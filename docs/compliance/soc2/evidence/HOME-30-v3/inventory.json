@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "source_revision": "e2aa3e6b7d41bc93df65b6c5f459cc5f81596058",
+  "population": "all committed Git tree entries under declared source roots",
+  "roots": [
+    "clusters/",
+    "IaC/",
+    ".talos/",
+    ".github/workflows/",
+    "builds/",
+    "policy/"
+  ],
+  "total_entries": 520,
+  "components": [
+    {
+      "path": ".github/workflows",
+      "entries": 19,
+      "tree_entries_sha256": "19305e62f624dedb25b2f18d63104c0e11fc4d3daa14d1850f8802e8b592bdd6"
+    },
+    {
+      "path": ".talos",
+      "entries": 12,
+      "tree_entries_sha256": "1259a5b18bc7396718ce2f0baed64859cbb2707cd923c0becfbd654a773d88af"
+    },
+    {
+      "path": "IaC",
+      "entries": 113,
+      "tree_entries_sha256": "47a88249a481aaa79f38319cbc45fec3179919dbfc587dd4393ead3e8739332f"
+    },
+    {
+      "path": "builds",
+      "entries": 26,
+      "tree_entries_sha256": "6f5e2f38c2c37d03a085cf0b19681c3f6656cf3a9f63f78808092e73a1db41f1"
+    },
+    {
+      "path": "clusters",
+      "entries": 1,
+      "tree_entries_sha256": "dc04b4969723120eb87dce8bfa179faae84f174093e412536cd0906ac50970a4"
+    },
+    {
+      "path": "clusters/homelab/apps/affine",
+      "entries": 14,
+      "tree_entries_sha256": "065f9d9fc75a217a781d0f506f4cb86f676abcbbd8af8c722da0286194b3ff6b"
+    },
+    {
+      "path": "clusters/homelab/apps/argocd-image-updater",
+      "entries": 4,
+      "tree_entries_sha256": "af63eeea47647c9dd576727abe73bafffa6048c0e31440700a09bfbad03eb713"
+    },
+    {
+      "path": "clusters/homelab/apps/cert-manager",
+      "entries": 6,
+      "tree_entries_sha256": "bef06b4ce69211b63c6154e0ea4fe6e4d3339acd4cbc83adb8808bc3b783b88f"
+    },
+    {
+      "path": "clusters/homelab/apps/compass",
+      "entries": 5,
+      "tree_entries_sha256": "f89fd943e87af0108eb3b3f80f61f5b0913866d7af43f3e40c33c55bb0f268db"
+    },
+    {
+      "path": "clusters/homelab/apps/cordium",
+      "entries": 8,
+      "tree_entries_sha256": "a359886db3803d67e8bc7b1be1346b1a03a81a29177c0aa16de6ad13c1c44d8f"
+    },
+    {
+      "path": "clusters/homelab/apps/cordium-bootstrap",
+      "entries": 4,
+      "tree_entries_sha256": "3c77372f5ad44bdaf4d4703002f3f7e6a8dbabe4a6ccacd4324a9a57cd38cf2d"
+    },
+    {
+      "path": "clusters/homelab/apps/deluge",
+      "entries": 11,
+      "tree_entries_sha256": "6597f4d49a6d014268461be7cae81b2eff96736bf9fd20b522f089c426af8516"
+    },
+    {
+      "path": "clusters/homelab/apps/descheduler",
+      "entries": 2,
+      "tree_entries_sha256": "84908f23b7e6b4674da17d156fe53435eee6385602d4688a3ca056ee48603352"
+    },
+    {
+      "path": "clusters/homelab/apps/dispatcharr",
+      "entries": 8,
+      "tree_entries_sha256": "7992aa515e6d64d863162a1fa39539a59fe33af214c908e4a3f844066e3b9d78"
+    },
+    {
+      "path": "clusters/homelab/apps/external-secrets",
+      "entries": 4,
+      "tree_entries_sha256": "0e3d80af222318157dd8a209bb4114807dd2aad41aaa89f9304e4ac75b7debfe"
+    },
+    {
+      "path": "clusters/homelab/apps/fleet",
+      "entries": 22,
+      "tree_entries_sha256": "6e2d1ec66ed241e681f383f8d702fc15d6e7ad368b43818e5e60853be248f8c7"
+    },
+    {
+      "path": "clusters/homelab/apps/github-actions-runner",
+      "entries": 2,
+      "tree_entries_sha256": "dc9c23eb872654676e950b47e11245c7487b714b31f3845e8e575f5fc711902a"
+    },
+    {
+      "path": "clusters/homelab/apps/grafana",
+      "entries": 9,
+      "tree_entries_sha256": "32a08d427120a7f3dd3437e419a3a0664c53d494d75d3ce0735716a49ee46fbc"
+    },
+    {
+      "path": "clusters/homelab/apps/grafana-alert-cleanup",
+      "entries": 2,
+      "tree_entries_sha256": "9e9fe2b93647435dbe23a6f2af216742cde8da63a2d8ddf853349529cb065b62"
+    },
+    {
+      "path": "clusters/homelab/apps/harbor",
+      "entries": 21,
+      "tree_entries_sha256": "f4d64f77bb4f82effaa0bcedeea67219e06b804a3560143eced3fac258e43791"
+    },
+    {
+      "path": "clusters/homelab/apps/istio",
+      "entries": 8,
+      "tree_entries_sha256": "d2901604e9ac424c2ae861920101bed3abdcb40b099e7a2843efed234b78f42d"
+    },
+    {
+      "path": "clusters/homelab/apps/kiali",
+      "entries": 5,
+      "tree_entries_sha256": "b6c427ce6c9243ba4249b77d2e0fd11c1beeb420df541df35a433c9d1e6dcc30"
+    },
+    {
+      "path": "clusters/homelab/apps/langfuse",
+      "entries": 11,
+      "tree_entries_sha256": "db90dc4a4ce4a05dd659d0ceed2a9ea033faba338424b2c4ae63515dad4e2c2a"
+    },
+    {
+      "path": "clusters/homelab/apps/litellm",
+      "entries": 7,
+      "tree_entries_sha256": "7a40e46b1004681e56c296eb499346a56b380f6fef886058bc41208f1e6eb629"
+    },
+    {
+      "path": "clusters/homelab/apps/media-postgres",
+      "entries": 9,
+      "tree_entries_sha256": "a00fcf31e6d60501d5c1593c059cda6d43b3ccabae0524364f18f6ea5595b205"
+    },
+    {
+      "path": "clusters/homelab/apps/media-postgres-recovery",
+      "entries": 2,
+      "tree_entries_sha256": "f2782b371b2629d93e11bf9ccd067ccab18d5170e9a80c3531b7a3ecca63c1e8"
+    },
+    {
+      "path": "clusters/homelab/apps/multica",
+      "entries": 12,
+      "tree_entries_sha256": "64f61f66ef9a0f08cdc090b988cfd3f08c96872a6085893028f42e5c2bdd68a2"
+    },
+    {
+      "path": "clusters/homelab/apps/n8n",
+      "entries": 8,
+      "tree_entries_sha256": "93b7d85d323e1bc2050e37896be7eb8da7f4f4c9c216bf35ddf1f7e49c14ca27"
+    },
+    {
+      "path": "clusters/homelab/apps/n8n-postgres",
+      "entries": 8,
+      "tree_entries_sha256": "7bf1747b3e61eada2ecb47c255e4c8c0a2c4e566df7516c7deadedfb1e59888f"
+    },
+    {
+      "path": "clusters/homelab/apps/nofx",
+      "entries": 14,
+      "tree_entries_sha256": "4a49323da349b703f35ac8c21fef0f3af39bad79f7d4e008ef955567a4eb70a9"
+    },
+    {
+      "path": "clusters/homelab/apps/octelium",
+      "entries": 7,
+      "tree_entries_sha256": "3bc01fdf5a4bf92c52df557ad6bdcb74588d14b940d389a32eb7c349c9b150ae"
+    },
+    {
+      "path": "clusters/homelab/apps/octelium-cluster",
+      "entries": 5,
+      "tree_entries_sha256": "4625d76c122e02eba8f0c7c3b6104c388554573c7fa65ec7ddf295debaee5ce6"
+    },
+    {
+      "path": "clusters/homelab/apps/octelium-enterprise",
+      "entries": 4,
+      "tree_entries_sha256": "13fa6bb9e7541687b6424705a8926f2e9d6393083990f255ae982ed08b3bbf09"
+    },
+    {
+      "path": "clusters/homelab/apps/octelium-public",
+      "entries": 8,
+      "tree_entries_sha256": "5e163121a41a8966b9c463ad0c41f50cf543e9d6b5bf1ebfedd7c61864127cdb"
+    },
+    {
+      "path": "clusters/homelab/apps/octelium-storage",
+      "entries": 12,
+      "tree_entries_sha256": "df4976b5bba074d05d34ba5c7d25e7267b33e0c15fe7bbc928f32d7d3ae36053"
+    },
+    {
+      "path": "clusters/homelab/apps/octobot",
+      "entries": 5,
+      "tree_entries_sha256": "e2381ddaefa91e74229e69ede8e945d180b4f4e6e873306c7dde5c0f4791bd06"
+    },
+    {
+      "path": "clusters/homelab/apps/openclaw",
+      "entries": 20,
+      "tree_entries_sha256": "58be3c755dc6c81d76fe1f19d5b9606d4c70169008835c8ea8a5cb44eeea8d25"
+    },
+    {
+      "path": "clusters/homelab/apps/policy-bot",
+      "entries": 8,
+      "tree_entries_sha256": "8d4dca81e423c02a06e72fa7b4e6bfe6f0d63b37c56694230ff811f77acdd253"
+    },
+    {
+      "path": "clusters/homelab/apps/prometheus",
+      "entries": 12,
+      "tree_entries_sha256": "2a38aad3e58343a8afe0ba558288a7f6e70b2ddbe8b45600e35621d89125cd3f"
+    },
+    {
+      "path": "clusters/homelab/apps/prowlarr",
+      "entries": 4,
+      "tree_entries_sha256": "7fcf1c93b78ba4f8cfa841750f13fc39cf15d50b7a3c5f95e28fee869baef7de"
+    },
+    {
+      "path": "clusters/homelab/apps/radarr",
+      "entries": 7,
+      "tree_entries_sha256": "d30fe9c41b32a8695530035a0d77331e943b5d969fdf4c391fbcfb685e92d94a"
+    },
+    {
+      "path": "clusters/homelab/apps/sonarr",
+      "entries": 7,
+      "tree_entries_sha256": "805b886c1403ce66ca1f0987646f95b6160196dde254669c83cfc924308ec026"
+    },
+    {
+      "path": "clusters/homelab/apps/tailscale",
+      "entries": 6,
+      "tree_entries_sha256": "f393e7658f7110d33aba2278ee0bc7f0e0e9b033b9300db520dfaf08278d2832"
+    },
+    {
+      "path": "clusters/homelab/argocd/self-management",
+      "entries": 10,
+      "tree_entries_sha256": "2771790cb28ad115d6d380d1fd4f659de93a7d07eade062e3630030402dd2f9d"
+    },
+    {
+      "path": "clusters/homelab/platform/crossplane",
+      "entries": 1,
+      "tree_entries_sha256": "e49311bb1ae168e1c8dfb5af80b4e5408a1298bb5e2f619257aed367e9428293"
+    },
+    {
+      "path": "clusters/homelab/platform/dns",
+      "entries": 8,
+      "tree_entries_sha256": "5a9fb20c6040ae19b20704dc27d11e8b77d60a6ea539c2c1b551daf559153a9f"
+    },
+    {
+      "path": "clusters/homelab/platform/multus",
+      "entries": 3,
+      "tree_entries_sha256": "21c3b3791f3fc06735fd2e825b5df47401aebc5c533ead84c88b151dc147270a"
+    },
+    {
+      "path": "clusters/homelab/platform/storage",
+      "entries": 8,
+      "tree_entries_sha256": "26ae5d8a34633008167511c7c4aab4164947bc31f789338724d8f98881ddc022"
+    },
+    {
+      "path": "policy",
+      "entries": 8,
+      "tree_entries_sha256": "299984839fa647cb1e9c7887494e930481adb3f76b33d1898287c02305d4fcd2"
+    }
+  ],
+  "literal_argocd_registrations": [
+    "affine",
+    "argocd-image-updater",
+    "cert-manager",
+    "compass",
+    "cordium",
+    "deluge",
+    "descheduler",
+    "dispatcharr",
+    "external-secrets",
+    "fleet",
+    "github-actions-runner",
+    "grafana",
+    "grafana-alert-cleanup",
+    "harbor",
+    "istio",
+    "kiali",
+    "langfuse",
+    "litellm",
+    "media-postgres",
+    "metrics-server",
+    "multica",
+    "n8n",
+    "n8n-postgres",
+    "nofx",
+    "octelium",
+    "octelium-cluster",
+    "octelium-enterprise",
+    "octelium-public",
+    "octelium-storage",
+    "octobot",
+    "openclaw",
+    "platform-crossplane",
+    "platform-dns",
+    "platform-multus",
+    "platform-storage",
+    "policy-bot",
+    "prometheus",
+    "prowlarr",
+    "radarr",
+    "sonarr",
+    "tailscale"
+  ],
+  "limitations": [
+    "No live collection",
+    "No manifest rendering",
+    "Registration does not establish activation or health",
+    "Hashes cover paths, modes and Git object IDs; no source values emitted"
+  ]
+}

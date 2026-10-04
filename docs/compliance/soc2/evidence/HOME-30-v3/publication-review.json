@@ -1,0 +1,23 @@
+{
+  "reviewed_at_utc": "2026-10-04T02:24:32.880547+00:00",
+  "reviewer": "SOC 2 Security Evidence Engineer",
+  "reviewer_agent_id": "01e5e4fd-3ecb-48f5-beda-66bd765e474b",
+  "integration_revision": "e2aa3e6b7d41bc93df65b6c5f459cc5f81596058",
+  "unique_emitted_names": 867,
+  "names_sha256": "3b9bdf2f55f5751a5bc6743ff952470cfc99f0e4fab0319f0d4368be016c25e1",
+  "population": "all 777 integration paths, both diff endpoint sets, all component paths and registration names; new packet filenames and PR titles also reviewed before publication",
+  "method": "Manual review of complete name lists and bounded token/private-key marker checks of publication artifacts",
+  "result": "No apparent secret values, private-only hostnames, personal records or credential values found in emitted names; source names retained verbatim",
+  "limitations": "Names are not automatically sanitized; full source content and operational controls not audited by name review",
+  "independent_review": "Homelab QA & Release Engineer pending; Third Party Auditor pending",
+  "open_findings": [
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6",
+    "F7",
+    "F8"
+  ]
+}
