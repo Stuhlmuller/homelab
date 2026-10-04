@@ -9,6 +9,53 @@ the frontend service. The frontend proxies API, auth, upload, and WebSocket
 traffic to the in-cluster backend service, so the backend does not have a
 separate browser-facing hostname.
 
+## Upgrade to 0.6.1
+
+The chart, backend, frontend, and runtime CLI are pinned to `0.6.1` together.
+Desktop `0.6.1` calls session-renewal and search-index APIs absent from `0.4.29`.
+The new backend applies its migrations automatically before serving requests;
+the chart allows ten minutes for startup and uses database-independent
+`/health` liveness with database-dependent `/healthz` readiness. First-party
+self-host telemetry is explicitly disabled with `doNotTrack: "1"`.
+
+Before merging an upgrade, wait for active agent tasks to finish and capture a
+private logical database backup plus uploads outside the checkout:
+
+```sh
+install -d -m 700 /private/operator/backups/multica
+python3 scripts/multica-upgrade-backup.py backup \
+  --context admin@homelab --destination /private/operator/backups/multica
+python3 scripts/multica-upgrade-backup.py verify \
+  --directory /private/operator/backups/multica/<printed-backup-directory>
+```
+
+The destination is an operator-specific placeholder. The helper only reads
+existing Pods through the declared API. It checks the PostgreSQL custom dump
+with `pg_restore`, verifies matching upload contents before and after the dump,
+and rejects active tasks, changed attachments/migrations, or changed source
+Pods. Archives are mode `0600` in a mode `0700` directory and contain private
+application data; never commit or publish them. This is an online backup with
+stable uploads, not an atomic snapshot or a tested restore. It excludes the
+runtime PVC and external secrets, which must remain intact.
+
+Review [upstream migrations](https://github.com/multica-ai/multica/tree/v0.6.1/server/migrations)
+before rollout: this upgrade resets legacy plugin records and removes obsolete
+PR references. Pre-upgrade inspection found no rows in the affected plugin and
+reference-only PR tables. Reverting only the images does not roll back schema
+or data. Recovery requires a reviewed maintenance change that stops writers,
+restores the database and uploads from the same capture, restores the previous
+chart/image pins, then resumes the workload; preserve the original archives.
+
+After the reviewed merge, dispatch the exact current `main` revision through
+`terragrunt-apply.yml` with `argocd_app=multica` to reconcile the chart version.
+Argo CD also consumes the committed image pins automatically. Verify chart and
+all three Multica binaries are `0.6.1`, all four workloads are Ready, database
+queries succeed, and the native desktop's search manifest and session renewal
+return `200` with a connected WebSocket. Keep Octelium and fixed-code sign-in
+unchanged. Before enabling the declared Harbor mirrors, publish the refreshed
+image inventory: all four nodes still used upstream registries during this
+upgrade's preflight.
+
 ## Server agent runtime
 
 `runtime.yaml` runs a separate, single-replica Multica daemon on `acer`.

@@ -35,6 +35,40 @@ workload README and [[../architecture/storage-and-state]]. Secret values stay
 outside git; repository-owned SSM paths and ExternalSecret contracts are
 tracked in [[../architecture/secrets-and-identity]].
 
+## Multica desktop compatibility
+
+On 2026-10-04 UTC, a recurring Mac connection report exposed version skew:
+the installed desktop app was `0.6.1`, while live frontend/backend images and
+`clusters/homelab/apps/multica/values.yaml` remained `0.4.29`. The local Octelium
+listener at `127.0.0.1:18080` worked. Desktop developer tools showed successful
+authenticated API reads and a connected WebSocket, but
+`POST /api/auth/refresh` and `GET /api/search-index/manifest` returned `404`.
+The app logged that session renewal did not complete and retained its current
+session. Independent HTTP probes reproduced both missing endpoints. Upstream's
+[0.4.29 router](https://github.com/multica-ai/multica/blob/v0.4.29/server/cmd/server/router.go)
+lacks both routes; the
+[0.6.1 router](https://github.com/multica-ai/multica/blob/v0.6.1/server/cmd/server/router.go)
+registers them. Direct backend inspection also returned `404` for the search
+manifest, excluding the frontend proxy as its cause.
+
+Multica's four workloads were Ready, backend `/healthz` returned `200`,
+PostgreSQL `SELECT 1` succeeded, and Multica/Octelium Argo applications were
+Synced/Healthy. A total connection loss was not reproduced during inspection;
+do not attribute every connection report to the older tunnel hang. Align
+desktop/server API support through the reviewed upgrade workflow, preserving
+the database and uploads, then verify renewal, search, and the originally
+failing desktop action. See the
+[Multica runbook](../../../clusters/homelab/apps/multica/README.md).
+
+The reviewed upgrade pins chart, web, backend and runtime CLI to `0.6.1` and
+disables self-host telemetry. `scripts/multica-upgrade-backup.py` captures a
+private online PostgreSQL archive and verifies stable upload contents, idle
+tasks, unchanged attachment/migration fingerprints and source Pods. It checks
+archive readability but does not fence writers or prove a restore. Retain the
+runtime PVC and external secrets; schema rollback requires restoring the
+database and uploads, not just reverting images. Live upgrade acceptance is
+pending until the chart, workloads, and desktop renewal/search checks pass.
+
 ## Kiali mesh visibility
 
 The 2026-09-05 read-only probes found cluster-wide namespace and Istio config

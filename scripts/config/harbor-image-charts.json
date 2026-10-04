@@ -117,7 +117,7 @@
     "chart": "multica",
     "repoURL": "ghcr.io/multica-ai/charts",
     "source": "IaC/terragrunt.stack.hcl",
-    "targetRevision": "0.4.29"
+    "targetRevision": "0.6.1"
   },
   {
     "chart": "nfs-subdir-external-provisioner",

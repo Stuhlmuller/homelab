@@ -1892,7 +1892,7 @@ unit "argocd_apps_multica" {
             repoURL        = "ghcr.io/multica-ai/charts"
             chart          = "multica"
             path           = "."
-            targetRevision = "0.4.29"
+            targetRevision = "0.6.1"
             helm = {
               releaseName = "multica"
               valueFiles  = ["$values/clusters/homelab/apps/multica/values.yaml"]

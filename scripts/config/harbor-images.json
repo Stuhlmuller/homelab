@@ -205,10 +205,10 @@
       "source": "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9"
     },
     {
-      "source": "ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66"
+      "source": "ghcr.io/multica-ai/multica-backend:v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c"
     },
     {
-      "source": "ghcr.io/multica-ai/multica-web:v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f"
+      "source": "ghcr.io/multica-ai/multica-web:v0.6.1@sha256:cc8260b0371661896dce52f968c8822d8275e0b275a43484347e5a59efffbb7c"
     },
     {
       "source": "ghcr.io/n8n-io/n8n:stable@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"

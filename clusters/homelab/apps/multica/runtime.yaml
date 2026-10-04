@@ -39,7 +39,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: install-multica
-          image: ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
+          image: ghcr.io/multica-ai/multica-backend:v0.6.1@sha256:824d42a4a4436efad96a2d15354a5512786c895672ac48fa05f9b2be4d8fbd5c
           imagePullPolicy: IfNotPresent
           command: [/bin/sh, -ec]
           args:
