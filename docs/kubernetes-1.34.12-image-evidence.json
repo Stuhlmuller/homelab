@@ -1,0 +1,31 @@
+{
+  "observed_date": "2026-10-04",
+  "method": "Anonymous upstream registry reads; raw SHA-256 checked for index, amd64 manifest and image config. No layers executed, signatures or Harbor publication verified.",
+  "images": [
+    {
+      "source": "registry.k8s.io/kube-apiserver:v1.34.12@sha256:ec5d36e7ba8be94476143c6c2f6a69971f368f9164b076d9ea50ff061716613a",
+      "amd64_manifest": "sha256:f33193d45b6aef40e31d0b2afd3583c902f0c3ec632c81189c42a67a3dab0db6",
+      "config": "sha256:49c761f7baec3747d9bf3e0da39736787cb70b276c340a7790c9649472865c8c"
+    },
+    {
+      "source": "registry.k8s.io/kube-controller-manager:v1.34.12@sha256:8a92c48d3faa0649598a4d854d294ff9d5de66bad5b23ddeb4c3b94c6bdcbf96",
+      "amd64_manifest": "sha256:5aacda3dc4d4c1f5c9079844aa63e366baee75de4c6bbdca2fabe5ea758ad691",
+      "config": "sha256:83f502a2da0cf12a8d3859e23da47346cd95c2a9e9a654a8dd06a632752d4b31"
+    },
+    {
+      "source": "registry.k8s.io/kube-scheduler:v1.34.12@sha256:5f01ad6a2f8df998388843145fc20b2d214ed8b22e36d7a2f8c9ede276242d0d",
+      "amd64_manifest": "sha256:a6664202193b0bd4b4441c43f272bbad5579731c32c43eb7e8d6352edd67faaf",
+      "config": "sha256:6e8ebd9a89d523d06a6e7fcea5da40a02dd060f16a2733f09eb553e6c2a144f9"
+    },
+    {
+      "source": "registry.k8s.io/kube-proxy:v1.34.12@sha256:b4a7c92729b02378bbe2f2658fe31e7f5ad224a496fffbd2c724c1b4d178dbce",
+      "amd64_manifest": "sha256:4a09df40da7222d7f3211eaabd08345764766965abd8f264f1925cc20b76fc38",
+      "config": "sha256:0efaa42028c62c33d802ca0ffc6d73450dc1699a0f2ec4846e98190745ba3265"
+    },
+    {
+      "source": "ghcr.io/siderolabs/kubelet:v1.34.12@sha256:975b8681ecc89fc111c6de908bed691b3caaeefd255ed68c138b068fb0aece08",
+      "amd64_manifest": "sha256:821a9ea9dfd518d0fe97a3749fe6553e453a8620b5a0760f830671025058aa4e",
+      "config": "sha256:9a8e1c24db067d5c704814da28d29fe2213eab19eee8cc3c98a527b0ad3d3080"
+    }
+  ]
+}

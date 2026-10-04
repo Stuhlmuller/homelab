@@ -269,3 +269,11 @@ mode.
   `.talos/talosconfig`.
 - Talos machine config changes should stay patch-oriented when only one node
   differs from the shared baseline.
+
+## Pending controller security patch
+
+HOME-54 proposes Kubernetes 1.34.11 → 1.34.12 without changing Talos.
+See [the candidate runbook](../../kubernetes-cve-2026-2270.md) for literal RBAC
+inventory, immutable image evidence, lifecycle ambiguity and independent
+Recovery/QA gates. This is not a live version or health update. HOME-3 retains
+network enforcement ownership; HOME-55/56 retain Talos/Istio maintenance.

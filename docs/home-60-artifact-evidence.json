@@ -1,0 +1,75 @@
+{
+  "observed_date": "2026-10-04",
+  "status": "PREPARATION_ONLY",
+  "method": "Anonymous public reads. Raw index, linux/amd64 manifest and config SHA-256 checked. No layers executed; no signatures, attestations or Harbor availability verified.",
+  "images": [
+    {
+      "source": "registry.k8s.io/kube-apiserver:v1.35.9@sha256:32abf8e4e2ae679b35c719a04902c2ae1a98a5b8648ac034a4672e39660f8a73",
+      "amd64_manifest": "sha256:d331d5b4dfaa6f7076e8d40a77f0721020aaae918cdcd0928e477a5c8a24990d",
+      "config": "sha256:83b3eb3a09e0b903b95ce44bcbbc9dcbac1e3549602625b37d84d37208417c29"
+    },
+    {
+      "source": "registry.k8s.io/kube-controller-manager:v1.35.9@sha256:d7e4983f79ee763f7c56226395ab9c55261ff6035df5ed23eef9bd26b63eb140",
+      "amd64_manifest": "sha256:e2fe2b4a2d6986800a61c95741ff491b401be53053af2dbc2c5fc5444d53343e",
+      "config": "sha256:009938256e813db149d479dd59cc6d29984518a0abf2606fc0e3ab8542264ca3"
+    },
+    {
+      "source": "registry.k8s.io/kube-scheduler:v1.35.9@sha256:d96574ba699bc887eeefcc05d9f7828b4df5ba75feac6f20b98097aa85d1ed22",
+      "amd64_manifest": "sha256:efa1dc74136bc3c8826e3163f091284af85f817fd92916217cea1152628b941e",
+      "config": "sha256:3f00ed4da2be184b86d05a6c5ffa2813effd9e83b542b1e96a8b66541e1460d9"
+    },
+    {
+      "source": "registry.k8s.io/kube-proxy:v1.35.9@sha256:d08adb0c8c2c68075f1e6fa6c4c82880c5af54c1686ac20d22af612082c32a31",
+      "amd64_manifest": "sha256:80fd2dbab0211ccc3a4af58c8181de3f7d7659b4e19251a3722a9febf04046a6",
+      "config": "sha256:96f81a7f09902e7b4d576db8ea407eecd69a63b3f0aed2e2992ad5b23a73c5fa"
+    },
+    {
+      "source": "ghcr.io/siderolabs/kubelet:v1.35.9@sha256:40c4200b8163a952bbde447febd9822cb986b70ec785f39c4cfcb8e377b05b55",
+      "amd64_manifest": "sha256:4af8f83f6788384c0b97b0937214083e9bd024bf92efb37addfe14fefb13dba2",
+      "config": "sha256:a673fd958c683b6c2e9d6259eb88112d8e9b85af27185bd937ece8c254707dd5"
+    }
+  ],
+  "client_checksum_lists": [
+    {
+      "version": "1.11.3",
+      "url": "https://github.com/siderolabs/talos/releases/download/v1.11.3/sha256sum.txt",
+      "list_sha256": "sha256:90a91d9f7ff85eeb18cfe8a2862af251a96cc9c0784cc5da49f1dd1f72b304c7",
+      "advertised_talosctl_linux_amd64_sha256": "7cd3a0d25a8f2dea343c2815431cc07d3e80bab124e7c3e22738819dc09c1b3f",
+      "binary_verified_this_run": false
+    },
+    {
+      "version": "1.11.6",
+      "url": "https://github.com/siderolabs/talos/releases/download/v1.11.6/sha256sum.txt",
+      "list_sha256": "sha256:4efd8feb027bb608ad5f2412c28b75a39c17830fc3409ed1fb97b0b6ef90e05c",
+      "advertised_talosctl_linux_amd64_sha256": "a248ef5c5f9cab08013281e6e14d8d8862e7363515e58e2fba8c94ca05c5cf34",
+      "binary_verified_this_run": false
+    },
+    {
+      "version": "1.12.12",
+      "url": "https://github.com/siderolabs/talos/releases/download/v1.12.12/sha256sum.txt",
+      "list_sha256": "sha256:bebd2c779bb149b078a07ed9a0829bce487f0652a44d1093181216eb992c8008",
+      "advertised_talosctl_linux_amd64_sha256": "3a3ad9fe02df94f8bcfe85a9d982991fbf510a2167fb0e5d1b2c149d6541090e",
+      "binary_verified_this_run": false
+    },
+    {
+      "version": "1.13.11",
+      "url": "https://github.com/siderolabs/talos/releases/download/v1.13.11/sha256sum.txt",
+      "list_sha256": "sha256:ba0d8310fb7cb47b6af3a5081ef93d0e06afe307acbe4fc5b2ab051a6e2e3871",
+      "advertised_talosctl_linux_amd64_sha256": "d4358faf5ebd740ab92ec4a9e3111f2f271f681e479f07b8603a3616c76b2413",
+      "binary_verified_this_run": false
+    },
+    {
+      "version": "1.14.2",
+      "url": "https://github.com/siderolabs/talos/releases/download/v1.14.2/sha256sum.txt",
+      "list_sha256": "sha256:607a38bd7e3a63cb2c5707fdd3b16fcb42e0b09ee885b12e5272d4ebee0c49a5",
+      "advertised_talosctl_linux_amd64_sha256": "c6c9552b0e5f767352c595fa1c0af4f186f697488646872955057d23990a66c4",
+      "binary_verified_this_run": false
+    }
+  ],
+  "unresolved": [
+    {
+      "artifact": "per-node installers",
+      "error": "Actual schematics/extensions/boot modes not established; no generic installer substituted."
+    }
+  ]
+}

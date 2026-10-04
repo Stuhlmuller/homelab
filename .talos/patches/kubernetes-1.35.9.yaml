@@ -1,0 +1,17 @@
+# Preparation only: requires accepted Talos 1.14.2 and separately staged mesh.
+# HOME-60 candidate; blocked pending independent recovery/QA and operational approval.
+# Control-plane bootstrap and offline config-render target only. Workers use
+# worker-kubernetes-1.35.9.yaml. Never apply these version patches live:
+# talosctl upgrade-k8s owns ordered sequencing.
+machine:
+  kubelet:
+    image: ghcr.io/siderolabs/kubelet:v1.35.9
+cluster:
+  apiServer:
+    image: registry.k8s.io/kube-apiserver:v1.35.9
+  controllerManager:
+    image: registry.k8s.io/kube-controller-manager:v1.35.9
+  scheduler:
+    image: registry.k8s.io/kube-scheduler:v1.35.9
+  proxy:
+    image: registry.k8s.io/kube-proxy:v1.35.9
