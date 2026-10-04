@@ -1,0 +1,101 @@
+{
+  "version": "HOME-30-v1",
+  "collected_at_utc": "2026-10-04T01:48:06.638676+00:00",
+  "collector_role": "SOC 2 Security Evidence Engineer",
+  "collector_agent_id": "01e5e4fd-3ecb-48f5-beda-66bd765e474b",
+  "implementation_commit": "a3c592e353c654b5fed28b6424036c2d1d74f35c",
+  "current_main": "58ecf587d3069fb8e504ac319e2bec2de05785c0",
+  "results": [
+    {
+      "command": [
+        "python3",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "Python 3.13.15\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "git version 2.39.5\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "-I",
+        "scripts/ci/soc2-scope-inventory-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "fatal: Needed a single revision\n..\n----------------------------------------------------------------------\nRan 2 tests in 0.854s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/soc2-scope-inventory.py",
+        "--revision",
+        "HEAD",
+        "--check",
+        "docs/compliance/soc2/evidence/HOME-30-v1/inventory.json"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS: complete source population matches approved-for-review baseline\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "scripts/soc2-scope-inventory.py",
+        "scripts/ci/soc2-scope-inventory-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "origin/main",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "judgmental_source_samples": [
+    {
+      "path": "IaC/terragrunt.stack.hcl",
+      "sha256": "2b11da68b56d974621a8fd042cecd76fed50544d9e4b1b2bd842723cc0689391"
+    },
+    {
+      "path": "clusters/homelab/apps/langfuse/values.yaml",
+      "sha256": "ea29bef0def377bb90504bcfb9c907fec8b9aa65a4ea97eaf7c768161bdd89a5"
+    },
+    {
+      "path": "clusters/homelab/apps/langfuse/datastores.yaml",
+      "sha256": "d1f5fc34b3d909e48a559f31054940d855d755f1668fa4c0451f98568912e663"
+    },
+    {
+      "path": "clusters/homelab/apps/external-secrets/cluster-secret-store.yaml",
+      "sha256": "af67d86e995a056700f98ae56982892fa0b3617236efc67f4faa6e7668dfc629"
+    },
+    {
+      "path": "clusters/homelab/platform/storage/kustomization.yaml",
+      "sha256": "988f0583da0312de889c4e05a032db522c3b9ac0dc202189ecb49aeac8ea45e3"
+    },
+    {
+      "path": ".talos/patches/kubernetes-1.34.11.yaml",
+      "sha256": "3a6a021b9ede104de7967433fd14c22c2e3ee1872dc63aa03b4c80a3cce2423c"
+    }
+  ]
+}
