@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = '2be233ffce44495ab63e5c1b3d349eeb795c28b6'
-PACKET = 'docs/compliance/soc2/evidence/HOME-30-v5/'
+PACKET = 'docs/compliance/soc2/evidence/HOME-30-v6/'
 
 
 def run(args, cwd=ROOT, **kwargs):

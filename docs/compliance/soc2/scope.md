@@ -1,4 +1,4 @@
-# HOME-30 system scope — version 5, assessment approach approved with conditions
+# HOME-30 system scope — version 6, assessment approach approved with conditions
 
 Review baseline: `2be233ffce44495ab63e5c1b3d349eeb795c28b6`, 2026-10-04 UTC.
 This is an internal Trust Services Criteria-aligned readiness self-assessment.
@@ -56,8 +56,8 @@ mapping for HOME-37 review, not a determination of criterion compliance.
 
 The boundary includes all committed cluster desired state, infrastructure,
 Talos patches, build sources, workflow definitions and policies in the generated
-[source inventory](evidence/HOME-30-v5/population.json). Current counts and the selected integration revision are recorded in
-[packet v5](evidence/HOME-30-v5/packet.md). Every group is included
+[source inventory](evidence/HOME-30-v6/population.json). Current counts and the selected integration revision are recorded in
+[packet v6](evidence/HOME-30-v6/packet.md). Every group is included
 for review, even when retired, suspended or a recovery candidate. Counts are
 source artifacts, not Kubernetes objects, deployed services or active users.
 
@@ -93,8 +93,8 @@ remain visible in the assessment; they are not evidence of secure data disposal.
 
 The six-root inventory is not the entire system boundary. D1–D7 explicitly
 retain the following sources in assessment scope although the collector does
-not monitor their drift. The v5 whole-tree verifier now checks these sources, including `.policy.yml` and all delivery scripts. The revision-bound
-[whole-tree register](evidence/HOME-30-v5/population.json) enumerates
+not monitor their drift. The v6 whole-tree verifier now checks these sources, including `.policy.yml` and all delivery scripts. The revision-bound
+[whole-tree register](evidence/HOME-30-v6/population.json) enumerates
 all tracked paths, including manual sources and HOME-30 additions, with Git blob
 IDs and mode/type identities. These are automated-population exclusions, not control exclusions.
 
@@ -113,7 +113,7 @@ repository, not just the six roots; reconcile changed excluded paths in the
 packet. The register does not prove execution or enforcement. HOME-30 additions
 are separately enumerated and hashed in the packet because they are absent from
 the main baseline. HOME-45 approves this combined method with conditions. Named review
-responsibilities and unresolved findings are recorded in packet v5; assigning
+responsibilities and unresolved findings are recorded in packet v6; assigning
 a path or counting its digest does not establish substantive control acceptance.
 
 Main advanced through Harbor/Grafana alerting changes: a new vulnerability
@@ -222,6 +222,6 @@ git diff --check
 The checker is an explicit review command, not an enforced CI or merge gate.
 The current change introduces no new platform or recurring automation.
 
-The v5 verifier is the authoritative complete tracked-tree check. The six-root
+The v6 verifier is the authoritative complete tracked-tree check. The six-root
 collector remains a limited summary. Historical manifests apply to original
-bytes preserved in v5 tree proofs; v2/v3 verifier entrypoints now delegate to the current verifier.
+bytes preserved in v6 tree proofs; v2/v3 verifier entrypoints now delegate to the current verifier.

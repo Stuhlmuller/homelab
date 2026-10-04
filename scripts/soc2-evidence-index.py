@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh v5 population from staged source and hash the fixed evidence envelope."""
+"""Refresh v6 population from staged source and hash the fixed evidence envelope."""
 import hashlib
 import json
 import runpy

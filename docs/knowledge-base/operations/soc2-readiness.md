@@ -3,7 +3,7 @@
 HOME-45 approves the internal, revision-bound control-design assessment and all
 five categories, with combined automated/manual review subject to five
 [incorporation conditions](../../compliance/soc2/HOME-45-decision.md).
-The [scope](../../compliance/soc2/scope.md) and [packet v5](../../compliance/soc2/evidence/HOME-30-v5/packet.md) account for Fleet/Entra
+The [scope](../../compliance/soc2/scope.md) and [packet v6](../../compliance/soc2/evidence/HOME-30-v6/packet.md) account for Fleet/Entra
 and HOME-30 additions across the whole tree, named manual reviewers and open
 findings. Prior packets and the original decision remain revision-bound history.
 
@@ -25,3 +25,8 @@ substituted history must fail in normal and optimized Python. HOME-46 selects
 a signed replacement route but does not authorize preparation; HOME-47 retains
 the operator/signing/protection prerequisite. QA and explicit Auditor disposition
 of the P2 repair precede a concrete preparation decision.
+
+V6 also requires the supplied archive object IDs to equal the set traversed by
+the fixed manifest proofs. Correctly hashed unrelated blobs/trees are rejected
+after regeneration and commit; missing objects and same-count substitutions
+remain failures. Both P2 dispositions require refreshed QA and Auditor review.

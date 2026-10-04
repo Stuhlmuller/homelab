@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify v5 source/evidence and archived tree proofs without PR-only commits."""
+"""Verify v6 source/evidence and archived tree proofs without PR-only commits."""
 
 import base64
 import hashlib
@@ -9,7 +9,7 @@ import sys
 from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKET = "docs/compliance/soc2/evidence/HOME-30-v5/"
+PACKET = "docs/compliance/soc2/evidence/HOME-30-v6/"
 ENVELOPE = {PACKET + name for name in (
     "population.json", "history.json", "packet.md", "validation.json",
     "SHA256SUMS", "review.json", "reconciliation.json")}
@@ -118,14 +118,21 @@ def history_check(history):
         require(object_id(kind, data) == oid, "archived Git object digest mismatch")
         objects[oid] = (kind, data)
 
+    reached = set()
+
+    def get_object(oid):
+        require(oid in objects, "missing historical proof object")
+        reached.add(oid)
+        return objects[oid]
+
     def get_blob(root, path):
         parts = PurePosixPath(safe_path(path)).parts
         oid = root
         for part in parts:
-            kind, raw = objects[oid]
+            kind, raw = get_object(oid)
             require(kind == "tree", "invalid tree proof")
             _, oid = parse_tree(raw)[part]
-        kind, data = objects[oid]
+        kind, data = get_object(oid)
         require(kind == "blob", "artifact is not a blob")
         return data
 
@@ -142,6 +149,7 @@ def history_check(history):
             names.add(path)
             require(hashlib.sha256(get_blob(root, path)).hexdigest() == digest,
                     "historical artifact mismatch")
+    require(set(objects) == reached, "historical archive contains objects outside manifest proofs")
     return len(history["packets"])
 
 
