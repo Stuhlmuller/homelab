@@ -78,6 +78,18 @@ remediated image through GitOps. Source: `clusters/homelab/apps/harbor/vulnerabi
 `clusters/homelab/apps/harbor/vulnerability-exporter.yaml`, and
 `clusters/homelab/apps/grafana/values.yaml`.
 
+Grafana's `Security Overview` dashboard uses the same aggregate metric to show
+critical-CVE totals and trend by project, affected-project count, collector
+freshness, and scrape health. It intentionally remains aggregate; triage image
+and CVE detail in Harbor. Missing telemetry shows an explicit orange warning
+in the current-state stats; a successful zero count remains green. Source:
+`clusters/homelab/apps/grafana/dashboards/security-overview.json`.
+
+On 2026-10-04, Prometheus reported the collector target down because its
+`/metrics` endpoint returned HTTP 503. The dashboard must show this as missing
+scan data and one scrape target down; investigate collector-to-Harbor API
+collection separately before treating a blank CVE total as healthy.
+
 Read-only acceptance on 2026-09-28 found scan-on-push enabled in both projects
 and Trivy v0.72.0 healthy. Both running NOFX images had successful reports:
 backend `6dfec7dd502b` (5 critical, 65 high findings) and frontend `210a1bd9ca7e`
