@@ -279,3 +279,10 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
 networking, migration and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+## Wazuh SIEM (staged)
+
+`clusters/homelab/apps/wazuh` owns the Wazuh manager, indexer, dashboard and
+Fluent Bit collectors in namespace `wazuh`; its explicit-stack Application
+targets main with automated sync disabled pending memory capacity. See
+[[operations/wazuh-siem]] and the [rollout runbook](../../../clusters/homelab/apps/wazuh/README.md).

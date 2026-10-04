@@ -3680,6 +3680,93 @@ unit "argocd_apps_tailscale" {
   }
 }
 
+unit "argocd_apps_wazuh" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/wazuh"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "../aws-ssm-parameters",
+      "external-secrets",
+      "cert-manager",
+      "istio",
+      "octelium",
+      "platform-storage",
+      "prometheus"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "wazuh"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "wazuh"
+        }
+
+        sources = [
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/wazuh"
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            # Enable through a reviewed stack change after the documented
+            # capacity and ingestion prerequisites pass.
+            enabled  = false
+            prune    = true
+            selfHeal = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "3m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "rollout"
+            value = "Staged with automated sync disabled until Wazuh capacity and ingestion prerequisites pass; enable through a reviewed stack change."
+          },
+          {
+            name  = "access"
+            value = "Private Octelium dashboard access; no public ingestion or dashboard ingress."
+          },
+          {
+            name  = "runbook"
+            value = "clusters/homelab/apps/wazuh/README.md"
+          }
+        ]
+      }
+    }
+  }
+}
+
 unit "aws_ssm_parameters" {
   source                  = "./.catalog/units/live/aws-ssm-parameters"
   path                    = "live/aws-ssm-parameters"

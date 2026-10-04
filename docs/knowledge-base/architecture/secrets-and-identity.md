@@ -479,3 +479,12 @@ No AWS signing resource or public transparency log is used. Namespace Pod
 creators and cluster administrators can access the key: keep those permissions
 restricted, back up etcd to encrypted off-node storage, and retain trusted public
 keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
+
+## Wazuh identities (staged)
+
+Four generated SSM SecureStrings under `/homelab/wazuh/` separate indexer admin,
+manager API, dashboard service and enrollment credentials. ESO renders native
+file configs and bcrypt hashes; cert-manager owns the internal CA and TLS keys.
+Private `wazuh.default` Octelium access requires the human-access policy and
+Wazuh login; no public ingress or anonymous Service is introduced. Collector
+RBAC reads only Pods, namespaces and events. See [[../operations/wazuh-siem]].

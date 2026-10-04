@@ -1,0 +1,8 @@
+machine:
+  logging:
+    destinations:
+      - endpoint: tcp://10.1.0.199:30517
+        format: json_lines
+        extraTags:
+          cluster: homelab
+          source: talos-service
