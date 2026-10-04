@@ -67,7 +67,9 @@ API. It publishes the aggregate
 `harbor_vulnerability_critical_total{project=...}` metric; artifact names,
 digests, CVE IDs, and credentials never become Prometheus labels or logs. The
 collector mounts the existing administrator credential as a file and keeps the
-credential out of process arguments and environment variables.
+credential out of process arguments and environment variables. Harbor omits
+zero-valued severity buckets, so a completed scan without a `Critical` bucket
+correctly contributes zero rather than failing collection.
 
 The ServiceMonitor is scraped every minute. Grafana alerts after five minutes
 when any completed image scan has one or more critical findings. Missing metric

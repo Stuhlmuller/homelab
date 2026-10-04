@@ -70,7 +70,9 @@ alerts at critical severity after five minutes for a nonzero count; absent data
 and evaluation errors also alert. Cached metrics expire within six minutes of a
 failed collection, and script revisions roll the collector through its
 versioned pod-template annotation. The raw Grafana query preserves healthy
-zero-valued project series while missing telemetry enters Alerting. Triage in
+zero-valued project series while missing telemetry enters Alerting. A completed
+Harbor scan that omits its zero-valued `Critical` severity bucket contributes
+zero. Triage in
 Harbor, then rebuild and roll out a
 remediated image through GitOps. Source: `clusters/homelab/apps/harbor/vulnerability-exporter.py`,
 `clusters/homelab/apps/harbor/vulnerability-exporter.yaml`, and
