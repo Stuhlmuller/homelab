@@ -44,6 +44,7 @@ units = {
     "IaC/live/argocd-apps": "apps",
     "IaC/live/argocd-apps/langfuse": "repair",
     "IaC/live/argocd-apps/fleet": "repair",
+    "IaC/live/argocd-apps/wazuh": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -128,7 +129,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "nofx"):
+        for name in ("langfuse", "fleet", "wazuh", "nofx"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,13 +196,18 @@ class TerragruntApplyTest(unittest.TestCase):
     def run_apply(self, target="langfuse", repair="false", **overrides):
         project = json.loads(json.dumps(PROJECT))
         app_names = APPS
-        if target == "fleet":
-            project["spec"]["destinations"][0]["namespace"] = "fleet"
+        crds = CRDS
+        if target in ("fleet", "wazuh"):
+            project["spec"]["destinations"][0]["namespace"] = target
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
-            app_names = [*APPS, "octelium-public"]
+            app_names = [*APPS, "octelium-public" if target == "fleet" else "octelium"]
+        if target == "wazuh":
+            app_names.append("prometheus")
+            crds = [*CRDS, "certificates.cert-manager.io", "issuers.cert-manager.io",
+                    "podmonitors.monitoring.coreos.com", "prometheusrules.monitoring.coreos.com"]
         config = {"target": target, "project": project,
-                  "app_names": app_names, "crds": CRDS,
-                  "store": {"spec": {"conditions": [{"namespaces": ["fleet"]}]}},
+                  "app_names": app_names, "crds": crds,
+                  "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
                   "apps": [{"metadata": {"name": name}, "status": {
                       "sync": {"status": "Synced"}, "health": {"status": "Healthy"}
                   }} for name in app_names], **overrides}
@@ -260,7 +266,8 @@ class TerragruntApplyTest(unittest.TestCase):
 
     def test_missing_target_and_invalid_repair_do_not_write(self):
         for options in ({"missing_target": "langfuse"}, {"repair": "invalid"},
-                        {"target": "fleet", "missing_target": "fleet"}):
+                        {"target": "fleet", "missing_target": "fleet"},
+                        {"target": "wazuh", "missing_target": "wazuh"}):
             with self.subTest(options=options):
                 result, events = self.run_apply(**options)
                 self.assertNotEqual(result.returncode, 0)
@@ -317,45 +324,51 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
 
-    def test_fleet_applies_checked_ssm_then_only_fleet_without_azuread(self):
-        result, events = self.run_apply(target="fleet", without_azuread=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(events, [
-            "generate", "preflight.project", "preflight.apps", "preflight.crds",
-            "preflight.store", "preflight.store_scope", "preflight.storage",
-            "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
-            "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
-            "apps.plan", "apps.policy", "apps.apply",
-        ])
+    def test_generated_secret_apps_check_ssm_then_only_target_without_azuread(self):
+        for target in ("fleet", "wazuh"):
+            with self.subTest(target=target):
+                result, events = self.run_apply(target=target, without_azuread=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(events, [
+                    "generate", "preflight.project", "preflight.apps", "preflight.crds",
+                    "preflight.store", "preflight.store_scope", "preflight.storage",
+                    "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
+                    "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
+                    "apps.plan", "apps.policy", "apps.apply",
+                ])
 
-    def test_fleet_missing_prerequisites_fail_before_any_write(self):
-        variants = [
-            {"project": PROJECT},  # Project permits Langfuse, not Fleet.
-            {"apps": []},
-            {"store": {"spec": {"conditions": [{"namespaces": ["langfuse"]}]}}},
-            {"store": {"spec": {}}},
-            {"fail": "preflight.store_scope"},
-        ]
-        for name in ("external-secrets", "octelium-public"):
-            apps = [{"metadata": {"name": app}, "status": {
-                "sync": {"status": "OutOfSync" if app == name else "Synced"},
-                "health": {"status": "Healthy"},
-            }} for app in [*APPS, "octelium-public"]]
-            variants.append({"apps": apps})
-        for options in variants:
-            with self.subTest(options=options):
-                result, events = self.run_apply(target="fleet", repair="true", **options)
-                self.assertNotEqual(result.returncode, 0)
-                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
-                                    for event in events), events)
+    def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
+        for target, access_app in (("fleet", "octelium-public"), ("wazuh", "octelium")):
+            app_names = [*APPS, access_app, *(["prometheus"] if target == "wazuh" else [])]
+            variants = [
+                {"project": PROJECT},  # Project permits Langfuse, not this target.
+                {"apps": []},
+                {"store": {"spec": {"conditions": [{"namespaces": ["langfuse"]}]}}},
+                {"store": {"spec": {}}},
+                {"fail": "preflight.crds"},
+                {"fail": "preflight.store_scope"},
+            ]
+            for name in app_names:
+                apps = [{"metadata": {"name": app}, "status": {
+                    "sync": {"status": "OutOfSync" if app == name else "Synced"},
+                    "health": {"status": "Healthy"},
+                }} for app in app_names]
+                variants.append({"apps": apps})
+            for options in variants:
+                with self.subTest(target=target, options=options):
+                    result, events = self.run_apply(target=target, repair="true", **options)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                        for event in events), events)
 
-    def test_fleet_ssm_and_application_failures_stop_later_stages(self):
-        for failure in ("ssm.plan", "ssm.policy", "ssm.apply", "apps.plan", "apps.policy"):
-            with self.subTest(failure=failure):
-                result, events = self.run_apply(target="fleet", fail=failure)
-                self.assertNotEqual(result.returncode, 0)
-                self.assertEqual(events[-1], failure)
-                self.assertNotIn("apps.apply", events)
+    def test_generated_secret_apps_failures_stop_later_stages(self):
+        for target in ("fleet", "wazuh"):
+            for failure in ("ssm.plan", "ssm.policy", "ssm.apply", "apps.plan", "apps.policy"):
+                with self.subTest(target=target, failure=failure):
+                    result, events = self.run_apply(target=target, fail=failure)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events[-1], failure)
+                    self.assertNotIn("apps.apply", events)
 
     def test_full_apply_still_requires_changed_azuread_credentials(self):
         result, events = self.run_apply(target="", without_azuread=True)

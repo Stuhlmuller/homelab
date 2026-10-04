@@ -16,6 +16,12 @@ python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
+python3 -I scripts/ci/octelium-wazuh-reconcile-test.py
+python3 -I scripts/ci/wazuh-talos-test.py
+python3 -I scripts/ci/wazuh-collector-test.py
+python3 -I scripts/ci/wazuh-check.py
+python3 -I scripts/ci/wazuh-startup-test.py
+python3 -I scripts/ci/wazuh-core-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py

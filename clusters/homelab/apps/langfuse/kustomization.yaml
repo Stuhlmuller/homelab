@@ -8,3 +8,8 @@ resources:
   - datastores.yaml
   - virtualservice.yaml
   - recovery-pvc.yaml
+configMapGenerator:
+  - name: langfuse-clickhouse-logging
+    namespace: langfuse
+    files:
+      - 90-homelab-logging.xml=clickhouse-logging.xml
