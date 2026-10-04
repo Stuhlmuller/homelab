@@ -12,13 +12,14 @@ rule tuning are separate work, so storage of a log does not imply its contents
 trigger a built-in detection. Active response is not enabled.
 
 **Staged, not deployed.** The Application targets `main` with automated sync
-explicitly disabled. On 2026-10-03 after the Langfuse memory reservation,
-`acer` had 2.82 GiB unreserved memory. Wazuh and its collectors request 7.12 GiB
-there plus 1 GiB operating headroom, leaving a 5.30 GiB capacity shortfall. Do not
-lower requests to force them onto the single control-plane node. Add capacity or
-approve specific workload moves, then validate again before enabling sync in a
-reviewed change. The current local volumes and central receiver are pinned to
-`acer`; moving to a new node requires updating those selectors, volumes, Talos
+explicitly disabled. The capacity gate currently blocks activation. Wazuh and
+its collectors request 7.12 GiB on the central node plus 1 GiB operating
+headroom. Do not lower requests to force them onto the single control-plane
+node. Moving workloads among existing nodes cannot resolve an aggregate
+memory deficit. Add capacity or obtain the operator's selection of workloads
+to retire, then validate again before enabling sync in a reviewed change.
+The current local volumes and central receiver are pinned to `acer`; moving
+to a new node requires updating those selectors, volumes, Talos
 endpoint and helper node inventory together.
 
 ## Data path and access
@@ -145,7 +146,20 @@ is implemented. Secret renewal alone does not prove processes reloaded keys.
 ## Rollout
 
 1. Run `nix develop --command python3 -I scripts/wazuh-preflight.py`. Capacity
-   must pass with operating headroom; review actual node memory usage too.
+   must pass on every collector node, including actual memory, node/image
+   filesystem headroom and room for persistent queues. Resolve DiskPressure
+   and review image usage before activation. Checking `acer` alone is not
+   sufficient. See the [activation status](../../../../docs/knowledge-base/operations/wazuh-siem.md).
+   The gate reserves 2 GiB per node for its collector queue, another 2 GiB on
+   `acer` for the central receiver, and image-pull/temporary storage above
+   kubelet eviction thresholds: 16 GiB on `acer` for the central images'
+   cold download/unpacking, and 1 GiB on each worker. Review these reserves
+   when changing pinned images. It treats equal-capacity node
+   and image filesystems as potentially shared, without adding their free
+   space together. `acer` additionally reserves its 150 GiB of local volumes
+   and retains a 200 GiB free-space floor. Inode headroom above eviction
+   thresholds is at least 4,096 inodes or 1% of the filesystem, whichever is
+   larger. Missing filesystem/eviction statistics or DiskPressure block activation.
 2. Run the static, policy and focused Wazuh checks. Mirror all pinned images to
    Harbor using the reviewed image workflow before activating consumers.
 3. From a clean reviewed `main`, reconcile shared prerequisites/AppProject and
