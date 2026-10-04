@@ -112,6 +112,59 @@ establish full-inventory mirror completion.
 
 ## Package Migration
 
+### Multica Python catalog prerequisite (HOME-48)
+
+[Consumer PR #1142](https://github.com/Stuhlmuller/homelab/pull/1142) at
+`03ce5db61098ee030507de492694a5ded13be268` updates both `configure-runtime` and
+`daemon` in `clusters/homelab/apps/multica/runtime.yaml`. Its new Python image
+was absent from the Harbor catalog. The prerequisite catalog change retains
+the old digest for current consumers and rollback, and assigns the single
+`3.13-bookworm` alias to the candidate:
+
+- Candidate: `docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d`.
+- Prior desired-state pin: `docker.io/library/python@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea`.
+
+Anonymous Docker Hub inspection on 2026-10-04 verified the SHA-256 of both
+raw indexes, their linux/amd64 manifests, and configuration blobs. Both indexes
+include linux amd64, arm/v7, arm64/v8, 386 and ppc64le. The amd64 configuration
+changes Python `3.13.15` to `3.13.16`, retains the Bookworm base history, PATH,
+and `python3` default command. Candidate amd64 manifest:
+`sha256:50fea1db210c57643500231bff4921a4c5505ace08597ee5edbc307bfb90a42d`;
+prior amd64 manifest:
+`sha256:61d9f7d6c554f2325f2dd26d627d3efffbd41f56c12ab4deb4ca92f7a157601f`.
+This is metadata compatibility evidence, not an image execution test or a live
+health observation. The runtime's UID, probes, commands, retained profile,
+storage and credentials must remain unchanged. PostgreSQL/pgvector is outside
+this change; no database migration or backup/restore waiver is implied.
+
+Release gates, in order:
+
+1. Independently review the catalog prerequisite and pass current-head static
+   CI with the normal signed-commit requirements. Keep the consumer PR blocked
+   on publication evidence even after its catalog coverage check turns green.
+2. With separate concrete execution approval, merge the prerequisite and run
+   the existing reviewed-main Harbor mirror workflow with `image_scope=all`
+   and its exact `expected_sha`. Fleet scope does not include this image.
+   Verify preserved manifest digests and complete anonymous destination pulls
+   under the existing publication/security gates. Catalog inclusion alone does
+   not establish that either digest is present in Harbor.
+3. Rebase #1142 onto that reviewed catalog, revalidate its immutable head,
+   obtain platform/security acceptance, and only then authorize its merge and
+   GitOps rollout. Do not duplicate the upstream consumer PR. Verify runtime
+   bootstrap and health after rollout without exposing retained credentials.
+4. Keep HOME-48 open for two consecutive successful scheduled QA observations;
+   local tests and repeated reads of one CI run do not count as observations.
+
+Rollback is a separately approved GitOps PR restoring **both** Python consumer
+references to `3.13-bookworm@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea`.
+Keep the digest-only catalog entry and verify its mirror availability before
+rollout; do not delete the retained runtime PVC or rotate credentials. Re-run
+`python3 -I scripts/ci/harbor-images-check.py`,
+`python3 -I scripts/ci/multica-runtime-check.py`, and
+`kubectl kustomize clusters/homelab/apps/multica` for candidate and rollback.
+If the candidate has not been deployed, leave the existing consumers unchanged.
+The alias is not the rollback target: immutable digests select the image.
+
 Repository inventory found only the NOFX backend and frontend custom images.
 Authenticated GHCR inspection on 2026-09-19 found two tags in each repository:
 the Packages API also confirmed two active versions per repository and no
