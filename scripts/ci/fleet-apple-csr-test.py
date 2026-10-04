@@ -15,7 +15,7 @@ from email.parser import BytesParser
 from email.policy import default
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location("fleet_csr", ROOT / "scripts/fleet-download-apple-csr.py")
@@ -194,6 +194,26 @@ class CSRTest(unittest.TestCase):
         self.assertEqual(self.run_command(error)[0], 1)
         self.assertEqual(self.calls, [])
         self.assertFalse(self.output.exists())
+
+    def test_explicit_204_contract_accepts_only_empty_expected_response(self):
+        response = MagicMock()
+        opener = MagicMock()
+        opener.open.return_value.__enter__.return_value = response
+        cases = [(204, 204, b"", True), (200, 204, b"{}", False),
+                 (204, 204, PRIVATE.encode(), False), (204, 200, b"", False)]
+        for actual_status, accepted_status, raw, success in cases:
+            with self.subTest(actual_status=actual_status, accepted_status=accepted_status, empty=not raw):
+                response.status = actual_status
+                response.read.return_value = raw
+                with patch.object(helper.urllib.request, "build_opener", return_value=opener):
+                    if success:
+                        self.assertEqual(helper.request("POST", "/dry-run", token=TOKEN,
+                                                        accepted_status=accepted_status), {})
+                    else:
+                        with self.assertRaises(helper.DownloadError) as error:
+                            helper.request("POST", "/dry-run", token=TOKEN, accepted_status=accepted_status)
+                        self.assertNotIn(PRIVATE, str(error.exception))
+                        self.assertNotIn(TOKEN, str(error.exception))
 
     def test_upload_multipart_activates_mdm_verifies_renewal_and_logs_out(self):
         status, output, _ = self.run_command(upload=True)

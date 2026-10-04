@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PayloadContent</key>
+	<array>
+		<dict>
+			<key>AuthenticationMethod</key>
+			<string>Password</string>
+			<key>ExtensionIdentifier</key>
+			<string>com.microsoft.CompanyPortalMac.ssoextension</string>
+			<key>PayloadDescription</key>
+			<string>Use the Company Portal extension to synchronize the Microsoft Entra password with the existing local account. Register from that account; its username and privileges are preserved.</string>
+			<key>PayloadDisplayName</key>
+			<string>Microsoft Entra Platform SSO</string>
+			<key>PayloadIdentifier</key>
+			<string>com.stinkyboi.fleet.macos.entra-platform-sso.extension</string>
+			<key>PayloadType</key>
+			<string>com.apple.extensiblesso</string>
+			<key>PayloadUUID</key>
+			<string>7CD2D872-1FE2-5FDC-B93F-D6C5F26599B4</string>
+			<key>PayloadVersion</key>
+			<integer>1</integer>
+			<key>PlatformSSO</key>
+			<dict>
+				<key>AccountDisplayName</key>
+				<string>Stinkyboi family</string>
+				<key>AuthenticationMethod</key>
+				<string>Password</string>
+				<key>EnableAuthorization</key>
+				<false/>
+				<key>EnableCreateFirstUserDuringSetup</key>
+				<false/>
+				<key>EnableCreateUserAtLogin</key>
+				<false/>
+				<key>EnableRegistrationDuringSetup</key>
+				<false/>
+				<key>UseSharedDeviceKeys</key>
+				<true/>
+			</dict>
+			<key>ScreenLockedBehavior</key>
+			<string>DoNotHandle</string>
+			<key>TeamIdentifier</key>
+			<string>UBF8T346G9</string>
+			<key>Type</key>
+			<string>Redirect</string>
+			<key>URLs</key>
+			<array>
+				<string>https://login.microsoftonline.com</string>
+				<string>https://login.microsoft.com</string>
+				<string>https://sts.windows.net</string>
+			</array>
+		</dict>
+	</array>
+	<key>PayloadDescription</key>
+	<string>Native Microsoft Password Platform SSO for existing local accounts. Requires Company Portal and interactive registration. Does not enroll into Intune, create accounts, change account privileges, or require online authentication.</string>
+	<key>PayloadDisplayName</key>
+	<string>Family Mac Microsoft Entra Platform SSO</string>
+	<key>PayloadIdentifier</key>
+	<string>com.stinkyboi.fleet.macos.entra-platform-sso</string>
+	<key>PayloadOrganization</key>
+	<string>Stinkyboi homelab</string>
+	<key>PayloadRemovalDisallowed</key>
+	<false/>
+	<key>PayloadScope</key>
+	<string>System</string>
+	<key>PayloadType</key>
+	<string>Configuration</string>
+	<key>PayloadUUID</key>
+	<string>C41685BE-0240-5572-A6CF-823B5726403B</string>
+	<key>PayloadVersion</key>
+	<integer>1</integer>
+	<key>TargetDeviceType</key>
+	<integer>5</integer>
+</dict>
+</plist>
