@@ -21,6 +21,23 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
+def publish_checksum(target, checksum):
+    manifest = target.with_suffix(target.suffix + ".sha256")
+    value = (checksum + "\n").encode()
+    try:
+        if manifest.read_bytes() == value:
+            return
+    except FileNotFoundError:
+        # A prior archive publication may have stopped before its manifest.
+        pass
+    temporary = manifest.with_suffix(manifest.suffix + ".partial")
+    with temporary.open("wb") as stream:
+        stream.write(value)
+        stream.flush()
+        os.fsync(stream.fileno())
+    temporary.replace(manifest)
+
+
 def mirror_archives():
     copied = 0
     now = time.time()
@@ -33,8 +50,11 @@ def mirror_archives():
                 continue
             target = Path("/backups/raw") / category / source.relative_to(source_root)
             target.parent.mkdir(parents=True, exist_ok=True)
-            if target.exists() and digest(target) == digest(source):
-                continue
+            if target.exists():
+                checksum = digest(source)
+                if digest(target) == checksum:
+                    publish_checksum(target, checksum)
+                    continue
             temporary = target.with_suffix(target.suffix + ".partial")
             with source.open("rb") as incoming, temporary.open("wb") as outgoing:
                 shutil.copyfileobj(incoming, outgoing)
@@ -49,7 +69,7 @@ def mirror_archives():
                 temporary.unlink(missing_ok=True)
                 raise RuntimeError("Wazuh archive backup checksum mismatch")
             temporary.replace(target)
-            target.with_suffix(target.suffix + ".sha256").write_text(checksum + "\n")
+            publish_checksum(target, checksum)
             copied += 1
     print(f"Verified raw archive mirror; copied {copied} closed files")
 

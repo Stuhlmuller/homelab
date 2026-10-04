@@ -209,6 +209,41 @@ class BackupTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
         self.assertFalse(self.target.with_suffix(".gz.partial").exists())
 
+    def test_existing_archive_repairs_missing_or_corrupt_checksum_without_recopying(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            BACKUP.mirror_archives()
+        manifest = self.target.with_suffix(".gz.sha256")
+        original_mtime = self.target.stat().st_mtime_ns
+        for broken in (None, b"incorrect digest\n", b"\xffinvalid text"):
+            with self.subTest(broken=broken):
+                if broken is None:
+                    manifest.unlink()
+                else:
+                    manifest.write_bytes(broken)
+                with patch.object(BACKUP.shutil, "copyfileobj", side_effect=AssertionError("archive recopied")), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    BACKUP.mirror_archives()
+                self.assertEqual(manifest.read_text(), BACKUP.digest(self.target) + "\n")
+                self.assertEqual(self.target.stat().st_mtime_ns, original_mtime)
+                self.assertFalse(manifest.with_suffix(".sha256.partial").exists())
+
+    def test_checksum_publication_failure_preserves_existing_manifest_and_recovers(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            BACKUP.mirror_archives()
+        manifest = self.target.with_suffix(".gz.sha256")
+        manifest.write_bytes(b"old invalid manifest\n")
+        original_archive = self.target.read_bytes()
+        with patch.object(BACKUP.os, "fsync", side_effect=OSError("metadata sync failed")):
+            with self.assertRaisesRegex(OSError, "metadata sync failed"):
+                BACKUP.mirror_archives()
+        self.assertEqual(manifest.read_bytes(), b"old invalid manifest\n")
+        self.assertEqual(self.target.read_bytes(), original_archive)
+        with contextlib.redirect_stdout(io.StringIO()):
+            BACKUP.mirror_archives()
+        self.assertEqual(manifest.read_text(), BACKUP.digest(self.target) + "\n")
+        self.assertEqual(self.target.read_bytes(), original_archive)
+        self.assertFalse(manifest.with_suffix(".sha256.partial").exists())
+
     def test_checksum_mismatch_never_publishes_a_partial_copy(self):
         digest = BACKUP.digest
         with patch.object(BACKUP, "digest", side_effect=lambda path: "corrupt" if path.suffix == ".partial" else digest(path)):
