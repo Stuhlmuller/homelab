@@ -149,6 +149,16 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
   remain operator-configured and must not be committed.
+- Multica's dedicated GitHub integration is staged under
+  `/homelab/multica/github-app/{slug,id,private-key,webhook-secret}`. These are
+  external-provider placeholders, never generated replacements for existing
+  credentials. `scripts/multica-github-secrets.py` validates the private App
+  response and publishes only to pre-existing declared SecureStrings from clean
+  reviewed main. The requested installation scope is only
+  `rstuhlmuller/minecraft-schematics`, with read-only repository permissions.
+  Registration, publication and installation remain prerequisites to activating
+  the separate backend Secret and exact signed callback routes. See the
+  [bootstrap and acceptance runbook](../../../docs/multica-github.md).
 - Multica uses generated `/homelab/multica/jwt-secret`,
   `/homelab/multica/postgres-password`, and six-digit
   `/homelab/multica/dev-verification-code` values. ExternalSecrets in `ai`

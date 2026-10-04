@@ -526,6 +526,22 @@ inputs = {
       description   = "OpenClaw GitHub App private key PEM."
       initial_value = local.placeholder
     }
+    "/homelab/multica/github-app/slug" = {
+      description   = "Multica GitHub App slug; supplied by the dedicated App manifest registration."
+      initial_value = local.placeholder
+    }
+    "/homelab/multica/github-app/id" = {
+      description   = "Multica GitHub App numeric ID; supplied by the dedicated App manifest registration."
+      initial_value = local.placeholder
+    }
+    "/homelab/multica/github-app/private-key" = {
+      description   = "Multica GitHub App private key PEM; supplied by the dedicated App manifest registration."
+      initial_value = local.placeholder
+    }
+    "/homelab/multica/github-app/webhook-secret" = {
+      description   = "Multica GitHub webhook and connect-state HMAC secret; supplied by the dedicated App manifest registration."
+      initial_value = local.placeholder
+    }
     "/homelab/multica/dev-verification-code" = {
       description = "Multica fixed email verification code; access remains gated by Octelium."
       generated = {

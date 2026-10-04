@@ -164,3 +164,10 @@ The query must print `1`. Repeated NFS errors need NAS/network diagnosis;
 preserve the PVC and never remove PostgreSQL locks while a writer may be alive.
 Reverting these probe settings through Git does not change the image or data,
 but restores the unsafe short recovery window.
+
+## GitHub repository picker and PR integration
+
+The dedicated App setup, selected-repository scope, staged secret publication,
+exact callback routes, and rollout/rollback checks are in the
+[GitHub integration runbook](../../../../docs/multica-github.md).
+Complete its prerequisites before activating the new backend Secret.

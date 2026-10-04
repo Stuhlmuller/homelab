@@ -1,0 +1,25 @@
+{
+  "name": "rstuhlmuller-multica",
+  "url": "https://multica.stinkyboi.com",
+  "description": "Private Multica integration for Block Library. Install only on rstuhlmuller/minecraft-schematics.",
+  "public": false,
+  "hook_attributes": {
+    "url": "https://multica.stinkyboi.com/api/webhooks/github",
+    "active": true
+  },
+  "setup_url": "https://multica.stinkyboi.com/api/github/setup",
+  "setup_on_update": true,
+  "default_permissions": {
+    "metadata": "read",
+    "contents": "read",
+    "pull_requests": "read",
+    "checks": "read",
+    "statuses": "read"
+  },
+  "default_events": [
+    "pull_request",
+    "check_suite",
+    "check_run",
+    "status"
+  ]
+}
