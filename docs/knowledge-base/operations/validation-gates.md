@@ -714,8 +714,9 @@ environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
-Azure credential gate compares AzureAD unit sources and stack blocks plus the
-normalized shared root source they consume. It ignores only the
+Azure credential gate compares AzureAD unit sources, their repository-owned
+module sources, and stack blocks plus the normalized shared root source they
+consume. It ignores only the
 forbidden legacy root plan-output directive; every other root source change
 fails closed. Unrelated stack changes do not require Azure credentials.
 
