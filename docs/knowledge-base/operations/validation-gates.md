@@ -969,8 +969,8 @@ full reviewed inventory; scoped publication retains digest and complete anonymou
 pull verification. Require published Harbor digests,
 ready workloads and secrets, Bound claims, the pinned public version, blocked
 setup aliases, authenticated administrator access and the PostSync backup's
-verified-publication log. Nightly recurrence, offsite recovery and actual device
-enrollment are separate gates. See the
+verified-publication log. Nightly recurrence, offsite recovery, actual device
+enrollment and reversible profile delivery are separate gates. See the
 [Fleet runbook](../../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 On October 3, the reviewed scoped mirror, targeted apply, DNS reconciliation,
@@ -978,6 +978,24 @@ public administrator/API checks and initial backup passed; the Fleet runbook
 records their workflow IDs. Omitted ExternalSecret server defaults caused
 repeated Argo self-healing, so Fleet now declares refresh interval, remote-ref
 strategies and template merge policy explicitly, matching the live API defaults.
+
+The [Apple acceptance record](../../../clusters/homelab/apps/fleet/README.md#apple-activation-and-device-acceptance-2026-10-03)
+confirms active APNs, a user-approved Mac, a freshly acknowledged MDM query and
+verified temporary profile installation/removal with baseline profiles retained.
+Free enrollment uses **Personal (BYOD)** through `/enroll`; the administrator
+manual-profile endpoint requires Premium and returns HTTP 402. iOS inventory
+and command acceptance remain pending; the runbook owns detailed evidence,
+the observed unexplained push delay and certificate renewal metadata. The
+[profile verifier](../../../clusters/homelab/apps/fleet/README.md#verify-reversible-profile-delivery-on-this-mac)
+defaults to a preview; `--execute` targets only the exact local Mac and requires
+verified removal of its temporary profile while retaining the baseline.
+
+Sandboxed `profiles status -type enrollment` can falsely report **No**. Verify
+through an approved local read outside the sandbox before diagnosing
+unenrollment, and privately match serial/hardware UUID to the exact Fleet host.
+Keep device identifiers, certificates and secrets out of git.
+Compare agent heartbeat with MDM check-in/acknowledgement when diagnosing
+delivery delays; do not duplicate writes while a command remains pending.
 
 An external Python `urllib` probe with its default user agent received HTTP 403
 with a Cloudflare response header. The same endpoint returned 200 for curl, the
