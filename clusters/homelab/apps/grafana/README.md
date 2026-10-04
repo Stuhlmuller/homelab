@@ -130,6 +130,10 @@ rule additions, changes, and deletions.
 
 The provisioned rules cover:
 
+- Harbor completed image scans with one or more critical CVEs for five minutes.
+  The repository-owned Harbor collector exports aggregate counts per project;
+  missing collector data is critical rather than a healthy zero. See
+  `clusters/homelab/apps/harbor/README.md#critical-cve-alerting`.
 - Prometheus scrape targets down for 10 minutes.
 - Grafana metrics missing from Prometheus for 10 minutes.
 - The former Octelium API UPnP lease rule is retained but paused; outbound
