@@ -9,7 +9,14 @@ extra_plan_json_files=()
 cleanup_dirs=()
 
 azuread_credentials_available() {
-  [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_CLIENT_SECRET:-}" && -n "${ARM_TENANT_ID:-}" ]]
+  [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_TENANT_ID:-}" ]] || return 1
+  case "${ARM_USE_OIDC:-false}" in
+    true)
+      [[ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]
+      ;;
+    false) [[ -n "${ARM_CLIENT_SECRET:-}" ]] ;;
+    *) return 1 ;;
+  esac
 }
 
 cleanup_temp_dirs() {
@@ -185,7 +192,7 @@ if azuread_credentials_available; then
     fi
   done < <(find IaC/live/azuread-applications -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
 else
-  echo "::warning::Skipping AzureAD application registration plan because ARM_CLIENT_ID, ARM_CLIENT_SECRET, and ARM_TENANT_ID are not configured for this plan run."
+  echo "::warning::Skipping AzureAD application registration plan because client/tenant IDs and a complete GitHub OIDC session (or explicit client-secret authentication) are not configured for this plan run."
 fi
 echo "::endgroup::"
 

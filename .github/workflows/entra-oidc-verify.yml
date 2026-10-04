@@ -1,0 +1,111 @@
+name: Entra OIDC Verify
+
+# checkov:skip=CKV_GHA_7: expected_sha pins reviewed current main; all units and commands are fixed and read-only.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit to verify without applying changes
+        required: true
+        type: string
+
+run-name: Entra OIDC verification @ ${{ github.sha }}
+
+permissions: {}
+
+concurrency:
+  group: entra-oidc-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify ${{ matrix.identity }} identity
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - identity: plan
+            environment: homelab-plan
+          - identity: apply
+            environment: homelab-production
+    environment:
+      name: ${{ matrix.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          current_main_sha="$(gh api --hostname github.com repos/Stuhlmuller/homelab/commits/main --jq 'select(.commit.verification.verified == true) | .sha')"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Check Out Repository
+        # actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install Nix
+        # cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore Nix Store Cache
+        # nix-community/cache-nix-action@v7
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+
+      - name: Configure AWS Credentials
+        # aws-actions/configure-aws-credentials@v6.1.1
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-session-name: homelab-entra-verify-${{ matrix.identity }}-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Verify Four Entra Units Without Applying
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZUREAD_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
+          ARM_USE_OIDC: "true"
+          ARM_USE_CLI: "false"
+          ARM_USE_MSI: "false"
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command python3 -I scripts/ci/entra-oidc-verify.py >"$private_log" 2>&1; then
+            python3 - "$private_log" <<'PY'
+          import re
+          import sys
+          pattern = re.compile(r"ENTRA_VERIFY_FAILURE stage=(?:checkout-revision|checkout-cleanliness|current-main-lookup|stack-generation|entra-unit-(?:fleet|fleet-pilot-user|grafana|octelium)) category=(?:entra-authorization-denied|entra-invalid-token|entra-authentication-failed|access-denied|aws-invalid-credentials|aws-expired-credentials|command-failed|command-unavailable|timeout|drift)")
+          with open(sys.argv[1]) as private_log:
+              for line in private_log:
+                  marker = line.strip()
+                  if pattern.fullmatch(marker):
+                      print("::error::" + marker)
+          PY
+            echo "::error::Entra OIDC verification failed or detected drift; private details withheld. No apply was performed."
+            exit 1
+          fi
+          echo "OIDC authentication and refreshed no-op plans passed for all four Entra units. No apply was performed."

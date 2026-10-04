@@ -5,12 +5,29 @@ data "azuread_user" "allowed" {
   user_principal_name = each.value
 }
 
+data "azuread_user" "owner" {
+  for_each            = var.owner_user_principal_names
+  user_principal_name = each.value
+}
+
+data "azuread_service_principal" "automation_owner" {
+  for_each     = var.owner_service_principal_names
+  display_name = each.value
+}
+
+locals {
+  owner_object_ids = concat(
+    [for owner in data.azuread_user.owner : owner.object_id],
+    [for owner in data.azuread_service_principal.automation_owner : owner.object_id],
+  )
+}
+
 resource "azuread_application" "this" {
   display_name            = var.display_name
   prevent_duplicate_names = true
   sign_in_audience        = "AzureADMyOrg"
   identifier_uris         = [var.entity_id]
-  owners                  = [data.azuread_client_config.current.object_id]
+  owners                  = local.owner_object_ids
 
   web {
     homepage_url  = var.login_url
@@ -25,7 +42,7 @@ resource "azuread_application" "this" {
 
 resource "azuread_service_principal" "this" {
   client_id                     = azuread_application.this.client_id
-  owners                        = [data.azuread_client_config.current.object_id]
+  owners                        = local.owner_object_ids
   app_role_assignment_required  = true
   preferred_single_sign_on_mode = "saml"
   login_url                     = var.login_url

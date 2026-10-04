@@ -9,6 +9,12 @@ import unittest
 from pathlib import Path
 
 SOURCE = Path(__file__).parent
+OIDC_ENVIRONMENT = {
+    "ARM_CLIENT_ID": "fixture", "ARM_TENANT_ID": "fixture", "ARM_USE_OIDC": "true",
+    "ARM_USE_CLI": "false", "ARM_USE_MSI": "false",
+    "ACTIONS_ID_TOKEN_REQUEST_URL": "https://example.invalid/oidc",
+    "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "fixture",
+}
 APPS = ["external-secrets", "cert-manager", "istio", "platform-storage"]
 CRDS = ["externalsecrets.external-secrets.io", "clustersecretstores.external-secrets.io",
         "authorizationpolicies.security.istio.io", "virtualservices.networking.istio.io"]
@@ -233,8 +239,10 @@ class TerragruntApplyTest(unittest.TestCase):
                            "TERRAGRUNT_ARGOCD_APP": target,
                            "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair}
             if not config.get("without_azuread"):
-                environment.update({"ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
-                                    "ARM_TENANT_ID": "fixture"})
+                environment.update(config.get("azuread_environment", {
+                    "ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
+                    "ARM_TENANT_ID": "fixture",
+                }))
             result = subprocess.run(
                 [str(binaries / "bash"), str(scripts / "terragrunt-apply.sh")],
                 cwd=root, env=environment,
@@ -363,6 +371,23 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(events, ["generate"])
         self.assertIn("AzureAD credentials are required", result.stderr)
 
+    def test_full_apply_uses_github_oidc_without_a_client_secret(self):
+        result, events = self.run_apply(target="", azuread_environment=OIDC_ENVIRONMENT)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("azure.apply", events)
+
+    def test_incomplete_oidc_stops_full_apply_before_any_write(self):
+        for missing in ("ARM_CLIENT_ID", "ARM_TENANT_ID", "ACTIONS_ID_TOKEN_REQUEST_URL",
+                        "ACTIONS_ID_TOKEN_REQUEST_TOKEN"):
+            with self.subTest(missing=missing):
+                environment = {key: value for key, value in OIDC_ENVIRONMENT.items() if key != missing}
+                # Selecting OIDC must not silently fall back to a client secret.
+                environment.update(ARM_CLIENT_SECRET="fixture")
+                result, events = self.run_apply(target="", azuread_environment=environment)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, ["generate"])
+                self.assertIn("AzureAD credentials are required", result.stderr)
+
     def test_full_sequence_is_unchanged(self):
         result, events = self.run_apply(target="")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -371,6 +396,32 @@ class TerragruntApplyTest(unittest.TestCase):
             "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
+
+
+class AzureADCredentialsTest(unittest.TestCase):
+    def test_plan_and_apply_readiness(self):
+        secret = {"ARM_CLIENT_ID": "fixture", "ARM_TENANT_ID": "fixture",
+                  "ARM_CLIENT_SECRET": "fixture"}
+        cases = [(OIDC_ENVIRONMENT, True), (secret, True), ({}, False),
+                 ({**secret, "ARM_USE_OIDC": "invalid"}, False),
+                 ({**secret, "ARM_USE_OIDC": "true"}, False)]
+        for missing in ("ARM_CLIENT_ID", "ARM_TENANT_ID", "ACTIONS_ID_TOKEN_REQUEST_URL",
+                        "ACTIONS_ID_TOKEN_REQUEST_TOKEN"):
+            cases.append(({key: value for key, value in OIDC_ENVIRONMENT.items()
+                           if key != missing}, False))
+        for script in ("terragrunt-plan.sh", "terragrunt-apply.sh"):
+            source = (SOURCE / script).read_text()
+            start = source.index("azuread_credentials_available() {")
+            end = source.index("\n}", start) + 2
+            command = source[start:end] + "\nazuread_credentials_available\n"
+            for environment, expected in cases:
+                with self.subTest(script=script, keys=sorted(environment), expected=expected):
+                    result = subprocess.run([shutil.which("bash"), "-c", command],
+                                            env=environment, text=True, capture_output=True,
+                                            timeout=5, check=False)
+                    self.assertEqual(result.returncode == 0, expected, result.stderr)
+                    self.assertEqual(result.stdout, "")
+                    self.assertEqual(result.stderr, "")
 
 
 if __name__ == "__main__":

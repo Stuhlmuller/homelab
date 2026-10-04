@@ -221,10 +221,10 @@ Create two GitHub environments:
 - `homelab-production`: used by post-merge applies. Require reviewers and limit
   deployment branches to `main`.
 
-Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Add
-`AZUREAD_CLIENT_SECRET` to `homelab-production`; adding it to `homelab-plan` lets
-trusted pull requests render AzureAD application plans, otherwise that PR plan
-phase is skipped with a warning. Keep live credentials environment-scoped so
+Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
+operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
+Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
+Keep live credentials environment-scoped so
 GitHub withholds them until the required reviewer approves the job; do not keep
 duplicate repository-scoped copies:
 
@@ -232,7 +232,6 @@ duplicate repository-scoped copies:
 | --- | --- | --- |
 | `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `OCTELIUM_CATALOG_AUTH_TOKEN` | `homelab-production`, temporary | One-authentication token created immediately before the private Kubernetes catalog dispatch and removed immediately afterward. |
-| `AZUREAD_CLIENT_SECRET` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application secret used by the AzureAD provider during production applies and optional trusted PR plans. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
 has no runtime consumer. Its declaration and preexisting-parameter adoption
@@ -248,8 +247,8 @@ has been configured:
 | Variable | Environment | Purpose |
 | --- | --- | --- |
 | `AWS_ROLE_TO_ASSUME_HOMELAB` | repository, `homelab-plan`, or `homelab-production` | AWS role used by trusted PR plans and protected post-merge applies. |
-| `AZUREAD_CLIENT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra application client ID used by the AzureAD provider. |
-| `AZUREAD_TENANT_ID` | `homelab-production`; optional in `homelab-plan` | Microsoft Entra tenant ID used by the AzureAD provider. |
+| `AZUREAD_CLIENT_ID` | both environments, distinct per environment | Entra OIDC application selector; published from Terraform outputs as an environment secret to mask its value. |
+| `AZUREAD_TENANT_ID` | both environments | Existing Entra tenant selector, published with the client ID. |
 
 ## Octelium CI Access Setup
 
@@ -663,17 +662,27 @@ additional grant has no IAM mutation, tag, rotation, wildcard, or other-user
 permission. Future Langfuse IAM changes remain operator-owned through the same
 remote-state saved-plan path.
 
-The Microsoft Entra provider uses the `ARM_CLIENT_ID`, `ARM_CLIENT_SECRET`, and
-`ARM_TENANT_ID` environment variables mapped from the protected GitHub
-environment values above. Keep those credentials scoped to the homelab Entra
-application registration workflow. Trusted pull request plans render the
-AzureAD stack only when the credentials are configured in `homelab-plan`; the
-production apply script applies that stack when the credentials are configured
-in `homelab-production`. When they are not configured, production apply skips
+The Microsoft Entra providers use `ARM_CLIENT_ID`, `ARM_TENANT_ID` and
+`ARM_USE_OIDC=true`, with Azure CLI and MSI fallback disabled in GitHub Actions.
+They obtain short-lived assertions through the job's `id-token: write`
+permission. The readiness check requires both identity selectors and both GitHub
+OIDC request inputs; an incomplete OIDC setup cannot fall back to a client secret.
+Trusted pull request plans render the AzureAD stack only when the identity is
+configured in `homelab-plan`; production uses the separate
+`homelab-production` identity. User and claims-policy lifecycle and application
+assignment changes retain the reviewed operator Terraform path because the CI
+identity has no corresponding tenant-wide write grants. When the identity is
+not configured, production apply skips
 that phase only if the unapplied range did not change the AzureAD stack or its
 shared root configuration. The comparison ignores only the forbidden legacy
 root plan-output directive; every other root source change fails
 closed and requires the credentials so identity drift is not silently ignored.
+
+The `Entra OIDC Verify` dispatch takes an exact current-main SHA and runs
+refresh-enabled no-change plans for all four Entra units under both protected
+identities. It applies nothing and cannot advance the full-apply checkpoint.
+Use it after the [provider bootstrap](entra-terraform-provider.md), then retain
+operator Terraform for changes beyond the CI permission boundary.
 
 ## Local Equivalents
 

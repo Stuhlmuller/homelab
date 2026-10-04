@@ -134,9 +134,11 @@ jobs:
 
       - name: Run Live Terragrunt Plan
         env:
-          ARM_CLIENT_ID: ${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZUREAD_CLIENT_SECRET }}
-          ARM_TENANT_ID: ${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}
+          ARM_CLIENT_ID: ${{ secrets.AZUREAD_CLIENT_ID }}
+          ARM_USE_OIDC: "true"
+          ARM_USE_CLI: "false"
+          ARM_USE_MSI: "false"
+          ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
