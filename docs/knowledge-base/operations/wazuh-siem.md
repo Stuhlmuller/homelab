@@ -25,6 +25,12 @@ timeout released the stale operation; Langfuse recovered Healthy/Synced at
 with console output directed to stdout. These prove source configuration and
 recovery, not Wazuh ingestion.
 
+[Protected staging run 37186920139](https://github.com/Stuhlmuller/homelab/actions/runs/37186920139)
+succeeded at `0ad30199`: its ordered apply reconciles the four generated SSM
+credential declarations before registering the Application. Live readback
+confirmed `wazuh` targets `main`, `automated.enabled=false`, no active operation,
+and no runtime namespace. Secret values were not read or displayed.
+
 On 2026-10-04 at 07:53:55 UTC, Kubernetes evicted a Langfuse ClickHouse Pod
 from `zimaboard-1` for ephemeral-storage pressure: available `3759652Ki`, below
 the `4333555065`-byte threshold. Pod status also records an earlier eviction
@@ -62,7 +68,7 @@ Manager startup copies API TLS files into private ephemeral `wazuh`-owned
 files and checks their keypair before starting daemons. Projected Secrets stay
 read-only; leaf renewal requires a reviewed Pod revision and ingestion readback.
 
-Acceptance still requires capacity, prerequisites, image
+Runtime acceptance requires capacity, prerequisites, verified image
 publication, Wazuh sync, Talos forwarding, private UI login, recent per-source
 and per-node index counts, canary in both archives/alerts, first backup and an
 isolated restore. No live ingestion, backup or restore success is claimed.
