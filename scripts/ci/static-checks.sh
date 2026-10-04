@@ -327,7 +327,7 @@ rg -Fq 'data "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/
 rg -Fq 'resource "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf && exit 1
 rg -Fq 'forceTakeover = false' IaC/modules/entra-domain-verification/main.tf
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
-rg -Fq 'verify_domain = false' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
 for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user; do
   (
