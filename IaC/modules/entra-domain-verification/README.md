@@ -17,9 +17,11 @@ declared pilot user.
 
 ## Two-stage operator rollout
 
-The committed catalog input starts with `verify_domain = false`. From reviewed,
-signed `main`, use an Entra Domain Name Administrator or higher and the normal
-AWS backend credentials:
+The baseline catalog input starts with `verify_domain = false`. After both
+authoritative DNS servers return the exact Microsoft TXT record, a reviewed
+phase-two commit sets `verify_domain = true` and retains that value after the
+verification action is applied. From reviewed, signed `main`, use an Entra
+Domain Name Administrator or higher and the normal AWS backend credentials:
 
 ```sh
 cd IaC
@@ -48,12 +50,48 @@ all Google MX/service records.
 `stuhlmuller.net` DNS is not currently owned by a repository Terraform unit.
 Add the returned TXT through the DNS owner's reviewed declarative workflow;
 do not use a web-console workaround. Once both authoritative nameservers return
-the exact value, commit `verify_domain = true`, repeat the protected review and
-operator saved-plan process. Review a plan containing only the one
-`msgraph_resource_action.verify` create and its reads, then apply those exact
-saved bytes and confirm `domain_status.verified` is true. Keep
-`verify_domain = true` afterward: the action has `prevent_destroy` so its state
-cannot be dropped and accidentally replayed. That Graph action does not
+the exact value, commit `verify_domain = true` and complete protected review.
+
+## Phase two: verify the domain
+
+From the resulting reviewed, signed `main`, make a new encrypted saved plan.
+It must contain exactly one managed change: the
+`msgraph_resource_action.verify[0]` create. Apply only those reviewed saved
+bytes, then prove that the domain stayed verified, managed, non-default and
+non-initial:
+
+```sh
+cd IaC
+terragrunt stack generate
+cd operator/entra-stuhlmuller-domain
+terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
+
+umask 077
+verify_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-entra-domain-verify.XXXXXX")"
+trap 'rm -rf -- "$verify_plan_dir"' EXIT
+terragrunt --log-disable init -reconfigure -lockfile=readonly -no-color
+terragrunt --log-disable plan -input=false -lock-timeout=5m \
+  -out="$verify_plan_dir/verify.tfplan" -no-color
+terragrunt --log-disable show -json "$verify_plan_dir/verify.tfplan" >"$verify_plan_dir/verify.json"
+jq -e '
+  [.resource_changes[]? | select(.mode == "managed") |
+    {address, actions: .change.actions}]
+  == [{address: "msgraph_resource_action.verify[0]", actions: ["create"]}]
+' "$verify_plan_dir/verify.json"
+terragrunt --log-disable apply -input=false -lock-timeout=5m -no-color \
+  "$verify_plan_dir/verify.tfplan"
+terragrunt --log-disable output -json | jq -e '
+  .domain_status.value |
+  .verified == true and
+  .authentication_type == "Managed" and
+  .is_default == false and
+  .is_initial == false
+'
+```
+
+Keep `verify_domain = true` afterward: the action has `prevent_destroy` so its
+state cannot be dropped and accidentally replayed. That Graph action does not
 configure Microsoft 365 mail services.
 
 Only after verification succeeds may the separate
@@ -61,4 +99,6 @@ Only after verification succeeds may the separate
 Its guard rejects an absent, unverified, federated, default, or initial UPN
 domain. This keeps all existing Google and Entra users outside the pilot.
 
-References: [Microsoft Graph verification records](https://learn.microsoft.com/en-us/graph/api/domain-list-verificationdnsrecords?view=graph-rest-1.0), [verify action](https://learn.microsoft.com/en-us/graph/api/domain-verify?view=graph-rest-1.0), and [MSGraph resource data](https://github.com/microsoft/terraform-provider-msgraph/blob/v0.5.0/docs/data-sources/resource.md).
+References: [Microsoft Graph verification records](https://learn.microsoft.com/en-us/graph/api/domain-list-verificationdnsrecords?view=graph-rest-1.0),
+[verify action](https://learn.microsoft.com/en-us/graph/api/domain-verify?view=graph-rest-1.0),
+and [MSGraph resource data](https://github.com/microsoft/terraform-provider-msgraph/blob/v0.5.0/docs/data-sources/resource.md).

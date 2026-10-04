@@ -16,5 +16,5 @@ EOF
 
 inputs = {
   domain_name   = "stuhlmuller.net"
-  verify_domain = false
+  verify_domain = true
 }
