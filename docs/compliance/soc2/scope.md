@@ -1,46 +1,50 @@
-# HOME-30 system scope — version 1, proposed
+# HOME-30 system scope — version 5, assessment approach approved with conditions
 
-Review baseline: `58ecf587d3069fb8e504ac319e2bec2de05785c0`, 2026-10-04 UTC.
+Review baseline: `2be233ffce44495ab63e5c1b3d349eeb795c28b6`, 2026-10-04 UTC.
 This is an internal Trust Services Criteria-aligned readiness self-assessment.
 It is not a CPA examination, SOC 2 report, certification, or attestation.
-All decisions below await delegated approval; no management approval is inferred.
+D1–D7 and the combined automated/manual method were approved with conditions
+by Homelab Decision Review Lead on 2026-10-04 at 02:12:44 UTC in HOME-45.
+See the [incorporated decision](HOME-45-decision.md) and preserved original.
+This approves assessment objectives, not controls, risk or unverified facts.
 
 ## Goal, commitments and decision record
 
 The repository describes a personal Kubernetes homelab and educational control
-surface. It does not establish contractual services to user entities. Recommend
-a self-assessment until the CSO obtains an owner statement about actual users,
+surface. It does not establish contractual services to user entities. Use
+the approved self-assessment while the CSO obtains an owner statement about actual users,
 contracts, service commitments and processing purposes. Family access and agent
 workloads do not by themselves settle the service-organization question.
 
-Recommend point-in-time control-design preparation at this revision, not a claim
+The approved target is point-in-time control-design preparation at this revision, not a claim
 of Type 1 examination completion. No Type 2 observation period is approved or
 started. Historical runbook observations are context, not current operating
 evidence. HOME-36 must later establish period start/end, population, sampling and
 continuous evidence before making operating-effectiveness claims.
 
-Proposed internal commitments are controlled and reviewed infrastructure changes,
+Internal assessment objectives are controlled and reviewed infrastructure changes,
 authorized access, protection of nonpublic state, recoverability and traceable
 automation. These are assessment objectives, not guarantees already achieved.
 No contractual uptime, RTO, RPO, retention, financial-performance or processing
 SLA is established here. HOME-34 and HOME-43 must propose measurable objectives.
 
-| Decision | Recommendation and reason | Approval record |
+| Decision | Approved disposition and reason | Approval record |
 | --- | --- | --- |
-| D1 service/report goal | Internal self-assessment; user-entity contracts unverified | Pending CSO synthesis and Decision Desk decision |
-| D2 time boundary | Revision-bound design preparation; no operating period | Pending delegated decision |
-| D3 Security | Include common criteria across the entire boundary | Pending delegated decision |
-| D4 Availability | Include: NAS, single control plane, capacity and recovery are material dependencies | Pending delegated decision |
-| D5 Confidentiality | Include: credentials, prompts, uploads, databases and backups are nonpublic | Pending delegated decision |
-| D6 Processing Integrity | Retain for assessment: trading, webhooks, jobs, GitOps and backup transformations need accuracy/authorization tests; HOME-43 refines scope | Pending delegated decision |
-| D7 Privacy | Retain for assessment: identity, family-device metadata, telemetry and user content may include personal information; HOME-44 verifies purposes/lifecycle without collecting real records | Pending delegated decision |
+| D1 service/report goal | Internal self-assessment; user-entity contracts unverified | APPROVE with HOME-45 conditions |
+| D2 time boundary | Revision-bound design preparation; no operating period | APPROVE with HOME-45 conditions |
+| D3 Security | Include common criteria across the entire boundary | APPROVE with HOME-45 conditions |
+| D4 Availability | Include: NAS, single control plane, capacity and recovery are material dependencies | APPROVE with HOME-45 conditions |
+| D5 Confidentiality | Include: credentials, prompts, uploads, databases and backups are nonpublic | APPROVE with HOME-45 conditions |
+| D6 Processing Integrity | Retain for assessment: trading, webhooks, jobs, GitOps and backup transformations need accuracy/authorization tests; HOME-43 refines scope | APPROVE with HOME-45 conditions |
+| D7 Privacy | Retain for assessment: identity, family-device metadata, telemetry and user content may include personal information; HOME-44 verifies purposes/lifecycle without collecting real records | APPROVE with HOME-45 conditions |
 
-No category is excluded in this proposal. A later exclusion requires evidence,
+No category is excluded in the approved assessment approach. A later exclusion requires evidence,
 criterion-level rationale, affected data flows, residual risk and delegated
 approval. Novel or cross-domain disagreements go to Decision Review Lead.
 Serious legal/privacy/security risk acceptance follows the reviewed CEO escalation
-route; routine scope decisions do not. Record decision-maker role, UTC date,
-issue reference, accepted version and rationale here through a new PR.
+route; routine scope decisions do not. Ordinary main drift requires evidence refresh, not repeated D1–D7 approval.
+Material changes to services, flows, objectives or category boundaries require
+a new scope decision. No applicable validation or merge gate is waived.
 
 Reference framework: [AICPA 2017 Trust Services Criteria, revised points of focus
 2022](https://www.aicpa-cima.com/resources/download/2017-trust-services-criteria-with-revised-points-of-focus-2022).
@@ -52,16 +56,20 @@ mapping for HOME-37 review, not a determination of criterion compliance.
 
 The boundary includes all committed cluster desired state, infrastructure,
 Talos patches, build sources, workflow definitions and policies in the generated
-[source inventory](evidence/HOME-30-v1/inventory.json). It has 501 entries in
-49 path groups and 41 literal Argo CD app registrations. Every group is included
+[source inventory](evidence/HOME-30-v5/population.json). Current counts and the selected integration revision are recorded in
+[packet v5](evidence/HOME-30-v5/packet.md). Every group is included
 for review, even when retired, suspended or a recovery candidate. Counts are
 source artifacts, not Kubernetes objects, deployed services or active users.
 
 `scripts/soc2-scope-inventory.py` hashes the complete Git tree population under
 six explicit roots and extracts literal stack registration paths. It does not
 render Helm/HCL, follow external charts, infer namespace ownership, or query
-live state. Names and file counts are public repository metadata; source values
-are never output. An unregistered directory is not automatically excluded.
+live state. Source values are never output. Component paths and registration names are
+emitted verbatim; public repository origin does not establish that they are
+safe for disclosure. Review emitted names for private hostnames, personal data
+and credentials before publishing. Tests prove value omission, not name
+sanitization. Hold the output privately and remediate the source/collection
+contract if unsafe names appear; do not silently claim an unredacted output is safe. An unregistered directory is not automatically excluded.
 `metrics-server` illustrates why registration and directory counts differ: it
 uses a remote chart. `cordium-bootstrap` and recovery overlays illustrate why
 directories are not necessarily top-level Applications.
@@ -80,6 +88,45 @@ The existing [workload inventory](../../knowledge-base/workloads/inventory.md)
 provides namespace, dependencies and persistence per application. Source code
 wins over historical prose. AFFiNE/Dispatcharr suspension and retained PVCs must
 remain visible in the assessment; they are not evidence of secure data disposal.
+
+## Delivery/control sources outside the automated population
+
+The six-root inventory is not the entire system boundary. D1–D7 explicitly
+retain the following sources in assessment scope although the collector does
+not monitor their drift. The v5 whole-tree verifier now checks these sources, including `.policy.yml` and all delivery scripts. The revision-bound
+[whole-tree register](evidence/HOME-30-v5/population.json) enumerates
+all tracked paths, including manual sources and HOME-30 additions, with Git blob
+IDs and mode/type identities. These are automated-population exclusions, not control exclusions.
+
+| Sources | Assessment responsibility and evidence gap |
+| --- | --- |
+| `scripts/` | Operator, deployment, backup and validation procedures; Security Evidence Engineer reconciles changes and HOME-42 reviews authorization/testing |
+| `docs/`, `README.md`, `ONBOARDING.md` | Runbooks, decisions, historical evidence and system commitments; CSO/control owners review currency and approval |
+| `specs/`, `AGENTS.md`, `.agents/`, `.cordium/` | Planned behavior, agent instructions and execution boundaries; HOME-31/HOME-42 review ownership and authority |
+| `flake.nix`, `flake.lock`, `.envrc` | Tool versions, dependency resolution and development shell; HOME-32/HOME-42 review provenance and reproducibility |
+| `.pre-commit-config.yaml`, `.policy.yml`, `.checkov.yaml`, `.gitleaks.toml` | Review, scanning and policy configuration; HOME-42 checks enforcement, HOME-32 checks exceptions |
+| `renovate.json`, `.releaserc.yaml` | Dependency and release automation; HOME-32/HOME-42 assess controlled changes |
+| Remaining root files, including ignore/attribute files, placeholders and `LICENSE` | Include in source reconciliation; ignore rules may hide artifacts from scans and license text does not establish supplier assurance |
+
+At every scope revision, inspect `git diff --name-status` across the entire
+repository, not just the six roots; reconcile changed excluded paths in the
+packet. The register does not prove execution or enforcement. HOME-30 additions
+are separately enumerated and hashed in the packet because they are absent from
+the main baseline. HOME-45 approves this combined method with conditions. Named review
+responsibilities and unresolved findings are recorded in packet v5; assigning
+a path or counting its digest does not establish substantive control acceptance.
+
+Main advanced through Harbor/Grafana alerting changes: a new vulnerability
+collector, ServiceMonitor and associated network/configuration changes now
+belong to declared scope. They report completed-scan critical counts and collector
+failure through Grafana. The merged declaration does not prove live scans or
+alerts. See `clusters/homelab/apps/harbor/README.md` and
+`clusters/homelab/apps/grafana/README.md`. Fleet/Entra changes at the selected main revision also enter declared scope:
+separate Fleet-console SAML and native Apple Platform SSO, profile declarations,
+and the cloud-only pilot-user module. Device enrollment, user consent, password
+synchronization, SAML callback, certificate lifecycle and recovery remain
+unverified. No profiles, identities or tenant settings were applied here.
+Recovery, containment and Wazuh proposals retain separate activation gates.
 
 ## Data classes, dependencies and flows
 
@@ -122,6 +169,10 @@ in scope. Fleet-managed endpoint posture requires an explicit enrollment boundar
 ## Roles and limitations
 
 CSO owns scope synthesis, sequencing and closure after independent acceptance.
+HOME-36 was revised by CSO on 2026-10-04 before any promotion: it prepares a
+design-assessment evidence program and remains in backlog. A later operating
+phase requires an explicit period/population/sampling decision and concrete
+collection authorization. HOME-45 remains open pending CSO verification.
 The Security Evidence Engineer prepares code/evidence and cannot approve it.
 Homelab QA reproduces the exact revision; Third Party Auditor reviews separately
 and records ACCEPTED or CHANGES_REQUESTED as an internal readiness verdict.
@@ -147,10 +198,13 @@ permission changes or risk acceptance occurred in HOME-30.
    live populations separately when authorized.
 3. Update this versioned description, applicability decisions, dependency/owner
    mapping and evidence packet. Preserve prior packets and explicitly supersede
-   them. CSO routes decisions to the delegated owner; record approval, not intent.
+   them. CSO routes material scope decisions to the delegated owner; ordinary drift
+   requires reconciliation rather than reopening the approved approach.
 4. QA reproduces before Auditor review. Requested changes require a new packet.
    Only CSO closes after acceptance plus merge or an approved exception.
-5. Recheck current main before merge and recollect if inputs changed. This PR
+5. At any separately authorized merge boundary, compare the selected baseline
+   with actual target main: record unchanged relevant inputs or reconcile and
+   recollect drift, then obtain refreshed QA followed by independent Auditor review. This PR
    grants no merge or live execution authority. Roll back documentation/tooling
    through a reviewed revert; retain the evidence history. No workload rollback
    is needed because runtime configuration is unchanged.
@@ -158,11 +212,16 @@ permission changes or risk acceptance occurred in HOME-30.
 From repository root:
 
 ```sh
-python3 scripts/soc2-scope-inventory.py --revision 58ecf587d3069fb8e504ac319e2bec2de05785c0 --check docs/compliance/soc2/evidence/HOME-30-v1/inventory.json
-python3 scripts/soc2-scope-inventory.py --revision HEAD --check docs/compliance/soc2/evidence/HOME-30-v1/inventory.json
+python3 scripts/soc2-evidence-verify.py
+python3 -O scripts/soc2-evidence-verify.py
+python3 scripts/ci/soc2-evidence-test.py
 python3 -I scripts/ci/soc2-scope-inventory-test.py
 git diff --check
 ```
 
 The checker is an explicit review command, not an enforced CI or merge gate.
 The current change introduces no new platform or recurring automation.
+
+The v5 verifier is the authoritative complete tracked-tree check. The six-root
+collector remains a limited summary. Historical manifests apply to original
+bytes preserved in v5 tree proofs; v2/v3 verifier entrypoints now delegate to the current verifier.
