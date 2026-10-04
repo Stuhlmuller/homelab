@@ -714,8 +714,9 @@ environment independently limits deployments to the `main` branch.
 Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
-Azure credential gate compares AzureAD unit sources and stack blocks plus the
-normalized shared root source they consume. It ignores only the
+Azure credential gate compares AzureAD unit sources, their repository-owned
+module sources, and stack blocks plus the normalized shared root source they
+consume. It ignores only the
 forbidden legacy root plan-output directive; every other root source change
 fails closed. Unrelated stack changes do not require Azure credentials.
 
@@ -726,6 +727,17 @@ checkpoint. A missing, unreachable, or non-ancestor result fails closed so an
 apply cannot become the new successful checkpoint while skipping an unknown
 deleted-unit range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the
 working-tree Gitleaks scan still covers the complete checkout.
+
+On October 3, the latest successful full checkpoint remained
+[`82ebd734` / run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179).
+The pre-Fleet-identity `main` revision `58ecf587` already changed the
+Grafana/Octelium AzureAD catalog inputs and shared root since that checkpoint;
+the missing protected Azure credentials therefore already block full applies.
+The focused Fleet identity operator path does not advance or repair this
+checkpoint. Recovery requires the protected Azure credential contract and a
+reviewed successful full apply across the outstanding range; never relabel a
+targeted run or manually skip the unapplied range. See the
+[Fleet Free identity runbook](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md#repository-operator-workflow).
 
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
 that route is the failed dependency, restore reviewed
@@ -955,6 +967,17 @@ live `authorizationMode: PASS` verification.
 See [the operator path](../../octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
+
+The [Free Entra acceptance checklist](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
+adds separate gates for Microsoft Password Platform SSO and console SAML. The
+profile operator is dry-run by default; its Fleet API validation uses
+`configuration_profiles/batch?dry_run=true`, without replacing global profiles.
+Require exact local Mac identity, correct platform-specific profile UUIDs,
+acknowledged installation, retained pre-existing profiles, and session revocation.
+The Entra app/user units require focused encrypted plans before protected apply.
+Browser SAML identity, device/user registration, actual Mac password sync,
+offline login, and FileVault unlock must each be verified independently. Record
+failed versus untested checks explicitly; Argo health is not their acceptance.
 
 Fleet adds bootstrap API regression tests for closed first-admin setup,
 administrator identity validation, token revocation and credential redaction.

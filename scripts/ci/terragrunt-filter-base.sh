@@ -97,7 +97,9 @@ terragrunt_azuread_stack_changed() {
 
   if ! git diff --quiet "$base_sha" "$head_sha" -- \
     IaC/live/azuread-applications \
-    IaC/.catalog/units/live/azuread-applications; then
+    IaC/.catalog/units/live/azuread-applications \
+    IaC/modules/azuread-saml-application \
+    IaC/modules/azuread-family-user; then
     return 0
   fi
 

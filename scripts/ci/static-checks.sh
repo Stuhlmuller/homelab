@@ -20,6 +20,7 @@ python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py
 python3 -I scripts/ci/fleet-apple-csr-test.py
+python3 -I scripts/ci/fleet-free-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
@@ -107,7 +108,7 @@ echo "::group::Terragrunt Azure credential gate"
 (
   base_root=$'locals {}\n\nterraform {\n  extra_arguments "plan" {\n    commands  = ["plan"]\n    arguments = ["-out", "plan.out"]\n  }\n}\n\ninputs = {}'
   head_root=$'locals {}\n\ninputs = {}'
-  direct_azure_change=false
+  changed_path=""
   root_change=false
   root_helper_failure=false
   stack_change=false
@@ -115,7 +116,15 @@ echo "::group::Terragrunt Azure credential gate"
   git() {
     case "$1" in
       cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
-      diff) [[ "$direct_azure_change" == false ]] ;;
+      diff)
+        local path
+        for path in "$@"; do
+          if [[ "$changed_path" == "$path" || "$changed_path" == "$path/"* ]]; then
+            return 1
+          fi
+        done
+        return 0
+        ;;
       show)
         if [[ "$root_helper_failure" == true ]]; then
           return 1
@@ -154,9 +163,22 @@ echo "::group::Terragrunt Azure credential gate"
   terragrunt_azuread_stack_changed
   root_change=false
 
-  direct_azure_change=true
-  terragrunt_azuread_stack_changed
-  direct_azure_change=false
+  for changed_path in \
+    IaC/live/azuread-applications/fleet/.terraform.lock.hcl \
+    IaC/.catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
+    IaC/modules/azuread-saml-application/main.tf \
+    IaC/modules/azuread-family-user/main.tf; do
+    if ! terragrunt_azuread_stack_changed; then
+      echo "Azure credentials must be required for ${changed_path}." >&2
+      exit 1
+    fi
+  done
+  changed_path="IaC/modules/argocd-application-kubernetes/main.tf"
+  if terragrunt_azuread_stack_changed; then
+    echo "An unrelated module change must not require Azure credentials." >&2
+    exit 1
+  fi
+  changed_path=""
 
   stack_change=true
   terragrunt_azuread_stack_changed

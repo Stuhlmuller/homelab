@@ -3692,6 +3692,19 @@ unit "langfuse_blob_storage" {
   no_dot_terragrunt_stack = true
 }
 
+unit "azuread_applications_fleet" {
+  source                  = "./.catalog/units/live/azuread-applications/fleet"
+  path                    = "live/azuread-applications/fleet"
+  no_dot_terragrunt_stack = true
+}
+
+# A cloud-only device user; placed here to use the existing AzureAD CI scope.
+unit "azuread_fleet_pilot_user" {
+  source                  = "./.catalog/units/live/azuread-applications/fleet-pilot-user"
+  path                    = "live/azuread-applications/fleet-pilot-user"
+  no_dot_terragrunt_stack = true
+}
+
 unit "azuread_applications_grafana" {
   source                  = "./.catalog/units/live/azuread-applications/grafana"
   path                    = "live/azuread-applications/grafana"
