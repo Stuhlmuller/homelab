@@ -11,6 +11,7 @@ import base64
 import importlib.util
 import json
 import plistlib
+import re
 import signal
 import subprocess
 import time
@@ -27,7 +28,17 @@ def timeout(_signum, _frame):
     raise VerificationError("Apple MDM command timed out; delivery may still be pending")
 
 
+def device_identifier(value):
+    """Validate Apple UUID/UDID forms; normalize only hex letter case."""
+    if (not isinstance(value, str) or len(value) not in (25, 36, 40)
+            or re.fullmatch(r"(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{16}|[0-9a-fA-F]{40}|"
+                            r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12})", value) is None):
+        raise VerificationError("Apple device identifier has an invalid format")
+    return value.lower()
+
+
 def command(api, token, host_uuid, contents):
+    expected_device = device_identifier(host_uuid)
     command_uuid = str(uuid.uuid4())
     payload = plistlib.dumps({"CommandUUID": command_uuid, "Command": contents})
     old_handler = signal.signal(signal.SIGALRM, timeout)
@@ -48,13 +59,13 @@ def command(api, token, host_uuid, contents):
                 if len(results) != 1:
                     raise VerificationError("Fleet returned ambiguous MDM command results")
                 result = results[0]
-                if (result.get("host_uuid") != host_uuid or result.get("command_uuid") != command_uuid
+                if (device_identifier(result.get("host_uuid")) != expected_device or result.get("command_uuid") != command_uuid
                         or result.get("request_type") != contents["RequestType"]):
                     raise VerificationError("Fleet MDM result identity did not match")
                 if result.get("status") == "Acknowledged":
                     reply = plistlib.loads(base64.b64decode(result["result"], validate=True))
                     if (reply.get("Status") != "Acknowledged" or reply.get("CommandUUID") != command_uuid
-                            or uuid.UUID(reply.get("UDID", "")) != uuid.UUID(host_uuid)):
+                            or device_identifier(reply.get("UDID")) != expected_device):
                         raise VerificationError("Apple MDM acknowledgement identity did not match")
                     return reply
                 if result.get("status") not in ("Pending", "NotNow"):
@@ -132,7 +143,7 @@ def verify(api, token, host_uuid):
                 remaining = profile_identifiers(command(api, token, host_uuid, {"RequestType": "ProfileList"}))
             if identifier in remaining or not baseline <= remaining:
                 raise VerificationError("Apple device profile cleanup could not be verified")
-        except BaseException:
+        except BaseException:  # noqa: BLE001 - report interrupted cleanup without private device responses
             raise VerificationError(
                 "MDM cleanup failed or is unconfirmed; inspect this Mac's temporary Fleet verification profile"
             ) from None
@@ -156,7 +167,7 @@ def execute():
         failed = sys.exc_info()[0] is not None
         try:
             api.request("POST", "/api/v1/fleet/logout", token=token)
-        except Exception:
+        except Exception:  # noqa: BLE001 - never log credential-bearing logout failures
             print("Fleet session revocation failed", file=sys.stderr)
             if not failed:
                 raise VerificationError("Verification not accepted because session revocation failed") from None
@@ -179,7 +190,7 @@ def main(argv=None):
     except VerificationError as error:
         print(str(error), file=sys.stderr)
         return 1
-    except (Exception, KeyboardInterrupt):
+    except (Exception, KeyboardInterrupt):  # noqa: BLE001 - redact unexpected operator-boundary failures
         print("Fleet Apple MDM verification failed; private details withheld", file=sys.stderr)
         return 1
     print("Apple MDM profile install/remove acceptance passed for this Mac")

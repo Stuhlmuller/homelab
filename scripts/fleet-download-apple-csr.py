@@ -52,6 +52,10 @@ def request(method, path, body=None, token=None, content_type="application/json"
         status = error.code
         error.close()
         raise DownloadError(f"Fleet API request failed (HTTP {status})") from None
+    if accepted_status == 204:
+        if raw:
+            raise DownloadError("Fleet API returned an unexpected response body")
+        return {}
     result = json.loads(raw)
     if not isinstance(result, dict) or result.get("error"):
         raise DownloadError("Fleet API returned an invalid response")
