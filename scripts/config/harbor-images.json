@@ -28,9 +28,6 @@
       "source": "docker.io/fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
     },
     {
-      "source": "docker.io/fluent/fluent-bit:5.1.3@sha256:c5542543523c9678398dd78d927c05e8425ec15b038f226b67b3b019b1a70845"
-    },
-    {
       "source": "docker.io/goharbor/harbor-core:v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7"
     },
     {
@@ -179,15 +176,6 @@
     },
     {
       "source": "docker.io/valkey/valkey@sha256:dbb2de90cb7a60c4f3f7e8d73fcaab69a94c557bb08a064108fa5d5b1814086e"
-    },
-    {
-      "source": "docker.io/wazuh/wazuh-dashboard:4.14.8@sha256:dd338d22355e8f0cdf8cc97d5b928539d56061b83c3274a79059e60ad5b8ac14"
-    },
-    {
-      "source": "docker.io/wazuh/wazuh-indexer:4.14.8@sha256:6a9c1e3827da627a70859213b3e9cfe43193a492e358953de332b94de33b07de"
-    },
-    {
-      "source": "docker.io/wazuh/wazuh-manager:4.14.8@sha256:412f665c77af5497780d29d0d9f069d7a169c5eca45e9a3a47a587d9cfc99b55"
     },
     {
       "source": "docker.langfuse.com/langfuse/langfuse:4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd"

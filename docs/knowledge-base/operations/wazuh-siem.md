@@ -1,98 +1,58 @@
-# Wazuh SIEM
+# Wazuh SIEM (deferred)
 
 Tags: #security #logging #wazuh #operations
 
-Source: [Wazuh runbook](../../../clusters/homelab/apps/wazuh/README.md),
-`IaC/terragrunt.stack.hcl`, `scripts/wazuh-{preflight,talos,verify}.py`.
+Wazuh is deferred at the operator's request until a hardware upgrade provides
+sufficient capacity. Its deployment, collectors, secret, access and storage
+declarations are removed from active desired state. The runtime was never
+deployed; no SIEM ingestion, backup or restore was accepted.
 
-Wazuh 4.14.8 plus Fluent Bit 5.1.3 merged in
-[PR #1153](https://github.com/Stuhlmuller/homelab/pull/1153), but the runtime is
-**not deployed** and automated sync is disabled. The capacity gate remains
-blocked. Wazuh and its collectors request 7.12GiB on the central node plus
-1GiB operating headroom. Moving workloads among existing nodes cannot resolve
-an aggregate memory deficit. Add capacity or obtain the operator's selection
-of workloads to retire before activation. Declared local-volume capacity is
-not a filesystem quota.
-The dashboard is pinned alongside manager/indexer so its memory and image
-requirements match the central-node preflight budget.
+## Remove the staged control-plane records
 
-The logging rollout required
-[PR #1167](https://github.com/Stuhlmuller/homelab/pull/1167) to put ClickHouse's
-generated ConfigMap before its Deployment sync wave. The console logging
-configuration was verified after reconciliation. Source configuration does
-not establish Wazuh ingestion.
+The empty `argocd-application-retired` module keeps the original encrypted
+`live/argocd-apps/wazuh` state address until cleanup completes. It cannot recreate
+the Application. A targeted protected workflow removes only that Application,
+the four generated `/homelab/wazuh/` credentials and their reader permissions:
 
-[Protected staging run 37186920139](https://github.com/Stuhlmuller/homelab/actions/runs/37186920139)
-succeeded at `0ad30199`: its ordered apply reconciles the four generated SSM
-credential declarations before registering the Application. Live readback
-confirmed `wazuh` targets `main`, `automated.enabled=false`, no active operation,
-and no runtime namespace. Secret values were not read or displayed.
+```sh
+gh workflow run terragrunt-apply.yml --ref main \
+  -f expected_sha=<full-reviewed-main-sha> \
+  -f argocd_app=wazuh -f retire_wazuh=true
+```
 
-Before activation, check free disk, image usage and room for each persistent
-2GiB collector queue on every node. The read-only preflight uses each kubelet's
-eviction configuration and node/image filesystem statistics, reserves
-queue/image/inode growth, and fails closed on missing statistics or
-DiskPressure. A False DiskPressure condition alone does not establish enough
-space for the new collector. Follow the canonical
-[rollout gate](../../../clusters/homelab/apps/wazuh/README.md#rollout).
+Both saved plans must pass strict resource checks and policy before either is
+applied. Only this path supplies the policy context permitting deletion of the
+four exact generated SecureStrings. Normal full and targeted applies continue
+to reject these deletions until retirement completes; other secret deletions
+and replacements remain blocked.
+Cleanup refuses an enabled Application, an active operation, finalizers
+or any Wazuh namespace, volume or collector permissions. Unrelated state drift
+also stops cleanup. Investigate failures through reviewed code changes; do not
+delete resources manually or remove state records to bypass the checks.
 
-[Image publication attempt 1](https://github.com/Stuhlmuller/homelab/actions/runs/37186918652/attempts/1)
-failed; verified publication remains an activation prerequisite. Re-run the
-repository's protected publication workflow and require successful copy and
-anonymous pull verification before activation. Keep detailed live diagnostics
-outside this public repository.
+Success verifies the Application and runtime resources are absent, the old
+Application state is empty, and no Wazuh credential metadata remains in SSM.
+The workflow uses a `Retire wazuh @` title so it cannot advance the full-stack
+apply checkpoint. It is safe to rerun after partial completion. No Talos rollback
+is needed: the staged logging and indexer patches were never applied.
 
-Declared sources: all namespaces' container output, existing Metadata audit
-files, Kubernetes events, and Talos service/kernel JSON. Full archives are
-indexed in addition to alerts. Fleet osquery and Istio access logs already use
-stdout. Collector self-diagnostics are excluded to prevent feedback; queues
-and record sizes are finite. Oversized admitted events require lossless
-fragmentation before Wazuh's 64KiB syslog limit.
+## Restore after a hardware upgrade
 
-NOFX's pinned logger already duplicates its file output to stdout; OctoBot
-console DEBUG and ClickHouse console trace match their file logs. Both mounted
-configurations were verified after reconciliation; Wazuh source receipts remain
-pending.
-Outstanding source coverage: NAS/Plex and network appliances; conventional
-endpoint agents; OpenClaw private doctor reports; Octelium's native security
-logstore. Wazuh API JSON is collected natively; manager/indexer console
-streams require live verification. Native JVM GC/fatal reports now route to
-stdout, verified with isolated local Java processes; heap dumps remain local
-and are excluded from collection. Add a scoped declared export per source.
-Do not treat database contents or AI conversation stores as generic logs.
+Historical implementation:
 
-The repository helper strictly validates Talos indexer/logging changes,
-preserves unrelated configuration,
-and gates execution on reviewed current main, node readiness and no reboot.
-No Talos settings have been applied for Wazuh.
-Manager startup copies API TLS files into private ephemeral `wazuh`-owned
-files and checks their keypair before starting daemons. Projected Secrets stay
-read-only; leaf renewal requires a reviewed Pod revision and ingestion readback.
+- [PR #1153](https://github.com/Stuhlmuller/homelab/pull/1153) introduced the
+  staged Wazuh stack, full-log collection and protected deployment paths.
+- [PR #1169](https://github.com/Stuhlmuller/homelab/pull/1169) strengthened
+  capacity checks and aligned dashboard placement with the central-node budget.
 
-Runtime acceptance requires capacity, prerequisites, verified image
-publication, Wazuh sync, Talos forwarding, private UI login, recent per-source
-and per-node index counts, canary in both archives/alerts, first backup and an
-isolated restore. No live ingestion, backup or restore success is claimed.
-Declared snapshot retention keeps 14 days and at least three successful snapshots;
-deletion requires a new success and API acknowledgement/readback. Raw archive
-pruning and full manager-state backup remain separate gates.
-
-## External-source activation requirements
-
-- Add a version-checked QNAP operator path preserving existing destinations,
-  retention and volume settings, with authenticated readback and rollback,
-  before enabling
-  [native event/access forwarding](https://docs.qnap.com/operating-system/qts/5.2.x/en-us/configuring-log-sender-settings-66DE0C94.html).
-- Verify QuLog service support and enable the relevant access-log categories
-  through that declared path; forwarding alone does not enable log production.
-- Verify Plex availability and log ownership before claiming coverage or log
-  integrity. Add a reviewed permission repair when needed and a supported,
-  narrowly scoped file forwarder.
-- Inventory gateway, switch and access-point models and their supported log
-  export mechanisms before promising network-appliance coverage.
-
-Source context: [NAS inventory](../../../docs/storage-nfs.md),
-[[qnap-monitoring-block-storage-research-2026-09-12]].
+Restore through a new reviewed change after the hardware upgrade. Recheck
+memory, disk and inode headroom on every collector node, including image
+downloads, unpacking and queue growth. Refresh image versions and secret,
+storage, access and source contracts before applying the historical design.
+Require verified image publication, private UI access, per-source ingestion,
+backup and restore evidence before claiming the SIEM is operational.
+Recreate credentials through the declared secret workflow; removed credentials
+and any previously cached image layers are not a supported rollback mechanism.
 
 Related: [[../architecture/gitops-flow]], [[../architecture/storage-and-state]],
 [[../architecture/secrets-and-identity]], [[../workloads/inventory]].

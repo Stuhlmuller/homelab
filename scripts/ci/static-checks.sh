@@ -18,12 +18,6 @@ python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
-python3 -I scripts/ci/octelium-wazuh-reconcile-test.py
-python3 -I scripts/ci/wazuh-talos-test.py
-python3 -I scripts/ci/wazuh-collector-test.py
-python3 -I scripts/ci/wazuh-check.py
-python3 -I scripts/ci/wazuh-startup-test.py
-python3 -I scripts/ci/wazuh-core-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py
@@ -252,6 +246,8 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
 python3 scripts/ci/terragrunt-apply-test.py
+python3 -I scripts/ci/wazuh-retire-test.py
+python3 -I scripts/ci/wazuh-retire-plan-test.py
 (
   cd IaC/live/argocd-apps
   terragrunt_stack_changed() { return 0; }
@@ -966,7 +962,7 @@ done <<'EOF'
 .github/workflows/octelium-public-tunnel.yml d944741bcf57ca037b1fe7dc83de7a5e66a26dd8b3d35100ca990dbf3df5f3ba
 .github/workflows/release.yml 399ebea06d5bbd57412facb55585f4bb32b1f3d345a7669aa74096a009b15361
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 20110307f8a2f5f0ec7ec6deee290e9d635d17ceadd560f603502b70d724c55b
+.github/workflows/terragrunt-apply.yml 5cab817f027eb1c45067351928e87c67a785c823415ad8bd9acb8e928dfc3e6a
 .github/workflows/terragrunt-plan.yml 6fe0f6536944c191b3c9220357e51e93cb03ec8a1467b1fdf59136037fde869f
 EOF
 echo "::endgroup::"
@@ -1028,7 +1024,13 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Retire wazuh @ {0}")) and
+    .on.workflow_dispatch.inputs.retire_wazuh == {
+      "description": "Remove only the retired Wazuh Application and its four unused credentials",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
@@ -1052,11 +1054,13 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_ARGOCD_APP",
-      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
+      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE",
+      "TERRAGRUNT_RETIRE_WAZUH"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_RETIRE_WAZUH == "${{ inputs.retire_wazuh }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false

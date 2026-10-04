@@ -80,8 +80,6 @@ spec:
       namespace: storage
     - server: https://kubernetes.default.svc
       namespace: tailscale
-    - server: https://kubernetes.default.svc
-      namespace: wazuh
   clusterResourceWhitelist:
     - group: ""
       kind: Namespace

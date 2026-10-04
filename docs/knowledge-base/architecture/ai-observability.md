@@ -25,16 +25,13 @@ Source: `clusters/homelab/apps/langfuse/values.yaml` and the pinned chart render
 
 ## Rollout evidence
 
-The October 4 Wazuh logging rollout exposed a sync-wave dependency: ClickHouse's
-Deployment runs at wave `-1`, so its generated logging ConfigMap must run at
-wave `-2`. Leaving the ConfigMap at wave `0` made the Pod fail its mount while
-Argo waited for the Deployment to become healthy. Keep generated configuration
-ahead of its consumers; verify the ConfigMap exists and ClickHouse becomes
-Ready before accepting the logging rollout. Source: the Langfuse Kustomization,
-`datastores.yaml`, and the Pod's `FailedMount` event after merge `99deec00`.
-An existing sync can hold the older revision until the declared 900-second
-controller timeout releases it; allow the next automatic sync to use the repair.
-See [[gitops-flow]] and Argo CD's
+An earlier ClickHouse logging change exposed a sync-wave dependency:
+its generated ConfigMap followed the Deployment, so Argo waited for a Pod
+that could not mount its configuration. [PR #1167](https://github.com/Stuhlmuller/homelab/pull/1167)
+fixed the ordering. That logging override has since been removed; keep any
+future generated configuration ahead of its consumers. An existing sync can
+hold an older revision until the declared 900-second controller timeout
+releases it. See [[gitops-flow]] and Argo CD's
 [timeout handling](https://github.com/argoproj/argo-cd/blob/v3.4.2/controller/appcontroller.go#L1454-L1465).
 
 On 2026-10-01 UTC, protected apply

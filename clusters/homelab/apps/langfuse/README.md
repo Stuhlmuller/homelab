@@ -20,13 +20,6 @@ only Langfuse's service account reaches the datastores. Datastore passwords
 are mounted as files; the containers run without root and with read-only image
 filesystems. ClickHouse receives writable temporary/user-config directories.
 
-`clickhouse-logging.xml` enables console output at the existing file logger's
-`trace` level so the Wazuh node collector receives ClickHouse diagnostics.
-The read-only single-file mount preserves the image's other `config.d`
-settings. Kustomize hashes the ConfigMap for rollout; revert the file and
-mount change to restore upstream file-only logging. Historical `emptyDir`
-log files are not backfilled by the stdout collector.
-
 Langfuse raw events, uploaded media and batch exports share a dedicated S3
 bucket with a 30-day object-retention policy (noncurrent versions expire after
 7 days). Media links and export downloads therefore expire too; download any
