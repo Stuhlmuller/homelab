@@ -1,0 +1,36 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: harbor-collector-lifecycle
+  namespace: harbor
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: harbor.collector.lifecycle
+      interval: 1m
+      rules:
+        - alert: HarborCollectorExpiryMetadataMissing
+          expr: absent(harbor_collector_expiry_metadata_valid{namespace="harbor",service="harbor-vulnerability-exporter"}) or (harbor_collector_expiry_metadata_valid{namespace="harbor",service="harbor-vulnerability-exporter"} != 1)
+          for: 2m
+          labels: {severity: critical, app: harbor}
+          annotations:
+            summary: Harbor collector expiry cannot be established.
+        - alert: HarborCollectorRenewalDue
+          expr: (harbor_collector_credential_expires_at_seconds{namespace="harbor",service="harbor-vulnerability-exporter"} - time()) <= 864000
+          for: 1m
+          labels: {severity: warning, app: harbor}
+          annotations:
+            summary: Harbor collector needs staffed renewal; at most ten days remain.
+        - alert: HarborCollectorCredentialExpired
+          expr: harbor_collector_credential_expires_at_seconds{namespace="harbor",service="harbor-vulnerability-exporter"} <= time()
+          for: 1m
+          labels: {severity: critical, app: harbor}
+          annotations:
+            summary: Harbor collector credential expiry has passed.
+        - alert: HarborCollectorTelemetryInterrupted
+          expr: absent(harbor_vulnerability_collector_last_successful_timestamp_seconds{namespace="harbor",service="harbor-vulnerability-exporter"}) or ((time() - harbor_vulnerability_collector_last_successful_timestamp_seconds{namespace="harbor",service="harbor-vulnerability-exporter"}) >= 480)
+          for: 1m
+          labels: {severity: critical, app: harbor}
+          annotations:
+            summary: Harbor collector telemetry is absent or stale; retain visible interruption.

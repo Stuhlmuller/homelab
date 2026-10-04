@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "execution_enabled": false,
+  "decision": null,
+  "chart_version": "1.19.2",
+  "harbor_version": "v2.15.2",
+  "endpoint": "https://127.0.0.1:8443",
+  "environment_record": null,
+  "timeout_seconds": 15,
+  "deadline_seconds": 1200,
+  "projects": {"homelab": false, "mirror": true, "qa-private-other": false, "qa-public-other": true},
+  "pagination_size": 101,
+  "required_external_gates": [
+    "scan-create denial/positive control, deterministic scanner reports and known collector totals",
+    "expired credential fixture without changing server clock",
+    "collector partial failure, HTTP 503 and alert routing",
+    "HOME-59 all-hop TLS negative and rotation tests",
+    "HOME-3 effective network isolation"
+  ]
+}

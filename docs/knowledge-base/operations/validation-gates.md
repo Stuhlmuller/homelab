@@ -4,6 +4,28 @@ Tags: #operations #validation
 
 ## Default Gate
 
+HOME-57's [disposable Harbor authorization proposal](../../harbor-authorization-fixture.md)
+adds a pinned chart/image fixture and a disabled direct API/registry runner,
+independently owned by QA for SRE integration. Its offline tests run in the
+static gate. Denied mutations require unchanged state and an identical valid
+administrator positive control. No server fixture has run; scan/expiry,
+collector/alert integration, HOME-59 all-hop TLS and HOME-3 isolation remain
+separate gates. Even a successful implemented subset returns incomplete, not
+operational acceptance. See [[operations/harbor-oci]].
+
+The corrected fixture rejects timestamp-only positive controls and preserves
+unrelated observed records while checking exact fields, IDs, digests and grants.
+The separate [HOME-62 capability proposal](../../harbor-issuer-capability-proposal.md)
+adds 54 unexecuted direct-API/session recipes and offline evidence oracles,
+without a credential reader or network adapter. Existing issuer hard stops remain;
+capability observations cannot grant authority acceptance. Custody, provisioning,
+checkpoint controls, session/expiry windows and verified teardown are unresolved.
+Session denials require independent positive access bracketing every observation
+within five seconds, fixed private target/request/route receipts and verified
+session-error attribution. Missing/failed/stale controls or route changes are
+inconclusive. These are offline receipt checks, not authenticated runtime evidence;
+the server adapter/error mapping remains absent and HOME-66 prerequisites stay open.
+
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
 

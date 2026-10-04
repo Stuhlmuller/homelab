@@ -371,3 +371,61 @@ pending AI secrets; the [targeted secret plan](../../harbor-image-mirroring.md#i
 limits publication to the new mirror credential and documents shared IAM/random
 state dependencies requiring explicit operator approval. Image transfer
 and node cutover remain pending; source verification is not migration evidence.
+
+## HOME-57 collector privilege and lifecycle proposal
+
+The [transition plan](../../harbor-vulnerability-exporter-transition.md) records
+HOME-59's all-hop verified TLS target. No gateway-only exception was granted;
+current code still lacks verified gateway→frontend→core TLS. Plaintext exposes
+both credential confidentiality and metrics integrity. TLS does not establish
+HOME-3 enforcement or prevent stolen-token replay through other allowed routes.
+
+The [lifecycle proposal](../../harbor-vulnerability-credential-lifecycle.md) adds a
+disabled manual protected workflow, exact-ID/scope/expiry verification, bounded
+renewal, a one-version SSM envelope and unregistered ESO/writer-role candidates.
+The proposed one-day issuer has system robot-management authority and requires
+separate Decision Review disposition; helper restrictions are not server RBAC.
+SRE owns #1163 integration; QA owns pinned-server controls and Recovery owns
+first-cutover containment, alert limits and compromise revocation. Signing, full
+validation, real authorization, all-hop TLS and operational evidence remain gates.
+No provisioning, execution, live health or continuous renewal monitoring is claimed.
+
+
+## HOME-57 integrated proposal
+
+QA #1164 and Recovery #1165 are integrated into SRE's proposal with original
+commits preserved. The [TLS/recovery integration contract](../../harbor-tls-and-recovery-integration.md)
+records the unregistered chart renderer, verified upstream identity tests and
+standalone metadata-only exact-ID recovery planner. HOME-62 rejected the proposed
+system issuer: the workflow/helper cannot execute even if acceptance flags change.
+Trust distribution, GitOps materialization, client/hook migration, actual proxy
+and Harbor-denial evidence, expiry/alerts, signing and HOME-3 remain HOLD gates.
+Recovery interruption limits are proposals, not authorized windows.
+
+
+### Fixed-proposal integration and finite gaps
+
+HOME-57 integrates QA #1172 and Recovery #1173 with the SRE custody correction
+and current main `ee07c797`. See [the finite blocker table](../../harbor-integration-blockers.md)
+for separate repository deliverables, unavailable identities/environment records,
+signing/full validation, authority and execution approvals, and runtime evidence.
+HOME-64 accepts preparation direction only; HOME-62's issuer rejection and all
+hard stops remain. Offline model/TLS results do not establish server, proxy,
+controller, effective IAM or recovery acceptance.
+
+
+### Disabled TLS materialization and expiry checks
+
+The [R1/R5 follow-up](../../harbor-tls-materialization-and-alerts.md) supplies
+allowlisted public NGINX overrides, unregistered public-CA generators, HTTPS
+bootstrap and TLS port patches, phased component reload annotations, and an
+expiry-only sidecar with tested PromQL alerts. The overlay keeps exporter replicas
+at zero, hooks Skip and scheduled backup suspended; it is not an authorized stop
+or sync operation. Public trust/issuer custody, named renewal/observer identities,
+signing and environment records remain HOME-66 inputs. Independent source closures
+apply only to their reviewed revisions; no integration or runtime acceptance is
+implied. QA's session-survival follow-up #1174 at `3569689b` is now integrated
+unchanged with R1/R5 at `e8984313`; both deliveries retain their authors' commits.
+Only integration-status documentation differs from their automatic merged tree.
+HOME-66 input-dependent work stays parked; independent review of these fixed
+deliveries and the eventual integration remains an acceptance gate.

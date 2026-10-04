@@ -269,8 +269,12 @@ gateway/Discord recovery remains pending.
 Harbor owns private `homelab` custom images and the public upstream-only
 `mirror` project. Its in-cluster vulnerability collector exports aggregate
 completed-scan critical-CVE counts per project for Grafana; it is read-only,
-uses the existing file-mounted Harbor administrator credential, and emits no
-artifact, digest, or CVE labels. The [Talos mirror rollout](../../harbor-image-mirroring.md)
+proposes a dedicated file-mounted list-only robot and verified TLS to the
+existing Istio gateway, and emits no artifact, digest, or CVE labels. This
+HOME-57 candidate is on hold for protected credential provisioning, independent
+server authorization and HOME-59’s required all-hop TLS implementation (no
+gateway-only exception). Its separate periodic ESO candidate is unregistered; see
+[the transition plan](../../harbor-vulnerability-exporter-transition.md). The [Talos mirror rollout](../../harbor-image-mirroring.md)
 covers Helm/operator-generated workloads and system images; publication must
 precede node cutover or new consumer versions.
 New builds use a local signing Job and the cert-manager-owned
@@ -286,3 +290,13 @@ to the evidence recorded there.
 Fluent Bit collectors in namespace `wazuh`; its explicit-stack Application
 targets main with automated sync disabled pending memory capacity. See
 [[operations/wazuh-siem]] and the [rollout runbook](../../../clusters/homelab/apps/wazuh/README.md).
+
+
+### Harbor collector custody proposal (HOME-57)
+
+The collector's unregistered credential projection references a separate
+namespace-scoped SecretStore, with exact-parameter reader policy and unprovisioned
+credential custody. The catalog excludes shared reader access. The active shared
+store and other consumers are unchanged. See [reader/writer and custody evidence](../../harbor-credential-custody.md).
+No effective IAM/RBAC, replacement operator path, all-hop acceptance or executable
+recovery is established; HOME-62's system-issuer hard stop remains in force.

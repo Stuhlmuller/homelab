@@ -1,0 +1,29 @@
+# Unregistered last-source override. Do not apply: no trust/custody acceptance.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../harbor
+  - nginx-public.yaml
+  - certificates.yaml
+  - destinationrule.yaml
+  - lifecycle-prometheusrule.yaml
+configMapGenerator:
+  - name: harbor-bootstrap
+    namespace: harbor
+    behavior: replace
+    files: [bootstrap.py]
+  - name: harbor-lifecycle-metrics
+    namespace: harbor
+    files: [lifecycle-metrics.py]
+generatorOptions:
+  disableNameSuffixHash: true
+patches:
+  - path: client-patches.yaml
+  - path: networkpolicy-patches.yaml
+  - target:
+      kind: VirtualService
+      name: harbor-octelium
+    patch: |-
+      - op: replace
+        path: /spec/http/0/route/0/destination/port/number
+        value: 443

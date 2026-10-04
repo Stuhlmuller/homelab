@@ -1,0 +1,146 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: harbor-internal-ca
+  namespace: harbor
+spec:
+  ca:
+    secretName: harbor-internal-ca
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-frontend-tls
+  namespace: harbor
+spec:
+  secretName: harbor-frontend-tls
+  duration: 2160h
+  renewBefore: 720h
+  issuerRef:
+    name: harbor-internal-ca
+    kind: Issuer
+  privateKey:
+    rotationPolicy: Always
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  dnsNames:
+  - harbor-frontend
+  - harbor-frontend.harbor.svc
+  - harbor-frontend.harbor.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-core-tls
+  namespace: harbor
+spec:
+  secretName: harbor-core-tls
+  duration: 2160h
+  renewBefore: 720h
+  issuerRef:
+    name: harbor-internal-ca
+    kind: Issuer
+  privateKey:
+    rotationPolicy: Always
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  dnsNames:
+  - harbor-core
+  - harbor-core.harbor.svc
+  - harbor-core.harbor.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-portal-tls
+  namespace: harbor
+spec:
+  secretName: harbor-portal-tls
+  duration: 2160h
+  renewBefore: 720h
+  issuerRef:
+    name: harbor-internal-ca
+    kind: Issuer
+  privateKey:
+    rotationPolicy: Always
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  dnsNames:
+  - harbor-portal
+  - harbor-portal.harbor.svc
+  - harbor-portal.harbor.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-jobservice-tls
+  namespace: harbor
+spec:
+  secretName: harbor-jobservice-tls
+  duration: 2160h
+  renewBefore: 720h
+  issuerRef:
+    name: harbor-internal-ca
+    kind: Issuer
+  privateKey:
+    rotationPolicy: Always
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  dnsNames:
+  - harbor-jobservice
+  - harbor-jobservice.harbor.svc
+  - harbor-jobservice.harbor.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-registry-tls
+  namespace: harbor
+spec:
+  secretName: harbor-registry-tls
+  duration: 2160h
+  renewBefore: 720h
+  issuerRef:
+    name: harbor-internal-ca
+    kind: Issuer
+  privateKey:
+    rotationPolicy: Always
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  dnsNames:
+  - harbor-registry
+  - harbor-registry.harbor.svc
+  - harbor-registry.harbor.svc.cluster.local
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-trivy-tls
+  namespace: harbor
+spec:
+  secretName: harbor-trivy-tls
+  duration: 2160h
+  renewBefore: 720h
+  issuerRef:
+    name: harbor-internal-ca
+    kind: Issuer
+  privateKey:
+    rotationPolicy: Always
+  usages:
+  - digital signature
+  - key encipherment
+  - server auth
+  dnsNames:
+  - harbor-trivy
+  - harbor-trivy.harbor.svc
+  - harbor-trivy.harbor.svc.cluster.local

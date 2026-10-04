@@ -58,7 +58,7 @@
             pre-commit
             postgresql_14
             prometheus.cli
-            python3
+            (python3.withPackages (ps: [ ps.pyyaml ]))
             ripgrep
             shellcheck
             shfmt
