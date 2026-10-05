@@ -57,9 +57,12 @@ present. Local admin login remains available through `grafana-admin`.
 - `dashboards/homelab-overview.json` is the default Homelab overview dashboard.
   `dashboards/argocd-overview.json` is the Argo CD GitOps operations
   dashboard. `dashboards/github-pr-status.json` tracks open pull request status
-  filters and recent failed GitHub Actions runs. Kustomize packages these
-  dashboards into the stable `grafana-dashboard-homelab-overview` ConfigMap,
-  which the Helm chart mounts through the `homelab` dashboard provider.
+  filters and recent failed GitHub Actions runs. `dashboards/security-overview.json`
+  shows aggregate Harbor critical-CVE counts, affected projects, collector
+  freshness, and scrape health without exposing image, digest, or CVE labels.
+  Kustomize packages these dashboards into the stable
+  `grafana-dashboard-homelab-overview` ConfigMap, which the Helm chart mounts
+  through the `homelab` dashboard provider.
 - `values.yaml` imports pinned Grafana.com dashboard revisions for Kubernetes
   and Prometheus views that are maintained by the
   `dotdc/grafana-dashboards-kubernetes` project.
