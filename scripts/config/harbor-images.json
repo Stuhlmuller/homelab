@@ -163,6 +163,9 @@
       "source": "docker.io/pgvector/pgvector@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782"
     },
     {
+      "source": "docker.io/pgvector/pgvector@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d"
+    },
+    {
       "source": "docker.io/queeup/upnpc-container:v2.3.3-r2@sha256:2d8a0d395f4e653943abd87324096842eb884409bb31f2a8d743a871592dcb87"
     },
     {
