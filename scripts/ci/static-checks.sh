@@ -18,6 +18,9 @@ python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
+python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
+python3 -I scripts/ci/bazarr-bootstrap-test.py
+python3 -I scripts/ci/nas-media-permissions-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py
@@ -978,7 +981,7 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 9fab359f6fa412a340f4bbd6d140ec840fdd592336266f3e7c2cc94a26510cbe
 .github/workflows/harbor-migrate.yml bb21b7e7b9a84765733020befb1bbadbb6195a24797ea7cb8595b4ce405cb592
-.github/workflows/harbor-mirror.yml c7a0555b84a3febc24f13e47f28ad2c045489ef1057b3aebcd0a97a5ab4c3ab0
+.github/workflows/harbor-mirror.yml 60add50eec82d24f25d9dc77563b570449de20dc3b33ef4c8a368cac3edcd665
 .github/workflows/homelab-diagnostics.yml 5043c57789978d8a1e4d352ad7d2d073168c3e298bb8dcdf008aef0ea0326864
 .github/workflows/lint.yml 746d58ce358dc2cb5fb6fc0e0728c8faee85e4679b1464ff89fd2c6a6ecca139
 .github/workflows/nofx-images.yml 72150105fa32ea3bd3868a289c4016cb9622192ed13fb128395051e4cbf227ae

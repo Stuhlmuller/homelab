@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
+BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 
 
@@ -79,6 +80,16 @@ def rendered_fleet_images():
     return declared_images(documents)[0]
 
 
+def declared_bazarr_images():
+    # app-template has no built-in container image. Its complete image set is
+    # declared in values; the pinned Helm render is also checked before rollout.
+    app = ROOT / "clusters/homelab/apps/bazarr"
+    manifests = subprocess.check_output(["kubectl", "kustomize", str(app)], text=True)
+    documents = json.loads(subprocess.check_output(
+        ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
+    return declared_images(documents + yaml_documents([app / "values.yaml"]))[0]
+
+
 def chart_sources():
     charts = []
     stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC/stacks").glob("*/stack.hcl"))]
@@ -123,15 +134,21 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
-    fleet_sources = {item["source"] for item in json.loads(FLEET_CATALOG.read_text())["images"]}
-    fleet_known = {normalize(image) for image in fleet_sources}
-    fleet_required = {normalize(image) for image in rendered_fleet_images()}
-    errors.extend("Fleet mirror scope missing rendered image: " + image
-                  for image in sorted(fleet_required - fleet_known))
-    errors.extend("Fleet mirror scope has unrendered image: " + image
-                  for image in sorted(fleet_known - fleet_required))
-    errors.extend("Fleet mirror scope source absent from full catalog: " + image
-                  for image in sorted(fleet_sources - {item["source"] for item in catalog}))
+    scope_counts = {}
+    for name, path, required_images in (
+        ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
+        ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
+    ):
+        sources = {item["source"] for item in json.loads(path.read_text())["images"]}
+        known_scope = {normalize(image) for image in sources}
+        required = {normalize(image) for image in required_images}
+        errors.extend(f"{name} mirror scope missing required image: " + image
+                      for image in sorted(required - known_scope))
+        errors.extend(f"{name} mirror scope has unused image: " + image
+                      for image in sorted(known_scope - required))
+        errors.extend(f"{name} mirror scope source absent from full catalog: " + image
+                      for image in sorted(sources - {item["source"] for item in catalog}))
+        scope_counts[name] = len(required)
     registries = {image.split("/", 1)[0] for image in known}
     expected_mirrors = {registry: {
         "endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
@@ -145,7 +162,7 @@ def check():
     if errors:
         raise SystemExit("\n".join(errors))
     print(f"Harbor catalog covers {len(images)} declared image references; chart inventory matches; "
-          f"Fleet scope covers exactly {len(fleet_required)} rendered images")
+          f"fixed app scopes match required images: {scope_counts}")
 
 
 if __name__ == "__main__":

@@ -137,14 +137,16 @@ exceptions are:
   retained static `hostPath` PVs pinned to `zimaboard-0`. Their former NFS
   config claims remain backup and recovery targets rather than active app
   storage.
-- Deluge, Radarr, and Sonarr media-library static PV/PVC pairs that mount the
+- Bazarr config uses a retained local PV on `zimaboard-0` with a separate NFS
+  backup claim; SQLite remains on local storage.
+- Deluge, Radarr, Sonarr, and Bazarr media-library static PV/PVC pairs that mount the
   QNAP `/media` export directly.
 
 | Claim | Owned by | Mounted in apps | Media subdirectory |
 | --- | --- | --- | --- |
 | `media-downloads` | `clusters/homelab/apps/deluge/media-storage.yaml` | Deluge, Radarr, Sonarr | `/media/downloads` |
-| `media-movies` | `clusters/homelab/apps/radarr/media-storage.yaml` | Radarr | `/media/movies` |
-| `media-tv` | `clusters/homelab/apps/sonarr/media-storage.yaml` | Sonarr | `/media/tv` |
+| `media-movies` | `clusters/homelab/apps/radarr/media-storage.yaml` | Radarr, Bazarr | `/media/movies` |
+| `media-tv` | `clusters/homelab/apps/sonarr/media-storage.yaml` | Sonarr, Bazarr | `/media/tv` |
 
 Each media app also owns a migration Job that runs as UID/GID `65534`, mounts
 the old dynamically provisioned PVC read-only, copies its files into the
@@ -220,6 +222,7 @@ app has acceptable backup and restore coverage.
 | multica | pgvector PostgreSQL database and backend uploads | `nfs-default` | NFS backup plus PostgreSQL logical dump before upgrades | Restore database and uploads PVCs from the same recovery point before app sync | Preserve PVCs unless intentionally rebuilding the Multica instance |
 | octelium-storage | primary PostgreSQL resource store and Redis AOF state | `nfs-default` for primary and PostgreSQL backup claims | Daily PostgreSQL globals without password hashes, custom-format `octelium` dump, and SHA-256 checksums on a separate retained NFS claim; 14-day retention; nominal 24-hour RPO, but actual RPO is the newest successful Job; Redis still lacks an independent backup | Candidate isolated PostgreSQL drill restores the latest complete set and checks resource/key invariants; it remains excluded from live GitOps and suspended until image/runtime proof and reviewed activation, then requires scheduled success and a separate fenced cutover | Preserve PostgreSQL, Redis, and backup claims; the backup remains in the same QNAP failure domain |
 | prowlarr | config, indexer refs, PostgreSQL app/log databases | `nfs-default` | NFS backup for config plus PostgreSQL logical dump | Restore config PVC and PostgreSQL databases before app sync and re-test app integrations | Preserve PVCs |
+| bazarr | local SQLite/config, generated subtitles on `media-tv` and `media-movies` | retained local config PV on `zimaboard-0`, separate retained NFS backup claim, shared static `/media` claims | Verified config/database backup to NFS; caption sidecars need NAS media backup coverage | Stop Bazarr through GitOps, restore a verified config/database archive to its local claim, restore caption files from media backups if needed, then verify both libraries | Preserve config/backup/media claims; reverting the app image does not reverse a database migration |
 | radarr | active config on `radarr-config-local`, PostgreSQL app/log databases, movies on `media-movies`, shared downloads on `media-downloads` | static local config PV, retained `nfs-default` config/archive claim mounted only by the backup CronJob, local `media-postgres`, and static `/media` PVs | Nightly verified config archive to NFS with 14-day retention, PostgreSQL logical dump, `/media/movies`, and `/media/downloads` | Stop Radarr, restore one validated config archive into the local claim, restore matching PostgreSQL databases if needed, then verify integrations and `/media` paths | Preserve the local PV, retained NFS claim, PostgreSQL backups, and `/media` subdirectories; never reactivate stale NFS config after local writes |
 | sonarr | active config on `sonarr-config-local`, PostgreSQL app/log databases, TV on `media-tv`, shared downloads on `media-downloads` | static local config PV, retained `nfs-default` config/archive claim mounted only by the backup CronJob, local `media-postgres`, and static `/media` PVs | Nightly verified config archive to NFS with 14-day retention, PostgreSQL logical dump, `/media/tv`, and `/media/downloads` | Stop Sonarr, restore one validated config archive into the local claim, restore matching PostgreSQL databases if needed, then verify integrations and `/media` paths | Preserve the local PV, retained NFS claim, PostgreSQL backups, and `/media` subdirectories; never reactivate stale NFS config after local writes |
 | litellm | model routing, optional DB/config | `nfs-default` | NFS backup for config store or DB PVC | Restore PVC before exposing gateway | Snapshot first, preserve PVC |

@@ -781,6 +781,22 @@ spec:
 ---
 kind: Service
 metadata:
+  name: bazarr
+spec:
+  displayName: Bazarr
+  isPublic: false
+  isAnonymous: false
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
+  config:
+    upstream:
+      url: http://bazarr.media.svc.cluster.local:6767
+---
+kind: Service
+metadata:
   name: radarr
 spec:
   displayName: Radarr

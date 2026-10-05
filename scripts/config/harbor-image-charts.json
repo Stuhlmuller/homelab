@@ -2,6 +2,12 @@
   {
     "chart": "app-template",
     "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/bazarr/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
     "source": "IaC/stacks/deluge/stack.hcl",
     "targetRevision": "4.4.0"
   },

@@ -22,6 +22,14 @@ unit "argocd_apps_argocd_image_updater" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/argocd-image-updater/stack.hcl").inputs
 }
 
+unit "argocd_apps_bazarr" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/bazarr"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/bazarr/stack.hcl").inputs
+}
+
 unit "argocd_apps_cert_manager" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/cert-manager"

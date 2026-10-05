@@ -100,13 +100,16 @@ with tempfile.TemporaryDirectory() as directory:
     check.ROOT = Path(directory)
     check.CATALOG = check.ROOT / "images.json"
     check.FLEET_CATALOG = check.ROOT / "fleet-images.json"
+    check.BAZARR_CATALOG = check.ROOT / "bazarr-images.json"
     check.CHARTS = check.ROOT / "charts.json"
     catalog = {"images": [
         {"source": "docker.io/library/busybox@" + digest},
         {"source": "quay.io/example/operator@" + digest}]}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(catalog))
+    check.BAZARR_CATALOG.write_text(json.dumps(catalog))
     check.rendered_fleet_images = lambda: images
+    check.declared_bazarr_images = lambda: images
     check.CHARTS.write_text("[]")
     mirrors = {registry: {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
                           "overridePath": True, "skipFallback": True}
@@ -121,7 +124,7 @@ with tempfile.TemporaryDirectory() as directory:
     try:
         check.check()
     except SystemExit as error:
-        assert "Fleet mirror scope missing rendered image: quay.io/example/operator@" in str(error)
+        assert "Fleet mirror scope missing required image: quay.io/example/operator@" in str(error)
     else:
         raise AssertionError("Fleet scope missing a rendered image passed")
     extra = {"source": "docker.io/library/busybox@sha256:" + "b" * 64}
@@ -131,7 +134,7 @@ with tempfile.TemporaryDirectory() as directory:
     try:
         check.check()
     except SystemExit as error:
-        assert "Fleet mirror scope has unrendered image: " + extra["source"] in str(error)
+        assert "Fleet mirror scope has unused image: " + extra["source"] in str(error)
     else:
         raise AssertionError("Fleet scope extra catalog digest passed")
     check.CATALOG.write_text(json.dumps(catalog))
@@ -142,6 +145,31 @@ with tempfile.TemporaryDirectory() as directory:
     else:
         raise AssertionError("Fleet scope source absent from the full catalog passed")
     check.FLEET_CATALOG.write_text(json.dumps(catalog))
+    check.BAZARR_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Bazarr mirror scope missing required image: quay.io/example/operator@" in str(error)
+    else:
+        raise AssertionError("Bazarr scope missing a rendered image passed")
+    extra = {"source": "docker.io/library/busybox@sha256:" + "b" * 64}
+    expanded = {"images": [*catalog["images"], extra]}
+    check.CATALOG.write_text(json.dumps(expanded))
+    check.BAZARR_CATALOG.write_text(json.dumps(expanded))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Bazarr mirror scope has unused image: " + extra["source"] in str(error)
+    else:
+        raise AssertionError("Bazarr scope extra catalog digest passed")
+    check.CATALOG.write_text(json.dumps(catalog))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Bazarr mirror scope source absent from full catalog: " + extra["source"] in str(error)
+    else:
+        raise AssertionError("Bazarr scope source absent from the full catalog passed")
+    check.BAZARR_CATALOG.write_text(json.dumps(catalog))
     documents[0]["initContainers"][0]["image"] = "busybox:missing"
     try:
         check.check()

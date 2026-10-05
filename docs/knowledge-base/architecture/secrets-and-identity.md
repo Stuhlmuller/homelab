@@ -153,6 +153,14 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   policy rejects SSM parameter deletion. It is excluded from the External
   Secrets reader IAM policy. Remove it only with a reviewed
   repository-owned state and secret-retirement workflow.
+- Bazarr reads Sonarr/Radarr API keys from their existing local `config.xml`
+  files through read-only init-container mounts. It retains credentials only in
+  its private config volume; no new SSM parameter or direct environment-variable
+  secret injection is introduced. The main container never mounts either source
+  config claim. The private `bazarr.default` Octelium WEB Service requires the
+  existing `homelab-human-web-access` policy; it has neither anonymous access nor
+  a public DNS/tunnel route. Config backups contain these credentials and must
+  remain private.
 - Dispatcharr's dedicated PostgreSQL password is generated at
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs
