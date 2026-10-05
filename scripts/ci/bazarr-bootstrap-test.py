@@ -144,7 +144,7 @@ class BootstrapTests(unittest.TestCase):
             (config / "db").mkdir(parents=True)
             (config / "config").mkdir()
             (config / "config/config.yaml").write_text("private-test-marker")
-            with sqlite3.connect(config / "db/bazarr.db") as database:
+            with contextlib.closing(sqlite3.connect(config / "db/bazarr.db")) as database:
                 database.execute("PRAGMA journal_mode=WAL")
                 database.execute("CREATE TABLE sample (value TEXT)")
                 database.execute("INSERT INTO sample VALUES ('committed')")
@@ -158,9 +158,61 @@ class BootstrapTests(unittest.TestCase):
                     self.assertEqual(archive.extractfile("config/config.yaml").read(), b"private-test-marker")
                     restored = root / "restored.db"
                     restored.write_bytes(archive.extractfile("db/bazarr.db").read())
-                with sqlite3.connect(restored) as restored_db:
+                with contextlib.closing(sqlite3.connect(restored)) as restored_db:
                     self.assertEqual(restored_db.execute("SELECT value FROM sample").fetchall(), [("committed",)])
                     self.assertEqual(restored_db.execute("PRAGMA integrity_check").fetchone(), ("ok",))
+
+    def test_backup_closes_connections_before_snapshot_cleanup(self):
+        real_connect = sqlite3.connect
+        real_directory = tempfile.TemporaryDirectory
+        testcase = self
+        for fail_copy in (False, True):
+            with self.subTest(fail_copy=fail_copy), real_directory() as directory:
+                root = Path(directory)
+                config = root / "config"
+                (config / "db").mkdir(parents=True)
+                (config / "config").mkdir()
+                (config / "config/config.yaml").write_text("synthetic: true")
+                with contextlib.closing(real_connect(config / "db/bazarr.db")) as database:
+                    database.execute("CREATE TABLE sample (value INTEGER)")
+                    database.commit()
+                connections = []
+                cleanup_checked = []
+
+                class Connection(sqlite3.Connection):
+                    def backup(self, *args, **kwargs):
+                        if fail_copy:
+                            raise RuntimeError("Synthetic backup failure")
+                        return super().backup(*args, **kwargs)
+
+                def connect(*args, **kwargs):
+                    connection = real_connect(*args, factory=Connection, **kwargs)
+                    connections.append(connection)
+                    return connection
+
+                class SnapshotDirectory(real_directory):
+                    def __exit__(self, *args):
+                        try:
+                            testcase.assertEqual(len(connections), 2)
+                            for connection in connections:
+                                with testcase.assertRaises(sqlite3.ProgrammingError):
+                                    connection.execute("SELECT 1")
+                            cleanup_checked.append(True)
+                        finally:
+                            super().__exit__(*args)
+
+                try:
+                    with patch.object(BOOTSTRAP.sqlite3, "connect", side_effect=connect), \
+                            patch.object(BOOTSTRAP.tempfile, "TemporaryDirectory", SnapshotDirectory), \
+                            contextlib.redirect_stdout(io.StringIO()):
+                        expected = self.assertRaisesRegex(RuntimeError, "Synthetic backup failure") \
+                            if fail_copy else contextlib.nullcontext()
+                        with expected:
+                            BOOTSTRAP.backup(config, root / "backups")
+                    self.assertEqual(cleanup_checked, [True])
+                finally:
+                    for connection in connections:
+                        connection.close()
 
     def test_search_waits_for_new_jobs_instead_of_old_completion(self):
         old = [{"job_id": 1, "job_name": "Searched for missing series subtitles", "status": "completed"},

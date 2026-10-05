@@ -244,3 +244,11 @@ after configuration; nightly backups follow at 04:45 Pacific. The separate
 timeout. Verify
 an actual downloaded sidecar subtitle before treating a healthy pod as completed
 subtitle setup.
+
+Initial backup acceptance on 2026-10-05 found finalized archives followed by
+`OSError` and leftover temporary directories on NFS. The helper's SQLite
+transaction contexts left both connections open at directory cleanup, confirmed
+by a regression test. Explicit connection closure now precedes archiving and
+cleanup. Open-file NFS cleanup failure fits the live evidence; the original
+errno was not retained. Require a successful hook with a verified archive
+before considering backup acceptance complete.

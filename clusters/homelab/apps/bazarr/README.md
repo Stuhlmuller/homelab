@@ -30,7 +30,10 @@ in `bootstrap.py`; provider availability still requires live acceptance.
 - The retained 5 Gi `bazarr-config-backups` NFS claim holds nightly archives.
   `bazarr-config-backup` runs at 04:45 America/Los_Angeles with 14-day retention.
   It snapshots SQLite using the online backup API, runs `PRAGMA integrity_check`,
-  and verifies the archive contains the database and config before publishing it.
+  explicitly closes both SQLite connections before snapshot cleanup, and verifies
+  the archive contains the database and config before publishing it. SQLite's
+  transaction context manager alone does not close a connection; leaving the
+  snapshot open can prevent NFS from removing the temporary directory.
   Media captions live beside the source files and need NAS media backup coverage
   separately. The `bazarr-initial-backup` PostSync hook runs the same verified
   backup after profile/default configuration, establishing the first archive
