@@ -10,10 +10,11 @@ metadata, user records, and execution history. It still persists
 encryption-key settings, and file-backed runtime data.
 
 The Terragrunt-generated encryption key comes from AWS SSM Parameter Store
-through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. The container
-exports it as `N8N_ENCRYPTION_KEY` only when `/home/node/.n8n/config` does not
-exist yet, so a restored or already-initialized PVC keeps using the key in its
-persisted settings file instead of crashlooping on an accidental mismatch.
+through External Secrets as `N8N_BOOTSTRAP_ENCRYPTION_KEY`. Both the app and
+the workflow-migration init container export it as `N8N_ENCRYPTION_KEY` only
+when `/home/node/.n8n/config` does not exist yet, so a restored or
+already-initialized PVC keeps using the key in its persisted settings file
+instead of crashlooping on an accidental mismatch.
 
 ## Runtime Security
 
