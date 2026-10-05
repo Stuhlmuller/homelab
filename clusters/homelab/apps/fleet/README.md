@@ -15,6 +15,11 @@ not Kubernetes resources that Argo CD can apply itself.
 The retired iPhone/iPad passcode baseline is retained only for removal; the
 operator cannot reinstall it.
 
+The [WireGuard/AirVPN catalog and operator](WIREGUARD-AIRVPN.md) cover official
+Mac and iPhone/iPad app downloads, a Mac installation policy, and private
+per-device VPN profiles from owner-supplied configurations. Fleet Free requires
+the App Store installation step; VPN profiles are provisioned separately.
+
 ## Scope and enrollment
 
 Fleet's [Free/Premium matrix](https://fleetdm.com/pricing) distinguishes basic
