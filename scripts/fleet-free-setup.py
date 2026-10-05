@@ -14,6 +14,7 @@ import json
 import plistlib
 import re
 import subprocess
+import urllib.parse
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
@@ -194,6 +195,65 @@ def reporting(api, token):
     print("Free FileVault reporting policy configured; host evaluation is a separate check")
 
 
+def mac_baseline_catalog(api, token, remove=False):
+    raw, profile = profiles((MAC_FILES[0],), 5)[0]
+
+    def catalog():
+        result = api.request("GET", "/api/v1/fleet/configuration_profiles?per_page=100", token=token)
+        if result.get("meta", {}).get("has_next_results") is not False:
+            raise SetupError("Configuration profile catalog listing is incomplete")
+        return result["profiles"]
+
+    # Fleet stores UNHEX(MD5(profile bytes)) and JSON encodes those bytes as base64.
+    # This is its content-equality checksum, not an authentication primitive.
+    expected = {"identifier": profile["PayloadIdentifier"], "name": profile["PayloadDisplayName"],
+                "platform": "darwin",
+                "checksum": base64.b64encode(hashlib.md5(raw, usedforsecurity=False).digest()).decode()}
+    before = catalog()
+    matches = [item for item in before if item.get("identifier") == expected["identifier"]
+               or item.get("name") == expected["name"]]
+    if matches and (len(matches) != 1 or any(matches[0].get(key) != value for key, value in expected.items())):
+        raise SetupError("Mac baseline already exists in the catalog; inspect it before changing it")
+    if remove:
+        if not matches:
+            print("Mac baseline is absent from the catalog; no catalog changes made")
+            return
+        profile_uuid = matches[0]["profile_uuid"]
+        if not isinstance(profile_uuid, str) or not profile_uuid:
+            raise SetupError("Mac baseline catalog UUID is invalid")
+        api.request("DELETE", "/api/v1/fleet/configuration_profiles/" + urllib.parse.quote(profile_uuid, safe=""),
+                    token=token)
+        after = catalog()
+        if any(item.get("identifier") == expected["identifier"] or item.get("profile_uuid") == profile_uuid
+               for item in after):
+            raise SetupError("Mac baseline catalog removal was not verified")
+        if not all(item in after for item in before if item not in matches):
+            raise SetupError("Pre-existing catalog profile retention was not verified")
+        print("Mac baseline catalog removal and unrelated-profile preservation: verified; device removal is separate")
+        return
+    if matches:
+        print("Mac baseline already exists with matching identity and content; no catalog changes made")
+        return
+    api.request("POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true", {
+        "configuration_profiles": [{"profile": base64.b64encode(raw).decode()}],
+    }, token, accepted_status=204)
+    boundary = "fleet-mac-baseline-profile"
+    body = (f'--{boundary}\r\nContent-Disposition: form-data; name="profile"; '
+            f'filename="{MAC_FILES[0]}"\r\nContent-Type: application/x-apple-aspen-config\r\n\r\n').encode()
+    body += raw + f"\r\n--{boundary}--\r\n".encode()
+    # Add one profile only. Never batch-replace the catalog or retry a timed-out write.
+    created = api.request("POST", "/api/v1/fleet/configuration_profiles", body, token,
+                          content_type=f"multipart/form-data; boundary={boundary}")
+    after = catalog()
+    matches = [item for item in after if item.get("identifier") == expected["identifier"]]
+    if (len(matches) != 1 or any(matches[0].get(key) != value for key, value in expected.items())
+            or not created.get("profile_uuid") or matches[0].get("profile_uuid") != created["profile_uuid"]):
+        raise SetupError("Mac baseline catalog identity was not verified")
+    if not all(item in after for item in before):
+        raise SetupError("Pre-existing catalog profile retention was not verified")
+    print("Mac baseline catalog upload and unrelated-profile preservation: verified; device enforcement is separate")
+
+
 def execute(args):
     desired = profiles(IOS_FILES if args.action == "ios-baseline" else MAC_FILES,
                        1 if args.action == "ios-baseline" else 5)
@@ -213,6 +273,8 @@ def execute(args):
             console_sso(api, token)
         elif args.action == "reporting":
             reporting(api, token)
+        elif args.action == "mac-baseline-catalog":
+            mac_baseline_catalog(api, token, remove=args.remove)
         elif args.action == "validate-profiles":
             api.request("POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true", {
                 "configuration_profiles": [{"profile": base64.b64encode(raw).decode()}
@@ -229,14 +291,14 @@ def execute(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "ios-baseline", "console-sso", "reporting"))
+    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline-catalog", "ios-baseline", "console-sso", "reporting"))
     parser.add_argument("--host-id", type=int, help="Explicit enrolled iPhone/iPad Fleet ID; required for ios-baseline")
     parser.add_argument("--remove", action="store_true", help="Remove only the selected repository profiles; does not restore old passwords")
     parser.add_argument("--execute", action="store_true", help="Apply through the authenticated Fleet API")
     args = parser.parse_args(argv)
     if (args.action == "ios-baseline") != (args.host_id is not None) or (args.host_id is not None and args.host_id < 1):
         parser.error("Only ios-baseline requires --host-id with a positive Fleet host ID")
-    if args.remove and args.action not in ("mac-pilot", "ios-baseline"):
+    if args.remove and args.action not in ("mac-pilot", "mac-baseline-catalog", "ios-baseline"):
         parser.error("--remove applies only to device profiles")
     try:
         if args.action == "ios-baseline" and not args.remove:
@@ -247,6 +309,7 @@ def main(argv=None):
             print("Dry run: profile files valid; no credentials or APIs accessed.\n"
                   "mac-pilot targets this exact Mac by serial AND hardware UUID; ios-baseline removes the retired profile from the selected iPhone/iPad.\n"
                   "Profile writes replace only stable repository identifiers, preserve other profiles, and never auto-retry.\n"
+                  "mac-baseline-catalog uploads only the Mac password baseline for Fleet-managed enforcement, or removes it with --remove.\n"
                   "console-sso uses the managed Entra unit outputs, precreates only the authorized SSO admin, and keeps recovery login.\n"
                   "reporting adds a macOS-only FileVault SQL policy without automatic remediation.")
             return 0
