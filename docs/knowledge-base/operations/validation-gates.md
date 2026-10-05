@@ -338,17 +338,14 @@ dispatches to carry an exact expected `main` SHA and fail before work when the
 resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
 secret, or OIDC permission and prints the exact dispatch command plus active
-apply links without opening a production approval. The protected apply's first
-post-approval step requires the expected, workflow, and current `main` SHAs to
+apply links. Production is restricted to `main`, without reviewer approval;
+PR plans retain their reviewer gate. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
 The live job retains only the newest pending run and never cancels an
-in-progress apply. GitHub's native environment/concurrency queue cannot enforce
-an automatic approval SLA; strict expiry needs an externally hosted GitHub App
-deployment-protection rule with a durable lease. Until then, dispatch only when
-a reviewer is ready to approve.
+in-progress apply. Main-only diagnostics use the same production environment.
 
 The focused Octelium private Kubernetes workflow has the same exact-`main`,
-current-head, production-approval, serialized-run, private-log, static, and
+current-head, production-branch, serialized-run, private-log, static, and
 Conftest gates. Its fixed helper extracts exactly
 `Policy/homelab-private-kubernetes-access` and
 `Service/kubernetes-api.homelab`, never prunes, and requires a second apply to

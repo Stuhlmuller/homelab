@@ -18,7 +18,7 @@ jobs:
   grafana:
     runs-on: ubuntu-24.04
     environment:
-      name: homelab-plan
+      name: homelab-production
     permissions:
       contents: read
     timeout-minutes: 15
@@ -55,7 +55,7 @@ jobs:
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
-          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
+          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-production environment secret."; exit 1; }
 
       - name: Run Grafana Diagnostics Through Octelium
         env:
