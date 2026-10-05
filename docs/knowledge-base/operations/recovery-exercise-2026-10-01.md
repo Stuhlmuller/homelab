@@ -77,6 +77,8 @@ containment. The test servers stopped before this exercise finished.
 
 ## Recovery-readiness assessment
 
+<!-- markdownlint-disable MD013 -->
+
 | Concern | Source or synthetic evidence | Remaining acceptance gate |
 | --- | --- | --- |
 | Capture and failure domain | Main `clusters/homelab/apps/octelium-storage/backup-cronjob.yaml` declares daily 02:30 UTC password-free globals and custom dump, archive listing and SHA-256 checks before/after atomic rename. Both database and backup use QNAP-backed `nfs-default`. | Confirm any existing operator-managed independent copy before provisioning another destination; retrieve a specific independent version. NAS-loss recovery is not established. |
@@ -86,6 +88,8 @@ containment. The test servers stopped before this exercise finished.
 | Secrets | Main `externalsecret.yaml` references `/homelab/octelium/postgres-password` and `/homelab/octelium/redis-password`. Dumps omit role password hashes; SQL checks require wrapped keys. | Independently recover matching DB/Redis auth, external root/encryption material, operator/AWS/KMS access and Entra/Octelium identity bootstrap. Verify private custody/version records without publishing values or rotating keys during restore. |
 | Whole application | SQL resources, wrapped-key linkage, metadata and indexes tested; proposal round trip also checks synthetic blob linkage. | Octelium startup, encrypted-resource decryption and representative identity/resource behavior remain untested. PostgreSQL excludes Redis AOF and Enterprise package stores; no loss budget for these was approved. |
 | Isolation | Main candidate is outside live kustomization and suspended. It copies only the selected recovery files to scratch and never mounts the production DB. | HOME-3's verified no-network process boundary must cover archive-triggered children, node/LAN/public IPv4/IPv6 and DNS paths with reachable controls. Deny-all YAML is insufficient. A real independent-copy drill needs a reviewed selected-set entry point instead of mounting the normal backup PVC. |
+
+<!-- markdownlint-enable MD013 -->
 
 Nominal database RPO is 24h; HOME-2 proposes a 4h Octelium RTO. These remain
 unratified/unmeasured targets, not achieved service levels. RPO uses the recovered
