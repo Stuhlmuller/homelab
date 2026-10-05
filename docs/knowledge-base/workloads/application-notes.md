@@ -225,6 +225,14 @@ checks. Both media roots match their source applications, so no path mapping is
 needed. The app shares `zimaboard-0` with the local source config claims; its
 resource reservations need validation against live library scans.
 
+The first rollout on 2026-10-05 confirmed the same
+[[operations/openclaw-assistant-2026-09-05#Talos direct mounts and verified runtime identity|Talos subPath mount boundary]]
+seen with OpenClaw: host and Arr pods had regular XML files, but kubelet's
+isolated overlay exposed directories at those paths. Bazarr now mounts the
+whole source config claims read-only in its configure init container, with no
+source mounts in the main container. No host config or permissions repair is
+needed for this failure.
+
 Its UI is a private Octelium WEB Service using the existing human-only policy.
 The guarded `scripts/octelium-bazarr-reconcile.py` helper reconciles only that
 catalog Service from a clean checkout at reviewed current `main`. Publish its

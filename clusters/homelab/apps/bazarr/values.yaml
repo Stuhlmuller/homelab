@@ -154,14 +154,15 @@ persistence:
           - path: /bootstrap
             readOnly: true
   sonarr-config:
+    # Whole claims avoid Talos kubelet's isolated hostPath subPath resolution.
+    # Only the configure init container can read either source config claim.
     enabled: true
     type: persistentVolumeClaim
     existingClaim: sonarr-config-local
     advancedMounts:
       bazarr:
         configure:
-          - path: /arr/sonarr/config.xml
-            subPath: config.xml
+          - path: /arr/sonarr
             readOnly: true
   radarr-config:
     enabled: true
@@ -170,8 +171,7 @@ persistence:
     advancedMounts:
       bazarr:
         configure:
-          - path: /arr/radarr/config.xml
-            subPath: config.xml
+          - path: /arr/radarr
             readOnly: true
   television:
     enabled: true

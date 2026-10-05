@@ -33,7 +33,7 @@ def main():
     started = []
     begin = time.monotonic()
     with tempfile.TemporaryDirectory(prefix='app-restore-') as directory:
-        root = Path(directory)
+        root = Path(directory).resolve()
         def run(tool, *arguments, **kwargs):
             return subprocess.run([str(binary / tool), *map(str, arguments)], env=environment,
                                   check=True, capture_output=True, text=True, timeout=60, **kwargs)
