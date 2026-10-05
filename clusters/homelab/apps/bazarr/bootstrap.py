@@ -121,6 +121,9 @@ def library(config):
 
 def search_missing(key, timeout=900):
     """Require actual queue completion; scheduling a task alone returns HTTP 204."""
+    if timeout <= 0:
+        raise RuntimeError("Initial subtitle search deadline expired")
+    deadline = time.monotonic() + timeout
     jobs = request(API + "system/jobs", key)["data"]
     old_ids = {job["job_id"] for job in jobs if job["status"] not in ("pending", "running")}
     pending = {"series", "movies"}
@@ -128,7 +131,6 @@ def search_missing(key, timeout=900):
         name = f"Searching for missing {kind} subtitles"
         if not any(job["job_name"] == name and job["status"] in ("pending", "running") for job in jobs):
             request(API + "system/tasks", key, {"taskid": f"wanted_search_missing_subtitles_{kind}"})
-    deadline = time.monotonic() + timeout
     while pending:
         for job in request(API + "system/jobs", key)["data"]:
             if job["job_id"] in old_ids:
@@ -149,6 +151,7 @@ def search_missing(key, timeout=900):
 
 
 def reconcile():
+    """Keep Argo's PostSync hook independent of library/provider processing time."""
     config = api_config()
     key = config["auth"]["apikey"]
     profile = json.loads(PROFILE.read_text())
@@ -166,23 +169,45 @@ def reconcile():
     for language in sorted({item["language"] for entry in profiles for item in entry["items"]} - {"en"}):
         fields.append(("languages-enabled", language))
     request(API + "system/settings", key, fields)
+    for task in ("update_series", "update_movies"):
+        request(API + "system/tasks", key, {"taskid": task})
+    print("Bazarr profile/defaults configured; library imports scheduled; run finish-setup for acceptance")
+
+
+def finish_setup(timeout=1800):
+    """Finish import and first searches outside Argo's bounded sync operation."""
+    if timeout <= 0:
+        raise ValueError("Setup timeout must be positive")
+    deadline = time.monotonic() + timeout
+    config = api_config()
+    key = config["auth"]["apikey"]
+    profile_bytes = PROFILE.read_bytes()
+    profile = json.loads(profile_bytes)
+    revision = hashlib.sha256(profile_bytes).hexdigest()
+    profiles = request(API + "system/languages/profiles", key)
+    current = next((item for item in profiles if item["profileId"] == profile["profileId"]), {})
+    if any(current.get(field) != value for field, value in profile.items()):
+        raise RuntimeError("Managed profile is not reconciled; complete the PostSync hook first")
     expected = library(config)
     series_ids = {item["id"] for item in expected["sonarr"]}
     movie_ids = {item["id"] for item in expected["radarr"] if item.get("hasFile")}
     episode_count = sum(item.get("statistics", {}).get("episodeFileCount", 0) for item in expected["sonarr"])
-    for task in ("update_series", "update_movies"):
-        request(API + "system/tasks", key, {"taskid": task})
-    deadline = time.monotonic() + 180
+    import_names = {f"{state} {kind} with {app}" for state in ("Syncing", "Synced")
+                    for kind, app in (("series", "Sonarr"), ("movies", "Radarr"))}
     while True:
         series = request(API + "series", key)["data"]
         movies = request(API + "movies", key)["data"]
-        if (series_ids <= {item["sonarrSeriesId"] for item in series}
+        jobs = request(API + "system/jobs", key)["data"]
+        importing = any(job["job_name"] in import_names and job["status"] in ("pending", "running")
+                        for job in jobs)
+        if (not importing and series_ids <= {item["sonarrSeriesId"] for item in series}
                 and movie_ids <= {item["radarrId"] for item in movies}
                 and sum(item["episodeFileCount"] for item in series) >= episode_count):
             break
         if time.monotonic() >= deadline:
             raise RuntimeError("Bazarr library import did not complete before the deadline")
         time.sleep(5)
+    assigned = False
     for endpoint, items, id_key, form_key in (
         ("series", series, "sonarrSeriesId", "seriesid"),
         ("movies", movies, "radarrId", "radarrid"),
@@ -192,11 +217,13 @@ def reconcile():
             assignments = [(form_key, item[id_key]) for item in missing]
             assignments += [("profileid", profile["profileId"]) for _ in missing]
             request(API + endpoint, key, assignments)
+            assigned = True
+            if any(item["profileId"] is None for item in request(API + endpoint, key)["data"]):
+                raise RuntimeError("Bazarr profile assignment did not converge")
     # Run the initial missing-subtitle searches once per requested profile.
     marker = CONFIG / ".homelab-profile"
-    revision = hashlib.sha256(PROFILE.read_bytes()).hexdigest()
-    if not marker.exists() or marker.read_text().strip() != revision:
-        search_missing(key, timeout=420)
+    if assigned or not marker.exists() or marker.read_text().strip() != revision:
+        search_missing(key, timeout=deadline - time.monotonic())
         temporary = marker.with_suffix(".partial")
         temporary.write_text(revision + "\n")
         temporary.replace(marker)
@@ -249,11 +276,16 @@ def verify():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("configure", "reconcile", "backup", "verify"))
+    parser.add_argument("command", choices=("configure", "reconcile", "finish-setup", "backup", "verify"))
+    parser.add_argument("--timeout", type=int, default=1800,
+                        help="Maximum import/search wait for finish-setup, in seconds (default: 1800)")
     args = parser.parse_args()
     os.umask(0o077)
     try:
-        {"configure": configure, "reconcile": reconcile, "backup": backup, "verify": verify}[args.command]()
+        if args.command == "finish-setup":
+            finish_setup(args.timeout)
+        else:
+            {"configure": configure, "reconcile": reconcile, "backup": backup, "verify": verify}[args.command]()
     except Exception as error:
         # Runtime errors can contain private media paths or provider/API credentials.
         print(f"Bazarr {args.command} failed ({type(error).__name__}); inspect the private runtime", flush=True)

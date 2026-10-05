@@ -2,6 +2,7 @@
 """Exercise credential handling, profile preservation and consistent SQLite backup."""
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -21,6 +22,90 @@ SPEC.loader.exec_module(BOOTSTRAP)
 
 
 class BootstrapTests(unittest.TestCase):
+    def test_postsync_only_configures_and_schedules_imports(self):
+        calls = []
+
+        def api(url, _key, fields=None):
+            calls.append((url.removeprefix(BOOTSTRAP.API), fields))
+            return [] if fields is None else None
+
+        with patch.object(BOOTSTRAP, "api_config", return_value={"auth": {"apikey": "test"}}), \
+                patch.object(BOOTSTRAP, "PROFILE", ROOT / "clusters/homelab/apps/bazarr/profile.json"), \
+                patch.object(BOOTSTRAP, "request", side_effect=api), \
+                patch.object(BOOTSTRAP, "library") as library, \
+                patch.object(BOOTSTRAP, "search_missing") as search, contextlib.redirect_stdout(io.StringIO()):
+            BOOTSTRAP.reconcile()
+        self.assertEqual([path for path, _ in calls],
+                         ["system/languages/profiles", "system/settings", "system/tasks", "system/tasks"])
+        fields = dict(calls[1][1])
+        self.assertEqual(fields["settings-general-serie_default_profile"], "1")
+        self.assertEqual(fields["settings-general-movie_default_profile"], "1")
+        self.assertEqual([fields["taskid"] for _, fields in calls[2:]], ["update_series", "update_movies"])
+        library.assert_not_called()
+        search.assert_not_called()
+
+    def test_finish_waits_for_import_assigns_only_null_and_captures_revision(self):
+        profile_bytes = (ROOT / "clusters/homelab/apps/bazarr/profile.json").read_bytes()
+        profile = json.loads(profile_bytes)
+        expected = {"sonarr": [{"id": 10, "statistics": {"episodeFileCount": 2}}],
+                    "radarr": [{"id": 20, "hasFile": True}]}
+        assigned = []
+        snapshots = iter([[{"job_id": 1, "job_name": "Syncing series with Sonarr", "status": "running"}], []])
+
+        def api(url, _key, fields=None):
+            endpoint = url.removeprefix(BOOTSTRAP.API)
+            if endpoint == "system/languages/profiles":
+                return [profile]
+            if fields is not None:
+                assigned.append((endpoint, fields))
+                return None
+            if endpoint == "series":
+                return {"data": [{"sonarrSeriesId": 10, "episodeFileCount": 2,
+                                  "profileId": 1 if assigned else None}]}
+            if endpoint == "movies":
+                return {"data": [{"radarrId": 20, "profileId": 2}]}
+            if endpoint == "system/jobs":
+                return {"data": next(snapshots)}
+            self.fail(f"Unexpected endpoint {endpoint}")
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "profile.json"
+            path.write_bytes(profile_bytes)
+            with patch.object(BOOTSTRAP, "CONFIG", root), patch.object(BOOTSTRAP, "PROFILE", path), \
+                    patch.object(BOOTSTRAP, "api_config", return_value={"auth": {"apikey": "test"}}), \
+                    patch.object(BOOTSTRAP, "library", return_value=expected), \
+                    patch.object(BOOTSTRAP, "request", side_effect=api), \
+                    patch.object(BOOTSTRAP.time, "sleep") as sleep, \
+                    patch.object(BOOTSTRAP, "search_missing", side_effect=lambda *args, **kwargs: path.write_text("{}")) \
+                    as search, contextlib.redirect_stdout(io.StringIO()):
+                BOOTSTRAP.finish_setup()
+            self.assertEqual(assigned, [("series", [("seriesid", 10), ("profileid", 1)])])
+            sleep.assert_called_once_with(5)
+            self.assertGreater(search.call_args.kwargs["timeout"], 0)
+            self.assertLessEqual(search.call_args.kwargs["timeout"], 1800)
+            self.assertEqual((root / ".homelab-profile").read_text().strip(),
+                             hashlib.sha256(profile_bytes).hexdigest())
+            self.assertFalse((root / ".homelab-profile.partial").exists())
+
+    def test_finish_does_not_mark_failed_search_complete(self):
+        profile = json.loads((ROOT / "clusters/homelab/apps/bazarr/profile.json").read_text())
+
+        def api(url, _key, fields=None):
+            return [profile] if url.endswith("system/languages/profiles") else {"data": []}
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(BOOTSTRAP, "CONFIG", root), \
+                    patch.object(BOOTSTRAP, "PROFILE", ROOT / "clusters/homelab/apps/bazarr/profile.json"), \
+                    patch.object(BOOTSTRAP, "api_config", return_value={"auth": {"apikey": "test"}}), \
+                    patch.object(BOOTSTRAP, "library", return_value={"sonarr": [], "radarr": []}), \
+                    patch.object(BOOTSTRAP, "request", side_effect=api), \
+                    patch.object(BOOTSTRAP, "search_missing", side_effect=RuntimeError("failed")):
+                with self.assertRaises(RuntimeError):
+                    BOOTSTRAP.finish_setup()
+            self.assertFalse((root / ".homelab-profile").exists())
+
     def test_file_credentials_and_existing_identity_survive_restart(self):
         with tempfile.TemporaryDirectory() as directory:
             xml = Path(directory) / "config.xml"

@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
-    checkov.io/skip1: CKV_K8S_40=The reconciler runs as Bazarr UID 1000 to read its private API key and save the setup marker.
+    checkov.io/skip1: CKV_K8S_40=The reconciler runs as Bazarr UID 1000 to read its private API key and configure profile defaults.
   labels:
     app.kubernetes.io/name: bazarr-reconcile
     app.kubernetes.io/part-of: homelab-media

@@ -231,6 +231,8 @@ catalog Service from a clean checkout at reviewed current `main`. Publish its
 digest through the existing exact-main `harbor-mirror.yml`
 `image_scope=bazarr` path before application registration, because Talos disables
 upstream fallback. The PostSync initial-backup hook proves the first archive
-after profile reconciliation; nightly backups follow at 04:45 Pacific. Verify
+after configuration; nightly backups follow at 04:45 Pacific. The separate
+`finish-setup` command waits for import and search completion outside Argo's sync
+timeout. Verify
 an actual downloaded sidecar subtitle before treating a healthy pod as completed
 subtitle setup.

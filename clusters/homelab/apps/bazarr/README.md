@@ -8,15 +8,19 @@ libraries. Its single replica runs in `media` on `zimaboard-0`, using the same
 
 The `English captions` profile accepts regular or SDH English subtitles without
 preferring SDH and excludes forced-only subtitles. Embedded English tracks also
-satisfy the requirement. The PostSync hook imports both libraries, assigns the
-profile to items without an existing profile, and makes it the default for new
-series and movies. Existing operator profiles remain intact.
+satisfy the requirement. The PostSync hook creates the profile, makes it the
+default for new series and movies, enables integrations, and schedules both
+library imports. It returns without waiting for library scans or providers.
+Existing operator profiles remain intact.
 
-The hook starts missing-subtitle searches after the first successful import and
-once again if the committed profile changes. Bazarr repeats TV and movie wanted
-searches every six hours. Normal pod restarts preserve the completion marker.
-Free providers are declared in `bootstrap.py`; provider availability still
-requires live acceptance.
+Run `finish-setup` after deployment to wait for imports, assign the profile to
+items without an existing profile, and verify the initial missing-subtitle
+searches. It records completion only after both searches finish successfully;
+rerun after failure, timeout, or a committed profile change. Normal pod restarts
+preserve this marker. Sonarr's initial import can also queue episode searches;
+the explicit setup search covers movies and any remaining episodes. Bazarr
+repeats TV and movie wanted searches every six hours. Free providers are declared
+in `bootstrap.py`; provider availability still requires live acceptance.
 
 ## State and credentials
 
@@ -29,8 +33,9 @@ requires live acceptance.
   and verifies the archive contains the database and config before publishing it.
   Media captions live beside the source files and need NAS media backup coverage
   separately. The `bazarr-initial-backup` PostSync hook runs the same verified
-  backup after library/profile reconciliation, establishing the first archive
-  during rollout instead of waiting for the nightly schedule.
+  backup after profile/default configuration, establishing the first archive
+  during rollout. Library imports may still be running; scheduled backups also
+  capture their later state and the completed setup marker.
 - Initialization reads the existing Sonarr/Radarr API keys through read-only
   mounts of their local config claims. The main Bazarr container cannot access
   either source config claim. Keys remain in private runtime config and backups.
@@ -71,7 +76,7 @@ to loopback; keep that default.
    `radarr`, and `sonarr`. Those dependencies order registration, so separately
    verify their runtime health and bound claims.
 4. Require the Bazarr Application to become `Synced`/`Healthy`, the pod to be
-   ready, and both source integrations to synchronize existing libraries.
+   ready, and the profile/default configuration hook to succeed.
 5. From a clean checkout at the reviewed current `main` SHA, reconcile the
    private native Octelium Service. Preview first:
 
@@ -84,9 +89,21 @@ to loopback; keep that default.
    The helper uses the existing operator login and pinned native transport,
    applies only `bazarr.default`, checks its private human-access contract, and
    requires a second apply with no changes. It never prunes the catalog.
-6. Verify the English language profile applies to existing and newly imported
-   series/movies, and run the configured missing-subtitle search. Confirm at
-   least one real English sidecar next to an existing episode or movie, then
+6. Complete application setup outside Argo's sync timeout:
+
+   ```sh
+   kubectl -n media exec deployment/bazarr -c app -- \
+     /lsiopy/bin/python3 /bootstrap/bootstrap.py finish-setup --timeout 1800
+   ```
+
+   This repository-owned command waits for Arr library coverage and active
+   import jobs, assigns only missing profiles, then requires both initial search
+   jobs to complete. The timeout covers import and search waiting; individual
+   API calls have a 90-second network timeout. A failure leaves the completion
+   marker unset; inspect the private job/provider status and rerun. Increase
+   `--timeout` for a larger library without extending the Argo operation.
+   Verify the English profile also applies to newly imported series/movies.
+   Confirm at least one real English sidecar next to an episode or movie, then
    confirm Bazarr marks that language as downloaded. Existing embedded subtitles
    can satisfy an item's requirement; choose an item actually missing English.
 7. Verify the private UI through Octelium and the successful
@@ -97,6 +114,50 @@ to loopback; keep that default.
 Provider availability and subtitle matches vary by release. A missing result
 must remain visible as wanted content, not be recorded as a successful download.
 Do not configure paid providers or create provider accounts implicitly.
+
+## NAS media access
+
+The [NFS storage contract](../../../../docs/storage-nfs.md) maps every client
+UID to the NAS guest identity. Owner-1000 directories with mode `0770` can
+therefore hide registered content from both Sonarr and Bazarr. Changing the
+container UID or supplemental groups does not repair this server-side boundary.
+
+The fixed-scope operator helper inventories only registered Sonarr and Radarr
+library paths. Preview from the repository; output contains counts only:
+
+```sh
+python3 -I scripts/nas-media-permissions.py
+```
+
+After reviewing and merging the helper, execute from a clean checkout matching
+current `main`. Choose a new private journal path outside the repository:
+
+```sh
+python3 -I scripts/nas-media-permissions.py \
+  --execute --expected-sha <full-reviewed-main-sha> \
+  --journal /private/operator-backups/media-modes.json --rescan
+```
+
+The helper uses the existing `themanofrod@10.1.0.2` SSH account, verifies UID
+1000, and writes the original modes, device/inode identities, and private paths
+to an exclusive mode-0600 journal before changing anything. It applies `a+rwX`
+only to owner-1000 directories and `a+r` only to owner-1000 files beneath those
+registered roots. Existing guest-owned objects, unrelated NAS folders, file
+contents, symlinks, and other mounted filesystems remain outside its scope.
+The explicit `/share/media` share alias is resolved once; symlinks beneath it
+are rejected at registered roots and before each permission change. Do not run
+while moving or replacing library directories.
+
+`--rescan` optionally queues scans for the registered Arr items after permission
+verification, making previously hidden files eligible for Bazarr synchronization.
+Execution requires both the exact reviewed SHA and the private journal; preview
+does not change NAS state or queue scans. A failed or interrupted execution can
+leave partial permission changes, so retain its journal and inspect before retry.
+
+For rollback, use the journal's original modes in a reviewed owner-side repair:
+first stop caption writes, confirm each object's UID, device, and inode still
+match, then restore only those recorded modes. Never restore onto replaced files.
+The journal contains private library names and must never be committed.
 
 ## Recovery and rollback
 
