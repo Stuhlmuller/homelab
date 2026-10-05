@@ -231,8 +231,8 @@ and PR-plan reviewers before removing the production reviewer requirement.
 Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
 operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
-Keep live credentials environment-scoped so GitHub releases PR-plan
-credentials only after approval and production credentials only to `main`; do not keep
+Keep live credentials environment-scoped so GitHub releases PR-plan credentials
+only after approval and production credentials only to `main`; do not keep
 duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |
