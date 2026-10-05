@@ -66,7 +66,7 @@ class BootstrapTests(unittest.TestCase):
                 return {"data": [{"radarrId": 20, "profileId": 2}]}
             if endpoint == "system/jobs":
                 return {"data": next(snapshots)}
-            self.fail(f"Unexpected endpoint {endpoint}")
+            raise AssertionError(f"Unexpected endpoint {endpoint}")
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

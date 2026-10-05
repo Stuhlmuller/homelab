@@ -4,20 +4,18 @@ import contextlib
 import importlib.util
 import io
 import json
-import os
 from pathlib import Path
 import shlex
 import subprocess
 import tempfile
-import unittest
-from unittest import mock
+from unittest import TestCase, main, mock
 
 SPEC = importlib.util.spec_from_file_location("repair", Path(__file__).resolve().parents[1] / "nas-media-permissions.py")
 repair = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(repair)
 
 
-class RepairTests(unittest.TestCase):
+class RepairTests(TestCase):
     def inventory(self, *pairs):
         fields = ["base", "/share/disk/media", *(field for pair in pairs for field in pair), ""]
         return mock.Mock(stdout="\0".join(fields).encode())
@@ -131,4 +129,4 @@ class RepairTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
