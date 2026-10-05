@@ -234,13 +234,15 @@ def require_active_host(host, platform):
         raise SetupError("An active Fleet MDM enrollment is required")
 
 
-def require_device_enrollment(host, platform, security_info):
+def require_device_enrollment(host, platform, device_info):
     require_active_host(host, platform)
-    # Fleet's personal/BYOD label is not Apple's enrollment mode. The device
-    # reports the actual mode through SecurityInfo on both Apple platforms.
-    management = security_info.get("SecurityInfo", {}).get("ManagementStatus", {})
-    if management.get("IsUserEnrollment") is not False:
-        raise SetupError("An active Fleet Device Enrollment is required; User Enrollment and unknown modes are unsupported")
+    # Apple forbids the UDID query under User Enrollment on both platforms.
+    # Match the freshly queried value to the already validated Fleet identity;
+    # the command envelope's UDID and Fleet's BYOD label cannot prove this.
+    responses = device_info.get("QueryResponses")
+    udid = responses.get("UDID") if isinstance(responses, dict) else None
+    if not isinstance(udid, str) or udid.lower() != host["uuid"].lower():
+        raise SetupError("Device Enrollment could not be verified from a matching device UDID")
 
 
 def require_wireguard(reply, bundle_id):
@@ -286,8 +288,8 @@ def execute(args, catalog, desired):
             raise SetupError("Selected device identity changed; refusing profile delivery")
         require_active_host(host, args.action)
         if not args.remove:
-            security_info = mdm.command(api, token, host_uuid, {"RequestType": "SecurityInfo"})
-            require_device_enrollment(host, args.action, security_info)
+            device_info = mdm.command(api, token, host_uuid, {"RequestType": "DeviceInformation", "Queries": ["UDID"]})
+            require_device_enrollment(host, args.action, device_info)
             bundle_id = catalog["platforms"][args.action]["bundle_id"]
             apps = mdm.command(api, token, host_uuid, {
                 "RequestType": "InstalledApplicationList", "Identifiers": [bundle_id], "ManagedAppsOnly": False,

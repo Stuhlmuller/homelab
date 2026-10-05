@@ -68,7 +68,7 @@ class FleetState:
         }
         for host in self.hosts.values():
             host["mdm"] = {"connected_to_fleet": True, "enrollment_status": "On (manual)"}
-        self.security_info = {"SecurityInfo": {"ManagementStatus": {"IsUserEnrollment": False}}}
+        self.device_info = {host: {"QueryResponses": {"UDID": host}} for host in (MAC_UUID, IOS_UUID)}
         self.apps = [{"Identifier": "com.wireguard.macos"}, {"Identifier": "com.wireguard.ios"}]
         self.policies, self.installed = [], [copy.deepcopy(UNRELATED)]
         self.keep_policy, self.write_error = True, None
@@ -98,8 +98,9 @@ class FleetState:
     def command(self, api, token, host, command):
         assert api is self.api and token == TOKEN and host in (MAC_UUID, IOS_UUID)
         action = command["RequestType"]
-        if action == "SecurityInfo":
-            return copy.deepcopy(self.security_info)
+        if action == "DeviceInformation":
+            assert command == {"RequestType": action, "Queries": ["UDID"]}
+            return copy.deepcopy(self.device_info[host])
         if action == "InstalledApplicationList":
             bundle = "com.wireguard." + ("macos" if host == MAC_UUID else "ios")
             assert command == {"RequestType": action, "Identifiers": [bundle], "ManagedAppsOnly": False}
@@ -325,15 +326,28 @@ class OperatorTest(unittest.TestCase):
                                  [("POST", "/api/v1/fleet/login"), ("POST", "/api/v1/fleet/logout")])
                 self.assert_logged_out()
 
-    def test_user_enrollment_and_unknown_state_prevent_profile_writes(self):
-        for security in ({}, {"SecurityInfo": {}}, {"SecurityInfo": {"ManagementStatus": {}}},
-                         {"SecurityInfo": {"ManagementStatus": {"IsUserEnrollment": True}}},
-                         {"SecurityInfo": {"ManagementStatus": {"IsUserEnrollment": 0}}}):
-            with self.subTest(security=security):
+    def test_missing_malformed_or_mismatched_device_udid_prevents_profile_writes(self):
+        for platform, target in (("macos", MAC_UUID), ("ios", IOS_UUID)):
+            replies = [{}, {"UDID": target}, {"QueryResponses": {}}, {"QueryResponses": None},
+                       {"QueryResponses": {"UDID": None}}, {"QueryResponses": {"UDID": PRIVATE}},
+                       {"QueryResponses": {"UDID": MAC_UUID if target == IOS_UUID else IOS_UUID}}]
+            for index, reply in enumerate(replies):
+                with self.subTest(platform=platform, case=index):
+                    self.state = FleetState()
+                    self.state.device_info[target] = reply
+                    self.assertEqual(self.run_command(self.args(platform, "--execute"))[0], 1)
+                    self.assertEqual(self.profile_writes(), [])
+                    self.assert_logged_out()
+
+    def test_personal_device_enrollment_accepts_matching_case_normalized_udid(self):
+        for platform, target, host_key in (("macos", MAC_UUID, MAC_UUID), ("ios", IOS_UUID, "2")):
+            with self.subTest(platform=platform):
                 self.state = FleetState()
-                self.state.security_info = security
-                self.assertEqual(self.run_command(self.args("ios", "--execute"))[0], 1)
-                self.assertEqual(self.profile_writes(), [])
+                self.state.hosts[host_key]["mdm"].update(
+                    enrollment_status="On (personal)", is_personal_enrollment=True)
+                self.state.device_info[target] = {"QueryResponses": {"UDID": target.lower()}}
+                self.assertEqual(self.run_command(self.args(platform, "--execute"))[0], 0)
+                self.assertEqual(len(self.profile_writes()), 1)
                 self.assert_logged_out()
 
     def test_wrong_or_disconnected_device_prevents_profile_writes(self):
@@ -361,7 +375,7 @@ class OperatorTest(unittest.TestCase):
         for platform in ("macos", "ios"):
             with self.subTest(platform=platform):
                 self.state = FleetState()
-                self.state.security_info, self.state.apps = {}, []
+                self.state.device_info, self.state.apps = {}, []
                 _, profile = helper.build_profile(platform, CONFIG, helper.load_catalog())
                 self.state.installed.append(profile)
                 args = [platform, "--remove", "--execute"] + (["--host-id", "2"] if platform == "ios" else [])

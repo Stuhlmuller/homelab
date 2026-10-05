@@ -996,9 +996,16 @@ The [WireGuard/AirVPN workflow](../../../clusters/homelab/apps/fleet/WIREGUARD-A
 adds `python3 -I scripts/ci/fleet-airvpn-setup-test.py` to static checks. Its
 synthetic tests cover private-file handling, supported Apple VPN payloads,
 explicit device targeting, enrollment checks, policy reconciliation and secret
-redaction. App installation, MDM profile receipt and a real AirVPN connection
-remain separate acceptance gates. Owner-supplied configurations are required
-for live VPN provisioning; the installation policy only checks the Mac app.
+redaction. Both Apple platforms require a freshly queried matching device UDID;
+tests reject missing identifiers, including responses containing only an
+enrollment/command-envelope identifier. App installation, MDM profile receipt
+and a real AirVPN connection remain separate acceptance gates. Owner-supplied
+configurations are required for live VPN provisioning; the installation policy
+only checks the Mac app.
+
+On 2026-10-05 UTC, read-only `DeviceInformation` queries returned matching device
+UDIDs for the enrolled local Mac and iPhone. No VPN profiles were installed;
+the inspection session was revoked. This validates the enrollment guard only.
 
 Entra provider authentication has its own
 [operator bootstrap and CI acceptance gates](../../entra-terraform-provider.md).

@@ -64,11 +64,14 @@ API. Execution matches this Mac by serial and hardware UUID, or validates the
 explicit iPhone/iPad ID. The device must use ordinary Device Enrollment;
 [Apple's VPN payload](https://github.com/apple/device-management/blob/release/mdm/profiles/com.apple.vpn.managed.yaml)
 is unavailable with User Enrollment. Unknown enrollment state is a stop
-condition. The operator checks Apple's `SecurityInfo` response; Fleet's personal
-ownership label alone does not identify User Enrollment. It also requests the
-selected app's `InstalledApplicationList` entry before installation. Removal
-does not require these checks or the original export. No device is enrolled by
-this command.
+condition. On both platforms, the operator requests only `UDID` through Apple's
+[`DeviceInformation` command](https://github.com/apple/device-management/blob/release/mdm/commands/information.device.yaml)
+and matches `QueryResponses.UDID` to the selected Fleet device. Apple forbids
+that query for User Enrollment. A missing or mismatched result blocks profile
+delivery; neither the command envelope nor Fleet's personal ownership label is
+sufficient. It also requests the selected app's `InstalledApplicationList`
+entry before installation. Removal does not require these checks or the original
+export. No device is enrolled by this command.
 
 The operator uses WireGuard's supported `com.apple.vpn.managed` payload with
 the platform's app bundle ID and `VendorConfig.WgQuickConfig`. It preserves the
