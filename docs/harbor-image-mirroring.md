@@ -188,5 +188,18 @@ verification still requires GitHub access. Apply only through this validated
 repository-owned path. Retain mirrored blobs;
 rollback changes image transport, not workload versions or stored data.
 
+The [proposed recovery contract](harbor-mirror-recovery-contract.md) records
+the GitHub/control-plane dependency, Talos 1.11.3 endpoint source evidence,
+synthetic failure coverage and approval gates for a future offline path. It
+does not change the commands above or establish live recovery capability.
+For that future path, approval must bind the operator/window, concurrent-writer
+exclusion, full replacement mirror map, upstream egress, deadlines and stop
+conditions. Successful config readback is only config restoration. Transport
+recovery requires a separately approved, initially uncached digest-pinned
+upstream pull with actual transfer evidence; never delete caches for this test.
+The proposed 30-minute target ends at that evidence, not at apply/readback.
+The contract lists mandatory future tests; they are not implemented by this
+proposal and do not waive signing or pinned-tool validation gates.
+
 Sources: [Talos 1.11 Harbor mirror configuration](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/images-container-runtime/pull-through-cache),
 [Harbor proxy-cache behavior and retention](https://goharbor.io/docs/2.14.0/administration/configure-proxy-cache/).
