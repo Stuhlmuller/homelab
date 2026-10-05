@@ -71,7 +71,7 @@ class PublicationTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        self.root = Path(self.temporary.name).resolve()
         self.workspace = self.root / 'private'
         self.workspace.mkdir(mode=0o700)
         self.source = self.root / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
