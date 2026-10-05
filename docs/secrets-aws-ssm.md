@@ -174,7 +174,7 @@ cluster CA is intentionally rotated.
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
-| litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
+| litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
@@ -183,7 +183,7 @@ cluster CA is intentionally rotated.
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
 | openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
-| n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, plus `n8n-postgres-client` from `n8n-postgres` |
+| n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
@@ -406,10 +406,11 @@ endpoint to an IPv4 address before Gluetun starts. The ExternalSecret uses
 `clusters/homelab/apps/deluge/values.yaml` so External Secrets refreshes the
 Kubernetes Secret and GitOps rolls the Deluge pod.
 
-n8n stores its Terragrunt-generated first-boot encryption key in SSM. The pod
-receives that value as `N8N_BOOTSTRAP_ENCRYPTION_KEY` and exports it as
-`N8N_ENCRYPTION_KEY` only when `/home/node/.n8n/config` does not exist. After
-first boot, the active instance key persists on the `/home/node/.n8n` volume.
+n8n stores its Terragrunt-generated first-boot encryption key in SSM. The app
+and workflow-migration init container receive that value as
+`N8N_BOOTSTRAP_ENCRYPTION_KEY` and export it as `N8N_ENCRYPTION_KEY` only when
+`/home/node/.n8n/config` does not exist. After first boot, the active instance
+key persists on the `/home/node/.n8n` volume.
 
 The dedicated `n8n-postgres` app uses two generated SSM passwords. The admin
 password stays in `n8n-postgres-auth` for the PostgreSQL container, while the

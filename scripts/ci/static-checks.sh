@@ -449,6 +449,32 @@ yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"
 
+echo "::group::n8n persisted encryption key"
+n8n_values="clusters/homelab/apps/n8n/values.yaml"
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
+  echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
+  exit 1
+fi
+rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_values"
+yq -e '
+  (
+    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
+  ) and (
+    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
+  )
+' "$n8n_values" >/dev/null
+# The literal shell assignment is intentionally matched inside a yq expression.
+# shellcheck disable=SC2016
+yq -e '
+  .controllers.n8n.initContainers."migrate-ai-workflow".command |
+  join("\n") |
+  (
+    contains("if [ ! -s /home/node/.n8n/config ]; then") and
+    contains("export N8N_ENCRYPTION_KEY=\"$N8N_BOOTSTRAP_ENCRYPTION_KEY\"")
+  )
+' "$n8n_values" >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"

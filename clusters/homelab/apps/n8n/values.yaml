@@ -68,7 +68,7 @@ controllers:
           DB_POSTGRESDB_USER: n8n
           DB_POSTGRESDB_SCHEMA: public
           DB_POSTGRESDB_PASSWORD_FILE: /run/secrets/n8n-postgres/DB_POSTGRESDB_PASSWORD
-          N8N_ENCRYPTION_KEY:
+          N8N_BOOTSTRAP_ENCRYPTION_KEY:
             valueFrom:
               secretKeyRef:
                 name: n8n-secrets
@@ -79,6 +79,11 @@ controllers:
           - |
             : "${DB_POSTGRESDB_PASSWORD_FILE:?DB_POSTGRESDB_PASSWORD_FILE must point at the n8n Postgres client secret}"
             test -s "$DB_POSTGRESDB_PASSWORD_FILE"
+
+            if [ ! -s /home/node/.n8n/config ]; then
+              : "${N8N_BOOTSTRAP_ENCRYPTION_KEY:?N8N bootstrap encryption key must be provided by n8n-secrets}"
+              export N8N_ENCRYPTION_KEY="$N8N_BOOTSTRAP_ENCRYPTION_KEY"
+            fi
 
             # The credential is deliberately blank. CREDENTIALS_OVERWRITE_DATA in
             # the application container supplies the dedicated LiteLLM key and URL.
