@@ -502,11 +502,62 @@ In a dedicated client container or Pod, map `octelium-api.stinkyboi.com` to
 `127.0.0.1` (for example, a declared Pod `hostAliases` entry) and run the
 carrier in that same network namespace. Binding port 443 may require the
 container's low-port capability. Keep the transport hostname publicly resolved;
-do not map it to loopback. Do not add a workstation-wide hosts entry that
-would redirect the browser's gRPC-Web traffic. The standalone transport probe
+do not map it to loopback. Do not add an unmanaged workstation-wide hosts entry that
+would redirect the browser's gRPC-Web traffic to an unverified listener. The standalone transport probe
 uses a temporary high port and curl `--connect-to`, so it needs neither root
 nor a hosts-file change. CI and OpenClaw client integration remains a separate
 rollout gate; the carrier probe alone does not prove authenticated execution.
+
+### macOS native API carrier
+
+The pinned macOS client fixes the native API port at 443. The repository-owned
+`scripts/octelium-macos-api-carrier.py` installs a loopback-only Cloudflare TCP
+carrier as a LaunchDaemon. This machine requires root to bind that port. The
+installer verifies native gRPC and browser gRPC-Web over the same carrier with
+normal TLS verification before adding one marked `/etc/hosts` entry for the
+canonical API hostname. The public transport hostname remains publicly resolved.
+It refuses an existing unmanaged API hosts entry or occupied listener port.
+
+```sh
+sudo python3 scripts/octelium-macos-api-carrier.py install
+octelium status --domain stinkyboi.com
+# If the saved human session has expired, complete the normal Entra login:
+octelium login --domain stinkyboi.com
+```
+
+The carrier restarts through launchd but does not grant access or keep an expired
+human session valid. After login, install the persistent Multica connection as
+the signed-in user (without sudo):
+
+```sh
+python3 scripts/multica-desktop-connect.py
+```
+
+This user LaunchAgent runs the native client in foreground gvisor mode, leaves
+system DNS unchanged, and publishes Multica on `127.0.0.1:18080`. Only after the
+route returns HTTP 200 does it back up and update `~/.multica/desktop.json` for
+HTTP and WebSocket access. Restart Multica to load the endpoint. launchd starts
+the connection at login and restarts failed clients; expired sessions still
+require normal Octelium login.
+
+On 2026-10-01, privileged carrier installation, authenticated native API,
+private HTTP 200, and a restarted Multica desktop displaying both runtimes
+Online were verified on the home LAN. Off-LAN reachability and a new chat send
+remain unverified. Roll back the desktop connection before removing its carrier:
+
+```sh
+launchctl bootout "gui/$(id -u)/com.stuhlmuller.multica-octelium"
+rm -f ~/Library/LaunchAgents/com.stuhlmuller.multica-octelium.plist
+cp ~/.multica/desktop.before-octelium.json ~/.multica/desktop.json
+# Restart Multica, then remove the API carrier if no other client uses it:
+```
+
+```sh
+sudo python3 scripts/octelium-macos-api-carrier.py uninstall
+```
+
+Uninstall removes only the managed hostname line and this LaunchDaemon. Browser
+API traffic then returns to public DNS; native CLI traffic again needs a carrier.
 
 Once the API and gRPC path are true, create or rotate the
 `homelab-octelium-client` credential, store it in SSM, bump
@@ -840,3 +891,13 @@ backbone.
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before
 running the operator script again.
+
+
+The follow-up failure on 2026-10-01 was a running native client with no local
+listener, while the API carrier and authenticated session remained healthy.
+Restarting that client restored HTTP 200. Process-only `KeepAlive` cannot catch
+this state. The installed supervisor checks HTTP every five seconds, allows 90
+seconds for startup and 30 seconds of sustained failure after readiness, then
+reaps the client so launchd can restart it. Session expiration still requires
+login; the original client hang trigger remains unknown. The supervisor is
+copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
