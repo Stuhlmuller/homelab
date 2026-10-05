@@ -27,6 +27,8 @@ in the same change.
   vault notes.
 - [[operations/continuous-improvement]] records the standing stewardship loop
   for security, reliability, findings, and follow-up work.
+- [[operations/recovery-exercise-2026-10-01]] records the October synthetic
+  Octelium restore exercise, proposed offsite checks and remaining live gates.
 - [[operations/octelium-capability-research-2026-09-05]] records the requested
   security, audit-console, and Cordium CI/developer/agent execution expansion.
 - [[operations/harbor-oci]] records private OCI registry ownership, package
