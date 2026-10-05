@@ -62,7 +62,7 @@ to loopback; keep that default.
 ## Deployment and acceptance
 
 1. Run repository static/security gates, render the app-template chart at the
-   version declared in `IaC/terragrunt.stack.hcl`, and validate the Kustomize
+   version declared in `IaC/stacks/bazarr/stack.hcl`, and validate the Kustomize
    overlay. Merge through the protected PR workflow.
 2. Dispatch `harbor-mirror.yml` on current `main` with its exact SHA as
    `expected_sha` and `image_scope=bazarr`. Require successful publication and
