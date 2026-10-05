@@ -440,6 +440,14 @@ protection. The public catalog contains only app links and a reporting policy;
 there is no global private-profile upload, Deluge secret reuse, or new SSM
 contract. Removing a device profile does not revoke its AirVPN client key.
 
+Its optional `--password-file` supplies the existing Fleet administrator's
+current password after rotation, replacing the bootstrap-secret source without
+fallback, login retries, or credential rotation. The owner-only `0600` UTF-8
+file must be outside the repository and at most 4096 bytes, with one password
+line; one final LF/CRLF is ignored and spaces are preserved. Dry runs read
+neither credential source. Omitting the option uses the initial administrator
+secret and works only while that password remains current.
+
 See the [Free Entra runbook](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 Native Microsoft Password Platform SSO uses Company Portal's extension and each
 person's Entra account. It preserves the existing local Mac account; no Fleet

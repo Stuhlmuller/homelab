@@ -43,6 +43,7 @@ AllowedIPs = 0.0.0.0/0, ::/0
 PersistentKeepalive = 21
 """
 PASSWORD = "PRIVATE_PASSWORD_DO_NOT_PRINT"
+ROTATED_PASSWORD = "  PRIVATE_ROTATED_PASSWORD_DO_NOT_PRINT  "
 TOKEN = "PRIVATE_TOKEN_DO_NOT_PRINT"
 PRIVATE = "PRIVATE_DETAIL_DO_NOT_PRINT"
 MAC_UUID = "11111111-1111-4111-8111-111111111111"
@@ -55,6 +56,7 @@ class FleetState:
     """Only the API routes used by this operator, backed by in-memory state."""
 
     def __init__(self):
+        self.password = PASSWORD
         self.api = SimpleNamespace(ADMIN_EMAIL="recovery@example.test", initial_password=Mock(return_value=PASSWORD),
                                    request=Mock(side_effect=self.request))
         self.mdm = SimpleNamespace(local_host=Mock(return_value=MAC_UUID),
@@ -75,7 +77,7 @@ class FleetState:
 
     def request(self, method, path, body=None, token=None, **_kwargs):
         if path == "/api/v1/fleet/login" and method == "POST":
-            assert body == {"email": self.api.ADMIN_EMAIL, "password": PASSWORD}
+            assert body == {"email": self.api.ADMIN_EMAIL, "password": self.password}
             return {"token": TOKEN}
         assert token == TOKEN
         if path == "/api/v1/fleet/logout" and method == "POST":
@@ -244,6 +246,7 @@ class OperatorTest(unittest.TestCase):
         self.path = Path(self.directory.name).resolve() / "private.conf"
         self.path.write_text(CONFIG)
         self.path.chmod(0o600)
+        self.password_path = self.path.parent / "operator-password.txt"
         self.state = FleetState()
 
     def run_command(self, args):
@@ -261,7 +264,8 @@ class OperatorTest(unittest.TestCase):
             except SystemExit as error:
                 status = error.code
         text = output.getvalue()
-        for secret in (PASSWORD, TOKEN, PRIVATE, PRIVATE_KEY, PUBLIC_KEY, PSK, str(self.path), MAC_UUID, IOS_UUID):
+        for secret in (PASSWORD, ROTATED_PASSWORD.strip(), TOKEN, PRIVATE, PRIVATE_KEY, PUBLIC_KEY, PSK,
+                       str(self.path), str(self.password_path), MAC_UUID, IOS_UUID):
             self.assertNotIn(secret, text)
         self.assertNotIn("Traceback", text)
         return status, text, loader
@@ -282,6 +286,8 @@ class OperatorTest(unittest.TestCase):
                     ["macos", "--remove"], ["ios", "--host-id", "2", "--remove"]]
         for args in commands:
             with self.subTest(action=args[0]):
+                if args[0] != "catalog":
+                    args += ["--password-file", str(self.password_path)]
                 status, _, loader = self.run_command(args)
                 self.assertEqual(status, 0)
                 loader.assert_not_called()
@@ -293,6 +299,7 @@ class OperatorTest(unittest.TestCase):
         commands = [["macos"], ["ios", "--config", str(self.path)], self.args("macos", "--host-id", "2"),
                     self.args("ios", "--host-id", "0"), ["policy", "--remove"],
                     ["policy", "--config", str(self.path)], self.args("macos", "--remove"),
+                    ["catalog", "--password-file", str(self.password_path)],
                     [PRIVATE, "--execute"], ["ios", "--host-id", PRIVATE, "--execute"]]
         for args in commands:
             with self.subTest(case=commands.index(args)):
@@ -301,6 +308,42 @@ class OperatorTest(unittest.TestCase):
                 loader.assert_not_called()
                 self.state.api.initial_password.assert_not_called()
                 self.state.api.request.assert_not_called()
+
+    def test_rotated_password_file_is_used_for_policy_install_and_removal(self):
+        commands = [["policy", "--execute"], self.args("macos", "--execute"), self.args("ios", "--execute"),
+                    ["macos", "--remove", "--execute"], ["ios", "--host-id", "2", "--remove", "--execute"]]
+        for index, args in enumerate(commands):
+            with self.subTest(action=args[0], remove="--remove" in args):
+                self.state = FleetState()
+                self.state.password = ROTATED_PASSWORD
+                self.password_path.write_bytes((ROTATED_PASSWORD + ("", "\n", "\r\n")[index % 3]).encode())
+                self.password_path.chmod(0o600)
+                self.assertEqual(self.run_command(args + ["--password-file", str(self.password_path)])[0], 0)
+                self.state.api.initial_password.assert_not_called()
+                self.assert_logged_out()
+
+    def test_unsafe_or_malformed_password_file_never_attempts_login(self):
+        cases = [(value, 0o600) for value in (b"", b"\n", b"\xff", b"x" * 4097,
+                                            b"two\nlines", b"two\rlines", b"embedded\0null", b"two\n\n",
+                                            b"two\n\r\n", b"two\r")]
+        cases.append((ROTATED_PASSWORD.encode(), 0o644))
+        for index, (content, mode) in enumerate(cases):
+            with self.subTest(case=index):
+                self.state = FleetState()
+                self.password_path.write_bytes(content)
+                self.password_path.chmod(mode)
+                self.assertEqual(self.run_command(["policy", "--execute", "--password-file", str(self.password_path)])[0], 1)
+                self.state.api.initial_password.assert_not_called()
+                self.state.api.request.assert_not_called()
+
+    def test_rotated_password_login_error_is_redacted_without_bootstrap_fallback(self):
+        self.password_path.write_text(ROTATED_PASSWORD)
+        self.password_path.chmod(0o600)
+        self.state.api.request.side_effect = RuntimeError(ROTATED_PASSWORD + TOKEN)
+        self.assertEqual(self.run_command(["policy", "--execute", "--password-file", str(self.password_path)])[0], 1)
+        self.state.api.initial_password.assert_not_called()
+        self.state.api.request.assert_called_once()
+        self.assertEqual(self.state.api.request.call_args.args[:2], ("POST", "/api/v1/fleet/login"))
 
     def test_invalid_private_export_never_authenticates(self):
         self.path.write_text(CONFIG.replace("MTU = 1420", "PostUp = " + PRIVATE))

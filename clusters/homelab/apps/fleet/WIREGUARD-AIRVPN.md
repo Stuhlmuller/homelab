@@ -26,8 +26,18 @@ so it can migrate the configuration into its keychain.
 ## Provision a supplied AirVPN configuration
 
 Use a reviewed, signed, merged `main` checkout and the existing Fleet operator
-credentials. The script shares the initial administrator authentication path
-with `fleet-free-setup.py`; it does not reset a changed administrator password.
+identity. After its administrator password has changed, supply the current
+password through optional `--password-file`. Keep this UTF-8 file outside every
+repository, owned by the operator with permissions `0600`, and at most 4096
+bytes. It must contain one password line; one final LF or CRLF is ignored, while
+password spaces are preserved. Do not put the password in command arguments.
+
+`--password-file` works with `policy`, `macos`, and `ios`, including profile
+removal. It replaces the bootstrap-secret credential source for that execution;
+there is no fallback, login retry, or password rotation. Without this option,
+the operator uses the initial administrator secret, which works only before
+that password has been rotated. Dry runs never read the password file or the
+initial secret.
 
 ```sh
 # Local catalog preview; no credentials or network access.
@@ -35,7 +45,8 @@ python3 -I scripts/fleet-airvpn-setup.py catalog
 
 # Preview, then add the Mac reporting policy to Fleet.
 python3 -I scripts/fleet-airvpn-setup.py policy
-python3 -I scripts/fleet-airvpn-setup.py policy --execute
+python3 -I scripts/fleet-airvpn-setup.py policy --execute \
+  --password-file /absolute/private/path/fleet-admin-password
 ```
 
 Generate a separate AirVPN client configuration for each concurrently used
@@ -50,13 +61,15 @@ chmod 600 /absolute/private/path/airvpn-mac.conf
 python3 -I scripts/fleet-airvpn-setup.py macos \
   --config /absolute/private/path/airvpn-mac.conf
 python3 -I scripts/fleet-airvpn-setup.py macos \
-  --config /absolute/private/path/airvpn-mac.conf --execute
+  --config /absolute/private/path/airvpn-mac.conf --execute \
+  --password-file /absolute/private/path/fleet-admin-password
 
 # Use a different export and explicitly selected enrolled iPhone/iPad ID.
 python3 -I scripts/fleet-airvpn-setup.py ios --host-id <FLEET_HOST_ID> \
   --config /absolute/private/path/airvpn-mobile.conf
 python3 -I scripts/fleet-airvpn-setup.py ios --host-id <FLEET_HOST_ID> \
-  --config /absolute/private/path/airvpn-mobile.conf --execute
+  --config /absolute/private/path/airvpn-mobile.conf --execute \
+  --password-file /absolute/private/path/fleet-admin-password
 ```
 
 Dry runs validate locally without reading Fleet credentials or contacting any
@@ -103,9 +116,11 @@ must be inspected before retrying a write; the operator never retries writes.
 
 ```sh
 # Removal needs no VPN configuration file and only removes the AirVPN profile.
-python3 -I scripts/fleet-airvpn-setup.py macos --remove --execute
+python3 -I scripts/fleet-airvpn-setup.py macos --remove --execute \
+  --password-file /absolute/private/path/fleet-admin-password
 python3 -I scripts/fleet-airvpn-setup.py ios --host-id <FLEET_HOST_ID> \
-  --remove --execute
+  --remove --execute \
+  --password-file /absolute/private/path/fleet-admin-password
 ```
 
 Removing the profile leaves the WireGuard app and other tunnels installed.

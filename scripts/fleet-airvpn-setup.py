@@ -59,28 +59,40 @@ def load_catalog():
     return catalog
 
 
-def read_config(path):
+def read_private_text(path, limit):
     """Read once from an owner-only regular file outside the public checkout."""
     try:
         if not path.is_absolute() or path.is_relative_to(ROOT):
-            raise SetupError("Configuration must be an absolute private file outside the repository")
+            raise SetupError("Private input must be an absolute file outside the repository")
         resolved = path.resolve(strict=True)
         if resolved.is_relative_to(ROOT):
-            raise SetupError("Configuration must be an absolute private file outside the repository")
+            raise SetupError("Private input must be an absolute file outside the repository")
         descriptor = os.open(resolved, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(descriptor, "rb") as source:
             metadata = os.fstat(source.fileno())
             if (not stat.S_ISREG(metadata.st_mode) or metadata.st_uid != os.getuid()
                     or stat.S_IMODE(metadata.st_mode) & 0o077):
-                raise SetupError("Configuration must be a user-owned regular file with no group or other access")
-            raw = source.read(MAX_CONFIG + 1)
-        if not raw or len(raw) > MAX_CONFIG:
-            raise SetupError("Configuration must contain at most 64 KiB of WireGuard text")
+                raise SetupError("Private input must be a user-owned regular file with no group or other access")
+            raw = source.read(limit + 1)
+        if not raw or len(raw) > limit:
+            raise SetupError("Private input is empty or exceeds the supported size")
         return raw.decode("utf-8")
     except SetupError:
         raise
     except (OSError, ValueError, UnicodeError):
-        raise SetupError("Private configuration could not be read safely") from None
+        raise SetupError("Private input could not be read safely") from None
+
+
+def read_config(path):
+    return read_private_text(path, MAX_CONFIG)
+
+
+def read_password(path):
+    text = read_private_text(path, 4096)
+    password = text[:-2] if text.endswith("\r\n") else text.removesuffix("\n")
+    if not password or any(char in password for char in "\r\n\0"):
+        raise SetupError("Password file must contain one nonempty line")
+    return password
 
 
 def hostname(value):
@@ -267,8 +279,9 @@ def execute(args, catalog, desired):
     api = setup.module("fleet_api", "fleet-download-apple-csr.py")
     mdm = setup.module("fleet_mdm", "fleet-verify-apple-mdm.py")
     api.MAX_RESPONSE = 16 * 1024 * 1024
+    password = read_password(args.password_file) if args.password_file else api.initial_password()
     token = api.request("POST", "/api/v1/fleet/login", {
-        "email": api.ADMIN_EMAIL, "password": api.initial_password(),
+        "email": api.ADMIN_EMAIL, "password": password,
     }).get("token")
     if not isinstance(token, str) or not token:
         raise SetupError("Fleet login did not return a session")
@@ -313,10 +326,13 @@ def main(argv=None):
     parser = PrivateArgumentParser(description=__doc__)
     parser.add_argument("action", choices=("catalog", "policy", "macos", "ios"))
     parser.add_argument("--config", type=Path, help="Private per-device AirVPN .conf outside this public repository")
+    parser.add_argument("--password-file", type=Path, help="Private file containing the current Fleet admin password; otherwise use the bootstrap password")
     parser.add_argument("--host-id", type=int, help="Positive Fleet ID; required only for the selected iPhone/iPad")
     parser.add_argument("--remove", action="store_true", help="Remove only this platform's managed AirVPN profile")
     parser.add_argument("--execute", action="store_true", help="Apply through Fleet; omitted means local validation only")
     args = parser.parse_args(argv)
+    if args.action == "catalog" and args.password_file is not None:
+        parser.error("Catalog preview does not use operator credentials")
     if ((args.action == "ios") != (args.host_id is not None)
             or (args.host_id is not None and args.host_id < 1)):
         parser.error("Only ios requires a positive --host-id")
