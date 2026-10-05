@@ -69,7 +69,7 @@ spec:
             - name: home
               mountPath: /home/multica
         - name: configure-runtime
-          image: docker.io/library/python:3.13-bookworm@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea
+          image: docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
           imagePullPolicy: IfNotPresent
           command: [/bin/bash, -euc]
           args:
@@ -113,7 +113,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: daemon
-          image: docker.io/library/python:3.13-bookworm@sha256:227b6570d6ee07061ae6ca2eb04dedfb6d2b34045835f343065b9869e4d427ea
+          image: docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
           imagePullPolicy: IfNotPresent
           command: [/tools/multica, daemon, start, --foreground]
           workingDir: /home/multica
