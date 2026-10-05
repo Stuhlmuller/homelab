@@ -52,6 +52,14 @@ administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security
 evidence; Fleet 4.92.2 SQL policies support macOS/Linux, not iOS.
 
+Fleet's [WireGuard/AirVPN catalog](../../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
+adds official app downloads for Mac and iPhone/iPad, a Mac installation-reporting
+policy, and private per-device VPN provisioning. Fleet Free cannot automatically
+deploy the apps. Owner-supplied AirVPN exports remain outside git; the operator
+delivers each VPN profile through an explicit-device MDM command, avoiding
+global distribution of one client key. VPN acceptance awaits the configurations
+and device connection tests.
+
 | App                     | Kind                      | Namespace               | GitOps path                                   | Terragrunt path                              | Depends on                                                  |
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/live/argocd-apps/platform-dns`          | Argo CD bootstrap                                           |

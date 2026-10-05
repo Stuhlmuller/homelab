@@ -80,6 +80,10 @@ Database restore also needs the stable Fleet server
 key and enrolled platform identities. These copies share the QNAP failure domain;
 offsite coverage and an isolated restore drill remain unverified. See the
 [Fleet backup and restore contract](../../../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+When the [AirVPN operator](../../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
+is used, Fleet command data and backups can also contain client VPN keys.
+Removing a device profile does not erase historical backups or revoke the
+AirVPN key; protect those backups as credential-bearing data.
 
 Kubernetes persistent storage is backed by a QNAP NFS export.
 

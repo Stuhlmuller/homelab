@@ -1,0 +1,23 @@
+{
+  "name": "WireGuard / AirVPN",
+  "platforms": {
+    "macos": {
+      "bundle_id": "com.wireguard.macos",
+      "target_device_type": 5,
+      "download_url": "https://apps.apple.com/app/wireguard/id1451685025"
+    },
+    "ios": {
+      "bundle_id": "com.wireguard.ios",
+      "target_device_type": 1,
+      "download_url": "https://apps.apple.com/app/wireguard/id1441195209"
+    }
+  },
+  "policy": {
+    "name": "WireGuard installed for AirVPN",
+    "query": "SELECT 1 FROM apps WHERE bundle_identifier = 'com.wireguard.macos' LIMIT 1;",
+    "platform": "darwin",
+    "description": "Checks that the WireGuard Mac app is installed. Does not verify an AirVPN tunnel, connection, or traffic routing. iPhone/iPad app installation is checked separately.",
+    "resolution": "Install and open WireGuard from https://apps.apple.com/app/wireguard/id1451685025. Supply a private AirVPN WireGuard configuration for this device through the repository Fleet AirVPN operator. After profile delivery, open WireGuard once, then connect AirVPN and verify connectivity. Fleet Free does not automatically install the app.",
+    "critical": false
+  }
+}

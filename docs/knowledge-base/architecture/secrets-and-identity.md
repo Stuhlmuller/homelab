@@ -431,6 +431,15 @@ See [NOFX reconciliation](../../octelium-nofx-reconciliation.md).
 
 ## Fleet Free identity boundaries
 
+The [WireGuard/AirVPN operator](../../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
+accepts private owner-supplied client exports from outside git, separately per
+device. It builds the credential-bearing Apple profile in memory and sends it
+only to the selected device. Fleet command data, database backups, and device
+profiles/keychain can contain the VPN material and require credential-level
+protection. The public catalog contains only app links and a reporting policy;
+there is no global private-profile upload, Deluge secret reuse, or new SSM
+contract. Removing a device profile does not revoke its AirVPN client key.
+
 See the [Free Entra runbook](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 Native Microsoft Password Platform SSO uses Company Portal's extension and each
 person's Entra account. It preserves the existing local Mac account; no Fleet

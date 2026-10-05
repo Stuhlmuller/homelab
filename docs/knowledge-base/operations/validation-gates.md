@@ -992,6 +992,14 @@ See [the operator path](../../octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
 
+The [WireGuard/AirVPN workflow](../../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
+adds `python3 -I scripts/ci/fleet-airvpn-setup-test.py` to static checks. Its
+synthetic tests cover private-file handling, supported Apple VPN payloads,
+explicit device targeting, enrollment checks, policy reconciliation and secret
+redaction. App installation, MDM profile receipt and a real AirVPN connection
+remain separate acceptance gates. Owner-supplied configurations are required
+for live VPN provisioning; the installation policy only checks the Mac app.
+
 Entra provider authentication has its own
 [operator bootstrap and CI acceptance gates](../../entra-terraform-provider.md).
 Check the encrypted operator plan against exact application names, federation
