@@ -1,0 +1,203 @@
+serviceAccount:
+  bazarr: {}
+controllers:
+  bazarr:
+    serviceAccount:
+      identifier: bazarr
+    annotations:
+      checkov.io/skip1: CKV_K8S_40=Bazarr uses media UID 1000 to write subtitle sidecars and read the existing Arr config files.
+      checkov.io/skip2: CKV_K8S_25=Only the config-directory init container receives CHOWN and FOWNER to prepare the retained local volume; the application drops all capabilities.
+    strategy: Recreate
+    pod:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-0
+      annotations:
+        homelab.rst.io/access-mode: octelium
+        homelab.rst.io/bootstrap-revision: "1"
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+    initContainers:
+      prepare-config:
+        image:
+          repository: busybox
+          tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+        command:
+          - /bin/sh
+          - -ec
+          - chown 1000:1000 /config && chmod 0700 /config
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+            add: [CHOWN, FOWNER]
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 32Mi
+      configure:
+        dependsOn: prepare-config
+        image:
+          repository: ghcr.io/linuxserver/bazarr
+          tag: 1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+        command: [/lsiopy/bin/python3, /bootstrap/bootstrap.py, configure]
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+          readOnlyRootFilesystem: true
+        resources:
+          requests:
+            cpu: 10m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+    containers:
+      app:
+        image:
+          repository: ghcr.io/linuxserver/bazarr
+          tag: 1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+        workingDir: /app/bazarr/bin
+        command:
+          - /lsiopy/bin/python3
+          - /app/bazarr/bin/bazarr.py
+          - --no-update
+          - --config
+          - /config
+        securityContext:
+          runAsGroup: 1000
+          runAsUser: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+          readOnlyRootFilesystem: true
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/system/ping
+                port: 6767
+              failureThreshold: 60
+              periodSeconds: 5
+              timeoutSeconds: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/system/ping
+                port: 6767
+              failureThreshold: 3
+              periodSeconds: 10
+              timeoutSeconds: 5
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/system/ping
+                port: 6767
+              failureThreshold: 6
+              periodSeconds: 30
+              timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 192Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+service:
+  app:
+    controller: bazarr
+    ports:
+      http:
+        port: 6767
+persistence:
+  config:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: bazarr-config-local
+    advancedMounts:
+      bazarr:
+        prepare-config:
+          - path: /config
+        configure:
+          - path: /config
+        app:
+          - path: /config
+  bootstrap:
+    enabled: true
+    type: configMap
+    name: bazarr-bootstrap
+    defaultMode: 0444
+    advancedMounts:
+      bazarr:
+        configure:
+          - path: /bootstrap
+            readOnly: true
+        app:
+          - path: /bootstrap
+            readOnly: true
+  sonarr-config:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: sonarr-config-local
+    advancedMounts:
+      bazarr:
+        configure:
+          - path: /arr/sonarr/config.xml
+            subPath: config.xml
+            readOnly: true
+  radarr-config:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: radarr-config-local
+    advancedMounts:
+      bazarr:
+        configure:
+          - path: /arr/radarr/config.xml
+            subPath: config.xml
+            readOnly: true
+  television:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: media-tv
+    advancedMounts:
+      bazarr:
+        app:
+          - path: /tv
+            subPath: tv
+  movies:
+    enabled: true
+    type: persistentVolumeClaim
+    existingClaim: media-movies
+    advancedMounts:
+      bazarr:
+        app:
+          - path: /movies
+            subPath: movies
+  tmp:
+    enabled: true
+    type: emptyDir
+    sizeLimit: 512Mi
+    advancedMounts:
+      bazarr:
+        configure:
+          - path: /tmp
+        app:
+          - path: /tmp

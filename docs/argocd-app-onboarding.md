@@ -49,6 +49,7 @@ destination, and resources.
 | deluge                | requested                 | `media`                 | `clusters/homelab/apps/deluge`                  | `IaC/live/argocd-apps/deluge`                | Yes           | cert-manager, istio, platform-storage                                                              |
 | dispatcharr           | requested                 | `media`                 | `clusters/homelab/apps/dispatcharr`             | `IaC/live/argocd-apps/dispatcharr`           | Yes           | external-secrets, cert-manager, istio, platform-storage                                            |
 | prowlarr              | requested                 | `media`                 | `clusters/homelab/apps/prowlarr`                | `IaC/live/argocd-apps/prowlarr`              | Yes           | cert-manager, istio, media-postgres, platform-storage                                              |
+| bazarr                | requested                 | `media`                 | `clusters/homelab/apps/bazarr`                  | `IaC/live/argocd-apps/bazarr`                | Yes           | platform-storage, radarr, sonarr                                                                  |
 | radarr                | requested                 | `media`                 | `clusters/homelab/apps/radarr`                  | `IaC/live/argocd-apps/radarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage                            |
 | sonarr                | requested                 | `media`                 | `clusters/homelab/apps/sonarr`                  | `IaC/live/argocd-apps/sonarr`                | Yes           | cert-manager, istio, deluge, media-postgres, prowlarr, platform-storage                            |
 | langfuse              | requested                 | `langfuse`              | `clusters/homelab/apps/langfuse`                | `IaC/live/argocd-apps/langfuse`              | Yes           | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, langfuse-blob-storage |
@@ -81,6 +82,13 @@ paths. Read-only
 `showmount -e 10.1.0.2` verified `/media` for every Talos node on 2026-05-26;
 do not treat those apps as cut over until the three media migration Jobs have
 completed.
+
+Bazarr keeps its SQLite database and config on a retained local volume on
+`zimaboard-0`, with a separate retained NFS backup claim. It reuses
+`media-tv` at `/tv` and `media-movies` at `/movies`; Sonarr and Radarr retain
+ownership of those claims. Acceptance requires both library synchronizations,
+an English subtitle beside an existing media file, and a verified backup.
+See [the Bazarr runbook](../clusters/homelab/apps/bazarr/README.md).
 
 Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres` is synced, the `media-postgres-auth` and

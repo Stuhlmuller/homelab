@@ -22,6 +22,98 @@ unit "argocd_apps_argocd_image_updater" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/argocd-image-updater/stack.hcl").inputs
 }
 
+unit "argocd_apps_bazarr" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/bazarr"
+  no_dot_terragrunt_stack = true
+
+  values = {
+    dependencies = [
+      "platform-storage",
+      "radarr",
+      "sonarr"
+    ]
+    manifest = {
+      apiVersion = "argoproj.io/v1alpha1"
+      kind       = "Application"
+
+      metadata = {
+        name      = "bazarr"
+        namespace = "argocd"
+        labels = {
+          "app.kubernetes.io/managed-by" = "terragrunt"
+          "app.kubernetes.io/part-of"    = "homelab"
+        }
+      }
+
+      spec = {
+        project = "homelab"
+
+        destination = {
+          name      = ""
+          server    = "https://kubernetes.default.svc"
+          namespace = "media"
+        }
+
+        sources = [
+          {
+            repoURL        = "https://bjw-s-labs.github.io/helm-charts"
+            chart          = "app-template"
+            path           = "."
+            targetRevision = "4.4.0"
+            helm = {
+              releaseName = "bazarr"
+              valueFiles  = ["$values/clusters/homelab/apps/bazarr/values.yaml"]
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            ref            = "values"
+            path           = "."
+            directory = {
+              include = ".argocd-values-ref-placeholder.yaml"
+            }
+          },
+          {
+            repoURL        = local.repo_url
+            targetRevision = local.target_revision
+            path           = "clusters/homelab/apps/bazarr"
+          }
+        ]
+
+        syncPolicy = {
+          automated = {
+            allowEmpty = false
+            enabled    = true
+            prune      = true
+            selfHeal   = true
+          }
+          syncOptions = [
+            "CreateNamespace=true",
+            "ServerSideApply=true"
+          ]
+          retry = {
+            limit = "5"
+            backoff = {
+              duration    = "30s"
+              factor      = "2"
+              maxDuration = "2m"
+            }
+          }
+        }
+
+        info = [
+          {
+            name  = "rollout"
+            value = "automated; verify Sonarr/Radarr sync, English subtitle downloads, and retained NFS backup coverage"
+          }
+        ]
+      }
+    }
+  }
+}
+
 unit "argocd_apps_cert_manager" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/cert-manager"

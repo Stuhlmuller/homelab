@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: bazarr-reconcile
+  namespace: media
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    checkov.io/skip1: CKV_K8S_40=The reconciler runs as Bazarr UID 1000 to read its private API key and save the setup marker.
+  labels:
+    app.kubernetes.io/name: bazarr-reconcile
+    app.kubernetes.io/part-of: homelab-media
+spec:
+  activeDeadlineSeconds: 660
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bazarr-reconcile
+        app.kubernetes.io/part-of: homelab-media
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-0
+      restartPolicy: Never
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: reconcile
+          image: ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+          command: [/lsiopy/bin/python3, /bootstrap/bootstrap.py, reconcile]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: local-config
+              mountPath: /config
+            - name: bootstrap
+              mountPath: /bootstrap
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: local-config
+          persistentVolumeClaim:
+            claimName: bazarr-config-local
+        - name: bootstrap
+          configMap:
+            name: bazarr-bootstrap
+            defaultMode: 0444
+        - name: tmp
+          emptyDir:
+            sizeLimit: 32Mi

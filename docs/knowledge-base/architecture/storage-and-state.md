@@ -135,6 +135,16 @@ archive targets. Their media paths still use static PV/PVC pairs against the
 QNAP `/media` export for downloads, movies, and TV library data. Read-only
 `showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
+Bazarr follows the media config pattern: retained local config/SQLite state on
+`zimaboard-0`, a separate retained NFS backup claim, and existing `media-tv` and
+`media-movies` claims mounted at `/tv` and `/movies`. Subtitle files are written
+beside the media files and belong to the NAS media backup scope; config/database
+archives alone do not protect captions. The init container reads Sonarr/Radarr
+local config claims read-only to obtain their API keys; the runtime container
+does not mount those claims. See the
+[Bazarr runbook](../../../clusters/homelab/apps/bazarr/README.md) for backup,
+recovery, and live acceptance gates.
+
 ## Stateful Workload Gate
 
 The existing QNAP is also an unproven iSCSI block-storage candidate for

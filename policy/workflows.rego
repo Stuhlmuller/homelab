@@ -319,11 +319,14 @@ case "$IMAGE_SCOPE" in
   fleet)
     bash scripts/ci/harbor-publish.sh mirror-fleet
     ;;
+  bazarr)
+    bash scripts/ci/harbor-publish.sh mirror-bazarr
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'237e3d7d78c469c2e8e2b3c27405bb404a13b57ed82f32f89f57cf5757aefdd5  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7c925c8f9a41207b63a485f7a27d666623ba777f8c40fdebd20bdbfe4b655bdc  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

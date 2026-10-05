@@ -1,0 +1,19 @@
+{
+  "profileId": 1,
+  "name": "English captions",
+  "cutoff": 1,
+  "items": [
+    {
+      "id": 1,
+      "language": "en",
+      "hi": "False",
+      "forced": "False",
+      "audio_exclude": "False",
+      "audio_only_include": "False"
+    }
+  ],
+  "mustContain": [],
+  "mustNotContain": [],
+  "originalFormat": false,
+  "tag": null
+}

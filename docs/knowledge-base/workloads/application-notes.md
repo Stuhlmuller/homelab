@@ -215,3 +215,22 @@ auth tags, and pass matching `SONARR__AUTH__*` environment settings while the
 linuxserver default config init script stays disabled. The validated one-time
 NFS migration resources are removed. Keep the legacy NFS claim as the nightly
 archive and rollback target; only the backup CronJob mounts it.
+
+
+## Bazarr
+
+[Bazarr's runbook](../../../clusters/homelab/apps/bazarr/README.md) owns the
+English subtitle policy, Sonarr/Radarr bootstrap, provider setup, and acceptance
+checks. Both media roots match their source applications, so no path mapping is
+needed. The app shares `zimaboard-0` with the local source config claims; its
+resource reservations need validation against live library scans.
+
+Its UI is a private Octelium WEB Service using the existing human-only policy.
+The guarded `scripts/octelium-bazarr-reconcile.py` helper reconciles only that
+catalog Service from a clean checkout at reviewed current `main`. Publish its
+digest through the existing exact-main `harbor-mirror.yml`
+`image_scope=bazarr` path before application registration, because Talos disables
+upstream fallback. The PostSync initial-backup hook proves the first archive
+after profile reconciliation; nightly backups follow at 04:45 Pacific. Verify
+an actual downloaded sidecar subtitle before treating a healthy pod as completed
+subtitle setup.

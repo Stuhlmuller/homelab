@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == migrate || "$1" == mirror || "$1" == mirror-fleet) ]] || {
-  echo 'Usage: harbor-publish.sh publish|migrate|mirror|mirror-fleet' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == migrate || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr) ]] || {
+  echo 'Usage: harbor-publish.sh publish|migrate|mirror|mirror-fleet|mirror-bazarr' >&2
   exit 2
 }
 mode="$1"
@@ -11,6 +11,9 @@ mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-fleet-images.json
+elif [[ "$mode" == mirror-bazarr ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-bazarr-images.json
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
@@ -48,7 +51,7 @@ if [[ "$mode" == mirror ]]; then
       keys == ["source"] and
       (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
-  if [[ "$manifest" == scripts/config/harbor-fleet-images.json ]]; then
+  if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.
     # No caller-supplied repository, digest, manifest path, or destination exists.
     jq --exit-status --slurpfile inventory scripts/config/harbor-images.json '

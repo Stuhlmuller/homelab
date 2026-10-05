@@ -102,6 +102,10 @@ They create:
   `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
+- Private `WEB` Service `bazarr` connects authenticated human clients directly
+  to `http://bazarr.media.svc.cluster.local:6767`. It has no public DNS/tunnel
+  route. See the [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for
+  the guarded single-Service reconciliation command.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
   `assets://.` origin and must directly reach its server-discovery, login,
   GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled after
@@ -124,7 +128,7 @@ gateway, and the `octelium-cluster` `VirtualService` routes it to the
 package-owned `console.octelium` backend without exposing the nested
 `console.octelium.stinkyboi.com` hostname.
 
-Each repo-defined app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
+Each public repo-defined app `WEB` Service forwards HTTPS to the in-cluster Istio gateway while
 setting `Host`, `X-Forwarded-Host`, `X-Forwarded-Port`, and
 `X-Forwarded-Proto` for the original app hostname. The HTTPS hop avoids the
 gateway's HTTP-to-HTTPS redirect loop for authenticated clientless browser

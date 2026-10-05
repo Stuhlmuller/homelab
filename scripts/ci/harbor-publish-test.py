@@ -33,6 +33,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.manifest = json.loads((ROOT / "scripts/config/harbor-migration.json").read_text())
         self.mirror_manifest = {"images": [{"source": "docker.io/library/busybox:1@sha256:" + "a" * 64}]}
         self.fleet_mirror_manifest = None
+        self.bazarr_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -69,6 +70,11 @@ class HarborPublicationGates(unittest.TestCase):
             fleet_manifest_path.unlink(missing_ok=True)
         else:
             fleet_manifest_path.write_text(json.dumps(self.fleet_mirror_manifest))
+        bazarr_manifest_path = self.root / "scripts/config/harbor-bazarr-images.json"
+        if self.bazarr_mirror_manifest is None:
+            bazarr_manifest_path.unlink(missing_ok=True)
+        else:
+            bazarr_manifest_path.write_text(json.dumps(self.bazarr_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -452,6 +458,69 @@ class HarborPublicationGates(unittest.TestCase):
                 self.transport_mocks(failure=failure, mirror=True)
                 self.fleet_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
                 result = self.run_helper(mode="mirror-fleet")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+
+    def test_bazarr_scope_rejects_missing_or_unreviewed_catalog_before_credentials(self):
+        valid = self.mirror_manifest["images"][0]
+        for catalog in (
+            None,
+            {"images": []},
+            {"images": [valid, valid]},
+            {"images": [{"source": valid["source"].replace("a" * 64, "b" * 64)}]},
+            {"images": [{"source": valid["source"].replace("busybox", "unreviewed")}]},
+            {"images": [valid], "destination": "other"},
+        ):
+            with self.subTest(catalog=catalog):
+                self.bazarr_mirror_manifest = catalog
+                self.rejected(mode="mirror-bazarr")
+        self.bazarr_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-bazarr")
+
+    def test_bazarr_scope_retains_dispatch_guards_and_rejects_arbitrary_modes(self):
+        self.bazarr_mirror_manifest = self.mirror_manifest
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-bazarr")
+                self.env[key] = previous
+        self.rejected(mode="mirror-bazarr:docker.io/library/busybox")
+
+    def test_bazarr_scope_excludes_unrelated_images_and_verifies_complete_pulls(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.bazarr_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-bazarr")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        repository = source.split(":")[0]
+        destination = "harbor.stinkyboi.com/mirror/" + repository
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 3)
+        self.assertEqual(copies[0][-2:], [f"docker://{repository}@{digest}",
+                                        f"docker://{destination}:{digest[7:]}"])
+        self.assertEqual(copies[1][-2:], [f"docker://{destination}@{digest}",
+                                        f"docker://{destination}:stable"])
+        self.assertEqual(copies[2][-2], f"docker://{destination}@{digest}")
+        self.assertTrue(copies[2][-1].startswith("dir:"))
+        for args in copies:
+            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
+        self.assertNotIn(unrelated, self.calls.read_text())
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
+    def test_bazarr_scope_retains_digest_and_anonymous_pull_failure_gates(self):
+        for failure in ("digest", "mirror-tag", "pull", "pull-digest"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure, mirror=True)
+                self.bazarr_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+                result = self.run_helper(mode="mirror-bazarr")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()

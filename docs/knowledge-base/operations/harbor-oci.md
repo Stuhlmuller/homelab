@@ -96,12 +96,25 @@ snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
 
-`harbor-mirror.yml` accepts only `image_scope=all` (the default) or `fleet`.
+`harbor-mirror.yml` accepts only `image_scope=all` (the default), `fleet`, or
+`bazarr`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
-missing, extra or non-inventoried sources. Both modes keep reviewed-main guards,
+missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
 anonymous upstream reads, immutable digest checks and complete anonymous pulls.
 They use the same existing mirror publisher and destination repositories.
+
+Bazarr uses `image_scope=bazarr` with the fixed
+`scripts/config/harbor-bazarr-images.json` subset: its Bazarr app image and
+BusyBox init image. CI compares that subset with the Kustomize render and
+app-template image declarations; the pinned app-template chart adds no default
+containers. Missing, unused or non-inventoried sources fail validation. Publish
+and verify these digests through `harbor-mirror.yml` at reviewed current `main`
+before registering the Application. Talos mirrors keep `skipFallback: true`;
+an upstream digest pin cannot make an uncopied image pullable. Scoped publication
+preserves digest checks and complete anonymous pulls without coupling Bazarr to
+unrelated historical images. See the
+[Bazarr rollout](../../../clusters/homelab/apps/bazarr/README.md).
 
 The full-inventory workflow has no verified successful run as of October 3.
 Run `36511537440` failed after 75 minutes copying an unrelated Python image
