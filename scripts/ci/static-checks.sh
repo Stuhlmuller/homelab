@@ -13,16 +13,27 @@ python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
+python3 -I scripts/ci/entra-ci-configure-test.py
+python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
+python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
+python3 -I scripts/ci/bazarr-bootstrap-test.py
+python3 -I scripts/ci/nas-media-permissions-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
+python3 -I scripts/ci/fleet-bootstrap-test.py
+python3 -I scripts/ci/fleet-backup-test.py
+python3 -I scripts/ci/fleet-apple-csr-test.py
+python3 -I scripts/ci/fleet-free-setup-test.py
+python3 -I scripts/ci/fleet-airvpn-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
 python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
+python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
@@ -31,6 +42,9 @@ python3 -I scripts/ci/affine-suspension-probe-check.py
 python3 scripts/ci/talos-etcd-backup-check.py
 python3 scripts/ci/talos-etcd-schedule-check.py
 python3 scripts/ci/etcd-offline-restore-check-test.py
+python3 -I scripts/ci/application-backup-test.py
+python3 -I scripts/ci/application-backup-restore-test.py
+python3 -I scripts/ci/application-backup-rules-test.py
 
 echo "::group::CronJob failure alert recovery"
 python3 scripts/ci/job-alert-recovery-check.py
@@ -54,12 +68,12 @@ echo "::group::Terragrunt HCL"
 terragrunt hcl fmt --check
 terragrunt hcl validate
 expected_units="$(rg -c '^unit "' IaC/terragrunt.stack.hcl)"
-parsed_units="$(terragrunt_stack_unit_paths_at_ref HEAD | wc -l | tr -d ' ')"
+parsed_units="$(terragrunt_stack_unit_paths < IaC/terragrunt.stack.hcl | wc -l | tr -d ' ')"
 if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
-if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl; then
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/stacks; then
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
@@ -79,12 +93,6 @@ terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
           .value == "1")
       )
     ' >/dev/null
-while IFS= read -r unit_dir; do
-  if [[ ! -f "${unit_dir}/.terraform.lock.hcl" ]]; then
-    echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
-    exit 1
-  fi
-done < <(terragrunt_stack_unit_paths_at_ref HEAD)
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
@@ -104,7 +112,7 @@ echo "::group::Terragrunt Azure credential gate"
 (
   base_root=$'locals {}\n\nterraform {\n  extra_arguments "plan" {\n    commands  = ["plan"]\n    arguments = ["-out", "plan.out"]\n  }\n}\n\ninputs = {}'
   head_root=$'locals {}\n\ninputs = {}'
-  direct_azure_change=false
+  changed_path=""
   root_change=false
   root_helper_failure=false
   stack_change=false
@@ -112,7 +120,15 @@ echo "::group::Terragrunt Azure credential gate"
   git() {
     case "$1" in
       cat-file) [[ "$3" != 'bad^{commit}' ]] ;;
-      diff) [[ "$direct_azure_change" == false ]] ;;
+      diff)
+        local path
+        for path in "$@"; do
+          if [[ "$changed_path" == "$path" || "$changed_path" == "$path/"* ]]; then
+            return 1
+          fi
+        done
+        return 0
+        ;;
       show)
         if [[ "$root_helper_failure" == true ]]; then
           return 1
@@ -151,9 +167,29 @@ echo "::group::Terragrunt Azure credential gate"
   terragrunt_azuread_stack_changed
   root_change=false
 
-  direct_azure_change=true
-  terragrunt_azuread_stack_changed
-  direct_azure_change=false
+  for changed_path in \
+    IaC/live/azuread-applications/fleet/.terraform.lock.hcl \
+    IaC/.catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
+    IaC/modules/azuread-saml-application/main.tf \
+    IaC/modules/azuread-family-user/main.tf; do
+    if ! terragrunt_azuread_stack_changed; then
+      echo "Azure credentials must be required for ${changed_path}." >&2
+      exit 1
+    fi
+  done
+  [[ "$(terragrunt_azuread_changed_filter)" == "*" ]]
+  changed_path="IaC/modules/argocd-application-kubernetes/main.tf"
+  if terragrunt_azuread_stack_changed; then
+    echo "An unrelated module change must not require Azure credentials." >&2
+    exit 1
+  fi
+  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  changed_path="IaC/modules/entra-verified-family-user/main.tf"
+  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  changed_path="scripts/ci/terragrunt-plan.sh"
+  [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
+  [[ "$(terragrunt_azuread_changed_filter true)" == "*" ]]
+  changed_path=""
 
   stack_change=true
   terragrunt_azuread_stack_changed
@@ -211,7 +247,10 @@ echo "::group::Terragrunt deleted-unit providers"
 echo "::endgroup::"
 
 echo "::group::Terragrunt generated-unit filters"
+python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
+python3 -I scripts/ci/wazuh-retire-test.py
+python3 -I scripts/ci/wazuh-retire-plan-test.py
 (
   cd IaC/live/argocd-apps
   terragrunt_stack_changed() { return 0; }
@@ -278,10 +317,33 @@ for parameter in \
 done
 (
   cd IaC/operator/github-actions-role-policy
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
 )
+(
+  cd IaC/operator/azuread-ci-identities
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- validate -no-color
+)
+rg -Fq 'data "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf
+rg -Fq 'resource "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf && exit 1
+verify_action_block="$(sed -n '/^resource "msgraph_resource_action" "verify" {/,/^}$/p' IaC/modules/entra-domain-verification/main.tf)"
+rg -Fq 'method       = "POST"' <<<"$verify_action_block"
+if rg -q '^[[:space:]]*(body[[:space:]]*=|forceTakeover[[:space:]]*=)' <<<"$verify_action_block"; then
+  echo "The standard Entra domain verification action must use a bodyless POST." >&2
+  exit 1
+fi
+rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
+rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user; do
+  (
+    cd "IaC/operator/${operator_unit}"
+    terragrunt --log-disable init -backend=false -no-color
+    terragrunt --log-disable run --no-auto-init -- validate -no-color
+  )
+done
 echo "::endgroup::"
 
 echo "::group::Etcd offsite bucket offline guards"
@@ -289,7 +351,7 @@ python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
 (
   cd IaC/operator/etcd-backup-storage
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
 )
@@ -394,6 +456,32 @@ yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"
 
+echo "::group::n8n persisted encryption key"
+n8n_values="clusters/homelab/apps/n8n/values.yaml"
+if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
+  echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2
+  exit 1
+fi
+rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_values"
+yq -e '
+  (
+    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
+  ) and (
+    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
+  )
+' "$n8n_values" >/dev/null
+# The literal shell assignment is intentionally matched inside a yq expression.
+# shellcheck disable=SC2016
+yq -e '
+  .controllers.n8n.initContainers."migrate-ai-workflow".command |
+  join("\n") |
+  (
+    contains("if [ ! -s /home/node/.n8n/config ]; then") and
+    contains("export N8N_ENCRYPTION_KEY=\"$N8N_BOOTSTRAP_ENCRYPTION_KEY\"")
+  )
+' "$n8n_values" >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -407,6 +495,11 @@ echo "::endgroup::"
 
 echo "::group::Harbor chart, credentials and cold bootstrap"
 bash scripts/ci/harbor-check.sh
+echo "::endgroup::"
+
+echo "::group::Langfuse migration startup allowance"
+bash scripts/ci/langfuse-startup-check.sh
+node scripts/ci/langfuse-empty-schema-recovery-check.mjs
 echo "::endgroup::"
 
 echo "::group::NOFX runtime storage"
@@ -746,14 +839,15 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
     ($live_plan | length) == 1 and
     $live_plan[0].env == {
-      "ARM_CLIENT_ID": "${{ vars.AZUREAD_CLIENT_ID || secrets.AZUREAD_CLIENT_ID }}",
-      "ARM_CLIENT_SECRET": "${{ secrets.AZUREAD_CLIENT_SECRET }}",
-      "ARM_TENANT_ID": "${{ vars.AZUREAD_TENANT_ID || secrets.AZUREAD_TENANT_ID }}",
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_USE_OIDC": "true",
+      "ARM_USE_CLI": "false",
+      "ARM_USE_MSI": "false",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
       "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
       "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
     } and
     ([.jobs["terragrunt-plan"].steps[] |
-      select(.name != "Run Live Terragrunt Plan") |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     .jobs["terragrunt-plan-skipped"].needs == ["static-policy"] and
     (.jobs["terragrunt-plan-skipped"].if |
@@ -845,6 +939,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-migrate.yml:migrate' \
     '.github/workflows/harbor-migrate.yml:static-policy' \
     '.github/workflows/harbor-mirror.yml:mirror' \
@@ -887,10 +982,11 @@ while read -r workflow expected_hash; do
 done <<'EOF'
 .github/workflows/cordium-check.yml 7cc3d5576e39f314a6d8269b7c6d80ef293685d3aa63a99c7b22c1677cd17d57
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
+.github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-migrate.yml 38dd9498ae9b7268dd8a7912a06abc96bc8cb533e2ae079660837aa22646e959
-.github/workflows/harbor-mirror.yml 7043994a5772c74d72d00386d36078d8d74ac73553b13ec07c6b9509026b832c
-.github/workflows/homelab-diagnostics.yml 04780adead4220e06d6a56e776bc1c872022485db9ad3829e60a0d3bcb3bb594
+.github/workflows/harbor-mirror.yml bbf296be0171b734c1298a6089b0a5f756376b01cc4873d869d2e01daf428dae
+.github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
 .github/workflows/nofx-images.yml 88d618e8398988a11e777e002de3969572dcaa3e8ecf6ec72c251f8d03acdb78
 .github/workflows/nofx-registry-credential.yml 57da09cc6bcecfaf820c85961ef19ad624e62e3a033d4b7aa12cb8eeae35e1e8
@@ -900,8 +996,8 @@ done <<'EOF'
 .github/workflows/octelium-public-tunnel.yml 5b8d8d00acc85bb692ba2fedb6349591d9645c49c5f62e6319432738717c40f6
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml 6a70b19db98d083394fa3e4a2cf4cda7f81a7bbd78f35fc61490eb4e4499acd7
-.github/workflows/terragrunt-plan.yml b0601c923163b898d352e694e7141759c44825d67fedc5aa1f37b185969e546d
+.github/workflows/terragrunt-apply.yml c223d91258230ca3a5453c89d53cea43b9fb138b68bcbf693b8936e433c421db
+.github/workflows/terragrunt-plan.yml 0e990457caf2d33452b2a7e23a7440da4dc4245b78bdc8a03a68c4687921fa32
 EOF
 echo "::endgroup::"
 
@@ -909,6 +1005,7 @@ echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
@@ -957,10 +1054,17 @@ yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply.yml |
   jq -e '
+    [.jobs["terragrunt-apply"].steps[] | select(.name == "Run Live Terragrunt Apply")] as $live_apply |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Retire wazuh @ {0}")) and
+    .on.workflow_dispatch.inputs.retire_wazuh == {
+      "description": "Remove only the retired Wazuh Application and its four unused credentials",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
@@ -970,13 +1074,27 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     .jobs["static-policy"].steps[0].if == null and
     .jobs["terragrunt-apply"].needs == ["static-policy"] and
     .jobs["terragrunt-apply"].environment == {"name": "homelab-production"} and
+    ($live_apply | length) == 1 and
+    $live_apply[0].env == {
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_USE_OIDC": "true",
+      "ARM_USE_CLI": "false",
+      "ARM_USE_MSI": "false",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    } and
+    ([.jobs["terragrunt-apply"].steps[] |
+      .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_ARGOCD_APP",
-      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
+      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE",
+      "TERRAGRUNT_RETIRE_WAZUH"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_RETIRE_WAZUH == "${{ inputs.retire_wazuh }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false
@@ -1004,6 +1122,34 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       contains(".event == \"workflow_dispatch\"") and
       contains("startswith(\"Full @ \")") and
       contains("max_by(.run_number)"))
+  ' >/dev/null
+yq -o=json '.' .github/workflows/entra-oidc-verify.yml |
+  jq -e '
+    [.jobs.verify.steps[] | select(.name == "Verify Four Entra Units Without Applying")] as $verify |
+    (.on | keys) == ["workflow_dispatch"] and
+    (.on.workflow_dispatch.inputs | keys) == ["expected_sha"] and
+    .name == "Entra OIDC Verify" and
+    ."run-name" == "Entra OIDC verification @ ${{ github.sha }}" and
+    .permissions == {} and
+    (.jobs | keys) == ["verify"] and
+    .jobs.verify.if == "github.repository == '\''Stuhlmuller/homelab'\'' && github.ref == '\''refs/heads/main'\''" and
+    .jobs.verify.strategy == {"fail-fast": false, "matrix": {"include": [
+      {"identity": "plan", "environment": "homelab-plan"},
+      {"identity": "apply", "environment": "homelab-production"}
+    ]}} and
+    .jobs.verify.environment == {"name": "${{ matrix.environment }}"} and
+    .jobs.verify.permissions == {"contents": "read", "id-token": "write"} and
+    .jobs.verify.env == null and
+    ($verify | length) == 1 and
+    $verify[0].env == {
+      "ARM_CLIENT_ID": "${{ secrets.AZUREAD_CLIENT_ID }}",
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "ARM_USE_OIDC": "true", "ARM_USE_CLI": "false", "ARM_USE_MSI": "false",
+      "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_TOKEN": "${{ github.token }}"
+    } and
+    ($verify[0].run | contains("python3 -I scripts/ci/entra-oidc-verify.py")) and
+    ([.jobs.verify.steps[] | .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
+    (.jobs.verify | tostring | contains("OCTELIUM") | not)
   ' >/dev/null
 yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
   jq -e '
@@ -1357,7 +1503,8 @@ yq -e '
   .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_NO_AUTO_UPDATE == "1" and
   .controllers.openclaw.containers.app.env.OPENCLAW_SUPERVISOR_MODE == "external" and
   .controllers.openclaw.containers.app.env.OPENCLAW_NO_AUTO_UPDATE == "1" and
-  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN.valueFrom.secretKeyRef.name == "openclaw-secrets" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN.valueFrom.secretKeyRef.key == "LITELLM_TOKEN" and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_ID == null and
@@ -1366,6 +1513,8 @@ yq -e '
   .persistence.config.advancedMounts.openclaw.proxy == null and
   .persistence."github-app-private-key".advancedMounts.openclaw."bootstrap-config" == null
 ' "$openclaw_values" >/dev/null
+rg -Fq 'LITELLM_TOKEN must be provided by openclaw-secrets' "$openclaw_values"
+rg -Fq '/data/openclaw/tmp/openclaw-1000/litellm-token.tmp' "$openclaw_values"
 echo "::endgroup::"
 
 echo "::group::Secret scan"
