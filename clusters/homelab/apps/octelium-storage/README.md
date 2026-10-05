@@ -188,3 +188,12 @@ kubectl -n octelium-storage logs job/<latest-octelium-postgres-backup-job>
 
 Redis requires authentication for real clients; the unauthenticated `PING` can
 return `NOAUTH` while still proving the TCP listener is reachable.
+
+## Independent publication candidate
+
+The [HOME-2 application recovery runbook](../../../../docs/application-recovery.md)
+adds a staged publisher for this job's completed logical sets. It verifies exact
+remote object versions before completion and monitors capture age. No bucket,
+IAM attachment, schedule or real-data restore is activated. Redis and Enterprise
+package state still need separate coverage; PostgreSQL publication alone does
+not establish whole-application recovery.

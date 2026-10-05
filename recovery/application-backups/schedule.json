@@ -1,0 +1,10 @@
+{
+  "aws_cli": "/usr/local/bin/aws",
+  "profile": "application-backup",
+  "workspace": "/var/lib/application-backups",
+  "metrics_directory": "/var/lib/application-backups/metrics",
+  "source_roots": {
+    "octelium": "/srv/application-backup-sources/octelium/logical-backups",
+    "media-postgres": "/srv/application-backup-sources/media-postgres/logical-backups"
+  }
+}

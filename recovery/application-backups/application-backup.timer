@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly independent application backup verification
+
+[Timer]
+OnCalendar=*-*-* *:45:00 UTC
+Persistent=true
+RandomizedDelaySec=120
+Unit=application-backup.service
+
+[Install]
+WantedBy=timers.target
