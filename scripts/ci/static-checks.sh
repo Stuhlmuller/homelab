@@ -20,6 +20,7 @@ python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
 python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
 python3 -I scripts/ci/bazarr-bootstrap-test.py
+python3 -I scripts/ci/nas-media-permissions-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py

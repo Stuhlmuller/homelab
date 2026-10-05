@@ -145,6 +145,16 @@ does not mount those claims. See the
 [Bazarr runbook](../../../clusters/homelab/apps/bazarr/README.md) for backup,
 recovery, and live acceptance gates.
 
+Read-only inspection during Bazarr onboarding on 2026-10-04 found registered
+media hidden from Sonarr by owner-1000 directories with mode `0770`. The QNAP
+export squashes every NFS client to guest, so container groups cannot repair
+this. The preview-first `scripts/nas-media-permissions.py` helper limits owner-side
+permission repair to registered Arr paths, requires reviewed current `main` and
+a private original-mode journal, and can queue Arr rescans afterward. Follow the
+[NAS access procedure](../../../clusters/homelab/apps/bazarr/README.md#nas-media-access)
+and verify the imported library afterward. Future owner-side media copies must
+preserve guest traversal/read access and directory write access for sidecars.
+
 ## Stateful Workload Gate
 
 The existing QNAP is also an unproven iSCSI block-storage candidate for
