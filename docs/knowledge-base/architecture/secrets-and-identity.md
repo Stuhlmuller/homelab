@@ -154,7 +154,11 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   Secrets reader IAM policy. Remove it only with a reviewed
   repository-owned state and secret-retirement workflow.
 - Bazarr reads Sonarr/Radarr API keys from their existing local `config.xml`
-  files through read-only init-container mounts. It retains credentials only in
+  files through read-only whole config-claim mounts in the configure init
+  container. Whole mounts avoid Talos kubelet resolving file `subPath` mounts
+  against empty directories in its isolated filesystem. The init container can
+  read each source config volume, but its script reads only `config.xml`.
+  It retains credentials only in
   its private config volume; no new SSM parameter or direct environment-variable
   secret injection is introduced. The main container never mounts either source
   config claim. The private `bazarr.default` Octelium WEB Service requires the

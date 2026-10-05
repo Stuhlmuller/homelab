@@ -37,7 +37,9 @@ in `bootstrap.py`; provider availability still requires live acceptance.
   during rollout. Library imports may still be running; scheduled backups also
   capture their later state and the completed setup marker.
 - Initialization reads the existing Sonarr/Radarr API keys through read-only
-  mounts of their local config claims. The main Bazarr container cannot access
+  whole-volume mounts of their local config claims at `/arr/sonarr` and
+  `/arr/radarr`. Only the configure init container receives these mounts and
+  reads `config.xml`; the main Bazarr container cannot access
   either source config claim. Keys remain in private runtime config and backups.
 - Sonarr owns `media-tv`; Radarr owns `media-movies`. Bazarr only consumes them.
   Removing Bazarr must preserve these shared library claims and subtitle files.
@@ -114,6 +116,15 @@ to loopback; keep that default.
 Provider availability and subtitle matches vary by release. A missing result
 must remain visible as wanted content, not be recorded as a successful download.
 Do not configure paid providers or create provider accounts implicitly.
+
+## Local Arr config mounts
+
+The local Arr config claims must be mounted without `subPath`. During the first
+rollout, the Talos kubelet's isolated filesystem resolved both `config.xml`
+subpaths as empty directories while the host and Arr pods saw regular files.
+The configure init failed with `IsADirectoryError`. Whole-volume read-only
+mounts use the same working host paths as the Arr pods; changing file ownership
+or recreating the source XML would not repair this mount boundary.
 
 ## NAS media access
 
