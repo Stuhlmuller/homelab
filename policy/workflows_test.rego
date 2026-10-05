@@ -407,13 +407,15 @@ test_rejects_workflow_wide_write_permission if {
 }
 
 test_rejects_live_job_artifact_upload if {
-	base := workflow_with_live_run(withheld_live_run)
-	workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {
-		"steps": array.concat(base.jobs.test.steps, [{"uses": "actions/upload-artifact@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]),
-	})}})
-	violations := deny with input as workflow
-	some msg in violations
-	contains(msg, "must not upload artifacts")
+	every action in ["actions/upload-artifact", "chainguard-actions/actions-upload-artifact"] {
+		base := workflow_with_live_run(withheld_live_run)
+		workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {
+			"steps": array.concat(base.jobs.test.steps, [{"uses": sprintf("%s@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", [action])}]),
+		})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "must not upload artifacts")
+	}
 }
 
 test_allows_withheld_live_command_output if {

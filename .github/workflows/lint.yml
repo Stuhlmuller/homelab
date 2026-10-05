@@ -15,12 +15,12 @@ jobs:
       statuses: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        uses: chainguard-actions/actions-checkout@279383ec3b8d70f964ffa5a2151ea3d2a5317ec6 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Super-Linter
-        uses: super-linter/super-linter@4ce20838b8ab83717e78138c5b3a1407148e0918  # v8.7.0
+        uses: chainguard-actions/super-linter-super-linter@bf49e660c836f9c76777ae48293f937565e314d7 # v8.7.0
         env:
           DEFAULT_BRANCH: ${{ github.event.pull_request.base.ref }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
