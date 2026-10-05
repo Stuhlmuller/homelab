@@ -35,10 +35,18 @@ acceptance gates. See the [Fleet runbook](../../../clusters/homelab/apps/fleet/R
 Fleet's [Free Entra setup](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
 separates native Microsoft Password Platform SSO from console SAML. Company
 Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers the initial Mac profiles with host-scoped commands, preserving
-other devices and profiles; this is not continuous managed-profile assignment.
+script delivers the initial Mac profiles with host-scoped commands. Its
+`mac-baseline-catalog` action adds only the Mac password baseline to Fleet's
+managed catalog, verifies content and preserves other entries; Entra SSO stays
+host-scoped. The catalog action supports guarded removal for rollback.
 The iPhone/iPad passcode baseline is retired; its operator action permits only
 removal and preserves enrollment and unrelated profiles.
+Fleet Free 4.92.2 has no inactive catalog state; upload activates assignment.
+Team/label scoping requires Premium. Global Apple profiles are sent to phones
+as well as Macs; the baseline's `TargetDeviceType=5` relies on Apple's device
+type check, not Fleet's `darwin` catalog field. The runbook links the pinned
+Fleet reconciler and Apple's platform-matching contract. Verify catalog state,
+Mac delivery and the phone's exclusion separately after upload.
 The console enterprise app permits only an individually assigned, precreated
 administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security
