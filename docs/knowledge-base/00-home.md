@@ -51,6 +51,12 @@ and `homelab-release-verification`. Load only the workflow needed for the task;
 the release skill distinguishes validation, merge, deployment, and live
 acceptance.
 
+Obsidian authoring skills are also available under `.agents/skills/`:
+`obsidian-markdown` for note syntax, `obsidian-bases` for `.base` views, and
+`obsidian-cli` for interacting with a running Obsidian instance. Their upstream
+source and hashes are recorded in `skills-lock.json` at the repository root;
+`THIRD_PARTY_NOTICES.md` preserves the upstream license notice.
+
 ## Update Rule
 
 For every substantive change, update the smallest useful set of notes:
