@@ -77,6 +77,16 @@ repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
+## AI gateway contract
+
+`/homelab/litellm/openai-api-key` is an existing operator-supplied OpenRouter
+provider credential. LiteLLM is its only Kubernetes consumer. Generated caller
+keys at `/homelab/openclaw/litellm-app-token` and
+`/homelab/{nofx,multica,n8n}/litellm-token` authenticate individual workloads
+to the in-cluster gateway; none grants direct provider access. Do not read,
+copy or place any of these values in Git, workflow exports or application
+configuration.
+
 ## External Secrets AWS Auth Bootstrap
 
 External Secrets cannot read Parameter Store until the cluster has the
@@ -164,14 +174,14 @@ cluster CA is intentionally rotated.
 | grafana | `grafana-azuread-sso` | `grafana-azuread-sso` | `/homelab/grafana/azuread/client-id`, `/homelab/grafana/azuread/client-secret`, `/homelab/grafana/azuread/auth-url`, `/homelab/grafana/azuread/token-url`, `/homelab/grafana/azuread/allowed-organizations` |
 | prometheus | `alertmanager-discord-webhook` | `alertmanager-discord-webhook` | `/homelab/grafana/discord-webhook-url` |
 | litellm | `litellm-provider-keys` | `litellm-provider-keys` | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key` |
-| litellm (staged) | `litellm-app-keys` | unmounted `litellm-app-keys` | `/homelab/litellm/master-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token` |
+| litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
 | n8n-postgres | `n8n-postgres-auth`, `n8n-postgres-client` | `n8n-postgres-auth`, `n8n-postgres-client` | `/homelab/n8n/postgres-admin-password`, `/homelab/n8n/postgres-app-password` |
-| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
+| openclaw | `openclaw-secrets`, `openclaw-github-app-private-key` | `openclaw-secrets`, `openclaw-github-app-private-key` | `/homelab/openclaw/app-secret`, `/homelab/openclaw/litellm-app-token`, `/homelab/openclaw/discord-bot-token`, `/homelab/openclaw/grafana/username`, `/homelab/openclaw/grafana/password` |
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
@@ -208,19 +218,18 @@ Terragrunt-generated internal values:
 - `/homelab/n8n/postgres-admin-password`
 - `/homelab/n8n/postgres-app-password`
 - `/homelab/openclaw/app-secret`
-- `/homelab/openclaw/litellm-token` (existing master-key alias)
-- `/homelab/openclaw/litellm-app-token` (staged distinct app key)
+- `/homelab/openclaw/litellm-token` (retired master-key alias)
+- `/homelab/openclaw/litellm-app-token` (active distinct app key)
 - `/homelab/policy-bot/github-app/webhook-secret`
 - `/homelab/policy-bot/sessions-key`
 
-`/homelab/openclaw/litellm-token` intentionally mirrors the LiteLLM master key
-during staging; a separate activation PR must switch its consumer to the distinct
-`/homelab/openclaw/litellm-app-token` only after gateway readiness.
+`/homelab/openclaw/litellm-token` remains a retired master-key alias and has no
+workload consumer. OpenClaw uses only its distinct
+`/homelab/openclaw/litellm-app-token` caller key.
 
-The Langfuse project keys are consumed only by `langfuse-secrets` in this
-foundation. LiteLLM receives them only after a separately reviewed activation
-implements safe request admission and telemetry. No direct OpenClaw OTLP
-credential is provisioned. `IaC/live/langfuse-blob-storage` creates the distinct S3
+LiteLLM consumes the Langfuse project keys through its dedicated
+`litellm-telemetry` Secret and performs trusted app-attributed export. No caller
+receives a direct OTLP credential. `IaC/live/langfuse-blob-storage` creates the distinct S3
 runtime credential pair under the same prefix; External Secrets receives exact
 additional reader names instead of a wildcard IAM grant.
 
@@ -247,8 +256,8 @@ copying the token into OpenClaw config. Replace the placeholder directly in SSM
 before relying on Discord, then bump
 `homelab.rst.io/openclaw-discord-bot-token-ssm-version` in
 `clusters/homelab/apps/openclaw/values.yaml` to the resulting SSM parameter
-version so GitOps rolls OpenClaw. ChatGPT Pro or Codex OAuth credentials are not
-SSM values; they are created interactively and persist on the OpenClaw PVC.
+version so GitOps rolls OpenClaw. OpenClaw no longer uses ChatGPT Pro or Codex
+OAuth credentials for inference.
 
 OpenClaw reads `/homelab/openclaw/grafana/username` and
 `/homelab/openclaw/grafana/password` as `GRAFANA_USERNAME` and

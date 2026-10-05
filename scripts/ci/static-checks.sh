@@ -1475,7 +1475,8 @@ yq -e '
   .controllers.openclaw.initContainers."bootstrap-config".env.OPENCLAW_NO_AUTO_UPDATE == "1" and
   .controllers.openclaw.containers.app.env.OPENCLAW_SUPERVISOR_MODE == "external" and
   .controllers.openclaw.containers.app.env.OPENCLAW_NO_AUTO_UPDATE == "1" and
-  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN == null and
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN.valueFrom.secretKeyRef.name == "openclaw-secrets" and
+  .controllers.openclaw.initContainers."bootstrap-config".env.LITELLM_TOKEN.valueFrom.secretKeyRef.key == "LITELLM_TOKEN" and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_USERNAME == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GRAFANA_PASSWORD == null and
   .controllers.openclaw.initContainers."bootstrap-config".env.GITHUB_APP_ID == null and
@@ -1484,6 +1485,8 @@ yq -e '
   .persistence.config.advancedMounts.openclaw.proxy == null and
   .persistence."github-app-private-key".advancedMounts.openclaw."bootstrap-config" == null
 ' "$openclaw_values" >/dev/null
+rg -Fq 'LITELLM_TOKEN must be provided by openclaw-secrets' "$openclaw_values"
+rg -Fq '/data/openclaw/tmp/openclaw-1000/litellm-token.tmp' "$openclaw_values"
 echo "::endgroup::"
 
 echo "::group::Secret scan"

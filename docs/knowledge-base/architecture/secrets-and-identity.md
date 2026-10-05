@@ -336,16 +336,14 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   refresh. This additional grant has no IAM write, tag, wildcard, or other-user
   permission. Future Langfuse IAM lifecycle or credential-rotation changes
   remain operator-owned through the same saved-plan path.
-- Future LiteLLM app keys are generated separately for NOFX and Multica at
-  `/homelab/<app>/litellm-token`; OpenClaw's future key uses
-  `/homelab/openclaw/litellm-app-token`. The existing OpenClaw `litellm-token`
-  stays an alias of the master key during staging. Neither the current gateway
-  provider Secret nor the current caller Pods depend on new Langfuse keys.
-  Caller activation is deferred to a separate implementation PR after the
-  [readiness gates](../../../clusters/homelab/apps/langfuse/README.md#caller-activation).
-  No activation hook/template or direct OpenClaw OTLP credential is included:
-  the candidate gateway admission boundary failed an offline security audit.
-  See [[ai-observability]] for the required pre-auth guard and accounting scope.
+- LiteLLM caller keys are generated separately for NOFX, Multica and n8n at
+  `/homelab/<app>/litellm-token`; OpenClaw uses
+  `/homelab/openclaw/litellm-app-token`. The prior OpenClaw `litellm-token`
+  remains a retired master-key alias with no workload consumer. LiteLLM alone
+  receives the existing `/homelab/litellm/openai-api-key` provider credential
+  and Langfuse project keys. Its pre-auth guard prevents callers from choosing
+  a provider, collector, or identity. See [[ai-observability]] for acceptance
+  evidence and accounting scope.
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It
@@ -360,6 +358,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   not used, avoiding custom-provider DNS resolution during sidecar recovery.
 - n8n uses `/homelab/n8n/encryption-key` as a first-boot bootstrap key only;
   existing PVCs keep using their persisted `/home/node/.n8n/config` key.
+  Its dedicated `/homelab/n8n/litellm-token` is rendered only as an OpenAI
+  credential overwrite for the internal LiteLLM endpoint; it is never stored
+  in workflow JSON or the n8n credential database.
   `n8n-postgres` uses generated `/homelab/n8n/postgres-admin-password` and
   `/homelab/n8n/postgres-app-password` values; n8n receives only the app
   password through `n8n-postgres-client` and
@@ -374,9 +375,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   then configures Discord with an OpenClaw SecretRef to that environment value
   instead of storing the token in config. The bootstrap and proxy containers
   do not receive the app-only LiteLLM, Grafana-login, or GitHub App credentials,
-  and the proxy does not mount persistent OpenClaw state. ChatGPT Pro or Codex OAuth
-  credentials are interactive user credentials stored on the OpenClaw PVC, not
-  SSM parameters. OpenClaw GitHub App credentials use
+  and the proxy does not mount persistent OpenClaw state. The deployed assistant
+  does not configure ChatGPT Pro or Codex OAuth inference. OpenClaw GitHub App credentials use
   `/homelab/openclaw/github-app/id`,
   `/homelab/openclaw/github-app/installation-id`, and
   `/homelab/openclaw/github-app/private-key`; the ID values are env vars and

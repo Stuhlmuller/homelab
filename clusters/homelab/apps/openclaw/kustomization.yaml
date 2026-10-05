@@ -19,7 +19,6 @@ configMapGenerator:
       - assistant/retired-jobs.json
       - assistant/bootstrap.py
       - assistant/reconcile.py
-      - assistant/install-codex.py
       - assistant/runtime-storage.py
       - assistant/gh
 generatorOptions:

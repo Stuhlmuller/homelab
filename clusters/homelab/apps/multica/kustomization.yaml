@@ -13,4 +13,4 @@ configMapGenerator:
     files:
       - runtime/bootstrap.py
       - runtime/settings.json
-      - runtime/codex.toml
+      - runtime/opencode.json

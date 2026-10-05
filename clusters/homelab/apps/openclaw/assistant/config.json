@@ -8,12 +8,6 @@
       "models": {
         "openrouter/free": {
           "alias": "free"
-        },
-        "openai/gpt-6-astra": {
-          "alias": "astra",
-          "agentRuntime": {
-            "id": "codex"
-          }
         }
       },
       "thinkingDefault": "medium",
@@ -49,38 +43,36 @@
       "workspaceOnly": true
     }
   },
-  "plugins": {
-    "entries": {
-      "codex": {
-        "config": {
-          "appServer": {
-            "command": "/toolbox/codex/codex"
-          }
-        }
-      }
-    }
-  },
   "cron": {
     "enabled": true,
     "sessionRetention": "24h"
   },
+  "diagnostics": {
+    "otel": {
+      "enabled": false
+    }
+  },
+  "secrets": {
+    "providers": {
+      "litellm": {
+        "source": "file",
+        "path": "/data/openclaw/tmp/openclaw-1000/litellm-token",
+        "mode": "singleValue"
+      }
+    }
+  },
   "models": {
     "providers": {
-      "openai": {
-        "baseUrl": "https://chatgpt.com/backend-api/codex",
-        "api": "openai-chatgpt-responses",
-        "models": [
-          {
-            "id": "gpt-6-astra",
-            "name": "GPT-6 Astra",
-            "api": "openai-chatgpt-responses",
-            "reasoning": true,
-            "input": [
-              "text",
-              "image"
-            ]
+      "openrouter": {
+        "baseUrl": "http://litellm.ai.svc.cluster.local:4000/v1",
+        "api": "openai-completions",
+        "headers": {
+          "x-litellm-api-key": {
+            "source": "file",
+            "provider": "litellm",
+            "id": "value"
           }
-        ]
+        }
       }
     }
   },
