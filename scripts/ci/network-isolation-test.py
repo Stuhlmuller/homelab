@@ -5,10 +5,9 @@ import copy
 import importlib.util
 import ipaddress
 import json
+import yaml
 import unittest
 from pathlib import Path
-
-import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 CANDIDATE = ROOT / "clusters/homelab/platform/network-isolation-candidate"

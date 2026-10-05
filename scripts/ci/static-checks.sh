@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 python3 -I scripts/ci/multica-runtime-check.py
-python3 -I scripts/ci/network-isolation-test.py
+python3 scripts/ci/network-isolation-test.py
 for phase in engine policies rollback; do
   kustomize build "clusters/homelab/platform/network-isolation-candidate/$phase" >/dev/null
 done

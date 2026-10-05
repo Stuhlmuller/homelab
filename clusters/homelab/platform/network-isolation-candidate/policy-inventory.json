@@ -80,6 +80,85 @@
     }
   },
   {
+    "path": "clusters/homelab/apps/bazarr/networkpolicy.yaml",
+    "namespace": "media",
+    "name": "bazarr",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "bazarr"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "octelium"
+                }
+              }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "bazarr"
+                }
+              }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "bazarr-reconcile"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 6767
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/bazarr/networkpolicy.yaml",
+    "namespace": "media",
+    "name": "bazarr-config-backup",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "bazarr-config-backup"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/bazarr/networkpolicy.yaml",
+    "namespace": "media",
+    "name": "bazarr-reconcile",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "bazarr-reconcile"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ]
+    }
+  },
+  {
     "path": "clusters/homelab/apps/cordium/networkpolicy.yaml",
     "namespace": "octelium",
     "name": "cordium-genesis",
@@ -267,6 +346,164 @@
     }
   },
   {
+    "path": "clusters/homelab/apps/fleet/networkpolicy.yaml",
+    "namespace": "fleet",
+    "name": "fleet-default-deny",
+    "spec": {
+      "podSelector": {},
+      "policyTypes": [
+        "Ingress"
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/fleet/networkpolicy.yaml",
+    "namespace": "fleet",
+    "name": "fleet-ambient",
+    "spec": {
+      "podSelector": {},
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 15008
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/fleet/networkpolicy.yaml",
+    "namespace": "fleet",
+    "name": "fleet-server",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "fleet",
+          "app.kubernetes.io/component": "server"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "istio-system"
+                }
+              }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "fleet-bootstrap"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/fleet/networkpolicy.yaml",
+    "namespace": "fleet",
+    "name": "fleet-datastores",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "fleet"
+        },
+        "matchExpressions": [
+          {
+            "key": "app.kubernetes.io/component",
+            "operator": "In",
+            "values": [
+              "mysql",
+              "redis"
+            ]
+          }
+        ]
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "fleet",
+                  "app.kubernetes.io/component": "server"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 3306
+            },
+            {
+              "protocol": "TCP",
+              "port": 6379
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/fleet/networkpolicy.yaml",
+    "namespace": "fleet",
+    "name": "fleet-mysql-backup",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "fleet",
+          "app.kubernetes.io/component": "mysql"
+        }
+      },
+      "policyTypes": [
+        "Ingress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "fleet-backup"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 3306
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
     "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
     "namespace": "harbor",
     "name": "harbor-default-deny-ingress",
@@ -403,6 +640,13 @@
                   "app.kubernetes.io/component": "bootstrap"
                 }
               }
+            },
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "harbor-vulnerability-exporter"
+                }
+              }
             }
           ],
           "ports": [
@@ -503,6 +747,87 @@
               "namespaceSelector": {
                 "matchLabels": {
                   "kubernetes.io/metadata.name": "kube-system"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "UDP",
+              "port": 53
+            },
+            {
+              "protocol": "TCP",
+              "port": 53
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "path": "clusters/homelab/apps/harbor/networkpolicy.yaml",
+    "namespace": "harbor",
+    "name": "harbor-vulnerability-exporter",
+    "spec": {
+      "podSelector": {
+        "matchLabels": {
+          "app.kubernetes.io/name": "harbor-vulnerability-exporter"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "monitoring"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        }
+      ],
+      "egress": [
+        {
+          "to": [
+            {
+              "podSelector": {
+                "matchLabels": {
+                  "app": "harbor",
+                  "component": "core"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 8080
+            }
+          ]
+        },
+        {
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "kube-system"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "k8s-app": "kube-dns"
                 }
               }
             }
