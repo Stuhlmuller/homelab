@@ -27,47 +27,7 @@ unit "argocd_apps_bazarr" {
   path                    = "live/argocd-apps/bazarr"
   no_dot_terragrunt_stack = true
 
-  values = {
-    defaults     = local.argocd_defaults
-    dependencies = ["platform-storage", "radarr", "sonarr"]
-    spec = {
-      destination = {
-        namespace = "media"
-      }
-      sources = [
-        {
-          repoURL        = "https://bjw-s-labs.github.io/helm-charts"
-          chart          = "app-template"
-          path           = "."
-          targetRevision = "4.4.0"
-          helm = {
-            releaseName = "bazarr"
-            valueFiles  = ["$values/clusters/homelab/apps/bazarr/values.yaml"]
-          }
-        },
-        {
-          repoURL        = local.repo_url
-          path           = "."
-          targetRevision = local.target_revision
-          ref            = "values"
-          directory = {
-            include = ".argocd-values-ref-placeholder.yaml"
-          }
-        },
-        {
-          repoURL        = local.repo_url
-          path           = "clusters/homelab/apps/bazarr"
-          targetRevision = local.target_revision
-        }
-      ]
-      info = [
-        {
-          name  = "rollout"
-          value = "automated; verify Sonarr/Radarr sync, English subtitle downloads, and retained NFS backup coverage"
-        }
-      ]
-    }
-  }
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/bazarr/stack.hcl").inputs
 }
 
 unit "argocd_apps_cert_manager" {
