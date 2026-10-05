@@ -57,7 +57,7 @@ that exact object into the declared address rather than making a duplicate.
 From the unit directory, validate without a backend first:
 
 ```sh
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 ```
 
@@ -68,7 +68,7 @@ reviewed bytes:
 ```sh
 umask 077
 ci_identity_plan_dir="$(mktemp -d /tmp/homelab-entra-ci.XXXXXX)"
-terragrunt --log-disable init -reconfigure -lockfile=readonly -no-color
+terragrunt --log-disable init -reconfigure -no-color
 terragrunt --log-disable plan -input=false -lock-timeout=5m \
   -out="$ci_identity_plan_dir/identities.tfplan" -no-color
 terragrunt --log-disable show -no-color "$ci_identity_plan_dir/identities.tfplan"

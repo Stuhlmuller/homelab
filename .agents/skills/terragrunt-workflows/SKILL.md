@@ -13,7 +13,9 @@ and only the affected source before editing. Ordinary app onboarding also uses
 
 | Concern | Edit |
 | --- | --- |
-| Unit identity, paths, common app defaults and per-app overrides | `IaC/terragrunt.stack.hcl` |
+| Unit identity, template source and output paths | `IaC/terragrunt.stack.hcl` |
+| Per-application inputs and chart pins | `IaC/stacks/<app>/stack.hcl` |
+| Shared Application defaults | `IaC/stack-defaults.hcl` |
 | Reusable generated unit behavior | `IaC/.catalog/units/` |
 | Backend, state encryption and shared inputs | `IaC/root.hcl` |
 | Kubernetes provider connection | `IaC/kubernetes-provider.hcl` |
@@ -23,19 +25,20 @@ and only the affected source before editing. Ordinary app onboarding also uses
 `no_dot_terragrunt_stack = true`; do not edit their generated `terragrunt.hcl`
 or `terragrunt.values.hcl`. Keep unit labels, literal `source`/`path` fields,
 and path identity stable: backend keys and CI's retirement parser depend on
-them. Commit each deployed unit's provider `.terraform.lock.hcl`.
-For a new shared-app unit, copy the lock from a reviewed peer using the same
-module/provider constraints before readonly initialization. For a new provider
-contract, generate and review its lock explicitly; stack generation creates no
-lockfile.
+them. OpenTofu initialization generates local `.terraform.lock.hcl` files;
+they are ignored. Do not commit or copy provider locks. Exact provider versions
+live in module/template HCL; CI regenerates locks and checksums during init.
 `IaC/operator` remains administrator-owned rather than part of workload CI.
 
 ## Shared Application contract
 
 All active app and platform registrations use
-`IaC/.catalog/units/live/argocd-app`. Each unit passes
-`defaults = local.argocd_defaults`; add only differing `metadata`, `spec` and
-`dependencies` fields. Do not duplicate the whole Application manifest.
+`IaC/.catalog/units/live/argocd-app`. Each app's `stack.hcl` loads shared locals
+from `IaC/stack-defaults.hcl` and sets `inputs.defaults = local.shared.argocd_defaults`;
+add only differing `metadata`, `spec` and `dependencies` fields. The root index
+loads the app file's `inputs` with `read_terragrunt_config` as the unit's `values`.
+Keep app filenames as `stack.hcl`, not nested `terragrunt.stack.hcl` files.
+Do not duplicate the whole Application manifest.
 
 The template derives the Application name and destination namespace from the
 unit directory. Default source is `clusters/homelab/apps/<name>` at this
@@ -49,7 +52,7 @@ with defaults. Lists such as `sources`, `syncOptions`, `info` and
 rendered manifest when overriding them. Omit empty `kustomize = {}`: Argo CD
 normalizes it away and leaves the declared Application OutOfSync.
 
-Use `values.dependencies` for registration ordering: sibling app names or an
+Use the app file's `inputs.dependencies` for registration ordering: sibling app names or an
 explicit relative unit reference, matching existing entries. A `dependency`
 block is needed only when consuming outputs. Registration order does not prove
 runtime readiness. Retired units must retain the reviewed retirement workflow;
@@ -81,7 +84,7 @@ nix develop --command terragrunt --working-dir IaC/live/argocd-apps/<app> \
   }'
 ```
 
-Backend-free unit validation requires `init -backend=false -lockfile=readonly`
+Backend-free unit validation requires `init -backend=false`
 followed by `run --no-auto-init -- validate`; otherwise Terragrunt may initialize
 the real backend. Before a real authenticated plan, reinitialize the intended
 backend. Use [validation gates](../../../docs/knowledge-base/operations/validation-gates.md)

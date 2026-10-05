@@ -3,8 +3,9 @@
 This directory contains generated Terragrunt entry points for registering
 homelab applications with Argo CD. The committed source lives in
 `IaC/.catalog/units/live/argocd-app/terragrunt.hcl`, and
-`IaC/terragrunt.stack.hcl` supplies per-app values and regenerates each child
-directory.
+`IaC/terragrunt.stack.hcl` indexes unit identities and output paths. It loads
+per-app inputs from `IaC/stacks/<app>/stack.hcl` and regenerates each child
+directory. Common Application defaults live in `IaC/stack-defaults.hcl`.
 
 The requested apps are registered here along with supporting Applications for
 shared platform services. `platform-dns` owns CoreDNS resolver policy,
@@ -17,8 +18,8 @@ they exist so dependency state is still delivered through Argo CD.
 ## Conventions
 
 - Use the shared `IaC/.catalog/units/live/argocd-app/terragrunt.hcl` template
-  for every Application and register per-app `values` in
-  `IaC/terragrunt.stack.hcl`.
+  for every active Application. Register its unit in `IaC/terragrunt.stack.hcl`
+  and put per-app inputs in `IaC/stacks/<app>/stack.hcl`.
 - Include `IaC/root.hcl` from every unit.
 - Source the local Kubernetes-backed Application module. Do not require a
   locally authenticated Argo CD API provider for routine app registration.
@@ -29,8 +30,9 @@ they exist so dependency state is still delivered through Argo CD.
   in `homelab`. Update the selected project manifest under
   `clusters/homelab/argocd/self-management` when a source, destination, or
   resource requirement changes.
-- Declare every upstream relationship with `values.dependencies` as sibling app
-  names, such as `external-secrets`, not generated relative paths.
+- Declare every upstream relationship with `inputs.dependencies` in the app's
+  stack file, using sibling app names such as `external-secrets` or an explicit
+  relative path to a non-Application unit.
 - Use `spec.syncPolicy.automated` with prune and self-heal by default. Any future
   exception must be documented beside the app registration.
 - Put non-secret chart values and raw manifests under

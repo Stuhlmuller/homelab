@@ -84,7 +84,9 @@ outside Argo CD's tracking and are unaffected by that setting.
 | Concern | Path |
 | --- | --- |
 | Root Terragrunt settings | `IaC/root.hcl` |
-| Terragrunt stack entry point | `IaC/terragrunt.stack.hcl` |
+| Terragrunt unit index | `IaC/terragrunt.stack.hcl` |
+| Per-application stack inputs | `IaC/stacks/<app>/stack.hcl` |
+| Shared Application defaults | `IaC/stack-defaults.hcl` |
 | Terragrunt unit templates | `IaC/.catalog/units` |
 | Generated Argo CD bootstrap unit | `IaC/bootstrap/argocd` |
 | Operator AWS apply-role policy | `IaC/operator/github-actions-role-policy` |
@@ -101,8 +103,10 @@ See [[runbooks/argocd-bootstrap]], [[runbooks/argocd-app-onboarding]], and
 ## Registration Pattern
 
 Argo CD Applications are registered through the shared Terragrunt unit template
-at `IaC/.catalog/units/live/argocd-app` and per-app `values` in the explicit
-stack at `IaC/terragrunt.stack.hcl`. The generated units keep the historical
+at `IaC/.catalog/units/live/argocd-app` and per-app inputs in
+`IaC/stacks/<app>/stack.hcl`. The root `IaC/terragrunt.stack.hcl` retains explicit
+unit identities, template sources, and output paths, loading each app's inputs
+as its unit `values`. The generated units keep the historical
 `IaC/live/...` paths so S3 backend keys remain stable. The template sources the
 repository-local `IaC/modules/argocd-application-kubernetes` module and passes a
 raw CRD-shaped `manifest`, so Application fields use their native names such as
@@ -110,9 +114,10 @@ raw CRD-shaped `manifest`, so Application fields use their native names such as
 at this repository, set `targetRevision` to `main` unless a temporary
 non-default branch is explicitly documented for testing or recovery.
 
-The stack's `local.argocd_defaults` owns common metadata, project, destination,
-sync policy, repository, and revision. Entries pass `values.defaults` plus only
-their `metadata`/`spec` exceptions and dependencies. The template derives the
+`IaC/stack-defaults.hcl` owns common metadata, project, destination, sync policy,
+repository, and revision. Each active app file loads those locals and passes
+`inputs.defaults = local.shared.argocd_defaults` plus only its `metadata`/`spec`
+exceptions and dependencies. The template derives the
 name, default namespace, and ordinary app source from the unit directory name.
 Map merging preserves inherited sync settings; lists replace rather than append.
 See the [registration example](../../../docs/argocd-app-onboarding.md#register-with-shared-defaults)

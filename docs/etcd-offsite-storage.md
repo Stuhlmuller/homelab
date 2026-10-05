@@ -51,7 +51,7 @@ nix develop
 cd IaC
 terragrunt stack generate
 cd operator/etcd-backup-storage
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 terragrunt --log-disable run --no-auto-init -- test -no-color
 ```
@@ -79,7 +79,7 @@ backup_plan_dir="$(mktemp -d /tmp/homelab-etcd-bucket-plan.XXXXXX)"
 chmod 0700 "$backup_plan_dir"
 terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --disable-bucket-update --backend-bootstrap=false -- \
-  init -reconfigure -lockfile=readonly -no-color
+  init -reconfigure -no-color
 terragrunt --log-disable run --download-dir "$backup_plan_dir/cache" \
   --disable-bucket-update --backend-bootstrap=false -- \
   plan -input=false -lock-timeout=5m \

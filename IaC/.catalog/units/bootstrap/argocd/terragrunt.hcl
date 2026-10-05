@@ -17,6 +17,22 @@ locals {
   }
 }
 
+# Preserve the reviewed provider selection while using the pinned catalog module.
+generate "provider_versions" {
+  path      = "provider-versions_override.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+terraform {
+  required_providers {
+    helm = {
+      source  = "hashicorp/helm"
+      version = "3.2.0"
+    }
+  }
+}
+EOF
+}
+
 generate "helm_provider" {
   path      = "helm-provider.tf"
   if_exists = "overwrite_terragrunt"

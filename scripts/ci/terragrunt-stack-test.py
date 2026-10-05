@@ -19,14 +19,16 @@ def run(*args, cwd, input=None):
     return result.stdout.strip()
 
 
-def unit(name, group="argocd-apps", values="defaults = local.argocd_defaults"):
+def unit(name, group="argocd-apps", values="defaults = local.argocd_defaults", config=False):
+    unit_values = (
+        f'read_terragrunt_config("${{get_terragrunt_dir()}}/stacks/{name}/stack.hcl").inputs'
+        if config else "{\n    " + values + "\n  }"
+    )
     return f'''unit "{name}" {{
   source = "./.catalog/units/live/argocd-app"
   path = "live/{group}/{name}"
   no_dot_terragrunt_stack = true
-  values = {{
-    {values}
-  }}
+  values = {unit_values}
 }}
 '''
 
@@ -80,6 +82,62 @@ eval "$4"
         self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
         self.shell("! terragrunt_azuread_stack_changed", head)
 
+    def separate_app_configs(self):
+        (self.root / "IaC/stack-defaults.hcl").write_text(self.locals)
+        for name in ("kept", "retired"):
+            path = self.root / "IaC/stacks" / name / "stack.hcl"
+            path.parent.mkdir(parents=True)
+            path.write_text('''locals {
+  shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
+}
+inputs = { defaults = local.shared.argocd_defaults }
+''')
+        self.stack.write_text(unit("kept", config=True) + unit("retired", config=True)
+                              + self.azure + self.operator)
+
+    def test_extracting_app_values_preserves_owned_units(self):
+        self.separate_app_configs()
+        head = self.commit()
+        self.assertEqual(self.shell("terragrunt_stack_unit_paths_at_ref HEAD", head),
+                         self.shell(f"terragrunt_stack_unit_paths_at_ref {self.base}", head))
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
+        self.shell("! terragrunt_azuread_stack_changed", head)
+
+    def test_app_config_changes_select_apps_without_azure_or_retirement(self):
+        self.separate_app_configs()
+        self.base = self.commit()
+        path = self.root / "IaC/stacks/kept/stack.hcl"
+        path.write_text(path.read_text().replace(
+            "inputs = { defaults = local.shared.argocd_defaults }",
+            'inputs = { defaults = local.shared.argocd_defaults, spec = { project = "workloads" } }'))
+        head = self.commit()
+        self.assertEqual(self.shell("terragrunt_changed_filter 'IaC/live/argocd-apps/*'", head), "*")
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
+        self.shell("! terragrunt_azuread_stack_changed", head)
+        self.assertEqual(self.shell("terragrunt_azuread_changed_filter true", head),
+                         "IaC/live/azuread-applications/* | [main...HEAD]")
+
+    def test_shared_defaults_file_changes_select_apps_without_azure_or_retirement(self):
+        self.separate_app_configs()
+        self.base = self.commit()
+        path = self.root / "IaC/stack-defaults.hcl"
+        path.write_text(path.read_text().replace('project = "homelab"',
+                                                 'project = "homelab-workloads"'))
+        head = self.commit()
+        self.assertEqual(self.shell("terragrunt_changed_filter 'IaC/live/argocd-apps/*'", head), "*")
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head), "")
+        self.shell("! terragrunt_azuread_stack_changed", head)
+
+    def test_removing_referenced_unit_retires_only_its_state(self):
+        self.separate_app_configs()
+        self.base = self.commit()
+        self.stack.write_text(unit("kept", config=True) + self.azure + self.operator)
+        (self.root / "IaC/stacks/retired/stack.hcl").unlink()
+        head = self.commit()
+        self.assertEqual(self.shell("terragrunt_deleted_unit_paths", head),
+                         "IaC/live/argocd-apps/retired")
+        self.shell("! terragrunt_azuread_stack_changed", head)
+
     def test_removing_unit_retires_only_that_workflow_owned_state(self):
         self.stack.write_text(self.locals + unit("kept") + self.azure)
         head = self.commit()
@@ -105,8 +163,8 @@ class SharedAppTemplateTest(unittest.TestCase):
         shutil.copyfile(ROOT / "IaC/kubernetes-provider.hcl", cls.root / "kubernetes-provider.hcl")
         shutil.copytree(ROOT / "IaC/.catalog/units/live/argocd-app",
                         cls.root / ".catalog/units/live/argocd-app")
-        defaults = (ROOT / "IaC/terragrunt.stack.hcl").read_text().split('\nunit "', 1)[0]
-        overrides = '''defaults = local.argocd_defaults
+        shutil.copyfile(ROOT / "IaC/stack-defaults.hcl", cls.root / "stack-defaults.hcl")
+        overrides = '''defaults = local.shared.argocd_defaults
     dependencies = ["sparse-app"]
     metadata = {
       labels = { "app.kubernetes.io/part-of" = "fixture" }
@@ -127,9 +185,29 @@ class SharedAppTemplateTest(unittest.TestCase):
       }
       ignoreDifferences = [{ kind = "Secret", jsonPointers = ["/data"] }]
     }'''
+        for name, inputs in (("sparse-app", "defaults = local.shared.argocd_defaults"),
+                             ("override-app", overrides)):
+            path = cls.root / "stacks" / name / "stack.hcl"
+            path.parent.mkdir(parents=True)
+            path.write_text('''locals {
+  shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
+}
+inputs = {
+''' + inputs + "\n}\n")
         (cls.root / "terragrunt.stack.hcl").write_text(
-            defaults + "\n" + unit("sparse-app") + unit("override-app", values=overrides))
+            unit("sparse-app", config=True) + unit("override-app", config=True))
         run("terragrunt", "--log-disable", "stack", "generate", cwd=cls.root)
+
+    def test_repeat_generation_and_clean_preserve_source_configs(self):
+        paths = [self.root / "terragrunt.stack.hcl", self.root / "stack-defaults.hcl",
+                 *self.root.glob("stacks/*/stack.hcl")]
+        before = {path: path.read_bytes() for path in paths}
+        run("terragrunt", "--log-disable", "stack", "generate", cwd=self.root)
+        run("terragrunt", "--log-disable", "stack", "generate", "--source-update", cwd=self.root)
+        run("terragrunt", "--log-disable", "stack", "clean", cwd=self.root)
+        self.assertEqual(before, {path: path.read_bytes() for path in paths})
+        self.assertEqual(self.render("sparse-app")["inputs"]["manifest"]["metadata"]["name"],
+                         "sparse-app")
 
     def render(self, name):
         return json.loads(run("terragrunt", "--log-disable", "render", "--json",

@@ -1,6 +1,9 @@
 # Local .terraform directories
 .terraform/
 
+# Provider locks are generated locally; versions are declared in HCL.
+.terraform.lock.hcl
+
 # .tfstate files
 *.tfstate
 *.tfstate.*

@@ -10,7 +10,9 @@ must read for an ordinary deployment.
 ## Source Layout
 
 ```text
-IaC/terragrunt.stack.hcl                    # app registration and chart pins
+IaC/terragrunt.stack.hcl                    # unit identity and output-path index
+IaC/stacks/<app>/stack.hcl                  # app registration inputs and chart pins
+IaC/stack-defaults.hcl                      # shared Application defaults
 IaC/.catalog/units/live/argocd-app/          # shared Application construction
 clusters/homelab/apps/<app>/
   values.yaml                              # overrides for the upstream chart
@@ -22,7 +24,7 @@ clusters/homelab/apps/<app>/
 Platform resources keep their existing `clusters/homelab/platform/<service>`
 ownership. The inspected repository has no committed `Chart.yaml` or
 `Chart.lock`; it already references remote charts directly. Its
-[stack](../../../IaC/terragrunt.stack.hcl),
+[application stacks](../../../IaC/stacks),
 [OpenClaw values and extras](../../../clusters/homelab/apps/openclaw), and
 [Harbor values and extras](../../../clusters/homelab/apps/harbor) demonstrate
 this layout.
@@ -36,7 +38,7 @@ Argo explicitly discourages using multiple sources to combine unrelated apps.
 ## Reuse Boundaries
 
 - Keep chart name, repository, exact revision, release name, and exceptional
-  Helm parameters explicit in the stack. Generate common Application metadata,
+  Helm parameters explicit in `IaC/stacks/<app>/stack.hcl`. Generate common Application metadata,
   destination, sync policy, and repository defaults. Inspect the evaluated
   manifest rather than copying a previous generated unit.
 - Use the existing `app-template` chart for suitable generic container apps.
@@ -92,7 +94,7 @@ in [[operations/harbor-oci]]. An inventory refresh alone does not verify images.
 Repository-configured Renovate coverage remains incomplete: [renovate.json](../../../renovate.json)
 configures image discovery, but no Argo CD file matching or custom chart
 extractor. Renovate's Terragrunt manager reads module dependencies in
-`terragrunt.hcl`; it does not cover the stack's nested chart revisions. Its
+`terragrunt.hcl`; it does not cover chart revisions in the app `stack.hcl` files. Its
 Argo CD manager requires explicit YAML file matching. Do not infer automated
 chart updates from successful image-update PRs.
 [Renovate Terragrunt manager](https://docs.renovatebot.com/modules/manager/terragrunt/),
@@ -109,7 +111,8 @@ extraction for dependencies outside built-in managers.
 
 ## Small Context for the Next Deployment
 
-Read [[patterns/new-application]], the target app directory, and its stack unit.
+Read [[patterns/new-application]], the target app directory, and its
+`IaC/stacks/<app>/stack.hcl` inputs.
 Generate once, then inspect only that app's effective sources and policy:
 
 ```sh

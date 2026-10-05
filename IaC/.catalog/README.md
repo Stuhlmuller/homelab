@@ -15,8 +15,9 @@ stay unchanged. Edit the templates here, not the generated `terragrunt.hcl`
 files in those live paths.
 
 Argo CD Applications share `units/live/argocd-app`. Per-app dependencies and
-sparse `metadata`/`spec` overrides live in `../terragrunt.stack.hcl` unit
-`values`; common inputs live in `local.argocd_defaults`. The template constructs
+sparse `metadata`/`spec` overrides live in `../stacks/<app>/stack.hcl` inputs.
+The root `../terragrunt.stack.hcl` indexes unit identities and paths; shared
+Application defaults live in `../stack-defaults.hcl`. The template constructs
 the raw Application manifest. See the
 [onboarding example](../../docs/argocd-app-onboarding.md#register-with-shared-defaults)
 and [chart organization decision](../../docs/knowledge-base/patterns/helm-chart-organization.md).

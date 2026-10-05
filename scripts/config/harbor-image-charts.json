@@ -2,7 +2,49 @@
   {
     "chart": "app-template",
     "repoURL": "https://bjw-s-labs.github.io/helm-charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/deluge/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/dispatcharr/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/n8n/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/octobot/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/openclaw/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/prowlarr/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/radarr/stack.hcl",
+    "targetRevision": "4.4.0"
+  },
+  {
+    "chart": "app-template",
+    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
+    "source": "IaC/stacks/sonarr/stack.hcl",
     "targetRevision": "4.4.0"
   },
   {
@@ -14,49 +56,49 @@
   {
     "chart": "base",
     "repoURL": "https://istio-release.storage.googleapis.com/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "cert-manager",
     "repoURL": "https://charts.jetstack.io",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/cert-manager/stack.hcl",
     "targetRevision": "v1.20.3"
   },
   {
     "chart": "cni",
     "repoURL": "https://istio-release.storage.googleapis.com/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "compass",
     "repoURL": "ghcr.io/adinhodovic/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/compass/stack.hcl",
     "targetRevision": "0.6.0"
   },
   {
     "chart": "crossplane",
     "repoURL": "https://charts.crossplane.io/stable",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/platform-crossplane/stack.hcl",
     "targetRevision": "2.3.3"
   },
   {
     "chart": "descheduler",
     "repoURL": "https://kubernetes-sigs.github.io/descheduler",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/descheduler/stack.hcl",
     "targetRevision": "0.33.0"
   },
   {
     "chart": "external-secrets",
     "repoURL": "https://charts.external-secrets.io",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/external-secrets/stack.hcl",
     "targetRevision": "2.0.1"
   },
   {
     "chart": "gateway",
     "repoURL": "https://istio-release.storage.googleapis.com/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
@@ -68,55 +110,55 @@
   {
     "chart": "grafana",
     "repoURL": "https://grafana-community.github.io/helm-charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/grafana/stack.hcl",
     "targetRevision": "12.11.2"
   },
   {
     "chart": "harbor",
     "repoURL": "https://helm.goharbor.io",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/harbor/stack.hcl",
     "targetRevision": "1.19.2"
   },
   {
     "chart": "istiod",
     "repoURL": "https://istio-release.storage.googleapis.com/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/istio/stack.hcl",
     "targetRevision": "1.27.3"
   },
   {
     "chart": "kiali-operator",
     "repoURL": "https://kiali.org/helm-charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/kiali/stack.hcl",
     "targetRevision": "2.26.0"
   },
   {
     "chart": "kube-prometheus-stack",
     "repoURL": "https://prometheus-community.github.io/helm-charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/prometheus/stack.hcl",
     "targetRevision": "85.2.0"
   },
   {
     "chart": "langfuse",
     "repoURL": "ghcr.io/langfuse/langfuse-k8s/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/langfuse/stack.hcl",
     "targetRevision": "2.1.1"
   },
   {
     "chart": "litellm-helm",
     "repoURL": "ghcr.io/berriai",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/litellm/stack.hcl",
     "targetRevision": "0.1.832"
   },
   {
     "chart": "metrics-server",
     "repoURL": "https://kubernetes-sigs.github.io/metrics-server/",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/metrics-server/stack.hcl",
     "targetRevision": "3.13.1"
   },
   {
     "chart": "multica",
     "repoURL": "ghcr.io/multica-ai/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/multica/stack.hcl",
     "targetRevision": "0.4.29"
   },
   {
@@ -128,13 +170,13 @@
   {
     "chart": "tailscale-operator",
     "repoURL": "https://pkgs.tailscale.com/helmcharts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/tailscale/stack.hcl",
     "targetRevision": "1.102.3"
   },
   {
     "chart": "ztunnel",
     "repoURL": "https://istio-release.storage.googleapis.com/charts",
-    "source": "IaC/terragrunt.stack.hcl",
+    "source": "IaC/stacks/istio/stack.hcl",
     "targetRevision": "1.27.3"
   }
 ]

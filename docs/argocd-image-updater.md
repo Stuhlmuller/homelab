@@ -38,7 +38,7 @@ The retirement is safe if the Terragrunt apply is delayed or unavailable:
    parameter paths from the External Secrets reader IAM policy. The parameters
    themselves remain state-managed tombstones.
 
-Keep the inert Application, ConfigMap, zero-replica values file, and lock file
+Keep the inert Application, ConfigMap, and zero-replica values file
 until Argo CD reports the marker revision synced and the retired controller
 resources are absent. A later reviewed change may then remove the Terragrunt
 unit and retirement directory.

@@ -30,7 +30,8 @@ The static gate's `scripts/ci/terragrunt-stack-test.py` generates sparse and
 overridden Applications from the real shared template, checking default
 inheritance, list replacement, historical backend keys, changed-unit selection,
 Azure credential isolation, and retirement ownership. Catalog fixtures carry
-shape only; production defaults belong in `IaC/terragrunt.stack.hcl`.
+shape only; production defaults belong in `IaC/stack-defaults.hcl`, with app
+inputs in `IaC/stacks/<app>/stack.hcl`.
 For a stack refactor, also compare every affected generated unit's inputs,
 dependencies, backend configuration, provider generation, and module source
 against the pre-change revision. HCL validity alone does not prove equivalence.
@@ -59,7 +60,7 @@ and an administrator-authenticated plan before apply:
 
 ```sh
 cd IaC/operator/github-actions-role-policy
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
@@ -665,6 +666,12 @@ unavailable.
 
 ## Terragrunt Checks
 
+OpenTofu generates `.terraform.lock.hcl` during initialization. These provider
+lockfiles are ignored at every directory level; do not commit them or copy a
+peer unit's lock. Exact provider versions live in module/template HCL; CI
+regenerates locks and checksums during init. This policy supersedes the
+provider-lock requirement recorded in [[operations/audit-2026-09-02]].
+
 Generate explicit stack units before focused validation:
 
 ```sh
@@ -676,15 +683,13 @@ Focused unit validation:
 
 ```sh
 cd IaC/live/<stack>/<unit>
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 # Only before an authenticated live plan, reconnect to the intended backend:
 terragrunt --log-disable init -reconfigure -no-color
 terragrunt --log-disable plan -no-color
 ```
 
-For a new unit, establish and review its provider lock first. Shared-app units
-can copy a reviewed peer lock when the module/provider constraints match.
 Backend-free OpenTofu validation does not guarantee credential-free Terragrunt
 initialization: existing backend metadata or Terragrunt's S3 checks can still
 require AWS access. Use an isolated module copy for offline validation when
@@ -704,11 +709,12 @@ details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
-units. When `IaC/terragrunt.stack.hcl`, `IaC/.catalog`, or `IaC/modules`
-changes, the scripts plan or apply the matching generated unit groups instead
+units. When `IaC/terragrunt.stack.hcl`, `IaC/stacks`, `IaC/stack-defaults.hcl`,
+`IaC/.catalog`, or `IaC/modules` changes, the scripts plan or apply the matching
+generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
-files. Stack, catalog, module, shared root/provider, and tracked generated-group
-changes such as provider locks use the local `*` because each command runs from
+files. Stack index/inputs/defaults, catalog, module, shared root/provider, and tracked generated-group
+changes use the local `*` because each command runs from
 its generated-unit root. Plan-only toolchain, Terraform-policy, and execution-
 script changes also refresh every plan without widening production apply scope.
 Affected-only runs combine the repository-relative group with the Git selector

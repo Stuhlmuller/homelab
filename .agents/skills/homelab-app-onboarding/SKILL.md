@@ -12,8 +12,8 @@ workload README and only the storage, secret or ingress runbooks the app needs.
 ## Minimal registration
 
 Add runtime desired state under `clusters/homelab/apps/<app>` or the appropriate
-platform directory. Register it in `IaC/terragrunt.stack.hcl` through the shared
-Application template; do not copy a generated live unit or a full CRD:
+platform directory. Register it in the root `IaC/terragrunt.stack.hcl` index
+through the shared Application template:
 
 ```hcl
 unit "argocd_apps_example" {
@@ -21,19 +21,30 @@ unit "argocd_apps_example" {
   path                   = "live/argocd-apps/example"
   no_dot_terragrunt_stack = true
 
-  values = {
-    defaults     = local.argocd_defaults
-    dependencies = ["external-secrets"]
-    spec = {
-      project = "homelab-workloads"
-    }
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/example/stack.hcl").inputs
+}
+```
+
+Create `IaC/stacks/example/stack.hcl`; do not copy a generated live unit or a
+full CRD:
+
+```hcl
+locals {
+  shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
+}
+
+inputs = {
+  defaults     = local.shared.argocd_defaults
+  dependencies = ["external-secrets"]
+  spec = {
+    project = "homelab-workloads"
   }
 }
 ```
 
 `example` and its dependency are teaching placeholders; choose only the actual
 dependencies and project permissions needed by the app. Common source, revision,
-destination and sync behavior come from stack defaults. Set `spec.destination`
+destination and sync behavior come from `IaC/stack-defaults.hcl`. Set `spec.destination`
 only for differing destination fields and `spec.sources` for Helm or a platform
 path. Source lists replace defaults in full; chart versions and all sources
 must remain explicit. See [Terragrunt merge semantics](../terragrunt-workflows/SKILL.md).
@@ -57,11 +68,10 @@ must remain explicit. See [Terragrunt merge semantics](../terragrunt-workflows/S
 - Keep Terragrunt registration dependencies separate from the app's runtime
   Synced/Healthy prerequisites, and document both in its README.
 
-Generate the stack and inspect the resulting Application. For a new unit using
-the same shared module, copy a reviewed peer's `.terraform.lock.hcl` to its new
-live directory and commit it; generation does not create provider locks. For a
-different provider/module contract, initialize its lock deliberately and review
-the selected versions before readonly validation. Run the affected gates from
+Generate the stack and inspect the resulting Application. OpenTofu initialization
+creates ignored local `.terraform.lock.hcl` files; do not copy or commit them.
+Exact provider versions live in module/template HCL; CI regenerates locks and
+checksums during init. Run the affected gates from
 [Terragrunt workflows](../terragrunt-workflows/SKILL.md). Update the workload
 inventory and affected architecture notes in the same change. For authorized
 delivery, finish [release verification](../homelab-release-verification/SKILL.md),

@@ -94,7 +94,7 @@ set -euo pipefail
 operator_profile="<administrator-profile>"
 aws sso login --profile "$operator_profile"
 cd IaC/operator/github-actions-role-policy
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
 ```

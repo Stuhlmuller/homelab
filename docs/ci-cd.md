@@ -569,7 +569,7 @@ administrator-authenticated un-targeted plan after backend-free validation:
 ```sh
 aws sso login --profile <administrator-profile>
 cd IaC/operator/github-actions-role-policy
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable init -reconfigure -no-color
 AWS_PROFILE=<administrator-profile> terragrunt --log-disable state list
@@ -685,6 +685,10 @@ Use it after the [provider bootstrap](entra-terraform-provider.md), then retain
 operator Terraform for changes beyond the CI permission boundary.
 
 ## Local Equivalents
+
+Exact provider versions live in module/template HCL. OpenTofu initialization
+generates ignored local `.terraform.lock.hcl` files and checksums; CI does not
+require committed provider locks.
 
 Run the same checks locally through the Nix shell:
 

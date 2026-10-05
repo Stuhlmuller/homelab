@@ -4,7 +4,7 @@ Tags: #harbor #oci #packages #gitops
 
 ## Ownership And Access
 
-Harbor is declared in `IaC/terragrunt.stack.hcl` and
+Harbor registration inputs are declared in `IaC/stacks/harbor/stack.hcl`; runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
 (Harbor `2.15.2`). Upstream component references remain digest-pinned; the
 Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh

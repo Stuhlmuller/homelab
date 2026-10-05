@@ -28,13 +28,13 @@ Domain Name Administrator or higher and the normal AWS backend credentials:
 cd IaC
 terragrunt stack generate
 cd operator/entra-stuhlmuller-domain
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 
 umask 077
 domain_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-entra-domain.XXXXXX")"
 trap 'rm -rf -- "$domain_plan_dir"' EXIT
-terragrunt --log-disable init -reconfigure -lockfile=readonly -no-color
+terragrunt --log-disable init -reconfigure -no-color
 terragrunt --log-disable plan -input=false -lock-timeout=5m \
   -out="$domain_plan_dir/read.tfplan" -no-color
 terragrunt --log-disable show -json "$domain_plan_dir/read.tfplan" >"$domain_plan_dir/read.json"
@@ -65,13 +65,13 @@ non-initial:
 cd IaC
 terragrunt stack generate
 cd operator/entra-stuhlmuller-domain
-terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
 
 umask 077
 verify_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/homelab-entra-domain-verify.XXXXXX")"
 trap 'rm -rf -- "$verify_plan_dir"' EXIT
-terragrunt --log-disable init -reconfigure -lockfile=readonly -no-color
+terragrunt --log-disable init -reconfigure -no-color
 terragrunt --log-disable plan -input=false -lock-timeout=5m \
   -out="$verify_plan_dir/verify.tfplan" -no-color
 terragrunt --log-disable show -json "$verify_plan_dir/verify.tfplan" >"$verify_plan_dir/verify.json"
