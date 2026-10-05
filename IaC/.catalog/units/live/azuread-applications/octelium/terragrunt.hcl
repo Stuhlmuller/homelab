@@ -24,6 +24,26 @@ dependencies {
   ]
 }
 
+# Preserve the reviewed provider selections while using the pinned catalog module.
+generate "provider_versions" {
+  path      = "provider-versions_override.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "6.56.0"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "3.9.0"
+    }
+  }
+}
+EOF
+}
+
 generate "aws_provider" {
   path      = "aws-provider.tf"
   if_exists = "overwrite_terragrunt"

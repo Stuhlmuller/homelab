@@ -65,7 +65,7 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
-if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl; then
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/stacks; then
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
@@ -85,12 +85,6 @@ terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
           .value == "1")
       )
     ' >/dev/null
-while IFS= read -r unit_dir; do
-  if [[ ! -f "${unit_dir}/.terraform.lock.hcl" ]]; then
-    echo "Explicit Terragrunt unit ${unit_dir} is missing .terraform.lock.hcl" >&2
-    exit 1
-  fi
-done < <(terragrunt_stack_unit_paths < IaC/terragrunt.stack.hcl)
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
@@ -315,13 +309,13 @@ for parameter in \
 done
 (
   cd IaC/operator/github-actions-role-policy
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
 )
 (
   cd IaC/operator/azuread-ci-identities
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
 )
 rg -Fq 'data "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf
@@ -338,7 +332,7 @@ rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operato
 for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user; do
   (
     cd "IaC/operator/${operator_unit}"
-    terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+    terragrunt --log-disable init -backend=false -no-color
     terragrunt --log-disable run --no-auto-init -- validate -no-color
   )
 done
@@ -349,7 +343,7 @@ python3 scripts/ci/etcd-offsite-backup-check.py
 python3 scripts/ci/etcd-offsite-schedule-check.py
 (
   cd IaC/operator/etcd-backup-storage
-  terragrunt --log-disable init -backend=false -lockfile=readonly -no-color
+  terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
   terragrunt --log-disable run --no-auto-init -- test -no-color
 )

@@ -172,6 +172,8 @@ terragrunt_stack_changed() {
   local repo_root
   local paths=(
     IaC/terragrunt.stack.hcl
+    IaC/stack-defaults.hcl
+    IaC/stacks
     IaC/.catalog
     IaC/modules
     IaC/root.hcl

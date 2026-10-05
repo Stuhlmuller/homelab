@@ -122,35 +122,52 @@ generates a raw CRD-shaped `manifest`; app overrides use Argo CD field names.
 
 ## Register With Shared Defaults
 
-Edit `IaC/terragrunt.stack.hcl`, not the ignored generated files in
-`IaC/live/argocd-apps`. All workload and platform Applications use
-`IaC/.catalog/units/live/argocd-app`. A plain repository application needs only:
+Register the unit in `IaC/terragrunt.stack.hcl` and keep its settings in
+`IaC/stacks/<app>/stack.hcl`. All active workload and platform Applications use
+`IaC/.catalog/units/live/argocd-app`. Do not edit ignored generated files under
+`IaC/live/argocd-apps`.
+
+Add the unit to the root index:
 
 ```hcl
 unit "argocd_apps_example" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/example"
+  source                 = "./.catalog/units/live/argocd-app"
+  path                   = "live/argocd-apps/example"
   no_dot_terragrunt_stack = true
 
-  values = {
-    defaults     = local.argocd_defaults
-    dependencies = ["external-secrets"]
-    spec = {
-      project = "homelab-workloads"
-    }
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/example/stack.hcl").inputs
+}
+```
+
+Create `IaC/stacks/example/stack.hcl`:
+
+```hcl
+locals {
+  shared = read_terragrunt_config(find_in_parent_folders("stack-defaults.hcl")).locals
+}
+
+inputs = {
+  defaults     = local.shared.argocd_defaults
+  dependencies = ["external-secrets"]
+  spec = {
+    project = "homelab-workloads"
   }
 }
 ```
 
+These app files are ordinary Terragrunt configuration fragments. Keep the name
+`stack.hcl`: only the root `terragrunt.stack.hcl` declares generated units.
+
 This example assumes the selected AppProject already permits the app's sources,
 namespace, and rendered resources. The directory basename supplies the
 Application name, destination namespace, and default
-`clusters/homelab/apps/<name>` source. The stack owns repository/revision,
-metadata labels, destination server, project, automated sync, retry, and sync
-options. Add `spec.destination.namespace` or `spec.sources` for exceptions.
+`clusters/homelab/apps/<name>` source. `IaC/stack-defaults.hcl` owns shared
+repository/revision, metadata labels, destination server, project, automated
+sync, retry, and sync options. Add `spec.destination.namespace` or `spec.sources` for exceptions.
 Keep existing unit paths stable: they determine remote-state keys.
 
-`values.metadata` and `values.spec` are sparse CRD overrides. The template merges
+The app file's `inputs.metadata` and `inputs.spec` become sparse CRD overrides
+in the generated unit's `values`. The template merges
 metadata labels, destination, sync policy, automated sync, retry, and backoff
 maps. Other fields replace their defaults; lists always replace, including
 `sources`, `syncOptions`, `info`, and `ignoreDifferences`. Use
@@ -180,9 +197,10 @@ nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 ```
 
-New units also need a reviewed provider lock file under their generated live
-directory; commit the lock, never generated HCL or state. The protected pipeline
-still plans and applies the generated units. Roll back a registration refactor
+OpenTofu initialization generates local `.terraform.lock.hcl` files, which are
+ignored; do not copy or commit them. Exact provider versions live in
+module/template HCL; CI regenerates locks and checksums during init. The protected
+pipeline still plans and applies those units. Roll back a registration refactor
 by reverting the stack/template changes together and regenerating; no backend
 migration is needed when the unit paths remain unchanged.
 

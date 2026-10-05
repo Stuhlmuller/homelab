@@ -40,6 +40,48 @@ with tempfile.TemporaryDirectory() as directory:
         raise AssertionError("A chart omitted from inventory extraction passed")
     check.ROOT = original_root
 
+# App inputs retain their own provenance, even when apps share a chart/version.
+with tempfile.TemporaryDirectory() as directory:
+    original_root = check.ROOT
+    check.ROOT = Path(directory)
+    stack = check.ROOT / "IaC/terragrunt.stack.hcl"
+    stack.parent.mkdir()
+    stack.write_text('unit "app" { values = read_terragrunt_config("stacks/app/stack.hcl").inputs }')
+    bootstrap = check.ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
+    bootstrap.parent.mkdir(parents=True)
+    bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
+                         'chart = "argo-cd"\nchart_version = "1.0.0"\n')
+    source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
+    for app in ("beta", "alpha"):
+        path = check.ROOT / f"IaC/stacks/{app}/stack.hcl"
+        path.parent.mkdir(parents=True)
+        path.write_text('inputs = { defaults = local.defaults, spec = { sources = [' + source + '] } }')
+    expected = [{"source": f"IaC/stacks/{app}/stack.hcl", "repoURL": "https://charts.example.invalid",
+                 "chart": "example", "targetRevision": "2.0.0"} for app in ("alpha", "beta")]
+    for ignored in ("IaC/live/argocd-apps/alpha/stack.hcl",
+                    "IaC/stacks/alpha/.terragrunt-cache/generated/stack.hcl"):
+        path = check.ROOT / ignored
+        path.parent.mkdir(parents=True)
+        path.write_text('inputs = { spec = { sources = [' + source + '] } }')
+    assert [item for item in check.chart_sources() if item["chart"] == "example"] == expected
+    alpha = check.ROOT / "IaC/stacks/alpha/stack.hcl"
+    alpha.write_text(alpha.read_text().replace('"2.0.0"', '"2.1.0"'))
+    assert expected[0] not in check.chart_sources()
+    assert {**expected[0], "targetRevision": "2.1.0"} in check.chart_sources()
+    assert expected[1] in check.chart_sources()
+    valid = alpha.read_text()
+    for field, value in (("repoURL", "https://charts.example.invalid"), ("chart", "example"),
+                         ("targetRevision", "2.1.0")):
+        alpha.write_text(valid.replace(f'"{value}"', f"local.hidden_{field}"))
+        try:
+            check.chart_sources()
+        except SystemExit as error:
+            assert "IaC/stacks/alpha/stack.hcl" in str(error)
+            assert "literal repoURL, chart and targetRevision" in str(error)
+        else:
+            raise AssertionError(f"A nonliteral split-stack {field} passed")
+    check.ROOT = original_root
+
 digest = "sha256:" + "a" * 64
 assert check.normalize("busybox") == "docker.io/library/busybox:latest"
 assert check.normalize("index.docker.io/busybox:1.38@" + digest) == "docker.io/library/busybox@" + digest

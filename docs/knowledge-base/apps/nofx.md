@@ -10,7 +10,8 @@ NOFX is deployed as a homelab trading app at the publicly resolvable
 `homelab-human-web-access` before forwarding to NOFX's own login. The GitOps
 source is `clusters/homelab/apps/nofx`. Octelium passes NOFX's application
 `Authorization` header because NOFX sends its session JWT there. The
-Argo CD Application is generated from `IaC/terragrunt.stack.hcl`.
+Argo CD Application uses `IaC/stacks/nofx/stack.hcl` registration inputs,
+indexed by `IaC/terragrunt.stack.hcl`.
 
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
