@@ -2,6 +2,7 @@
 """Configure Bazarr from mounted files; reconcile its API; back up SQLite safely."""
 
 import argparse
+from contextlib import closing
 import copy
 import hashlib
 import json
@@ -240,8 +241,9 @@ def backup(config=CONFIG, destination=Path("/backup")):
     with tempfile.TemporaryDirectory(prefix=".bazarr-", dir=destination) as directory:
         snapshot = Path(directory) / "bazarr.db"
         source_path = config / "db/bazarr.db"
-        with sqlite3.connect(f"file:{source_path}?mode=ro", uri=True, timeout=30) as source:
-            with sqlite3.connect(snapshot) as target:
+        # SQLite transaction contexts do not close files before NFS cleanup.
+        with closing(sqlite3.connect(f"file:{source_path}?mode=ro", uri=True, timeout=30)) as source:
+            with closing(sqlite3.connect(snapshot)) as target:
                 source.backup(target, pages=256, sleep=0.1)
                 if target.execute("PRAGMA integrity_check").fetchone() != ("ok",):
                     raise RuntimeError("Bazarr backup database integrity check failed")
