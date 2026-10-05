@@ -498,3 +498,11 @@ No AWS signing resource or public transparency log is used. Namespace Pod
 creators and cluster administrators can access the key: keep those permissions
 restricted, back up etcd to encrypted off-node storage, and retain trusted public
 keys independently. See [[../operations/harbor-oci]] for rollout acceptance.
+
+## Kubernetes controller boundary assessment
+
+[HOME-54 inventory and gates](../../kubernetes-cve-2026-2270.md) enumerate literal
+ServiceAccounts and role bindings. Effective live grants, generated chart/operator
+RBAC and human/CI group membership remain unknown. Cordium genesis has explicit
+RBAC bind/escalate capability; absent direct apps grants are not a denial.
+No permissions or credential changes are proposed.
