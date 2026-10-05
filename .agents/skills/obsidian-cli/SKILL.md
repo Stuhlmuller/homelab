@@ -9,7 +9,7 @@ Use the `obsidian` CLI to interact with a running Obsidian instance. Requires Ob
 
 ## Command reference
 
-Run `obsidian help` to see all available commands. This is always up to date. Full docs: https://help.obsidian.md/cli
+Run `obsidian help` to see all available commands. This is always up to date. Full docs: <https://help.obsidian.md/cli>
 
 ## Syntax
 
