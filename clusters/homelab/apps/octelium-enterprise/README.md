@@ -41,7 +41,8 @@ removed automatically. Preserve them until a reviewed recovery-retention
 change establishes they are no longer needed.
 
 The resource-store Deployment declares `initContainers: []` and
-`Replace=true` so Argo CD reconciles the complete Pod template. Server-side
+`Replace=true,ServerSideApply=false` so Argo CD reconciles the complete Pod
+template without inheriting the Application's server-side apply mode. Server-side
 apply alone retains init containers owned by an earlier field manager, even
 when they are absent from the current manifest. Replacement preserves the
 Deployment's `Recreate` strategy and existing PVC.
@@ -77,8 +78,8 @@ Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
 images as `tag@sha256:digest`, preserve `Recreate` on the three store Deployments,
-omit `rollingUpdate`, keep `initContainers: []` and `Replace=true` on the resource
-store, preserve
+omit `rollingUpdate`, keep `initContainers: []` and `Replace=true,ServerSideApply=false` on the
+resource store, preserve
 the Argo image ignore rule for the four generated service proxy Deployments,
 and re-run validation.
 
