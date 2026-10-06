@@ -11,14 +11,10 @@ if (!["--check", "--recover"].includes(mode)) {
   throw new Error("Expected --check or --recover");
 }
 const runtime = JSON.parse(await readFile("/app/package.json", "utf8"));
-const reviewed = {
-  "2026.9.1": { store: "store-CZzbMlii.js", load: "m", state: "usage-state-C0QBjJnZ.js", cooldown: "o", reprobe: "s", usage: "usage-CWqpxTil.js" },
-  "2026.9.2": { store: "store-F1B2duCT.js", load: "d", state: "usage-state-CAKmPrwS.js", cooldown: "o", reprobe: "s", usage: "usage-_yfLJGtN.js" },
-  "2026.9.5": { store: "store-runtime-D8__yyKr.mjs", load: "c", state: "order-GFdW5zWC.mjs", cooldown: "h", usage: "usage-CpSyxDN4.mjs", reprobe: "i" },
-}[runtime.version];
-if (!reviewed) {
-  throw new Error("Recovery requires reviewed OpenClaw 2026.9.1, 2026.9.2, or 2026.9.5 internals");
+if (runtime.version !== "2026.9.5") {
+  throw new Error("Recovery requires reviewed OpenClaw 2026.9.5 internals");
 }
+const reviewed = { store: "store-runtime-D8__yyKr.mjs", load: "c", state: "order-GFdW5zWC.mjs", cooldown: "h", usage: "usage-CpSyxDN4.mjs", reprobe: "i" };
 const { [reviewed.load]: loadStore } = await import(`/app/dist/${reviewed.store}`);
 const { [reviewed.cooldown]: inCooldown } = await import(`/app/dist/${reviewed.state}`);
 const { [reviewed.reprobe]: reprobe } = await import(`/app/dist/${reviewed.usage}`);

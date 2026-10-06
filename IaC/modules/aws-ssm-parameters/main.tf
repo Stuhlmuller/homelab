@@ -1,59 +1,10 @@
 data "aws_caller_identity" "current" {}
 
-data "aws_kms_key" "parameter" {
-  count  = var.parameter_kms_key_id == null ? 0 : 1
-  key_id = var.parameter_kms_key_id
-}
-
 data "aws_kms_key" "existing" {
-  count = var.create_kms_key ? 0 : 1
-
   key_id = var.kms_key_id
 }
 
-data "aws_iam_policy_document" "kms" {
-  # checkov:skip=CKV_AWS_111: KMS key bootstrap policy intentionally grants account-root key administration
-  # checkov:skip=CKV_AWS_109: KMS key bootstrap policy must let account-root manage the key policy
-  # checkov:skip=CKV_AWS_356: KMS key policies use Resource * because the policy is attached to the key itself
-  statement {
-    sid = "EnableAccountKeyAdministration"
-
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-    }
-
-    actions = [
-      "kms:*",
-    ]
-
-    resources = ["*"]
-  }
-}
-
-resource "aws_kms_key" "this" {
-  count = var.create_kms_key ? 1 : 0
-
-  region                  = var.aws_region
-  description             = var.kms_key_description
-  deletion_window_in_days = 30
-  enable_key_rotation     = true
-  policy                  = data.aws_iam_policy_document.kms.json
-  tags                    = var.tags
-}
-
-resource "aws_kms_alias" "this" {
-  count = var.create_kms_key ? 1 : 0
-
-  region        = var.aws_region
-  name          = var.kms_key_id
-  target_key_id = aws_kms_key.this[0].key_id
-}
-
 locals {
-  retained_kms_key_arn  = var.create_kms_key ? aws_kms_key.this[0].arn : data.aws_kms_key.existing[0].arn
-  effective_kms_key_id  = var.parameter_kms_key_id != null ? var.parameter_kms_key_id : (var.create_kms_key ? aws_kms_alias.this[0].name : var.kms_key_id)
-  effective_kms_key_arn = var.parameter_kms_key_id == null ? local.retained_kms_key_arn : data.aws_kms_key.parameter[0].arn
   parameter_reader_names = setunion(toset([
     for name, parameter in var.parameters : name
     if parameter.reader_access
@@ -151,7 +102,7 @@ resource "aws_ssm_parameter" "this" {
   description = each.value.description
   type        = "SecureString"
   value       = each.value.initial_value
-  key_id      = local.effective_kms_key_id
+  key_id      = var.kms_key_id
   tier        = each.value.tier
   tags        = var.tags
 
@@ -173,38 +124,13 @@ resource "aws_ssm_parameter" "generated" {
   description = each.value.description
   type        = "SecureString"
   value       = local.generated_values[each.key]
-  key_id      = local.effective_kms_key_id
+  key_id      = var.kms_key_id
   tier        = each.value.tier
   tags        = var.tags
 
   lifecycle {
     create_before_destroy = true
   }
-}
-
-moved {
-  from = aws_ssm_parameter.this["/homelab/litellm/master-key"]
-  to   = aws_ssm_parameter.generated["/homelab/litellm/master-key"]
-}
-
-moved {
-  from = aws_ssm_parameter.this["/homelab/media-postgres/app-password"]
-  to   = aws_ssm_parameter.generated["/homelab/media-postgres/app-password"]
-}
-
-moved {
-  from = aws_ssm_parameter.this["/homelab/n8n/encryption-key"]
-  to   = aws_ssm_parameter.generated["/homelab/n8n/encryption-key"]
-}
-
-moved {
-  from = aws_ssm_parameter.this["/homelab/openclaw/app-secret"]
-  to   = aws_ssm_parameter.generated["/homelab/openclaw/app-secret"]
-}
-
-moved {
-  from = aws_ssm_parameter.this["/homelab/openclaw/litellm-token"]
-  to   = aws_ssm_parameter.generated["/homelab/openclaw/litellm-token"]
 }
 
 data "aws_iam_policy_document" "parameter_reader" {
@@ -238,8 +164,7 @@ data "aws_iam_policy_document" "parameter_reader_kms" {
     ]
 
     resources = [
-      local.effective_kms_key_arn,
-      local.retained_kms_key_arn,
+      data.aws_kms_key.existing.arn,
     ]
   }
 }
@@ -280,9 +205,8 @@ resource "aws_iam_group_policy_attachment" "parameter_reader" {
   policy_arn = each.value.arn
 }
 
-# Keep the existing inline policy address and shrink it only after every
-# managed SSM policy is attached. This avoids a reader-permission gap while
-# migrating away from the aggregate group inline-policy size limit.
+# Parameter reads use chunked managed policies; the inline policy grants KMS
+# access only after every reader policy is attached.
 resource "aws_iam_group_policy" "parameter_reader" {
   count = length(var.parameter_reader_iam_user_names) > 0 ? 1 : 0
 

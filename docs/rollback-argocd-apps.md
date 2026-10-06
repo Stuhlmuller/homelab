@@ -60,9 +60,7 @@ the PostgreSQL PVC unless intentionally rebuilding the media apps from backups.
 Preserve both `media-postgres-local` and `data-media-postgres-0`. The retained
 NFS physical copy became stale when local writes began; use the repository-owned
 `media-postgres-recovery` logical restore overlay instead of mounting that copy
-directly. Never run the local and NFS PostgreSQL copies at the same time behind
-the `media-postgres` Service. A normal Git revert to the read-only cutover
-revision is not a post-write rollback. Follow
+directly. Follow
 `clusters/homelab/apps/media-postgres/README.md#backup-and-restore`, require the
 recovery Job to be `Complete`, and use a separate reviewed revision to return
 the Application to the writable base overlay.

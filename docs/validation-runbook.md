@@ -88,7 +88,6 @@ and healthy:
 argocd app get external-secrets
 argocd app get cert-manager
 argocd app get istio
-argocd app get argocd-image-updater
 argocd app get kiali
 argocd app get platform-dns
 argocd app get platform-storage
@@ -131,21 +130,11 @@ real URL and SNI preserved. The gate also probes the reviewed public callback
 hosts. If any probe fails, the gate should print one or more `FAIL:` lines and
 exit nonzero; a quiet early exit is a validation harness bug.
 
-For image automation, confirm the retired controller and credential consumer
-are absent and Renovate configuration remains valid:
+For image automation, validate Renovate configuration:
 
 ```sh
 npx --yes --package renovate renovate-config-validator renovate.json
-kubectl -n argocd get configmap argocd-image-updater-retirement
-kubectl -n argocd get deploy argocd-image-updater-controller
-kubectl -n argocd get externalsecret argocd-image-updater-git
-kubectl -n argocd get imageupdater homelab-managed-images
 ```
-
-Expected result: Renovate configuration is valid, the marker exists, and the
-last three resource queries return `NotFound` after the marker-only Application
-has synced. Before its Terragrunt update, the Deployment may still exist with
-zero desired replicas.
 
 For Policy Bot, verify the app stays narrow before registering the GitHub App
 webhook URL:
@@ -167,94 +156,39 @@ Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
 `docs/storage-nfs.md` records backup coverage.
 
-Deluge, Radarr, and Sonarr media-library data is an exception to the default
-StorageClass rule: their downloads, movies, and TV library mounts use static
-PV/PVC objects backed by the QNAP `/media` export. Before syncing that cutover,
-verify `showmount -e 10.1.0.2` lists `/media` for `10.1.0.199` through
-`10.1.0.202`, then confirm the `media-downloads-migration`,
-`media-movies-migration`, and `media-tv-migration` Jobs complete successfully.
+Deluge, Radarr, and Sonarr downloads, movies, and TV mounts use static claims
+against the QNAP `/media` export. Verify `showmount -e 10.1.0.2` lists `/media`
+for all four Talos node addresses, the directory-setup Jobs succeeded, and the
+media claims remain Bound.
 
-Sonarr, Radarr, and Prowlarr must also wait for `media-postgres` to sync and
-become healthy. Verify the ExternalSecrets, StatefulSet, PVC, and logical
-databases documented in `clusters/homelab/apps/media-postgres/README.md`
-before treating those apps as migrated to PostgreSQL. For each app, also verify
-the persistent `/config/config.xml` contains the Servarr-documented
-`PostgresUser`, `PostgresPassword`, `PostgresPort`, `PostgresHost`,
-`PostgresMainDb`, and `PostgresLogDb` entries before running any SQLite
-migration.
+Sonarr, Radarr, and Prowlarr require healthy `media-postgres` and Ready
+ExternalSecrets. Verify their private `config.xml` uses the declared Servarr
+PostgreSQL connection fields without printing credentials. Radarr also requires
+its local config claim and retained NFS backup claim Bound, a Ready Pod on
+`zimaboard-0`, and a successful verified config archive.
 
-Radarr's local-config cutover is not complete until both `radarr-config-local`
-and the retained `radarr-config` claim are bound, the pod is Ready on
-`zimaboard-0`, `/config/.nfs-migration-complete` exists, and the first 04:00
-`radarr-config-backup` Job has completed. Validate one non-empty API key without
-printing it, discard the `/initialize.json` response body, and re-test Prowlarr
-integration. After those checks, remove the migration-only NFS mount in a
-separate revision. Do not reactivate the stale NFS config root after local
-writes begin; use the reviewed archive restore path in the Radarr README.
-
-For the local database cutover, also require all of the following:
-
-Treat the read-only staging state and writable replacement as separate observed
-`main` revisions. Do not squash or merge the replacement until Argo CD has
-synced the staging revision, the migration marker exists, and the one-shot
-cutover backup Job has completed.
-
-Phase one, while `media-postgres` is the read-only local staging pod:
-
-```sh
-kubectl -n media get pod media-postgres-0 -o wide
-kubectl -n media exec statefulset/media-postgres -- \
-  test -f /var/lib/postgresql/data/pgdata/.nfs-migration-complete
-kubectl -n media exec statefulset/media-postgres -- \
-  psql -U media_apps -d media_apps -c '\l'
-kubectl -n media exec statefulset/media-postgres -- \
-  psql -U media_apps -d media_apps -Atqc 'SELECT 1'
-kubectl -n media exec statefulset/media-postgres -- \
-  psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
-kubectl -n media exec statefulset/media-postgres -- \
-  psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
-kubectl -n media get job media-postgres-cutover-backup
-kubectl -n media logs job/media-postgres-cutover-backup
-```
-
-Require all six application databases, `default_transaction_read_only=on`, an
-empty `listen_addresses`, a `Complete` backup Job, and its logged UTC
-`BACKUP_ID` before merging phase two.
-
-Phase two, after the writable replacement syncs:
+Check the active database and scheduled backup:
 
 ```sh
 kubectl get storageclass,persistentvolume media-postgres-local
 kubectl -n media get pvc media-postgres-local data-media-postgres-0
-kubectl -n media get statefulset media-postgres media-postgres-local
+kubectl -n media get statefulset media-postgres-local
 kubectl -n media get pod media-postgres-local-0 -o wide
-kubectl -n media get statefulset media-postgres-local \
-  -o jsonpath='{.spec.template.spec.volumes[*].persistentVolumeClaim.claimName}{"\n"}'
 kubectl -n media get endpointslice \
-  -l kubernetes.io/service-name=media-postgres \
-  -o jsonpath='{range .items[*].endpoints[*]}{.targetRef.name}{"\t"}{.conditions.ready}{"\n"}{end}'
-kubectl -n media exec statefulset/media-postgres-local -- \
-  test -f /var/lib/postgresql/data/.local-cutover-fenced
+  -l kubernetes.io/service-name=media-postgres
 kubectl -n media exec statefulset/media-postgres-local -- \
   psql -U media_apps -d media_apps -Atqc 'SELECT 1'
 kubectl -n media exec statefulset/media-postgres-local -- \
   psql -U media_apps -d media_apps -Atqc 'SHOW default_transaction_read_only'
-kubectl -n media exec statefulset/media-postgres-local -- \
-  psql -U media_apps -d media_apps -Atqc 'SHOW listen_addresses'
 kubectl -n media get cronjob media-postgres-backup
-kubectl -n media get cronjob media-postgres-backup \
-  -o jsonpath='{.status.lastSuccessfulTime}{"\n"}'
 kubectl -n media get job -l app.kubernetes.io/name=media-postgres-backup
 ```
 
-The local claim and PV must be `Bound`, the pod must run on `acer`, the
-legacy StatefulSet must remain at zero replicas, and the replacement must list
-only `media-postgres-local`. The EndpointSlice must list only
-`media-postgres-local-0` as ready. The cutover fence marker must exist,
-`default_transaction_read_only` must report `off`, `listen_addresses` must
-report `*`, and repeated SQL probes must complete without NFS-correlated stalls.
-Verify the latest scheduled backup completes and then test an indexer search in
-Prowlarr, Sonarr, and Radarr before treating the incident as closed.
+Require a Ready local Pod on `acer`, only that Pod in the Service endpoints,
+all six application databases, writable SQL access, and a verified scheduled
+backup. Test indexer searches in Prowlarr, Sonarr and Radarr. Use the
+[database restore procedure](../clusters/homelab/apps/media-postgres/README.md#backup-and-restore)
+for recovery; preserve both claims.
 
 For Radarr access lockout checks, validate that the auth-normalized
 `config.xml` contains exactly one `AuthenticationMethod=External` entry and

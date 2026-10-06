@@ -31,9 +31,7 @@ destination, and resources.
 | metrics-server        | support                   | `kube-system`           | official `metrics-server` Helm chart            | `IaC/live/argocd-apps/metrics-server`        | Yes           | Kubernetes API and node kubelets                                                                   |
 | media-postgres        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`          | `IaC/live/argocd-apps/media-postgres`        | Yes           | external-secrets, platform-storage                                                                 |
 | n8n-postgres          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`            | `IaC/live/argocd-apps/n8n-postgres`          | Yes           | external-secrets, platform-storage                                                                 |
-| github-actions-runner | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner`   | `IaC/live/argocd-apps/github-actions-runner` | Yes           | none                                                                                               |
 | affine                | requested                 | `affine`                | `clusters/homelab/apps/affine`                  | `IaC/live/argocd-apps/affine`                | Yes           | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage                 |
-| argocd-image-updater  | retired/prune placeholder | `argocd`                | `clusters/homelab/apps/argocd-image-updater`    | `IaC/live/argocd-apps/argocd-image-updater`  | Yes           | none                                                                                               |
 | fleet                 | requested                 | `fleet`                 | `clusters/homelab/apps/fleet`                   | `IaC/live/argocd-apps/fleet`                 | Yes           | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, octelium-public       |
 | external-secrets      | requested                 | `external-secrets`      | `clusters/homelab/apps/external-secrets`        | `IaC/live/argocd-apps/external-secrets`      | Yes           | platform-dns                                                                                       |
 | cert-manager          | requested                 | `cert-manager`          | `clusters/homelab/apps/cert-manager`            | `IaC/live/argocd-apps/cert-manager`          | Yes           | external-secrets                                                                                   |
@@ -79,9 +77,7 @@ Sonarr, Deluge, and Radarr keep active config on retained local volumes pinned
 to `zimaboard-0` and archive it nightly to their retained NFS claims. All three
 apps use static claims against the QNAP `/media` export for media-library
 paths. Read-only
-`showmount -e 10.1.0.2` verified `/media` for every Talos node on 2026-05-26;
-do not treat those apps as cut over until the three media migration Jobs have
-completed.
+`showmount -e 10.1.0.2` verifies the required `/media` export before rollout.
 
 Bazarr keeps its SQLite database and config on a retained local volume on
 `zimaboard-0`, with a separate retained NFS backup claim. It reuses
@@ -93,8 +89,7 @@ See [the Bazarr runbook](../clusters/homelab/apps/bazarr/README.md).
 Sonarr, Radarr, and Prowlarr are also not considered ready until
 `media-postgres` is synced, the `media-postgres-auth` and
 `media-postgres-arr-env` ExternalSecrets are ready, the six logical databases
-exist, `media-postgres-local-0` is Ready on `acer`, the legacy
-`media-postgres` StatefulSet is at zero replicas, and the Service EndpointSlice
+exist, `media-postgres-local-0` is Ready on `acer`, and the Service EndpointSlice
 contains only the local pod. Require a verified scheduled backup and successful
 indexer searches in Prowlarr, Sonarr, and Radarr. Each app's `config.xml` must
 also contain the official Servarr PostgreSQL fields, and any required
@@ -187,8 +182,7 @@ release name, and values files in `spec.sources`; see
 [Helm chart organization](knowledge-base/patterns/helm-chart-organization.md).
 Dependencies are relative to the sibling application directory: use an app name
 for another Application and `../../aws-ssm-parameters` for that shared AWS unit.
-Bootstrap installs Argo CD before its CRDs exist; the retired Wazuh unit retains
-its separate state-retirement module. Argo's self-management, Cordium's bootstrap
+Bootstrap installs Argo CD before its CRDs exist. Argo's self-management, Cordium's bootstrap
 child, and the two storage provisioner children retain their existing lifecycle
 owners; their parent deployments are registered by this same stack.
 
@@ -217,8 +211,7 @@ migration is needed when the unit paths remain unchanged.
 Renovate manages repo-declared workload image tags and digests through reviewed
 pull requests against `main`. All committed images must be pinned as
 `tag@sha256:digest`; do not add live-only Argo CD parameter overrides for image
-drift. The retired Image Updater Application remains only as a pruning
-placeholder until the checks in `docs/argocd-image-updater.md` pass.
+drift. See `docs/image-automation.md` for update policy.
 
 ## Sync And Health Exception Record
 

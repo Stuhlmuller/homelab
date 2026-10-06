@@ -36,7 +36,7 @@ The companion `entra-stuhlmuller-pilot-user` unit creates only
 `rodman.mac@stuhlmuller.net` after that verification, with no group, role,
 license, Fleet-console assignment, mailbox, or impact on other accounts. The
 unit uses the separate `entra-verified-family-user` module so a guarded
-operator pilot change cannot alter the legacy AzureAD user collection. The full
+operator pilot change cannot alter the existing AzureAD user collection. The full
 two-stage saved-plan procedure is in the
 [domain module](../modules/entra-domain-verification/README.md) and the
 [Fleet Free runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
@@ -307,15 +307,5 @@ safe reconciliation or restore the broader direct-policy risk.
 `state-bucket-encryption` adopts the existing state bucket's encryption
 configuration and enables S3 Bucket Keys. It preserves the default KMS key,
 explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
-See [KMS audit and rollout](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md)
+See [State encryption](../../docs/knowledge-base/operations/state-encryption.md)
 for the focused plan/apply path, verification, and declarative rollback.
-
-## Legacy KMS key retirement
-
-`legacy-kms-retirement` owns only the adopted legacy key and its alias. Its
-final desired state schedules deletion with a 30-day window. The active
-east-region OpenTofu key is outside this unit. Dependency audit and archive
-verification are complete. The explicitly approved retirement was applied on
-September 5, 2026; deletion is scheduled for October 5. Keep
-`retirement_requested = true` so re-applies preserve retirement. See the
-[KMS audit](../../docs/knowledge-base/operations/kms-cost-audit-2026-09-05.md).

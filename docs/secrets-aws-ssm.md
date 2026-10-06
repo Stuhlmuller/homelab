@@ -11,9 +11,8 @@ as SecureStrings using the AWS-managed `alias/aws/ssm` key. The root input
 `us-east-1`. SSM IAM permissions remain the runtime access boundary; the
 AWS-managed key does not have a customizable customer key policy.
 
-The September 2026 migration preserves all 68 current values and archives
-128 historical versions under AWS-managed S3 encryption. See
-[migration evidence and recovery](knowledge-base/operations/kms-cost-audit-2026-09-05.md).
+Confidential historical recovery copies remain outside the repository. See
+[state encryption and recovery](knowledge-base/operations/state-encryption.md).
 
 ## Placeholder Rules
 
@@ -57,7 +56,7 @@ limits. Splitting the same permissions across group inline policies is not a
 valid workaround because AWS applies a 5,120-character aggregate limit across
 all inline policies on one group. The fixed-size KMS-only inline policy stays
 well below that aggregate limit and is updated only after all managed reader
-policies are attached, preserving access during migration.
+policies are attached, preserving access during policy updates.
 
 Operators applying `IaC/live/aws-ssm-parameters` also need identity-based KMS
 permissions on the resolved `us-west-2` SSM key ARN. An apply role that can
@@ -350,13 +349,8 @@ before login as documented in the Octelium public app README.
 The protected `octelium-public-tunnel.yml` workflow requires an exact reviewed
 main SHA. Its existing production AWS role reads the cert-manager Cloudflare
 DNS token and Tunnel UUID from SSM to reconcile both API records as CNAMEs.
-It uses `CLOUDFLARE_ZONE_SETTINGS_TOKEN` from `homelab-production` only to
-remove retired hostname-specific origin/TLS rules (zone read, Origin Rules
-edit, Config Settings write). DNS itself needs only zone read and DNS edit.
-The UPnP job is suspended; the old origin-port apply workflow rejects use.
-The old `/homelab/octelium/cloudflare-zone-settings-token` declaration remains
-until secret retirement is reviewed separately. No token value enters git or
-workflow output.
+DNS reconciliation needs only zone read and DNS edit. No token value enters
+git or workflow output.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

@@ -157,8 +157,7 @@ ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
 gate are owned by `clusters/homelab/apps/octelium-public`,
 `scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
 The public Tunnel workflow now reconciles all declared CNAMEs, including the
-browser API and native TCP carrier. `--tunnel-only` remains a compatibility
-alias and no longer skips the API.
+browser API and native TCP carrier.
 
 On 2026-09-04, the public root and `/api/health` returned HTTP 200 without
 Octelium denial headers. A read-only projection from `octelium_resources`
@@ -234,18 +233,8 @@ credentials on a Linux Docker host. `.github/workflows/nofx-images.yml` runs PR
 tests/builds with read-only repository permission. Following the Harbor change,
 only current `main` can publish new images to the private Harbor repositories,
 tagged `homelab-<full-main-sha>`; manual dispatch requires that exact SHA.
-The workflow reports digests after pushing. The initial functional repair used
-the migrated artifacts; subsequent releases publish directly to Harbor and use
-the same namespace-scoped `harbor-pull` Secret. See [[../operations/harbor-oci]].
-The reviewed source repair merged in
-[PR #1030](https://github.com/Stuhlmuller/homelab/pull/1030). Its
-[publication workflow](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
-passed. Both anonymous pull checks returned HTTP 401 on September 14. Package
-visibility must remain private. Credential bootstrap
-[PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031), main `0b352ebd`,
-retained upstream images and left the GHCR recovery Secret unattached. The
-initial maintained rollout selected the same digests from Harbor after the
-successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550).
+The workflow reports digests after pushing and uses the namespace-scoped
+`harbor-pull` Secret. See [[../operations/harbor-oci]].
 The rollout was verified with `harbor-pull` ExternalSecret readiness, both
 running Harbor digests, and the live trader stopped. Complete simulation
 acceptance remains separate; use the

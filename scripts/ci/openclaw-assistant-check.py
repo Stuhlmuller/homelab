@@ -4,8 +4,6 @@ import copy
 import hashlib
 import importlib.util
 import json
-import re
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -109,33 +107,6 @@ for job in jobs:
     assert argv[argv.index("--model") + 1] == "openrouter/free"
     assert argv[argv.index("--timeout-seconds") + 1] == str(job["timeoutSeconds"])
 
-retired = json.loads((BUNDLE / "retired-jobs.json").read_text())
-existing = [dict(job, enabled=True) for job in retired] + [
-    {"id": "keep", "name": "Daily Security Audit", "enabled": True}]
-assert reconcile.retiring_ids(existing, retired) == [job["id"] for job in retired]
-assert reconcile.retiring_ids([], retired) == []
-assert reconcile.retiring_ids([dict(job, enabled=False) for job in retired], retired) == []
-try:
-    reconcile.retiring_ids([dict(retired[0], name="Different purpose")], retired)
-    raise AssertionError("repurposed legacy job retired")
-except RuntimeError:
-    pass
-
-# Recovery must never turn an operator pause or a later outage into an enabled job.
-failed_health = {
-    "id": "health", "declarationKey": "homelab:assistant:v1:homelab-health-watch",
-    "enabled": False, "state": {"lastErrorReason": "auth", "autoDisabled": {
-        "reason": "consecutive-failures", "atMs": 1788650230917, "consecutiveErrors": 10}}}
-assert reconcile.recovering_ids([failed_health]) == ["health"]
-for changed in (
-    dict(failed_health, enabled=True),
-    dict(failed_health, declarationKey="unrelated"),
-    dict(failed_health, state={}),
-    dict(failed_health, state={"lastErrorReason": "auth", "autoDisabled": {
-        "reason": "consecutive-failures", "atMs": 1788650230918, "consecutiveErrors": 10}}),
-):
-    assert reconcile.recovering_ids([changed]) == []
-
 with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     reconcile.CONFIG = root / "config.json"
@@ -152,14 +123,8 @@ with tempfile.TemporaryDirectory() as directory:
         run.return_value.returncode = 0
         run.return_value.stdout = b'{"jobs": []}'
         reconcile.reconcile()
-        assert run.call_count == 4
+        assert run.call_count == 3
     assert json.loads(reconcile.STATUS.read_text())["state"] == "ready"
-    with patch.object(reconcile.subprocess, "run") as run:
-        run.return_value.returncode = 0
-        run.return_value.stdout = json.dumps({"jobs": [failed_health]}).encode()
-        reconcile.reconcile()
-        assert ["openclaw", "automations", "enable", "health", "--timeout", "20000"] in [
-            call.args[0] for call in run.call_args_list]
     with patch.object(reconcile.subprocess, "run") as run, patch.object(reconcile.time, "sleep"):
         run.return_value.returncode = 1
         reconcile.reconcile()
@@ -174,20 +139,4 @@ for path in sorted(BUNDLE.iterdir()):
 values = Path("clusters/homelab/apps/openclaw/values.yaml").read_text()
 assert f'homelab.rst.io/openclaw-assistant-sha256: "{digest.hexdigest()}"' in values
 assert '{"path":"plugins.entries.openrouter.enabled","value":true}' in values
-# A new backup must not suppress import when restoring pre-SQLite session state.
-guard = re.search(r'(if "\$had_existing_state"[^\n]+)\n\s+echo "Migrating session state',
-                  values).group(1)
-with tempfile.TemporaryDirectory() as directory:
-    root = Path(directory)
-    migration_marker = root / "migrated"
-    backup_marker = root / "backup"
-    backup_marker.write_text("verified")
-    script = ('had_existing_state=true; migration_marker=$1; backup_marker=$2; '
-              + guard + ' printf import; fi')
-    for migrated, expected in ((False, "import"), (True, "")):
-        if migrated:
-            migration_marker.write_text("verified")
-        result = subprocess.run(["sh", "-c", script, "check", str(migration_marker),
-                                 str(backup_marker)], capture_output=True, text=True, check=True)
-        assert result.stdout == expected
 print("OpenClaw assistant: preservation, idempotence, routing, schedules, rollout checksum passed")

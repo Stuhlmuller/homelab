@@ -232,7 +232,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    argocd.argoproj.io/sync-options: Replace=true
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
@@ -314,7 +313,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    argocd.argoproj.io/sync-options: Replace=true
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
@@ -700,7 +698,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    argocd.argoproj.io/sync-options: Replace=true
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
@@ -738,38 +735,6 @@ spec:
         octelium.com/component-type: cluster
     spec:
       automountServiceAccountToken: false
-      initContainers:
-      - command:
-        - /bin/sh
-        - -ec
-        - |
-          marker=/octelium-data/.homelab-rscstore-wal-recovery-20260826
-          [ -f "$marker" ] && exit 0
-          if [ -f /octelium-data/store.db.wal ]; then
-            quarantine=/octelium-data/store.db.wal.quarantined-20260826
-            [ ! -e "$quarantine" ] || { echo "error: $quarantine already exists" >&2; exit 1; }
-            mv /octelium-data/store.db.wal "$quarantine"
-          fi
-          touch "$marker"
-        image: busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
-        imagePullPolicy: IfNotPresent
-        name: quarantine-invalid-wal
-        resources:
-          limits:
-            cpu: 50m
-            memory: 32Mi
-          requests:
-            cpu: 5m
-            memory: 8Mi
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          readOnlyRootFilesystem: true
-        volumeMounts:
-        - mountPath: /octelium-data
-          name: octelium
       containers:
       - image: ghcr.io/octelium/octeliumee-rscstore:0.22.0@sha256:c7d56cc2cc56422f051be8176e7f3220523e9ff1249dbd711e633542ed82e358
         imagePullPolicy: IfNotPresent

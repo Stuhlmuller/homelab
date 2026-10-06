@@ -16,7 +16,6 @@ configMapGenerator:
       - assistant/HEARTBEAT.md
       - assistant/config.json
       - assistant/jobs.json
-      - assistant/retired-jobs.json
       - assistant/bootstrap.py
       - assistant/reconcile.py
       - assistant/runtime-storage.py

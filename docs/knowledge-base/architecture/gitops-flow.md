@@ -29,13 +29,8 @@ shared remote backend to apply those units.
 
 It also owns state-bucket encryption configuration through
 `state-bucket-encryption`, keeping backend administration outside workload
-CI. See [[operations/kms-cost-audit-2026-09-05]] for the adopted configuration,
-validation evidence, and rollback.
-
-`IaC/operator/legacy-kms-retirement` adopts and retires only the historical
-west-region state key after recovery archives and cross-project dependency
-checks pass. It does not change the retained active OpenTofu key. The exact
-deletion approval and rollout status live in the same KMS audit note.
+CI. See [[operations/state-encryption]] for current configuration and recovery
+requirements.
 
 Octelium recovery has one transport exception, not a desired-state exception:
 a trusted LAN operator may apply the reviewed `kubernetes-node-labels`
@@ -129,11 +124,9 @@ exceptions and dependencies. The template derives the
 name, default namespace, and ordinary app source from the unit directory name.
 Map merging preserves inherited sync settings; lists replace rather than append.
 See the [registration example](../../../docs/argocd-app-onboarding.md#register-with-shared-defaults)
-and [[patterns/helm-chart-organization]]. Bootstrap, retirement, self-management,
+and [[patterns/helm-chart-organization]]. Bootstrap, self-management,
 and child-Application lifecycles keep their existing owners. The latter include
 Cordium bootstrap and both storage provisioners under `platform-storage`.
-Refactor scope and equivalence evidence:
-[[operations/terragrunt-dry-refactor-2026-10-04]].
 
 The module delegates the CRD schema to `kubernetes_manifest` while retaining
 repository policy for encrypted state, field-manager ownership, and the small
@@ -195,6 +188,12 @@ storage class before any repair/import/apply. It selects only the exact
 Langfuse Application; it does not widen the Terragrunt filter or advance the
 full-apply checkpoint. The full bootstrap sequence remains unchanged. See the
 [deployment and readiness gates](../../../clusters/homelab/apps/langfuse/README.md#validation).
+
+Deleted workflow-owned units use temporary configurations at their original
+backend paths. Their generated providers retain the state key-provider and
+encryption-method identities, so retirement can read encrypted state and apply
+only the reviewed, policy-checked destroy plan. Retained secret and backup data
+remain protected by their existing ownership and policy gates.
 
 ## Provider Scope
 

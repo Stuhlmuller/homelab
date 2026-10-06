@@ -51,7 +51,6 @@ spec:
                   complete="${backup_root}/${timestamp}.tar.gz"
                   mkdir -p "$backup_root"
 
-                  test -f /config/.nfs-migration-complete
                   tar -czf "$partial" -C /config .
                   tar -tzf "$partial" >/dev/null
                   tar -xOzf "$partial" ./config.xml >"$extracted"
@@ -89,13 +88,13 @@ spec:
                 - name: local-config
                   mountPath: /config
                   readOnly: true
-                - name: legacy-config
+                - name: backup-config
                   mountPath: /backup
           volumes:
             - name: local-config
               persistentVolumeClaim:
                 claimName: radarr-config-local
                 readOnly: true
-            - name: legacy-config
+            - name: backup-config
               persistentVolumeClaim:
                 claimName: radarr-config

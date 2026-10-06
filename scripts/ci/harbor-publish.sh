@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == migrate || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr) ]] || {
-  echo 'Usage: harbor-publish.sh publish|migrate|mirror|mirror-fleet|mirror-bazarr' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr) ]] || {
+  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr' >&2
   exit 2
 }
 mode="$1"
@@ -38,7 +38,7 @@ if [[ "$mode" == publish ]]; then
   }
 fi
 
-# Validate every migration input before installing credentials or contacting AWS.
+# Validate the mirror inventory before installing credentials or contacting AWS.
 if [[ "$mode" == mirror ]]; then
   manifest="$mirror_manifest"
   jq --exit-status '
@@ -59,25 +59,6 @@ if [[ "$mode" == mirror ]]; then
       all(.images[]; . as $image | any($inventory[0].images[]; . == $image))
     ' "$manifest" >/dev/null
   fi
-else
-manifest=scripts/config/harbor-migration.json
-jq --exit-status '
-  (keys | sort) == ["releases"] and
-  (.releases | type == "array" and length == 2) and
-  ([.releases[].source_revision] | unique | length) == 2 and
-  ([.releases[].source_workflow_run] | sort) == [
-    "https://github.com/Stuhlmuller/homelab/actions/runs/34815485548",
-    "https://github.com/Stuhlmuller/homelab/actions/runs/34926391605"
-  ] and
-  all(.releases[];
-    (keys | sort) == ["images", "source_revision", "source_workflow_run"] and
-    (.source_revision | type == "string" and test("^[0-9a-f]{40}$")) and
-    (.images | type == "array" and length == 2) and
-    ([.images[].name] | sort) == ["homelab-nofx-backend", "homelab-nofx-frontend"] and
-    all(.images[];
-      (keys | sort) == ["digest", "name"] and
-      (.digest | type == "string" and test("^sha256:[0-9a-f]{64}$"))))
-' "$manifest" >/dev/null
 fi
 
 : "${RUNNER_TEMP:?RUNNER_TEMP must be set by GitHub Actions}"
@@ -86,7 +67,6 @@ if [[ "$mode" == publish ]]; then
 fi
 : "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
 [[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
-[[ "$mode" != migrate || -n "${GITHUB_TOKEN:-}" ]]
 [[ ! -e "$HOME/.kube/config" ]] || {
   echo 'Refusing to replace an existing runner kubeconfig.' >&2
   exit 1
@@ -189,12 +169,7 @@ publisher="robot\$homelab+publisher"
 [[ "$mode" != mirror ]] || publisher="robot\$mirror+publisher"
 skopeo login --authfile "$scratch/auth.json" --username "$publisher" \
   --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
-if [[ "$mode" == migrate ]]; then
-  printf '%s' "$GITHUB_TOKEN" |
-    skopeo login --authfile "$scratch/auth.json" --username "$GITHUB_ACTOR" \
-      --password-stdin ghcr.io >/dev/null
-  unset GITHUB_TOKEN
-elif [[ "$mode" == publish ]]; then
+if [[ "$mode" == publish ]]; then
   mkdir "$scratch/docker"
   docker --config "$scratch/docker" login --username "robot\$homelab+publisher" \
     --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
@@ -268,35 +243,20 @@ if [[ "$mode" == mirror ]]; then
   exit 0
 fi
 
-while IFS=$'\t' read -r revision name source_digest; do
-  tag="homelab-${revision}"
+for name in homelab-nofx-backend homelab-nofx-frontend; do
+  tag="homelab-${GITHUB_SHA}"
   destination="harbor.stinkyboi.com/homelab/${name}"
-  if [[ "$mode" == migrate ]]; then
-    skopeo copy --all --preserve-digests --authfile "$scratch/auth.json" \
-      "docker://ghcr.io/stuhlmuller/${name}@${source_digest}" \
-      "docker://${destination}:${tag}"
-  else
-    docker tag "${name}:build" "${destination}:${tag}"
-    docker --config "$scratch/docker" push "${destination}:${tag}"
-    source_digest="$(docker image inspect --format '{{json .RepoDigests}}' "${destination}:${tag}" |
-      jq --raw-output --arg prefix "${destination}@" '.[] | select(startswith($prefix)) | split("@")[1]')"
-    [[ "$source_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-  fi
+  docker tag "${name}:build" "${destination}:${tag}"
+  docker --config "$scratch/docker" push "${destination}:${tag}"
+  source_digest="$(docker image inspect --format '{{json .RepoDigests}}' "${destination}:${tag}" |
+    jq --raw-output --arg prefix "${destination}@" '.[] | select(startswith($prefix)) | split("@")[1]')"
+  [[ "$source_digest" =~ ^sha256:[0-9a-f]{64}$ ]]
   skopeo inspect --raw --authfile "$scratch/auth.json" "docker://${destination}:${tag}" \
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
-done < <(jq --raw-output --arg mode "$mode" --arg revision "$GITHUB_SHA" '
-  if $mode == "migrate" then
-    .releases[] | .source_revision as $source_revision |
-    .images[] | [$source_revision, .name, .digest] | @tsv
-  else
-    # Release history must not duplicate publication of the current build.
-    ([.releases[].images[].name] | unique[]) as $name |
-    [$revision, $name, ""] | @tsv
-  end
-' "$manifest")
+done
 
 if [[ "$mode" == publish ]]; then
   # Only verified, allowlisted digests enter the repository-owned Job template.
@@ -331,40 +291,6 @@ if [[ "$mode" == publish ]]; then
       --key "$scratch/signing.pub" --insecure-ignore-tlog \
       --new-bundle-format=false "$reference" >"$scratch/signature-verification.json"
   done
-fi
-
-if [[ "$mode" == migrate ]]; then
-  # Independently exercise the namespace-scoped pull credential and every blob.
-  # Publisher credentials and the local image cache cannot satisfy this check.
-  aws ssm get-parameter --region us-west-2 \
-    --name /homelab/nofx/harbor-pull-password --with-decryption \
-    --query Parameter.Value --output text >"$scratch/pull-password"
-  [[ -s "$scratch/pull-password" ]]
-  skopeo login --authfile "$scratch/pull-auth.json" --username "robot\$homelab+pull" \
-    --password-stdin harbor.stinkyboi.com <"$scratch/pull-password" >/dev/null
-  rm -f -- "$scratch/pull-password"
-  printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
-  while IFS=@ read -r tagged_repository expected_digest; do
-    repository="${tagged_repository%:*}"
-    # A new empty directory for each artifact prevents one release's blobs
-    # from masking an incomplete pull of another release of the same image.
-    pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
-    skopeo copy --all --preserve-digests --src-authfile "$scratch/pull-auth.json" \
-      "docker://${repository}@${expected_digest}" "dir:${pull_directory}"
-    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
-    pulled_digest="sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)"
-    [[ "$pulled_digest" == "$expected_digest" ]]
-    if skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
-      "docker://${repository}@${expected_digest}" \
-      >"$scratch/anonymous-manifest" 2>"$scratch/anonymous-error"; then
-      echo 'Anonymous access to a private migrated artifact was allowed.' >&2
-      exit 1
-    fi
-    # A network/TLS failure is not evidence that the registry denied access.
-    grep -Eiq 'unauthorized|authentication required|requested access to the resource is denied' \
-      "$scratch/anonymous-error"
-    rm -rf -- "$pull_directory"
-  done <"$scratch/verified-digests"
 fi
 
 # Publish only allowlisted references after transfer and required acceptance pass.

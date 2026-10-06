@@ -32,20 +32,13 @@ The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments intentionally use `Recreate` instead of a
 rolling update. Each process opens a DuckDB-backed `store.db` on its PVC, so a
 second pod against the same volume can fail on the single-writer lock while the
-old pod is still terminating. The resource-level
-`argocd.argoproj.io/sync-options: Replace=true` annotation makes Argo replace
-those adopted Deployments instead of server-side applying the strategy change;
-that replacement clears the package-adopted rolling-update field from live
-Deployments. Do not keep an explicit `rollingUpdate: null` field because it can
-compare differently from the live object's absent field.
+old pod is still terminating. Keep `rollingUpdate` absent when refreshing
+package captures; the deployed stores already use `Recreate`.
 
-`octeliumee-rscstore` includes an incident-specific, completion-marked init
-container for the 2026-08-26 DuckDB recovery. It renames the unreplayable
-`store.db.wal` to `store.db.wal.quarantined-20260826` before startup and never
-deletes it. The earlier `20260821` marker and quarantined WAL remain untouched.
-If the new quarantine already exists while its completion marker is absent, the
-init container fails instead of overwriting evidence. Remove it only after
-rscstore is healthy and the preserved WAL is no longer needed for recovery.
+The resource-store PVC retains private recovery artifacts. Startup runs only
+the store process; historical WAL quarantine files are never replayed or
+removed automatically. Preserve them until a reviewed recovery-retention
+change establishes they are no longer needed.
 
 The `svc-console-octelium`, `svc-dirsync-octelium`,
 `svc-enterprise-octelium-api`, and `svc-public-octelium` Deployments are
@@ -77,8 +70,7 @@ alone can be satisfied by these emergency replicas.
 Use `scripts/octelium-enterprise-package.sh --upgrade` first when changing the
 Enterprise package version. After the package settles, refresh
 `resources.yaml` from the healthy live resources, scrub generated metadata, pin
-images as `tag@sha256:digest`, preserve `Recreate` and resource-level
-`Replace=true` on the three store Deployments, omit `rollingUpdate`, preserve
+images as `tag@sha256:digest`, preserve `Recreate` on the three store Deployments, omit `rollingUpdate`, preserve
 the Argo image ignore rule for the four generated service proxy Deployments,
 and re-run validation.
 

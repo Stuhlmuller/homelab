@@ -1,2 +1,0 @@
-boto3==1.43.108
-cryptography==50.0.2

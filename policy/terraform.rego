@@ -13,53 +13,7 @@ deny contains msg if {
 	some change in terraform_resource_changes
 	change.type in sensitive_delete_resource_types
 	action_deletes(change.change.actions)
-	not archived_ssm_key_retirement(change)
-	not archived_legacy_key_retirement(change)
-	not wazuh_ssm_parameter_retirement(change)
 	msg := sprintf("Terraform plan must not delete sensitive resource %q of type %s", [change.address, change.type])
-}
-
-# Only the guarded retirement helper supplies this external data capability,
-# after checking inactivity and the exact plan. Ordinary applies still deny
-# all four deletions; plan input alone cannot authorize the exception.
-wazuh_ssm_parameter_retirement(change) if {
-	data.wazuh_retirement == true
-	change.type == "aws_ssm_parameter"
-	change.change.actions == ["delete"]
-	change.change.after == null
-	some name in {"indexer-admin-password", "api-password", "dashboard-password", "agent-enrollment-password"}
-	parameter_name := sprintf("/homelab/wazuh/%s", [name])
-	change.address == sprintf("aws_ssm_parameter.generated[%q]", [parameter_name])
-	change.change.before.name == parameter_name
-	change.change.before.type == "SecureString"
-	change.change.before.region == "us-west-2"
-	change.change.before.arn == sprintf("arn:aws:ssm:us-west-2:716182248480:parameter%s", [parameter_name])
-}
-
-# Cross-project state audit found no outside dependencies; all 60 legacy
-# homelab backups are preserved under AWS-managed encryption. The active
-# OpenTofu key is deliberately excluded from this exact-ID exception.
-archived_legacy_key_retirement(change) if {
-	change.type == "aws_kms_key"
-	change.address == "aws_kms_key.legacy[0]"
-	change.change.actions == ["delete"]
-	change.change.after == null
-	change.change.before.arn == "arn:aws:kms:us-west-2:716182248480:key/959539ca-5646-435c-8ae4-aec13b0f0607"
-	change.change.before.key_id == "959539ca-5646-435c-8ae4-aec13b0f0607"
-	change.change.before.deletion_window_in_days == 30
-}
-
-# One-time retirement after the 2026-09-05 aws/ssm migration. The 128-version
-# archive and unchanged-value verification are recorded in the KMS audit note.
-# KMS UUIDs cannot be reused; no other key, replacement, or secret deletion is allowed.
-archived_ssm_key_retirement(change) if {
-	change.type == "aws_kms_key"
-	change.address == "aws_kms_key.this[0]"
-	change.change.actions == ["delete"]
-	change.change.after == null
-	change.change.before.arn == "arn:aws:kms:us-west-2:716182248480:key/d3332190-27f9-4b5b-867d-ccccc3e5efc8"
-	change.change.before.key_id == "d3332190-27f9-4b5b-867d-ccccc3e5efc8"
-	change.change.before.deletion_window_in_days == 30
 }
 
 deny contains msg if {

@@ -73,7 +73,7 @@ directly to the Istio gateway with its original Host header, and
 the public certificate/DNS shape.
 
 After Argo CD loads the new `octelium-public` pod revision, run the protected
-workflow to remove the retired WAN origin rules and reconcile Tunnel DNS:
+workflow to reconcile Tunnel DNS:
 
 ```sh
 gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
@@ -81,16 +81,11 @@ nix develop --command python3 scripts/octelium-tunnel-check.py
 ```
 
 The workflow uses the existing production AWS role to read the DNS token and
-Tunnel UUID from SSM, and `CLOUDFLARE_ZONE_SETTINGS_TOKEN` to remove the old
-hostname-specific origin/TLS rules. The latter needs zone read, Origin Rules
-edit, and Config Settings write. API responses remain in a temporary private
-log. Retry after correcting declared inputs if any stage fails; partial DNS
-changes are possible and the workflow is idempotent.
-
-The old UPnP CronJob is suspended and its Grafana lease alert paused. It no
-longer renews router mappings; any prior leased mapping expires naturally.
-The dedicated gateway and cluster split DNS remain available for in-cluster
-clients. The legacy origin-port apply workflow now rejects use.
+Tunnel UUID from SSM. It previews and reconciles the declared Tunnel records;
+responses remain in a temporary private log. Retry after correcting declared
+inputs if any stage fails; partial DNS changes are possible and reconciliation
+is idempotent. The dedicated gateway and cluster split DNS serve in-cluster
+clients; public transport uses the outbound Tunnel.
 
 For rollback, revert the Tunnel configuration and pod revision through a
 reviewed PR. Do not restore WAN DNS or port forwarding without a separately

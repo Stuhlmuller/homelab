@@ -148,7 +148,7 @@ class FleetFreeTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.profiles = Path(self.directory.name)
-        for name in helper.MAC_FILES + helper.IOS_FILES + helper.LEGACY_MAC_FILES:
+        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
 
@@ -200,12 +200,12 @@ class FleetFreeTest(unittest.TestCase):
         return entry
 
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
-        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "mac-baseline-catalog", "ios-baseline", "console-sso", "reporting"):
+        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
             with self.subTest(action=action):
                 args = [action]
-                if action in ("mac-baseline", "ios-baseline"):
+                if action == "mac-baseline":
                     args += ["--host-id", "2"]
-                if action in ("mac-baseline-catalog", "ios-baseline"):
+                if action == "mac-baseline-catalog":
                     args += ["--remove"]
                 status, _, loader = self.run_command(args)
                 self.assertEqual(status, 0)
@@ -214,20 +214,9 @@ class FleetFreeTest(unittest.TestCase):
                 self.assertEqual(self.api.calls, [])
                 self.assertEqual(self.mdm.calls, [])
 
-    def test_retired_ios_install_is_rejected_before_credentials_modules_and_api(self):
-        for flags in ([], ["--execute"]):
-            with self.subTest(flags=flags):
-                status, output, loader = self.run_command(["ios-baseline", "--host-id", "2"] + flags)
-                self.assertEqual(status, 1)
-                self.assertIn("ios-baseline requires --remove", output)
-                loader.assert_not_called()
-                self.api.initial_password.assert_not_called()
-                self.assertEqual(self.api.calls, [])
-                self.assertEqual(self.mdm.calls, [])
-
     def test_wrong_platform_and_boolean_platform_fail_before_login(self):
         for filename, value in ((helper.MAC_FILES[0], 1), (helper.MAC_FILES[0], 2),
-                                (helper.IOS_FILES[0], 5), (helper.IOS_FILES[0], True)):
+                                (helper.MAC_FILES[0], True)):
             with self.subTest(filename=filename, value=value):
                 path = self.profiles / filename
                 original = path.read_bytes()
@@ -330,7 +319,7 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual(self.mdm.installed, [UNRELATED, entra, legacy])
 
     def test_selected_device_actions_require_positive_host_ids_before_loading_credentials(self):
-        for action in ("mac-baseline", "ios-baseline"):
+        for action in ("mac-baseline",):
             for host_args in ([], ["--host-id", "0"], ["--host-id", "-1"]):
                 with self.subTest(action=action, host_args=host_args), \
                         patch.object(helper, "module") as loader, \
@@ -434,38 +423,6 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual(sum(method == "DELETE" for method, _, _, _ in self.api.calls), 1)
         self.assertEqual(len(self.api.catalog), 2)
         self.assertEqual(self.mdm.calls, [])
-        self.assert_logged_out()
-
-    def test_ios_wrong_host_identity_or_platform_cannot_queue_commands(self):
-        for field, value in (("platform", "darwin"), ("platform", "linux"), ("id", 3),
-                             ("uuid", "not-a-uuid")):
-            with self.subTest(field=field):
-                original = copy.deepcopy(self.api.host)
-                self.api.host[field] = value
-                self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--remove", "--execute"])[0], 1)
-                self.assert_no_setup_mutations()
-                self.mdm.local_host.assert_not_called()
-                self.assert_logged_out()
-                self.api.host = original
-
-    def test_ios_removes_only_retired_profile_from_selected_device(self):
-        profile = plistlib.loads((self.profiles / helper.IOS_FILES[0]).read_bytes())
-        self.mdm.installed.append(profile)
-        status, _, _ = self.run_command(["ios-baseline", "--host-id", "2", "--remove", "--execute"])
-        self.assertEqual(status, 0)
-        self.assertTrue(all(host == IOS_UUID for host, _ in self.mdm.calls))
-        self.assertEqual([command for _, command in self.mdm.calls], [
-            {"RequestType": "ProfileList"},
-            {"RequestType": "RemoveProfile", "Identifier": profile["PayloadIdentifier"]},
-            {"RequestType": "ProfileList"},
-        ])
-        self.mdm.local_host.assert_not_called()
-        self.assertEqual(self.mdm.installed, [UNRELATED])
-        self.assert_logged_out()
-        self.mdm.calls.clear()
-        self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--remove", "--execute"])[0], 0)
-        self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
-        self.assertEqual(self.mdm.installed, [UNRELATED])
         self.assert_logged_out()
 
     def test_remove_is_idempotent_and_never_removes_another_profile(self):

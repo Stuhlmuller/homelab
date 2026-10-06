@@ -74,7 +74,6 @@ These files are the source of truth:
 | --- | --- |
 | [Host-scoped Mac baseline](profiles/macos-security-baseline-host.mobileconfig) | Password required, at least 8 characters, non-simple; maximum 5 minutes idle before screen lock; password required immediately after lock. No scheduled expiration, history requirement, forced next-login password change, or failed-attempt threshold is configured. |
 | [Retired global Mac baseline](profiles/macos-security-baseline.mobileconfig) | Removal reference only. The operator permits deleting its global catalog assignment, not uploading it again. |
-| [Retired iPhone/iPad baseline](profiles/ios-passcode-baseline.mobileconfig) | Removal reference only. No repository-managed iPhone/iPad passcode baseline is desired; the operator rejects installation. |
 | [Mac Platform SSO](profiles/macos-entra-platform-sso.mobileconfig) | Microsoft Company Portal extension, `Password` method, shared device keys, existing accounts only. No account creation, authorization/privilege changes, or forced online authentication. |
 
 The Mac baseline uses `com.apple.mobiledevice.passwordpolicy`. Apple applies the
@@ -87,8 +86,7 @@ PSSO synchronization, the local account uses the accepted Entra password.
 See [Entra's policy](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad-combined-policy)
 and [Apple's passcode schema](https://raw.githubusercontent.com/apple/device-management/release/mdm/profiles/com.apple.mobiledevice.passwordpolicy.yaml).
 
-The Mac profiles explicitly target `TargetDeviceType=5`; the retired mobile
-baseline targets `1` (iPhone/iPad). The host-scoped Mac baseline has a distinct
+The Mac profiles explicitly target `TargetDeviceType=5`. The host-scoped Mac baseline has a distinct
 identifier and UUID from the retired global baseline; identities remain stable
 within each profile. They contain no passwords, enrollment secrets or tenant credentials.
 No profile enables FileVault, rotates recovery keys or changes encryption state.
@@ -100,12 +98,6 @@ Enrollment, Apple ignores many passcode keys and imposes its own minimum rules.
 Removing the retired baseline does not override Apple's enrollment requirements
 or another provider's profiles. Fleet profile acknowledgement is delivery evidence; it is not a test
 of password complexity, screen locking or a user's current passcode.
-
-The iPhone/iPad baseline was retired at the owner's request on 2026-10-04 after
-it prompted for a compliant passcode. Its payload remains only to identify
-existing installations for removal; `validate-profiles` excludes it and
-`ios-baseline` requires `--remove`. Removal preserves the current passcode and
-other profiles. Re-enabling this baseline requires a reviewed code change.
 
 ### Mac-only baseline through individual installs
 
@@ -363,12 +355,6 @@ nix develop --command python3 -I scripts/fleet-free-setup.py console-sso --execu
 python3 -I scripts/fleet-free-setup.py reporting --execute
 python3 -I scripts/fleet-free-setup.py mac-pilot --execute
 nix develop --command python3 -I scripts/fleet-entra-pilot-credentials.py --pilot stuhlmuller --output <PRIVATE_FILE_OUTSIDE_REPO>
-```
-
-Remove an existing retired iPhone/iPad baseline with:
-
-```sh
-python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --remove --execute
 ```
 
 Omit `--execute` to preview without reading credentials or contacting APIs.

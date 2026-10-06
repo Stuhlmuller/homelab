@@ -32,7 +32,6 @@ Options:
   --catalog PATH              Octelium catalog file. Default: docs/examples/octelium/homelab-services.yaml
   --idp-name NAME             Required Octelium IdentityProvider name. Default: entra
   --path PATH                 HTTPS path to probe on each app hostname. Default: /
-  --client-implementation IMPL Deprecated; accepted for compatibility.
   --homelab-kubeconfig PATH   Kubeconfig for the homelab cluster. Default: kubectl default
   --homelab-context NAME      Kube context for homelab connector checks. Default: kubectl current context
   --octelium-kubeconfig PATH  Kubeconfig for the Octelium control-plane cluster. Default: kubectl default
@@ -57,10 +56,6 @@ while [ "$#" -gt 0 ]; do
       ;;
     --path)
       TEST_PATH="$2"
-      shift 2
-      ;;
-    --client-implementation)
-      # Deprecated; accepted for compatibility.
       shift 2
       ;;
     --homelab-kubeconfig)

@@ -45,12 +45,6 @@ async function run(options = {}) {
       probes++;
       if (options.probeFails) throw new Error("private diagnostic must stay private");
     } },
-    "/app/dist/store-F1B2duCT.js": { d: loadStore },
-    "/app/dist/usage-state-CAKmPrwS.js": { o: (store) => store.blocked },
-    "/app/dist/usage-_yfLJGtN.js": { s: () => { probes++; } },
-    "/app/dist/store-CZzbMlii.js": { m: loadStore },
-    "/app/dist/usage-state-C0QBjJnZ.js": { o: (store) => store.blocked },
-    "/app/dist/usage-CWqpxTil.js": { s: () => { probes++; } },
   };
   async function moduleFor(name) {
     const exports = modules[name];
@@ -69,20 +63,12 @@ async function run(options = {}) {
   return { probes, reloads, output, error, code: process.exitCode ?? 0 };
 }
 
-for (const options of [{ version: "2026.9.3" }, { ambiguous: true }, { source: "codex_rate_limits" }]) {
+for (const options of [{ version: "2026.9.1" }, { version: "2026.9.2" }, { version: "2026.9.3" }, { ambiguous: true }, { source: "codex_rate_limits" }]) {
   const result = await run(options);
   assert.ok(result.error);
   assert.equal(result.probes, 0);
   assert.equal(result.reloads, 0);
 }
-const legacy = await run({ version: "2026.9.1", available: true });
-assert.equal(legacy.error, undefined);
-assert.equal(legacy.code, 0);
-assert.equal(legacy.probes, 1);
-assert.equal(legacy.reloads, 1);
-const previous = await run({ version: "2026.9.2", available: true });
-assert.equal(previous.error, undefined);
-assert.equal(previous.code, 0);
 const failedProbe = await run({ probeFails: true });
 assert.equal(failedProbe.code, 1);
 assert.equal(failedProbe.reloads, 0);

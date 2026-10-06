@@ -10,7 +10,6 @@ on:
       - scripts/ci/harbor-publish.sh
       - clusters/homelab/apps/harbor/signing-job.yaml
       - scripts/ci/harbor-publish-test.py
-      - scripts/config/harbor-migration.json
       - scripts/config/harbor-signing.json
       - scripts/ci/static-checks.sh
       - policy/workflows*.rego
@@ -22,7 +21,6 @@ on:
       - scripts/ci/harbor-publish.sh
       - clusters/homelab/apps/harbor/signing-job.yaml
       - scripts/ci/harbor-publish-test.py
-      - scripts/config/harbor-migration.json
       - scripts/config/harbor-signing.json
       - scripts/ci/static-checks.sh
       - policy/workflows*.rego

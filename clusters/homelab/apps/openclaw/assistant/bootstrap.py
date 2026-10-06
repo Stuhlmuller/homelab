@@ -61,7 +61,7 @@ def install(bundle, state, config_path):
         raise ValueError("main workspace must be inside persistent OpenClaw state")
     patch = json.loads((bundle / "config.json").read_text())
     model = patch["agents"]["defaults"]["model"]["primary"]
-    # A migrated allowlist must include the managed default; empty means unrestricted.
+    # A restricted allowlist must include the managed default; empty means unrestricted.
     allowed = defaults.get("modelPolicy", {}).get("allow")
     if allowed and model not in allowed:
         allowed.append(model)
@@ -85,9 +85,7 @@ def install(bundle, state, config_path):
         if path.is_symlink():
             raise ValueError("managed workspace files must not be symlinks")
         original = path.read_text() if path.exists() else ""
-        # Retire the old polling checklist, which otherwise duplicates managed jobs.
-        retained = "" if name == "HEARTBEAT.md" else original
-        updates.append((path, original, section(retained, (bundle / name).read_text())))
+        updates.append((path, original, section(original, (bundle / name).read_text())))
     # Validate every section before making any change; retain the first originals.
     backup = state / "assistant-backups" / "v1"
     first_install = not (backup / "openclaw.json").exists()

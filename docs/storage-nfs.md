@@ -12,7 +12,7 @@ PostgreSQL restore drill has gone 30 hours without a verified success.
 
 Octelium PostgreSQL remains NFS-backed, but a separate retained NFS claim now
 stores daily verified logical backups at 02:30 UTC with
-14-day retention. This creates a migration and logical-recovery checkpoint; it
+14-day retention. This creates a logical-recovery checkpoint; it
 is not an independent copy because both claims use the same QNAP export.
 
 Langfuse chart `2.1.1` directly runs single-replica PostgreSQL (`20Gi`),
@@ -22,13 +22,9 @@ objects after 30 days. There is no automatic logical backup or restore job for
 these datastores. The retained PVCs and S3 lifecycle are not independent
 recovery copies, so record and test a manual restore procedure before claiming
 backup/restore readiness for `https://langfuse.stinkyboi.com`.
-The approved interrupted-migration replay uses a separate retained 1Gi
-`langfuse-migration-recovery` claim for private schema/history artifacts,
-guarded by exact empty-table checks. It does not provide recurring backups or
-an independent failure domain; no restore drill has been completed. Keep this
-claim through Job cleanup and replica restoration. `recovery-pvc.yaml` retains
-the same managed claim after the Job/ConfigMap wiring is removed; see the
-[recovery runbook](../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
+The retained 1Gi `langfuse-migration-recovery` claim stores private recovery
+artifacts. Preserve it independently of application rollout and cleanup; it
+provides neither recurring backups nor an independent failure domain.
 
 ## NAS Configuration
 
@@ -57,8 +53,7 @@ then re-run `rpcinfo -p 10.1.0.2` and confirm only the required NFS version is
 advertised.
 
 The `homelab` shared folder grants NFS read/write access only to the Talos node
-addresses. The `Media` shared folder must use the same node allow-list before
-the media migration is applied:
+addresses. The `Media` shared folder uses the same node allow-list:
 
 | Node | Address | Access |
 | --- | --- | --- |
@@ -79,14 +74,7 @@ Verify the export path and allow-list from an operator workstation:
 showmount -e 10.1.0.2
 ```
 
-Expected result before media-library cutover:
-
-```text
-Exports list on 10.1.0.2:
-/homelab 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199
-```
-
-Expected result before syncing the Servarr media-storage migration:
+Expected result:
 
 ```text
 Exports list on 10.1.0.2:
@@ -148,16 +136,10 @@ exceptions are:
 | `media-movies` | `clusters/homelab/apps/radarr/media-storage.yaml` | Radarr, Bazarr | `/media/movies` |
 | `media-tv` | `clusters/homelab/apps/sonarr/media-storage.yaml` | Sonarr, Bazarr | `/media/tv` |
 
-Each media app also owns a migration Job that runs as UID/GID `65534`, mounts
-the old dynamically provisioned PVC read-only, copies its files into the
-corresponding `/media` subdirectory, applies `a+rwX` permissions, and performs a
-write test before the app rollout reaches the new volume mounts. The legacy
-`deluge-downloads`, `radarr-media`, and `sonarr-media` claims stay in desired
-state as migration sources and rollback references until the `/media` copy is
-verified. The broad directory mode is intentional for this NAS path because QNAP
-NFS squashes Kubernetes client UIDs to the NAS guest identity; the security
-boundary is the NAS export allow-list and the cluster namespace, not POSIX
-per-user ownership on the export.
+The media apps own bounded directory-setup Jobs that create the required
+`/media` subdirectories and set guest-compatible permissions without copying
+existing data. QNAP squashes client UIDs to its guest identity; access is
+constrained by the NAS export allow-list and Kubernetes namespace.
 
 ## Validation
 

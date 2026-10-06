@@ -27,7 +27,6 @@ Options:
                                   Default: /homelab/cert-manager/cloudflare-api-token
   --tunnel-id-parameter NAME      SSM parameter containing the Cloudflare Tunnel UUID.
                                   Default: /homelab/octelium/cloudflare-tunnel-id
-  --tunnel-only                   Deprecated compatibility flag; all records now use the tunnel.
   --dry-run                       Print intended DNS changes without writing.
   -h, --help                      Show this help.
 USAGE
@@ -54,10 +53,6 @@ while [[ $# -gt 0 ]]; do
     --tunnel-id-parameter)
       tunnel_id_parameter="$2"
       shift 2
-      ;;
-    --tunnel-only)
-      # All routes now use the tunnel.
-      shift
       ;;
     --dry-run)
       dry_run="true"
@@ -190,9 +185,6 @@ if [[ "$domain" == "$zone_name" ]]; then
   hostnames+=("octelium.${domain}")
 fi
 
-# Retire the short-lived two-label CI endpoint. The certificate only covers
-# first-level subdomains, so the replacement is kubernetes-api-ci.<domain>.
-retired_hostnames=("kubernetes-api.ci.${domain}")
 
 delete_exact_records() {
   local hostname="$1"
@@ -277,10 +269,4 @@ for hostname in "${hostnames[@]}"; do
   delete_exact_records "$hostname" A
   delete_exact_records "$hostname" AAAA
   upsert_record CNAME "$hostname" "$tunnel_target"
-done
-
-for hostname in "${retired_hostnames[@]}"; do
-  delete_exact_records "$hostname" A
-  delete_exact_records "$hostname" AAAA
-  delete_exact_records "$hostname" CNAME
 done

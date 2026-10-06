@@ -20,7 +20,6 @@ is delivered through Argo CD, Helm, Kustomize, and committed manifests.
 | `docs/knowledge-base/` | Obsidian-compatible Markdown vault for cross-cutting architecture and operations context. |
 | `policy/` | Conftest/Rego policies for Terraform, Kubernetes, and GitHub Actions checks. |
 | `scripts/ci/` | Reusable local and CI validation helpers. |
-| `specs/` | Feature specs, plans, task lists, and design artifacts. |
 
 ## Change Flow
 

@@ -81,18 +81,12 @@ export. Radarr and Sonarr mount that same claim at `/downloads`, so their
 download-client checks can see the files Deluge creates without remote path
 mappings.
 
-The completed `media-downloads-migration` Job is retired after its verified May
-2026 completion. Its replacement `media-downloads-directories` Job only
-creates required directories and sets their directory permissions. It never
-mounts the retained `deluge-downloads` source or copies old files over active data.
-Only this idempotent Job uses `Force=true,Replace=true`, so image changes
-recreate it without patching immutable Pod templates. Its deadline is two
-minutes; the dedicated deny-all NetworkPolicy is installed first. Argo CD prunes
-the completed legacy Job and its NetworkPolicy; all PVs/PVCs remain declared.
-
-On rollback, preserve the directory Job and claims. Do not restore the legacy
-copy Job: recreating it can overwrite newer media. A historical data restore
-requires a separate reviewed, fenced recovery operation.
+The `media-downloads-directories` Job creates required directories and sets
+nonrecursive directory permissions. It uses `Force=true,Replace=true` so image
+changes recreate it without patching immutable Pod templates. Its deadline is
+two minutes; the dedicated deny-all NetworkPolicy is installed first. Claims
+remain declared independently of this Job. Restoring historical data requires
+a reviewed recovery with writers stopped.
 
 Use these Deluge paths:
 
@@ -113,19 +107,14 @@ Active Deluge config uses the retained `deluge-config-local` volume backed by
 files, authentication, and probe reads from the QNAP NFS latency path that
 repeatedly stalled Deluge while the VPN remained healthy.
 
-The initial cutover stopped the singleton and cold-copied its existing
-`deluge-config` NFS claim into the empty local volume before starting Deluge.
-The guarded copy took 4 minutes 6 seconds for roughly 5.2 MB, directly
-demonstrating the QNAP stall on the old startup path. The steady-state pod
-mounts only the local config and shared downloads claims; the retained NFS
+The Pod mounts only the local config and shared downloads claims; the retained NFS
 config claim is mounted only by the backup CronJob.
 
 `deluge-config-backup` writes a verified compressed archive of the local config
 back to `deluge-config` at 03:30 Pacific each day and retains 14 days. The
 archive is a best-effort filesystem snapshot of a running daemon. Keep several
 generations because related state files can change while an archive is being
-read. The first scheduled run completed and validated
-`20260731T103003Z.tar.gz`.
+read.
 
 Steady-state startup assigns only the local `/config` mount root to UID/GID
 `1000`, then removes LinuxServer's broad ownership hook before `/init`. This
@@ -181,14 +170,11 @@ kubectl -n media get pod -l app.kubernetes.io/name=deluge
 kubectl get persistentvolume deluge-config-local
 kubectl -n media get pvc deluge-config-local deluge-config
 kubectl -n media logs deploy/deluge -c gluetun
-kubectl -n media exec deploy/deluge -c app -- \
-  test -f /config/.nfs-migration-complete
 kubectl -n media get cronjob deluge-config-backup
 ```
 
 The ExternalSecret should be ready, the `deluge-vpn` Secret should exist, the
-local and retained NFS claims should be bound, the migration marker should
-exist, the Pod should be ready on `zimaboard-0`, and Gluetun logs should show a
+local and retained NFS claims should be bound, the Pod should be ready on `zimaboard-0`, and Gluetun logs should show a
 healthy WireGuard session.
 This command should return success only while the VPN is healthy:
 

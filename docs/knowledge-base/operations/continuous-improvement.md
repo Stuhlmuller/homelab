@@ -62,8 +62,38 @@ organization-policy blocker is tracked below.
 
 ## Open Findings
 
-The [[audit-2026-09-04]] records the current audit, OpenClaw config-migration
-repair, and newly confirmed NOFX access-boundary failure. The
+- **Area:** OpenClaw assistant scheduling
+- **Finding:** Before the cleanup rollout, Gateway readiness and SQLite mount
+  identity passed, but the assistant reconciliation receipt already reported
+  failure at `2026-10-05T05:57:58Z`: the Gateway automation API rejected
+  reconciliation. The three declared jobs exist; morning/daily jobs are enabled
+  with timed-out last runs, while health-watch is disabled.
+- **Next step:** Compare this baseline after rollout, preserve the disabled job,
+  and diagnose the existing scheduler failure through the declared configuration
+  and operator workflow. Gateway health alone does not establish assistant
+  scheduling acceptance.
+
+
+- **Status:** pending rollout
+- **Area:** n8n AI routing
+- **Evidence:** Read-only database inspection on 2026-10-05 found the configured
+  workflow still uses the Bedrock model node while the n8n Pod is Pending. The
+  declared workflow initializer has not completed its intended routing change.
+- **Next step:** Resolve scheduling through reviewed desired state, then verify
+  the declared initializer and model routing. Keep the initializer until those
+  checks pass; repository cleanup must not discard a pending functional change.
+
+
+- **Status:** open
+- **Area:** GitOps application health
+- **Evidence:** Read-only inspection during repository cleanup on 2026-10-05
+  found LiteLLM and Multica OutOfSync/Healthy and n8n Synced/Degraded. These
+  findings predate this source cleanup; no live mutation was performed.
+- **Next step:** Inspect current diffs and failing n8n resources, then repair
+  their repository-owned desired state and validate through normal rollout.
+
+
+The [[audit-2026-09-04]] records NOFX access-boundary and runtime findings. The
 [[audit-2026-09-02]] records the preceding repository fixes, read-only live
 inspection, validation, and remaining blockers. The broader
 [[audit-2026-08-30]] records prior live repairs and remediation PRs. Public API
@@ -207,28 +237,15 @@ observations below retain their original dates.
   `scripts/octelium-e2e-check.sh`. Total TLS cannot cover Cloudflare Tunnel
   hostnames, so use an explicit advanced wildcard.
 
-- **Status:** superseded by outbound Tunnel transport; rollout verification pending
+- **Status:** sustained transport acceptance pending
 - **Area:** Octelium / public gRPC transport
-- **Evidence:** On 2026-08-28 the public API completed Cloudflare TLS and HTTP/2
-  but returned no gRPC response, while direct NodePort `10.1.0.200:30443`
-  returned unauthenticated `grpc-status: 16`. The lease CronJob had not
-  succeeded since 2026-08-06, and its `zimaboard-1` target became NotReady.
-  Desired state moves the existing miniupnpc reconciler to Ready `zimaboard-0`,
-  pins the end-to-end gRPC request to a public `1.1.1.1` answer, and alerts when
-  the last successful renewal is stale or absent. Live IGD discovery still
-  reports no usable UPnP gateway. Read-only checks on 2026-09-02 confirmed the
-  public API still times out while the direct LAN origin returns HTTP/2 and
-  unauthenticated `grpc-status: 16`; the latest lease Jobs still fail.
-- **Risk:** The old WAN path remains unavailable. September 5 operator
-  clarification selects Cloudflare Tunnel; the replacement separates browser
-  gRPC-Web from native TLS gRPC over a TCP carrier. Do not retire private
-  fallback access until authenticated CLI, console, Cordium, and Talos gates
-  pass. Long-lived TCP-carrier reconnect behavior remains unverified.
-- **Next step:** Sync the reviewed Tunnel routes, run the protected
-  `octelium-public-tunnel.yml` DNS/rule reconciliation, then pass
-  `scripts/octelium-tunnel-check.py` and authenticated execution tests.
-  The UPnP job and lease alert are suspended in desired state. Historical
-  router observations above no longer prescribe the current rollout.
+- **Evidence:** The declared outbound Tunnel separates browser gRPC-Web from
+  native TLS gRPC over a TCP carrier. Initial authentication succeeds; sustained
+  execution and carrier reconnection require separate verification.
+- **Risk:** Carrier disconnects can interrupt operator and Cordium sessions.
+- **Next step:** Run `scripts/octelium-tunnel-check.py`, then verify authenticated
+  CLI, console, Cordium execution and reconnect behavior before withdrawing
+  private fallback access.
 
 - **Status:** fixed
 - **Area:** CI/CD / credential isolation
@@ -284,10 +301,9 @@ observations below retain their original dates.
   bit-flipped source bytes. The API server also could not decode the
   `clustersecretstores.external-secrets.io` CRD or decrypt obsolete Argo CD
   Helm history revision `v6` and generated `media-postgres-arr-env`, preventing
-  CRD and Secret informer sync. The dated
-  `scripts/recover-kubernetes-storage-20260825.sh` recovery snapshots etcd,
-  removes only those corrupt records, and reschedules OpenClaw away from
-  `acer`; desired state keeps it excluded. On 2026-09-02, the current
+  CRD and Secret informer sync. The incident repair recovered the affected records and rescheduled OpenClaw
+  away from `acer`; desired state keeps it excluded. Future corruption requires
+  a new evidence-backed recovery change and verified off-node snapshot. On 2026-09-02, the current
   control-plane configuration restored authenticated Talos access without a
   reset. A consistent 61,505,568-byte etcd snapshot at revision `36011142` was
   copied off `acer` before the reviewed Octelium Talos DNS SAN was applied and
@@ -322,63 +338,10 @@ observations below retain their original dates.
   leaving Octelium authentication unavailable for 30 minutes.
 - **Risk:** The larger ceiling restores recovery headroom but does not make the
   QNAP NFS path reliable; another retry storm could still fill 32 sessions.
-- **Next step:** Move PostgreSQL to reviewed local block storage; the cluster
-  currently exposes only `nfs-default`, so that migration needs a declared
-  Talos volume and Kubernetes storage path. Keep the availability alert active,
-  delete disconnected sessions through `octeliumctl delete session`, and treat
-  renewed probe failures as the storage incident rather than an Octelium
-  routing failure.
-
-- **Status:** obsolete; superseded by the current router and worker recovery
-  finding
-- **Area:** Octelium / public gRPC transport
-- **Evidence:** After PostgreSQL recovered, authenticated Octelium CLI calls
-  still hung through `octelium-api.stinkyboi.com` while the same client and
-  session succeeded through a TLS-preserving local CONNECT proxy to the
-  in-cluster Istio gateway. Both `cloudflared` `2026.6.1` replicas selected
-  QUIC successfully but logged that `2026.7.3` was the recommended update.
-  After that digest-pinned update rolled out healthy, authenticated public
-  `octelium status` still hung. The direct route completed login and reached
-  `isConnected: true` with the unprivileged `gvisor` implementation, proving
-  the client, session, database, and Istio origin path. The first protected
-  reconciliation run injected the scoped token successfully, but Cloudflare
-  returned `Undefined zone setting: grpc`; its replacement
-  `long_lived_grpc` is visible but non-editable and returns API error `1015`.
-  Cloudflare's current documentation states that Tunnel public-hostname
-  deployments do not support gRPC. The Xfinity gateway exposes a working UPnP
-  IGD, and the dedicated NodePort on `10.1.0.200:30443` returned the expected
-  unauthenticated gRPC status directly. The gateway rejected a mapping created
-  from the operator workstation with UPnP error `402`, because its
-  implementation requires the request to originate from the target LAN client.
-  The host-networked reconciliation then succeeded from `zimaboard-0`, and the
-  router lists TCP/443 to `10.1.0.200:30443` with its minimum 86,400-second
-  lease. Direct origin probes still return `grpc-status: 16`, but Cloudflare
-  receives HTTP `502` and direct WAN IPv4 connections time out. Xfinity
-  documents that Advanced Security can block all inbound traffic to UPnP and
-  port-forwarded devices, and its published blocked-port list does not include
-  `8443`. Cloudflare Origin Rules can keep the client on standard TCP/443 while
-  overriding only the origin destination port on every plan. The live
-  TCP/8443 mapping changed the edge failure from a timeout to Cloudflare HTTP
-  `525`, while the dedicated Envoy logged `filter_chain_not_found` for that
-  connection. This proves the high port reaches Istio and that Cloudflare's
-  origin handshake omits the SNI required by the original exact-host Gateway.
-  After the SNI-tolerant Gateway and API-only `VirtualService` rolled out, the
-  Cloudflare TCP/8443 probe returned HTTP/2 `200` with `grpc-status: 16`, while
-  a request for another Host returned `route_not_found`. Protected run
-  `30716050087` then exposed the final cause: the zone used Flexible SSL, so
-  Cloudflare sent plaintext to the TLS-only origin and returned HTTP `520`.
-  PR `#638` added a hostname-scoped Full (strict) Configuration Rule alongside
-  the existing destination-port rule. Protected run `30716932077` created and
-  verified both rules. The standard TCP/443 API probe then returned HTTP/2
-  `200`, `content-type: application/grpc`, and the expected unauthenticated
-  `grpc-status: 16`. A real Octelium `v0.35.0` client authenticated as
-  `homelab-owner`, printed `Connected successfully`, and reported
-  `isConnected: true`; the test session then shut down cleanly.
-- **Risk:** Public client availability still depends on the leased UPnP mapping,
-  the two exact-host Cloudflare rules, and normal certificate renewal.
-- **Next step:** Follow the outbound Tunnel replacement finding above. This
-  historical WAN success no longer proves current public availability; the
-  origin-port apply workflow is retired.
+- **Next step:** Review durable block storage with an explicit Talos volume,
+  Kubernetes storage path and verified restore before changing placement. Keep
+  availability alerts active and diagnose renewed probe failures against the
+  recorded storage evidence.
 
 - **Status:** fix staged; rollout verification pending
 - **Area:** observability / retained CronJob failure alerts
@@ -501,40 +464,12 @@ observations below retain their original dates.
   received connection refusals. Concurrent probe failures affected NFS-backed
   workloads on `acer`, `zimaboard-0`, and `zimaboard-1`, while every node
   remained Ready and physical NIC error counters stayed at zero. Desired state
-  now stages `media-postgres` on an `acer`-pinned local volume, uses real SQL
-  for readiness, disables TCP during the verified cutover backup, and then
-  replaces the legacy StatefulSet with a writable local-only instance. A
-  one-time PID/socket fence prevents writer overlap. Nightly verified logical
-  backups retain 14 days on NFS without storing role password hashes, and the
-  repository recovery overlay fences the writer and schedule before restore.
-  Live phase-one validation at signed revision `24da3a01` confirmed Argo CD
-  synced and healthy, the retained local pod Ready on `acer`, the migration
-  marker and all six application databases present, read-only mode enabled,
-  TCP disabled, and 50 `SELECT 1` probes completing in 1.63 seconds. Backup
-  `20260730T045748Z` verified the six custom-format dumps and password-free
-  globals before phase two was released.
-  Live phase-two validation at signed revision `88098e7f` confirmed the legacy
-  writer at zero replicas, the local-only writer Ready on `acer`, the one-time
-  fence present, read/write SQL available, and 50 probes completing in 1.71
-  seconds. The remaining Prowlarr search stall was outside PostgreSQL: its raw
-  tracker HTTPS request completed in 0.49 seconds, while one read of the
-  NFS-backed `/config/config.xml` took 10.2 seconds and two live searches
-  exceeded 30 seconds. The equivalent reads in Sonarr and Radarr on
-  `zimaboard-0` took 79 and 281 milliseconds, and that node's NFS client
-  recorded 12 lifetime write timeouts versus 26,065,641 on `acer`. Desired
-  state now pins Prowlarr to `zimaboard-0` without replacing its retained PVC.
-  Final read-only validation on 2026-07-30 found both Argo CD Applications
-  synced and healthy. Prowlarr was Ready with zero restarts on `zimaboard-0`
-  using its original retained claim; 20 config reads had a 17.34-millisecond
-  median and 30.66-millisecond p95. Prowlarr, Sonarr, and Radarr searches each
-  returned 50 results in 2.916, 3.519, and 3.714 seconds, respectively, with no
-  indexer or PostgreSQL timeout/refusal errors after the Prowlarr rollout. The
-  local PostgreSQL writer remained Ready with zero restarts, the legacy writer
-  remained at zero replicas, a rolled-back temporary write passed, and 50
-  queries completed in 1.669 seconds. The first scheduled backup Job completed
-  at 03:00 Pacific with no failures. Backup `20260730T100002Z` verified
-  password-free globals and all six dumps; the successful Job also exercised
-  the live 14-day retention command without error.
+  uses `media-postgres-local` on an `acer`-pinned volume with real SQL probes.
+  Verified nightly logical backups retain 14 days on NFS; the declared recovery
+  overlay fences database writers and the schedule before restore. Prowlarr
+  runs on `zimaboard-0` with its retained config claim. These placements remove
+  the observed control-plane NFS path from active PostgreSQL I/O but do not
+  establish independent backup or node-failure tolerance.
   Read-only inspection on 2026-08-01 found Radarr independently
   `CrashLoopBackOff` with 785 restarts because its NFS-backed
   `/config/config.xml` was empty. The local-config Deluge replacement remained
@@ -579,8 +514,7 @@ observations below retain their original dates.
   unrelated workloads across the cluster. The nominal local-disk RPO is 24
   hours, but the actual RPO is the age of the newest verified set and can be
   older. n8n can recur until the shared storage failure is corrected.
-- **Next step:** the validated migration-only NFS mounts and init containers
-  are removed from Radarr and Sonarr desired state. Inspect QNAP pool, disk,
+- **Next step:** Inspect QNAP pool, disk,
   NFS-service, and network history because the same failure domain still affects
   other NFS-backed workloads. Verify recovery clears each stale-backup alert
   after its next successful Job.
@@ -754,22 +688,6 @@ observations below retain their original dates.
   inspect kernel and kubelet logs, identify the memory-growth path, and retain
   the `4Gi` cap until 48 hours of healthy measurements prove safe headroom.
 
-- **Status:** fixed
-- **Area:** agent runtime / startup
-- **Evidence:** The first 2026-08-13 rollout stalled in `bootstrap-config`
-  before the app container started. Automatic `openclaw doctor --fix` found
-  5,344 orphan transcripts and remained blocked scanning the NFS-backed session
-  directory. The original repair removed doctor from ordinary bootstrap. The
-  reviewed 2026.8.2 recovery adds a one-time state migration after the targeted
-  session import, with a ten-minute deadline and 30-second kill grace period.
-  It restores reviewed configuration and fails closed without a completion
-  marker on timeout; no unbounded generic scan is permitted.
-- **Risk:** future OpenClaw upgrades that require config migration will fail
-  validation instead of repairing persisted state automatically.
-- **Validation:** the replacement pod completed both init containers and became
-  ready. Run doctor or a specific migration only as reviewed maintenance when
-  an upgrade requires it.
-
 - **Status:** open
 - **Area:** agent runtime / sandboxing
 - **Evidence:** On 2026-07-19, restored OpenClaw cron runs reported that
@@ -914,9 +832,10 @@ observations below retain their original dates.
 - **Risk:** decrypted External Secrets AWS provider credentials could otherwise
   be exposed to anyone or anything with access to OpenTofu state, plan caches, or
   CI artifacts.
-- **Next step:** keep this finding open until the migration applies, older S3
-  versions of this stack's exact state object are removed, and the External
-  Secrets IAM access key is rotated with a matching committed revision bump.
+- **Next step:** Verify the applied write-only Secret contract and review the
+  exact backend object's retained versions for credential exposure. Track IAM
+  access-key rotation with a matching committed revision bump; do not infer
+  historical-state sanitization from the current module source.
 - **Status:** open; first AppProject tranche and Kiali tailnet bypass fixed
 - **Area:** platform service / GitOps
 - **Evidence:** the `homelab-workloads` AppProject limits the first four

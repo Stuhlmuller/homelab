@@ -47,31 +47,7 @@ PostgreSQL from its Service after six failed checks, but startup and liveness
 failures tolerate 30 minutes of QNAP recovery and shutdown receives 120 seconds
 to finish. This reduces forced crash recovery after an NFS stall.
 
-Recovery from the 2026-08-03 stale-lock incident completed in two reconciled
-phases. Phase 1 fenced the StatefulSet at zero replicas and confirmed no pod or
-process used its retained claim. Phase 2 used an incident-specific Sync hook to
-remove only `pgdata/postmaster.pid`, write a durable marker, and restore one
-replica. The one-shot hook is now removed from desired state; the explicit
-retained claim and recovery-aware probes remain.
-
 ## Validation
-
-### Recovery Phase 1: Fenced
-
-```sh
-kubectl kustomize clusters/homelab/apps/n8n-postgres
-kubectl -n argocd get application n8n-postgres
-kubectl -n automation get statefulset n8n-postgres \
-  -o jsonpath='{.spec.replicas}{" "}{.status.currentReplicas}{"\n"}'
-kubectl -n automation get pod n8n-postgres-0 --ignore-not-found
-kubectl -n automation get pvc data-n8n-postgres-0
-```
-
-Required phase-one results were: Argo CD synced and healthy, desired/current
-replicas `0/0`, no PostgreSQL pod or process, and the original PVC still
-`Bound`. Revision `e9f42313` passed that gate before phase 2 was prepared.
-
-### Recovery Phase 2: Restored
 
 After Argo CD syncs `n8n-postgres`, verify the secrets, StatefulSet, PVC, and
 database connectivity:
@@ -81,18 +57,15 @@ kubectl -n automation get externalsecret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get secret n8n-postgres-auth n8n-postgres-client
 kubectl -n automation get statefulset,pod,pvc,svc -l app.kubernetes.io/name=n8n-postgres
 kubectl -n automation exec statefulset/n8n-postgres -- \
-  test -f /var/lib/postgresql/data/.homelab-postgres-recovery-20260803-complete
-kubectl -n automation exec statefulset/n8n-postgres -- \
   psql -U postgres -d n8n -Atqc 'select 1'
 kubectl -n automation rollout status deployment/n8n --timeout=10m
 curl -sS -o /dev/null -w '%{http_code}\n' \
   https://n8n-webhook.stinkyboi.com/webhook/__missing__
 ```
 
-Revision `6c6f1182` passed phase two: Argo recorded the hook as succeeded, the
-marker existed, PostgreSQL became ready with zero restarts, SQL printed `1`,
-n8n became ready, and the public callback returned HTTP 404 instead of 503. The
-original PVC remained bound throughout recovery.
+Require a Ready PostgreSQL Pod, bound PVC, successful SQL query, and n8n
+readiness. The missing callback should return HTTP 404 rather than a gateway
+503 once the app is available.
 
 ## Backup And Restore
 

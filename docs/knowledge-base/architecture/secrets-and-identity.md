@@ -17,14 +17,9 @@ outside git.
 
 SSM SecureStrings now use AWS-managed `alias/aws/ssm` in `us-west-2`, selected
 by `runtime_kms_key_id` in `IaC/root.hcl`. The OpenTofu client-side state key
-remains `alias/homelab-opentofu` in `us-east-1`. The September migration
-archives old SSM versions under AWS-managed S3 encryption before retiring
-the former west-region customer key; see the audit below for rollout status.
-
-The [[operations/kms-cost-audit-2026-09-05]] inventories three customer-managed
-keys and 16 AWS-managed keys. The third customer key, `tofu-encryption-key`,
-is a legacy retirement candidate, not safe to delete without checking retained
-ciphertext. Account KMS costs were $3.05 in August 2026.
+remains `alias/homelab-opentofu` in `us-east-1`. See
+[[operations/state-encryption]] for state-bucket ownership and confidential
+recovery archive retention.
 
 ## AWS SSM Pattern
 
@@ -239,15 +234,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   validated by the receiving application credentials or signatures.
   The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
   The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
-  existing production AWS role for SSM reads and the `homelab-production`
-  secret `CLOUDFLARE_ZONE_SETTINGS_TOKEN` for removal of retired origin/TLS
-  rules (zone read, Origin Rules edit, Config Settings write). DNS reconciliation
-  uses the SSM-backed DNS token. Native TLS gRPC uses the separate Tunnel TCP
-  carrier; no UPnP or WAN address is required. The token values never enter git
-  or workflow output. The former
-  `/homelab/octelium/cloudflare-zone-settings-token` declaration has no runtime
-  consumer, is excluded from the External Secrets reader IAM policy, and
-  remains only until secret retirement is reviewed separately.
+  production AWS role for SSM reads and the SSM-backed DNS token. Native TLS
+  gRPC uses the separate Tunnel TCP carrier. Token values never enter git or
+  workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into

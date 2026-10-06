@@ -5,19 +5,14 @@ Keep both Harbor `homelab/homelab-nofx-*` repositories and their retained
 expected. The NOFX application login and registry authentication are separate:
 the kubelet needs a registry credential before it can start either container.
 
-The initial maintained rollout used revision
-`f76c27834ff987aa1dfad81d0c9ff273be7dd3cd`, migrated to Harbor without changing
-its digests. The successful
-[migration workflow](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
-verified complete read-only pulls and denied anonymous access. Keep those
-artifacts as recovery history; subsequent builds publish directly to Harbor.
-[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml) is the source of
-truth for the desired backend and frontend references.
+New builds publish directly to Harbor.
+[deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml) owns the desired
+backend and frontend references.
 
 Both deployments use `imagePullSecrets: [{name: harbor-pull}]`, rendered by the
 existing ExternalSecret from `/homelab/nofx/harbor-pull-password`. The read-only
 robot credential never enters NOFX containers. See the
-[migration contract](../builds/nofx/README.md#existing-ghcr-package-migration).
+[publication contract](../builds/nofx/README.md#publish-update-and-revert).
 Retain the GHCR originals and credential as a reviewed recovery path.
 
 ## GHCR recovery credential contract
@@ -56,21 +51,10 @@ ExternalSecret belongs to `clusters/homelab/apps/nofx`. Parameter creation uses
 the existing OpenTofu placeholder contract; the credential workflow cannot
 create a missing slot or write another parameter.
 
-## GHCR bootstrap without interrupting NOFX
+## GHCR recovery credential provisioning
 
-The first stage, [PR #1031](https://github.com/Stuhlmuller/homelab/pull/1031),
-merged at `0b352ebd05a944de46b0cdda7240edbc10671d76`. It retains the original
-upstream images and does not attach the new pull Secret. A placeholder credential is not
-an authenticated image pull and must never be treated as rollout readiness.
-The new ExternalSecret uses sync wave `-1`; until the SSM slot exists, Argo CD
-may show a pending sync or unhealthy ExternalSecret. Existing pods keep running.
-Provision the slot through the reviewed infrastructure apply to resolve this
-expected bootstrap state.
-
-Run the documented protected Terragrunt apply for that exact reviewed `main`
-commit to create the parameter and update the External Secrets reader policy.
-Review its plan before approval. Require Argo CD to reconcile the new
-ExternalSecret through GitOps; do not patch Secrets or Deployments manually.
+Provision the declared SSM slot and reader policy through a reviewed
+Terragrunt apply, then require its ExternalSecret to reconcile through GitOps.
 
 Create the dedicated classic PAT in GitHub's authenticated UI. Store it with the
 CLI's interactive secret input so it is absent from shell history and command
@@ -169,14 +153,13 @@ Before merging the image-pin PR:
 1. Require successful private Harbor publication of that exact build revision.
    Copy both verified digest references from the publication report into
    [deployment.yaml](../clusters/homelab/apps/nofx/deployment.yaml); never infer
-   a digest from a tag or reuse the old migration result as new-build evidence.
+   a digest from a tag or reuse evidence from another build.
    For builds with a successful `Report Published NOFX Digests` job, download
    the fixed `nofx-published-images-<source-sha>` artifact with `gh run download`
    and read its `nofx-published-images.txt`. Earlier builds expose these
    references only in the Actions summary, which the `gh` API does not return.
-2. Verify `nofx/harbor-pull` ExternalSecret `Ready=True`. The earlier migration
-   proves the read-only robot contract; readiness alone does not prove a new
-   image can be pulled.
+2. Verify `nofx/harbor-pull` ExternalSecret `Ready=True` and require a complete
+   read-only pull of the new image.
 3. Verify every live trader is stopped using a fresh authenticated UI check or
    the read-only database check below. Earlier screenshots do not satisfy this
    gate: running traders auto-resume when the backend restarts.

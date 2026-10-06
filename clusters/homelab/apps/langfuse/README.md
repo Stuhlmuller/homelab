@@ -43,145 +43,29 @@ and rolling-update surge capacity. Accept only after web initialization,
 readiness and authenticated UI access succeed without heap aborts; verify real
 ingestion separately. Keep live measurements and logs private.
 
-Memory changes do not alter database migrations or recovery artifacts. If
-startup still fails, use the forward writer fence below while reviewing a new
-budget; do not reintroduce the recovery Job or change migration markers.
+## Database startup and retained recovery state
 
-## Migration startup
+The web container applies database schema upgrades before starting HTTP. Chart
+`2.1.1` has no web startup probe; `langfuse.web.livenessProbe.initialDelaySeconds:
+600` gives initialization ten minutes before liveness checks begin. Readiness
+withholds traffic until the app is ready. The pinned-chart regression verifies
+this allowance and rendered replica counts.
 
-The web container runs database migrations before starting HTTP. Chart `2.1.1`
-has no web startup probe; its default liveness checks killed the first startup
-after about 47 seconds, leaving ClickHouse migration `47` dirty. The supported
-`langfuse.web.livenessProbe.initialDelaySeconds: 600` gives migrations ten
-minutes before liveness checks begin. Readiness still withholds traffic until
-the app is ready; steady-state liveness timing is unchanged. A hung startup
-can therefore take ten minutes to be recycled.
+`recovery-pvc.yaml` retains the `langfuse-migration-recovery` claim with
+`Prune=false,Delete=false`. Its private artifacts contain database DDL and
+schema history; do not remove this claim during workload cleanup. It is on the
+same NAS and provides neither an independent backup nor verified general
+restore coverage. No recovery script or one-shot Job is deployed.
 
-`nix develop --command bash scripts/ci/langfuse-startup-check.sh` checks the
-actual pinned chart render, not just the values file. This prevention does not
-repair an existing dirty migration. Inspect the last clean version and partial
-schema; never mark an incomplete migration complete. Recovery needs a reviewed,
-repository-owned path, quiesced writers and a verified recovery copy. Do not
-reset PVCs, rotate credentials or run ad hoc migration commands. Reverting the
-probe value does not roll back database state and reintroduces the startup risk.
-
-### Approved empty-database recovery: writer fence
-
-The recovery fence sets web and worker to zero replicas before replaying the
-interrupted first migration. The chart uses Helm's `default` function, so the
-global replica value must also be zero; per-role zeros alone render as one.
-The chart regression checks both rendered replica counts against desired state.
-Datastores, PVCs, credentials and caller routing remain unchanged.
-
-Before deploying the one-shot recovery Job in a separate reviewed revision,
-verify the fence has reconciled and **no web or worker Pods remain**:
-
-```sh
-kubectl -n argocd get application langfuse -o json |
-  jq '{sync: .status.sync.status, revisions: .status.sync.revisions}'
-kubectl -n langfuse get deploy langfuse-web langfuse-worker -o json |
-  jq '.items[] | {name: .metadata.name, generation: .metadata.generation,
-    observed: .status.observedGeneration, desired: .spec.replicas,
-    actual: (.status.replicas // 0)}'
-kubectl -n langfuse get pods -l 'app.kubernetes.io/component in (web,worker)'
-```
-
-Require the reviewed Git revision in both Git-source entries, Synced status,
-observed deployment generations, zero desired/actual replicas and an empty Pod
-list, including terminating Pods. Then recheck the exact partial migration and
-empty tables, preserve and verify a complete logical recovery copy, and use
-the pinned native migrator to reset only the marker to `46` and replay `up`.
-PR #1133 included only the fence, not a recovery Job or database mutation. Resume
-all three replica values to one and remove the temporary zero-replica assertion
-in a separate reviewed revision only after
-clean migration `48` and its complete schema are verified. Rolling back this
-fence before recovery merely restores the existing migration crash loop.
-
-### One-shot empty-schema replay
-
-The fence merged as `712699ebfbf381a5f85cdb42fef0605a88c39c99`. The separate
-replay revision requires both Git sources, observed zero replicas and writer
-Pod absence to be verified first; retain live acceptance evidence privately.
-That revision deploys a one-shot Job while keeping all writers stopped. Its
-command replaces the pinned image entrypoint so no automatic migration precedes
-guards. It uses the existing Langfuse service account without an API token and mounts
-only the existing ClickHouse password, as a file. No IAM, RBAC, secret or caller
-changes are included.
-
-The CLI compares canonical paths so Kubernetes' projected ConfigMap symlinks
-cannot silently skip its entrypoint. The offline regression invokes both real
-and projected paths with filesystem permissions denying secrets and writes.
-The `-r2` Job name declares a reviewed retry; deploy it only after the prior Job
-is terminal and read-only checks establish no recovery ran. Never delete or
-restart a Job manually. An exit code alone is not a recovery success signal.
-
-`recover-empty-schema.mjs` is deliberately incident-specific, not a general
-backup tool. It requires the exact partial migration 47, all 14 expected objects,
-nine empty ingestion tables, and no active writer or migrator. A fixed exclusive
-PVC lock prevents duplicate recovery processes. It captures database/object DDL
-and every migration-history row with exact 64-bit sequences, rechecks the source,
-then verifies private modes and SHA-256 checksums before publishing the copy.
-Only then does the pinned native migrator append clean marker 46 and run `up`.
-It verifies the preserved history prefix, exact new markers, migration 47
-columns/defaults/indexes/view projections, and migration 48 settings.
-
-The retained `langfuse-migration-recovery` PVC is a separate `1Gi` NFS claim,
-declared in `recovery-pvc.yaml` independently of the removed Job.
-Artifacts are `snapshot-<id>.complete/` plus `receipt-<id>.json`; directories
-must be mode 0700 and files 0600. Raw migration diagnostics stay in the private
-snapshot, never Pod logs. Completed receipts permit database-read-only
-verification; partial/changed artifacts fail closed and are never overwritten
-or pruned. Do not remove a leftover lock or retry a failed Job blindly.
-
-The replay Job has no automatic retries, liveness probes or hard deadline that
-could kill migration DDL. If it stalls, inspect its status and ClickHouse
-activity read-only before approving cancellation. Any failure keeps the writer
-fence in place. Do not reset storage or force version 47/48 complete.
+If startup fails, use a reviewed change setting global, web, and worker replicas
+to zero while preserving datastore and recovery claims. Check all writer Pods
+have stopped before a separately reviewed recovery. Never reset PVCs, force
+schema versions, or replay historical recovery commands against live data.
 
 ```sh
 nix develop --command bash scripts/ci/langfuse-startup-check.sh
-nix develop --command node scripts/ci/langfuse-empty-schema-recovery-check.mjs
 kubectl -n langfuse get pvc langfuse-migration-recovery
 ```
-
-### Resume and retain the recovery copy
-
-This resume revision must not merge until the reviewed replay revision is
-Synced, the Job has completed with its fixed success marker and no active
-recovery Pod, the private receipt is verified, and an independent read-only
-check confirms clean migration 48
-and its complete schema. Keep that evidence private; do not put database
-snapshots, receipt contents or raw logs in the public repository or PR.
-
-The desired state restores global/web/worker replicas to one and removes the
-one-shot Job and generated ConfigMap. The unchanged recovery PVC remains
-managed by Argo CD with `Prune=false,Delete=false`; no datastore, credential or
-caller configuration changes. The incident-specific helper and its offline
-regression remain in git, but are not mounted or executed by a workload.
-The chart check keeps the migration startup allowance and verifies the retained
-claim plus absence of recovery Job/ConfigMap resources.
-
-After rollout, verify both Git-source revisions, Synced/Healthy status,
-observed deployment generations, Ready web/worker and datastores, Bound claims,
-and absence of the recovery Job/ConfigMap. Then verify project initialization
-and authenticated UI access. Caller activation and real telemetry remain
-separate acceptance gates; restored replicas do not prove either.
-
-If resume fails, use a forward reviewed change setting all three replica
-values to zero while preserving the startup allowance, recovery claim and
-datastores. Do not revert the whole resume revision: that would reintroduce the
-one-shot Job. Do not rerun recovery, reset storage or change migration markers
-without a new reviewed recovery plan.
-
-This logical copy is complete only because the guards prove every ingestion
-table empty. It is on the same NAS, not offsite or an independent failure domain,
-and no restore drill is claimed. Restoration would require a reviewed isolated
-ClickHouse Job with the recorded server version/config and unchanged secret
-references: verify the manifest, recreate the database and base tables, import
-`schema_migrations.tsv`, then recreate dependent views/materialized views.
-Preserve the UUID-bearing DDL and exact history; never replay these files over
-the live database. The existing PostgreSQL/Valkey/S3 state is unchanged and
-must remain available. General datastore backup/restore remains a separate gap.
 
 ## Validation
 

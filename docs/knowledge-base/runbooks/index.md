@@ -34,7 +34,7 @@ what to read, what facts matter, and what must be updated with future changes.
 - [[rollback]] records dependency-aware app rollback order.
 - [[talos-control-plane-maintenance]] records issuer drift repair and upgrade
   gates.
-- [[image-automation]] records Renovate policy and Image Updater retirement.
+- [[image-automation]] records Renovate policy and digest requirements.
 
 ## Supporting Maps
 

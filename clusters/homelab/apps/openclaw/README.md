@@ -1,39 +1,5 @@
 # OpenClaw
 
-## Remaining 2026.8.2 state migration
-
-The session SQLite import alone does not migrate workspace setup state.
-After the coordinator ownership repair, the gateway rejected the retained
-`openclaw-workspace-state.json` and requested `openclaw doctor --fix`.
-Bootstrap now runs the pinned doctor's noninteractive repair once after
-configuring plugins and secrets, with workspace suggestions disabled. It
-keeps the existing external supervisor/service-repair policy and does not use
-`--force` or `--allow-exec`. Because generic repair can rewrite unrelated skill
-policy, bootstrap snapshots the reviewed config privately and restores it
-atomically after doctor, even on failure. An interrupted repair restores that
-snapshot before the next bootstrap applies configuration. Only doctor state
-migrations persist; configuration remains owned by the reviewed bootstrap.
-The repair has a ten-minute deadline and a 30-second kill grace period because
-an earlier generic doctor run stalled scanning NFS transcripts. Timeout
-restores configuration, retains diagnostics, and leaves completion unset.
-
-Existing state requires the verified pre-2026.8.2 archive before this step.
-Doctor performs its upstream legacy-state migrations and startup readiness
-checks, including workspace setup/attestations and any other detected legacy
-stores. The session inventory is checked again afterward, and configuration
-must validate before the separate `.doctor-state-migrated-to-2026.8.2` marker
-is written. The original session-import marker is preserved. Failures block
-the gateway and retain private `doctor-state-reports/latest.log` plus one
-previous report; their contents must not be posted in this public repository.
-
-The pinned CLI passed synthetic workspace migration and a repeat run. Local
-bootstrap tests prove failed backup, doctor, session preservation, or config
-validation cannot create the completion marker. Live gateway and Discord
-readiness remain rollout gates. A manifest rollback cannot undo migrated
-state; recovery requires the verified archive and its matching prior version,
-following the existing offline restore procedure. Do not delete the archive
-or archived legacy sources during the recovery soak.
-
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Configuration and workspace remain on the `openclaw` NAS PVC.
@@ -74,8 +40,7 @@ added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.15
 OpenClaw is pinned to `2026.9.5`, retaining hidden models when discovering
 the Codex catalog. This matters because Astra's initial catalog entry is hidden
 from the interactive picker. Bootstrap takes a verified offline
-`pre-2026.9.5` archive before touching runtime state; older migration markers
-remain intact. The explicit app-server command preserves the existing OAuth
+`pre-2026.9.5` archive before applying runtime configuration. The explicit app-server command preserves the existing OAuth
 account and
 per-agent runtime home. Roll back the pin and command together through GitOps;
 the bundled version cannot satisfy the Astra requirement. The official Codex
@@ -138,9 +103,8 @@ owner's Discord DM:
 
 The fixed-name ConfigMap mounts only in bootstrap and the app. Its content
 digest in the Pod template triggers replacement when the bundle changes.
-Bootstrap adds managed sections to SOUL.md, AGENTS.md, and TOOLS.md and
-replaces the old heartbeat checklist so its legacy polling does not duplicate
-the new jobs. It preserves IDENTITY.md, USER.md, MEMORY.md, daily notes,
+Bootstrap adds managed sections to SOUL.md, AGENTS.md, TOOLS.md, and
+HEARTBEAT.md while preserving text outside those sections. It preserves IDENTITY.md, USER.md, MEMORY.md, daily notes,
 existing tool additions, credentials, and unrelated config. It extends any
 restricted model policy to allow the OpenRouter free router. The first
 pre-change files and config
@@ -149,15 +113,8 @@ same-volume rollback checkpoint, not an independent backup.
 
 The app's postStart hook registers three jobs through the public automation
 CLI with stable declaration keys. Retries converge in place; they preserve
-job history and an owner's disabled state. A targeted recovery re-enables only
-the health job auto-disabled by the recorded September 5 authentication outage;
-it matches that exact failure timestamp and leaves subsequent failures paused.
-After registering replacements, it
-disables the two observed overlapping
-legacy jobs (Grafana auto-triage and the daily improvement loop) only when both
-ID and name match `retired-jobs.json`. Their history remains; security audits,
-memory dreaming, and research routines are preserved. It does not edit
-scheduler SQLite tables or adopt/delete unrelated jobs. An absent or ambiguous
+job history and an owner's disabled state. It does not edit scheduler SQLite
+tables or adopt, enable, disable, or delete unrelated jobs. An absent or ambiguous
 owner defers
 scheduling rather than guessing a recipient. This keeps a fresh gateway usable
 before Discord setup. Bounded API retries also leave chat available on failure.
@@ -180,8 +137,7 @@ See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 If an operator-selected Astra recovery session reports `agent-runner-failure`
 and gateway logs say its auth profile is temporarily unavailable, inspect
 `openclaw models status --json`. A saved subscription block can outlive a provider usage reset:
-the native Codex path in 2026.9.1 and 2026.9.2 may reject auth before reaching OpenClaw's
-normal background usage recheck. A valid OAuth expiry alone does not clear it.
+auth preparation can reject a blocked profile before a background usage recheck. A valid OAuth expiry alone does not clear it.
 
 Run the repository helper from this checkout:
 
@@ -200,7 +156,7 @@ the transaction and verifies unchanged credentials and block generation;
 provider denial, active authentication failures, and probe throttling retain
 the block. It never spends a usage-reset credit, replaces credentials, edits
 SQLite directly, or restarts the Pod. It accepts exactly one OpenAI OAuth
-profile and a reviewed 2026.9.1, 2026.9.2, or 2026.9.5 runtime; re-review its internal imports before
+profile and the reviewed 2026.9.5 runtime; re-review its internal imports before
 an upgrade. If it fails, inspect provider availability and auth diagnostics;
 do not erase the block or repeatedly force probes.
 
@@ -268,8 +224,7 @@ state survives reconciliation. To retire or rename jobs, include explicit
 removal of their declaration IDs in a reviewed maintenance change. Removing
 the ConfigMap alone does not remove persisted jobs. Roll back through a PR
 that restores the previous model and managed content and disables/removes
-the three declarations through the public CLI, then re-enable the two retired
-jobs if returning to the old behavior. Keep personal memory and
+the three declarations through the public CLI. Keep personal memory and
 session history; use the private originals only for a reviewed offline
 workspace/config restore when needed.
 
@@ -482,13 +437,8 @@ OpenClaw rejects SecretRef objects for `hooks.token`, so bootstrap expands
 `GRAFANA_ALERT_HOOK_TOKEN` from the mounted Secret at pod startup, JSON-encodes
 the actual runtime value, and writes that plain string to the PVC-backed
 OpenClaw config. This keeps the token out of git while satisfying OpenClaw's
-hook-token policy. If an older config contains the authored
-`${GRAFANA_ALERT_HOOK_TOKEN}` reference, bootstrap removes that reference
-before setting the literal value. OpenClaw 2026.8.2 otherwise restores the
-reference during config writes, leaving the gateway without its bootstrap-only
-environment variable. The removal and replacement happen during init, before
-the gateway runs; a failure prevents startup rather than exposing an
-unauthenticated hook.
+hook-token policy. Configuration writes happen during init before the gateway
+runs; a failure prevents startup.
 
 After rotating the hook token, bump
 `homelab.rst.io/openclaw-grafana-alert-hook-ssm-version` on OpenClaw so Argo CD
@@ -556,30 +506,14 @@ keeps fallbacks empty. Existing sessions pinned to another model remain pinned
 until the owner selects the default. The bundled `codex` plugin, explicit Astra
 metadata, and retained ChatGPT OAuth profile remain for manual recovery only.
 
-Keep OpenClaw at `2026.8.2` or newer while the Codex plugin is enabled.
-`2026.7.1` can leave timed-out native hook relay processes orphaned until the
-container reaches its memory limit; upstream
-[PR #109446](https://github.com/openclaw/openclaw/pull/109446) fixes relay PID
-ownership on Linux. The bootstrap keeps the effective concurrency at four
-instead of adopting `2026.8.2`'s higher default.
-
-The `2026.7.1` to `2026.8.2` rollout is fail-closed. The `Recreate` deployment
-stops the gateway, then bootstrap writes a complete owner-only archive and
-SHA-256 checksum under `/data/openclaw-backups` before invoking any `2026.8.2`
-OpenClaw command. It verifies the tar stream and checksum before running the
-targeted session SQLite migration and starting the new gateway. The archive
-includes credentials, private transcripts, and the workspace. It stays on the
-same QNAP-backed volume and is a migration checkpoint, not an independent NAS
-backup. Reinstallable npm cache and external-plugin directories are excluded.
-OpenClaw also preserves its migration originals and manifests; do not run
-`openclaw update cleanup` before the 24-hour soak closes.
-
-An image-only rollback below `2026.8.2` is unsafe after the session SQLite
-migration and also restores the hook-relay leak. If rollback is required, use a
-reviewed init-container maintenance change to replace `/data/openclaw` from the
-verified pre-upgrade archive while the gateway is stopped; an overlay extraction
-is not a restore. Validate the recovered state before reverting the image. This
-discards post-upgrade state, so prefer repairing `2026.8.2` when possible.
+The pinned release uses four concurrent runs. Before applying configuration,
+the stopped gateway's bootstrap verifies its release-specific offline archive
+under `/data/openclaw-backups`. Archives include credentials, transcripts,
+workspace, and authoritative local state; keep them private. They share the
+NAS failure domain and do not replace an independent backup. Reinstallable npm
+cache and plugin directories are excluded. Recover from a verified archive
+with matching software while the gateway is stopped; an image-only rollback
+does not restore persisted state.
 
 The bootstrap also enables the bundled `memory-wiki` plugin. OpenClaw uses that
 plugin for Imported Insights and Memory Palace, so reload the Control UI tab
@@ -599,43 +533,11 @@ application credentials. If a sandbox backend is added later, document and
 validate it before changing this setting.
 Do not mount a host container-runtime socket into this workload.
 
-After the verified offline backup, bootstrap migrates the four observed retired
-config keys (`meta.lastTouchedAt`, `commands.ownerDisplay`,
-`hooks.maxBodyBytes`, and `plugins.bundledDiscovery`) before invoking OpenClaw.
-It preserves model metadata and copies a legacy model restriction into
-`agents.defaults.modelPolicy.allow` only when no explicit policy exists.
-The owner-only config replacement is atomic and leaves unrelated settings,
-credentials, skill policy, and session files untouched. The retired hook body
-limit is no longer written; OpenClaw 2026.8.2 enforces its built-in 256 KiB limit.
-
-Bootstrap then installs the missing official external Discord plugin before
-validating persisted config and applying desired state. An exact
-installed version is reused; a missing or mismatched package gets four bounded
-registry attempts so a transient reset cannot leave every restart dependent on
-a fresh successful download. The versioned bootstrap runs the targeted session
-SQLite inspect, dry-run, import, and post-import inspection once after its verified
-backup. Reports are retained with owner-only permissions under
-`/data/openclaw/session-sqlite-reports`, keeping only the latest and previous
-report for each mode; logs contain totals instead of thousands
-of transcript paths. The report gate accepts only the observed
-`transcript_missing` warning for `agent:main:healthcheck-20260813` on agent
-`main`. OpenClaw 2026.8.2 preserves that entry's metadata during import but
-returns exit code 1 for any warning. Every other issue, malformed report, or
-unexplained nonzero exit remains fatal. The original archive and any retained
-legacy/trajectory files remain available; no replacement transcript is invented.
-Before import, bootstrap saves every legacy session key and session ID in a
-private inventory that survives retries. After inspection, a read-only SQLite
-query verifies each identity still exists before writing the completion marker.
-Missing or changed identities stop bootstrap even if doctor reports no issues.
-
-The later doctor state gate restores the reviewed configuration so generic
-repair cannot persist unrelated skill-policy changes. Gateway startup owns
-its documented deterministic config migrations once startup is reached;
-plugin installation itself rejects unmigrated config. Session identity
-preservation remains mandatory after every migration step. Bootstrap also pins
-`gateway.mode` to `local`, which is
-required for the container-managed gateway process. External-supervisor mode
-makes Kubernetes the only lifecycle and image-update authority.
+Bootstrap installs the official external Discord plugin before validating
+persisted config and applying desired state. A matching installed version is
+reused; missing or mismatched packages get four bounded registry attempts.
+Bootstrap pins `gateway.mode` to `local`; external-supervisor mode makes
+Kubernetes the lifecycle and image-update authority.
 
 After connecting through Octelium and exporting the kubeconfig generated by
 `octelium config kubernetes-api.homelab`, authenticate OpenRouter:
@@ -671,12 +573,6 @@ produced a failed receipt after about 80 seconds of scheduling delay plus a
 43-second successful agent turn. Keep this queue-inclusive budget when tuning
 heartbeats; do not mistake a completed native turn for a successful cron receipt.
 
-OpenClaw `2026.9.2` moves native thread preparation inside its guarded resume
-recovery. In `2026.9.1`, a `thread/read` failure could escape before that recovery
-and leave every heartbeat retry referring to the same unloaded thread. The
-stable release also fences binding changes against current session ownership.
-See the [release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.2).
-
 The platform-storage application declares the retained 5 GiB local PV in
 `clusters/homelab/platform/storage/openclaw-runtime.yaml`; this application
 declares only its namespaced claim in `runtime-storage.yaml`. The PV resides at
@@ -689,7 +585,7 @@ and `Recreate`; automatic failover to another node is intentionally unavailable.
 Talos runs kubelet in a container. An arbitrary host path used with `subPath`
 can resolve inside kubelet's overlay instead of the CRI host filesystem. The
 application therefore uses direct child PVs for `runtime/state` and
-`runtime/agents/main/agent`; the parent PV remains the migration/backup view.
+`runtime/agents/main/agent`; the parent PV provides the integrity-check and backup view.
 These three retained PVs describe the same underlying directory tree, not three
 independent disks. Bootstrap requires identical database device/inode identities
 through parent and child mounts before starting any OpenClaw CLI.
@@ -701,24 +597,17 @@ archive. The checkpoint uses SQLite backup, hash, and integrity verification
 before its completion marker, and is separate from daily snapshot retention.
 See [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/).
 
-The init-only `runtime-storage.py migrate` copies the stopped NAS `state/` and
-`agents/main/agent/` directories into one staging directory, compares every regular file checksum,
-checks authoritative SQLite integrity and foreign keys, then publishes both
-with one directory rename. A marker prevents subsequent starts from recopying
-stale NAS data. The retained pre-2026.9.2 backup marker also prevents an empty
-local disk from silently reimporting the old source after cutover; that case
-requires verified snapshot restoration. Unexpected existing destinations, corrupt databases, and
-insufficient free space fail closed. The NAS source remains untouched. The root
-toolbox init initializes only the volume root; migration runs as UID 1000.
+The init-only `runtime-storage.py verify` requires both authoritative SQLite
+databases and checks integrity and foreign keys without modifying them. Missing
+or corrupt local state blocks startup and requires a verified snapshot restore.
+The root toolbox init initializes only the volume root; verification runs as
+UID 1000. Bootstrap then verifies parent and child mounts identify the same
+files before running any OpenClaw command.
 
-The new mounts at `/data/openclaw/state` and `/data/openclaw/agents/main/agent` let OpenClaw
+The mounts at `/data/openclaw/state` and `/data/openclaw/agents/main/agent` let OpenClaw
 select WAL on a local filesystem. Its network-filesystem policy keeps NFS in
 rollback-journal mode, where long readers can block write commits. The native
-Codex home now persists under the same local agent tree. The old hidden NAS
-`codex-home` cache is excluded from first migration because the active version
-was an `emptyDir`. First-cutover stale bindings use the upstream guarded recovery
-and canonical OpenClaw continuity; no session reset or transcript deletion is
-performed. Workspace, identity/configuration files, and existing archives remain
+Codex home now persists under the same local agent tree. Workspace, identity/configuration files, and existing archives remain
 on the original NAS claim. The pre-upgrade archive explicitly includes the two
 local mount roots despite `tar --one-file-system`. If a rollout interrupts archive creation, bootstrap preserves the unpublished partial directory with an `interrupted-<UTC timestamp>` suffix and rebuilds from the still-stopped state. A corrupt published backup still blocks startup; it is never replaced automatically.
 
@@ -730,7 +619,7 @@ snapshots, not full-machine backups: workspace/configuration already live on the
 NAS, and native Codex indexes can be rebuilt from canonical history. Snapshot
 artifacts contain credentials and private history; keep their permissions private.
 
-After sync, verify migration logs, WAL mode for both authoritative databases,
+After sync, verify integrity-check logs, WAL mode for both authoritative databases,
 repeated main-session turns and heartbeats, the real owner Discord round trip,
 and one online backup through the same repository helper:
 
@@ -773,7 +662,7 @@ Revisit this storage design before introducing multiple replicas.
 
 Validate the render and the full static gate before rollout. After Argo sync,
 require the mounted directory to report UID/GID `1000:1000` and mode `0700`,
-then verify gateway readiness, the Discord channel, and the migration marker.
+then verify gateway readiness and the Discord channel.
 Rollback removes the local mount through a reviewed PR; persistent data and
 backup files remain, but the known NAS ownership failure would return unless
 an alternative ownership-compatible storage path is deployed first.
