@@ -1,5 +1,4 @@
 ---
-title: QNAP Plex Recovery 2026-10-05
 date: 2026-10-05
 tags:
   - operations
