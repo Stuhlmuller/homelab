@@ -25,6 +25,7 @@ spec:
         app.kubernetes.io/part-of: homelab-ai
     spec:
       automountServiceAccountToken: false
+      serviceAccountName: nofx
       imagePullSecrets:
         - name: harbor-pull
       securityContext:
@@ -39,7 +40,7 @@ spec:
             value: "0"
       containers:
         - name: backend
-          image: harbor.stinkyboi.com/homelab/homelab-nofx-backend:homelab-b78cc47ddd5bb9bdace4912b47886e799a9d5efd@sha256:54764606e5249da498cef3a1cfbfe07c7a929a2e8b86a04e62d794001d91401e
+          image: harbor.stinkyboi.com/homelab/homelab-nofx-backend:homelab-db0212f565643a7e977d7ab09d780b5519e1d734@sha256:a5031145d24de0a503879d89f5876f8b54e4157945304b4005155d5844e5e8bd
           imagePullPolicy: IfNotPresent
           # NOFX writes relative backtest and log paths; keep them on the PVC.
           workingDir: /app/data
@@ -98,12 +99,25 @@ spec:
               mountPath: /app/data
             - name: tmp
               mountPath: /tmp
+            - name: litellm-routing
+              mountPath: /etc/nofx
+              readOnly: true
+            - name: litellm-token
+              mountPath: /var/run/secrets/nofx/litellm
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: nofx-data
         - name: tmp
           emptyDir: {}
+        - name: litellm-routing
+          configMap:
+            name: nofx-litellm-routing
+        - name: litellm-token
+          secret:
+            secretName: nofx-litellm
+            defaultMode: 0440
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -142,7 +156,7 @@ spec:
             value: "0"
       containers:
         - name: frontend
-          image: harbor.stinkyboi.com/homelab/homelab-nofx-frontend:homelab-b78cc47ddd5bb9bdace4912b47886e799a9d5efd@sha256:aef3867b8e83384f49ff922cb947ec779554447d17c8b1101bba4a1cd3f95354
+          image: harbor.stinkyboi.com/homelab/homelab-nofx-frontend:homelab-db0212f565643a7e977d7ab09d780b5519e1d734@sha256:6b8086d63f74290e9f110e09b5bce28279caa5d4900a960eaeafe69cd8571e85
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
