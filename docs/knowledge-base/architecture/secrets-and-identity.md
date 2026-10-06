@@ -357,7 +357,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   receives the existing `/homelab/litellm/openai-api-key` provider credential
   and Langfuse project keys. Its pre-auth guard prevents callers from choosing
   a provider, collector, or identity. See [[ai-observability]] for acceptance
-  evidence and accounting scope.
+  evidence and accounting scope. External OpenRouter key injection uses
+  `.github/workflows/litellm-provider-credential.yml`: a temporary production
+  GitHub secret, scoped AWS OIDC write, then a separate GitOps `OnChange`
+  revision bump. See the [SSM runbook](../../secrets-aws-ssm.md#ai-gateway-contract).
 - Deluge uses the `deluge-vpn` ExternalSecret for AirVPN WireGuard profile
   material. It reads the full profile from
   `/homelab/deluge/vpn/wireguard-config` and publishes it as `wg0.conf`. It

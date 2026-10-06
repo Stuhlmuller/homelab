@@ -79,6 +79,22 @@ same PR that adds its first ExternalSecret.
 
 ## AI gateway contract
 
+Use the `LiteLLM Provider Credential` workflow to populate or rotate the
+external OpenRouter slot. Temporarily store the key in the `homelab-production`
+environment secret `LITELLM_OPENROUTER_API_KEY`, then dispatch
+`litellm-provider-credential.yml` on `main` with its exact current commit as
+`expected_sha`. The workflow validates provider authentication without a
+generation and writes only `/homelab/litellm/openai-api-key` using scoped AWS
+OIDC credentials. It keeps the write payload in a temporary private file and
+withholds provider/CLI errors from logs. Delete the temporary GitHub secret
+after successful transfer. Never pass the key as a workflow input or argument.
+
+After the write succeeds, advance the committed `litellm-app-keys`
+`generated-secret-revision` annotation and let Argo reconcile its `OnChange`
+ExternalSecret. Verify one gateway generation and the attributed Langfuse
+trace. Reverting manifests does not restore an old external credential; use
+this workflow again with a valid replacement when rollback requires one.
+
 `/homelab/litellm/openai-api-key` is an existing operator-supplied OpenRouter
 provider credential. LiteLLM is its only Kubernetes consumer. Generated caller
 keys at `/homelab/openclaw/litellm-app-token` and
