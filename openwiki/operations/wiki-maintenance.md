@@ -79,7 +79,8 @@ git diff --check
 
 The static CI gate runs the wiki check. It checks metadata, local links and
 heading anchors, navigation reachability, and active skill routes. Run focused
-Markdown lint too. The source probe test reads the migrated validation page:
+Markdown lint too. The explicit secret scanner covers `openwiki/` and `.codex/`
+alongside the existing source paths. The source probe test reads the migrated validation page:
 
 ```sh
 nix develop --command python3 -I scripts/ci/istio-ambient-probe-check.py
