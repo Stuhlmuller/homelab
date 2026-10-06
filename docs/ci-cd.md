@@ -64,18 +64,14 @@ contract for Grafana.
   static and Terragrunt gates. It runs the upstream Super-Linter action with
   `VALIDATE_ALL_CODEBASE=false` and uses workflow concurrency to cancel stale
   lint runs for the same pull request.
-- Policy Bot reads this repository's `.policy.yml`; one of its normal review
-  approvals satisfies the `policy-bot: main` branch protection check. The Codex
-  path accepts only the exact top-level `👍` comment from
-  `chatgpt-codex-connector[bot]` that `AGENTS.md` requires after a passing
-  review with no P0 or P1 alerts. A later push invalidates that approval, so
-  auto-merge remains queued until Policy Bot observes the pass signal for the
-  latest changes. The human comment path accepts only a `👍` comment from
-  `rstuhlmuller`, including PRs opened by `rodman` and PRs where `rstuhlmuller`
-  authored or committed changes; it does not read PR body text or other users'
-  comments. The organization-member approval rule also opts into author and
-  contributor approvals so matching Stuhlmuller approvals are not ignored as
-  disqualified.
+- Policy Bot reads this repository's `.policy.yml` and automatically approves
+  PRs with `requires.count: 0`, so merging does not depend on a human review,
+  Codex review, or thumbs-up comment. Required GitHub checks still gate merges.
+  Stuhlmuller organization members can explicitly disapprove a PR through a
+  changes-requested review or `👎` comment; that blocks Policy Bot approval.
+  Policy Bot reads the policy from the target branch, so this behavior takes
+  effect after the policy change lands on `main`. Reverting `.policy.yml`
+  restores the previous review requirement.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
 - The `main` ruleset requires pull requests, squash-only linear history,

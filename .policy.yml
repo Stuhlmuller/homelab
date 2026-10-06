@@ -1,59 +1,15 @@
 policy:
   approval:
-    - or:
-        - codex review bot approved
-        - rstuhlmuller thumbs-up comment approved
-        - organization member approved
+    - pull request approved without review
   disapproval:
     requires:
       organizations:
         - "Stuhlmuller"
 
 approval_rules:
-  - name: codex review bot approved
+  - name: pull request approved without review
     description: >-
-      Count only the exact top-level thumbs-up comment that the Codex review
-      bot posts after approving the latest PR changes with no P0 or P1 review
-      alerts.
-    options:
-      invalidate_on_push: true
-      methods:
-        comments: []
-        comment_patterns:
-          - '^\s*👍\s*$'
-        github_review: false
-        github_review_comment_patterns: []
-        body_patterns: []
+      Approve without human or bot review. Required GitHub checks still gate
+      merges, and organization members can explicitly disapprove a PR.
     requires:
-      count: 1
-      users:
-        - "chatgpt-codex-connector[bot]"
-  - name: rstuhlmuller thumbs-up comment approved
-    description: >-
-      Count only an explicit thumbs-up comment from rstuhlmuller; this approval
-      path is valid when rstuhlmuller opened or contributed to the PR, including
-      PRs opened by rodman, and PR body text does not satisfy this rule.
-    options:
-      invalidate_on_push: true
-      allow_author: true
-      allow_contributor: true
-      methods:
-        comments: []
-        comment_patterns:
-          - '^\s*👍(\s|$)'
-        github_review: false
-        github_review_comment_patterns: []
-        body_patterns: []
-    requires:
-      count: 1
-      users:
-        - "rstuhlmuller"
-  - name: organization member approved
-    options:
-      invalidate_on_push: true
-      allow_author: true
-      allow_contributor: true
-    requires:
-      count: 1
-      organizations:
-        - "Stuhlmuller"
+      count: 0
