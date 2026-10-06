@@ -15,7 +15,7 @@ stop condition, not permission to bypass the check.
 | --- | --- |
 | Mac password synchronization | Native Microsoft Platform SSO using Company Portal's extension and `AuthenticationMethod=Password`. Fleet's own Premium password-sync feature stays disabled. |
 | Fleet administrator SAML SSO | Supported in Fleet Free. Precreate each authorized console user; leave JIT provisioning and SCIM disabled. Family device users do not automatically become Fleet administrators. |
-| Apple OS settings | The Mac password baseline can be assigned through the managed profile catalog. Platform SSO uses explicit, host-scoped Free MDM commands. |
+| Apple OS settings | The Mac password baseline and Platform SSO use explicit, host-scoped Free MDM commands. No global Mac-baseline assignment is desired. |
 | Inventory and policy reporting | Retain Fleet's free inventory and supported policy queries, subject to platform and enrollment limitations. |
 | Conditional Access and Entra compliance integration | Disabled. Entra registration alone proves neither management nor compliance. |
 | Password changes | Known-password changes for cloud-only Entra users are free. Forgotten-password self-service reset and on-premises password writeback require eligible licenses. |
@@ -72,7 +72,8 @@ These files are the source of truth:
 
 | Profile | Enforced settings |
 | --- | --- |
-| [Mac baseline](profiles/macos-security-baseline.mobileconfig) | Password required, at least 8 characters, non-simple; maximum 5 minutes idle before screen lock; password required immediately after lock. No scheduled expiration, history requirement, forced next-login password change, or failed-attempt threshold is configured. |
+| [Host-scoped Mac baseline](profiles/macos-security-baseline-host.mobileconfig) | Password required, at least 8 characters, non-simple; maximum 5 minutes idle before screen lock; password required immediately after lock. No scheduled expiration, history requirement, forced next-login password change, or failed-attempt threshold is configured. |
+| [Retired global Mac baseline](profiles/macos-security-baseline.mobileconfig) | Removal reference only. The operator permits deleting its global catalog assignment, not uploading it again. |
 | [Retired iPhone/iPad baseline](profiles/ios-passcode-baseline.mobileconfig) | Removal reference only. No repository-managed iPhone/iPad passcode baseline is desired; the operator rejects installation. |
 | [Mac Platform SSO](profiles/macos-entra-platform-sso.mobileconfig) | Microsoft Company Portal extension, `Password` method, shared device keys, existing accounts only. No account creation, authorization/privilege changes, or forced online authentication. |
 
@@ -87,8 +88,9 @@ See [Entra's policy](https://learn.microsoft.com/en-us/entra/identity/authentica
 and [Apple's passcode schema](https://raw.githubusercontent.com/apple/device-management/release/mdm/profiles/com.apple.mobiledevice.passwordpolicy.yaml).
 
 The Mac profiles explicitly target `TargetDeviceType=5`; the retired mobile
-baseline targets `1` (iPhone/iPad). Profile identifiers and UUIDs remain stable across
-updates. They contain no passwords, enrollment secrets or tenant credentials.
+baseline targets `1` (iPhone/iPad). The host-scoped Mac baseline has a distinct
+identifier and UUID from the retired global baseline; identities remain stable
+within each profile. They contain no passwords, enrollment secrets or tenant credentials.
 No profile enables FileVault, rotates recovery keys or changes encryption state.
 An already noncompliant local password can still produce an Apple password-change
 prompt; absent `changeAtNextAuth` does not exempt it from the enforced baseline.
@@ -105,37 +107,54 @@ existing installations for removal; `validate-profiles` excludes it and
 `ios-baseline` requires `--remove`. Removal preserves the current passcode and
 other profiles. Re-enabling this baseline requires a reviewed code change.
 
-### Managed Mac password profile
+### Mac-only baseline through individual installs
 
-`mac-baseline-catalog` adds **Family Mac security baseline** to Fleet's
-**Controls > OS settings > Configuration profiles** using the supported single
-profile upload API. It preserves the firewall and other catalog entries, checks
-the uploaded content checksum, and leaves the Entra SSO profile host-scoped.
-An identical catalog entry is a no-op; a conflicting entry requires review.
+The desired state is no global **Family Mac security baseline** catalog entry.
+Each Mac receives the host-scoped baseline through an explicit Free MDM command.
+New Macs require an operator install; there is no automatic assignment or
+continuous drift repair for this baseline.
 
-Fleet Free 4.92.2 has no draft/disabled profile state. Uploading activates
-continuous assignment; it is not storage-only. Team and label targeting require
-Premium. Fleet sends global Apple profiles to macOS, iOS and iPadOS; its
-`platform: darwin` catalog field does not exclude phones. This profile retains
-`TargetDeviceType=5` (Mac). Apple requires the target and device types to match;
-verify the phone's rejection and absence of the profile after uploading.
-See [Fleet's reconciler](https://github.com/fleetdm/fleet/blob/fleet-v4.92.2/server/mdm/apple/reconcile.go#L39)
-and [Apple's TargetDeviceType slide, page 141](https://devstreaming-cdn.apple.com/videos/wwdc/2019/303te9o8pf35qp/303/303_whats_new_in_managing_apple_devices.pdf?dl=1#page=141).
+Fleet Free 4.92.2 sends global Apple profiles to macOS, iOS and iPadOS; its
+`platform: darwin` catalog field does not exclude phones. `TargetDeviceType=5`
+makes Apple reject installation on an iPhone, but leaves a failed assignment in
+Fleet. Team and label targeting require Premium; see
+[Fleet's label-scoping restriction](https://fleetdm.com/guides/custom-os-settings#target-hosts-with-labels)
+and the [versioned reconciler](https://github.com/fleetdm/fleet/blob/fleet-v4.92.2/server/mdm/apple/reconcile.go#L39).
+The owner's chosen Free workflow removes that global assignment and preserves
+Mac enforcement with individual installs.
 
-After authorizing enforcement, upload with:
+Migrate existing Macs before removing the global entry:
+
+1. Privately identify each intended Mac's Fleet host ID. Install the new baseline
+   on each enrolled Mac with the command below. The operator requires platform
+   `darwin`, checks enrollment, and verifies acknowledgement and `ProfileList`.
+2. Confirm each Mac has
+   `com.stinkyboi.fleet.macos.security-baseline.host`. The new identity prevents
+   delayed removals of the old global profile from removing the replacement.
+3. Remove the retired global catalog entry. The operator checks the exact
+   profile identity/content and preserves every other catalog entry.
+4. Verify the old entry and iPhone assignment are absent in Fleet. After Fleet's
+   asynchronous removal completes, verify fresh Mac `ProfileList` evidence:
+   the old `com.stinkyboi.fleet.macos.security-baseline` is absent, the new
+   `.security-baseline.host` remains, and unrelated profiles are retained.
 
 ```sh
-python3 -I scripts/fleet-free-setup.py mac-baseline-catalog --execute
+python3 -I scripts/fleet-free-setup.py mac-baseline --host-id <MAC_FLEET_ID> --execute
+python3 -I scripts/fleet-free-setup.py mac-baseline-catalog --remove --execute
 ```
 
-Verify the catalog entry, per-host status and fresh `ProfileList` responses.
-Pending delivery is not confirmed installation. Roll back through the same
-operator with `mac-baseline-catalog --remove --execute`; it deletes only the
-matching catalog entry and verifies that other entries remain. Fleet then
-removes its assignment asynchronously. Inspect devices to confirm removal.
-This can also remove the same baseline originally installed on the pilot Mac;
-it does not restore that Mac's prior unmanaged baseline automatically.
-Direct `RemoveProfile` commands alone do not disable managed assignment.
+Pending commands are not confirmed installation or removal. If a Mac is offline,
+finish its replacement install before removing the global entry. Direct
+`RemoveProfile` commands alone do not disable catalog assignment.
+`mac-baseline-catalog` is removal-only and rejects re-upload; re-enabling global
+assignment requires a reviewed code change.
+
+For a new Mac, run only the `mac-baseline --host-id` install command. Remove its
+host-scoped baseline with the same command plus `--remove`; this stops its
+enforcement without restoring an earlier password. `mac-pilot` installs or
+removes both the new baseline and Platform SSO on the privately matched local Mac.
+Record actual migration results in the knowledge base after execution; these
+instructions alone do not establish live acceptance.
 
 ## Existing-account Platform SSO pilot
 
@@ -207,8 +226,8 @@ The initial pilot delivers the committed profiles using Fleet's supported Free M
 command API to the privately matched Mac only. A successful `InstallProfile`
 followed by `ProfileList` establishes installation. It does not create continuous
 Fleet profile assignment, automatic drift repair, or a family-wide targeting
-rule. The catalog action above makes only the password baseline continuously
-managed. Revisions and removals require the reviewed repository operator path;
+rule. The password baseline remains host-scoped as described above. Revisions
+and removals require the reviewed repository operator path;
 do not substitute ad hoc commands or enable a paid feature after a license error.
 
 Removing the PSSO profile stops that configuration; it does **not** restore the
@@ -358,14 +377,17 @@ existing paths and repository destinations. Open that file privately, complete
 the initial known-password change/MFA flow, and remove the obsolete copy when
 finished. The file is not a recovery credential after the initial change.
 
-The Mac pilot privately matches both serial and hardware UUID. iPhone selection
-requires an explicit Fleet ID and verifies the platform and Apple identifier.
+The Mac pilot privately matches both serial and hardware UUID. Individual Mac
+baseline installation requires an explicit Fleet ID and verifies `darwin` and
+MDM enrollment. iPhone selection requires an explicit Fleet ID and verifies the
+platform and Apple identifier.
 Each MDM write is submitted once, with a bounded acknowledgement wait. If it
 times out, inspect the pending command and device connectivity before retrying;
 a timeout does not prove that a change failed. Removal verifies the selected
 profile identifiers are absent and unrelated profiles remain installed. Mac
-profile removal uses `mac-pilot --remove`; if the password baseline is managed,
-remove its catalog assignment first. iPhone/iPad supports removal only.
+pilot removal uses `mac-pilot --remove`; baseline-only removal uses
+`mac-baseline --host-id <MAC_FLEET_ID> --remove`. Retiring the old global baseline
+requires its separate catalog removal action. iPhone/iPad supports removal only.
 PSSO removal does not revert the user's password or erase its Entra registration.
 
 The reporting action adds only the macOS FileVault observation policy. Linux

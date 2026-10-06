@@ -1167,6 +1167,30 @@ The operator now rejects iOS baseline installation before credential access and
 excludes the retired payload from active-profile validation. Its payload is
 retained only for idempotent removal; the user's current passcode is preserved.
 
+Read-only Fleet inspection on 2026-10-06 UTC confirmed the managed **Family Mac
+security baseline** appeared on the iPhone with installation status `failed`:
+`MCInstallationErrorDomain (4035): Invalid profile target` and
+`MCProfileErrorDomain (1015): The target device does not match this platform`.
+This confirms Apple rejected that installation; Fleet's global assignment is
+still visible. The same catalog profile was `verified` on one Mac and `pending`
+on another. No profile settings were changed, and the operator session was
+revoked. A fresh device `ProfileList` was not requested during this inspection.
+See the [Mac-only migration](../../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs)
+before treating a visible Fleet assignment as installed configuration or
+removing the catalog entry, which also removes Mac assignment.
+
+The owner then selected individual Mac installs with no global baseline
+assignment. The operator now rejects global upload before credential access;
+`mac-baseline --host-id <MAC_FLEET_ID>` requires an enrolled `darwin` host.
+The replacement preserves every security setting but uses distinct profile and
+payload identities so delayed global removals cannot erase it. The 51-test
+setup suite checks phone exclusion, host identity/enrollment, unchanged settings,
+unrelated-profile retention and guarded catalog removal. The Apple API/MDM
+suite (17 tests), dependent AirVPN suite (24 tests), both operator dry runs and
+`git diff --check` passed. Live migration requires acknowledged replacement
+installation before removing existing Mac protection; these tests alone do not
+establish device delivery or removal of the iPhone assignment.
+
 An external Python `urllib` probe with its default user agent received HTTP 403
 with a Cloudflare response header. The same endpoint returned 200 for curl, the
 browser and an identified `Fleet-verification/1.0` client; authenticated API
