@@ -71,8 +71,16 @@ tool calls, and 49720 tokens. Observation `2e79c0fc1c0a30df` in trace
 `03b7bd8d4b6aeeefd2e70edc16c088af` matched its marker, input/output, identity
 and usage, but Langfuse classified it as `SPAN`, not `GENERATION`. Inspect
 streaming observation typing before claiming generation-level acceptance.
-The n8n read-only workflow export hung and was terminated; workflow acceptance
-and NOFX inference acceptance remain outstanding.
+The n8n read-only CLI export hung and was terminated. A subsequent read-only
+database inventory of all ten workflows confirmed the active model node uses
+`openrouter/free` and `litellm-managed`. It also found two inactive workflows
+still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
+The prepared init migration now covers these three exact workflow/node IDs,
+rejects changed model/options, and republishes only previously active workflows.
+It awaits deployment; inactive workflows must remain inactive afterward.
+The active error workflow includes HTTP actions and Discord
+notifications; do not trigger it wholesale for an inference smoke check.
+Bounded native-node acceptance and NOFX inference acceptance remain outstanding.
 
 ### Retirement gap: retained OpenClaw configuration
 
