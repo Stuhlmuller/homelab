@@ -20,8 +20,12 @@ caps actual fill leverage at the configured limit.
 Patch `0013-litellm-runtime-routing.patch` preserves NOFX's encrypted provider
 configuration and routes only `openrouter/free` through LiteLLM when the fixed
 mounted JSON config exists. It reads the gateway bearer from the declared token
-file, sends the original provider key only in the gateway request body, and uses
-no environment-variable routing inputs. The source change is inert until a
+file and uses no environment-variable routing inputs. Patch `0020` removes
+provider-key forwarding and the stored provider-key prerequisite: routed calls
+authenticate only with the mounted LiteLLM token. Both chat paths reject missing
+gateway credentials and retain model restrictions; unrouted clients are unchanged.
+Synthetic HTTP tests cover absent provider credentials, token rotation and
+concurrent calls. The source change is inert until a
 reviewed `main` build publishes an exact backend image digest; do not change the
 active deployment digest as part of the configuration-only rollout.
 Routed calls validate both the configured model and the final request model:

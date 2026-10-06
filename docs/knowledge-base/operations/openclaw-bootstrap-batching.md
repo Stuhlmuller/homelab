@@ -32,8 +32,8 @@ and [implementation](https://github.com/openclaw/openclaw/blob/v2026.9.5/src/cli
 
 Bootstrap groups the existing 16 assignments into six batches when both
 optional credentials are populated. Without either credential, it uses three.
-The legacy hook-token unset, assistant bootstrap, config validation, and Discord
-plugin enable/check retain their ordering. Those commands can still write
+Assistant bootstrap, config validation, and Discord plugin enable/check retain
+their ordering. Those commands can still write
 configuration separately. Current backup, database integrity and mount-identity
 gates remain in place.
 
@@ -51,7 +51,7 @@ preservation, repeat runs, failure stops, and temporary-file cleanup. The separa
 `OpenClaw native config` CI job uses the exact digest-pinned image and synthetic,
 disposable state to verify vendor batch behavior. It checks typed edits,
 SecretRefs, ordered duplicate paths, one write versus sequential writes,
-dry-run behavior, rejected-batch atomicity, and the legacy hook-token sequence.
+dry-run behavior and rejected-batch atomicity.
 It starts no gateway and does not access a cluster, credentials, or backups.
 
 After an approved merge, Argo replaces the Pod. Compare Pod start, init-container

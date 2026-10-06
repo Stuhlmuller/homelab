@@ -61,15 +61,26 @@ def install(bundle, state, config_path):
         raise ValueError("main workspace must be inside persistent OpenClaw state")
     patch = json.loads((bundle / "config.json").read_text())
     model = patch["agents"]["defaults"]["model"]["primary"]
-    # A restricted allowlist must include the managed default; empty means unrestricted.
-    allowed = defaults.get("modelPolicy", {}).get("allow")
-    if allowed and model not in allowed:
-        allowed.append(model)
-    main_allowed = main.get("modelPolicy", {}).get("allow")
-    if main_allowed and model not in main_allowed:
-        main_allowed.append(model)
-    if "model" in main:
-        main["model"] = patch["agents"]["defaults"]["model"]
+    # Inference routing is managed, not additive: retaining subscription models
+    # lets saved aliases and agent overrides bypass the gateway after migration.
+    for agent in [defaults, *config["agents"].get("entries", {}).values()]:
+        agent["model"] = {"primary": model, "fallbacks": []}
+        agent["models"] = {model: {"alias": "free"}}
+        agent.setdefault("modelPolicy", {})["allow"] = [model]
+        agent.pop("agentRuntime", None)
+        if "heartbeat" in agent:
+            agent["heartbeat"]["model"] = model
+    config.setdefault("models", {})["providers"] = {}
+    plugins = config.setdefault("plugins", {})
+    for retired in ("openai", "codex"):
+        plugins.setdefault("entries", {})[retired] = {"enabled": False}
+        if isinstance(plugins.get("allow"), list):
+            plugins["allow"] = [name for name in plugins["allow"] if name != retired]
+    # Remove active subscription references, not private credential files/backups.
+    profiles = config.get("auth", {}).get("profiles", {})
+    for name, profile in list(profiles.items()):
+        if profile.get("provider") in {"openai", "openai-codex", "codex"}:
+            del profiles[name]
     if "heartbeat" in main:
         main["heartbeat"] = patch["agents"]["defaults"]["heartbeat"]
     existing_tools = config.get("tools", {}).get("alsoAllow", [])

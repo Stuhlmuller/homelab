@@ -27,8 +27,17 @@ fixture = {
         "defaults": {"models": {"openai/gpt-5.5": {}},
                      "modelPolicy": {"allow": ["openai/gpt-5.5"]}},
         "entries": {"main": {"model": "openai/gpt-6-astra",
-                             "modelPolicy": {"allow": ["openai/gpt-6-astra"]}}},
+                             "modelPolicy": {"allow": ["openai/gpt-6-astra"]}},
+                    "other": {"model": "openai/gpt-5.5", "agentRuntime": {"id": "codex"},
+                              "heartbeat": {"model": "openai/gpt-5.5", "every": "2h"},
+                              "workspace": "/preserved/workspace"}},
     },
+    "models": {"providers": {"openai": {"baseUrl": "https://chatgpt.com/backend-api/codex"}}},
+    "plugins": {"allow": ["codex", "openai", "discord"],
+                "entries": {"codex": {"enabled": True}, "openai": {"enabled": True},
+                            "discord": {"enabled": True}}},
+    "auth": {"profiles": {"subscription": {"provider": "openai", "mode": "oauth"},
+                          "unrelated": {"provider": "unrelated", "mode": "api_key"}}},
     "skills": {"allowBundled": ["existing-skill"],
                "entries": {"existing-skill": {"enabled": False}, "gog": {"enabled": False}}},
     "channels": {"discord": {"enabled": True, "allowFrom": ["123456789012345678"],
@@ -53,12 +62,25 @@ with tempfile.TemporaryDirectory() as directory:
     assert result["skills"]["entries"]["existing-skill"] == {"enabled": False}
     assert result["skills"]["entries"]["gog"] == {"enabled": True}
     assert result["channels"] == fixture["channels"]
-    assert result["agents"]["defaults"]["modelPolicy"]["allow"] == [
-        "openai/gpt-5.5", "openrouter/free"]
+    assert result["agents"]["defaults"]["modelPolicy"]["allow"] == ["openrouter/free"]
     assert result["agents"]["entries"]["main"]["model"] == {
         "primary": "openrouter/free", "fallbacks": []}
-    assert result["agents"]["entries"]["main"]["modelPolicy"]["allow"] == [
-        "openai/gpt-6-astra", "openrouter/free"]
+    assert result["agents"]["entries"]["main"]["modelPolicy"]["allow"] == ["openrouter/free"]
+    for agent in [result["agents"]["defaults"], *result["agents"]["entries"].values()]:
+        assert agent["models"] == {"openrouter/free": {"alias": "free"}}
+        assert agent["model"] == {"primary": "openrouter/free", "fallbacks": []}
+        assert "agentRuntime" not in agent
+    assert result["agents"]["entries"]["other"]["workspace"] == "/preserved/workspace"
+    assert result["agents"]["entries"]["other"]["heartbeat"] == {
+        "model": "openrouter/free", "every": "2h"}
+    assert list(result["models"]["providers"]) == ["openrouter"]
+    assert result["models"]["providers"]["openrouter"]["baseUrl"] == (
+        "http://litellm.ai.svc.cluster.local:4000/v1")
+    assert result["plugins"]["allow"] == ["discord"]
+    assert result["plugins"]["entries"] == {
+        "codex": {"enabled": False}, "openai": {"enabled": False}, "discord": {"enabled": True}}
+    assert result["auth"]["profiles"] == {"unrelated": fixture["auth"]["profiles"]["unrelated"]}
+    assert json.loads((root / "assistant-backups/v1/openclaw.json").read_text()) == fixture
     assert "Existing personal identity." in soul.read_text()
     assert memory.read_text() == "Private memory must survive.\n"
     assert (root / "assistant-backups/v1/SOUL.md").read_text() == "Existing personal identity.\n"

@@ -15,7 +15,7 @@ service:
   type: ClusterIP
   port: 4000
 podAnnotations:
-  homelab.stuhlmuller.dev/app-identity-revision: "6"
+  homelab.stuhlmuller.dev/app-identity-revision: "7"
 volumes:
   - name: app-identity
     configMap:

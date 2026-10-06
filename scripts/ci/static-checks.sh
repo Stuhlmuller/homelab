@@ -471,6 +471,7 @@ yq -e '
 echo "::endgroup::"
 
 echo "::group::n8n persisted encryption key"
+python3 -I scripts/ci/n8n-ai-migration-check.py
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
 if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
   echo "n8n must not inject N8N_ENCRYPTION_KEY directly; retained configs own the active key." >&2

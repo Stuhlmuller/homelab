@@ -62,7 +62,7 @@ with patch.object(Path, "read_text", side_effect=["pk-fixture", "sk-fixture"]):
 assert exporter_config.endpoint == "http://langfuse-web.langfuse.svc.cluster.local:3000/api/public/otel/v1/traces"
 assert exporter_config.headers == "Authorization=Basic " + base64.b64encode(
     b"pk-fixture:sk-fixture"
-).decode()
+).decode() + ",x-langfuse-ingestion-version=4"
 with patch.object(Path, "read_text", side_effect=["REPLACE_ME", "sk-fixture"]):
     try:
         gateway_launcher.langfuse_config()
@@ -599,6 +599,7 @@ async def check_openclaw_gateway():
     assert sum(span.attributes.get("llm.token_count.completion") == 1 for span in spans) == 6
     for span in spans:
         if span.attributes.get("llm.token_count.prompt") == 8:
+            assert span.attributes["langfuse.observation.type"] == "generation"
             assert span.attributes["llm.model_name"] == model
             assert span.attributes["llm.provider"] == "openai"  # SDK transport; upstream URL asserted separately.
     assert any(span.attributes.get("error.type") == "BadRequestError" for span in spans)
