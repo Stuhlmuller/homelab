@@ -307,5 +307,5 @@ safe reconciliation or restore the broader direct-policy risk.
 `state-bucket-encryption` adopts the existing state bucket's encryption
 configuration and enables S3 Bucket Keys. It preserves the default KMS key,
 explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
-See [State encryption](../../docs/knowledge-base/operations/state-encryption.md)
+See [State encryption](../../openwiki/operations/state-encryption.md)
 for the focused plan/apply path, verification, and declarative rollback.

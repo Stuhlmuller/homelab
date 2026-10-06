@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Check the actual runbook queries against a failure before its first scrape."""
 import json
-from pathlib import Path
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-queries = re.findall(r"ambient_promql '([^']+)'", (root / "docs/knowledge-base/operations/validation-gates.md").read_text())
+queries = re.findall(r"ambient_promql '([^']+)'", (root / "openwiki/operations/validation-gates.md").read_text())
 increase = next(query for query in queries if "increase(prober_probe_total" in query)
 baseline = next(query for query in queries if "prober_probe_total" in query and "offset 24h" in query)
 series = 'prober_probe_total{namespace="istio-system",pod="ztunnel-test",pod_uid="uid",probe_type="Readiness",result="failed"}'

@@ -6,7 +6,7 @@ description: Add or change homelab SSM, ExternalSecret, and workload credential 
 # Homelab Secret Contracts
 
 Read only the affected rows in the [secret matrix](../../../docs/secrets-aws-ssm.md)
-and [identity architecture](../../../docs/knowledge-base/architecture/secrets-and-identity.md),
+and [identity architecture](../../../openwiki/architecture/secrets-and-identity.md),
 then trace the actual declaration, reader policy, ExternalSecret and consumer.
 The matrix is an index; source files decide the current behavior.
 
@@ -39,7 +39,7 @@ The matrix is an index; source files decide the current behavior.
 ## Verify
 
 Run the relevant static, render and policy checks from
-[validation gates](../../../docs/knowledge-base/operations/validation-gates.md).
+[validation gates](../../../openwiki/operations/validation-gates.md).
 Secret-bearing shared SSM and secret materialization units are excluded from
 ordinary PR plans: that skip does not validate their production plan. Review the
 authorized private saved plan, including unrelated shared-unit changes, through

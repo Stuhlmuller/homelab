@@ -1,0 +1,87 @@
+---
+type: runbook
+title: "Octelium"
+description: "Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence."
+tags: ["runbook", "octelium", "access"]
+---
+
+# Octelium
+
+Canonical runbook: [`docs/octelium.md`](../../docs/octelium.md)
+
+Octelium is the primary human-app, private Kubernetes, callback, and CI access
+backbone. Operator machines run `octelium connect` and generate a kubeconfig
+with `octelium config kubernetes-api.homelab`; Cordium Workspaces already have
+their own client session and use the same private Service. Keep Cluster
+bootstrap, Enterprise adoption, public Cloudflare routing, Entra OIDC, and the
+end-to-end gate on their repository-owned scripts and manifests. The catalog
+also owns the core human session ceiling; apply its `ClusterConfig` include
+separately before the normal catalog apply.
+
+Bootstrap and upgrade require the dataplane label on `zimaboard-0`, the
+control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.
+The bootstrap script refuses to mutate the cluster if these selectors fail,
+including a missing node or failed API lookup.
+
+The public API uses outbound Cloudflare Tunnel: HTTPS for browser gRPC-Web
+and `octelium-transport.stinkyboi.com` TCP-over-WebSocket for native TLS gRPC.
+Reconcile DNS with `octelium-public-tunnel.yml` after Argo sync.
+Run `scripts/octelium-tunnel-check.py`; then prove authenticated console,
+audit queries, Cordium execution, and reconnect behavior separately. Native
+clients need a scoped canonical API resolver mapping and local carrier;
+workstation-wide hosts overrides would also redirect browser API requests.
+
+The temporary August 2026 recovery manifest runs the control paths, CI API,
+and 18 additional public WEB Service fallbacks on `acer` without Multus, 19
+including the existing OctoBot fallback. Its generated Service UIDs must be
+refreshed after any Service recreation. Keep it until the native fleet passes
+the capacity, 24-hour stability, direct Pod, and public end-to-end removal
+gates in [Cluster Topology](../architecture/cluster-topology.md).
+
+See [Secrets And Identity](../architecture/secrets-and-identity.md), [Tailnet And App Ingress](tailnet-ingress.md), and
+[Workload Inventory](../workloads/inventory.md).
+
+## macOS API carrier
+
+`scripts/octelium-macos-api-carrier.py` installs a loopback-only native API
+carrier as a system LaunchDaemon. macOS requires administrator permission for
+its port 443 listener. The installer checks TLS, native gRPC, and browser
+gRPC-Web before adding one marked canonical API hostname entry to `/etc/hosts`;
+public DNS remains unchanged. It rejects conflicting local hostname entries or
+listeners, preserves unrelated hosts entries, and provides an uninstall path.
+The macOS curl status-line trailing-space regression is covered by the offline
+check in `scripts/ci/octelium-macos-api-carrier-test.py`.
+
+On 2026-10-01 both protocol probes, privileged installation, authenticated
+native status, private Multica HTTP 200, and desktop runtime refresh passed on
+the home LAN. `scripts/multica-desktop-connect.py` owns the user LaunchAgent and
+backed-up desktop HTTP/WebSocket endpoint configuration. It starts at login and
+restarts failed clients. Off-LAN and new chat-send acceptance remain separate
+checks. This carrier grants no Octelium permissions and does not
+bypass session expiry. See [the macOS setup procedure](../../docs/octelium.md).
+
+
+### Gateway retirement finding
+
+The 2026-10-01 authenticated Gateway inventory still included `zimaboard-2`
+after its dataplane label was removed; only `zimaboard-0` ran a gateway agent.
+Upstream v0.35.0 nocturne removes a Gateway when its Node disappears, but label
+removal does not trigger that cleanup. The home-LAN connection succeeded with
+this inventory; its effect on reconnect latency is unproven. Add a validated,
+repository-owned retirement path before removing the stale Gateway; do not
+delete the Kubernetes Node merely to force cleanup.
+
+
+The follow-up failure on 2026-10-01 was a running native client with no local
+listener, while the API carrier and authenticated session remained healthy.
+Restarting that client restored HTTP 200. Process-only `KeepAlive` cannot catch
+this state. The installed supervisor checks HTTP every five seconds, allows 90
+seconds for startup and 30 seconds of sustained failure after readiness, then
+reaps the client so launchd can restart it. Session expiration still requires
+login; the original client hang trigger remains unknown. The supervisor is
+copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
+
+A live acceptance test froze only the managed client with SIGSTOP. The
+supervisor reaped it, launchd restarted the connection, HTTP returned 200, and
+the same desktop Autopilot page recovered to show 13 entries without an app
+restart. The offline regression exercises a running but unresponsive child.

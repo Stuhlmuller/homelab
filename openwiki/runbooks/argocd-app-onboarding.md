@@ -1,0 +1,21 @@
+---
+type: runbook
+title: "Argo CD App Onboarding"
+description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
+tags: ["runbook", "argocd", "applications"]
+---
+
+# Argo CD App Onboarding
+
+Canonical runbook: [`docs/argocd-app-onboarding.md`](../../docs/argocd-app-onboarding.md)
+
+Register applications in `IaC/terragrunt.stack.hcl` with the shared
+`IaC/.catalog/units/live/argocd-app` template. Put per-app inputs in
+`IaC/stacks/<app>/stack.hcl`, load common defaults from `IaC/stack-defaults.hcl`,
+and keep runtime state under
+`clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`. Use
+`main` for repository-backed sources and treat Terragrunt dependencies as
+ordering only; readiness still requires Argo CD `Synced` and `Healthy` status.
+
+See [GitOps Flow](../architecture/gitops-flow.md), [Workload Inventory](../workloads/inventory.md), and
+[New Application Pattern](../patterns/new-application.md).

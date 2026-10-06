@@ -248,7 +248,7 @@ nix develop --command python3 scripts/gluetun-cpu-profile.py check-disabled
 ```
 
 Do not manually restart the container or mutate its files. See the
-[CPU audit and evidence](../../../../docs/knowledge-base/operations/deluge-cpu-audit-2026-09-05.md).
+[CPU audit and evidence](../../../../openwiki/operations/deluge-cpu-audit-2026-09-05.md).
 Runtime binding, profiling overhead, and the CPU cause require live verification.
 
 ## Troubleshooting

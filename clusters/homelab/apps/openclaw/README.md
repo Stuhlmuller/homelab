@@ -344,7 +344,7 @@ OpenClaw 2026.9.5's validated batches within existing configuration phases to
 reduce repeated CLI invocations and writes. Private temporary batch files are
 cleaned on exit. The runtime-backup CronJob shares sync wave `0` with the
 Deployment so its desired state is applied before Argo waits for the long
-rollout. See the [startup measurements and rollout checks](../../../../docs/knowledge-base/operations/openclaw-bootstrap-batching.md);
+rollout. See the [startup measurements and rollout checks](../../../../openwiki/operations/openclaw-bootstrap-batching.md);
 actual improvement requires measurement after rollout.
 
 Use the event timestamps to distinguish expected startup failures from a live

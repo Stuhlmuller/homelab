@@ -108,10 +108,10 @@ only safe references, encrypted values, templates, or contracts in git.
 
 ## Knowledge Base
 
-The project knowledge base lives in `docs/knowledge-base`. Open that directory
-as an Obsidian vault when you want graph navigation, backlinks, and linked
-architecture notes. The notes are committed as plain Markdown so they remain
-reviewable in pull requests.
+The project knowledge base lives in [OpenWiki](openwiki/quickstart.md). Start
+with its task routes, then read the relevant sections and linked source. The
+repository installs OpenWiki and homelab context skills for agent retrieval and
+maintenance; see [wiki maintenance](openwiki/operations/wiki-maintenance.md).
 
 Use the knowledge base for cross-cutting context that spans multiple runbooks or
 source directories: cluster topology, GitOps flow, workload inventory, storage

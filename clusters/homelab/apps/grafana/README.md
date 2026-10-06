@@ -171,7 +171,7 @@ The provisioned rules cover:
   missing capacity metrics. Missing data enters Grafana's `Alerting` state;
   it does not prove disk exhaustion. NFS subdirectory claims share filesystem
   capacity rather than enforcing the requested PVC size. See
-  [storage metric recovery](../../../../docs/knowledge-base/operations/pvc-metrics-recovery.md).
+  [storage metric recovery](../../../../openwiki/operations/pvc-metrics-recovery.md).
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining in `Progressing` for 30 minutes.

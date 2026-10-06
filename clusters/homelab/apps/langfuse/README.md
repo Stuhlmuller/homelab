@@ -111,7 +111,7 @@ ordinary startup, then verifies quarantine preserves the files and application
 data across restart. See the [native marker implementation](https://github.com/ClickHouse/ClickHouse/blob/f0cf8bd49aa0956d1f8709dfc7a81857aea915b5/src/Databases/DatabaseOnDisk.cpp#L326-L345),
 [metadata loader](https://github.com/ClickHouse/ClickHouse/blob/f0cf8bd49aa0956d1f8709dfc7a81857aea915b5/src/Databases/DatabaseOrdinary.cpp#L269-L317),
 and [ClickHouse DETACH](https://clickhouse.com/docs/reference/statements/detach)
-and the [incident evidence](../../../../docs/knowledge-base/operations/plex-recovery-2026-10-05.md).
+and the [incident evidence](../../../../openwiki/operations/plex-recovery-2026-10-05.md).
 
 ## Validation
 

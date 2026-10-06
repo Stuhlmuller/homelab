@@ -179,7 +179,7 @@ maps. Other fields replace their defaults; lists always replace, including
 
 Helm applications keep explicit chart repository, chart, pinned revision,
 release name, and values files in `spec.sources`; see
-[Helm chart organization](knowledge-base/patterns/helm-chart-organization.md).
+[Helm chart organization](../openwiki/patterns/helm-chart-organization.md).
 Dependencies are relative to the sibling application directory: use an app name
 for another Application and `../../aws-ssm-parameters` for that shared AWS unit.
 Bootstrap installs Argo CD before its CRDs exist. Argo's self-management, Cordium's bootstrap

@@ -17,7 +17,7 @@ is delivered through Argo CD, Helm, Kustomize, and committed manifests.
 | `IaC/` | OpenTofu modules and Terragrunt stacks for cloud, bootstrap, and GitOps registration. |
 | `clusters/homelab/` | Kubernetes desired state for Argo CD, platform services, and applications. |
 | `docs/` | Operator runbooks and learner-facing explanations. |
-| `docs/knowledge-base/` | Obsidian-compatible Markdown vault for cross-cutting architecture and operations context. |
+| `openwiki/` | OpenWiki Markdown wiki for cross-cutting architecture and operations context. |
 | `policy/` | Conftest/Rego policies for Terraform, Kubernetes, and GitHub Actions checks. |
 | `scripts/ci/` | Reusable local and CI validation helpers. |
 
@@ -56,7 +56,7 @@ Start with these documents:
 - `docs/ci-cd.md` for GitHub Actions, Octelium, AWS OIDC, and rollout gates.
 - `docs/secrets-aws-ssm.md` for the External Secrets and AWS SSM contract.
 - `docs/storage-nfs.md` for QNAP-backed Kubernetes persistent storage.
-- `docs/knowledge-base/00-home.md` for the Obsidian knowledge-base index.
+- [OpenWiki quickstart](openwiki/quickstart.md) for task routes and agent context.
 
 This is a public repository. Keep raw secrets, kubeconfigs, Talos secrets,
 tokens, private keys, and raw certificate material out of git. Commit safe
@@ -80,12 +80,13 @@ For docs-only changes, focused Markdown and whitespace checks are usually
 enough:
 
 ```sh
-git diff --check -- README.md docs/ AGENTS.md ONBOARDING.md .agents/skills
+python3 -I scripts/ci/openwiki-check.py
+git diff --check -- README.md docs/ openwiki/ AGENTS.md ONBOARDING.md .agents/skills
 rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" README.md docs AGENTS.md ONBOARDING.md .agents/skills
 ```
 
 See `docs/validation-runbook.md` and
-`docs/knowledge-base/operations/validation-gates.md` for the full validation
+`openwiki/operations/validation-gates.md` for the full validation
 model, including Terragrunt plans, Kustomize renders, server-side diffs, and
 live readiness checks.
 

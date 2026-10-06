@@ -41,7 +41,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 
 Paths abbreviated `apps/…` above mean `clusters/homelab/apps/…`. See
 [storage coverage](storage-nfs.md), the workload READMEs and
-[knowledge-base inventory](knowledge-base/workloads/inventory.md) for source
+[knowledge-base inventory](../openwiki/workloads/inventory.md) for source
 ownership. Automatic **capture** beyond existing Octelium/media jobs remains a
 gap. The paired adapters provide publication, not an approved writer-fencing or
 capture workflow. Do not enable them until that capture change is reviewed.
