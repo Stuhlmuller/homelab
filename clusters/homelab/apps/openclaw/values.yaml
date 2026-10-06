@@ -531,7 +531,7 @@ controllers:
               httpGet:
                 path: /
                 port: 8080
-              failureThreshold: 72
+              failureThreshold: 180
               periodSeconds: 5
               timeoutSeconds: 3
           readiness:

@@ -7,6 +7,13 @@ import sys
 import tempfile
 
 values = "clusters/homelab/apps/openclaw/values.yaml"
+probes = json.loads(subprocess.check_output(
+    ["yq", "-o=json", '.controllers.openclaw.containers.app.probes', values], text=True,
+))
+assert probes["startup"]["spec"] == {
+    "httpGet": {"path": "/", "port": 8080},
+    "failureThreshold": 180, "periodSeconds": 5, "timeoutSeconds": 3,
+}
 bootstrap = subprocess.check_output(
     ["yq", "-r", '.controllers.openclaw.initContainers."bootstrap-config".command[2]', values],
     text=True,
