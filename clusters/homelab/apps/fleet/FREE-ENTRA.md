@@ -187,9 +187,10 @@ users nor forces them through Entra.
 
 After a separate DNS-owner GitOps change publishes the exact TXT record and the
 domain is verified, `IaC/operator/entra-stuhlmuller-pilot-user` creates only
-`rodman.mac@stuhlmuller.net`. It is a cloud-only Entra password identity for
-this Mac's PSSO pilot, not a mailbox, Google account, Fleet administrator or
-replacement for `rodman@stuhlmuller.net` recovery access. The existing
+`rodman@stuhlmuller.net`. It is a cloud-only Entra password identity for
+this Mac's PSSO pilot, not a mailbox, Google account or Fleet administrator.
+It does not modify the separately managed Fleet recovery account with the same
+email address. The existing
 `rodman.mac@stinkyboi.com` pilot remains unchanged. Creating any additional
 family pilot requires another explicit reviewed user unit; no domain-wide rule
 enrolls or redirects anyone.
@@ -230,7 +231,7 @@ records. Preserve access and inspect registration before any cleanup.
 
 1. After the reviewed `stuhlmuller.net` pilot identity apply and private
    credential handoff, sign in to [Microsoft My Account](https://myaccount.microsoft.com/)
-   as `rodman.mac@stuhlmuller.net`. Replace the temporary password and complete the
+   as `rodman@stuhlmuller.net`. Replace the temporary password and complete the
    tenant's required security-information registration. PSSO cannot synchronize
    a temporary password requiring change. Do not alter the existing owner account.
 2. Install the [official Microsoft Company Portal package](https://go.microsoft.com/fwlink/?linkid=853070).

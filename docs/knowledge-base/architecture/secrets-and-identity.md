@@ -89,9 +89,11 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   behavior, not a requested OAuth scope: keep Dex scopes to `openid`,
   `profile`, and `email`, configure Entra to emit the `groups` claim for Argo
   CD RBAC, and keep `insecureSkipEmailVerified: true` because Entra may omit
-  the `email_verified` claim. The bootstrap RBAC policy also binds
-  `rodman@stuhlmuller.net` directly to `role:admin` through the configured
-  `email` scope so operator access does not depend on group-claim setup.
+  the `email_verified` claim. Dex maps the existing administrator's immutable
+  Entra object ID using `userIDKey: oid`; Argo CD v3 binds that federated user
+  ID directly to `role:admin`, then evaluates group claims. It does not use a
+  mutable email value for authorization, so the exact-UPN Mac PSSO pilot cannot
+  inherit Argo CD administration from a matching email address.
 - Argo CD Image Updater's GitHub App credential contract is retired. The
   ExternalSecret and generated Secret have no runtime consumer; Renovate owns
   image update pull requests. Its three SSM paths remain declared only as
@@ -493,7 +495,7 @@ standard bodyless Graph request, retaining the service default of no domain
 takeover; its private saved plan must confirm the domain remains managed and
 non-default. The companion
 `operator/entra-stuhlmuller-pilot-user` unit can then create only
-`rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
+`rodman@stuhlmuller.net`. Its domain guard requires verified managed,
 non-default state, and the account receives no role, group, license, mailbox or
 Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
 email address alone is not an Entra password identity. Its guarded module is

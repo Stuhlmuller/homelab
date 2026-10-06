@@ -727,7 +727,7 @@ class CredentialExportTest(unittest.TestCase):
         self.assertIn("IaC/live/azuread-applications/fleet-pilot-user", str(process.call_args))
 
     def test_stuhlmuller_pilot_requires_explicit_selection(self):
-        self.values["user_principal_name"]["value"] = "rodman.mac@stuhlmuller.net"
+        self.values["user_principal_name"]["value"] = "rodman@stuhlmuller.net"
         status, process = self.run_export(pilot="stuhlmuller")
         self.assertEqual(status, 0)
         self.assertIn("IaC/operator/entra-stuhlmuller-pilot-user", str(process.call_args))

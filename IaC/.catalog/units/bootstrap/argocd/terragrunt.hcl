@@ -11,7 +11,9 @@ locals {
   oidc_sso_secret_name                 = "argocd-oidc-sso"
   oidc_sso_issuer                      = "https://login.microsoftonline.com/2aee152b-5281-40d0-8f4b-60faf40514ab/v2.0"
   oidc_sso_admin_group                 = "argocd-admins"
-  oidc_sso_admin_email                 = "rodman@stuhlmuller.net"
+  # Entra object ID for the existing rodman@stinkyboi.com administrator.
+  # Argo CD v3 authorizes this immutable Dex federated user ID, not an email.
+  oidc_sso_admin_entra_object_id = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
   argocd_metrics = {
     enabled = true
   }
@@ -80,6 +82,7 @@ inputs = {
                   issuer: ${local.oidc_sso_issuer}
                   clientID: ${format("$%s:clientID", local.oidc_sso_secret_name)}
                   clientSecret: ${format("$%s:clientSecret", local.oidc_sso_secret_name)}
+                  userIDKey: oid
                   scopes:
                     - openid
                     - profile
@@ -95,8 +98,8 @@ inputs = {
 
         rbac = {
           "policy.default" = "role:readonly"
-          "policy.csv"     = "g, ${local.oidc_sso_admin_group}, role:admin\ng, ${local.oidc_sso_admin_email}, role:admin\n"
-          scopes           = "[groups, email]"
+          "policy.csv"     = "g, ${local.oidc_sso_admin_group}, role:admin\ng, ${local.oidc_sso_admin_entra_object_id}, role:admin\n"
+          scopes           = "[groups]"
         }
       }
 
