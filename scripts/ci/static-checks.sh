@@ -477,7 +477,8 @@ yq -e '
   join("\n") |
   (
     contains("if [ ! -s /home/node/.n8n/config ]; then") and
-    contains("export N8N_ENCRYPTION_KEY=\"$N8N_BOOTSTRAP_ENCRYPTION_KEY\"")
+    contains("export N8N_ENCRYPTION_KEY=\"$N8N_BOOTSTRAP_ENCRYPTION_KEY\"") and
+    contains("[{\"id\":\"litellm-managed\",\"name\":\"LiteLLM Gateway\",\"type\":\"openAiApi\",\"data\":{}}]")
   )
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"
