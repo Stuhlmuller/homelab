@@ -289,6 +289,15 @@ n8n readiness, and the public callback. The hook is now removed; the explicit
 retained claim, 30-minute startup and liveness windows, and 120-second
 termination grace remain.
 
+### Pending n8n PostgreSQL upgrade
+
+On 2026-10-05 PDT, `n8n-postgres` was still pinned to PostgreSQL 14.23 while
+n8n reported PostgreSQL 14 as unsupported (17+ supported; 16 compatibility
+only). Availability recovered, but schedule a reviewed major-version migration:
+take a logical database dump and n8n PVC backup, restore into PostgreSQL 17+
+instead of changing the major image in place, then verify SQL, n8n readiness,
+and the public webhook before retiring the old PVC.
+
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
 `SELECT 1` instead of treating socket acceptance as usable database service.
