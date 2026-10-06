@@ -49,6 +49,10 @@ def contract(resources):
     config, = [item for item in resources if item["kind"] == "ConfigMap"
                and item["metadata"]["name"] == name]
     assert config["metadata"]["namespace"] == deployment["metadata"]["namespace"]
+    wave = "argocd.argoproj.io/sync-wave"
+    assert int(config["metadata"].get("annotations", {}).get(wave, "0")) < int(
+        deployment["metadata"].get("annotations", {}).get(wave, "0")
+    ), "Quarantine config must sync before the Recreate deployment"
     assert set(config["data"]) == {"log-quarantine.xml"}
     assert re.fullmatch(r"clickhouse/clickhouse-server:[^@]+@sha256:[0-9a-f]{64}",
                         container["image"]), "Runtime must use the rendered immutable image"

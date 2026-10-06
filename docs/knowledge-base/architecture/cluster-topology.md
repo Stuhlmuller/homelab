@@ -132,7 +132,20 @@ gateway advertises the LAN address reachable through the declared Tailscale
 subnet route. The gateway agent reads this annotation at startup; run the
 documented Octelium upgrade path after changing it, then verify the live
 Gateway status before testing an off-LAN CLIENT session.
-The reviewed Terragrunt plan removed it from the undersized `zimaboard-2` on
+
+The node metadata module keeps label manager `terragrunt` and uses
+`terragrunt-node-annotations` for annotations. Each resource sends a separate
+server-side apply request, so sharing a manager makes an annotation update
+remove that manager's omitted labels. Annotation ownership is established
+before labels reconcile to preserve the gateway address during the handoff.
+Full apply [37412936155](https://github.com/Stuhlmuller/homelab/actions/runs/37412936155)
+exposed this on 2026-10-06 at 04:29:32 UTC: the annotation update removed
+`zimaboard-0`'s dataplane label and the gateway DaemonSet deleted its only Pod.
+Restore the reviewed module through the trusted LAN Terragrunt recovery path
+in [CI/CD](../../../docs/ci-cd.md#octelium-ci-access-setup), then verify the
+label, annotation, gateway readiness, and normal CI access together.
+
+The reviewed Terragrunt plan removed the dataplane label from undersized `zimaboard-2` on
 2026-08-30 before any reboot; live inspection confirmed the label absent, all
 bound Octelium Pods terminating, and no PVC consumers on that node. The worker
 remains in the cluster without native dataplane eligibility.

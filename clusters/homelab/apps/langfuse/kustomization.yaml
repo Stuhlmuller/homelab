@@ -11,5 +11,8 @@ resources:
 configMapGenerator:
   - name: langfuse-clickhouse-log-quarantine
     namespace: langfuse
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
     files:
       - log-quarantine.xml=clickhouse-log-quarantine.xml

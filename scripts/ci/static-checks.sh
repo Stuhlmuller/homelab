@@ -359,6 +359,11 @@ echo "::endgroup::"
 
 echo "::group::Octelium bootstrap node containment"
 (
+  cd IaC/live/kubernetes-node-labels
+  terragrunt --log-disable init -backend=false -no-color
+  terragrunt --log-disable run --no-auto-init -- test -no-color
+)
+(
   # Run the actual prerequisites against mocked API responses, without cluster access.
   bootstrap_label_checks="$(awk '/^require_label\(\)/,/^}/; /^require_label /' scripts/octelium-cluster-bootstrap.sh)"
   check_bootstrap_labels() (
