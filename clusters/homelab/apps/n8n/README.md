@@ -40,9 +40,11 @@ instance key; do not rotate the SSM value without following an n8n-supported
   `http://litellm.ai.svc.cluster.local:4000/v1` without serializing the key in
   a workflow. The `migrate-ai-workflow` init container idempotently replaces
   the active workflow's fixed Bedrock node with that credential and the
-  `openrouter/free` model through n8n's supported CLI. It refuses an unexpected
-  node shape rather than changing another workflow. Verify a resulting Langfuse
-  generation before retiring the AWS credential.
+  `openrouter/free` model through n8n's supported CLI. Its single credential is
+  still serialized as a one-element JSON array because `import:credentials`
+  requires an array input. It refuses an unexpected node shape rather than
+  changing another workflow. Verify a resulting Langfuse generation before
+  retiring the AWS credential.
 
 ## Access Contract
 

@@ -87,7 +87,7 @@ controllers:
 
             # The credential is deliberately blank. CREDENTIALS_OVERWRITE_DATA in
             # the application container supplies the dedicated LiteLLM key and URL.
-            printf '%s\n' '{"id":"litellm-managed","name":"LiteLLM Gateway","type":"openAiApi","data":{}}' \
+            printf '%s\n' '[{"id":"litellm-managed","name":"LiteLLM Gateway","type":"openAiApi","data":{}}]' \
               >/tmp/litellm-credential.json
             n8n import:credentials --input=/tmp/litellm-credential.json
 
