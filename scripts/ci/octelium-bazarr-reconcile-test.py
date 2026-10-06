@@ -70,7 +70,7 @@ class ReconciliationTests(unittest.TestCase):
 
     def test_contract_rejects_auth_and_routing_drift(self):
         for keys, value in [
-            (("metadata", "name"), "nofx.default"), (("spec", "isPublic"), True),
+            (("metadata", "name"), "nofx.default"), (("spec", "isPublic"), False),
             (("spec", "isAnonymous"), True), (("spec", "mode"), "TCP"), (("spec", "port"), 443),
             (("spec", "authorization", "policies"), []),
             (("spec", "config", "upstream", "url"), "https://wrong.invalid"),

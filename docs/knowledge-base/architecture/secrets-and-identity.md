@@ -161,10 +161,11 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   It retains credentials only in
   its private config volume; no new SSM parameter or direct environment-variable
   secret injection is introduced. The main container never mounts either source
-  config claim. The private `bazarr.default` Octelium WEB Service requires the
-  existing `homelab-human-web-access` policy; it has neither anonymous access nor
-  a public DNS/tunnel route. Config backups contain these credentials and must
-  remain private.
+  config claim. The public `bazarr.default` Octelium WEB Service at
+  `https://bazarr.stinkyboi.com` requires `homelab-human-web-access` and disables
+  anonymous access. Cloudflare Tunnel forwards to the Octelium ingress dataplane;
+  Bazarr's internal upstream remains unchanged. Config backups contain these
+  credentials and must remain private.
 - Dispatcharr's dedicated PostgreSQL password is generated at
   `/homelab/media-postgres/dispatcharr-app-password` and rendered by
   `dispatcharr-postgres-env`; IPTV provider credentials and playlist URLs

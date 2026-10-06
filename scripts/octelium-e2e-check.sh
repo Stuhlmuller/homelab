@@ -94,6 +94,7 @@ done
 API_HOST="octelium-api.${DOMAIN}"
 PORTAL_HOST="portal.${DOMAIN}"
 AFFINE_HOST="affine.stinkyboi.com"
+BAZARR_HOST="bazarr.stinkyboi.com"
 NOFX_HOST="nofx.stinkyboi.com"
 CONTROL_HOSTS=("${DOMAIN}" "${PORTAL_HOST}" "${API_HOST}")
 if [ "${DOMAIN}" = "stinkyboi.com" ]; then
@@ -103,6 +104,7 @@ fi
 APP_HOSTS="
 affine.stinkyboi.com
 argocd.stinkyboi.com
+bazarr.stinkyboi.com
 compass.stinkyboi.com
 cordium.stinkyboi.com
 tls-audit.cordium.stinkyboi.com
@@ -135,6 +137,7 @@ kubernetes-api.homelab
 talos-api.homelab
 affine
 argocd
+bazarr
 compass
 cordium
 deluge
@@ -476,7 +479,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Octelium public Services have duplicate primary hostnames: $(tr '\n' ' ' <<<"${DUPLICATE_PRIMARY_HOSTNAMES}")"
     fi
-    for SERVICE in affine argocd compass cordium deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in affine argocd bazarr compass cordium deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} is WEB and public"
       else
@@ -499,7 +502,7 @@ if [ "${GRPC_READY}" -eq 1 ]; then
     else
       fail "Octelium Service affine is not anonymous"
     fi
-    for SERVICE in argocd compass cordium deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
+    for SERVICE in argocd bazarr compass cordium deluge dispatcharr grafana kiali litellm langfuse multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr; do
       if jq -e --arg service "${SERVICE}" '.items[] | select((.metadata.name == $service or .status.primaryHostname == $service) and (.spec.isAnonymous // false) == false)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
         pass "Octelium Service ${SERVICE} still requires authentication"
       else
@@ -510,6 +513,11 @@ if [ "${GRPC_READY}" -eq 1 ]; then
       pass "Octelium Service nofx enforces homelab-human-web-access and passes its application authorization header"
     else
       fail "Octelium Service nofx does not enforce the expected Octelium and application authorization contract"
+    fi
+    if jq -e '.items[] | select((.metadata.name == "bazarr.default" or .metadata.name == "bazarr" or .status.primaryHostname == "bazarr") and .spec.mode == "WEB" and .spec.isPublic == true and .spec.isAnonymous == false and .spec.port == 80 and .spec.authorization.policies == ["homelab-human-web-access"] and .spec.config.upstream.url == "http://bazarr.media.svc.cluster.local:6767")' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
+      pass "Octelium Service bazarr requires human authentication and uses its direct cluster upstream"
+    else
+      fail "Octelium Service bazarr does not enforce the expected authentication and upstream contract"
     fi
     if jq -e '.items[] | select(.metadata.name == "default.cordium" and .metadata.isSystem == true and .status.primaryHostname == "cordium" and .status.namespaceRef.name == "cordium" and .status.managedService != null and .spec.mode == "WEB" and .spec.isPublic == true)' >/dev/null 2>&1 <<<"${SERVICES_JSON}"; then
       pass "Cordium uses its package-managed default.cordium WEB Service"
@@ -678,6 +686,27 @@ while read -r HOST; do
 
     rm -f "${HEADER_FILE}" "${CURL_ERR}"
 done <<<"${APP_HOSTS}"
+
+note "Checking Bazarr rejects unauthenticated access"
+for BAZARR_PATH in / /api/system/ping; do
+  BAZARR_HEADER_FILE="$(mktemp "${TMPDIR:-/tmp}/bazarr-headers.XXXXXX")"
+  BAZARR_CURL_ERR="$(mktemp "${TMPDIR:-/tmp}/bazarr-curl.XXXXXX")"
+  BAZARR_HTTP_CODE="$(
+    curl -sS --max-time 20 -D "${BAZARR_HEADER_FILE}" -o /dev/null -w '%{http_code}' \
+      "https://${BAZARR_HOST}${BAZARR_PATH}" 2>"${BAZARR_CURL_ERR}" || true
+  )"
+  BAZARR_UNAUTHORIZED="$(
+    awk 'tolower($1) == "x-octelium-unauthorized:" {print tolower($2)}' "${BAZARR_HEADER_FILE}" |
+      tr -d '\r' |
+      tail -1
+  )"
+  if [ "${BAZARR_HTTP_CODE}" = "401" ] && [ "${BAZARR_UNAUTHORIZED}" = "true" ]; then
+    pass "https://${BAZARR_HOST}${BAZARR_PATH} requires Octelium authentication"
+  else
+    fail "https://${BAZARR_HOST}${BAZARR_PATH} returned HTTP ${BAZARR_HTTP_CODE:-000} with x-octelium-unauthorized=${BAZARR_UNAUTHORIZED:-missing}; curl: $(tr '\n' ' ' <"${BAZARR_CURL_ERR}")"
+  fi
+  rm -f "${BAZARR_HEADER_FILE}" "${BAZARR_CURL_ERR}"
+done
 
 note "Checking NOFX rejects unauthenticated access"
 for NOFX_PATH in / /api/health; do

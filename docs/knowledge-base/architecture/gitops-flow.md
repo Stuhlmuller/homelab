@@ -79,11 +79,11 @@ The Cordium Application prunes removed repository-owned Kubernetes manifests;
 Cordium and Octelium resources generated through their native APIs remain
 outside Argo CD's tracking and are unaffected by that setting.
 
-Bazarr's private native Octelium Service follows the existing single-Service
+Bazarr's public, human-authenticated native Octelium Service follows the existing single-Service
 operator pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
 default and requires a clean checkout matching reviewed current `main` for
 `--execute`. It applies only `bazarr.default`, verifies unchanged human-only
-authorization and private routing, and requires a second apply with no changes.
+authorization and public routing, and requires a second apply with no changes.
 The Kubernetes application itself follows the protected Terragrunt registration
 and Argo CD sync path.
 

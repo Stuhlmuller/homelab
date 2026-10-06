@@ -159,6 +159,7 @@ hostnames=(
   "octelium-transport.${domain}"
   "affine.${domain}"
   "argocd.${domain}"
+  "bazarr.${domain}"
   "compass.${domain}"
   "cordium.${domain}"
   "*.cordium.${domain}"
