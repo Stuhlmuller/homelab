@@ -233,7 +233,8 @@ whole source config claims read-only in its configure init container, with no
 source mounts in the main container. No host config or permissions repair is
 needed for this failure.
 
-Its UI is a private Octelium WEB Service using the existing human-only policy.
+Its UI at `https://bazarr.stinkyboi.com` is a public Octelium WEB Service using
+the existing human-only policy, with anonymous access disabled.
 The guarded `scripts/octelium-bazarr-reconcile.py` helper reconciles only that
 catalog Service from a clean checkout at reviewed current `main`. Publish its
 digest through the existing exact-main `harbor-mirror.yml`

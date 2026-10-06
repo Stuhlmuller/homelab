@@ -20,6 +20,7 @@ with tempfile.TemporaryDirectory() as directory:
         check.write_text('''#!/usr/bin/env bash
 set -euo pipefail
 AFFINE_HOST=affine.stinkyboi.com
+BAZARR_HOST=bazarr.stinkyboi.com
 NOFX_HOST=nofx.stinkyboi.com
 APP_HOSTS=$'affine.stinkyboi.com\\ndispatcharr.stinkyboi.com\\ngrafana.stinkyboi.com'
 TEST_PATH=/
@@ -57,6 +58,7 @@ curl() {
         assert sum('https://affine.' in call for call in observed) == expected, (value, observed)
         assert sum('https://dispatcharr.' in call for call in observed) == 1, observed
         assert sum('https://grafana.' in call for call in observed) == 1, observed
+        assert sum('https://bazarr.' in call for call in observed) == 2, observed
         assert sum('https://nofx.' in call for call in observed) == 2, observed
     deployment.unlink()
     result = subprocess.run(['bash', str(check)], capture_output=True, text=True)

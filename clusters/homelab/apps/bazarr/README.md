@@ -47,13 +47,13 @@ in `bootstrap.py`; provider availability still requires live acceptance.
 - Sonarr owns `media-tv`; Radarr owns `media-movies`. Bazarr only consumes them.
   Removing Bazarr must preserve these shared library claims and subtitle files.
 
-## Private access
+## Access
 
-Connect the authenticated Octelium desktop/CLI client, then open
-[http://bazarr](http://bazarr). This uses the private `bazarr.default` WEB Service
-and existing `homelab-human-web-access` policy. It has no public DNS record,
-Cloudflare Tunnel route, or anonymous access. Short service hostnames are part of
-[Octelium client access](https://octelium.com/docs/octelium/latest/user/cli/access).
+Open [https://bazarr.stinkyboi.com](https://bazarr.stinkyboi.com) and sign in
+through Octelium. Cloudflare Tunnel routes this hostname to Octelium's ingress
+dataplane, which enforces `homelab-human-web-access` before forwarding directly
+to Bazarr. The `bazarr.default` WEB Service explicitly disables anonymous access.
+Authenticated Octelium desktop/CLI clients can also use [http://bazarr](http://bazarr).
 
 The Kubernetes operator fallback is:
 
@@ -83,7 +83,7 @@ to loopback; keep that default.
 4. Require the Bazarr Application to become `Synced`/`Healthy`, the pod to be
    ready, and the profile/default configuration hook to succeed.
 5. From a clean checkout at the reviewed current `main` SHA, reconcile the
-   private native Octelium Service. Preview first:
+   public, human-authenticated native Octelium Service. Preview first:
 
    ```sh
    python3 -I scripts/octelium-bazarr-reconcile.py
@@ -92,8 +92,14 @@ to loopback; keep that default.
    ```
 
    The helper uses the existing operator login and pinned native transport,
-   applies only `bazarr.default`, checks its private human-access contract, and
+   applies only `bazarr.default`, checks its public human-access contract, and
    requires a second apply with no changes. It never prunes the catalog.
+   Require `octelium-public` to finish syncing the matching tunnel route and
+   config revision, then dispatch `octelium-public-tunnel.yml` on `main` with
+   the same `expected_sha`. This existing workflow reconciles all declared
+   public tunnel DNS records, including Bazarr. Verify unauthenticated `/` and
+   `/api/system/ping` return HTTP 401 with `x-octelium-unauthorized: true`,
+   then verify the UI after Octelium login.
 6. Complete application setup outside Argo's sync timeout:
 
    ```sh
@@ -111,7 +117,7 @@ to loopback; keep that default.
    Confirm at least one real English sidecar next to an episode or movie, then
    confirm Bazarr marks that language as downloaded. Existing embedded subtitles
    can satisfy an item's requirement; choose an item actually missing English.
-7. Verify the private UI through Octelium and the successful
+7. Verify the public UI through Octelium and the successful
    `bazarr-initial-backup` hook with its verified archive on the backup claim.
    Then verify the first scheduled `bazarr-config-backup` run. A healthy pod
    alone does not establish subtitle or backup acceptance.

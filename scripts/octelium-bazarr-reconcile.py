@@ -43,7 +43,7 @@ def valid_contract(service):
         spec = service.get("spec", {})
         return (service.get("kind") == "Service"
                 and service.get("metadata", {}).get("name") in ("bazarr", NAME)
-                and spec.get("isPublic", False) is False
+                and spec.get("isPublic", False) is True
                 and spec.get("isAnonymous", False) is False
                 and spec.get("mode") == "WEB" and spec.get("port") == 80
                 and spec.get("authorization", {}).get("policies") == ["homelab-human-web-access"]
@@ -59,7 +59,7 @@ def declared_service():
                  str(ROOT / "docs/examples/octelium/homelab-services.yaml"))
     desired = json.loads(result.stdout)
     if not valid_contract(desired):
-        raise RuntimeError("Bazarr must retain its reviewed private human-access and routing contract")
+        raise RuntimeError("Bazarr must retain its reviewed public human-access and routing contract")
     return {**desired, "metadata": {**desired["metadata"], "name": NAME}}
 
 
@@ -83,7 +83,7 @@ def reconcile(client, environment, desired, directory, execute):
 
     before = current()
     print("Bazarr Service present:", before is not None)
-    print("Bazarr private human-access and routing contract matches:", before is not None and valid_contract(before))
+    print("Bazarr public human-access and routing contract matches:", before is not None and valid_contract(before))
     if not execute:
         print("Read-only check; no catalog resources changed")
         return
@@ -100,8 +100,8 @@ def reconcile(client, environment, desired, directory, execute):
         raise RuntimeError("Repeated apply did not converge")
     after = current()
     if after is None or not valid_contract(after):
-        raise RuntimeError("Bazarr private human-access and routing contract did not converge")
-    print("Verified Bazarr convergence and private, non-anonymous human access")
+        raise RuntimeError("Bazarr public human-access and routing contract did not converge")
+    print("Verified Bazarr convergence and public, non-anonymous human access")
 
 
 def main():

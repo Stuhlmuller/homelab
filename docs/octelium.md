@@ -98,14 +98,15 @@ They create:
   access.
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
-- Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
+- Public `WEB` Services `affine`, `argocd`, `bazarr`, `compass`, `deluge`, `dispatcharr`,
   `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
-- Private `WEB` Service `bazarr` connects authenticated human clients directly
-  to `http://bazarr.media.svc.cluster.local:6767`. It has no public DNS/tunnel
-  route. See the [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for
-  the guarded single-Service reconciliation command.
+- Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
+  Octelium human authentication and forwards directly to
+  `http://bazarr.media.svc.cluster.local:6767`. See the
+  [Bazarr runbook](../clusters/homelab/apps/bazarr/README.md) for the guarded
+  single-Service reconciliation and public tunnel DNS commands.
 - The `affine` Service sets `isAnonymous: true`. AFFiNE Desktop uses a native
   `assets://.` origin and must directly reach its server-discovery, login,
   GraphQL, blob, and Socket.IO endpoints. AFFiNE signup stays disabled after
