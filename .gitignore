@@ -83,6 +83,13 @@ __pycache__/
 #Ignore vscode AI rules
 .github/copilot-instructions.md
 
+# Obsidian local workspace state
+docs/knowledge-base/.obsidian/workspace*.json
+docs/knowledge-base/.obsidian/plugins/
+docs/knowledge-base/.obsidian/snippets/
+docs/knowledge-base/.trash/
+docs/knowledge-base/.obsidian/appearance.json
+docs/knowledge-base/.obsidian/graph.json
 # Talos generated/local credential material
 .talos/secrets.yaml
 .talos/controlplane.yaml
