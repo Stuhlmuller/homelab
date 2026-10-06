@@ -60,9 +60,11 @@ omit the `email_verified` claim from ID tokens; the connector sets
 client-secret and RBAC controls.
 
 Argo CD grants `role:admin` to the homelab-specific `argocd-admins` group and
-directly to `rodman@stuhlmuller.net`. The direct email binding uses the existing
-RBAC `email` scope and keeps the named operator's access independent of Entra
-group-claim configuration.
+directly to the existing administrator's immutable Entra object ID. Dex maps
+that ID with `userIDKey: oid`, and Argo CD v3 evaluates it as the federated user
+ID. RBAC evaluates that direct federated user ID and `groups`, never the
+mutable `email` claim. The exact-UPN Mac PSSO pilot receives no Argo CD role;
+the existing administrator must sign in again after this mapping changes.
 
 The `terraform.source` value points directly at the Terragrunt catalog
 `helm-release` module pinned to version `0.3.0`. There are no repository-local

@@ -21,7 +21,7 @@ PILOTS = {
     },
     "stuhlmuller": {
         "unit": "IaC/operator/entra-stuhlmuller-pilot-user",
-        "upn": "rodman.mac@stuhlmuller.net",
+        "upn": "rodman@stuhlmuller.net",
     },
 }
 

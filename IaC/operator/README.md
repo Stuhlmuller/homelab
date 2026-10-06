@@ -33,7 +33,7 @@ standard bodyless Graph verification request, which defaults to
 `forceTakeover = false`. It cannot create, delete, federate, make a default
 domain, configure Microsoft 365 mail services, or change Google Workspace.
 The companion `entra-stuhlmuller-pilot-user` unit creates only
-`rodman.mac@stuhlmuller.net` after that verification, with no group, role,
+`rodman@stuhlmuller.net` after that verification, with no group, role,
 license, Fleet-console assignment, mailbox, or impact on other accounts. The
 unit uses the separate `entra-verified-family-user` module so a guarded
 operator pilot change cannot alter the existing AzureAD user collection. The full

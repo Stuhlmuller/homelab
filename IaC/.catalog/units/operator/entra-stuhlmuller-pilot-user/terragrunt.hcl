@@ -15,7 +15,7 @@ EOF
 }
 
 inputs = {
-  user_principal_name      = "rodman.mac@stuhlmuller.net"
+  user_principal_name      = "rodman@stuhlmuller.net"
   display_name             = "Rodman Mac (stuhlmuller.net pilot)"
   required_verified_domain = "stuhlmuller.net"
 }
