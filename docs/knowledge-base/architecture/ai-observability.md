@@ -89,11 +89,22 @@ files are retained, not revoked or erased. Offline regression covers legacy
 defaults, non-main overrides, unrelated settings and idempotence. Deployment is
 pending the merge hold; inspect session overrides and actual-agent traces before
 claiming every runtime uses LiteLLM.
-Read-only native session inventory found 37 sessions: 16 still associated with
-Codex models, of which 15 explicitly selected the Codex runtime. Determine
-active/archive state and migrate through the supported session API without
-deleting transcripts before deploying retirement. Both focused OpenClaw checks
+The offline CLI displays 16 old Codex model/runtime associations among 37
+stored sessions, but these are not proof of current routing overrides. Native
+read-only store projection found no explicit model/provider/runtime overrides;
+the running gateway resolved all 29 visible sessions (including two archived)
+to `openrouter/free` and native `openclaw`, with none active or runtime-locked.
+Do not rewrite historical usage to look migrated. Both focused OpenClaw checks
 and the full static gate passed for the prepared config migration.
+
+### Prepared tracing correction
+
+The exporter now declares chat completions as `generation`, including streamed
+responses, and sends `x-langfuse-ingestion-version=4`. The
+[current OTEL contract](https://langfuse.com/integrations/native/opentelemetry)
+documents that explicit observation types win and that omitting this header can
+delay v4 visibility by up to ten minutes. These changes await deployment and a
+new streamed agent trace; the earlier observations are not relabeled.
 
 ### Operational finding: Langfuse worker instability
 

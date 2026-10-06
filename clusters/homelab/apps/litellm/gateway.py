@@ -32,7 +32,7 @@ def langfuse_config():
     return OpenTelemetryConfig(
         exporter="otlp_http",
         endpoint="http://langfuse-web.langfuse.svc.cluster.local:3000/api/public/otel/v1/traces",
-        headers="Authorization=" + auth,
+        headers="Authorization=" + auth + ",x-langfuse-ingestion-version=4",
     )
 
 
