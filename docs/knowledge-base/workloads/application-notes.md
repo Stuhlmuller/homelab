@@ -113,6 +113,16 @@ and Redis containers (root/privilege/capability/seccomp defaults). Source:
 against the upstream root startup wrapper before changing those defaults; no
 namespace policy or runtime security settings were relaxed for resumption.
 
+PR #1200 merged as `626a720f` on October 6, 2026 UTC. At 05:59 UTC, Argo CD
+observed that revision and reported `Synced/Healthy` with a successful operation.
+PostgreSQL was Ready on `zimaboard-1`; all three app containers were Ready on
+`acer` without restarts, and both 20 GiB PVCs remained `Bound`. The running UI
+reports Dispatcharr `0.31.0`. The loopback setup GET still returned
+`superuser_exists: false` and `setup_allowed: true`; the first-administrator
+form was opened for the operator. No account or source was created. IPTV-org
+import, channel exports and playback remain pending that setup, followed by
+private NAS routing and media-server acceptance.
+
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep
 steady-state resources under Argo CD wherever the upstream lifecycle permits.
