@@ -339,14 +339,14 @@ Before a follow-up activation PR:
 5. After activation, verify one real OpenClaw free-model turn and gateway request
    produce correlated traces with expected provider/model, content and available
    usage. Preserve `openrouter/free` for interactive turns, heartbeat and
-   schedules, along with the retained Astra OAuth recovery metadata. Keep the
-   n8n Bedrock workflow unchanged.
+   schedules, along with the retained Astra OAuth recovery metadata. Complete
+   the separate n8n migration through its managed OpenAI credential and verify
+   its own correlated generation.
 6. Activate NOFX separately using its
-   [image and routing gates](../nofx/README.md#deferred-litellm-routing).
-   Its prepared `activate-nofx.patch` does not select an image: pair it with the
-   verified published backend digest containing source patch `0013` only after
-   LiteLLM and `nofx-litellm` are Ready. Preserve the original provider/model and
-   require a real correlated trace without credential leakage.
+   [image and routing gates](../nofx/README.md#litellm-routing).
+   Pin the verified published image pair containing source patch `0013` only
+   after LiteLLM and `nofx-litellm` are Ready. Preserve the original
+   provider/model and require a real correlated trace without credential leakage.
 
 The activation PR must document rollback of any persisted caller settings,
 not just a Helm revert; retain Langfuse data and keys.

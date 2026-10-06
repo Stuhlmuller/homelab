@@ -34,9 +34,9 @@ correlated Langfuse generation has the caller identity, `openrouter/free`,
 input/output and nonzero provider usage. Gateway health and a Ready
 ExternalSecret are not acceptance evidence.
 
-NOFX remains staged until an image containing
-`builds/nofx/patches/0013-litellm-runtime-routing.patch` is published and
-pinned. Do not mount its route/token into the currently deployed image.
+NOFX uses a separately pinned image containing
+`builds/nofx/patches/0013-litellm-runtime-routing.patch` and mounts its gateway
+route and dedicated token only in the backend.
 
 Sources: [LiteLLM custom authentication](https://docs.litellm.ai/docs/proxy/custom_auth),
 [Langfuse LiteLLM integration](https://langfuse.com/integrations/gateways/litellm).

@@ -17,7 +17,7 @@ by callers. See the [gateway contract](../../../clusters/homelab/apps/litellm/RE
 | --- | --- | --- |
 | OpenClaw | `/homelab/openclaw/litellm-app-token` | Routed to `openrouter/free`; Codex subscription runtime removed. |
 | Multica | `/homelab/multica/litellm-token` | OpenCode uses the internal gateway; Codex runtime removed. |
-| NOFX | `/homelab/nofx/litellm-token` | Gateway source patch is ready, but the deployment remains staged until an image containing patch `0013` is published and pinned. |
+| NOFX | `/homelab/nofx/litellm-token` | Backend uses the internal gateway through a file-backed route and dedicated read-only token mount; its pinned image includes patch `0013`. |
 | n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. The idempotent CLI migration imports its managed credential as n8n's required one-element array, replaces Bedrock in `s1JVSbnvnmHMCbty` with `openrouter/free`, and exports its bootstrap key only for an empty config PVC. The gateway key never enters workflow JSON. |
 
 AFFiNE has no active AI workload. OctoBot's AI evaluators are disabled. Cordium

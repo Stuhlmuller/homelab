@@ -22,7 +22,7 @@ PVC. Runtime secrets are sourced from AWS SSM through External Secrets:
   recovery credential. Its dedicated `nofx-registry-auth` ExternalSecret renders a
   `kubernetes.io/dockerconfigjson` Secret; it is not exposed to NOFX containers.
 - `/homelab/nofx/litellm-token` is the generated inference-only gateway key.
-  `nofx-litellm` reserves it for the activation patch as a backend-only read-only
+  `nofx-litellm` mounts it only in the backend as a read-only
   `/var/run/secrets/nofx/litellm/token` file; it is never an environment variable
   or a frontend mount. Because this ExternalSecret uses `OnChange`, increment its
   `generated-secret-revision` annotation after rotating the SSM value.
@@ -30,29 +30,22 @@ PVC. Runtime secrets are sourced from AWS SSM through External Secrets:
 Rollout depends on External Secrets, Istio ambient, Octelium,
 `octelium-public`, and the `nfs-default` storage class.
 
-## Deferred LiteLLM routing
+## LiteLLM routing
 
-The active overlay declares the fixed file-backed route, token Secret, and
-dedicated ServiceAccount but deliberately makes no backend Pod-spec change.
-[`activate-nofx.patch`](../../../../docs/examples/langfuse/activate-nofx.patch)
-is the reviewed follow-up that adds the route at `/etc/nofx/litellm-routing.json`,
-the read-only token file, and the backend ServiceAccount. The route points only to
+The active backend uses the dedicated ServiceAccount, fixed file-backed route at
+`/etc/nofx/litellm-routing.json`, and read-only token file. The route points only to
 `http://litellm.ai.svc.cluster.local:4000`; there are no routing environment
 variables. The existing encrypted database continues to own the OpenRouter provider key, Base URL
 `https://openrouter.ai/api/v1`, and model `openrouter/free`. The patched client
 forwards that original provider key in its request body to LiteLLM while using the
 file token for gateway authentication, and rejects any other configured model.
 
-Publishing or pinning the cash-spot images does not activate this route. The
-routing and token mounts remain absent. Do not apply the
-activation patch until LiteLLM is activated, `nofx-litellm` is Ready and its target
-Secret exists, and a reviewed `main` image containing
-`0013-litellm-runtime-routing.patch` has published a verified backend digest.
-Use a separate reviewed gateway-activation follow-up, then prove a short
-historical `openrouter/free` run reaches LiteLLM with one structured provider attempt and no
-raw provider or gateway credentials in application logs.
-That follow-up must consume this patch, remove the scratch activation check, and
-switch `nofx-runtime-check.py` to `active=True` for the now-active render.
+The activation is pinned to the reviewed image pair containing
+`0013-litellm-runtime-routing.patch`; both `nofx-litellm` and LiteLLM were Ready
+before the rollout. Validate a short historical `openrouter/free` run reaches
+LiteLLM with one structured provider attempt and no raw provider or gateway
+credentials in application logs. Rollback restores the previous reviewed image pair
+and removes the route/token mounts through GitOps; retain `nofx-data`.
 
 ## Runtime storage and backtests
 
