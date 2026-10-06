@@ -156,7 +156,6 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         paths = get_feature_paths(
-            no_persist=args.paths_only,
             script_file=Path(__file__),
         )
     except SystemExit as exc:

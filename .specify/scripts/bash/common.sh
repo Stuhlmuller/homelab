@@ -24,42 +24,9 @@ find_specify_root() {
     return 1
 }
 
-# Resolve an explicit SPECIFY_INIT_DIR project override (the directory that
-# *contains* .specify/), for non-interactive / CI use — e.g. running a Spec Kit
-# command against a member project from a monorepo root without cd.
-#
-# Precondition: SPECIFY_INIT_DIR is non-empty. Echoes the validated absolute
-# project root, or prints an error and returns 1. Strict by design: the path
-# must exist and contain .specify/, with no silent fallback to cwd or the
-# script-location default (which would silently write to the wrong project).
-#
-# This is the single resolver: bundled extensions inherit it by sourcing core
-# (e.g. the git extension's create-new-feature-branch) rather than duplicating it.
-resolve_specify_init_dir() {
-    local init_root
-    # Normalize: relative paths resolve against $(pwd); a trailing slash collapses.
-    # CDPATH="" so a relative value cannot be resolved against the caller's CDPATH
-    # (which would also echo to stdout and corrupt the captured path).
-    if ! init_root="$(CDPATH="" cd -- "$SPECIFY_INIT_DIR" 2>/dev/null && pwd)"; then
-        echo "ERROR: SPECIFY_INIT_DIR does not point to an existing directory: $SPECIFY_INIT_DIR" >&2
-        return 1
-    fi
-    if [[ ! -d "$init_root/.specify" ]]; then
-        echo "ERROR: SPECIFY_INIT_DIR is not a Spec Kit project (no .specify/ directory): $init_root" >&2
-        return 1
-    fi
-    printf '%s\n' "$init_root"
-}
-
 # Get repository root, prioritizing .specify directory
 # This prevents using a parent repository when spec-kit is initialized in a subdirectory
 get_repo_root() {
-    # Explicit project override wins (see resolve_specify_init_dir).
-    if [[ -n "${SPECIFY_INIT_DIR:-}" ]]; then
-        resolve_specify_init_dir
-        return
-    fi
-
     # First, look for .specify directory (spec-kit's own marker)
     local specify_root
     if specify_root=$(find_specify_root); then
@@ -71,21 +38,6 @@ get_repo_root() {
     local script_dir
     script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return 1
     (cd "$script_dir/../../.." && pwd)
-}
-
-# Get current feature name from explicit state only.
-# Returns the feature identifier or empty string if none is set.
-# Feature state is set by SPECIFY_FEATURE (from create-new-feature or
-# the git extension) or implicitly via .specify/feature.json.
-get_current_branch() {
-    if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
-        echo "$SPECIFY_FEATURE"
-        return
-    fi
-
-    # No explicit feature set — caller must handle this via feature.json
-    # in get_feature_paths(). Return empty to signal "unknown".
-    echo ""
 }
 
 # Safely read .specify/feature.json's "feature_directory" value.
@@ -162,60 +114,17 @@ _persist_feature_json() {
 }
 
 get_feature_paths() {
-    # Read-only callers (e.g. check-prerequisites.sh --paths-only) pass
-    # --no-persist so pure path resolution never writes .specify/feature.json,
-    # which would dirty the working tree or overwrite a pinned value (issue #3025).
-    local no_persist=false
-    if [[ "${1:-}" == "--no-persist" ]]; then
-        no_persist=true
-        shift
-    fi
-
-    # Split decl/assignment so a SPECIFY_INIT_DIR validation failure in
-    # get_repo_root propagates as a hard error instead of being masked by `local`.
-    local repo_root
+    # Resolve feature selection from repository-owned state without rewriting it.
+    local repo_root feature_dir
     repo_root=$(get_repo_root) || return 1
-    local current_branch
-    current_branch=$(get_current_branch)
-
-    # Resolve feature directory.  Priority:
-    #   1. SPECIFY_FEATURE_DIRECTORY env var (explicit override)
-    #   2. .specify/feature.json "feature_directory" key (persisted by specify command)
-    #   3. Error — no feature context available
-    local feature_dir
-    if [[ -n "${SPECIFY_FEATURE_DIRECTORY:-}" ]]; then
-        feature_dir="$SPECIFY_FEATURE_DIRECTORY"
-        # Normalize relative paths to absolute under repo root
-        [[ "$feature_dir" != /* ]] && feature_dir="$repo_root/$feature_dir"
-        # Persist to feature.json so future sessions without the env var still
-        # work — unless the caller opted out for read-only resolution (#3025).
-        if [[ "$no_persist" != true ]]; then
-            _persist_feature_json "$repo_root" "$SPECIFY_FEATURE_DIRECTORY"
-        fi
-    elif [[ -f "$repo_root/.specify/feature.json" ]]; then
-        local _fd
-        _fd=$(read_feature_json_feature_directory "$repo_root")
-        if [[ -n "$_fd" ]]; then
-            feature_dir="$_fd"
-            # Normalize relative paths to absolute under repo root
-            [[ "$feature_dir" != /* ]] && feature_dir="$repo_root/$feature_dir"
-        else
-            echo "ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY or ensure .specify/feature.json contains feature_directory." >&2
-            return 1
-        fi
-    else
-        echo "ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY or run the specify command to create .specify/feature.json." >&2
+    feature_dir=$(read_feature_json_feature_directory "$repo_root")
+    if [[ -z "$feature_dir" ]]; then
+        echo "ERROR: Feature directory not found. Run the specify command or set feature_directory in .specify/feature.json." >&2
         return 1
     fi
-
-    # When no branch context exists (no SPECIFY_FEATURE, feature resolved via
-    # SPECIFY_FEATURE_DIRECTORY or feature.json), fall back to the feature
-    # directory basename so CURRENT_BRANCH is a usable identifier rather than
-    # an empty, misleading value (issue #3026).
-    if [[ -z "$current_branch" ]]; then
-        local feature_dir_trimmed="${feature_dir%/}"
-        current_branch="${feature_dir_trimmed##*/}"
-    fi
+    [[ "$feature_dir" != /* ]] && feature_dir="$repo_root/$feature_dir"
+    local feature_dir_trimmed="${feature_dir%/}"
+    local current_branch="${feature_dir_trimmed##*/}"
 
     # Use printf '%q' to safely quote values, preventing shell injection
     # via crafted branch names or paths containing special characters

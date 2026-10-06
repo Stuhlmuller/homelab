@@ -78,14 +78,8 @@ done
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
-# Get feature paths.
-# In --paths-only mode this is pure resolution, so pass --no-persist to opt out
-# of the feature.json write side effect (issue #3025).
-if $PATHS_ONLY; then
-    _paths_output=$(get_feature_paths --no-persist) || { echo "ERROR: Failed to resolve feature paths" >&2; exit 1; }
-else
-    _paths_output=$(get_feature_paths) || { echo "ERROR: Failed to resolve feature paths" >&2; exit 1; }
-fi
+# Feature path resolution only reads .specify/feature.json.
+_paths_output=$(get_feature_paths) || { echo "ERROR: Failed to resolve feature paths" >&2; exit 1; }
 # Declare the path variables assigned dynamically by get_feature_paths.
 declare REPO_ROOT CURRENT_BRANCH FEATURE_DIR
 eval "$_paths_output"

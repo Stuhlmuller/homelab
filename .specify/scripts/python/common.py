@@ -3,17 +3,9 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-
-
-def _trim_trailing_separators(value: Path) -> str:
-    text = str(value)
-    while len(text) > 1 and text.endswith((os.sep, "/")):
-        text = text[:-1]
-    return text
 
 
 def find_specify_root(start_dir: Path | None = None) -> Path | None:
@@ -27,39 +19,7 @@ def find_specify_root(start_dir: Path | None = None) -> Path | None:
         current = parent
 
 
-def resolve_specify_init_dir() -> Path:
-    raw = os.environ.get("SPECIFY_INIT_DIR", "")
-    candidate = Path(raw)
-    if not candidate.is_absolute():
-        candidate = Path.cwd() / candidate
-    try:
-        init_root = candidate.resolve(strict=True)
-    except OSError:
-        print(
-            f"ERROR: SPECIFY_INIT_DIR does not point to an existing directory: {raw}",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-    if not init_root.is_dir():
-        print(
-            f"ERROR: SPECIFY_INIT_DIR does not point to an existing directory: {raw}",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-    if not (init_root / ".specify").is_dir():
-        print(
-            "ERROR: SPECIFY_INIT_DIR is not a Spec Kit project "
-            f"(no .specify/ directory): {init_root}",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
-    return init_root
-
-
 def get_repo_root(script_file: Path | None = None) -> Path:
-    if os.environ.get("SPECIFY_INIT_DIR"):
-        return resolve_specify_init_dir()
-
     specify_root = find_specify_root()
     if specify_root is not None:
         return specify_root
@@ -72,10 +32,6 @@ def get_repo_root(script_file: Path | None = None) -> Path:
         # Installed scripts live at .specify/scripts/python/<script>.py.
         return script_file.resolve().parents[3]
     return Path.cwd().resolve()
-
-
-def get_current_branch() -> str:
-    return os.environ.get("SPECIFY_FEATURE", "")
 
 
 def read_feature_json_feature_directory(repo_root: Path) -> str:
@@ -132,45 +88,23 @@ class FeaturePaths:
     contracts_dir: Path
 
 
-def get_feature_paths(
-    *, no_persist: bool = False, script_file: Path | None = None
-) -> FeaturePaths:
+def get_feature_paths(*, script_file: Path | None = None) -> FeaturePaths:
     repo_root = get_repo_root(script_file)
-    current_branch = get_current_branch()
-
-    feature_dir_raw = os.environ.get("SPECIFY_FEATURE_DIRECTORY", "")
-    if feature_dir_raw:
-        feature_dir = Path(feature_dir_raw)
-        if not feature_dir.is_absolute():
-            feature_dir = repo_root / feature_dir
-        if not no_persist:
-            persist_feature_json(repo_root, feature_dir_raw)
-    elif (repo_root / ".specify" / "feature.json").is_file():
-        stored = read_feature_json_feature_directory(repo_root)
-        if not stored:
-            print(
-                "ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY "
-                "or ensure .specify/feature.json contains feature_directory.",
-                file=sys.stderr,
-            )
-            raise SystemExit(1)
-        feature_dir = Path(stored)
-        if not feature_dir.is_absolute():
-            feature_dir = repo_root / feature_dir
-    else:
+    stored = read_feature_json_feature_directory(repo_root)
+    if not stored:
         print(
-            "ERROR: Feature directory not found. Set SPECIFY_FEATURE_DIRECTORY "
-            "or run the specify command to create .specify/feature.json.",
+            "ERROR: Feature directory not found. Run the specify command or "
+            "set feature_directory in .specify/feature.json.",
             file=sys.stderr,
         )
         raise SystemExit(1)
-
-    if not current_branch:
-        current_branch = Path(_trim_trailing_separators(feature_dir)).name
+    feature_dir = Path(stored)
+    if not feature_dir.is_absolute():
+        feature_dir = repo_root / feature_dir
 
     return FeaturePaths(
         repo_root=repo_root,
-        current_branch=current_branch,
+        current_branch=feature_dir.name,
         feature_dir=feature_dir,
         feature_spec=feature_dir / "spec.md",
         impl_plan=feature_dir / "plan.md",

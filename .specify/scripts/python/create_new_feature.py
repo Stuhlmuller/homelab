@@ -6,7 +6,6 @@ from __future__ import annotations
 import datetime
 import json
 import re
-import shlex
 import shutil
 import sys
 from dataclasses import dataclass
@@ -43,22 +42,6 @@ def _int64_from_digits(value: str) -> int | None:
     ):
         return None
     return int(normalized, 10)
-
-
-def _persistence_assignments(
-    branch_name: str, feature_dir: str, *, powershell: bool
-) -> tuple[str, str]:
-    if powershell:
-        quoted_branch = "'" + branch_name.replace("'", "''") + "'"
-        quoted_dir = "'" + feature_dir.replace("'", "''") + "'"
-        return (
-            f"$env:SPECIFY_FEATURE = {quoted_branch}",
-            f"$env:SPECIFY_FEATURE_DIRECTORY = {quoted_dir}",
-        )
-    return (
-        f"export SPECIFY_FEATURE={shlex.quote(branch_name)}",
-        f"export SPECIFY_FEATURE_DIRECTORY={shlex.quote(feature_dir)}",
-    )
 
 
 def _usage(argv0: str) -> str:
@@ -390,15 +373,6 @@ def main(argv: list[str] | None = None) -> int:
         # Persist to .specify/feature.json so downstream commands can find the feature.
         persist_feature_json(repo_root, f"specs/{branch_name}")
 
-        # Inform the user how to set feature state in their own shell.
-        feature_assignment, directory_assignment = _persistence_assignments(
-            branch_name,
-            str(feature_dir),
-            powershell=sys.platform == "win32",
-        )
-        print(f"# To persist: {feature_assignment}", file=sys.stderr)
-        print(f"#              {directory_assignment}", file=sys.stderr)
-
     if args.json_mode:
         payload: dict[str, object] = {
             "BRANCH_NAME": branch_name,
@@ -412,9 +386,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"BRANCH_NAME: {branch_name}")
         print(f"SPEC_FILE: {spec_file}")
         print(f"FEATURE_NUM: {feature_num}")
-        if not args.dry_run:
-            print(f"# To persist in your shell: {feature_assignment}")
-            print(f"#                           {directory_assignment}")
     return 0
 
 
