@@ -72,12 +72,13 @@ verification timestamps or edit its control files by hand.
 ## Validate
 
 ```sh
-python3 -I scripts/ci/openwiki-check.py --self-test
-python3 -I scripts/ci/openwiki-check.py
+nix develop --command python3 -I scripts/ci/openwiki-check.py --self-test
+nix develop --command python3 -I scripts/ci/openwiki-check.py
 git diff --check
 ```
 
-The static CI gate runs the wiki check. It checks metadata, local links and
+The static CI gate runs the wiki check. It uses the existing Nix `yq` parser
+to reject malformed YAML and invalid metadata types, then checks local links,
 heading anchors, navigation reachability, and active skill routes. Run focused
 Markdown lint too. The explicit secret scanner covers `openwiki/` and `.codex/`
 alongside the existing source paths. The source probe test reads the migrated validation page:

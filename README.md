@@ -80,7 +80,7 @@ For docs-only changes, focused Markdown and whitespace checks are usually
 enough:
 
 ```sh
-python3 -I scripts/ci/openwiki-check.py
+nix develop --command python3 -I scripts/ci/openwiki-check.py
 git diff --check -- README.md docs/ openwiki/ AGENTS.md ONBOARDING.md .agents/skills
 rg -n "password|token|secret|api[_-]?key|PRIVATE KEY|BEGIN CERTIFICATE|kubeconfig" README.md docs openwiki AGENTS.md ONBOARDING.md .agents/skills
 ```

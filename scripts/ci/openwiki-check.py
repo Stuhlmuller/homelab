@@ -2,7 +2,9 @@
 """Check the repository wiki's local links, navigation, and agent entrypoints."""
 
 import html
+import json
 import re
+import subprocess
 import sys
 import tempfile
 from os.path import relpath
@@ -17,6 +19,33 @@ COMPATIBILITY = (
     "docs/knowledge-base/architecture/cluster-topology.md",
     "docs/knowledge-base/operations/pvc-metrics-recovery.md",
 )
+
+
+def validate_frontmatter(text):
+    frontmatter = FRONTMATTER.match(text)
+    if not frontmatter:
+        raise ValueError("missing frontmatter")
+    try:
+        result = subprocess.run(
+            ["yq", "eval", "-o=json", ".", "-"], input=frontmatter[1],
+            capture_output=True, check=True, text=True,
+        )
+        fields = json.loads(result.stdout)
+    except FileNotFoundError:
+        sys.exit("OpenWiki check requires yq; run nix develop --command python3 -I scripts/ci/openwiki-check.py")
+    except subprocess.CalledProcessError as error:
+        raise ValueError(f"invalid YAML frontmatter: {error.stderr.strip()}") from error
+    except json.JSONDecodeError as error:
+        raise ValueError(f"invalid YAML frontmatter: {error}") from error
+    if not isinstance(fields, dict):
+        raise TypeError("frontmatter must be a mapping")
+    invalid = [name for name in ("type", "title", "description")
+               if not isinstance(fields.get(name), str) or not fields[name].strip()]
+    tags = fields.get("tags")
+    if not isinstance(tags, list) or any(not isinstance(tag, str) or not tag.strip() for tag in tags):
+        invalid.append("tags")
+    if invalid:
+        raise ValueError(f"invalid frontmatter fields: {', '.join(invalid)}")
 
 
 def prose(text):
@@ -79,12 +108,10 @@ def check(root):
     for page, text in documents.items():
         relative = page.relative_to(root)
         if page in content and page.name != "index.md":
-            frontmatter = FRONTMATTER.match(text)
-            fields = dict(re.findall(r'^(\w+):[ \t]*(.*?)(?=^\w+:|\Z)', frontmatter[1], re.MULTILINE | re.DOTALL)) if frontmatter else {}
-            missing = [field for field in ("type", "title", "description", "tags")
-                       if not fields.get(field, "").strip().strip('"\'')]
-            if missing:
-                errors.append(f"{relative}: missing frontmatter {', '.join(missing)}")
+            try:
+                validate_frontmatter(text)
+            except (TypeError, ValueError) as error:
+                errors.append(f"{relative}: {error}")
         body = INLINE_CODE.sub(lambda match: "\n" * match[0].count("\n"), prose(text))
         if page in pages and re.search(r'\[\[[^\]\n]+\]\]', body):
             errors.append(f"{relative}: leftover Obsidian wikilink; use a relative Markdown link")
@@ -156,6 +183,16 @@ def self_test():
 """
         quickstart.write_text(valid)
         assert not check(root), check(root)
+        for old, new, expected in (
+            ("tags:\n  - test", "tags: [", "invalid YAML frontmatter"),
+            (header, "---\n- reference\n---\n", "frontmatter must be a mapping"),
+            ("title: Test", "title: [Test]", "invalid frontmatter fields: title"),
+            ("tags:\n  - test", "tags: test", "invalid frontmatter fields: tags"),
+            ("tags:\n  - test", "tags: [1]", "invalid frontmatter fields: tags"),
+        ):
+            quickstart.write_text(valid.replace(old, new))
+            assert any(expected in error for error in check(root)), expected
+        quickstart.write_text(valid)
         skill = root / ".agents/skills/openwiki/SKILL.md"
         skill.write_text("[Missing](missing.md)\n")
         assert any("SKILL.md:1: broken link" in error for error in check(root))
