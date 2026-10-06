@@ -38,7 +38,7 @@ grafana.ini:
     skip_org_role_sync: false
     use_pkce: true
 podAnnotations:
-  homelab.rst.io/alerting-provisioning-version: "21"
+  homelab.rst.io/alerting-provisioning-version: "22"
 plugins:
   - yesoreyeram-infinity-datasource@4.0.0
 defaultCurlOptions: "-sSfL"
@@ -233,6 +233,8 @@ alerting:
   rules.yaml:
     apiVersion: 1
     deleteRules:
+      - orgId: 1
+        uid: homelab-octelium-api-upnp-stale
       - orgId: 1
         uid: homelab-octobot-deployment-unavailable
       - orgId: 1

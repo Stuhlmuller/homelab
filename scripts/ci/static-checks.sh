@@ -456,6 +456,15 @@ yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"
 
+echo "::group::Grafana persisted alert cleanup"
+yq -e '
+  ([.alerting."rules.yaml".deleteRules[] |
+    select(.orgId == 1 and .uid == "homelab-octelium-api-upnp-stale")] | length) == 1 and
+  ([.alerting."rules.yaml".groups[].rules[] |
+    select(.uid == "homelab-octelium-api-upnp-stale")] | length) == 0
+' clusters/homelab/apps/grafana/values.yaml >/dev/null
+echo "::endgroup::"
+
 echo "::group::n8n persisted encryption key"
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
 if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then

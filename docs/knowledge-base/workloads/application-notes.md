@@ -180,6 +180,11 @@ depend on Grafana rule evaluation for the only Argo CD notification path. After
 rollout, validate that the `argocd-application-health` `PrometheusRule` is
 present and that Prometheus is receiving `argocd_app_info`.
 
+Grafana persists provisioned alerts in its PVC-backed database. Retiring a
+rule requires `deleteRules` in `clusters/homelab/apps/grafana/values.yaml` and
+an alerting provisioning version bump; removing it from `groups` alone does
+not delete the existing rule. The retired Octelium UPnP rule uses this path.
+
 [[../operations/monitoring-resource-requests]] records the September 2026
 memory measurements, explicit monitoring reservations, scheduling-fit model,
 and required post-rollout checks. These requests protect scheduler accounting;
