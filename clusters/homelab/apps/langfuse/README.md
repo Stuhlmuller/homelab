@@ -76,8 +76,9 @@ detaches their tables during native server startup. It retains their metadata
 and data files; Langfuse's `default` database and healthy system logs are unchanged.
 These six SQL diagnostic histories stop recording while quarantined.
 
-The generated ConfigMap hash replaces the ClickHouse Pod when configuration
-changes. Startup runs after metadata loading, before serving clients, and fails
+The generated ConfigMap syncs at wave `-2`, before the datastore deployment at
+wave `-1`; its hash replaces the ClickHouse Pod when configuration changes.
+Startup runs after metadata loading, before serving clients, and fails
 on SQL errors. Missing tables on fresh installs and already-detached tables are
 no-ops. This is a short ClickHouse outage during the existing `Recreate` rollout.
 

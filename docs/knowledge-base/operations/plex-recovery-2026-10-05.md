@@ -180,3 +180,18 @@ detachments, disappearance of merge retries, lower NAS metadata rates, readable
 application tables, and actual Plex start/seek. See the
 [Langfuse quarantine contract](../../../clusters/homelab/apps/langfuse/README.md#clickhouse-diagnostic-quarantine)
 for rollback; restoring configuration alone cannot reattach retained tables.
+
+### Deployment Ordering Correction
+
+PR #1205 merged as `3a20f48562990551f62c442decac835efe3a3bd6`; the pinned-image
+runtime test and required checks passed. Argo began its rollout at 21:48 PDT.
+The first rollout blocked because the ClickHouse Deployment was at sync wave
+`-1` while the new ConfigMap defaulted to wave `0`. The replacement Pod reported
+`FailedMount` for the missing ConfigMap. ClickHouse was temporarily unavailable;
+Plex still returned HTTP 200.
+
+The correction places the generated ConfigMap at wave `-2` and adds a rendered
+regression requiring configuration to precede the datastore deployment. The
+cluster's existing 900-second sync timeout releases the old operation; verify
+that the following automated sync uses the corrected revision before accepting
+recovery. Do not infer successful deployment from Git merge or Pod creation.
