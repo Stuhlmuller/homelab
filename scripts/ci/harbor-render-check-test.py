@@ -3,6 +3,8 @@
 
 import copy
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -147,6 +149,27 @@ class HarborRenderPrerequisites(unittest.TestCase):
 
     def test_empty_render_is_not_success(self):
         self.assertTrue(CHECK.validate([]))
+
+    def test_enrolled_harbor_image_requires_verified_receipt(self):
+        resources = [workload(pod={"containers": [{
+            "name": "app", "image": "harbor.stinkyboi.com/homelab/pilot:latest"
+        }]})]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "config.json"
+            state = root / "state.json"
+            config.write_text(json.dumps({
+                "images": [{"image_id": "pilot", "destination":
+                            "harbor.stinkyboi.com/homelab/pilot:latest"}],
+                "consumers": [{"image_id": "pilot", "automation_status": "enrolled"}],
+            }))
+            state.write_text(json.dumps({"receipts": {}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+            state.write_text(json.dumps({"receipts": {"pilot": {
+                "destination_ref": "harbor.stinkyboi.com/homelab/pilot:latest",
+                "consumer_access": True,
+            }}}))
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
 
 
 if __name__ == "__main__":

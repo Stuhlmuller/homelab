@@ -87,6 +87,11 @@ assert check.normalize("busybox") == "docker.io/library/busybox:latest"
 assert check.normalize("index.docker.io/busybox:1.38@" + digest) == "docker.io/library/busybox@" + digest
 assert check.normalize("localhost:5000/example:v1") == "localhost:5000/example:v1"
 assert check.normalize("tailscale/tailscale:v1") == "docker.io/tailscale/tailscale:v1"
+inventory_spec = importlib.util.spec_from_file_location("inventory", Path(__file__).parents[1] / "harbor-image-inventory.py")
+inventory = importlib.util.module_from_spec(inventory_spec)
+inventory_spec.loader.exec_module(inventory)
+assert inventory.runtime_references([{"helm": {"values": "image:\n  repository: docker.io/example\n  tag: latest"}}]) == set()
+assert inventory.runtime_references([{"helm": {"values": "image: docker.io/example:latest\ntag: ignored"}}]) == {"docker.io/example:latest"}
 documents = [{"initContainers": [{"image": "busybox:1.38@" + digest}],
               "operator": {"image": {"registry": "quay.io", "repository": "example/operator",
                                      "tag": "v1", "digest": digest}},
@@ -199,4 +204,30 @@ with tempfile.TemporaryDirectory() as directory:
         assert "Chart sources changed" in str(error)
     else:
         raise AssertionError("unreviewed chart version passed")
+
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    original_automation = check.AUTOMATION
+    original_state = check.AUTOMATION_STATE
+    original_renovate = check.RENOVATE
+    check.AUTOMATION = root / "image-automation.json"
+    check.AUTOMATION_STATE = root / "image-automation-state.json"
+    check.RENOVATE = root / "renovate.json"
+    config = {"images": [{"image_id": "pilot", "destination": "harbor.stinkyboi.com/homelab/pilot:latest"}],
+              "consumers": [{"image_id": "pilot", "automation_status": "enrolled"}]}
+    check.AUTOMATION.write_text(json.dumps(config))
+    check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {}}))
+    assert check.receipt_errors()
+    check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"pilot": {
+        "destination_ref": "harbor.stinkyboi.com/homelab/pilot:latest", "consumer_access": True}}}))
+    assert check.receipt_errors() == []
+    check.RENOVATE.write_text(json.dumps({"packageRules": [{
+        "matchPackageNames": ["harbor.stinkyboi.com/homelab/pilot"],
+        "enabled": False}]}))
+    assert check.ownership_errors() == []
+    check.RENOVATE.write_text(json.dumps({"packageRules": []}))
+    assert check.ownership_errors()
+    check.AUTOMATION = original_automation
+    check.AUTOMATION_STATE = original_state
+    check.RENOVATE = original_renovate
 print("Harbor image coverage regression check passed")

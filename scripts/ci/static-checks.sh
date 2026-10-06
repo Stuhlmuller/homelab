@@ -33,6 +33,11 @@ python3 -I scripts/ci/fleet-airvpn-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
+python3 -I scripts/ci/image-automation-test.py
+python3 -I scripts/ci/image-automation-promote-test.py
+python3 -I scripts/ci/image-automation-alert-test.py
+python3 -I scripts/ci/image-automation.py check
+python3 -I scripts/ci/image-automation.py render-check
 python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
@@ -963,6 +968,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
+    '.github/workflows/image-automation.yml:promote' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
@@ -991,6 +997,14 @@ expected_credentialed_job_inventory="$({
     <(printf '%s\n' "$credentialed_job_inventory") >&2 || true
   exit 1
 }
+
+for promotion_job in image-update-gate promote fallback-pr; do
+  yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
+    .github/workflows/image-automation.yml >/dev/null || {
+    echo "Image automation promotion job $promotion_job lost its activation gate." >&2
+    exit 1
+  }
+done
 
 while read -r workflow expected_hash; do
   [[ "$(workflow_sha256 "$workflow")" == "$expected_hash" ]] || {

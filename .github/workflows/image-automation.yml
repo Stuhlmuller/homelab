@@ -1,0 +1,179 @@
+name: Image automation
+
+# checkov:skip=CKV_GHA_7: operation is a constrained verify/promote selector; promotion is separately disabled unless the repository activation variable is enabled.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/image-automation.yml'
+      - 'clusters/homelab/apps/argocd-image-updater/**'
+      - 'clusters/homelab/apps/harbor/image-automation.json'
+      - 'scripts/ci/image-automation*.py'
+      - 'scripts/config/image-automation-state.json'
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Trusted operation to run
+        required: true
+        default: verify
+        type: choice
+        options: [verify, promote]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-automation-main
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+      - name: Validate configuration
+        run: python3 -I scripts/ci/image-automation.py check
+      - name: Verify generated updater targets
+        run: python3 -I scripts/ci/image-automation.py render-check
+      - name: Publish safe summary
+        run: echo 'Image automation verification completed on main.' >> "$GITHUB_STEP_SUMMARY"
+
+  observe:
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.operation == 'verify' || inputs.operation == 'promote'))
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Observe state and alert
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.IMAGE_AUTOMATION_DISCORD_WEBHOOK_URL }}
+          RUN_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: python3 -I scripts/ci/image-automation-alert.py --webhook "$DISCORD_WEBHOOK" --run-url "$RUN_URL"
+
+  image-update-gate:
+    if: vars.IMAGE_AUTOMATION_PROMOTION_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Validate exact proposal scope
+        env:
+          MAIN_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin refs/heads/codex/image-updater-proposals:refs/remotes/origin/codex/image-updater-proposals
+          candidate_sha="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
+          git show "${candidate_sha}:scripts/config/image-automation-candidate.json" > "$RUNNER_TEMP/candidate.json"
+          jq -e --arg sha "$candidate_sha" '.candidate_sha == $sha' "$RUNNER_TEMP/candidate.json" >/dev/null
+          mapfile -t path_args < <(git diff --name-only "$MAIN_SHA" "$candidate_sha" | sed 's/^/--path=/')
+          mapfile -t symlink_args < <(git diff --summary "$MAIN_SHA" "$candidate_sha" | awk '/120000/{print "--symlink=" $NF}')
+          python3 -I scripts/ci/image-automation-promote.py \
+            --state scripts/config/image-automation-state.json \
+            --candidate "$RUNNER_TEMP/candidate.json" \
+            --main-sha "$MAIN_SHA" "${path_args[@]}" "${symlink_args[@]}"
+          echo 'Image Update Gate passed for the exact candidate tree.' >> "$GITHUB_STEP_SUMMARY"
+
+  promote:
+    if: vars.IMAGE_AUTOMATION_PROMOTION_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main'
+    needs: [verify, image-update-gate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: image-automation-promote
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: write
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Fetch proposal metadata only
+        run: git fetch --no-tags --depth=1 origin refs/heads/codex/image-updater-proposals:refs/remotes/origin/codex/image-updater-proposals
+      - name: Validate trusted candidate
+        env:
+          MAIN_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          candidate_sha="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
+          git show "${candidate_sha}:scripts/config/image-automation-candidate.json" > "$RUNNER_TEMP/candidate.json"
+          jq -e --arg sha "$candidate_sha" '.candidate_sha == $sha' "$RUNNER_TEMP/candidate.json" >/dev/null
+          mapfile -t path_args < <(git diff --name-only "$MAIN_SHA" "$candidate_sha" | sed 's/^/--path=/')
+          mapfile -t symlink_args < <(git diff --summary "$MAIN_SHA" "$candidate_sha" | awk '/120000/{print "--symlink=" $NF}')
+          python3 -I scripts/ci/image-automation-promote.py \
+            --state scripts/config/image-automation-state.json \
+            --candidate "$RUNNER_TEMP/candidate.json" \
+            --main-sha "$MAIN_SHA" "${path_args[@]}" "${symlink_args[@]}"
+      - name: Compare and fast-forward main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          actual="$(gh api repos/${GITHUB_REPOSITORY}/git/ref/heads/main --jq .object.sha)"
+          test "$actual" = "$EXPECTED_SHA"
+          candidate="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/heads/main" \
+            -f "sha=$candidate" -F force=false >/dev/null
+          echo "Promoted exact candidate $candidate from base $EXPECTED_SHA" >> "$GITHUB_STEP_SUMMARY"
+
+  fallback-pr:
+    if: vars.IMAGE_AUTOMATION_PROMOTION_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main' && needs.promote.result == 'failure'
+    needs: [verify, image-update-gate, promote]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Revalidate candidate before PR fallback
+        env:
+          MAIN_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin refs/heads/codex/image-updater-proposals:refs/remotes/origin/codex/image-updater-proposals
+          candidate_sha="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
+          git show "$candidate_sha:scripts/config/image-automation-candidate.json" > "$RUNNER_TEMP/candidate.json"
+          jq -e --arg sha "$candidate_sha" '.candidate_sha == $sha' "$RUNNER_TEMP/candidate.json" >/dev/null
+          mapfile -t path_args < <(git diff --name-only "$MAIN_SHA" "$candidate_sha" | sed 's/^/--path=/')
+          mapfile -t symlink_args < <(git diff --summary "$MAIN_SHA" "$candidate_sha" | awk '/120000/{print "--symlink=" $NF}')
+          python3 -I scripts/ci/image-automation-promote.py \
+            --state scripts/config/image-automation-state.json \
+            --candidate "$RUNNER_TEMP/candidate.json" \
+            --main-sha "$MAIN_SHA" "${path_args[@]}" "${symlink_args[@]}"
+      - name: Create or reuse validated proposal PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          branch='codex/image-updater-proposals'
+          pr="$(gh pr list --base main --head "$branch" --state open --json number --jq '.[0].number')"
+          if [ -z "$pr" ]; then
+            pr="$(gh pr create --base main --head "$branch" \
+              --title 'chore(images): promote validated image update' \
+              --body 'Direct promotion was unavailable. This proposal passed the trusted candidate validation and is subject to normal branch protection and required checks.')"
+          fi
+          gh pr merge "$pr" --auto --squash
+          echo "Direct promotion was unavailable; proposal PR $pr is queued for protected auto-merge." >> "$GITHUB_STEP_SUMMARY"

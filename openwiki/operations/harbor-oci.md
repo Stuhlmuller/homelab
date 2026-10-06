@@ -9,7 +9,8 @@ tags: ["harbor", "oci", "packages", "gitops"]
 
 ## Ownership And Access
 
-Harbor registration inputs are declared in `IaC/stacks/harbor/stack.hcl`; runtime state lives in
+Harbor registration inputs are declared in `IaC/stacks/harbor/stack.hcl`;
+runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
 (Harbor `2.15.2`). Upstream component references remain digest-pinned; the
 Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
@@ -186,6 +187,14 @@ registry credentials remain outside artifacts. The live-job artifact upload ban
 is unchanged. See the [NOFX build recipe](../../builds/nofx/README.md#publish-update-and-revert)
 for the artifact name and CLI retrieval command.
 
+At the pre-cutover inspection on 2026-09-19, NOFX still used upstream images.
+The initial maintained Harbor rollout then merged in PR #1036 at `78ca869` and
+was verified Synced/Healthy with both `f76c278` images ready. See [[../apps/nofx]]
+for runtime evidence and `clusters/homelab/apps/nofx/deployment.yaml` for current
+desired references. Later source builds require a separate functional rollout.
+first verify copies and read-only pulls, then preserve that consumer's exact
+digest while changing its registry through GitOps. The later cluster-wide
+mirror rollout below extends this to third-party images.
 ## Rollout And Acceptance
 
 1. Validate static checks, rendered chart/manifests and Terragrunt plan. Merge
@@ -268,6 +277,73 @@ Two rollout failures refined validation: ESO 2.0.1 requires an explicit
 [Istio HTTPRoute reference](https://istio.io/latest/docs/reference/config/networking/virtual-service/#HTTPRoute).
 Static rendering did not catch either runtime validation issue.
 
+## Proposed Chainguard automation
+
+The [Chainguard image automation specification](../../../specs/002-chainguard-image-automation/spec.md)
+proposes migrating all compatible active workloads, recording exceptions,
+automatically importing Chainguard releases into Harbor, and restoring Argo CD
+Image Updater for digest-pinned updates committed directly to `main` by a GitHub
+bot. The user requested this scoped exception to routine image-update PRs;
+publication and exact-candidate validation must pass before the bot advances
+`main`. Enrollment and permission changes retain normal review. Automatically
+merged PRs are the fallback if a scoped direct-write path is not feasible.
+Enrolled workloads would follow any stable release, including major upgrades,
+subject to compatibility and recovery checks; prereleases and known incompatible
+candidates remain excluded. It preserves publish-before-consume verification,
+source provenance, restricted-image access, and rollback. Enrolled images would
+transfer update ownership from Renovate; other dependency updates would remain
+with Renovate. Failed updates would revert automatically only with verified
+compatibility between the retained image and current data, blocking the failed
+digest from reapplication. Unsafe or unknown compatibility and failed rollback
+would pause affected-application updates and alert the operator; data restores
+remain operator-led.
+
+The [implementation plan](../../../specs/002-chainguard-image-automation/plan.md)
+uses exact-name native Harbor replication rules: Chainguard's anonymous catalog
+API is unsupported, but known repository tag listing works. A verifier advertises
+only completely downloaded digests through a separate Harbor alias. Image
+Updater proposes changes; a separate CI-only bot validates a signed candidate
+before advancing main. Explicit Harbor references preserve source provenance
+without adding a new Talos upstream-mirror rule.
+
+Direct promotion requires a companion reviewed change in `Stuhlmuller/github-iac`,
+the owner of repository rulesets and environment protections. The proposed bot
+bypasses PR governance only; signatures and genuine checks remain required.
+Existing protected environments retain reviewers. Fresh proposer credentials
+and a separate CI-only promoter are activation prerequisites.
+
+The [implementation tasks](../../../specs/002-chainguard-image-automation/tasks.md)
+separate an import-only MVP from workload migration and bot activation. Direct
+updates stay paused until the independent checks and recovery readiness pass.
+Routine updates, bound rollback and control-only pause/rejection have distinct
+eligibility gates, so recording a failure cannot block its own safe recovery.
+Release metadata verification ships in the import phase. Compatible non-Argo
+images still migrate through their current reviewed owner; only updater
+eligibility is exempt. Release-sample acceptance and recovery drills run
+independently after activation, and both remain required for completion alongside
+the full migration assessment beyond the stateless pilot.
+
+The [initial inventory](../../../specs/002-chainguard-image-automation/migration-inventory.md)
+identifies the stateless Python Harbor vulnerability exporter as the first
+candidate. It also records a parser finding: `scripts/harbor-image-inventory.py`
+matches across the embedded Helm `image:`/`tag:` newline in
+`clusters/homelab/platform/storage/cordium-local-path-provisioner-application.yaml`,
+inventing `docker.io/library/tag:latest`. Fix the shared parser with a regression
+case, then reconcile all pinned chart renders and read-only runtime images
+before claiming complete migration coverage.
+
+The implementation is staged in repository desired state: public Chainguard
+replication is active, the Python and Kiali enrollments are candidates, the
+updater remains paused, and deterministic contract checks plus the main-owned
+verification workflow are present. Workload migration, bot promotion, and
+live acceptance remain paused until their gates pass; existing images still use
+the manual reviewed publication path.
+Read-only planning verified selected public registry access and GitHub protection
+constraints; it did not establish organization entitlements or runtime
+compatibility. Preserve the failure context in
+[the retirement runbook](../../argocd-image-updater.md) and
+[the mirror runbook](../../harbor-image-mirroring.md) while implementing the plan.
+
 ## Sources
 
 - [Official chart](https://github.com/goharbor/harbor-helm/releases/tag/v1.19.2)
@@ -328,7 +404,8 @@ from repository declarations, rendered charts and live Pods/system images. The
 protected `harbor-mirror.yml` workflow copies all platforms into the normal
 public-read `mirror` project and verifies complete anonymous pulls. A completed
 ancestor publication is reusable only with the runbook's six publication files
-unchanged; node rollout still requires exact reviewed `main` and live digest checks. Its publisher
+unchanged; node rollout still requires exact reviewed `main` and live digest
+checks. Its publisher
 uses a separate generated `/homelab/harbor/mirror-robot-push-password`; apply
 the reviewed shared SSM plan before expecting the new bootstrap to complete. Private
 `homelab` artifacts retain their existing authentication/signing contract.
