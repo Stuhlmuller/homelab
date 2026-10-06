@@ -38,7 +38,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
 1. Merge the bootstrap, inventory, publisher and unapplied Talos patches through
    normal signed-commit, review and CI gates. Apply the reviewed
    `IaC/live/aws-ssm-parameters` saved plan through the existing
-   [Harbor rollout path](knowledge-base/operations/harbor-oci.md#rollout-and-acceptance),
+   [Harbor rollout path](../openwiki/operations/harbor-oci.md#rollout-and-acceptance),
    inspecting it for unrelated changes first. This creates the independent mirror
    publisher secret. Wait for Harbor secrets to reconcile and its PostSync
    bootstrap to finish Synced/Healthy before publication.

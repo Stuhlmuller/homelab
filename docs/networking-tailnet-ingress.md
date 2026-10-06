@@ -310,4 +310,4 @@ interception is incompatible with Docker, Helm and containerd. Self-registration
 is disabled. Internal Pod DNS rewrites this hostname directly to Istio while
 retaining the public TLS certificate. Hosted publication uses a reviewed
 Kubernetes TLS port-forward to bypass Cloudflare request-size limits.
-See the [rollout and transport contract](knowledge-base/operations/harbor-oci.md).
+See the [rollout and transport contract](../openwiki/operations/harbor-oci.md).

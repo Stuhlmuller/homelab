@@ -19,13 +19,13 @@ replacement. `maxUnavailable: 0` retains two available replicas while
 `70Mi` memory request. All other Pod-template fields remain unchanged.
 
 **Do not disable Talos CoreDNS during initial bootstrap.** First complete the
-[ownership handoff](../../../../docs/knowledge-base/operations/coredns-gitops-ownership.md).
+[ownership handoff](../../../../openwiki/operations/coredns-gitops-ownership.md).
 The separate Talos patch is not wired into bootstrap or applied by this overlay.
 
 Talos still generates a default CoreDNS ConfigMap during Kubernetes upgrades.
 The September 2026 upgrade plan would overwrite this policy, including the
 internal Octelium route. Resolve that ownership collision before upgrading;
-see the [maintenance findings](../../../../docs/knowledge-base/operations/kubernetes-patch-maintenance-2026-09.md).
+see the [maintenance findings](../../../../openwiki/operations/kubernetes-patch-maintenance-2026-09.md).
 Do not depend on a later Argo CD reconciliation to repair a temporary DNS
 regression during control-plane maintenance.
 

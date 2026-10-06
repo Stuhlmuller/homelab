@@ -622,7 +622,7 @@ sidecars. Refresh a fallback UID whenever Octelium recreates its Service.
 Do not remove the fallback after a single worker becomes Ready. Use the
 capacity, 24-hour native-fleet stability, direct native Pod probe, and public
 end-to-end gates in
-`docs/knowledge-base/architecture/cluster-topology.md`.
+`openwiki/architecture/cluster-topology.md`.
 
 The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments use `Recreate` because each store opens a

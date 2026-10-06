@@ -188,7 +188,7 @@ ExternalSecret lacks SSM reader permission. Reconcile the declared shared
 `aws-ssm-parameters` IAM through a reviewed full protected Terragrunt Apply,
 then verify ESO readiness and Argo health. UI/account acceptance awaits
 NOFX sign-in and explicit allocations; no live trading result is established.
-See the [dated rollout evidence](../../../../docs/knowledge-base/apps/nofx.md).
+See the [dated rollout evidence](../../../../openwiki/apps/nofx.md).
 
 The earlier US connection and dashboard release used
 [build 35558011393](https://github.com/Stuhlmuller/homelab/actions/runs/35558011393)

@@ -985,7 +985,7 @@ Restore redundancy only after a dedicated replacement passes the capacity and
 Use this checklist before changing Talos or Kubernetes versions. The verified
 2026-09-07 baseline is Talos `v1.11.3` and Kubernetes `v1.34.11` on all four nodes.
 
-The [September 2026 maintenance findings](knowledge-base/operations/kubernetes-patch-maintenance-2026-09.md)
+The [September 2026 maintenance findings](../openwiki/operations/kubernetes-patch-maintenance-2026-09.md)
 record the completed `1.34.11` upgrade, restored mounted PVC metrics, and the
 CoreDNS ownership handoff that preceded execution. Recheck DNS ownership and
 all maintenance gates before any future upgrade. Talos `1.11.3`

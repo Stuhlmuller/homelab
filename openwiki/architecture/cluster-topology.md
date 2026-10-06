@@ -1,0 +1,294 @@
+---
+type: architecture
+title: "Cluster Topology"
+description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
+tags: ["architecture", "talos", "kubernetes"]
+---
+
+<!-- markdownlint-disable MD013 -->
+
+# Cluster Topology
+
+## Current Shape
+
+The homelab is a Talos Linux Kubernetes cluster with one active seed
+control-plane node and three Zimaboard workers.
+
+Verified on 2026-09-07 after the
+[Kubernetes patch maintenance](../operations/kubernetes-patch-maintenance-2026-09.md):
+all four nodes are Ready on Kubernetes `1.34.11` and Talos `1.11.3`. All four
+boot IDs were preserved. The single control-plane topology is unchanged;
+its API interruption caused temporary dependent-controller restarts.
+
+| Node | Address | Role | Notes |
+| --- | --- | --- | --- |
+| `acer` | `10.1.0.199` | control-plane | Canonical Talos and Kubernetes API endpoint |
+| `zimaboard-0` | `10.1.0.200` | worker | Hyphenated Kubernetes node name |
+| `zimaboard-1` | `10.1.0.201` | worker | Octelium control-plane and Cordium Workspace node |
+| `zimaboard-2` | `10.1.0.202` | worker | Hyphenated Kubernetes node name |
+
+The [September 12 control-plane feasibility assessment](../operations/existing-node-control-plane-feasibility-2026-09-12.md)
+identifies `zimaboard-0` and `zimaboard-1` as possible additional members.
+It separates potential API/etcd quorum improvement from the unresolved workload
+capacity, eMMC qualification, endpoint, and restore requirements; no roles changed.
+
+## Worker Recovery History
+
+Initial inspection on 2026-09-02 found `acer`, `zimaboard-0`, and
+`zimaboard-1` Ready. `zimaboard-2` was NotReady; its last kubelet
+heartbeat was `2026-08-26T16:56:41Z`. Istio was Degraded and Multus was
+Progressing, with Octelium replacement Pods stranded on that worker.
+Authenticated Talos access was restored from the current control-plane
+configuration without resetting any node. The replacement local `os:admin`
+certificate expires on 2027-09-02, and a fresh etcd snapshot was copied off
+`acer`. The reviewed Octelium Talos DNS SAN was then applied without a reboot
+and verified on the live server certificate. The reviewed worker preflight
+passed, but an authenticated reboot of `zimaboard-2` stalled in
+`stopAllPods` while gracefully stopping the unhealthy kubelet. A subsequent
+power-cycle restarted the node: all four nodes, every non-terminal cluster Pod,
+and all five Pods bound to `zimaboard-2` were Ready. Talos reported kubelet,
+CRI, and containerd healthy; the worker retained no Octelium dataplane label.
+No force-deletion was attempted. See
+[Homelab Audit — 2026-08-30](../operations/audit-2026-08-30.md) and issue
+[#775](https://github.com/Stuhlmuller/homelab/issues/775).
+
+Read-only live inspection on 2026-08-28 found `zimaboard-1` and
+`zimaboard-2` NotReady with stopped kubelet heartbeats; `acer` and
+`zimaboard-0` remained Ready. Both failed workers still answered on the LAN and
+Talos TCP/50000. Immediately before `zimaboard-1` stopped reporting, OpenClaw
+grew from `530Mi` to `5.36Gi` and all user containers reached `6.51Gi` on its
+`7.58Gi` physical memory. This strongly correlates the outage with memory
+starvation, but authenticated Talos logs are required to distinguish kernel OOM
+from severe thrashing. At that time, the available local Talos client
+certificate had expired and did not match the current cluster CA; authenticated
+access was restored on 2026-09-02.
+
+Sync the OpenClaw `4Gi` containment limit before recovering `zimaboard-1`.
+Recover these configured nodes with a current authenticated
+`.talos/talosconfig` or physical console or power access. Do not use
+`--insecure`, and do not force-delete their single-writer workloads without
+first fencing the old node.
+
+On 2026-09-02, `zimaboard-1` repeated the OpenClaw failure after seven leaked
+hook relays remained blocked in page faults. Memory availability fell to about
+`132Mi`, load exceeded `119`, I/O pressure exceeded 97%, and local eMMC reads
+queued until kubelet stopped reporting. Talos and the NAS endpoint remained
+reachable; no node-scoped evidence established an NFS outage. Eviction started
+replacement PVC workloads on `acer`, so only a confirmed reset and new boot ID
+fence the old writers. Restarting kubelet or networking is unsafe.
+
+On 2026-09-26 at about 21:56 UTC, `kubectl get node zimaboard-1` again reported
+`Ready=Unknown` with `NodeStatusUnknown: Kubelet stopped posting node status`.
+The OpenClaw Pod still showed both containers running with zero restarts, but
+its Pod `Ready` condition was false, the Deployment had `0/1` Ready replicas,
+and kubelet-backed logs and exec requests timed out. This interrupted the final
+live `openrouter/free` response probe after OpenRouter OAuth had completed and
+stored its profile; it does not invalidate the merged configuration or prove
+the model route can serve traffic. Preserve the node and single-writer PVC
+state. With authenticated Talos access, inspect kubelet, kernel/OOM, memory,
+I/O-pressure, and boot-ID evidence before any recovery. After the node is Ready,
+require OpenClaw `1/1` Deployment readiness, exact Argo revision, an OAuth-ready
+`openrouter/free` model status, and one successful response before closing the
+rollout.
+
+After its earlier recovery, the scheduler placed several zero-request Argo CD
+controllers and Prometheus on the 1.28 GiB-allocatable `zimaboard-2`; it then
+fell below 82 MiB available memory and stopped heartbeating. That worker later
+recovered after evictions released memory. `zimaboard-1` also resumed healthy
+heartbeats on its unchanged boot and kubelet reconciled the old Pods, so no
+reboot or cordon was justified. Keep it schedulable until OpenClaw rolls
+forward: current affinity excludes `acer` and the dataplane worker, while
+`zimaboard-2` cannot meet the 2 GiB init request. Any later drain or reboot is
+separate healthy maintenance.
+
+## Monitoring Contract
+
+Grafana alerting treats this four-node set as the expected hardware inventory
+through `clusters/homelab/apps/grafana/values.yaml`. The node rules watch
+`acer`, `zimaboard-0`, `zimaboard-1`, and `zimaboard-2` with kube-state-metrics
+and kubelet/cAdvisor metrics for inventory count, Kubernetes readiness,
+pressure conditions, and workload CPU/memory use against reported machine
+capacity.
+
+Kube-state-metrics availability has a dedicated critical alert. The expected
+hardware inventory rule only evaluates while that scrape is healthy, so a
+telemetry outage cannot be misreported as four missing machines. The dedicated
+alert also makes it explicit that the kube-state-metrics-backed readiness and
+pressure rules have no current data.
+
+Update the Grafana alert regex and expected count in the same change that adds,
+removes, or renames a node.
+
+## Workload Scheduling
+
+Terragrunt manages `octelium.com/node-mode-cordium=` on `zimaboard-1` because
+Cordium-generated Workspace Pods require that selector. Of the worker nodes,
+`zimaboard-1` has enough memory for the default Workspace limit and lower
+reserved load than `zimaboard-0`; `zimaboard-2` is too small.
+Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
+support Pods use RuntimeDefault seccomp and explicitly request an unconfined
+AppArmor profile to clear stale server-side-applied defaults.
+
+### Octelium dataplane capacity
+
+Terragrunt assigns the Octelium dataplane label only to `zimaboard-0`.
+It also owns `octelium.com/override-gw-ip=10.1.0.200` on that node so the
+gateway advertises the LAN address reachable through the declared Tailscale
+subnet route. The gateway agent reads this annotation at startup; run the
+documented Octelium upgrade path after changing it, then verify the live
+Gateway status before testing an off-LAN CLIENT session.
+
+The node metadata module keeps label manager `terragrunt` and uses
+`terragrunt-node-annotations` for annotations. Each resource sends a separate
+server-side apply request, so sharing a manager makes an annotation update
+remove that manager's omitted labels. Annotation ownership is established
+before labels reconcile to preserve the gateway address during the handoff.
+Full apply [37412936155](https://github.com/Stuhlmuller/homelab/actions/runs/37412936155)
+exposed this on 2026-10-06 at 04:29:32 UTC: the annotation update removed
+`zimaboard-0`'s dataplane label and the gateway DaemonSet deleted its only Pod.
+Restore the reviewed module through the trusted LAN Terragrunt recovery path
+in [CI/CD](../../docs/ci-cd.md#octelium-ci-access-setup), then verify the
+label, annotation, gateway readiness, and normal CI access together.
+
+The reviewed Terragrunt plan removed the dataplane label from undersized `zimaboard-2` on
+2026-08-30 before any reboot; live inspection confirmed the label absent, all
+bound Octelium Pods terminating, and no PVC consumers on that node. The worker
+remains in the cluster without native dataplane eligibility.
+The August 2026 outage showed that the former two-worker pool was unsafe:
+a failover can start 51 dataplane-selected Deployments plus the node-local
+gateway agent at once. Seven-day measurements put the full fleet near 3.1 GiB
+memory at p95, while its declared memory requests total only about 315 MiB.
+
+Do not use the existing control-plane node or `zimaboard-1` as the replacement
+dataplane target. The control-plane node has etcd and rollout pod-slot risk;
+`zimaboard-1` already hosts the Octelium control plane and stateful workloads.
+After the 16 stale `*.homelab` service proxies are removed, the retained
+dataplane still uses about 2.7 GiB memory at p95 and creates 35 Deployment Pods
+plus the gateway agent.
+
+The durable recovery requirement is a dedicated third dataplane-capable worker
+with enough real memory and pod capacity for that retained fleet plus startup
+and rolling-update headroom. No hardware choice or sizing is declared yet.
+Before assigning its label, remove the stale services, set representative proxy
+requests, and validate the chosen node against measured use. The declarative
+label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
+
+### Temporary August 2026 recovery
+
+For the outage of both labeled dataplane nodes,
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 26
+uniquely named temporary Deployments on `acer`: the Octelium ingress, shared
+Octovigil authorization service, Portal, login, Auth API, admin API, OctoBot,
+CI Kubernetes API, and 18 additional public WEB Service proxies. Including the
+existing OctoBot fallback, 19 public WEB proxies run during recovery. The
+additional public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
+console, Deluge, Dispatcharr, Grafana, Kiali, LiteLLM, Multica, n8n, NOFX,
+OpenClaw, Policy Bot, Prowlarr, Radarr, and Sonarr. Existing Service selector
+labels restore these paths without a new Service, ingress, port, node label, or
+controller-owned Deployment patch. Cordium and the Enterprise console retain
+their required digest-pinned managed sidecars; Cordium gets a bounded writable
+`/tmp` for its bbolt cache. Temporary containers are capped at 256 MiB except
+the measured Auth API and admin API managed containers, which request 384 MiB
+and are capped at 512 MiB.
+
+The 24 temporary service-proxy Pods intentionally use only the primary
+Kubernetes network. The ingress Envoy resolves their existing Kubernetes
+Services, and Vigil listens on all Pod interfaces. Attaching Octelium's
+secondary Multus network would require the privileged gateway agent that is
+deliberately absent from the control-plane node. Each fallback embeds its
+generated `octelium.com/svc-uid`; refresh that value if Octelium recreates the
+corresponding Service.
+
+Do not remove the file merely because one dataplane node reports Ready;
+`zimaboard-2` alone does not have enough capacity. First validate the replacement
+node against measured use plus startup and rolling-update headroom. Keep the
+full native fleet on it for 24 hours with a stable Ready condition and restart
+counts. The package-managed `octelium-ingress-dataplane`,
+`octelium-octovigil`, all six original control and CI Service Deployments, and
+all 18 additional public WEB Service Deployments must each have a Ready replica. Before
+pruning, probe the native Pod IPs directly—not the selector-balanced
+Services—for every recovered path, then run `scripts/octelium-e2e-check.sh`.
+Remove the file from the Enterprise Kustomization only after both checks pass;
+the `octelium-enterprise` Application then prunes the 26 uniquely named
+temporary Deployments. Reverify native-only endpoints and the public paths
+afterward.
+
+Keep Multus `connectionLimit` at `4`; lowering it to `1` or `2` is not a safe
+capacity fix. The [upstream option](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
+limits simultaneous Unix-socket connections to the thick daemon so its
+delegated CNI child processes stay within the daemon container's memory budget.
+It does not limit scheduler placement or the final number of proxy Pods. During
+the August 2026 failure, the limit was already
+`4`: 51 dataplane-selected Pods were created in eight seconds, an unrelated
+client Pod joined the same window, container starts continued for about 27
+seconds, and `zimaboard-2` became NotReady 44 seconds later. Multus peaked near
+`24Mi` memory and `162m` CPU, far below its `512Mi` memory limit, with no
+observed container OOM event before telemetry stopped. The node exposes only
+about `1.28Gi` allocatable memory, so even the retained fleet's `2.7Gi` p95
+cannot reach steady state there. A lower connection limit would only queue CNI
+work and can add head-of-line delay to every node-local CNI operation; it would
+not remove the overcommit. Revisit the value only with a controlled startup
+test on a correctly sized dedicated dataplane worker.
+
+Retain Multus `v4.3.0` and `connectionLimit: 4`; a version rollback is rejected
+for this outage. The [v4.3.0 release](https://github.com/k8snetworkplumbingwg/multus-cni/releases/tag/v4.3.0)
+and [connection-limit implementation](https://github.com/k8snetworkplumbingwg/multus-cni/pull/1510)
+show an opt-in Unix-listener cap, while Kubernetes v1.34.1
+[GenericPLEG](https://github.com/kubernetes/kubernetes/blob/v1.34.1/pkg/kubelet/pleg/generic.go#L232-L258)
+gets pod state through CRI sandbox and container lists, not CNI. No controlled
+reproduction ties the limit to the worker hang, and rollback would remove its
+burst-memory protection while restarting the thick daemon.
+
+`kube-multus-ds` uses `system-node-critical` to prevent ordinary pods from
+starving node CNI on a recovered or saturated worker. This follows Kubernetes
+[critical DaemonSet guidance](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/#how-daemon-pods-are-scheduled),
+matches [Talos v1.11.3 Flannel](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/internal/k8stemplates/testdata/flannel-daemonset.yaml#L82),
+and addresses the version-independent condition in
+[Multus issue #1531](https://github.com/k8snetworkplumbingwg/multus-cni/issues/1531).
+It cannot revive an unreachable kubelet; the NotReady workers still require an
+operator reboot or physical recovery before GitOps can roll out this hardening.
+
+## Canonical Endpoints
+
+- Talos endpoint: `10.1.0.199`
+- Kubernetes API endpoint: `https://10.1.0.199:6443`
+- Remote Kubernetes Service: `kubernetes-api.homelab` through
+  `octelium connect` and an Octelium-generated kubeconfig
+- Talos config reference: `.talos/talosconfig`
+- Control-plane config reference: `.talos/controlplane.yaml`
+- Worker config reference: `.talos/worker.yaml`
+
+The previous control-plane address `10.1.0.216` is stale. If it appears in
+Talos config, kubeconfig, service-account issuer discovery, OIDC setup, or
+troubleshooting notes, fix the repository-owned desired state to use
+`https://10.1.0.199:6443`.
+
+The control-plane patch stack also replaces the explicit Kubernetes API SAN
+list with `10.1.0.199` and the Talos API SAN list with the private Octelium
+hostname. These list patches use RFC 6902 replacement so repeated renders do
+not retain stale SANs or append duplicates.
+
+Cordium Workspaces use the same private Kubernetes Service with restricted
+read-only access through their automatic Octelium client session. Sensitive
+resources and subresources stay denied. Tailscale remains only as the temporary
+remote Talos/LAN fallback; Octelium does not provide a Talos-native Service
+mode.
+
+## Source Files
+
+- `ONBOARDING.md`
+- `docs/talos-control-plane-maintenance.md`
+- `.talos/patches/controlplane-kubernetes-api-san.yaml`
+- `.talos/patches/controlplane-octelium-talos-api.yaml`
+- `.talos/patches/controlplane-service-account-issuer.yaml`
+- `.talos/patches/worker-zimaboard-2.yaml`
+- `clusters/homelab/platform/multus`
+
+## Maintenance Notes
+
+- Use `--insecure` with `talosctl` only for nodes in Talos maintenance mode
+  before machine config has been applied.
+- After machine config is applied, use authenticated Talos access through
+  `.talos/talosconfig`.
+- Talos machine config changes should stay patch-oriented when only one node
+  differs from the shared baseline.

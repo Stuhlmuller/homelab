@@ -12,7 +12,7 @@ as SecureStrings using the AWS-managed `alias/aws/ssm` key. The root input
 AWS-managed key does not have a customizable customer key policy.
 
 Confidential historical recovery copies remain outside the repository. See
-[state encryption and recovery](knowledge-base/operations/state-encryption.md).
+[state encryption and recovery](../openwiki/operations/state-encryption.md).
 
 ## Placeholder Rules
 
@@ -474,4 +474,4 @@ materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
 The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
 alias of the pull robot credential, into its Docker-config Secret. CI reads
 only the publisher credential during protected image publication. See the
-[Harbor contract](knowledge-base/operations/harbor-oci.md).
+[Harbor contract](../openwiki/operations/harbor-oci.md).

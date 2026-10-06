@@ -5,7 +5,7 @@ description: Add a homelab workload or platform Application through the shared g
 
 # Homelab App Onboarding
 
-Start with the relevant [inventory entry](../../../docs/knowledge-base/workloads/inventory.md)
+Start with the relevant [inventory entry](../../../openwiki/workloads/inventory.md)
 and [onboarding contract](../../../docs/argocd-app-onboarding.md). Read the nearest
 workload README and only the storage, secret or ingress runbooks the app needs.
 
@@ -51,7 +51,7 @@ must remain explicit. See [Terragrunt merge semantics](../terragrunt-workflows/S
 
 ## Complete the app boundary
 
-- Select chart ownership from [chart organization](../../../docs/knowledge-base/patterns/helm-chart-organization.md).
+- Select chart ownership from [chart organization](../../../openwiki/patterns/helm-chart-organization.md).
   Prefer upstream charts plus local values and existing shared chart patterns;
   do not vendor generated manifests or duplicate templates to add one workload.
 - Define resource requests, probes, image digest pins, service and namespace

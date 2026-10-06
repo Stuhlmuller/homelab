@@ -28,7 +28,7 @@ workflow dispatches or production changes.
 
 ## Prove each milestone
 
-1. Run the relevant [validation gates](../../../docs/knowledge-base/operations/validation-gates.md),
+1. Run the relevant [validation gates](../../../openwiki/operations/validation-gates.md),
    including static checks, Conftest and the affected render/plan. Record actual
    failures or unavailable checks before production work.
 2. Record the merged commit and, when applicable, the exact workflow run ID,

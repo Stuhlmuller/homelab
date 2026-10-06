@@ -69,7 +69,7 @@ Pods. If Octelium recreates a Service, refresh its generated
 Keep this recovery file until a correctly sized native dataplane worker has
 run the full package-managed fleet for 24 hours. Follow the direct native Pod
 probe and public end-to-end removal gate in
-`docs/knowledge-base/architecture/cluster-topology.md`; Service-level probes
+`openwiki/architecture/cluster-topology.md`; Service-level probes
 alone can be satisfied by these emergency replicas.
 
 ## Updating

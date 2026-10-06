@@ -104,7 +104,7 @@ setup POST or account creation was performed during that inspection. The user
 confirmed Dispatcharr was never configured. The public authenticated route
 reached the app, but
 first-run setup and functional acceptance remain open.
-See [the workload note](../../../../docs/knowledge-base/workloads/application-notes.md#dispatcharr)
+See [the workload note](../../../../openwiki/workloads/application-notes.md#dispatcharr)
 for the observed first-run state. Confirm account login, provider/EPG
 configuration, channel loading and playback before claiming full acceptance.
 

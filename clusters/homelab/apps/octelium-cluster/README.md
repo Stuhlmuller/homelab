@@ -29,7 +29,7 @@ query. Cookies, authentication, status codes, response bodies, and unrelated
 redirects are untouched. Core 0.35.0 accepts the friendly hostname as a valid
 login return; neither Enterprise 0.22.0 nor 0.29.0 exposes a console-alias
 setting. See the source-backed
-[capability research](../../../../docs/knowledge-base/operations/octelium-capability-research-2026-09-05.md).
+[capability research](../../../../openwiki/operations/octelium-capability-research-2026-09-05.md).
 
 The static gate runs the actual Lua against root, deep-link, query, wrong-host,
 wrong-status, missing-marker, and lookalike-target cases. After GitOps rollout,
