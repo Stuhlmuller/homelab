@@ -189,10 +189,11 @@ ready, but they must not be treated as production-ready until:
 
 ## Stateful Apps
 
-AFFiNE and Dispatcharr are suspended for memory capacity, including their
-dedicated PostgreSQL and AFFiNE Redis workloads. Their six PVCs remain retained;
-no durable data is removed. See [[operations/monitoring-resource-requests]] and
-the app READMEs for suspension and resume checks.
+AFFiNE remains suspended for memory capacity, including its PostgreSQL and Redis
+workloads; its four PVCs remain retained. Dispatcharr now declares one app and
+one dedicated PostgreSQL replica for IPTV-org USA setup, reusing its two retained
+PVCs. No durable data is removed. See [[operations/monitoring-resource-requests]]
+and the app READMEs for capacity, suspension and resume checks.
 
 The current stateful set includes AFFiNE with PostgreSQL/pgvector, ephemeral
 Redis, blob storage, and config state; Prometheus, Grafana, Deluge, Dispatcharr

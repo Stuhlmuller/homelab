@@ -120,18 +120,27 @@ exceed total allocatable memory for 10 minutes, and the chart default is
 disabled. This explicitly accepts the node-loss deficit without repairing it;
 node pressure, actual-use, readiness, and unschedulable-Pod alerts remain active.
 
-Rodman selected Dispatcharr and AFFiNE for suspension. Their combined 3.500 GiB
-reduction projects requests of 19.362 GiB and a remaining 3.863 GiB node-loss
+Rodman selected Dispatcharr and AFFiNE for suspension on September 21. Their
+combined 3.500 GiB reduction projected requests of 19.362 GiB and a 3.863 GiB node-loss
 shortfall. These suspensions alone would not clear the original rule. The
 replacement total-capacity rule is quiet both before and after suspension.
 Full node-loss headroom still requires further demand reduction or capacity,
 but that is no longer this homelab's warning threshold.
 
 Candidate savings below include running app containers and dedicated databases
-at diagnosis, but exclude shared platform services and access proxies. Only the
-two selected apps are configured for suspension; retain their PVCs.
+at diagnosis, but exclude shared platform services and access proxies. Both
+selected apps were configured for suspension then; retain their PVCs. Dispatcharr
+now declares one replica for its app and database; AFFiNE remains suspended.
 
-| App | Current requests GiB |
+The October 6, 2026 05:42 UTC pre-resume snapshot measured 25.163 GiB of
+ordinary-container requests across 200 Running/Pending Pods, excluding init
+containers and overhead. Total allocatable memory remains 30.402 GiB, with
+15.499 GiB available after losing the largest node. Dispatcharr's 1.875 GiB
+resumption projects 27.038 GiB requested, 3.364 GiB total-capacity headroom and
+an 11.539 GiB node-loss shortfall. These replace the historical suspension
+projection for current planning; peak usage and failover remain unproven.
+
+| App | September 21 requests GiB |
 | --- | ---: |
 | OpenClaw | 2.063 |
 | Dispatcharr and its PostgreSQL | 1.875 |
@@ -155,7 +164,7 @@ described in `clusters/homelab/apps/prometheus/README.md`, then query
 `/api/v1/alerts` and `/api/v1/rules?type=alert`. Require exactly one healthy
 `KubeMemoryOvercommit` rule in `homelab.memory`, with no duplicate chart rule
 and no pending/firing instance at the measured or projected requests. The
-remaining node-loss shortfall is approximately 3.863 GiB after suspension;
+historical node-loss shortfall was approximately 3.863 GiB after suspension;
 the policy change must not be reported as restoring failover capacity.
 Recheck the expression's request/capacity inputs, node readiness, pressure,
 remaining workload health, and retained PVCs. No runtime changes were made

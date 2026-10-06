@@ -37,9 +37,10 @@ The secret is not committed.
 It warns when Pod memory requests exceed **100% of total node allocatable
 memory for 10 minutes**. The single-control-plane homelab explicitly accepts
 the existing largest-node-loss shortfall; the rule no longer reserves the
-largest node's capacity. Current requests of 22.862 GiB against 30.402 GiB
-allocatable are below this threshold, as are the projected 19.362 GiB after
-Dispatcharr and AFFiNE are suspended.
+largest node's capacity. The October 6, 2026 05:42 UTC snapshot measured
+25.163 GiB of ordinary-container requests against 30.402 GiB allocatable.
+Dispatcharr's planned resumption adds 1.875 GiB, projecting 27.038 GiB;
+AFFiNE remains suspended. Both totals are below this alert threshold.
 
 This is a change in alerting policy, not proof of node-failure tolerance.
 The capacity risk remains recorded in
