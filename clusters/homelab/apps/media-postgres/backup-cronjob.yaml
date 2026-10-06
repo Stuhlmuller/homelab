@@ -131,13 +131,13 @@ spec:
                 - name: local-data
                   mountPath: /local
                   readOnly: true
-                - name: legacy-data
+                - name: backup-data
                   mountPath: /backup
           volumes:
             - name: local-data
               persistentVolumeClaim:
                 claimName: media-postgres-local
                 readOnly: true
-            - name: legacy-data
+            - name: backup-data
               persistentVolumeClaim:
                 claimName: data-media-postgres-0

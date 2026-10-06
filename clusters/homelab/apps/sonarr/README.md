@@ -34,17 +34,10 @@ and small app state out of the QNAP/NFS failure domain that previously caused
 slow config reads, PostgreSQL timeouts, and empty or malformed Servarr
 `config.xml` files.
 
-The completed one-time migration copied and validated the legacy config tree,
-recovered a valid backup when needed, and wrote
-`.nfs-migration-complete`. Its init container, script ConfigMap, and read-only
-NFS mount are removed from steady state; `configure-postgres` now follows
-`prepare-config` directly.
-
 The `sonarr-config-backup` CronJob runs nightly on `zimaboard-0`, validates the
 local `config.xml`, and writes 14-day tarball archives back to
-`sonarr-config/local-backups` on NFS. The cutover and scheduled backup have
-been verified. Keep the legacy claim as the archive and rollback target; the
-backup CronJob is its only steady-state Sonarr consumer.
+`sonarr-config/local-backups` on NFS. Keep this claim as the archive and
+rollback target; the backup CronJob is its only steady-state Sonarr consumer.
 
 ## Authentication
 
@@ -67,8 +60,6 @@ After Argo CD syncs this change, verify the rollout and runtime endpoint:
 
 ```bash
 kubectl -n media rollout status deployment/sonarr --timeout=10m
-kubectl -n media exec deploy/sonarr -c app -- \
-  sh -ec 'test -f /config/.nfs-migration-complete'
 kubectl -n media exec deploy/sonarr -c app -- \
   sh -ec 'grep -E "<(AuthenticationMethod|AuthenticationRequired|PostgresHost|PostgresMainDb|PostgresLogDb)>" /config/config.xml'
 kubectl -n media exec deploy/sonarr -c app -- \
@@ -104,14 +95,10 @@ Failure modes to look for:
 
 ### Rollback
 
-Rollback through GitOps, not a live manual patch. After cutover, keep the
-`sonarr-config-local` claim mounted as active `/config` unless the rollback PR
-also restores a current `sonarr-config/local-backups/*.tar.gz` archive into the
-legacy claim root before Sonarr starts. Simply reverting `values.yaml` to mount
-the old `sonarr-config` claim can restart Sonarr with stale pre-cutover
-settings, because the nightly job writes current state under `local-backups`
-instead of refreshing the legacy root. Do not delete either the local or legacy
-config claim during rollback; both are retained recovery sources.
+Recover through a reviewed GitOps change that stops Sonarr and restores a
+current `sonarr-config/local-backups/*.tar.gz` archive into the active local
+claim before starting it. Preserve the local and backup claims throughout
+recovery; the NFS claim root is not a current application-state copy.
 
 If emergency access must temporarily return to built-in Forms auth, make that a
 repo change too: remove the `SONARR__AUTH__*` environment keys and the
@@ -127,18 +114,12 @@ Sonarr mounts the node-local `sonarr-config-local` PVC at `/config`, the static
 The media claims point at the QNAP `/media` NFS export instead of the default
 `/homelab` provisioner path.
 
-The completed `media-tv-migration` Job is retired after its verified May
-2026 completion. Its replacement `media-tv-directories` Job only
-creates required directories and sets their directory permissions. It never
-mounts the retained `sonarr-media` source or copies old files over active data.
-Only this idempotent Job uses `Force=true,Replace=true`, so image changes
-recreate it without patching immutable Pod templates. Its deadline is two
-minutes; the dedicated deny-all NetworkPolicy is installed first. Argo CD prunes
-the completed legacy Job and its NetworkPolicy; all PVs/PVCs remain declared.
-
-On rollback, preserve the directory Job and claims. Do not restore the legacy
-copy Job: recreating it can overwrite newer media. A historical data restore
-requires a separate reviewed, fenced recovery operation.
+The `media-tv-directories` Job creates required directories and sets
+nonrecursive directory permissions. It uses `Force=true,Replace=true` so image
+changes recreate it without patching immutable Pod templates. Its deadline is
+two minutes; the dedicated deny-all NetworkPolicy is installed first. Claims
+remain declared independently of this Job. Restoring historical data requires
+a reviewed recovery with writers stopped.
 
 ## Migration Notes
 

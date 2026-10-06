@@ -20,7 +20,7 @@ desired state.
 | --- | --- |
 | `docs/argocd-bootstrap.md` | [[runbooks/argocd-bootstrap]] |
 | `docs/argocd-app-onboarding.md` | [[runbooks/argocd-app-onboarding]] |
-| `docs/argocd-image-updater.md` | [[runbooks/image-automation]] |
+| `docs/image-automation.md` | [[runbooks/image-automation]] |
 | `docs/ci-cd.md` | [[runbooks/ci-cd]] |
 | `docs/networking-tailnet-ingress.md` | [[runbooks/tailnet-ingress]] |
 | `docs/octelium.md` | [[runbooks/octelium]] |
@@ -39,10 +39,3 @@ desired state.
 | `clusters/homelab/apps/*/README.md` | [[workloads/application-notes]] |
 | `clusters/homelab/platform/*/README.md` | [[workloads/application-notes]] |
 | `IaC/live/argocd-apps/README.md` | [[runbooks/argocd-app-onboarding]] |
-
-## Spec Artifacts
-
-The `specs/001-onboard-argocd-apps/` artifacts remain useful for design intent
-and acceptance criteria. Prefer the current runbooks and source paths for
-operator commands because the working tree may have moved since the spec was
-generated.

@@ -236,47 +236,8 @@ host entry, kubeconfig, registry credentials, and private logs. Harbor, its TLS
 certificate, project/robot reconciliation, and production CI access must be
 ready before publication.
 
-### Existing GHCR package migration
-
-The [migration inventory](../../scripts/config/harbor-migration.json) records
-four private artifacts: backend and frontend releases published by
-[run 34815485548](https://github.com/Stuhlmuller/homelab/actions/runs/34815485548)
-at revision `f76c27834ff987aa1dfad81d0c9ff273be7dd3cd` and
-[run 34926391605](https://github.com/Stuhlmuller/homelab/actions/runs/34926391605)
-at revision `0b352ebd05a944de46b0cdda7240edbc10671d76`. Authenticated GHCR and
-GitHub Packages inventory on 2026-09-19 confirmed two active tagged versions
-per repository and no untagged versions.
-After Harbor is ready, dispatch the
-[migration workflow](../../.github/workflows/harbor-migrate.yml) from current
-`main` with that checkout's exact SHA as `expected_sha`. The inventory's source
-revisions stay fixed to the original builds; the dispatch SHA identifies the
-reviewed migration code.
-
-The workflow requires static checks and the production environment gate,
-reads private GHCR packages using its repository-scoped `GITHUB_TOKEN`, and
-copies the fixed digests with `skopeo copy --all --preserve-digests`. It verifies
-the SHA-256 of each destination's raw manifest against the recorded source
-digest. It then reads `/homelab/nofx/harbor-pull-password` into a separate
-temporary authfile for `robot$homelab+pull`, downloads all four complete
-artifacts to separate fresh directories, and verifies those manifest digests.
-Anonymous requests
-must receive an authentication denial with an explicitly empty authfile and
-`--no-creds`; network failures do not count as denial. Only then does it publish
-the result. Downloaded blobs and all credentials are removed on success or
-failure. Original tags and GHCR sources remain; reruns copy the same content.
-Future builds publish directly to Harbor.
-
-At the migration inventory check, NOFX still used upstream images. The
-successful [migration](https://github.com/Stuhlmuller/homelab/actions/runs/35486238550)
-preserved all historical digests and verified complete read-only pulls. The
-initial maintained rollout then selected the migrated `f76c278` pair in
-[PR #1036](https://github.com/Stuhlmuller/homelab/pull/1036). Preserve those
-artifacts as recovery history; a later source build requires its own verified
-publication and functional acceptance.
-
 Use [deployment.yaml](../../clusters/homelab/apps/nofx/deployment.yaml) for the
-current desired image references, rather than copying this historical migration
-inventory. Pin both published images in a separate reviewed rollout PR with
+current desired image references. Pin both published images in a separate reviewed rollout PR with
 `harbor-pull`, then verify ready Pods at both exact digests. Follow the
 [rollout gates](../../docs/nofx-private-images.md#harbor-runtime-acceptance),
 including a fresh authenticated `STOPPED` check before merge. Keep Harbor

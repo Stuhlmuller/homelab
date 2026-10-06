@@ -72,20 +72,14 @@ and one `AuthenticationRequired=DisabledForLocalAddresses` line. Do not print
 ## Config Recovery And Local Storage
 
 Active config lives on the retained `radarr-config-local` volume backed by
-`/var/lib/radarr` on `zimaboard-0`. The old `radarr-config` NFS claim stays
+`/var/lib/radarr` on `zimaboard-0`. The `radarr-config` NFS claim stays
 declared as the archive and rollback target, but the app Pod no longer mounts
 it. Radarr uses a `Recreate` rollout to protect its singleton local state.
-
-The completed one-time migration copied and validated the legacy config tree,
-recovered a valid backup when needed, and wrote
-`.nfs-migration-complete`. Its init container, script ConfigMap, and read-only
-NFS mount are removed from steady state; `configure-postgres` now follows
-`prepare-config` directly.
 
 `radarr-config-backup` writes a verified compressed archive of local config
 back to the retained NFS claim at 04:00 Pacific and keeps 14 days. This is a
 best-effort snapshot of a running app, so retain several generations. It is the
-only steady-state Radarr workload that mounts the old config claim. The app Pod
+only steady-state Radarr workload that mounts the backup claim. The app Pod
 does not need QNAP config availability to start.
 
 The local volume survives ordinary Talos reboots and upgrades because `/var` is
@@ -101,8 +95,6 @@ kubectl get persistentvolume radarr-config-local
 kubectl -n media get pvc radarr-config-local radarr-config
 kubectl -n media get pod -l app.kubernetes.io/name=radarr -o wide
 kubectl -n media exec deploy/radarr -c app -- \
-  test -f /config/.nfs-migration-complete
-kubectl -n media exec deploy/radarr -c app -- \
   sh -c 'test -s /config/config.xml && test "$(grep -c "<ApiKey>[^<][^<]*</ApiKey>" /config/config.xml)" -eq 1'
 kubectl -n media exec deploy/radarr -c app -- \
   sh -c 'curl -fsS -o /dev/null http://127.0.0.1:7878/initialize.json'
@@ -110,7 +102,7 @@ kubectl -n media get cronjob radarr-config-backup
 ```
 
 Require both claims to remain bound, the pod to be ready on `zimaboard-0`, the
-marker and non-empty API key guard to pass, and Radarr searches plus Prowlarr
+non-empty API key guard to pass, and Radarr searches plus Prowlarr
 integration to work. Verify the latest CronJob timestamp and archive validation
 log:
 
@@ -122,8 +114,7 @@ kubectl -n media get job \
 kubectl -n media logs job/<latest-radarr-config-backup-job>
 ```
 
-The one-time source copy is complete; do not point Radarr back at the stale NFS
-root. Rollback requires a reviewed revision that stops Radarr, restores one
+Recovery requires a reviewed revision that stops Radarr, restores one
 selected and validated archive into `radarr-config-local` with UID/GID `1000`,
 and removes the restore Job before starting Radarr. Preserve both claims
 throughout recovery.
@@ -134,18 +125,12 @@ Radarr mounts the static `media-movies` PVC at `/movies` and the shared
 `media-downloads` PVC at `/downloads`. Both claims point at the QNAP `/media`
 NFS export instead of the default `/homelab` provisioner path.
 
-The completed `media-movies-migration` Job is retired after its verified May
-2026 completion. Its replacement `media-movies-directories` Job only
-creates required directories and sets their directory permissions. It never
-mounts the retained `radarr-media` source or copies old files over active data.
-Only this idempotent Job uses `Force=true,Replace=true`, so image changes
-recreate it without patching immutable Pod templates. Its deadline is two
-minutes; the dedicated deny-all NetworkPolicy is installed first. Argo CD prunes
-the completed legacy Job and its NetworkPolicy; all PVs/PVCs remain declared.
-
-On rollback, preserve the directory Job and claims. Do not restore the legacy
-copy Job: recreating it can overwrite newer media. A historical data restore
-requires a separate reviewed, fenced recovery operation.
+The `media-movies-directories` Job creates required directories and sets
+nonrecursive directory permissions. It uses `Force=true,Replace=true` so image
+changes recreate it without patching immutable Pod templates. Its deadline is
+two minutes; the dedicated deny-all NetworkPolicy is installed first. Claims
+remain declared independently of this Job. Restoring historical data requires
+a reviewed recovery with writers stopped.
 
 ## Migration Notes
 

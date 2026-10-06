@@ -33,12 +33,6 @@ variable "external_secrets_user_name" {
   }
 }
 
-variable "additional_kms_key_aliases" {
-  description = "Exact additional runtime keys allowed during a ciphertext migration."
-  type        = set(string)
-  default     = []
-}
-
 variable "kms_key_id" {
   description = "Alias of the regional KMS key used to encrypt homelab SSM parameters."
   type        = string

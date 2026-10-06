@@ -112,7 +112,7 @@ echo "::endgroup::"
 
 echo "::group::Terragrunt Azure credential gate"
 (
-  base_root=$'locals {}\n\nterraform {\n  extra_arguments "plan" {\n    commands  = ["plan"]\n    arguments = ["-out", "plan.out"]\n  }\n}\n\ninputs = {}'
+  base_root=$'locals {}\n\ninputs = {}'
   head_root=$'locals {}\n\ninputs = {}'
   changed_path=""
   root_change=false
@@ -161,7 +161,7 @@ echo "::group::Terragrunt Azure credential gate"
   export APPLY_BASE_SHA="base"
   export APPLY_HEAD_SHA="head"
   if terragrunt_azuread_stack_changed; then
-    echo "The removed legacy root plan block must not require Azure credentials." >&2
+    echo "Unchanged root settings must not require Azure credentials." >&2
     exit 1
   fi
 
@@ -251,8 +251,6 @@ echo "::endgroup::"
 echo "::group::Terragrunt generated-unit filters"
 python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py
-python3 -I scripts/ci/wazuh-retire-test.py
-python3 -I scripts/ci/wazuh-retire-plan-test.py
 (
   cd IaC/live/argocd-apps
   terragrunt_stack_changed() { return 0; }
@@ -458,6 +456,15 @@ yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"
 
+echo "::group::Grafana persisted alert cleanup"
+yq -e '
+  ([.alerting."rules.yaml".deleteRules[] |
+    select(.orgId == 1 and .uid == "homelab-octelium-api-upnp-stale")] | length) == 1 and
+  ([.alerting."rules.yaml".groups[].rules[] |
+    select(.uid == "homelab-octelium-api-upnp-stale")] | length) == 0
+' clusters/homelab/apps/grafana/values.yaml >/dev/null
+echo "::endgroup::"
+
 echo "::group::n8n persisted encryption key"
 n8n_values="clusters/homelab/apps/n8n/values.yaml"
 if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
@@ -505,7 +512,6 @@ echo "::endgroup::"
 
 echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
-node scripts/ci/langfuse-empty-schema-recovery-check.mjs
 echo "::endgroup::"
 
 echo "::group::NOFX runtime storage"
@@ -946,8 +952,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-login-denial.yml:deny' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
-    '.github/workflows/harbor-migrate.yml:migrate' \
-    '.github/workflows/harbor-migrate.yml:static-policy' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -959,8 +963,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/nofx-images.yml:test-build' \
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
-    '.github/workflows/octelium-cloudflare-origin-port-remove.yml:remove' \
-    '.github/workflows/octelium-cloudflare-origin-port.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/octelium-public-tunnel.yml:reconcile' \
@@ -992,20 +994,17 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-migrate.yml 38dd9498ae9b7268dd8a7912a06abc96bc8cb533e2ae079660837aa22646e959
 .github/workflows/harbor-mirror.yml bbf296be0171b734c1298a6089b0a5f756376b01cc4873d869d2e01daf428dae
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
-.github/workflows/nofx-images.yml 88d618e8398988a11e777e002de3969572dcaa3e8ecf6ec72c251f8d03acdb78
+.github/workflows/nofx-images.yml 1e641356d76b777a04b34a0d32c3bbfb0000ef76ca4ad8e2c1c23163b212921a
 .github/workflows/nofx-registry-credential.yml 57da09cc6bcecfaf820c85961ef19ad624e62e3a033d4b7aa12cb8eeae35e1e8
 .github/workflows/litellm-provider-credential.yml a6d4fe36ccd7986c9cb35811fd70ec795458cc095758b302f1d9bd25b7d77416
-.github/workflows/octelium-cloudflare-origin-port-remove.yml dcf8e0e0c437aaa2f77682f1e948d6c1c4917e9add07dd76ff4cfed92a5c3362
-.github/workflows/octelium-cloudflare-origin-port.yml 936aa05a825cbc09abc967f02c20f1ca0c7bc3b35e9e3b638c7aacfb5b77be1a
 .github/workflows/octelium-private-kubernetes-apply.yml 76d81812010b3a1546b053a57e8e8d2b67cea86fd36b87d3356dc48575dca065
-.github/workflows/octelium-public-tunnel.yml 5b8d8d00acc85bb692ba2fedb6349591d9645c49c5f62e6319432738717c40f6
+.github/workflows/octelium-public-tunnel.yml 80ea67e7fbd41ca506e34c64072f48ef281449c1c5017f489aa5b8e244abe0a0
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml c223d91258230ca3a5453c89d53cea43b9fb138b68bcbf693b8936e433c421db
+.github/workflows/terragrunt-apply.yml c3225c6bf4cb456fc4d1becc7df44d30c72708da1cf5d5cbd07911eaf6c48a43
 .github/workflows/terragrunt-plan.yml 0e990457caf2d33452b2a7e23a7440da4dc4245b78bdc8a03a68c4687921fa32
 EOF
 echo "::endgroup::"
@@ -1016,7 +1015,6 @@ for workflow_job in \
   '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/octelium-public-tunnel.yml:reconcile' \
-  '.github/workflows/harbor-migrate.yml:static-policy' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
@@ -1068,13 +1066,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Retire wazuh @ {0}")) and
-    .on.workflow_dispatch.inputs.retire_wazuh == {
-      "description": "Remove only the retired Wazuh Application and its four unused credentials",
-      "required": false,
-      "default": false,
-      "type": "boolean"
-    } and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}")) and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
       "required": false,
@@ -1098,13 +1090,11 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
       "TERRAGRUNT_ARGOCD_APP",
-      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE",
-      "TERRAGRUNT_RETIRE_WAZUH"
+      "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
-    .jobs["terragrunt-apply"].env.TERRAGRUNT_RETIRE_WAZUH == "${{ inputs.retire_wazuh }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
       "cancel-in-progress": false
@@ -1453,15 +1443,6 @@ rg -Fq -- '--exclude=openclaw/npm' "$openclaw_values"
 rg -Fq -- '--exclude=openclaw/extensions' "$openclaw_values"
 rg -Fq 'verify_backup_dir "$backup_dir"' "$openclaw_values"
 rg -Fq 'required_kib=$((state_kib * 2 + 2097152))' "$openclaw_values"
-[[ "$(rg -Fc 'session_sqlite --session-sqlite inspect' "$openclaw_values")" -eq 2 ]]
-rg -Fq 'session_sqlite --session-sqlite dry-run' "$openclaw_values"
-rg -Fq 'session_sqlite --session-sqlite import' "$openclaw_values"
-[[ "$(rg -Fc 'openclaw doctor --fix --non-interactive' "$openclaw_values")" -eq 1 ]]
-rg -Fq 'restore_doctor_config' "$openclaw_values"
-if rg -Fq 'openclaw doctor --session-sqlite validate' "$openclaw_values"; then
-  echo "OpenClaw bootstrap contains an unsafe or ineffective doctor repair" >&2
-  exit 1
-fi
 rg -Fq '"maxConcurrent": 4' clusters/homelab/apps/openclaw/assistant/config.json
 if [[ "$(rg -Fc 'openclaw plugins install ' "$openclaw_values")" -ne 1 ]] ||
   rg -q 'falling back|current_discord_plugin_spec|clawhub:@openclaw/discord|plugin\.get\("origin"\) == "bundled"' "$openclaw_values"; then
@@ -1472,21 +1453,13 @@ if ! awk '
   /tar --one-file-system/ && !backup { backup = NR }
   /^[[:space:]]+verify_backup_dir "\$backup_dir"[[:space:]]*$/ && !backup_verified { backup_verified = NR }
   /--pin --force --accept-capabilities/ && !install { install = NR }
-  /--session-sqlite inspect/ && !inspect_before { inspect_before = NR; next }
-  /--session-sqlite inspect/ && !inspect_after { inspect_after = NR }
-  /--session-sqlite dry-run/ && !dry_run { dry_run = NR }
-  /--session-sqlite import/ && !import { import = NR }
   /openclaw config validate/ && !config_validate { config_validate = NR }
   END {
-    exit !(backup && backup_verified && install && inspect_before && dry_run && import &&
-      inspect_after && config_validate && backup < backup_verified &&
-      backup_verified < install &&
-      install < inspect_before && inspect_before < dry_run &&
-      dry_run < import && import < inspect_after &&
-      inspect_after < config_validate)
+    exit !(backup && backup_verified && install && config_validate &&
+      backup < backup_verified && backup_verified < install && install < config_validate)
   }
 ' "$openclaw_values"; then
-  echo "OpenClaw must back up, install Discord, migrate, then validate persisted state" >&2
+  echo "OpenClaw must back up, install Discord, then validate persisted state" >&2
   exit 1
 fi
 yq -e '

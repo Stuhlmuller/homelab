@@ -10,6 +10,4 @@ encryption, field-manager ownership, and computed-field normalization for
 metadata, destinations, and multi-source paths. Repository-owned source fields
 such as `targetRevision` remain declarative.
 
-The non-destructive `removed` block preserves the completed migration from the
-old `argocd_application.this` resource address. The managed resource remains
-`kubernetes_manifest.this`, so simplifying the inputs does not move state.
+The managed resource address is `kubernetes_manifest.this`.

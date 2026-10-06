@@ -128,20 +128,19 @@ try {
   assert.equal(successfulWrites(invalid).length, 0, "malformed batch wrote config");
   cases.push(stage);
 
-  stage = "legacy-hook-unset-before-literal-batch";
-  const hook = make("hook", { ...baseline, hooks: { enabled: true, path: "/hooks", token: "${GRAFANA_ALERT_HOOK_TOKEN}" } });
-  cli(hook, ["config", "unset", "hooks.token"]);
+  stage = "literal-hook-batch-update";
+  const hook = make("hook", { ...baseline, hooks: { enabled: true, path: "/hooks", token: "cccccccccccccccccccccccccccccccc" } });
   batch(hook, [
-    { path: "hooks.token", value: "synthetic-hook-after" },
+    { path: "hooks.token", value: "dddddddddddddddddddddddddddddddd" },
     { path: "hooks.defaultSessionKey", value: "hook:fixture" },
     { path: "hooks.allowRequestSessionKey", value: false },
   ]);
   const hookValue = JSON.parse(fs.readFileSync(hook.config, "utf8"));
   retained(hookValue);
-  assert.equal(hookValue.hooks.token, "synthetic-hook-after", "legacy env template survived the unset/literal sequence");
+  assert.equal(hookValue.hooks.token, "dddddddddddddddddddddddddddddddd", "hook token did not update through the batch");
   assert.equal(hookValue.hooks.defaultSessionKey, "hook:fixture");
   assert.equal(hookValue.hooks.allowRequestSessionKey, false);
-  assert.equal(successfulWrites(hook).length, 2, "unset and batch did not each write once");
+  assert.equal(successfulWrites(hook).length, 1, "hook batch did not write once");
   cases.push(stage);
   console.log(JSON.stringify({ vendor: "OpenClaw 2026.9.5", passed: cases.length, cases, successfulWrites: { batch: 1, sequential: 2 } }));
 } catch (error) {

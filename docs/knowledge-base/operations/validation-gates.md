@@ -109,23 +109,19 @@ reviewers map the immutable pin back to the upstream release tag.
 
 ### Chainguard Actions
 
-The workflow migration replaces 56 references across 18 workflows with
-SHA-pinned `chainguard-actions` equivalents. Checkout preserves its existing
-v5.0.1/v7.0.1 split; upload-artifact v7.0.1, semantic-release v6.0.0, and
-Super-Linter v8.7.0 preserve their upstream versions. Nix installation moves
-to v31.11.1, AWS credential setup to v6.2.0, and CodeQL to v4.38.2 because
-the catalog lacks the exact previously pinned revisions. Inputs, permissions,
-triggers, environments, and commands remain unchanged.
+GitHub workflows pin their Chainguard Actions references by full commit SHA.
+Checkout, artifact publication, Nix installation, AWS credential setup, CodeQL,
+semantic release and linting retain explicit reviewed versions.
 
 This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
-still runs the upstream GHCR container, now pinned by digest. Other migrated
+still runs the upstream GHCR container, pinned by digest. Other
 actions use JavaScript or composite steps. Ubuntu hosted runners and Nix-managed
 tools remain; application images built or inspected by CI are separate workload
 contracts. `terragrunt-apply-request.yml` has no external actions to replace.
 
 `nix-community/cache-nix-action` remains pinned upstream: no corresponding
-Chainguard repository was available during this migration. Recheck the catalog
+Chainguard repository was available at the recorded review. Recheck the catalog
 before replacing it; do not remove caching or substitute a different cache
 implementation merely to change the publisher.
 
@@ -133,7 +129,7 @@ Before enabling CI, confirm the repository owner's Chainguard Actions entitlemen
 its status has not been verified locally. GitHub's repository policy was checked:
 Actions are enabled, all publishers are allowed, and SHA pinning is required.
 See the
-[migration prerequisites](https://edu.chainguard.dev/chainguard/actions/overview/).
+[vendor prerequisites](https://edu.chainguard.dev/chainguard/actions/overview/).
 The selected Nix and semantic-release actions include vendor usage telemetry;
 the Nix action sends repository/action identity and uses an audience-specific
 OIDC token when the job already permits it. No new credentials or permissions
@@ -146,10 +142,6 @@ after reviewing the full definitions. Validate with `actionlint`,
 `conftest verify --policy policy`, workflow policy evaluation, and the static
 gate. GitHub execution remains the integration check; rollback restores the
 previous action references and their matching workflow security hashes.
-
-Migration validation passed locally: the full static gate, actionlint, 89 policy
-regressions, 1,064 workflow policy checks, and 51 Harbor publication tests.
-Normalized workflow comparison confirmed only `uses:` values changed.
 
 ### Workflow security contracts
 
@@ -264,7 +256,6 @@ For image automation changes, render the retirement source, validate Renovate,
 and confirm no image bypasses digest policy:
 
 ```sh
-kubectl kustomize clusters/homelab/apps/argocd-image-updater
 npx --yes --package renovate renovate-config-validator renovate.json
 nix develop --command bash scripts/ci/static-checks.sh
 ```
@@ -292,7 +283,6 @@ kubectl kustomize clusters/homelab/apps/octelium-public
 bash -n \
   scripts/octelium-gateway-dns.sh \
   scripts/octelium-public-dns.sh \
-  scripts/octelium-cloudflare-origin-port.sh \
   scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
@@ -714,6 +704,9 @@ lockfiles are ignored at every directory level; do not commit them or copy a
 peer unit's lock. Exact provider versions live in module/template HCL; CI
 regenerates locks and checksums during init. This policy supersedes the
 provider-lock requirement recorded in [[operations/audit-2026-09-02]].
+Fresh runners trust the registry checksum set because prior provider checksums
+are not committed. Exact versions constrain selection, but do not independently
+prove identical provider bytes across clean runs.
 
 Generate explicit stack units before focused validation:
 
@@ -782,10 +775,9 @@ Deleted-unit handling compares tracked units and explicit-stack paths at
 the base and head revisions, so a catalog migration at the same path is not a
 destroy while removing a stack block still retires its state. The production
 Azure credential gate compares AzureAD unit sources, their repository-owned
-module sources, and stack blocks plus the normalized shared root source they
-consume. It ignores only the
-forbidden legacy root plan-output directive; every other root source change
-fails closed. Unrelated stack changes do not require Azure credentials.
+module sources, stack blocks, and the shared root source they consume. Every
+root source change fails closed. Unrelated stack changes do not require Azure
+credentials.
 
 Production applies resolve their affected-unit base from the newest successful
 historical push apply or full dispatch. Full runs are named `Full @ <sha>`;
@@ -908,18 +900,12 @@ Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
 format as well as raw gRPC stderr errors. Already-absent resources are skipped;
 other native failures remain errors.
 
-## OpenClaw doctor state gate
+## OpenClaw bootstrap gates
 
-The static gate permits one exact noninteractive pinned doctor repair after
-backup verification. Bootstrap tests require configuration restoration on
-success and failure, plus session preservation and config validation before
-the separate completion marker. A private config snapshot also repairs an
-interrupted doctor before the next bootstrap applies desired configuration;
-generic doctor changes must not persist unrelated skill-policy rewrites.
-
-The one-time doctor process has a ten-minute timeout and 30-second kill grace
-period. Timeout is tested as a failed migration, with config restored and no
-completion marker. This bounds the previously observed NFS session scan.
+Bootstrap verifies its current offline archive, existing local database
+integrity and direct-mount identity. It refuses missing databases and requires
+a reviewed restore. Configuration and assistant checks preserve unrelated
+state and remain idempotent.
 
 Configuration batches have two complementary gates. The static shell fixtures
 check bootstrap ordering, independent optional credentials, preservation, repeat
@@ -930,25 +916,6 @@ SecretRefs, duplicate-path ordering, one write per batch, dry-run behavior,
 failure atomicity, and the legacy hook-token unset sequence. The container has
 no network or credentials and starts no gateway. This proves vendor semantics,
 not production startup speed; see [[openclaw-bootstrap-batching]].
-
-### Post-start session lifecycle
-
-The pre-import identity inventory is a migration gate, not an immutable runtime
-inventory. OpenClaw 2026.8.2 replaces legacy managed Memory Dreaming Promotion
-jobs with declaration-keyed jobs; removing the old job also removes its base
-cron session. A later exact-key comparison can therefore report an intentional
-missing legacy entry after the migration itself passed.
-
-Before classifying an absent entry as data loss, check its job ownership, the
-replacement declaration, retained migration reports, and backup. Do not relax
-the bootstrap preservation gate or recreate retired sessions manually. Keep
-gateway readiness, channel authentication, and backup retention as separate
-acceptance checks.
-
-Source: pinned upstream
-[managed dreaming reconciliation](https://github.com/openclaw/openclaw/blob/v2026.8.2/extensions/memory-core/src/dreaming.ts),
-[cron mutations](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/service/ops-mutations.ts),
-and [base-session retirement](https://github.com/openclaw/openclaw/blob/v2026.8.2/src/cron/session-reaper.ts).
 
 ## Octelium PostgreSQL Restore Drill
 
@@ -1139,33 +1106,7 @@ the signed NameID to the existing password-login account, whose SSO flag is
 deliberately false. Settings readback alone had not detected this external-MSA
 identity mapping difference. Preserve recovery access and correct the dedicated
 Entra application's claim mapping through the SAML module; retest the browser
-callback after apply. The iPhone passcode install initially returned Apple
-`NotNow`, then appeared in a fresh `ProfileList` with the exact expected UUID
-without resubmitting installation. Its later `SecurityInfo` also returned
-`NotNow`; passcode compliance and enrollment-mode readback remain pending device
-availability. Inspect the existing command before any retry; do not enqueue
-duplicate profile writes.
-
-Read-only Fleet command-history inspection on 2026-10-04 confirmed the iPhone
-baseline in the acknowledged `ProfileList` result at `02:17:05Z`, matching the
-repository profile UUID. The existing `SecurityInfo` command subsequently
-acknowledged at `03:17:46Z`: `PasscodePresent=true`, `PasscodeCompliant=false`,
-and `PasscodeCompliantWithProfiles=false`. These are recorded device responses,
-not a fresh check after the user's passcode change. The
-[iPhone baseline](../../../clusters/homelab/apps/fleet/profiles/ios-passcode-baseline.mobileconfig)
-requires six characters and rejects simple passcodes; omitting scheduled expiry
-does not disable those requirements. Post-change compliance and enrollment mode
-remain unverified. No device settings were changed during this inspection.
-
-Later on 2026-10-04, the owner requested baseline removal. The existing
-`fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --remove --execute`
-operator completed acknowledged `ProfileList`, `RemoveProfile`, and fresh
-`ProfileList` commands: the baseline was absent, all unrelated profiles remained,
-and the operator session was revoked. The focused Fleet setup suite (38 tests),
-Apple MDM/API suite (17 tests), removal dry run, and `git diff --check` passed.
-The operator now rejects iOS baseline installation before credential access and
-excludes the retired payload from active-profile validation. Its payload is
-retained only for idempotent removal; the user's current passcode is preserved.
+callback after apply.
 
 Read-only Fleet inspection on 2026-10-06 UTC confirmed the managed **Family Mac
 security baseline** appeared on the iPhone with installation status `failed`:
@@ -1204,9 +1145,9 @@ enrollment compatibility.
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression
 tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
 verified TLS, API health, denied anonymous artifact pulls, successful robot
-push/pull, identical migrated image digests, ready consumer Pods and a verified
+push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [[harbor-oci]]; a Healthy Application alone does
-not establish successful private package migration.
+not establish successful private image publication.
 
 The full Harbor chart is rendered twice to reject randomly generated state,
 then combined with the owned manifests to validate prerequisite references and

@@ -37,7 +37,7 @@ inputs = {
     info = [
       {
         name  = "rollout"
-        value = "automated; replace the SSM password placeholders and verify PostgreSQL readiness before treating n8n as migrated"
+        value = "automated; verify PostgreSQL readiness before starting n8n"
       },
       {
         name  = "storage"

@@ -106,17 +106,16 @@ about `17Gi` free and no disk pressure when measured. The backup CronJob now
 shares sync wave `0` with the Deployment so Argo applies it before waiting on
 the long rollout.
 
-[[operations/openclaw-assistant-2026-09-05]] records assistant rollout evidence,
-remaining runtime acceptance checks, and observed bootstrap/SQLite delays.
+[[operations/openclaw-runtime-state]] records runtime storage and recovery
+requirements; [[operations/openclaw-bootstrap-batching]] tracks startup costs.
 
 Claw's reviewed assistant bundle lives in
 `clusters/homelab/apps/openclaw/assistant/`: the OpenRouter free router, managed
 personality/tool/operating notes, quiet follow-through heartbeats, a Pacific
 09:00 briefing, twice-hourly daytime health watch, and one bounded daily
 improvement session. Stable automation declaration keys preserve history and
-operator pauses. After registering replacements, ID/name-checked reconciliation
-disables the legacy ten-minute auto-triage and daily improvement jobs, preserving
-history and unrelated security, memory, and research routines.
+operator pauses. Reconciliation preserves unrelated security, memory, and
+research routines.
 The existing allowlisted owner supplies the Discord DM route;
 ambiguous routing defers scheduling without breaking gateway startup. Verify
 `assistant-reconciliation.json` reports `ready` as well as Pod readiness.
@@ -133,25 +132,6 @@ containers. Keep the copied Nix database and shared store as a matched unit:
 copying only the profile runtime closure while copying the full database leaves
 missing `.drv` entries, and fresh agent shells fail when `nix develop` evaluates
 the homelab flake.
-
-On 2026-09-02, five orphaned `openclaw-hooks` processes consumed about `2.04Gi`
-before the `2026.7.1` app reached its `4Gi` limit and was OOM-killed. This
-matches [upstream OpenClaw issue #109421](https://github.com/openclaw/openclaw/issues/109421):
-a timed-out Codex native hook lost ownership of its detached relay child.
-Desired state now pins the first current
-stable release containing the Linux fix, `2026.8.2`; keep the `4Gi` limit and
-require 24 hours without another app restart or orphaned relay before closing
-the incident. Its `Recreate` bootstrap creates a verified, owner-only migration
-archive on the same NFS volume, runs the targeted session SQLite inspect,
-dry-run, import, and post-import inspection, keeps Kubernetes as the external
-supervisor, and pins concurrency at the prior effective value of four. Generic
-doctor repair is intentionally excluded because it can rewrite unrelated skill
-policy. Gateway startup owns deterministic config migrations, not persisted
-session or cron route repair. A pre-rollout count-only inspection found 20
-entries in one session store with no legacy Codex route field and no cron JSON
-store, so this upgrade needs no separate route mutation. The checkpoint is not
-independent protection from NAS failure; retain OpenClaw's migration originals
-until the soak closes.
 
 ## Zimaboard-0 Resource Envelope
 
@@ -200,6 +180,11 @@ depend on Grafana rule evaluation for the only Argo CD notification path. After
 rollout, validate that the `argocd-application-health` `PrometheusRule` is
 present and that Prometheus is receiving `argocd_app_info`.
 
+Grafana persists provisioned alerts in its PVC-backed database. Retiring a
+rule requires `deleteRules` in `clusters/homelab/apps/grafana/values.yaml` and
+an alerting provisioning version bump; removing it from `groups` alone does
+not delete the existing rule. The retired Octelium UPnP rule uses this path.
+
 [[../operations/monitoring-resource-requests]] records the September 2026
 memory measurements, explicit monitoring reservations, scheduling-fit model,
 and required post-rollout checks. These requests protect scheduler accounting;
@@ -226,7 +211,7 @@ needed. The app shares `zimaboard-0` with the local source config claims; its
 resource reservations need validation against live library scans.
 
 The first rollout on 2026-10-05 confirmed the same
-[[operations/openclaw-assistant-2026-09-05#Talos direct mounts and verified runtime identity|Talos subPath mount boundary]]
+[[operations/openclaw-runtime-state#Direct Mount Identity|Talos subPath mount boundary]]
 seen with OpenClaw: host and Arr pods had regular XML files, but kubelet's
 isolated overlay exposed directories at those paths. Bazarr now mounts the
 whole source config claims read-only in its configure init container, with no

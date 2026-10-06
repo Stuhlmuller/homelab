@@ -32,9 +32,7 @@ in the same change.
 - [[operations/octelium-capability-research-2026-09-05]] records the requested
   security, audit-console, and Cordium CI/developer/agent execution expansion.
 - [[operations/harbor-oci]] records private OCI registry ownership, package
-  migration and rollout acceptance.
-- [[operations/wazuh-siem]] records the deferred SIEM plan and restoration
-  references for a future hardware upgrade.
+  publication and rollout acceptance.
 - [[source-map]] lists the source docs and repo paths imported into the vault.
 - [[patterns/new-application]] is the checklist for adding a new workload.
 - [[patterns/helm-chart-organization]] records chart, values, and generated

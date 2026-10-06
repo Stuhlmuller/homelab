@@ -12,7 +12,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: octelium-cloudflare-origin-port
+  group: octelium-public-tunnel
   cancel-in-progress: false
 
 jobs:
@@ -49,18 +49,14 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
-      - name: Reconcile Tunnel DNS And Retire WAN Origin Rules
-        env:
-          CLOUDFLARE_ZONE_SETTINGS_TOKEN: ${{ secrets.CLOUDFLARE_ZONE_SETTINGS_TOKEN }}
+      - name: Reconcile Tunnel DNS
         run: |
-          test -n "$CLOUDFLARE_ZONE_SETTINGS_TOKEN"
           private_log="$(mktemp "${RUNNER_TEMP}/octelium-public-tunnel.XXXXXX")"
           chmod 600 "$private_log"
           trap 'rm -f -- "$private_log"' EXIT
           if ! scripts/octelium-public-dns.sh --dry-run >"$private_log" 2>&1 ||
-             ! scripts/octelium-cloudflare-origin-port.sh remove >>"$private_log" 2>&1 ||
              ! scripts/octelium-public-dns.sh >>"$private_log" 2>&1; then
             echo "::error::Tunnel reconciliation failed; private API output withheld. Fix the declared inputs and rerun this idempotent workflow."
             exit 1
           fi
-          echo "Tunnel DNS reconciled; retired WAN origin rules removed. Run the transport and authenticated execution gates before declaring recovery."
+          echo "Tunnel DNS reconciled. Run the transport and authenticated execution gates before declaring recovery."

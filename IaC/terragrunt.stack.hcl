@@ -14,14 +14,6 @@ unit "argocd_apps_affine" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/affine/stack.hcl").inputs
 }
 
-unit "argocd_apps_argocd_image_updater" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/argocd-image-updater"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/argocd-image-updater/stack.hcl").inputs
-}
-
 unit "argocd_apps_bazarr" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/bazarr"
@@ -94,28 +86,12 @@ unit "argocd_apps_fleet" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/fleet/stack.hcl").inputs
 }
 
-unit "argocd_apps_github_actions_runner" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/github-actions-runner"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/github-actions-runner/stack.hcl").inputs
-}
-
 unit "argocd_apps_grafana" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/grafana"
   no_dot_terragrunt_stack = true
 
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/grafana/stack.hcl").inputs
-}
-
-unit "argocd_apps_grafana_alert_cleanup" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/grafana-alert-cleanup"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/grafana-alert-cleanup/stack.hcl").inputs
 }
 
 unit "argocd_apps_istio" {
@@ -342,15 +318,6 @@ unit "argocd_apps_tailscale" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailscale/stack.hcl").inputs
 }
 
-unit "argocd_apps_wazuh" {
-  # Preserve the encrypted state address while the scoped retirement is applied.
-  source                  = "./.catalog/units/live/retired-argocd-app"
-  path                    = "live/argocd-apps/wazuh"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/wazuh/stack.hcl").inputs
-}
-
 unit "aws_ssm_parameters" {
   source                  = "./.catalog/units/live/aws-ssm-parameters"
   path                    = "live/aws-ssm-parameters"
@@ -409,12 +376,6 @@ unit "operator_github_actions_role_policy" {
 unit "operator_state_bucket_encryption" {
   source                  = "./.catalog/units/operator/state-bucket-encryption"
   path                    = "operator/state-bucket-encryption"
-  no_dot_terragrunt_stack = true
-}
-
-unit "operator_legacy_kms_retirement" {
-  source                  = "./.catalog/units/operator/legacy-kms-retirement"
-  path                    = "operator/legacy-kms-retirement"
   no_dot_terragrunt_stack = true
 }
 

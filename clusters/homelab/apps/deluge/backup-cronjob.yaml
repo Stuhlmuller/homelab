@@ -79,13 +79,13 @@ spec:
                 - name: local-config
                   mountPath: /config
                   readOnly: true
-                - name: legacy-config
+                - name: backup-config
                   mountPath: /backup
           volumes:
             - name: local-config
               persistentVolumeClaim:
                 claimName: deluge-config-local
                 readOnly: true
-            - name: legacy-config
+            - name: backup-config
               persistentVolumeClaim:
                 claimName: deluge-config

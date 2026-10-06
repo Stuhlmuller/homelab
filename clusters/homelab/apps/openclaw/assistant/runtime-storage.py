@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Offline NFS cutover and read-only online backups for OpenClaw runtime state.
-
-Migration runs only as an init container behind the single-replica Recreate
-Deployment. Never invoke it against a running source Gateway. Workspace and
-configuration stay on the retained NAS claim; native Codex caches are rebuilt
-on the first cutover and thereafter persist on the local claim.
-"""
+"""Verify local OpenClaw runtime state and publish online SQLite backups."""
 import argparse
 from contextlib import closing
 import hashlib
@@ -59,69 +53,15 @@ def publish(staging, complete):
         os.close(descriptor)
 
 
-def migrate(source, target):
-    source, target = source.resolve(), target.resolve()
-    runtime = target / 'runtime'
-    marker = runtime / '.nfs-migration.json'
-    if runtime.exists():
-        if not marker.is_file() or json.loads(marker.read_text()).get('version') != 1:
-            raise RuntimeError('Existing local runtime has no verified migration marker; preserve it')
-        for db in owned_databases(runtime):
-            verify_database(db)
-        print('Verified existing local runtime; source not recopied', flush=True)
-        return
-    # Bootstrap writes this retained NAS marker before starting the new Gateway.
-    # After that point, an empty local disk needs restore, never the stale source.
-    if (source / '.backup-verified-for-2026.9.2').exists():
-        raise RuntimeError('Local runtime missing after cutover; restore a verified snapshot, not stale NAS state')
-    staging = target / '.runtime-migration.partial'
-    if staging.exists():
-        shutil.rmtree(staging)  # Only this helper-owned unpublished staging tree.
-    source_bytes = 0
-    for name in ('state', 'agents/main/agent'):
-        for parent, dirs, names in os.walk(source / name, followlinks=False):
-            if name.startswith('agents/') and 'codex-home' in dirs:
-                dirs.remove('codex-home')
-            source_bytes += sum((Path(parent) / item).stat().st_size for item in names
-                                if not (Path(parent) / item).is_symlink())
-    target.mkdir(parents=True, exist_ok=True)
-    if shutil.disk_usage(target).free < source_bytes * 2 + 2 * 1024**3:
-        raise RuntimeError('Local cutover needs two copies of state plus 2 GiB free')
-    staging.mkdir(parents=True, mode=0o700)
-    files = {}
-    try:
-        for name in ('state', 'agents/main/agent'):
-            src = source / name
-            dst = staging / name
-            if src.exists():
-                # The NAS Codex home is an older hidden cache, not the current emptyDir.
-                shutil.copytree(src, dst, symlinks=True,
-                                ignore=lambda directory, names: ['codex-home'] if name.startswith('agents/') else [])
-            else:
-                dst.mkdir(parents=True)
-        for path in sorted(staging.rglob('*')):
-            if path.is_symlink():
-                # SQLite aliases cannot silently keep a database on the NAS.
-                if path.name.endswith(('.sqlite', '.sqlite-wal', '.sqlite-shm', '.sqlite-journal')):
-                    raise RuntimeError('Refusing aliased SQLite state')
-                continue
-            if path.is_file():
-                relative = str(path.relative_to(staging))
-                checksum = digest(path)
-                if checksum != digest(source / relative):
-                    raise RuntimeError('Migration source changed; preserve source and retry offline')
-                files[relative] = checksum
-        for db in owned_databases(staging):
-            verify_database(db)
-        (staging / '.nfs-migration.json').write_text(json.dumps({
-            'version': 1, 'createdAt': int(time.time()), 'files': files}, sort_keys=True) + '\n')
-        # One directory rename publishes state, agents, and their receipt together.
-        publish(staging, runtime)
-        print(f'Published verified local runtime ({len(files)} files); NAS source retained', flush=True)
-    except BaseException:
-        # Keep partial evidence. The next init retry replaces only this unpublished tree.
-        raise
-
+def verify_runtime(target):
+    runtime = target.resolve() / 'runtime'
+    required = [runtime / 'state/openclaw.sqlite',
+                runtime / 'agents/main/agent/openclaw-agent.sqlite']
+    if not all(path.is_file() for path in required):
+        raise RuntimeError('Local runtime is missing; restore a verified snapshot before startup')
+    for database in owned_databases(runtime):
+        verify_database(database)
+    print('Verified authoritative local runtime databases', flush=True)
 
 
 def verify_mounts(runtime, mounted):
@@ -137,8 +77,9 @@ def verify_mounts(runtime, mounted):
 
 def backup(runtime, destination):
     runtime, destination = runtime.resolve(), destination.resolve()
-    if not (runtime / '.nfs-migration.json').is_file():
-        raise RuntimeError('Local runtime is not migration-verified')
+    if not all((runtime / relative).is_file() for relative in (
+            'state/openclaw.sqlite', 'agents/main/agent/openclaw-agent.sqlite')):
+        raise RuntimeError('Authoritative runtime database missing; refusing incomplete backup')
     timestamp = time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())
     destination.mkdir(parents=True, exist_ok=True, mode=0o700)
     staging = destination / f'.{timestamp}.partial'
@@ -181,13 +122,11 @@ def backup(runtime, destination):
 if __name__ == '__main__':
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=['migrate', 'backup', 'verify-mounts', 'checkpoint'])
+    parser.add_argument('operation', choices=['verify', 'backup', 'verify-mounts'])
     args = parser.parse_args()
-    if args.operation == 'migrate':
-        migrate(Path('/legacy/openclaw'), Path('/runtime-volume'))
+    if args.operation == 'verify':
+        verify_runtime(Path('/runtime-volume'))
     elif args.operation == 'verify-mounts':
         verify_mounts(Path('/runtime-volume/runtime'), Path('/data/openclaw'))
-    elif args.operation == 'checkpoint':
-        backup(Path('/runtime-volume/runtime'), Path('/data/openclaw-backups/pre-2026.9.2-runtime'))
     else:
         backup(Path('/runtime-volume/runtime'), Path('/data/openclaw-runtime-snapshots'))

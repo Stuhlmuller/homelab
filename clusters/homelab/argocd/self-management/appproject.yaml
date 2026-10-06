@@ -53,8 +53,6 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: fleet
     - server: https://kubernetes.default.svc
-      namespace: github-actions-runner
-    - server: https://kubernetes.default.svc
       namespace: harbor
     - server: https://kubernetes.default.svc
       namespace: istio-system

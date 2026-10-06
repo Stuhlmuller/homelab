@@ -187,9 +187,10 @@ The Prometheus `nodeExporter` subchart remains disabled, so these alerts do not
 claim host filesystem, SMART, or full operating-system memory telemetry. Add a
 reviewed node-exporter path before adding those bare-metal alert families.
 
-The provisioning file also deletes retired OctoBot- and Deluge-specific
-deployment availability rules so Grafana only evaluates the generic workload
-alerts after startup or an alerting provisioning reload.
+The provisioning file also deletes the retired Octelium UPnP alert and the
+OctoBot- and Deluge-specific deployment availability rules. Explicit
+`deleteRules` entries remove persisted rules from existing Grafana databases;
+removing them from `groups` alone leaves the old rules behind.
 
 The PostgreSQL rule reads `prober_probe_total` from the kubelet probe targets,
 so it does not depend on kube-state-metrics. It covers the stable StatefulSet

@@ -12,8 +12,6 @@ limits, and the interactive acceptance checklist. Profiles live in `profiles/`;
 `scripts/fleet-free-setup.py` applies them through supported Free APIs. These
 application/device settings are a repository operator step after protected merge,
 not Kubernetes resources that Argo CD can apply itself.
-The retired iPhone/iPad passcode baseline is retained only for removal; the
-operator cannot reinstall it.
 
 The [WireGuard/AirVPN catalog and operator](WIREGUARD-AIRVPN.md) cover official
 Mac and iPhone/iPad app downloads, a Mac installation policy, and private

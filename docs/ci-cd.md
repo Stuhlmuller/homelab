@@ -170,6 +170,10 @@ contract for Grafana.
   reuse `IaC/root.hcl` so `path_relative_to_include()` points each fake unit at
   the original backend key. Synthetic Kubernetes and Helm providers reuse the
   canonical root kubeconfig instead of relying on implicit local defaults.
+  The synthetic configuration uses the owning modules' `aws_kms.main` and
+  `aes_gcm.main` encryption identities with the root state key and region,
+  enforcing encryption for both state and saved plans. Backend SSE alone cannot
+  decrypt OpenTofu client-encrypted state.
   Pull request plans list the remote-state resources
   and save a destroy plan without rendering potentially sensitive values.
   Production apply lists the same state resources, checks the destroy plan
@@ -677,9 +681,8 @@ assignment changes retain the reviewed operator Terraform path because the CI
 identity has no corresponding tenant-wide write grants. When the identity is
 not configured, production apply skips
 that phase only if the unapplied range did not change the AzureAD stack or its
-shared root configuration. The comparison ignores only the forbidden legacy
-root plan-output directive; every other root source change fails
-closed and requires the credentials so identity drift is not silently ignored.
+shared root configuration. Every root source change requires the credentials
+so identity drift is not silently ignored.
 
 The `Entra OIDC Verify` dispatch takes an exact current-main SHA and runs
 refresh-enabled no-change plans for all four Entra units under both protected

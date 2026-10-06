@@ -12,11 +12,14 @@ override_data {
   values = { account_id = "123456789012" }
 }
 
+override_data {
+  target = data.aws_kms_key.existing
+  values = { arn = "arn:aws:kms:us-west-2:123456789012:key/test" }
+}
+
 variables {
-  aws_region           = "us-west-2"
-  create_kms_key       = true
-  kms_key_id           = "alias/homelab-test"
-  parameter_kms_key_id = null
+  aws_region = "us-west-2"
+  kms_key_id = "alias/homelab-test"
   parameters = {
     "/homelab/test/encryption-key" = {
       description = "Test hexadecimal key."

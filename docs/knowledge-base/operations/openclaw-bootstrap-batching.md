@@ -1,6 +1,6 @@
 # OpenClaw bootstrap batching
 
-Related: [[openclaw-assistant-2026-09-05]], [[validation-gates]],
+Related: [[openclaw-runtime-state]], [[validation-gates]],
 [[architecture/storage-and-state]].
 
 ## Measured startup cost
@@ -34,7 +34,7 @@ Bootstrap groups the existing 16 assignments into six batches when both
 optional credentials are populated. Without either credential, it uses three.
 The legacy hook-token unset, assistant bootstrap, config validation, and Discord
 plugin enable/check retain their ordering. Those commands can still write
-configuration separately. Backup, migration, doctor, and session-preservation
+configuration separately. Current backup, database integrity and mount-identity
 gates remain in place.
 
 Batch input is limited to 1 MiB and written to a private directory under `/tmp`,
@@ -63,14 +63,9 @@ Do not manually restart or modify the Pod to shorten the measurement.
 Sources: `clusters/homelab/apps/openclaw/values.yaml`, the app README, and the
 two configuration validation scripts under `scripts/ci/`.
 
-The September 11 integration preserved the then-pinned 2026.9.2 image, retained
-local runtime storage, interrupted-backup recovery, and doctor ordering. Its
-native fixture required that exact deployed image version; historical
-2026.9.1 evidence did not validate the 2026.9.2 integration.
-
 The 2026.9.5 integration updates the native gate's exact version, `.mjs` audit
 module lookup, and explicit `agents.entries.main` fixture required by that
 schema. It preserves the 3600-second interactive budget and earlier storage
 and upgrade gates. Focused bootstrap checks and the container schema contract
 were verified locally; the new Linux native CI run remains required before
-merge. Earlier 2026.9.2 receipts do not prove 2026.9.5 batch behavior.
+merge.

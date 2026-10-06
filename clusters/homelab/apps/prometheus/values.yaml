@@ -3,14 +3,10 @@ grafana:
 nodeExporter:
   enabled: false
 kube-state-metrics:
-  podAnnotations:
-    homelab.rst.io/recovery-revision: "2026-08-21"
   resources:
     requests:
       memory: 128Mi
 prometheusOperator:
-  podAnnotations:
-    homelab.rst.io/recovery-revision: "2026-08-21"
   resources:
     requests:
       memory: 128Mi

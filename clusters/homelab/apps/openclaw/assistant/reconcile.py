@@ -48,31 +48,6 @@ def command(job, destination):
     ]
 
 
-def retiring_ids(existing, retired):
-    indexed = {job["id"]: job for job in existing}
-    result = []
-    for expected in retired:
-        job = indexed.get(expected["id"])
-        if job is None:
-            continue
-        if job.get("name") != expected["name"]:
-            raise RuntimeError("legacy job identity changed; preserve it for review")
-        if job.get("enabled"):
-            result.append(job["id"])
-    return result
-
-
-def recovering_ids(existing):
-    """Recover only the observed pre-fix auth outage; preserve later/operator pauses."""
-    return [job["id"] for job in existing
-            if job.get("declarationKey") == "homelab:assistant:v1:homelab-health-watch"
-            and job.get("enabled") is False
-            and job.get("state", {}).get("lastErrorReason") == "auth"
-            and job.get("state", {}).get("autoDisabled", {}) == {
-                "reason": "consecutive-failures", "atMs": 1788650230917,
-                "consecutiveErrors": 10}]
-
-
 def reconcile():
     try:
         destination = owner_destination(json.loads(CONFIG.read_text()))
@@ -99,15 +74,6 @@ def reconcile():
         try:
             for job in jobs:
                 run(command(job, destination))
-            # Retire only the two observed overlapping jobs, after replacements
-            # exist. Keep their history and every unrelated routine untouched.
-            current = json.loads(run(["openclaw", "automations", "list", "--all", "--json",
-                                      "--timeout", "20000"]))
-            for job_id in recovering_ids(current["jobs"]):
-                run(["openclaw", "automations", "enable", job_id, "--timeout", "20000"])
-            retired = json.loads((BUNDLE / "retired-jobs.json").read_text())
-            for job_id in retiring_ids(current["jobs"], retired):
-                run(["openclaw", "automations", "disable", job_id, "--timeout", "20000"])
             status("ready", "All three managed homelab automations reconciled")
             print("All three managed homelab automations reconciled", flush=True)
             return

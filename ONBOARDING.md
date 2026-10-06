@@ -432,10 +432,8 @@ talosctl validate --config .talos/worker.yaml --mode metal --strict
 talosctl validate --config /private/tmp/worker-zimaboard-2.yaml --mode metal --strict
 ```
 
-If this checkout is incomplete or a legacy validation helper is unavailable,
-record that fact before proceeding. During early onboarding, a stripped checkout
-was missing the project flake and live survey helper, so Talos validation and
-read-only node inspection were used as the live safeguards.
+If a validation helper is unavailable, record that fact and run the applicable
+Talos validation and read-only node inspection before proceeding.
 
 ## Maintenance-Mode Inspection
 
@@ -492,7 +490,7 @@ Applied configuration without a reboot
 That is acceptable. The node should leave the temporary DHCP address and begin
 answering on its static IP.
 
-## Transition Checks
+## Verify Machine Configuration
 
 After apply, the old temporary address should stop answering:
 

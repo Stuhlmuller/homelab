@@ -45,7 +45,7 @@ browser deployment/login, and hardware/budget/pickup criteria remain blockers.
 Instructions are not proof of integrations or successful actions. The README
 records acceptance and rollback; complete those before claiming live capability.
 
-See [[workloads/inventory]] and [[operations/openclaw-assistant-2026-09-05]].
+See [[workloads/inventory]] and [[operations/openclaw-runtime-state]].
 
 September 21 execution-timeout repair: read-only logs showed an interactive
 Discord turn stopped exactly 600 seconds after startup with `codex app-server
@@ -84,6 +84,6 @@ The cold rollout took about 21 minutes: toolbox installation took 8m22s and
 bootstrap 10m02s. Argo terminated the sync operation after 15 minutes, then
 reported Synced/Healthy when startup completed. Retain both observations when
 assessing rollout success. This extends the existing
-[[openclaw-assistant-2026-09-05#Startup performance finding]]; profile or batch
-configuration writes through reviewed code, preserve migration/backup gates,
+[[openclaw-bootstrap-batching#Measured startup cost]]; profile or batch
+configuration writes through reviewed code, preserve backup and runtime gates,
 and evaluate declared rollout budgets against the measured startup bound.

@@ -31,14 +31,6 @@ terraform {
   }
 }
 
-removed {
-  from = argocd_application.this
-
-  lifecycle {
-    destroy = false
-  }
-}
-
 locals {
   sources = try(var.manifest.spec.sources, [])
 

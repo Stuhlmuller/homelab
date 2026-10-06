@@ -55,8 +55,9 @@ normalizes it away and leaves the declared Application OutOfSync.
 Use the app file's `inputs.dependencies` for registration ordering: sibling app names or an
 explicit relative unit reference, matching existing entries. A `dependency`
 block is needed only when consuming outputs. Registration order does not prove
-runtime readiness. Retired units must retain the reviewed retirement workflow;
-do not turn a retirement placeholder back into a managed Application.
+runtime readiness. Remove unused registrations from the explicit stack after
+verifying their resources are absent or safe to delete. The protected workflow
+discovers removed units and checks their saved destroy plans before applying.
 
 ## Generate and validate
 

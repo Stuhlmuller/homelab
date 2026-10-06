@@ -9,9 +9,8 @@ Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt
 units as the source of truth when they disagree with this note.
 
 Runtime secret contract: declared SSM parameters use AWS-managed `alias/aws/ssm`.
-Application secret names and values are unchanged. Historical secret/state
-recovery copies and the old-key retirement status are recorded in
-[[operations/kms-cost-audit-2026-09-05]].
+Secret/state recovery copies and encryption ownership are recorded in
+[[operations/state-encryption]].
 
 ## Import Note
 
@@ -49,8 +48,6 @@ explicit installation; the baseline has no automatic assignment or drift repair.
 `mac-pilot` uses the new baseline with the existing Entra SSO profile.
 Verify the phone's assignment is absent and the new Mac profile remains after
 the old one is removed; [[operations/validation-gates]] owns live evidence.
-The iPhone/iPad passcode baseline is retired; its operator action permits only
-removal and preserves enrollment and unrelated profiles.
 The console enterprise app permits only an individually assigned, precreated
 administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security
@@ -73,7 +70,6 @@ and device connection tests.
 | `platform-crossplane`   | support                   | `crossplane-system`     | `clusters/homelab/platform/crossplane`        | `IaC/live/argocd-apps/platform-crossplane`   | Argo CD bootstrap                                           |
 | `octelium-storage`      | support                   | `octelium-storage`      | `clusters/homelab/apps/octelium-storage`      | `IaC/live/argocd-apps/octelium-storage`      | external-secrets, platform-storage                          |
 | `harbor`                | private OCI registry      | `harbor`                | `clusters/homelab/apps/harbor`                | `IaC/live/argocd-apps/harbor`                | external-secrets, cert-manager, Istio, storage, Prometheus  |
-| `github-actions-runner` | retired/prune placeholder | `github-actions-runner` | `clusters/homelab/apps/github-actions-runner` | `IaC/live/argocd-apps/github-actions-runner` | none                                                        |
 | `media-postgres`        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`        | `IaC/live/argocd-apps/media-postgres`        | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres`          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`          | `IaC/live/argocd-apps/n8n-postgres`          | external-secrets, platform-storage                          |
 
@@ -94,8 +90,7 @@ credentials yet.
 
 `octelium-storage` keeps its PostgreSQL resource store and Redis AOF state on
 retained NFS. A daily CronJob writes a verified 14-day PostgreSQL logical
-archive to a separate retained NFS claim. The archive supports later migration
-and logical recovery, but it shares the QNAP failure domain and has not passed a
+archive to a separate retained NFS claim. The archive supports logical recovery, but it shares the QNAP failure domain and has not passed a
 restore drill. The daily isolated PostgreSQL drill has a repository-owned
 candidate excluded from live GitOps and suspended; activation and scheduled
 success remain required. Redis still lacks an independent
@@ -105,9 +100,9 @@ backup.
 windows plus a 120-second termination grace period, but active data now uses a
 retained local volume pinned to `acer`. Readiness and liveness execute a real
 SQL query.
-The clean writable StatefulSet has no active NFS mount and uses a one-time
-old-writer fence. A nightly CronJob writes verified 14-day logical backups to
-the former NFS claim; the sibling recovery overlay fences both before restore.
+The active StatefulSet has no NFS mount. A nightly CronJob writes verified
+14-day logical backups to the retained NFS claim; the sibling recovery overlay
+fences writers before restore.
 
 `n8n-postgres` recovered one replica after a fenced, completion-marked hook
 removed its 2026-08-03 stale lock. The one-shot hook is removed; its explicit
@@ -118,19 +113,17 @@ execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
 
 Istio's API gateway now receives outbound Tunnel traffic: browser gRPC-Web
-over HTTPS and native TLS gRPC through a separate TCP carrier. The retired
-UPnP job is suspended and its Grafana lease alert paused. The production
-Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
+over HTTPS and native TLS gRPC through a separate TCP carrier. The production
+Tunnel workflow owns public DNS.
 
 ## Requested Applications
 
 | App                    | Namespace          | GitOps path                                     | Terragrunt path                             | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Depends on                                                                                                          |
 | ---------------------- | ------------------ | ----------------------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | `affine`               | `affine`           | `clusters/homelab/apps/affine`                  | `IaC/live/argocd-apps/affine`               | Suspended at zero replicas with PostgreSQL and Redis for memory capacity; PVCs retained; AFFiNE `0.27.0`; PostgreSQL 16 with pgvector, an explicit 20 Gi retained claim, NFS-aware checkpoint/WAL tuning, a 30-minute probe recovery window, and 120-second shutdown grace; the 2026-07-20 fenced stale-lock recovery is complete and its one-shot hook has been removed; ephemeral Redis, with persistence disabled; former AOF claim retained, now unmounted; migration init container with `Recreate` ordering; 50 Gi blob storage; retained config; generated ECDSA signing key; disabled public signup; disabled Copilot/BYOK; and `https://affine.stinkyboi.com` through anonymous Octelium transport with AFFiNE-owned authentication for web and native clients                                                       | external-secrets, cert-manager, istio, octelium, octelium-public, platform-storage                                  |
-| `argocd-image-updater` | `argocd`           | `clusters/homelab/apps/argocd-image-updater`    | `IaC/live/argocd-apps/argocd-image-updater` | retirement ConfigMap only; the controller, selector CR, and credential consumer are retired, while the Application remains temporarily for safe pruning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | none                                                                                                                |
 | `external-secrets`     | `external-secrets` | `clusters/homelab/apps/external-secrets`        | `IaC/live/argocd-apps/external-secrets`     | controller state only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | platform-dns                                                                                                        |
 | `cert-manager`         | `cert-manager`     | `clusters/homelab/apps/cert-manager`            | `IaC/live/argocd-apps/cert-manager`         | cert-manager `v1.20.3`; controller, webhook, CA injector, ACME solver, and startup API check images digest-pinned; controller-managed certificates                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | external-secrets                                                                                                    |
-| `istio`                | `istio-system`     | `clusters/homelab/apps/istio`                   | `IaC/live/argocd-apps/istio`                | controller state with homelab-sized `512Mi` Istiod and `256Mi`-per-node ztunnel memory requests; ambient CNI and ztunnel are IPv4-only to match the cluster Pod/Service CIDRs, and the CNI pod template carries an explicit config rollout annotation; also owns the dedicated `octelium-api-ingressgateway` release, SNI-tolerant TLS `Gateway`, and API-only `VirtualService` on NodePort `30443`; the API gateway receives browser HTTPS and native TCP Tunnel traffic; the retired `octelium-api-upnp` CronJob is suspended                                                                                                                                                                                                                                                                                               | cert-manager                                                                                                        |
+| `istio`                | `istio-system`     | `clusters/homelab/apps/istio`                   | `IaC/live/argocd-apps/istio`                | controller state with homelab-sized `512Mi` Istiod and `256Mi`-per-node ztunnel memory requests; ambient CNI and ztunnel are IPv4-only to match the cluster Pod/Service CIDRs, and the CNI pod template carries an explicit config rollout annotation; also owns the dedicated `octelium-api-ingressgateway` release, SNI-tolerant TLS `Gateway`, and API-only `VirtualService` on NodePort `30443`; the API gateway receives browser HTTPS and native TCP Tunnel traffic                                                                                                                                                                                                                                                                                                                                                     | cert-manager                                                                                                        |
 | `tailscale`            | `tailscale`        | `clusters/homelab/apps/tailscale`               | `IaC/live/argocd-apps/tailscale`            | temporary Talos/LAN/egress fallback; operator plus exit-node proxy fixed at `1.102.3`; no persistent application state                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | external-secrets                                                                                                    |
 | `octelium-cluster`     | `istio-system`     | `clusters/homelab/apps/octelium-cluster`        | `IaC/live/argocd-apps/octelium-cluster`     | Istio front-proxy route for the self-hosted Octelium Cluster domain, portal, API hostnames, and direct Enterprise console hostname, plus an HTTP/2 upstream `DestinationRule` so Octelium CLI gRPC calls keep response trailers, and a scoped console login-return EnvoyFilter; the Octelium runtime namespace and workloads are installed by `scripts/octelium-cluster-bootstrap.sh` through `octops`, and the wrapper labels that namespace for privileged data-plane pods                                                                                                                                                                                                                                                                                                                                                  | istio, platform-multus, octelium-storage                                                                            |
 | `octelium-public`      | `octelium-public`  | `clusters/homelab/apps/octelium-public`         | `IaC/live/argocd-apps/octelium-public`      | stateless Cloudflare Tunnel connector for public Octelium browser control-plane and portal routes, app clientless access, the Enterprise console, and the policy-bound clientless CI Kubernetes hostname `kubernetes-api-ci.stinkyboi.com`; reads `/homelab/octelium/cloudflare-tunnel-credentials-json` and forwards public app hostnames such as `grafana.stinkyboi.com` directly to the Octelium ingress dataplane; browser gRPC-Web uses the HTTPS API Tunnel route; native TLS gRPC uses the separate TCP-over-WebSocket Tunnel carrier                                                                                                                                                                                                                                                                                  | external-secrets, istio, octelium-cluster                                                                           |
@@ -159,11 +152,10 @@ Tunnel workflow owns public DNS and removes the obsolete WAN origin rules.
 
 Langfuse web allows ten minutes for database migrations before liveness checks
 begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
-The post-recovery desired state restores web and worker to one replica
-and removes the one-shot Job/ConfigMap, gated on private clean migration 48,
-schema and receipt verification. Datastores and caller settings are unchanged;
-the separate 1Gi `langfuse-migration-recovery` NFS claim remains managed and
-retained. Restored replicas do not establish UI or telemetry acceptance; see
+Web and worker each declare one replica; their schema initialization remains
+part of normal application startup. The separate 1Gi
+`langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
+Pod readiness does not establish UI or telemetry acceptance; see
 [[../architecture/ai-observability]].
 
 Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
@@ -279,13 +271,11 @@ data is disposable node-local state. Cluster limits allow four stored and one
 active workspace per user, including interactive users. Live execution and
 negative-policy acceptance remain pending; see [Cordium CI](../../cordium-ci.md).
 
-### OpenClaw workspace-state readiness
+### OpenClaw runtime readiness
 
-After the successful session import and coordinator ownership repair, the
-gateway exposed an additional legacy workspace-state migration gate. Bootstrap
-now declares a one-time pinned doctor repair after backup verification and
-configuration, with session identity verification before completion. Live
-gateway/Discord recovery remains pending.
+Bootstrap verifies the current offline backup, existing SQLite databases and
+direct local mounts before configuration. Missing databases require a verified
+restore. See [[../operations/openclaw-runtime-state]].
 
 ## Private OCI Packages
 
@@ -300,14 +290,8 @@ New builds use a local signing Job and the cert-manager-owned
 `harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [[../operations/harbor-oci]] for secret,
-networking, migration and acceptance boundaries. Live readiness remains subject
+networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
-
-## Deferred workloads
-
-Wazuh SIEM is removed from active desired state pending a hardware upgrade.
-See [[../operations/wazuh-siem]] for the historical implementation and
-restoration requirements.
 
 ## Recovery inventory (HOME-2)
 

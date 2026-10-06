@@ -78,15 +78,6 @@ terragrunt_stack_unit_paths_at_ref() {
   terragrunt_stack_units_at_ref "$1" | sed -n 's#^  path[[:space:]]*=[[:space:]]*"\([^"]*\)".*$#IaC/\1#p'
 }
 
-terragrunt_normalized_root_source_at_ref() {
-  local ref="$1"
-  local root_source
-  local legacy_plan_block=$'terraform {\n  extra_arguments "plan" {\n    commands  = ["plan"]\n    arguments = ["-out", "plan.out"]\n  }\n}\n\n'
-
-  root_source="$(git show "${ref}:IaC/root.hcl")" || return 1
-  printf '%s\n' "${root_source/"$legacy_plan_block"/}"
-}
-
 terragrunt_azuread_stack_changed() {
   local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
   local head_sha="${APPLY_HEAD_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_HEAD_REF:-${GITHUB_SHA:-HEAD}}}"
@@ -124,8 +115,8 @@ terragrunt_azuread_stack_changed() {
     return 0
   fi
 
-  if ! base_root_source="$(terragrunt_normalized_root_source_at_ref "$base_sha")" ||
-    ! head_root_source="$(terragrunt_normalized_root_source_at_ref "$head_sha")"; then
+  if ! base_root_source="$(git show "${base_sha}:IaC/root.hcl")" ||
+    ! head_root_source="$(git show "${head_sha}:IaC/root.hcl")"; then
     return 0
   fi
 
@@ -133,7 +124,7 @@ terragrunt_azuread_stack_changed() {
 }
 
 # The AzureAD collection contains both application registrations and the
-# legacy pilot user. Unrelated operator-only modules must not make a normal
+# device pilot user. Unrelated operator-only modules must not make a normal
 # deployment plan or apply that collection wholesale.
 terragrunt_azuread_plan_inputs_changed() {
   local base_sha="${APPLY_BASE_SHA:-${TERRAGRUNT_EFFECTIVE_FILTER_BASE_REF:-}}"
@@ -412,21 +403,52 @@ generate "deleted_unit_destroy_config" {
   if_exists = "overwrite_terragrunt"
   contents  = <<TF
 terraform {
+  required_version = ">= 1.10"
+
   required_providers {
     aws = {
-      source = "hashicorp/aws"
+      source  = "hashicorp/aws"
+      version = "6.56.0"
     }
     azuread = {
-      source = "hashicorp/azuread"
+      source  = "hashicorp/azuread"
+      version = "3.9.0"
     }
     helm = {
-      source = "hashicorp/helm"
+      source  = "hashicorp/helm"
+      version = "3.2.0"
     }
     kubernetes = {
-      source = "hashicorp/kubernetes"
+      source  = "hashicorp/kubernetes"
+      version = "3.2.1"
     }
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
+      version = "3.9.0"
+    }
+  }
+
+  # Match the key-provider identity and method used by the owning modules.
+  # Backend SSE alone cannot read OpenTofu client-encrypted state.
+  encryption {
+    key_provider "aws_kms" "main" {
+      kms_key_id = "${local.root_config.locals.kms_key_id}"
+      key_spec   = "${local.root_config.locals.kms_key_spec}"
+      region     = "${local.root_config.locals.kms_region}"
+    }
+
+    method "aes_gcm" "main" {
+      keys = key_provider.aws_kms.main
+    }
+
+    state {
+      method   = method.aes_gcm.main
+      enforced = true
+    }
+
+    plan {
+      method   = method.aes_gcm.main
+      enforced = true
     }
   }
 }

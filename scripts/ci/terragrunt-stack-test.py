@@ -145,6 +145,35 @@ inputs = { defaults = local.shared.argocd_defaults }
                          "IaC/live/argocd-apps/retired")
         self.shell("! terragrunt_azuread_stack_changed", head)
 
+    def test_deleted_app_preserves_backend_and_state_encryption_contract(self):
+        for name in ("root.hcl", "kubernetes-provider.hcl"):
+            shutil.copyfile(ROOT / "IaC" / name, self.root / "IaC" / name)
+        # Distinct fixture settings prove deletion follows state encryption,
+        # never the runtime-secret key or its region.
+        root = self.root / "IaC/root.hcl"
+        root.write_text(root.read_text().replace("alias/homelab-opentofu", "alias/fixture-state")
+                        .replace('state_region       = "us-east-1"', 'state_region       = "us-east-2"'))
+        self.stack.write_text(self.locals + unit("kept") + self.azure)
+        head = self.commit()
+        self.shell('terragrunt_create_deleted_unit_destroy_stack "$PWD/destroy" '
+                   'IaC/live/argocd-apps/retired', head)
+        rendered = json.loads(run("terragrunt", "--log-disable", "render", "--json",
+                                  "--write=false", "--no-color",
+                                  cwd=self.root / "destroy/IaC/live/argocd-apps/retired"))
+        self.assertEqual(rendered["remote_state"]["config"]["key"],
+                         "IaC/homelab/live/argocd-apps/retired/terraform.tfstate")
+        generated = rendered["generate"]["deleted_unit_destroy_config"]["contents"]
+        self.assertIn('key_provider "aws_kms" "main"', generated)
+        self.assertIn('kms_key_id = "alias/fixture-state"', generated)
+        self.assertIn('region     = "us-east-2"', generated)
+        self.assertNotIn("alias/aws/ssm", generated)
+        self.assertIn('method "aes_gcm" "main"', generated)
+        self.assertIn("keys = key_provider.aws_kms.main", generated)
+        self.assertEqual(generated.count("method   = method.aes_gcm.main"), 2)
+        self.assertEqual(generated.count("enforced = true"), 2)
+        self.assertIn('state {', generated)
+        self.assertIn('plan {', generated)
+
     def test_azure_changes_still_require_azure_credentials(self):
         self.stack.write_text(self.stack.read_text().replace('name = "identity"',
                                                             'name = "changed-identity"'))

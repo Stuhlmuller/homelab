@@ -3,11 +3,11 @@
 The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
 the existing S3 state bucket's encryption configuration, enabling S3 Bucket
 Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
-[[operations/kms-cost-audit-2026-09-05]] for evidence, rollout, and rollback.
+[[operations/state-encryption]] for configuration, recovery, and rollback.
 
 The same bucket holds confidential AWS-managed-encryption recovery archives
-for 128 SSM versions and 60 legacy homelab state versions under
-`IaC/homelab/migrations/`. Preserve these when retiring old KMS keys. Archive
+for 128 SSM versions and 60 old homelab state versions under
+`IaC/homelab/migrations/`. Preserve these recovery copies. Archive
 objects contain secret material and must never be copied into this public repo.
 
 Tags: #architecture #storage #stateful
@@ -123,15 +123,12 @@ the former NFS data claim remains retained for verified nightly logical backups
 at 03:00 `America/Los_Angeles` with 14-day retention. The local volume removes
 QNAP latency from the live database but couples recovery to the single
 control-plane node and its system disk. GitOps explicitly declares the retained
-`data-media-postgres-0` claim with `Prune=false,Delete=false`; the inactive
-legacy StatefulSet keeps its compatible claim template for rollback. A clean
-bootstrap therefore creates the backup target even while that StatefulSet stays
-at zero replicas.
+`data-media-postgres-0` claim with `Prune=false,Delete=false`, so clean bootstrap
+creates the backup target independently of the active StatefulSet.
 
 Media-library paths are intentionally separate from app state. Deluge, Radarr,
 and Sonarr keep active app config on retained local volumes pinned to
-`zimaboard-0`, while using retained NFS claims as migration sources and nightly
-archive targets. Their media paths still use static PV/PVC pairs against the
+`zimaboard-0`, while using retained NFS claims as nightly archive targets. Their media paths still use static PV/PVC pairs against the
 QNAP `/media` export for downloads, movies, and TV library data. Read-only
 `showmount -e 10.1.0.2` verified `/media` and `/homelab` on 2026-05-26.
 
@@ -173,34 +170,6 @@ ready, but they must not be treated as production-ready until:
 
 ## Open Audit Findings
 
-- **Status:** config recovery verified; session-warning fix staged
-- **Area:** OpenClaw upgrade / config and session migration
-- **Evidence:** On 2026-09-04, OpenClaw 2026.8.2 bootstrap repeatedly rejected
-  four retired config keys before Discord installation and session migration.
-  `clusters/homelab/apps/openclaw/values.yaml` now migrates those keys after
-  the verified offline backup and preserves legacy model restrictions explicitly.
-  It also stops writing retired `hooks.maxBodyBytes`. PR #953 rolled out on
-  September 5: both archive verification passes succeeded, retired keys were
-  absent, the model policy was present, and Discord 2026.8.2 installed.
-  Session dry-run then stopped on one missing healthcheck transcript: 19 of 20
-  entries validated, with 1,089 events. Upstream treats `transcript_missing` as
-  an import warning and preserves metadata, but its CLI returns exit 1 for all
-  issues. Bootstrap now accepts only that exact known agent/session warning,
-  retains private JSON reports, and rejects all other issues. No live index
-  entries or transcripts were manually altered.
-- **Validation:** A synthetic legacy config failed under the exact 2026.8.2
-  CLI before migration and passed afterward. The actual bootstrap migration
-  has preservation, idempotence, and invalid-input checks in
-  `scripts/ci/openclaw-config-check.py`. The same check exercises the session
-  report gate against unexpected warnings, failure exits, mismatched reports,
-  and malformed JSON. An exact 2026.8.2 CLI fixture returned exit 1 for
-  dry-run and import with a missing transcript, preserved both session metadata
-  entries, and passed post-import inspection. Full static validation, 280
-  rendered policy checks, shell syntax, and server-side diff passed.
-- **Next step:** Roll out through GitOps, require successful bootstrap and
-  session migration, then verify gateway and Discord readiness. Preserve the
-  pre-upgrade archive and migration originals until the 24-hour soak passes.
-
 - **Status:** open
 - **Area:** storage / backup and retained data
 - **Evidence:** Read-only inspection on 2026-08-27 found Prometheus and
@@ -236,12 +205,12 @@ its retained NAS claim, but its global state, per-agent SQLite databases, and
 native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The
 platform-storage application owns its StorageClass and PV;
 the namespaced OpenClaw application owns its PVC. This permits
-local WAL and preserves native bindings across Pod replacement. A one-time
-verified offline copy retains the NAS source. Daily SQLite online backups keep
+local WAL and preserves native bindings across Pod replacement. Daily SQLite
+online backups keep
 seven database snapshots on the NAS. The local hostPath survives Pod replacement
 but not node-disk loss; there is no automatic node failover and recovery can lose
 writes since the last backup. Native caches are reconstructed on disaster restore.
-See the OpenClaw app README and [[operations/openclaw-assistant-2026-09-05]].
+See the OpenClaw app README and [[operations/openclaw-runtime-state]].
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`
@@ -251,14 +220,9 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
-The incident-specific Langfuse migration replay uses a retained 1Gi
-`langfuse-migration-recovery` claim for verified DDL and full migration history,
-only after proving all nine ingestion tables empty. It preserves private
-artifacts without pruning; both source and copy remain on the same QNAP.
-`recovery-pvc.yaml` keeps the same claim managed after removal of the one-shot
-Job and generated ConfigMap. Resume and rollback must not remove this claim.
-This is not an automatic backup or verified restore. See the
-[one-shot recovery contract](../../../clusters/homelab/apps/langfuse/README.md#one-shot-empty-schema-replay).
+The retained 1Gi `langfuse-migration-recovery` claim holds private recovery
+artifacts. Keep it independently of application rollout; it is not an automatic
+backup or an independently verified restore.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
 Multica PostgreSQL now follows the recovered NFS database probe pattern:
@@ -313,9 +277,7 @@ termination grace remain.
 `media-postgres` uses 30-minute startup and runtime liveness windows plus a
 120-second termination grace period. Its readiness and liveness probes execute
 `SELECT 1` instead of treating socket acceptance as usable database service.
-The writable `media-postgres-local` StatefulSet mounts only local storage; a
-one-time PID/socket fence prevents it from overlapping the staged writer. The
-legacy NFS-backed StatefulSet stays declared at zero replicas, and the sibling
+The active `media-postgres-local` StatefulSet mounts only local storage. The
 `media-postgres-recovery` overlay fences the writer and backup schedule before
 a logical restore. See `clusters/homelab/apps/media-postgres/README.md` for the
 failure mode and operator response.
@@ -329,8 +291,8 @@ Its availability is required for Octelium service publication, including the
 CI Kubernetes API tunnel. A daily CronJob writes PostgreSQL globals without
 password hashes, a custom-format database dump, and checksums to the separate
 retained `octelium-postgres-backup` NFS claim. It verifies the dump before
-atomic publication and retains 14 days. This is a logical recovery and
-migration checkpoint, not an off-NAS backup. The proposed restore drill lives in
+atomic publication and retains 14 days. This is a logical recovery checkpoint,
+not an off-NAS backup. The proposed restore drill lives in
 the separate `octelium-storage/restore-drill-candidate/` kustomization, excluded
 from the live application and additionally suspended. It declares
 a daily 04:45 UTC schedule after the backup's full late-start/runtime window and
@@ -439,27 +401,10 @@ failures so stale catalog state cannot trigger a silent redownload.
 
 ## OpenClaw identity coordinator ownership
 
-September 5 read-only inspection found QNAP-backed OpenClaw paths reported as
-UID/GID `65534`; the 2026.8.2 runtime uses UID `1000`. Its new private
-coordinator ownership check blocked gateway startup after session migration
-completed successfully. The repository mounts a shared local `emptyDir` at
-`/data/openclaw/tmp/openclaw-1000`, initialized to `1000:1000`, mode `0700`.
-Only coordinator locks move off NFS; identity/configuration files and the verified
-pre-upgrade backup remain on the NAS PVC; the later runtime migration below moves
-session/state databases local. This requires one
-`Recreate` Pod and all writers using its shared mount. Never start an external
-writer against that PVC with a separate coordinator. See the OpenClaw README
-for verification and rollback limits; live recovery remains pending rollout.
-
-### OpenClaw remaining legacy-state upgrade
-
-The 2026.8.2 session import does not migrate workspace setup/attestation state.
-A separate bootstrap doctor gate verifies the existing pre-upgrade archive,
-runs pinned upstream noninteractive repairs, rechecks imported session
-identities, and validates configuration before writing its own completion
-marker. Private doctor reports retain latest plus previous. State restoration
-requires the archive and compatible software, not merely a manifest revert.
-See the OpenClaw README; gateway readiness is still a live acceptance gate.
+OpenClaw uses a shared Pod-local coordinator directory owned by UID/GID `1000`,
+mode `0700`, because the NFS export reports anonymous ownership. Persistent
+state and recovery limits are documented in [[operations/openclaw-runtime-state]].
+Keep the single-replica `Recreate` strategy and same-Pod writer boundary.
 
 The inactive Octelium restore candidate places its kubelet termination message
 under the image's root-only `/root` directory and refuses backup reads if that
@@ -470,33 +415,13 @@ the message filename alone does not close that output channel. Synthetic Talos
 activation proof must verify the inaccessible parent and an empty terminated
 message under the exact published image. See the [kubelet mount implementation](https://github.com/kubernetes/kubernetes/blob/v1.34.1/pkg/kubelet/kuberuntime/kuberuntime_container.go#L454-L483).
 
-### Monitoring storage migration design
+### Monitoring storage recovery gap
 
-[[../operations/monitoring-storage-migration-draft-2026-09-06]] records the
-pinned operator's new-claim migration path, separate writer fences, restore
-proof, capacity reservations, and rollback. Its September 7 refresh records
-deployed memory requests, current consumers, restored PVC telemetry, and the
-remaining capacity/control-plane recovery gaps. Those observations do not
-establish a monitoring-data restore proof. Healthy target hardware remains
-unselected; the draft does not authorize use of Acer's unverified storage or
-reduction of existing retention.
+Prometheus and Alertmanager remain on NFS without a completed restore proof.
+A replacement storage target still needs healthy hardware, measured capacity,
+verified backups, and an isolated restore before any reviewed rollout. Do not
+use Acer's unverified storage or reduce retention to bypass those requirements.
 
-### Completed media-copy Job retirement
-
-September 12 read-only inspection confirmed `media-downloads-migration`,
-`media-movies-migration`, and `media-tv-migration` completed successfully in May
-2026. Their existing BusyBox Pod templates cannot be updated in place. The
-three media applications now own bounded directory-only Jobs; they
-retain all claims and never mount or copy from legacy source claims. Per-Job
-`Force=true,Replace=true` permits image upgrades without immutable Job updates.
-Argo CD prunes
-only the old completed Jobs and their dedicated NetworkPolicies. Existing
-media contents are untouched; directory permission setup is nonrecursive.
-
-Verify all three applications Synced/Healthy, old Job absence, unchanged bound
-claims and media access after rollout. Fresh bootstrap creates only the required
-directories. Rollback must not recreate the old copy Jobs against active data;
-use a reviewed fenced restore when historical data is actually needed.
 
 ## Harbor registry state
 

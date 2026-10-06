@@ -200,11 +200,6 @@ plan_and_apply_argocd_apps() {
 prepare_terragrunt_filter_base
 terragrunt_generate_stack
 
-if [[ "${TERRAGRUNT_RETIRE_WAZUH:-false}" == "true" ]]; then
-  bash "${script_dir}/wazuh-retire.sh"
-  exit 0
-fi
-
 repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
   terragrunt_argocd_app_state_repair_unit

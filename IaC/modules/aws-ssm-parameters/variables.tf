@@ -51,27 +51,9 @@ variable "aws_region" {
   type        = string
 }
 
-variable "create_kms_key" {
-  description = "Whether to create the KMS key used to encrypt SecureString parameters."
-  type        = bool
-  default     = false
-}
-
 variable "kms_key_id" {
   description = "KMS key alias or ARN used to encrypt SecureString parameters."
   type        = string
-}
-
-variable "kms_key_description" {
-  description = "Description for the managed KMS key when create_kms_key is true."
-  type        = string
-  default     = "Homelab OpenTofu-managed SSM Parameter Store key."
-}
-
-variable "parameter_kms_key_id" {
-  description = "Optional runtime encryption key, separate from a retained historical customer key."
-  type        = string
-  default     = null
 }
 
 variable "tags" {
