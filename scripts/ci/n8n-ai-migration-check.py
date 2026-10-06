@@ -5,6 +5,14 @@ from pathlib import Path
 import subprocess
 import tempfile
 
+gateway_policy = json.loads(subprocess.check_output([
+    "yq", "-o=json", 'select(.metadata.name == "litellm-allow-required-clients")',
+    "clusters/homelab/apps/litellm/authorizationpolicy.yaml",
+], text=True))
+rule = gateway_policy["spec"]["rules"][0]
+assert "cluster.local/ns/automation/sa/n8n" in rule["from"][0]["source"]["principals"]
+assert rule["to"] == [{"operation": {"ports": ["4000"]}}]
+
 command = subprocess.check_output([
     "yq", "-r", '.controllers.n8n.initContainers."migrate-ai-workflow".command[2]',
     "clusters/homelab/apps/n8n/values.yaml",

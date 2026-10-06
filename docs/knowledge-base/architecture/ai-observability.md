@@ -82,6 +82,14 @@ The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.
 
+The isolated installed n8n model node failed with a connection error on
+2026-10-06; a direct authenticated model-discovery request from the same pod
+also ended with a socket close. Both namespaces use ambient mesh, and the
+live LiteLLM AuthorizationPolicy omitted n8n's confirmed service account.
+The prepared fix admits only `cluster.local/ns/automation/sa/n8n` on port 4000;
+the n8n regression now checks that route. Re-test native-node inference and
+Langfuse attribution after GitOps deployment; no workflow actions were run.
+
 Gateway checks on 2026-10-06 confirmed five distinct, nonempty internal keys,
 all different from the upstream credential. Each lists only `openrouter/free`;
 missing/invalid keys return 401. All four app keys reject administration (403),

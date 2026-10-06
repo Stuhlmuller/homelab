@@ -23,6 +23,7 @@ spec:
               - cluster.local/ns/ai/sa/multica-runtime
               - cluster.local/ns/ai/sa/openclaw
               - cluster.local/ns/nofx/sa/nofx
+              - cluster.local/ns/automation/sa/n8n
               - cluster.local/ns/octelium-client/sa/octelium-client
       to:
         - operation:
