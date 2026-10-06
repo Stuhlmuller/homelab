@@ -968,7 +968,11 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
+    '.github/workflows/image-automation.yml:fallback-pr' \
+    '.github/workflows/image-automation.yml:image-update-gate' \
+    '.github/workflows/image-automation.yml:observe' \
     '.github/workflows/image-automation.yml:promote' \
+    '.github/workflows/image-automation.yml:verify' \
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
