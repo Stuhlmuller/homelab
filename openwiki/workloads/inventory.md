@@ -7,7 +7,7 @@ tags: ["workloads", "argocd", "inventory"]
 
 # Workload Inventory
 
-<!-- markdownlint-disable MD013 -->
+<!-- markdownlint-disable MD013 MD060 -->
 
 This inventory summarizes the current application and platform ownership map.
 Treat `docs/argocd-app-onboarding.md`, the `clusters/` tree, and Terragrunt

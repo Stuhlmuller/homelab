@@ -128,7 +128,7 @@ jobs:
           EXPECTED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          actual="$(gh api repos/${GITHUB_REPOSITORY}/git/ref/heads/main --jq .object.sha)"
+          actual="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq .object.sha)"
           test "$actual" = "$EXPECTED_SHA"
           candidate="$(git rev-parse refs/remotes/origin/codex/image-updater-proposals)"
           gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/heads/main" \
