@@ -479,7 +479,10 @@ yq -e '
   (
     contains("if [ ! -s /home/node/.n8n/config ]; then") and
     contains("export N8N_ENCRYPTION_KEY=\"$N8N_BOOTSTRAP_ENCRYPTION_KEY\"") and
-    contains("[{\"id\":\"litellm-managed\",\"name\":\"LiteLLM Gateway\",\"type\":\"openAiApi\",\"data\":{}}]")
+    contains("[{\"id\":\"litellm-managed\",\"name\":\"LiteLLM Gateway\",\"type\":\"openAiApi\",\"data\":{}}]") and
+    contains("const workflows = JSON.parse") and
+    contains("Array.isArray(workflows)") and
+    contains("JSON.stringify(workflows)")
   )
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"

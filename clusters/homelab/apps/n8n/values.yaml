@@ -95,7 +95,12 @@ controllers:
             node <<'NODE'
             const fs = require('node:fs');
             const path = '/tmp/ai-workflow.json';
-            const workflow = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const workflows = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (!Array.isArray(workflows) || workflows.length !== 1 ||
+                workflows[0]?.id !== 's1JVSbnvnmHMCbty') {
+              throw new Error('expected exactly the target workflow from n8n export');
+            }
+            const workflow = workflows[0];
             const node = workflow.nodes?.find((candidate) =>
               candidate.id === '5c52f616-3b9e-4483-89e3-effffc393750' &&
               candidate.name === 'AWS Bedrock Chat Model',
@@ -119,7 +124,7 @@ controllers:
             node.credentials = {
               openAiApi: { id: 'litellm-managed', name: 'LiteLLM Gateway' },
             };
-            fs.writeFileSync(path, JSON.stringify(workflow));
+            fs.writeFileSync(path, JSON.stringify(workflows));
             fs.writeFileSync('/tmp/ai-workflow-changed', 'true');
             NODE
             if [ "$(cat /tmp/ai-workflow-changed)" != true ]; then
