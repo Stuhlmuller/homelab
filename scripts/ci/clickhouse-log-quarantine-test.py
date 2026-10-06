@@ -26,8 +26,8 @@ MOUNT = "/etc/clickhouse-server/config.d/log-quarantine.xml"
 PASSWORD = "test"
 
 
-def command(*args, input=None, timeout=60):
-    return subprocess.check_output(args, input=input, text=True, timeout=timeout).strip()
+def command(*args, input=None, timeout=60, stderr=None):
+    return subprocess.check_output(args, input=input, text=True, timeout=timeout, stderr=stderr).strip()
 
 
 def render(path):
@@ -159,13 +159,14 @@ def runtime_check(image):
             if command(*docker, "inspect", "--format", "{{.State.Running}}", name) != "true":
                 if corrupt:
                     assert command(*docker, "inspect", "--format", "{{.State.ExitCode}}", name) != "0"
-                    logs = command(*docker, "logs", name)
+                    logs = command(*docker, "logs", name, stderr=subprocess.STDOUT)
                     assert re.search(r"intersect|overlap", logs, re.IGNORECASE), logs[-4000:]
                     stop(name)
                     return
                 break
             time.sleep(1)
-        raise AssertionError("Fixture startup failed:\n" + command(*docker, "logs", "--tail", "40", name))
+        raise AssertionError("Fixture startup failed:\n" + command(
+            *docker, "logs", "--tail", "40", name, stderr=subprocess.STDOUT))
 
     def stop(name):
         command(*docker, "stop", "--time", "30", name)
