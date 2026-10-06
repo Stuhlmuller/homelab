@@ -21,6 +21,13 @@ COMPATIBILITY = (
 )
 
 
+def unique_keys(pairs):
+    fields = dict(pairs)
+    if len(fields) != len(pairs):
+        raise ValueError("YAML frontmatter keys must be unique")
+    return fields
+
+
 def validate_frontmatter(text):
     frontmatter = FRONTMATTER.match(text)
     if not frontmatter:
@@ -30,7 +37,7 @@ def validate_frontmatter(text):
             ["yq", "eval", "-o=json", ".", "-"], input=frontmatter[1],
             capture_output=True, check=True, text=True,
         )
-        fields = json.loads(result.stdout)
+        fields = json.loads(result.stdout, object_pairs_hook=unique_keys)
     except FileNotFoundError:
         sys.exit("OpenWiki check requires yq; run nix develop --command python3 -I scripts/ci/openwiki-check.py")
     except subprocess.CalledProcessError as error:
@@ -185,6 +192,7 @@ def self_test():
         assert not check(root), check(root)
         for old, new, expected in (
             ("tags:\n  - test", "tags: [", "invalid YAML frontmatter"),
+            ("title: Test", "title: []\ntitle: Test", "YAML frontmatter keys must be unique"),
             (header, "---\n- reference\n---\n", "frontmatter must be a mapping"),
             ("title: Test", "title: [Test]", "invalid frontmatter fields: title"),
             ("tags:\n  - test", "tags: test", "invalid frontmatter fields: tags"),
