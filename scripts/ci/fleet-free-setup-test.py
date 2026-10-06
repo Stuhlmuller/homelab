@@ -4,8 +4,6 @@
 import base64
 import contextlib
 import copy
-import email.parser
-import email.policy
 import hashlib
 import importlib.util
 import io
@@ -59,7 +57,6 @@ class FakeAPI:
         self.catalog_has_next = False
         self.catalog_drop_unrelated = False
         self.catalog_refuse_delete = False
-        self.catalog_readback_changes = {}
         self.initial_password = Mock(return_value=PASSWORD)
 
     def request(self, method, path, body=None, token=None, content_type="application/json", accepted_status=200):
@@ -104,26 +101,6 @@ class FakeAPI:
             if self.catalog_drop_unrelated:
                 self.catalog.remove(CATALOG_UNRELATED)
             return {}
-        if path == "/api/v1/fleet/configuration_profiles" and method == "POST":
-            if accepted_status != 200:
-                raise AssertionError("Profile creation must require HTTP 200")
-            message = email.parser.BytesParser(policy=email.policy.default).parsebytes(
-                f"Content-Type: {content_type}\r\n\r\n".encode() + body)
-            parts = list(message.iter_parts())
-            if len(parts) != 1 or parts[0].get_param("name", header="content-disposition") != "profile":
-                raise AssertionError("Only one profile upload is allowed")
-            if parts[0].get_filename() != "macos-security-baseline.mobileconfig":
-                raise AssertionError("Only the Mac password baseline may be uploaded")
-            raw = parts[0].get_payload(decode=True)
-            profile = plistlib.loads(raw)
-            created = {"profile_uuid": "77777777-7777-4777-8777-777777777777", "platform": "darwin",
-                       "identifier": profile["PayloadIdentifier"], "name": profile["PayloadDisplayName"],
-                       "checksum": base64.b64encode(hashlib.md5(raw, usedforsecurity=False).digest()).decode()}
-            created.update(self.catalog_readback_changes)
-            self.catalog.append(created)
-            if self.catalog_drop_unrelated:
-                self.catalog.remove(CATALOG_UNRELATED)
-            return {"profile_uuid": "77777777-7777-4777-8777-777777777777"}
         raise AssertionError("Unexpected API route")
 
 
@@ -171,7 +148,7 @@ class FleetFreeTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.profiles = Path(self.directory.name)
-        for name in helper.MAC_FILES + helper.IOS_FILES:
+        for name in helper.MAC_FILES + helper.IOS_FILES + helper.LEGACY_MAC_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
 
@@ -213,10 +190,23 @@ class FleetFreeTest(unittest.TestCase):
         profile[key] = value
         path.write_bytes(plistlib.dumps(profile))
 
+    def seed_legacy_catalog(self):
+        raw = (self.profiles / helper.LEGACY_MAC_FILES[0]).read_bytes()
+        profile = plistlib.loads(raw)
+        entry = {"profile_uuid": "77777777-7777-4777-8777-777777777777", "platform": "darwin",
+                 "identifier": profile["PayloadIdentifier"], "name": profile["PayloadDisplayName"],
+                 "checksum": base64.b64encode(hashlib.md5(raw, usedforsecurity=False).digest()).decode()}
+        self.api.catalog.append(entry)
+        return entry
+
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
-        for action in ("validate-profiles", "mac-pilot", "mac-baseline-catalog", "ios-baseline", "console-sso", "reporting"):
+        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "mac-baseline-catalog", "ios-baseline", "console-sso", "reporting"):
             with self.subTest(action=action):
-                args = [action] + (["--host-id", "2", "--remove"] if action == "ios-baseline" else [])
+                args = [action]
+                if action in ("mac-baseline", "ios-baseline"):
+                    args += ["--host-id", "2"]
+                if action in ("mac-baseline-catalog", "ios-baseline"):
+                    args += ["--remove"]
                 status, _, loader = self.run_command(args)
                 self.assertEqual(status, 0)
                 loader.assert_not_called()
@@ -267,6 +257,91 @@ class FleetFreeTest(unittest.TestCase):
         self.assertNotIn("RemoveProfile", [command["RequestType"] for _, command in self.mdm.calls])
         self.assert_logged_out()
 
+    def test_individual_mac_baseline_preserves_settings_with_distinct_profile_identities(self):
+        current = plistlib.loads((self.profiles / helper.MAC_FILES[0]).read_bytes())
+        legacy = plistlib.loads((self.profiles / helper.LEGACY_MAC_FILES[0]).read_bytes())
+
+        def without_identity(value, identities):
+            if isinstance(value, dict):
+                for key in ("PayloadIdentifier", "PayloadUUID"):
+                    if key in value:
+                        identities.add(value[key])
+                return {key: without_identity(item, identities) for key, item in value.items()
+                        if key not in ("PayloadIdentifier", "PayloadUUID")}
+            if isinstance(value, list):
+                return [without_identity(item, identities) for item in value]
+            return value
+
+        current_ids, legacy_ids = set(), set()
+        self.assertEqual(without_identity(current, current_ids), without_identity(legacy, legacy_ids))
+        self.assertEqual(len(current_ids), 4)
+        self.assertEqual(len(legacy_ids), 4)
+        self.assertTrue(current_ids.isdisjoint(legacy_ids))
+
+    def test_mac_baseline_targets_only_selected_connected_mac_and_one_profile(self):
+        self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
+                         "mdm": {"connected_to_fleet": True}}
+        legacy = plistlib.loads((self.profiles / helper.LEGACY_MAC_FILES[0]).read_bytes())
+        self.mdm.installed.append(legacy)
+        self.assertEqual(self.run_command(["mac-baseline", "--host-id", "2", "--execute"])[0], 0)
+        expected = plistlib.loads((self.profiles / helper.MAC_FILES[0]).read_bytes())
+        self.assertTrue(all(host == LOCAL_UUID for host, _ in self.mdm.calls))
+        self.assertEqual([command["RequestType"] for _, command in self.mdm.calls],
+                         ["ProfileList", "InstallProfile", "ProfileList"])
+        self.assertEqual(self.mdm.installed, [UNRELATED, legacy, expected])
+        self.assertEqual(self.api.catalog, [CATALOG_UNRELATED])
+        self.mdm.local_host.assert_not_called()
+        self.assert_logged_out()
+
+    def test_mac_baseline_rejects_wrong_identity_platform_or_disconnected_mdm(self):
+        connected = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
+                     "mdm": {"connected_to_fleet": True}}
+        for field, value in (("platform", "ios"), ("platform", "ipados"), ("platform", "linux"),
+                             ("id", 3), ("uuid", "not-a-uuid"), ("mdm", {}),
+                             ("mdm", {"connected_to_fleet": False}),
+                             ("mdm", {"connected_to_fleet": "true"})):
+            with self.subTest(field=field, value=value):
+                self.api.host = dict(connected, **{field: value})
+                self.assertEqual(self.run_command(["mac-baseline", "--host-id", "2", "--execute"])[0], 1)
+                self.assert_no_setup_mutations()
+                self.mdm.local_host.assert_not_called()
+                self.assert_logged_out()
+
+    def test_mac_baseline_removes_only_individual_profile_and_is_idempotent(self):
+        self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
+                         "mdm": {"connected_to_fleet": True}}
+        baseline, entra = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
+        legacy = plistlib.loads((self.profiles / helper.LEGACY_MAC_FILES[0]).read_bytes())
+        self.mdm.installed += [baseline, entra, legacy]
+        args = ["mac-baseline", "--host-id", "2", "--remove", "--execute"]
+        self.assertEqual(self.run_command(args)[0], 0)
+        self.assertEqual([command for _, command in self.mdm.calls], [
+            {"RequestType": "ProfileList"},
+            {"RequestType": "RemoveProfile", "Identifier": baseline["PayloadIdentifier"]},
+            {"RequestType": "ProfileList"},
+        ])
+        self.assertTrue(all(host == LOCAL_UUID for host, _ in self.mdm.calls))
+        self.assertEqual(self.mdm.installed, [UNRELATED, entra, legacy])
+        self.mdm.local_host.assert_not_called()
+        self.assert_logged_out()
+        self.mdm.calls.clear()
+        self.assertEqual(self.run_command(args)[0], 0)
+        self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
+        self.assertEqual(self.mdm.installed, [UNRELATED, entra, legacy])
+
+    def test_selected_device_actions_require_positive_host_ids_before_loading_credentials(self):
+        for action in ("mac-baseline", "ios-baseline"):
+            for host_args in ([], ["--host-id", "0"], ["--host-id", "-1"]):
+                with self.subTest(action=action, host_args=host_args), \
+                        patch.object(helper, "module") as loader, \
+                        contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+                    helper.main([action, "--remove", "--execute"] + host_args)
+                self.assertEqual(error.exception.code, 2)
+                loader.assert_not_called()
+                self.api.initial_password.assert_not_called()
+                self.assertEqual(self.api.calls, [])
+                self.assertEqual(self.mdm.calls, [])
+
     def test_server_profile_validation_cannot_assign_profiles(self):
         self.assertEqual(self.run_command(["validate-profiles", "--execute"])[0], 0)
         writes = [(method, path) for method, path, _, _ in self.api.calls if method != "GET"]
@@ -287,93 +362,40 @@ class FleetFreeTest(unittest.TestCase):
         self.assert_no_setup_mutations()
         self.assert_logged_out()
 
-    def test_catalog_upload_adds_only_mac_baseline_and_preserves_existing_profiles(self):
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
-        self.assertEqual([(method, path) for method, path, _, _ in self.api.calls], [
-            ("POST", "/api/v1/fleet/login"), ("GET", "/api/v1/fleet/config"),
-            ("GET", "/api/v1/fleet/configuration_profiles?per_page=100"),
-            ("POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true"),
-            ("POST", "/api/v1/fleet/configuration_profiles"),
-            ("GET", "/api/v1/fleet/configuration_profiles?per_page=100"),
-            ("POST", "/api/v1/fleet/logout"),
-        ])
-        submitted = self.api.calls[3][2]["configuration_profiles"]
-        self.assertEqual(len(submitted), 1)
-        self.assertEqual(base64.b64decode(submitted[0]["profile"]),
-                         (self.profiles / "macos-security-baseline.mobileconfig").read_bytes())
-        self.assertEqual(len(self.api.catalog), 2)
-        self.assertIn(CATALOG_UNRELATED, self.api.catalog)
-        self.assertEqual(self.mdm.calls, [])
-        self.assert_logged_out()
+    def test_retired_catalog_upload_is_rejected_before_credentials_modules_and_api(self):
+        for flags in ([], ["--execute"]):
+            with self.subTest(flags=flags):
+                status, output, loader = self.run_command(["mac-baseline-catalog"] + flags)
+                self.assertEqual(status, 1)
+                self.assertIn("mac-baseline-catalog requires --remove", output)
+                loader.assert_not_called()
+                self.api.initial_password.assert_not_called()
+                self.assertEqual(self.api.calls, [])
+                self.assertEqual(self.mdm.calls, [])
 
-    def test_catalog_existing_identifier_or_name_cannot_be_overwritten(self):
-        profile = plistlib.loads((self.profiles / helper.MAC_FILES[0]).read_bytes())
-        for field, value in (("identifier", profile["PayloadIdentifier"]), ("name", profile["PayloadDisplayName"])):
-            with self.subTest(field=field):
-                self.api.catalog = [dict(CATALOG_UNRELATED, **{field: value})]
-                self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
-                self.assert_no_setup_mutations()
-                self.assert_logged_out()
+    def test_catalog_upload_function_cannot_bypass_cli_guard(self):
+        with self.assertRaises(helper.SetupError):
+            helper.mac_baseline_catalog(self.api, TOKEN)
+        self.assertEqual(self.api.calls, [])
 
-    def test_catalog_matching_identity_and_content_is_idempotent(self):
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
-        original = copy.deepcopy(self.api.catalog)
-        self.api.calls.clear()
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
-        self.assert_no_setup_mutations()
-        self.assertEqual(self.api.catalog, original)
-        self.assert_logged_out()
-        self.api.calls.clear()
-        self.api.catalog[-1]["checksum"] = "different-content"
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
-        self.assert_no_setup_mutations()
-        self.assert_logged_out()
-
-    def test_catalog_incomplete_listing_cannot_create_profiles(self):
+    def test_catalog_incomplete_listing_cannot_remove_profiles(self):
+        self.seed_legacy_catalog()
         for has_next in (True, None):
             with self.subTest(has_next=has_next):
                 self.api.catalog_has_next = has_next
-                self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
+                self.assertEqual(self.run_command(["mac-baseline-catalog", "--remove", "--execute"])[0], 1)
                 self.assert_no_setup_mutations()
                 self.assert_logged_out()
 
-    def test_catalog_non_free_license_cannot_create_profiles(self):
+    def test_catalog_non_free_license_cannot_remove_profiles(self):
+        self.seed_legacy_catalog()
         self.api.config["license"] = {"tier": "premium"}
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
+        self.assertEqual(self.run_command(["mac-baseline-catalog", "--remove", "--execute"])[0], 1)
         self.assert_no_setup_mutations()
         self.assert_logged_out()
 
-    def test_catalog_failed_preflight_does_not_upload(self):
-        self.api.errors["POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true"] = RuntimeError(PRIVATE)
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
-        self.assertNotIn(("POST", "/api/v1/fleet/configuration_profiles"),
-                         [(method, path) for method, path, _, _ in self.api.calls])
-        self.assert_logged_out()
-
-    def test_catalog_failed_create_is_not_retried(self):
-        self.api.errors["POST", "/api/v1/fleet/configuration_profiles"] = TimeoutError(PRIVATE)
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
-        self.assertEqual(sum(path == "/api/v1/fleet/configuration_profiles" for _, path, _, _ in self.api.calls), 1)
-        self.assertEqual(self.api.catalog, [CATALOG_UNRELATED])
-        self.assert_logged_out()
-
-    def test_catalog_readback_mismatch_cannot_report_success(self):
-        for field in ("identifier", "name", "platform", "profile_uuid", "checksum"):
-            with self.subTest(field=field):
-                self.api.catalog = [copy.deepcopy(CATALOG_UNRELATED)]
-                self.api.catalog_readback_changes = {field: PRIVATE}
-                self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
-                self.assert_logged_out()
-
-    def test_catalog_unrelated_profile_loss_cannot_report_success(self):
-        self.api.catalog_drop_unrelated = True
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 1)
-        self.assert_logged_out()
-
     def test_catalog_removal_is_idempotent_and_preserves_unrelated_profiles(self):
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
-        profile_uuid = self.api.catalog[-1]["profile_uuid"]
-        self.api.calls.clear()
+        profile_uuid = self.seed_legacy_catalog()["profile_uuid"]
         self.assertEqual(self.run_command(["mac-baseline-catalog", "--remove", "--execute"])[0], 0)
         self.assertEqual([(method, path) for method, path, _, _ in self.api.calls if method != "GET"], [
             ("POST", "/api/v1/fleet/login"),
@@ -390,9 +412,7 @@ class FleetFreeTest(unittest.TestCase):
         self.assert_logged_out()
 
     def test_catalog_removal_refuses_conflicting_content(self):
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
-        self.api.catalog[-1]["checksum"] = "different-content"
-        self.api.calls.clear()
+        self.seed_legacy_catalog()["checksum"] = "different-content"
         self.assertEqual(self.run_command(["mac-baseline-catalog", "--remove", "--execute"])[0], 1)
         self.assert_no_setup_mutations()
         self.assert_logged_out()
@@ -401,16 +421,14 @@ class FleetFreeTest(unittest.TestCase):
         for flag in ("catalog_refuse_delete", "catalog_drop_unrelated"):
             with self.subTest(flag=flag):
                 self.api = FakeAPI()
-                self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
+                self.seed_legacy_catalog()
                 setattr(self.api, flag, True)
                 self.assertEqual(self.run_command(["mac-baseline-catalog", "--remove", "--execute"])[0], 1)
                 self.assertEqual(self.mdm.calls, [])
                 self.assert_logged_out()
 
     def test_catalog_failed_delete_is_not_retried(self):
-        self.assertEqual(self.run_command(["mac-baseline-catalog", "--execute"])[0], 0)
-        path = "/api/v1/fleet/configuration_profiles/" + self.api.catalog[-1]["profile_uuid"]
-        self.api.calls.clear()
+        path = "/api/v1/fleet/configuration_profiles/" + self.seed_legacy_catalog()["profile_uuid"]
         self.api.errors["DELETE", path] = TimeoutError(PRIVATE)
         self.assertEqual(self.run_command(["mac-baseline-catalog", "--remove", "--execute"])[0], 1)
         self.assertEqual(sum(method == "DELETE" for method, _, _, _ in self.api.calls), 1)
