@@ -698,7 +698,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    argocd.argoproj.io/sync-options: Replace=true
+    argocd.argoproj.io/sync-options: Replace=true,ServerSideApply=false
     checkov.io/skip1: CKV_K8S_37=Adopts upstream Octelium Enterprise package capabilities until package-validated hardening is available.
     checkov.io/skip2: CKV_K8S_31=Adopts upstream Octelium Enterprise package seccomp defaults until package-validated hardening is available.
     checkov.io/skip3: CKV_K8S_40=Adopts upstream Octelium Enterprise package user IDs; changing them can break packaged services.
