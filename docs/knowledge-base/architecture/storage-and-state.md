@@ -220,6 +220,11 @@ raw events, uploaded media and batch exports expires all objects after 30 days
 Neither that lifecycle policy nor the retained
 PVCs is an independent backup: no automatic logical backup is configured, and
 restore coverage remains unverified.
+The October 5 ClickHouse quarantine disables six corrupt diagnostic log tables
+and permanently detaches them without deleting their files. Repeated merge
+failures caused shared-NAS metadata pressure; application tables remain attached.
+See [[operations/plex-recovery-2026-10-05]] and the Langfuse README for rollout
+acceptance and the separate repair required before reattachment.
 The retained 1Gi `langfuse-migration-recovery` claim holds private recovery
 artifacts. Keep it independently of application rollout; it is not an automatic
 backup or an independently verified restore.

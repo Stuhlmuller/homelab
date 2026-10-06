@@ -512,6 +512,7 @@ echo "::endgroup::"
 
 echo "::group::Langfuse migration startup allowance"
 bash scripts/ci/langfuse-startup-check.sh
+python3 -I scripts/ci/clickhouse-log-quarantine-test.py
 echo "::endgroup::"
 
 echo "::group::NOFX runtime storage"

@@ -361,6 +361,10 @@ spec:
               mountPath: /var/lib/clickhouse
             - name: logs
               mountPath: /var/log/clickhouse-server
+            - name: log-quarantine
+              mountPath: /etc/clickhouse-server/config.d/log-quarantine.xml
+              subPath: log-quarantine.xml
+              readOnly: true
       volumes:
         - name: credentials
           secret:
@@ -377,6 +381,9 @@ spec:
             claimName: langfuse-clickhouse-data
         - name: logs
           emptyDir: {}
+        - name: log-quarantine
+          configMap:
+            name: langfuse-clickhouse-log-quarantine
 ---
 apiVersion: v1
 kind: Service
