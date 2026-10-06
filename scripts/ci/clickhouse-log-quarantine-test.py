@@ -129,13 +129,13 @@ def runtime_check(image, root):
                 image)
         deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
-            ready = subprocess.run([*docker, "exec", name, "clickhouse-client", "--password", PASSWORD,
-                                    "--query", "SELECT 1"],
-                                   capture_output=True, text=True, timeout=10)
             # The entrypoint briefly starts a temporary server before execing
             # the final server. SQL readiness alone races that shutdown.
             server = subprocess.run([*docker, "exec", name, "readlink", "/proc/1/exe"],
                                     capture_output=True, text=True, timeout=10)
+            ready = subprocess.run([*docker, "exec", name, "clickhouse-client", "--password", PASSWORD,
+                                    "--query", "SELECT 1"],
+                                   capture_output=True, text=True, timeout=10)
             if ready.returncode == 0 and server.stdout.strip() == "/usr/bin/clickhouse":
                 return name
             if command(*docker, "inspect", "--format", "{{.State.Running}}", name) != "true":
