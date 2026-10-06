@@ -7,6 +7,7 @@ metadata:
   source: "templates/commands/constitution.md"
 ---
 
+# Spec Kit Constitution
 
 ## User Input
 
@@ -48,7 +49,7 @@ and commands read the constitution at runtime and are not modified here.
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Pre-Hook**: {extension}
@@ -59,7 +60,7 @@ and commands read the constitution at runtime and are not modified here.
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Pre-Hook**: {extension}
@@ -146,7 +147,7 @@ Check if `.specify/extensions.yml` exists in the project root.
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Hook**: {extension}
@@ -157,7 +158,7 @@ Check if `.specify/extensions.yml` exists in the project root.
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Hook**: {extension}

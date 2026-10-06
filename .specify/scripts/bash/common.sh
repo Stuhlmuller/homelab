@@ -68,7 +68,8 @@ get_repo_root() {
     fi
 
     # Final fallback to script location
-    local script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local script_dir
+    script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || return 1
     (cd "$script_dir/../../.." && pwd)
 }
 
@@ -364,7 +365,7 @@ format_speckit_command() {
     command_name="${command_name#speckit-}"
     command_name="${command_name//./$separator}"
 
-    printf '$speckit%s%s\n' "$separator" "$command_name"
+    printf "\$speckit%s%s\n" "$separator" "$command_name"
 }
 
 # Escape a string for safe embedding in a JSON value (fallback when jq is unavailable).
@@ -568,7 +569,7 @@ except Exception:
                         if [ -n "$manifest_file" ]; then
                             # Reject absolute paths and parent traversal
                             case "$manifest_file" in
-                                /*|*../*|../*) manifest_file="" ;;
+                                /*|*../*) manifest_file="" ;;
                             esac
                         fi
                         if [ -n "$manifest_file" ]; then

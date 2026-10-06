@@ -7,6 +7,7 @@ metadata:
   source: "templates/commands/converge.md"
 ---
 
+# Spec Kit Converge
 
 ## User Input
 
@@ -184,9 +185,9 @@ Before appending anything, output a compact, severity-graded summary (no file wr
 
 ## Convergence Findings
 
-| ID | Gap Type | Severity | Source | Evidence | Remaining Work |
-|----|----------|----------|--------|----------|----------------|
-| F1 | missing  | HIGH     | FR-008 | Example: no append-only guard detected in path/to/module.py when writing tasks.md | Add append-only enforcement |
+| ID  | Gap Type | Severity | Source | Evidence                                                                          | Remaining Work              |
+| --- | -------- | -------- | ------ | --------------------------------------------------------------------------------- | --------------------------- |
+| F1  | missing  | HIGH     | FR-008 | Example: no append-only guard detected in path/to/module.py when writing tasks.md | Add append-only enforcement |
 
 **Summary metrics:**
 

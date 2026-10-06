@@ -65,6 +65,14 @@ unfilled template; use `speckit-constitution` to establish project principles
 before relying on constitution checks. Repository `AGENTS.md` remains the
 operational guide.
 
+Spec Kit updates must pass the existing Super-Linter Markdown and ShellCheck
+rules; imported upstream files are not exempt. Run
+`shellcheck -x -P SCRIPTDIR .specify/scripts/bash/*.sh` and
+`python3 -I scripts/ci/speckit-check.py` before pushing. The static gate runs
+the latter against temporary projects, including paths with spaces and
+existing-plan preservation. Installation manifests retain upstream hashes
+so local compatibility edits remain detectable during upgrades.
+
 Obsidian authoring skills are also available under `.agents/skills/`:
 `obsidian-markdown` for note syntax, `obsidian-bases` for `.base` views, and
 `obsidian-cli` for interacting with a running Obsidian instance. Their upstream

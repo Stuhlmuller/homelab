@@ -7,6 +7,7 @@ metadata:
   source: "templates/commands/analyze.md"
 ---
 
+# Spec Kit Analyze
 
 ## User Input
 
@@ -29,7 +30,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Pre-Hook**: {extension}
@@ -40,7 +41,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Pre-Hook**: {extension}
@@ -60,7 +61,11 @@ Identify inconsistencies, duplications, ambiguities, and underspecified items ac
 
 **STRICTLY READ-ONLY**: Do **not** modify any files. Output a structured analysis report. Offer an optional remediation plan (user must explicitly approve before any follow-up editing commands would be invoked manually).
 
-**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `$speckit-analyze`.
+**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is
+**non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and
+require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of
+the principle. If a principle itself needs to change, that must occur in a separate, explicit
+constitution update outside `$speckit-analyze`.
 
 ## Execution Steps
 
@@ -110,7 +115,12 @@ Load only the minimal necessary context from each artifact:
 
 Create internal representations (do not include raw artifacts in output):
 
-- **Requirements inventory**: For each Functional Requirement (FR-###) and Success Criterion (SC-###), record a stable key. Use the explicit FR-/SC- identifier as the primary key when present, and optionally also derive an imperative-phrase slug for readability (e.g., "User can upload file" → `user-can-upload-file`). Include only Success Criteria items that require buildable work (e.g., load-testing infrastructure, security audit tooling), and exclude post-launch outcome metrics and business KPIs (e.g., "Reduce support tickets by 50%").
+- **Requirements inventory**: For each Functional Requirement (FR-###) and Success Criterion
+  (SC-###), record a stable key. Use the explicit FR-/SC- identifier as the primary key when
+  present, and optionally also derive an imperative-phrase slug for readability (e.g., "User can
+  upload file" → `user-can-upload-file`). Include only Success Criteria items that require buildable
+  work (e.g., load-testing infrastructure, security audit tooling), and exclude post-launch outcome
+  metrics and business KPIs (e.g., "Reduce support tickets by 50%").
 - **User story/action inventory**: Discrete user actions with acceptance criteria
 - **Task coverage mapping**: Map each task to one or more requirements or stories (inference by keyword / explicit reference patterns like IDs or key phrases)
 - **Constitution rule set**: Extract principle names and MUST/SHOULD normative statements
@@ -168,9 +178,9 @@ Output a Markdown report (no file writes) with the following structure:
 
 ## Specification Analysis Report
 
-| ID | Category | Severity | Location(s) | Summary | Recommendation |
-|----|----------|----------|-------------|---------|----------------|
-| A1 | Duplication | HIGH | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
+| ID  | Category    | Severity | Location(s)      | Summary                      | Recommendation                       |
+| --- | ----------- | -------- | ---------------- | ---------------------------- | ------------------------------------ |
+| A1  | Duplication | HIGH     | spec.md:L120-134 | Two similar requirements ... | Merge phrasing; keep clearer version |
 
 (Add one row per finding; generate stable IDs prefixed by category initial.)
 
@@ -216,7 +226,7 @@ After reporting, check if `.specify/extensions.yml` exists in the project root.
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Hook**: {extension}
@@ -227,7 +237,7 @@ After reporting, check if `.specify/extensions.yml` exists in the project root.
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Hook**: {extension}

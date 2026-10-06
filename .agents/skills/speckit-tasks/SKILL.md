@@ -7,6 +7,7 @@ metadata:
   source: "templates/commands/tasks.md"
 ---
 
+# Spec Kit Tasks
 
 ## User Input
 
@@ -29,7 +30,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Pre-Hook**: {extension}
@@ -40,7 +41,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Pre-Hook**: {extension}
@@ -54,7 +55,12 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Outline
 
-1. **Setup**: Run `python3 .specify/scripts/python/setup_tasks.py --json` from repo root and parse FEATURE_DIR, TASKS_TEMPLATE, and AVAILABLE_DOCS list. `FEATURE_DIR` and `TASKS_TEMPLATE` must be absolute paths when provided. `AVAILABLE_DOCS` is a list of document names/relative paths available under `FEATURE_DIR` (for example `research.md` or `contracts/`). For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+1. **Setup**: Run `python3 .specify/scripts/python/setup_tasks.py --json` from repo root and parse
+   FEATURE_DIR, TASKS_TEMPLATE, and AVAILABLE_DOCS list. `FEATURE_DIR` and `TASKS_TEMPLATE` must be
+   absolute paths when provided. `AVAILABLE_DOCS` is a list of document names/relative paths
+   available under `FEATURE_DIR` (for example `research.md` or `contracts/`). For single quotes in
+   args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm
+   Groot").
 
 2. **Load design documents**: Read from FEATURE_DIR:
    - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
@@ -101,7 +107,7 @@ Check if `.specify/extensions.yml` exists in the project root.
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Mandatory hook** (`optional: false`) — **You MUST emit `EXECUTE_COMMAND:` for each mandatory hook**:
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Hook**: {extension}
@@ -110,7 +116,7 @@ Check if `.specify/extensions.yml` exists in the project root.
     ```
     After emitting the block above you MUST actually invoke the hook and wait for it to finish before continuing. Run it the same way you would run the command yourself in this agent/session (the invocation may differ from the literal `{command}` id shown above, e.g. a skills-mode agent runs it as `/skill:speckit-...` or `$speckit-...`). Emitting the block alone does not run the hook.
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Hook**: {extension}

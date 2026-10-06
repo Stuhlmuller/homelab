@@ -7,6 +7,7 @@ metadata:
   source: "templates/commands/checklist.md"
 ---
 
+# Spec Kit Checklist
 
 ## Checklist Purpose: "Unit Tests for English"
 
@@ -50,7 +51,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Pre-Hook**: {extension}
@@ -61,7 +62,7 @@ You **MUST** consider the user input before proceeding (if not empty).
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Pre-Hook**: {extension}
@@ -351,7 +352,7 @@ Check if `.specify/extensions.yml` exists in the project root.
 - When constructing command invocations from hook command names, replace dots (`.`) with hyphens (`-`). For example, `speckit.git.commit` → `$speckit-git-commit`.
 - For each executable hook, output the following based on its `optional` flag:
   - **Optional hook** (`optional: true`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Optional Hook**: {extension}
@@ -362,7 +363,7 @@ Check if `.specify/extensions.yml` exists in the project root.
     To execute: `/{command}`
     ```
   - **Mandatory hook** (`optional: false`):
-    ```
+    ```text
     ## Extension Hooks
 
     **Automatic Hook**: {extension}
