@@ -82,6 +82,20 @@ The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.
 
+### NOFX credential contract mismatch
+
+Read-only SQLite inspection found one enabled model (`openrouter/free`), six
+disabled provider defaults, and zero running traders. The deployed source
+archive still contains patch `0013`'s `addLiteLLMProviderAPIKey`: both chat paths
+add the original provider credential as body `api_key`. LiteLLM's current
+admission rejects caller-supplied provider credentials. Prepared patch `0020`
+removes this forwarding and the old provider-key prerequisite in the shared
+NOFX client; routed calls authenticate only with the dedicated mounted gateway
+token. Synthetic tests cover both chat paths, absent provider credentials,
+token rotation and concurrent calls. Publish/verify a new private
+image through the declared build workflow before changing its deployment.
+Do not weaken the gateway guard or start trading to test the repair.
+
 ### Retirement gap: retained OpenClaw configuration
 
 Live inspection still found an enabled `codex` plugin, the OpenAI provider
