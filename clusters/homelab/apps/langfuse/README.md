@@ -72,15 +72,17 @@ kubectl -n langfuse get pvc langfuse-migration-recovery
 Six `system` log tables had corrupt parts and repeated failed merges, generating
 heavy NFS metadata traffic and delaying Plex playback on the shared QNAP.
 `clickhouse-log-quarantine.xml` disables those six log writers and permanently
-detaches their tables during native server startup. It retains their metadata
-and data files; Langfuse's `default` database and healthy system logs are unchanged.
+detaches their tables before metadata loading. A non-root init container
+creates the pinned server's native empty `.sql.detached` markers; it retains
+the original `.sql` metadata and data files; Langfuse's `default` database and healthy system logs are unchanged.
 These six SQL diagnostic histories stop recording while quarantined.
 
 The generated ConfigMap syncs at wave `-2`, before the datastore deployment at
 wave `-1`; its hash replaces the ClickHouse Pod when configuration changes.
-Startup runs after metadata loading, before serving clients, and fails
-on SQL errors. Missing tables on fresh installs and already-detached tables are
-no-ops. This is a short ClickHouse outage during the existing `Recreate` rollout.
+The init container resolves the Atomic system database UUID and validates its
+metadata alias plus all six table/marker paths before creating any marker.
+Unexpected metadata, symlinks, or nonempty markers stop startup. Missing tables
+on fresh installs and already-detached tables are no-ops. This is a short ClickHouse outage during the existing `Recreate` rollout.
 
 ```sh
 nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py
@@ -96,14 +98,19 @@ an authenticated, read-only client to check `system.detached_tables`: the incide
 Langfuse tables remain readable, NAS metadata traffic falls, and Plex start/seek
 improves. Fresh installs legitimately have no detached tables.
 
-Rollback requires a reviewed forward recovery: remove the startup detachment
-queries first, keep affected writers disabled, then repair and deliberately
+Rollback requires a reviewed forward recovery: remove the quarantine init
+container first, keep affected writers disabled, then repair and deliberately
 reattach the retained tables through a repository-owned recovery path. A config
 revert does not reattach tables; blindly reattaching corrupt parts restarts the
 merge failures. Do not delete retained files. The cause of the corruption and
 independent datastore backup/restore remain unresolved storage work.
 
-See [ClickHouse DETACH](https://clickhouse.com/docs/reference/statements/detach)
+The marker is an internal format, so the init container must use the same
+pinned image as the server. CI reproduces overlapping parts that prevent
+ordinary startup, then verifies quarantine preserves the files and application
+data across restart. See the [native marker implementation](https://github.com/ClickHouse/ClickHouse/blob/f0cf8bd49aa0956d1f8709dfc7a81857aea915b5/src/Databases/DatabaseOnDisk.cpp#L326-L345),
+[metadata loader](https://github.com/ClickHouse/ClickHouse/blob/f0cf8bd49aa0956d1f8709dfc7a81857aea915b5/src/Databases/DatabaseOrdinary.cpp#L269-L317),
+and [ClickHouse DETACH](https://clickhouse.com/docs/reference/statements/detach)
 and the [incident evidence](../../../../docs/knowledge-base/operations/plex-recovery-2026-10-05.md).
 
 ## Validation
