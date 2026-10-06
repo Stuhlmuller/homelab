@@ -230,6 +230,12 @@ artifacts. Keep it independently of application rollout; it is not an automatic
 backup or an independently verified restore.
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
+The resource-store manifest in `clusters/homelab/apps/octelium-enterprise`
+also declares `initContainers: []` and scoped `Replace=true`. Live inspection
+on 2026-10-06 found an obsolete init container retained under an earlier field
+manager despite Argo CD reporting Synced. Server-side dry runs with an empty
+list retained that container; a replacement dry run omitted it while preserving
+`Recreate` and the existing `octelium-rscstore` claim.
 Multica PostgreSQL now follows the recovered NFS database probe pattern:
 30-minute startup and liveness windows, SQL-query readiness, and 120-second
 shutdown grace. Its image, credentials, scheduling, and PVC are unchanged.
