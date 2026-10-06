@@ -1,0 +1,56 @@
+{
+  "revision": "e2aa3e6b7d41bc93df65b6c5f459cc5f81596058",
+  "method": "one GitHub commit-workflow snapshot; no polling; final evidence commit not covered",
+  "workflow_runs": [
+    {
+      "id": 37170823061,
+      "name": "Terragrunt Plan",
+      "status": "in_progress",
+      "conclusion": null,
+      "run_number": 2064,
+      "jobs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823061/jobs",
+      "logs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823061/logs",
+      "workflow_id": 282707870
+    },
+    {
+      "id": 37170823064,
+      "name": "Release",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 4185,
+      "jobs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823064/jobs",
+      "logs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823064/logs",
+      "workflow_id": 165598671
+    },
+    {
+      "id": 37170823077,
+      "name": "CodeQL",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 2067,
+      "jobs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823077/jobs",
+      "logs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823077/logs",
+      "workflow_id": 290571824
+    },
+    {
+      "id": 37170823060,
+      "name": "validate",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 2941,
+      "jobs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823060/jobs",
+      "logs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823060/logs",
+      "workflow_id": 256311930
+    },
+    {
+      "id": 37170823083,
+      "name": "Lint",
+      "status": "completed",
+      "conclusion": "success",
+      "run_number": 1696,
+      "jobs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823083/jobs",
+      "logs_url": "https://api.github.com/repos/Stuhlmuller/homelab/actions/runs/37170823083/logs",
+      "workflow_id": 290207848
+    }
+  ]
+}

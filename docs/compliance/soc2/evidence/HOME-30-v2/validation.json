@@ -1,0 +1,203 @@
+{
+  "packet_version": "HOME-30-v2",
+  "collected_at_utc": "2026-10-04T02:00:41.040869+00:00",
+  "collector": "SOC 2 Security Evidence Engineer",
+  "collector_agent_id": "01e5e4fd-3ecb-48f5-beda-66bd765e474b",
+  "implementation_commit": "0c45cee76f99661bf7c399933bca78d9140ed302",
+  "main_revision": "b56d8febca2c2eeae03de374b574289502b4feaa",
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "Python 3.13.15\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "git",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "git version 2.39.5\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "v22.22.2\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "../.lint-v2/node_modules/markdownlint-cli/markdownlint.js",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "0.45.0\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "../.tools-v2/bin/ruff",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "ruff 0.15.17\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "python3",
+        "-I",
+        "scripts/ci/soc2-scope-inventory-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "fatal: Needed a single revision\n..\n----------------------------------------------------------------------\nRan 2 tests in 0.843s\n\nOK\n",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/soc2-scope-inventory.py",
+        "--revision",
+        "HEAD",
+        "--check",
+        "docs/compliance/soc2/evidence/HOME-30-v2/inventory.json"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS: complete source population matches recorded baseline\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/soc2-scope-inventory.py",
+        "--revision",
+        "origin/main",
+        "--check",
+        "docs/compliance/soc2/evidence/HOME-30-v1/inventory.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "FAIL: source inventory changed; reconcile scope and issue a new packet\n",
+      "expected_exit": 1
+    },
+    {
+      "command": [
+        "python3",
+        "docs/compliance/soc2/evidence/HOME-30-v2/verify.py"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS: 230 excluded paths, 9 main-change samples, original v1 packet and 9 historical hashes\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "scripts/soc2-scope-inventory.py",
+        "scripts/ci/soc2-scope-inventory-test.py",
+        "docs/compliance/soc2/evidence/HOME-30-v2/verify.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "../.tools-v2/bin/ruff",
+        "check",
+        "scripts/soc2-scope-inventory.py",
+        "scripts/ci/soc2-scope-inventory-test.py",
+        "docs/compliance/soc2/evidence/HOME-30-v2/verify.py"
+      ],
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "../.lint-v2/node_modules/markdownlint-cli/markdownlint.js",
+        "--config",
+        "docs/compliance/soc2/evidence/HOME-30-v2/markdown-lint.yml",
+        "docs/compliance/soc2/evidence/HOME-30-v1/packet.md",
+        "docs/compliance/soc2/scope.md",
+        "docs/knowledge-base/00-home.md",
+        "docs/knowledge-base/operations/soc2-readiness.md"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/ci/secret-scan.sh",
+        "--artifacts-only"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "origin/main",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "expected_exit": 0
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "../.lint-v2/node_modules/markdownlint-cli/markdownlint.js",
+        "--config",
+        "docs/compliance/soc2/evidence/HOME-30-v2/markdown-lint.yml",
+        "docs/compliance/soc2/evidence/HOME-30-v2/packet.md"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "",
+      "expected_exit": 0
+    }
+  ],
+  "unavailable_tools": [
+    "nix",
+    "terragrunt",
+    "rg",
+    "gh",
+    "gitleaks",
+    "tofu",
+    "helm",
+    "kustomize",
+    "kubectl",
+    "conftest"
+  ],
+  "packet_linted_at_utc": "2026-10-04T02:03:23.277126+00:00"
+}

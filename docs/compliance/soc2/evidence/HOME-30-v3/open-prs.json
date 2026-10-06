@@ -1,0 +1,147 @@
+[
+  {
+    "number": 1155,
+    "title": "fix(fleet): map Entra SAML identity to the console account",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1155"
+  },
+  {
+    "number": 1154,
+    "title": "HOME-30: define readiness scope and reproducible evidence inventory",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1154"
+  },
+  {
+    "number": 1153,
+    "title": "feat(wazuh): stage SIEM and cluster log collection",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1153"
+  },
+  {
+    "number": 1150,
+    "title": "fix(multica): align server and runtime with desktop 0.6.1",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1150"
+  },
+  {
+    "number": 1143,
+    "title": "chore(deps): update pgvector/pgvector:pg17 docker digest to ac08538",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1143"
+  },
+  {
+    "number": 1142,
+    "title": "chore(deps): update docker.io/library/python:3.13-bookworm docker digest to ab62bda",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1142"
+  },
+  {
+    "number": 1141,
+    "title": "docs: HOME-21 October Octelium synthetic recovery exercise",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1141"
+  },
+  {
+    "number": 1137,
+    "title": "chore(deps): update dependency cryptography to v50.0.2",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1137"
+  },
+  {
+    "number": 1136,
+    "title": "chore(deps): update dependency boto3 to v1.43.108",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1136"
+  },
+  {
+    "number": 1134,
+    "title": "fix(multica): persist authenticated macOS desktop access",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1134"
+  },
+  {
+    "number": 1130,
+    "title": "ci: migrate workflows to Chainguard hardened actions",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1130"
+  },
+  {
+    "number": 1129,
+    "title": "HOME-17: inventory cloudflared 2026.9.3 before consumer upgrade",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1129"
+  },
+  {
+    "number": 1128,
+    "title": "chore(deps): update cloudflare/cloudflared docker tag to v2026.9.3",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1128"
+  },
+  {
+    "number": 1127,
+    "title": "chore(deps): update redis:8.10.1-alpine docker digest to ef216d8",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1127"
+  },
+  {
+    "number": 1125,
+    "title": "HOME-15: define Harbor activation evidence and recovery acceptance targets",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1125"
+  },
+  {
+    "number": 1124,
+    "title": "HOME-14: define independent Harbor recovery security gates",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1124"
+  },
+  {
+    "number": 1123,
+    "title": "HOME-13: specify bounded Harbor recovery and test outage gates",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1123"
+  },
+  {
+    "number": 1122,
+    "title": "chore(deps): update redis:7.4.11-alpine docker digest to 858f009",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1122"
+  },
+  {
+    "number": 1121,
+    "title": "chore(deps): update github/codeql-action digest to 2892aa5",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1121"
+  },
+  {
+    "number": 1120,
+    "title": "HOME-4: stage monitoring recovery and independent heartbeat",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1120"
+  },
+  {
+    "number": 1118,
+    "title": "feat(multica): wire GitHub credentials and signed callbacks",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1118"
+  },
+  {
+    "number": 1117,
+    "title": "feat(multica): prepare dedicated GitHub App credentials",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1117"
+  },
+  {
+    "number": 1116,
+    "title": "HOME-3: stage policy-only network enforcement and containment gates",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1116"
+  },
+  {
+    "number": 1114,
+    "title": "feat(multica): add OpenRouter free via traced LiteLLM gateway",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1114"
+  },
+  {
+    "number": 1113,
+    "title": "HOME-2: stage independent application backups and synthetic restore validation",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1113"
+  },
+  {
+    "number": 1111,
+    "title": "fix(ci): exempt main deployments from reviewer approval",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1111"
+  },
+  {
+    "number": 1093,
+    "title": "chore(deps): update ghcr.io/n8n-io/n8n:stable docker digest to 87e0bab",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1093"
+  },
+  {
+    "number": 1092,
+    "title": "chore(deps): update docker.io/valkey/valkey:8.0 docker digest to 4436c94",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1092"
+  },
+  {
+    "number": 1087,
+    "title": "fix(octelium): advertise tailnet-reachable gateway",
+    "url": "https://github.com/Stuhlmuller/homelab/pull/1087"
+  }
+]

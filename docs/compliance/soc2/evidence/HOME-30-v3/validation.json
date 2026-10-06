@@ -1,0 +1,204 @@
+{
+  "version": "HOME-30-v3",
+  "collected_at_utc": "2026-10-04T02:27:33.177193+00:00",
+  "collector": "SOC 2 Security Evidence Engineer",
+  "collector_agent_id": "01e5e4fd-3ecb-48f5-beda-66bd765e474b",
+  "integration_revision": "e2aa3e6b7d41bc93df65b6c5f459cc5f81596058",
+  "selected_main": "27e058b5836c2f87f7b8f8ce4700893a559cf3e2",
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "Python 3.13.15\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "git version 2.39.5\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "../.tools-v2/bin/ruff",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "ruff 0.15.17\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "v22.22.2\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "../.lint-v2/node_modules/markdownlint-cli/markdownlint.js",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "0.45.0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/soc2-whole-tree.py",
+        "--previous-main",
+        "b56d8febca2c2eeae03de374b574289502b4feaa",
+        "--selected-main",
+        "27e058b5836c2f87f7b8f8ce4700893a559cf3e2",
+        "--revision",
+        "e2aa3e6b7d41bc93df65b6c5f459cc5f81596058",
+        "--check",
+        "docs/compliance/soc2/evidence/HOME-30-v3/whole-tree.json"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS: whole-tree entries and both change sets reproduce\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/soc2-scope-inventory.py",
+        "--revision",
+        "HEAD",
+        "--check",
+        "docs/compliance/soc2/evidence/HOME-30-v3/inventory.json"
+      ],
+      "exit_code": 0,
+      "stdout": "PASS: complete source population matches recorded baseline\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "-I",
+        "scripts/ci/soc2-whole-tree-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ".\n----------------------------------------------------------------------\nRan 1 test in 0.041s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "-I",
+        "scripts/ci/soc2-scope-inventory-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "fatal: Needed a single revision\n..\n----------------------------------------------------------------------\nRan 2 tests in 0.844s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "-I",
+        "scripts/ci/fleet-free-setup-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ".....................................\n----------------------------------------------------------------------\nRan 37 tests in 0.125s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "-I",
+        "scripts/ci/fleet-apple-csr-test.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ".................\n----------------------------------------------------------------------\nRan 17 tests in 4.379s\n\nOK\n"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "py_compile",
+        "scripts/soc2-whole-tree.py",
+        "scripts/ci/soc2-whole-tree-test.py",
+        "scripts/soc2-scope-inventory.py",
+        "scripts/ci/soc2-scope-inventory-test.py",
+        "docs/compliance/soc2/evidence/HOME-30-v3/verify.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "../.tools-v2/bin/ruff",
+        "check",
+        "scripts/soc2-whole-tree.py",
+        "scripts/ci/soc2-whole-tree-test.py",
+        "scripts/soc2-scope-inventory.py",
+        "scripts/ci/soc2-scope-inventory-test.py",
+        "docs/compliance/soc2/evidence/HOME-30-v3/verify.py"
+      ],
+      "exit_code": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "../.node-v2-runtime/bin/node",
+        "../.lint-v2/node_modules/markdownlint-cli/markdownlint.js",
+        "--config",
+        "docs/compliance/soc2/evidence/HOME-30-v2/markdown-lint.yml",
+        "docs/compliance/soc2/scope.md",
+        "docs/compliance/soc2/HOME-45-decision.md",
+        "docs/compliance/soc2/evidence/HOME-30-v3/packet.md",
+        "docs/knowledge-base/operations/soc2-readiness.md"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/ci/secret-scan.sh",
+        "--artifacts-only"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "origin/main",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "unavailable_tools": [
+    "nix",
+    "terragrunt",
+    "rg",
+    "gitleaks",
+    "tofu",
+    "helm",
+    "kustomize",
+    "kubectl",
+    "conftest"
+  ],
+  "final_tree_check": "Run verify.py and SHA256SUMS at published final evidence head; results in issue handoff"
+}

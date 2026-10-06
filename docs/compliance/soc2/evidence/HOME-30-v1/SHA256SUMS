@@ -1,0 +1,9 @@
+d8d059602f84cf1e15962bcd3251d250cfd0c1bb0eb48bbb9fb0253ea89b3fef  docs/knowledge-base/00-home.md
+9571448abc312acc094356ea6e7773a1d154cd2000cc130f968b4be003361b24  docs/knowledge-base/operations/soc2-readiness.md
+46139c29bde578ade7b40b273cf888762996a6866cb1a027b04726cfa8226628  scripts/soc2-scope-inventory.py
+f22bfc408a7043875016801d06ca459cd8867835c29130ecc4b3f8b1abe90082  scripts/ci/soc2-scope-inventory-test.py
+0ec10e57eaaa5abe57567a4faf20461fd5b307758c6ca424666bb497814df1de  docs/compliance/soc2/scope.md
+d0d0fc33496fbbef25c483ebade40746abfd65fd8bbb520ae6bf10a6697c9d0a  docs/compliance/soc2/evidence/HOME-30-v1/inventory.json
+7a2cf33fef7ee5ed4fe5fe53f5e565ab78e84daaacd78470584195bcd90a4699  docs/compliance/soc2/evidence/HOME-30-v1/open-prs.json
+3a793fc2b23bb3fb5f6d519a1e763fde72926a32f4da8cc5682bd84a5c124f42  docs/compliance/soc2/evidence/HOME-30-v1/validation.json
+41b2af6db94f6ecd02cb138bbed51c010ff5a2732ecfc0eac37facfd254cb998  docs/compliance/soc2/evidence/HOME-30-v1/packet.md
