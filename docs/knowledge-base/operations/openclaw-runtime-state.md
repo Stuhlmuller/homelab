@@ -34,6 +34,12 @@ limits were unchanged, configuration was valid, and removed migration guards
 had already completed. A retained Codex migration warning coexisted with the
 failure; causality is unproven.
 
+The same investigation verified that `/home/node/.cache/openclaw` readonly-v2
+snapshots use container overlay, not NFS. Canonical shared and agent databases
+use local XFS on `/dev/mmcblk0p4`; only the `/data` root is NFS. Moving that
+snapshot cache to `emptyDir` has no demonstrated NFS benefit; no filesystem
+change is proposed on this evidence.
+
 Separately, Kubernetes events record two startup-probe kills; one app attempt
 ran from 05:09:10 to 05:15:10 UTC before exit 137. The declared startup budget
 is now 900 seconds instead of six minutes; readiness and liveness are unchanged.
