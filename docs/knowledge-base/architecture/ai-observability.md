@@ -82,6 +82,14 @@ The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.
 
+Gateway checks on 2026-10-06 confirmed five distinct, nonempty internal keys,
+all different from the upstream credential. Each lists only `openrouter/free`;
+missing/invalid keys return 401. All four app keys reject administration (403),
+nonfree model requests (400), and caller-supplied provider credentials (400).
+Multica's Ready gateway ExternalSecret still reports Argo drift; declare its
+three remote-reference defaults explicitly, matching the converged LiteLLM
+contract. This does not rotate its key or change its `OnChange` policy.
+
 ### NOFX credential contract mismatch
 
 Read-only SQLite inspection found one enabled model (`openrouter/free`), six
