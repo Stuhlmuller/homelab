@@ -53,6 +53,18 @@ and `homelab-release-verification`. Load only the workflow needed for the task;
 the release skill distinguishes validation, merge, deployment, and live
 acceptance.
 
+Spec Kit 0.15.1 adds ten `speckit-*` skills for specification, clarification,
+planning, task generation, analysis, implementation, convergence, checklists,
+constitution authoring, and issue creation. `.specify/init-options.json` records
+the Codex integration, Python helpers, and sequential feature numbering;
+`.specify/templates/` and `.specify/workflows/speckit/workflow.yml` own the
+artifact templates and review gates. Feature selection is stored in
+`.specify/feature.json`; use this file-backed path rather than the upstream
+environment-variable overrides. `.specify/memory/constitution.md` remains an
+unfilled template; use `speckit-constitution` to establish project principles
+before relying on constitution checks. Repository `AGENTS.md` remains the
+operational guide.
+
 Obsidian authoring skills are also available under `.agents/skills/`:
 `obsidian-markdown` for note syntax, `obsidian-bases` for `.base` views, and
 `obsidian-cli` for interacting with a running Obsidian instance. Their upstream

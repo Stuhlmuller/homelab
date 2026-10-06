@@ -1,0 +1,22 @@
+{
+  "integration": "speckit",
+  "version": "0.15.1",
+  "installed_at": "2026-10-06T02:36:45.601263+00:00",
+  "files": {
+    ".specify/scripts/python/check_prerequisites.py": "74df3ef0a05141d85ed1473b315446fa93c62ca3d1bde87fb8d4459011277fa7",
+    ".specify/scripts/python/setup_tasks.py": "23fb1595011649d57ef699eed41e853b53dd3eda47fb5d1417514963faf7928f",
+    ".specify/scripts/python/common.py": "c9c6fb4daeb02ea2c735dee0e8ea3d3d4ae896277bc446c3daee80d28a9cf9eb",
+    ".specify/scripts/python/setup_plan.py": "d89bf18f8c57de802700ec6befabc01a359f296fb5d9b2481e96ec62539bb4da",
+    ".specify/scripts/python/create_new_feature.py": "6fdcc954bf121cb4b24d4dafc442f72a8241b9eb05a186b19d37b2f1c634f143",
+    ".specify/scripts/bash/common.sh": "d70a6191ec6f6a95987026d79368fde30a10f1c18908a6bc60e134a188456a4f",
+    ".specify/scripts/bash/setup-plan.sh": "4469b22960f43c07c33dca00de6dedb252145e9a9ce8fbb0e63be82e02b082ab",
+    ".specify/scripts/bash/setup-tasks.sh": "49e336e94d25ed07da1c3c39c97292c4f217f404a81d1229195a8ce249cbc7f1",
+    ".specify/scripts/bash/check-prerequisites.sh": "50fc0aff7ed4c02ca92fe87520130d6c928bff3b7dd3e6cdd86c3d514407e752",
+    ".specify/scripts/bash/create-new-feature.sh": "ad09a94a2c1107e25e5386a834da1d7a31f9abb06ab8bfd323a7b84038221e39",
+    ".specify/templates/constitution-template.md": "ce7549540fa45543cca797a150201d868e64495fdff39dc38246fb17bd4024b3",
+    ".specify/templates/checklist-template.md": "0b9c45061bfb174e1a19e599abac71d7145295ef9e13f2635103fc10cfe963a8",
+    ".specify/templates/tasks-template.md": "b0f527d41e546af0c31903e04f9b20965b6b497b573792198f663a64ce128863",
+    ".specify/templates/spec-template.md": "3945437fc35cd30a5b2bf7beea680337c3516826d3efa5a6b92c4a7eca1ba28e",
+    ".specify/templates/plan-template.md": "a828ad6206526574ab3fc99be6d0154588cb1c9774c5919d71b81ab5b2dbffa0"
+  }
+}
