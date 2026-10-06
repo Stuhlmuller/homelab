@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "clusters/homelab/apps/langfuse"
 XML = "clickhouse-log-quarantine.xml"
+SCRIPT = "quarantine-system-logs.sh"
 TABLES = (
     "error_log", "histogram_metric_log", "opentelemetry_span_log",
     "part_log", "query_log", "text_log",
@@ -25,8 +26,8 @@ MOUNT = "/etc/clickhouse-server/config.d/log-quarantine.xml"
 PASSWORD = "test"
 
 
-def command(*args, input=None, timeout=60):
-    return subprocess.check_output(args, input=input, text=True, timeout=timeout).strip()
+def command(*args, input=None, timeout=60, stderr=None):
+    return subprocess.check_output(args, input=input, text=True, timeout=timeout, stderr=stderr).strip()
 
 
 def render(path):
@@ -37,6 +38,7 @@ def render(path):
 def contract(resources):
     deployment, = [item for item in resources if item["kind"] == "Deployment"
                    and item["metadata"]["name"] == "langfuse-clickhouse"]
+    assert deployment["spec"]["strategy"]["type"] == "Recreate", "Init quarantine requires the old server stopped"
     pod = deployment["spec"]["template"]["spec"]
     container, = [item for item in pod["containers"] if item["name"] == "clickhouse"]
     mounts = [item for item in container["volumeMounts"]
@@ -53,41 +55,51 @@ def contract(resources):
     assert int(config["metadata"].get("annotations", {}).get(wave, "0")) < int(
         deployment["metadata"].get("annotations", {}).get(wave, "0")
     ), "Quarantine config must sync before the Recreate deployment"
-    assert set(config["data"]) == {"log-quarantine.xml"}
+    assert set(config["data"]) == {"log-quarantine.xml", SCRIPT}
     assert re.fullmatch(r"clickhouse/clickhouse-server:[^@]+@sha256:[0-9a-f]{64}",
                         container["image"]), "Runtime must use the rendered immutable image"
-    return name, container["image"], config["data"]["log-quarantine.xml"]
+    init, = pod["initContainers"]
+    assert init["image"] == container["image"], "Quarantine must use the exact server image"
+    assert init["command"] == ["/bin/sh", "/quarantine/" + SCRIPT]
+    assert init["securityContext"] == container["securityContext"]
+    assert init["securityContext"]["runAsUser"] == 65534
+    assert init["volumeMounts"] == [
+        {"name": "data", "mountPath": "/var/lib/clickhouse"},
+        {"name": "log-quarantine", "mountPath": "/quarantine", "readOnly": True},
+    ]
+    data, = [item for item in pod["volumes"] if item["name"] == "data"]
+    assert data["persistentVolumeClaim"]["claimName"] == "langfuse-clickhouse-data"
+    assert [item for item in container["volumeMounts"] if item["name"] == "data"] == [
+        {"name": "data", "mountPath": "/var/lib/clickhouse"}]
+    return name, container["image"], config["data"]
 
 
 def static_check():
     source = (APP / XML).read_text()
     root = ET.fromstring(source)
     assert root.tag == "clickhouse" and not root.attrib
-    assert [child.tag for child in root] == [*TABLES, "startup_scripts"]
+    assert [child.tag for child in root] == list(TABLES), "No SQL startup hook may load corrupt metadata"
     for table in TABLES:
         child = root.find(table)
         assert child.attrib == {"remove": "1"} and len(child) == 0
-    startup = root.find("startup_scripts")
-    assert not startup.attrib
-    assert [child.tag for child in startup] == ["throw_on_error", *(["scripts"] * 6)]
-    assert startup.findtext("throw_on_error") == "true"
-    for table, script in zip(TABLES, startup.findall("scripts"), strict=True):
-        assert not script.attrib and [child.tag for child in script] == ["condition", "query"]
-        assert script.findtext("condition") == f"EXISTS TABLE system.{table} FORMAT TabSeparated"
-        assert script.findtext("query") == f"DETACH TABLE IF EXISTS system.{table} PERMANENTLY SYNC"
+    command("/bin/sh", "-n", str(APP / SCRIPT))
     name, image, actual = contract(render(APP))
-    assert actual == source, "Rendered XML differs from the reviewed quarantine file"
+    assert actual == {"log-quarantine.xml": source, SCRIPT: (APP / SCRIPT).read_text()}
     with tempfile.TemporaryDirectory(prefix="clickhouse-render-") as directory:
         copy = Path(directory) / "langfuse"
         shutil.copytree(APP, copy)
-        (copy / XML).write_text(source + "\n<!-- rollout hash fixture -->\n")
-        changed_name, changed_image, _ = contract(render(copy))
-        assert name != changed_name and image == changed_image, "Config edit must change pod volume reference"
-    print("ClickHouse quarantine XML, mount, image pin, and rollout hash checks passed")
-    return image, root
+        for filename, extra in [(XML, "\n<!-- rollout hash fixture -->\n"), (SCRIPT, "\n# rollout hash fixture\n")]:
+            target = copy / filename
+            original = target.read_text()
+            target.write_text(original + extra)
+            changed_name, changed_image, _ = contract(render(copy))
+            assert name != changed_name and image == changed_image, "Config edit must change pod volume reference"
+            target.write_text(original)
+    print("ClickHouse quarantine XML, init container, mount, image pin, wave and rollout hash checks passed")
+    return image
 
 
-def runtime_check(image, root):
+def runtime_check(image):
     if not shutil.which("docker"):
         raise SystemExit("Docker runtime unavailable: docker executable not found")
     contexts = json.loads(command("docker", "context", "inspect"))
@@ -114,7 +126,7 @@ def runtime_check(image, root):
                 "--entrypoint", "/bin/chown", image, "-R", "65534:65534", "/var/lib/clickhouse")
         return name
 
-    def start(suffix, data, config):
+    def start(suffix, data, config, *, corrupt=False):
         name = prefix + "-" + suffix
         containers.append(name)
         command(*docker, "run", "--detach", "--name", name, "--network", "none", "--hostname", "localhost",
@@ -130,6 +142,7 @@ def runtime_check(image, root):
                 "--mount", f"type=bind,source={password_file},target=/run/secrets/langfuse/clickhouse-password,readonly",
                 "--mount", f"type=volume,source={data},target=/var/lib/clickhouse",
                 "--mount", f"type=bind,source={config},target={MOUNT},readonly",
+                "--mount", f"type=bind,source={console_file},target=/etc/clickhouse-server/config.d/fixture-console.xml,readonly",
                 image)
         deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
@@ -141,11 +154,19 @@ def runtime_check(image, root):
                                     "--query", "SELECT 1"],
                                    capture_output=True, text=True, timeout=10)
             if ready.returncode == 0 and server.stdout.strip() == "/usr/bin/clickhouse":
+                assert not corrupt, "Unquarantined overlapping parts unexpectedly allowed startup"
                 return name
             if command(*docker, "inspect", "--format", "{{.State.Running}}", name) != "true":
+                if corrupt:
+                    assert command(*docker, "inspect", "--format", "{{.State.ExitCode}}", name) != "0"
+                    logs = command(*docker, "logs", name, stderr=subprocess.STDOUT)
+                    assert re.search(r"intersect|overlap", logs, re.IGNORECASE), logs[-4000:]
+                    stop(name)
+                    return None
                 break
             time.sleep(1)
-        raise AssertionError("Fixture startup failed:\n" + command(*docker, "logs", "--tail", "40", name))
+        raise AssertionError("Fixture startup failed:\n" + command(
+            *docker, "logs", "--tail", "40", name, stderr=subprocess.STDOUT))
 
     def stop(name):
         command(*docker, "stop", "--time", "30", name)
@@ -158,6 +179,16 @@ def runtime_check(image, root):
         assert hashes, "Seeded MergeTree parts must contain data files"
         return sorted(hashes.splitlines())
 
+    def offline(data, script, *args):
+        return command(*docker, "run", "--rm", "--network", "none", "--user", "65534:65534",
+                       "--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+                       "--mount", f"type=volume,source={data},target=/var/lib/clickhouse",
+                       "--mount", f"type=bind,source={APP / SCRIPT},target=/quarantine/{SCRIPT},readonly",
+                       "--entrypoint", "/bin/sh", image, "-eu", "-c", script, "fixture", *args)
+
+    def quarantine(data):
+        offline(data, 'exec /bin/sh /quarantine/' + SCRIPT)
+
     def verify(name, paths, hashes):
         assert sql(name, f"SELECT count() FROM system.tables WHERE database='system' "
                          f"AND name IN ({SQL_TABLES})") == "0"
@@ -169,31 +200,54 @@ def runtime_check(image, root):
 
     try:
         with tempfile.TemporaryDirectory(prefix="clickhouse-quarantine-") as directory:
+            console_file = Path(directory) / "console.xml"
+            console_file.write_text("<clickhouse><logger><console>1</console></logger></clickhouse>\n")
             password_file = Path(directory) / "password"
             password_file.write_text(PASSWORD)
             password_file.chmod(0o644)  # Synthetic fixture credential, readable by UID 65534.
-            seed = Path(directory) / "seed.xml"
-            baseline = ET.Element("clickhouse")
-            for table in TABLES:
-                baseline.append(root.find(table))
-            ET.ElementTree(baseline).write(seed, encoding="unicode")
             data = volume("data")
-            name = start("seed", data, seed)
+            name = start("seed", data, APP / XML)
             for number, table in enumerate(TABLES):
                 sql(name, f"CREATE TABLE system.{table} (marker UInt64) ENGINE=MergeTree ORDER BY marker; "
                           f"INSERT INTO system.{table} VALUES ({number})")
             sql(name, "CREATE TABLE default.quarantine_sentinel (marker UInt64) ENGINE=MergeTree ORDER BY marker; "
                       "INSERT INTO default.quarantine_sentinel VALUES (424242)")
-            paths = sql(name, f"SELECT path FROM system.parts WHERE database='system' AND active "
+            parts = sql(name, f"SELECT path FROM system.parts WHERE database='system' AND active "
                               f"AND table IN ({SQL_TABLES}) ORDER BY table").splitlines()
-            assert len(paths) == len(TABLES), paths
-            hashes = files(name, paths)
+            assert len(parts) == len(TABLES), parts
+            paths = sql(name, f"SELECT arrayJoin([data_paths[1], metadata_path]) FROM system.tables WHERE "
+                             f"(database='system' AND name IN ({SQL_TABLES})) OR "
+                             "(database='default' AND name='quarantine_sentinel') ORDER BY database, name").splitlines()
+            paths = [str(Path("/var/lib/clickhouse") / path) for path in paths]
+            assert len(paths) == 2 * (len(TABLES) + 1), paths
             stop(name)
+            # Two ranges overlap without either containing the other: native metadata load must reject them.
+            offline(data, 'part=${1%/}; base=${part%/*}; mv "$part" "$base/all_1_2_0"; '
+                          'cp -a "$base/all_1_2_0" "$base/all_2_3_0"', parts[0])
+            start("corrupt", data, APP / XML, corrupt=True)
+            # Both guards must reject before creating any marker, even for the last table in the allowlist.
+            offline(data, 'alias=/var/lib/clickhouse/metadata/system; target=$(readlink "$alias"); '
+                          'directory=$(readlink -f "$alias"); '
+                          'ln -sfn /var/lib/clickhouse/store/wrong-system-database "$alias"; '
+                          'if /bin/sh /quarantine/quarantine-system-logs.sh; then exit 1; fi; '
+                          'test -z "$(find "$directory" -maxdepth 1 -name "*.sql.detached" -print)"; '
+                          'ln -sfn "$target" "$alias"')
+            offline(data, 'directory=$(readlink -f /var/lib/clickhouse/metadata/system); '
+                          'marker="$directory/text_log.sql.detached"; printf guard > "$marker"; '
+                          'if /bin/sh /quarantine/quarantine-system-logs.sh; then exit 1; fi; '
+                          'test "$(cat "$marker")" = guard; '
+                          'test "$(find "$directory" -maxdepth 1 -name "*.sql.detached" | wc -l)" -eq 1; '
+                          'rm "$marker"')
+            hashes = sorted(offline(data, 'find "$@" -type f -exec sha256sum {} +', *paths).splitlines())
+            assert hashes
             for suffix in ("quarantine", "repeat"):
+                quarantine(data)
                 name = start(suffix, data, APP / XML)
                 verify(name, paths, hashes)
                 stop(name)
-            name = start("fresh", volume("fresh"), APP / XML)
+            fresh = volume("fresh")
+            quarantine(fresh)
+            name = start("fresh", fresh, APP / XML)
             assert sql(name, f"SELECT count() FROM system.tables WHERE database='system' "
                              f"AND name IN ({SQL_TABLES})") == "0"
             assert sql(name, "SELECT count() FROM system.detached_tables") == "0"
@@ -211,13 +265,13 @@ def runtime_check(image, root):
             if result.returncode:
                 failures.append(name)
         assert not failures, f"Fixture cleanup failed: {failures}"
-    print("ClickHouse runtime: six permanent detaches, retained data, intact sentinel, repeat and fresh boots passed")
+    print("ClickHouse runtime: corrupt startup rejected; init quarantine retained data and sentinel; repeat/fresh boots passed")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runtime", choices=["docker"], help="Also run the local Docker fixture")
     arguments = parser.parse_args()
-    pinned_image, config_root = static_check()
+    pinned_image = static_check()
     if arguments.runtime:
-        runtime_check(pinned_image, config_root)
+        runtime_check(pinned_image)

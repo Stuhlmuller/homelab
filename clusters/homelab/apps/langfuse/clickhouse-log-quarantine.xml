@@ -1,6 +1,7 @@
 <clickhouse>
     <!-- Corrupt diagnostic parts caused sustained NFS merge retries on 2026-10-05.
-         Stop their writers before detaching; retain all files for investigation.
+         The init container marks them detached before metadata loading.
+         Keep their writers disabled; retain all files for investigation.
          Application tables, including Langfuse traces, keep their normal writers. -->
     <error_log remove="1" />
     <histogram_metric_log remove="1" />
@@ -8,33 +9,4 @@
     <part_log remove="1" />
     <query_log remove="1" />
     <text_log remove="1" />
-    <startup_scripts>
-        <throw_on_error>true</throw_on_error>
-        <!-- Native startup scripts run after metadata loads and before serving.
-             Conditions make an empty installation and repeated starts no-ops. -->
-        <scripts>
-            <condition>EXISTS TABLE system.error_log FORMAT TabSeparated</condition>
-            <query>DETACH TABLE IF EXISTS system.error_log PERMANENTLY SYNC</query>
-        </scripts>
-        <scripts>
-            <condition>EXISTS TABLE system.histogram_metric_log FORMAT TabSeparated</condition>
-            <query>DETACH TABLE IF EXISTS system.histogram_metric_log PERMANENTLY SYNC</query>
-        </scripts>
-        <scripts>
-            <condition>EXISTS TABLE system.opentelemetry_span_log FORMAT TabSeparated</condition>
-            <query>DETACH TABLE IF EXISTS system.opentelemetry_span_log PERMANENTLY SYNC</query>
-        </scripts>
-        <scripts>
-            <condition>EXISTS TABLE system.part_log FORMAT TabSeparated</condition>
-            <query>DETACH TABLE IF EXISTS system.part_log PERMANENTLY SYNC</query>
-        </scripts>
-        <scripts>
-            <condition>EXISTS TABLE system.query_log FORMAT TabSeparated</condition>
-            <query>DETACH TABLE IF EXISTS system.query_log PERMANENTLY SYNC</query>
-        </scripts>
-        <scripts>
-            <condition>EXISTS TABLE system.text_log FORMAT TabSeparated</condition>
-            <query>DETACH TABLE IF EXISTS system.text_log PERMANENTLY SYNC</query>
-        </scripts>
-    </startup_scripts>
 </clickhouse>

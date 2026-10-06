@@ -16,3 +16,4 @@ configMapGenerator:
         argocd.argoproj.io/sync-wave: "-2"
     files:
       - log-quarantine.xml=clickhouse-log-quarantine.xml
+      - quarantine-system-logs.sh

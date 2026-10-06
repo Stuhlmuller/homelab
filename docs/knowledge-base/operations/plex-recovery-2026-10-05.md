@@ -195,3 +195,27 @@ regression requiring configuration to precede the datastore deployment. The
 cluster's existing 900-second sync timeout releases the old operation; verify
 that the following automated sync uses the corrected revision before accepting
 recovery. Do not infer successful deployment from Git merge or Pod creation.
+
+### Quarantine Before Metadata Loading
+
+The ordering correction merged in PR #1204 as
+`d10a4af51a1363bfbdabb3f3b4189f032e22a1b5`. Argo applied its ConfigMap at
+22:11 PDT; the missing mount cleared and the pinned image pulled.
+ClickHouse then failed during metadata loading: overlapping parts in
+`histogram_metric_log`, `query_log`, `text_log`, and `part_log` caused code 49,
+followed by asynchronous-loader failures. The SQL startup hook ran too late
+to quarantine these tables. No `default` table attachment failure was observed.
+
+The revised path is a fenced, non-root init container, using the same pinned
+ClickHouse image. It resolves the Atomic system database's authoritative
+metadata directory from `metadata/system.sql`, validates its alias and the six
+allowlisted table paths, then creates native empty `.sql.detached` markers.
+It preserves the original metadata and data, does not touch application tables,
+and does not require credentials. Invalid inputs fail before marker creation.
+The six log writers remain disabled. The runtime regression now includes actual
+overlapping parts, whose ordinary startup fails before quarantine.
+
+Two samples while ClickHouse was stopped measured NAS I/O wait at 2.9% and 4.0%,
+versus 44.5% before; NFS creates fell from 41.2/s to 0.8–1.4/s. This supports
+ClickHouse as the residual bottleneck after Jellyfin stopped. Verification with
+ClickHouse running and a client start/seek retest remain required.
