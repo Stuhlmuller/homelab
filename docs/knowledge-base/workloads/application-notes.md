@@ -82,20 +82,26 @@ Follow the loopback-only human setup procedure in
 public setup access or create an administrator through a shell command.
 Provider credentials, playlist URLs, and guide source secrets stay outside git.
 
-On October 6, 2026 UTC, read-only inspection confirmed the Deployment and
+On October 6, 2026 at 05:40 UTC, read-only inspection confirmed the Deployment and
 PostgreSQL StatefulSet remain at zero replicas, both PVCs are `Bound`, and
 Argo CD reports `Synced/Healthy`; that health does not establish playback.
 The unchanged app requests 1664 MiB and can currently fit only on `acer`.
-Placing it and its 256 MiB database there would leave about 400 MiB of requested
+Placing it and its 256 MiB database there would leave about 1552 MiB of requested
 memory headroom. Recheck capacity before resuming; stream/transcode peaks remain
-untested. Jellyfin/Plex are absent from this repo and the live Pod inventory;
-their external locations and the operator's TV source remain unspecified.
+untested. October 6 read-only checks located Plex and Jellyfin on QNAP
+`10.1.0.2`: Plex responds on port `32400`; Jellyfin was deliberately disabled
+and port `8096` is unavailable. The NAS cannot reach cluster Service IPs, and
+the protected Dispatcharr hostname returns `401` without browser login.
+An unattended private tuner route remains necessary; see
+[[operations/plex-recovery-2026-10-05]] for the NAS service state.
 The workload README now records M3U/XMLTV for Jellyfin and HDHR/XMLTV for Plex,
 including private routing, profile selection and real-client acceptance.
 The owner then selected the public IPTV-org USA M3U feed. The manifests now
 restore one app/database replica, retain both claims and start PostgreSQL first.
-The README records native account setup, daily refresh, group auto-channel sync
-and source rollback. The source has no embedded XMLTV URL, so guide setup remains
+The README records native account setup, daily stream refresh, manual bulk
+channel creation and source rollback. Auto Channel Sync stays off for this
+regular lineup to preserve control of guide mappings and failover streams.
+The source has no embedded XMLTV URL, so guide setup remains
 open. Runtime resumption and source/playback acceptance must be verified after
 merge; the initial inspection alone changed no live state.
 

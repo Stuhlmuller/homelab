@@ -9,9 +9,9 @@ The app and dedicated PostgreSQL StatefulSet each declare one replica for the
 IPTV-org USA setup. PostgreSQL starts in wave `-1`, before the app. Both existing
 PVCs are reused; PostgreSQL retains its claim on scale-down and deletion.
 
-The October 6, 2026 UTC preflight found enough capacity for the existing
+The October 6, 2026 05:40 UTC preflight found enough capacity for the existing
 1.875 GiB combined memory requests. Only `acer` could fit the 1664 MiB app Pod;
-placing the 256 MiB database there too would leave about 400 MiB of requested
+placing the 256 MiB database there too would leave about 1552 MiB of requested
 memory headroom. All nodes were Ready without pressure. This proves current
 scheduling fit, not peak streaming or transcoding capacity. Keep the existing
 requests and verify actual usage during playback.
@@ -127,16 +127,22 @@ Configure it through the authenticated native UI after first-run setup:
 | Credentials | None |
 
 Edit an existing account with this exact URL instead of adding a duplicate.
-After group discovery, open **Groups**, enable the USA groups and their
-**Auto Channel Sync**, then **Save and Refresh**. Auto-sync creates exported
-Channels from Streams and maintains them on refresh. Newly discovered groups
-must also have auto-sync enabled before they contribute exported channels.
+After group discovery, open **Groups**, enable the USA groups, leave
+**Auto Channel Sync** off, then **Save and Refresh**. In the Streams table,
+filter to this account with **Only Unassociated** and **Hide Stale**, select
+all matching streams and use **Create Channels → Auto-Assign Sequential**.
+The header checkbox includes matching rows across pages. Daily refresh updates
+the source streams; review new streams and create their channels separately.
+
+Manual channels preserve control of future EPG mappings and failover streams.
+Upstream [recommends bulk creation for regular lineups](https://dispatcharr.github.io/Dispatcharr-Docs/troubleshooting/#use-of-auto-channel-sync);
+reserve auto-sync for event groups whose channel identities follow the source.
 
 The playlist currently supplies no XMLTV URL. Leave EPG unconfigured until a
 compatible guide is selected; channel import does not establish programme data
 or premium-event coverage. Verify nonempty Channels, `/output/m3u` and
 `/hdhr/lineup.json`, then play a sample channel. Media-server connections remain
-pending their actual server addresses. To remove this source, disable its
+pending private routing. To remove this source, disable its
 account first; use the native UI to review associated channels before deleting.
 
 ## Live TV for Jellyfin and Plex
@@ -145,6 +151,12 @@ Dispatcharr needs an operator-supplied M3U/Xtream source and guide data; it does
 not supply channels or PPV access. Confirm the provider includes the desired
 baseball, football and purchased events and exposes compatible streams. A
 subscription limited to the provider's own player is not an M3U source.
+
+October 6 inspection located both media servers on QNAP `10.1.0.2`.
+Plex responds on port `32400`; Jellyfin is deliberately disabled and its port
+`8096` is unavailable. Neither the cluster-only Service IP nor the protected
+browser-login route currently provides an unattended tuner connection from
+the NAS. Preserve the operator's Jellyfin stop while completing source setup.
 
 After the capacity and first-run checks above:
 
