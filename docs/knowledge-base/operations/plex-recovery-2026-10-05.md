@@ -85,7 +85,7 @@ No configuration or version change is included to roll back.
 
 ## Remaining Work
 
-- Resolve the slow start/seek behavior recorded below; client login now works.
+- Confirm client start/seek after the verified storage-contention repair below.
 - Investigate the crash cause using private crash/log evidence if it recurs.
   Keep raw logs, tokens, account identifiers, and library details out of git.
 
@@ -167,15 +167,13 @@ reads. No failed merge events for Langfuse's `default` database were found in
 the preceding 24 hours; this is not a full integrity check. Corruption origin
 remains unknown.
 
-The repository repair removes the six logger configuration sections and uses
-ClickHouse's native startup SQL to permanently detach those tables. It retains
-all data and metadata, does not modify application tables, and runs idempotently
-on restart or an empty installation. A generated ConfigMap hash triggers the
-existing `Recreate` deployment. A disposable pinned-image test verifies retained
-part checksums, an unaffected application sentinel, repeated startup, and fresh
-startup before deployment. Local Docker is unavailable; CI must run that test.
+The first repair disabled the six log writers and used native startup SQL to
+detach their tables. Its pinned-image fixture verified retained-file checksums,
+application reads, repeated startup, and fresh startup with healthy diagnostic
+tables. It did not cover overlapping parts that prevented metadata loading;
+the follow-up below added that failure case and moved quarantine before startup.
 
-Deployment and playback improvement are pending. Verify the six permanent
+The acceptance criteria were six permanent
 detachments, disappearance of merge retries, lower NAS metadata rates, readable
 application tables, and actual Plex start/seek. See the
 [Langfuse quarantine contract](../../../clusters/homelab/apps/langfuse/README.md#clickhouse-diagnostic-quarantine)
@@ -219,3 +217,45 @@ Two samples while ClickHouse was stopped measured NAS I/O wait at 2.9% and 4.0%,
 versus 44.5% before; NFS creates fell from 41.2/s to 0.8–1.4/s. This supports
 ClickHouse as the residual bottleneck after Jellyfin stopped. Verification with
 ClickHouse running and a client start/seek retest remain required.
+
+### Verified Server Recovery
+
+PR #1210 merged as `2aee3e88d953f7da8ba4b920234f87039b975693` after all
+required checks passed. The pinned-image fixture reproduced overlapping parts,
+then verified quarantine, retained-file checksums, application reads, repeated
+startup, and fresh startup. Argo completed the rollout at **October 6,
+06:00:33 UTC**, reporting Synced/Healthy. Its observed descendant revision
+`626a720febf2d9d038a353720273bdc18e738b1c` retained the tested recovery files.
+
+Read-only acceptance with ClickHouse running confirmed:
+
+- The init container completed successfully, creating all six native markers.
+  All six logs were permanently detached, with no attached targets or merges.
+- All ten physical application tables remained readable with identical row
+  counts: `events_core` and `events_full` each 1,044, `schema_migrations` 98,
+  and seven empty tables. The Bound PVC and backing-volume identities matched.
+- Error counters 33 and 117 stayed at zero across a 35-second sample. The
+  replacement remained Ready with zero restarts; all five Langfuse deployments
+  had their desired available replica.
+- Two five-second NAS samples measured I/O wait at **4.9% and 2.0%**, versus
+  **44.5%** before repair. NFS renames fell from 25.1/s to 0.6–1.9/s;
+  creates fell from 41.2/s to 11.1–17.1/s.
+- Plex identity and web requests returned HTTP 200 in 8–20 ms. Jellyfin
+  remained disabled with no running processes. Actual client start/seek
+  improvement still requires operator confirmation.
+
+### Recreate Deployment Delay
+
+The rollout scaled the old ReplicaSet to zero at 05:48:21 UTC, but three
+historical Failed Pods remained. No replacement appeared until **05:58:22**,
+exactly the live 600-second progress deadline plus one second. No manual
+cluster mutation was needed.
+
+This matches a missed wake-up in Kubernetes `v1.34.11`: Recreate reconciliation
+ignores terminal Pods, while the Pod-deletion handler enqueues only when the
+total owned Pod count is zero. Internal queue ordering was not observed, so
+that mechanism remains an inference; the replacement timing was observed.
+Check the progress deadline before treating this state as a storage or
+admission failure. See the [deletion handler](https://github.com/kubernetes/kubernetes/blob/v1.34.11/pkg/controller/deployment/deployment_controller.go#L355-L398),
+[Recreate check](https://github.com/kubernetes/kubernetes/blob/v1.34.11/pkg/controller/deployment/recreate.go#L98-L125),
+and [progress requeue](https://github.com/kubernetes/kubernetes/blob/v1.34.11/pkg/controller/deployment/progress.go#L157-L199).
