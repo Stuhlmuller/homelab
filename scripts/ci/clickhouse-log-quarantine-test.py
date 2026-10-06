@@ -162,7 +162,7 @@ def runtime_check(image):
                     logs = command(*docker, "logs", name, stderr=subprocess.STDOUT)
                     assert re.search(r"intersect|overlap", logs, re.IGNORECASE), logs[-4000:]
                     stop(name)
-                    return
+                    return None
                 break
             time.sleep(1)
         raise AssertionError("Fixture startup failed:\n" + command(
@@ -218,6 +218,7 @@ def runtime_check(image):
             paths = sql(name, f"SELECT arrayJoin([data_paths[1], metadata_path]) FROM system.tables WHERE "
                              f"(database='system' AND name IN ({SQL_TABLES})) OR "
                              "(database='default' AND name='quarantine_sentinel') ORDER BY database, name").splitlines()
+            paths = [str(Path("/var/lib/clickhouse") / path) for path in paths]
             assert len(paths) == 2 * (len(TABLES) + 1), paths
             stop(name)
             # Two ranges overlap without either containing the other: native metadata load must reject them.
