@@ -268,6 +268,15 @@ The targeted `Terragrunt Apply` dispatch also installs its kubeconfig through
 Octelium, so it cannot repair an Octelium outage and does not consume a
 repository kubeconfig secret.
 
+Node label and annotation resources must use distinct server-side apply field
+managers. Full apply
+[37412936155](https://github.com/Stuhlmuller/homelab/actions/runs/37412936155)
+removed `zimaboard-0`'s dataplane label when its annotation resource reused the
+label manager; the gateway Pod was deleted at 2026-10-06 04:29:32 UTC. The
+module now establishes annotation ownership before reconciling labels. For
+recovery, verify the saved plan preserves the gateway address and restores the
+dataplane label without replacing node metadata resources.
+
 When recovery requires the committed `kubernetes-node-labels` state while
 Octelium is unavailable, use a reviewed `main` checkout on a trusted LAN
 machine whose operator kubeconfig points directly at the canonical API

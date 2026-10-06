@@ -34,6 +34,9 @@ terraform {
 resource "kubernetes_labels" "nodes" {
   for_each = var.node_labels
 
+  # Establish annotation ownership before this existing manager relinquishes it.
+  depends_on = [kubernetes_annotations.nodes]
+
   api_version = "v1"
   kind        = "Node"
   labels      = each.value
@@ -57,6 +60,7 @@ resource "kubernetes_annotations" "nodes" {
     name = each.key
   }
 
-  field_manager = "terragrunt"
+  # Labels and annotations issue separate server-side apply requests per Node.
+  field_manager = "terragrunt-node-annotations"
   force         = true
 }
