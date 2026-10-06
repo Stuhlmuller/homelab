@@ -67,6 +67,44 @@ nix develop --command bash scripts/ci/langfuse-startup-check.sh
 kubectl -n langfuse get pvc langfuse-migration-recovery
 ```
 
+## ClickHouse diagnostic quarantine
+
+Six `system` log tables had corrupt parts and repeated failed merges, generating
+heavy NFS metadata traffic and delaying Plex playback on the shared QNAP.
+`clickhouse-log-quarantine.xml` disables those six log writers and permanently
+detaches their tables during native server startup. It retains their metadata
+and data files; Langfuse's `default` database and healthy system logs are unchanged.
+These six SQL diagnostic histories stop recording while quarantined.
+
+The generated ConfigMap hash replaces the ClickHouse Pod when configuration
+changes. Startup runs after metadata loading, before serving clients, and fails
+on SQL errors. Missing tables on fresh installs and already-detached tables are
+no-ops. This is a short ClickHouse outage during the existing `Recreate` rollout.
+
+```sh
+nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py
+# Requires a local Linux Docker engine; CI runs this against the pinned image.
+nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py --runtime docker
+```
+
+After Argo CD observes the merged revision, verify ClickHouse readiness and use
+an authenticated, read-only client to check `system.detached_tables`: the incident's
+`error_log`, `histogram_metric_log`, `opentelemetry_span_log`, `part_log`,
+`query_log`, and `text_log` must all have `is_permanently=1`. None may remain in
+`system.tables` or `system.merges`. Confirm error counters 33/117 stop increasing,
+Langfuse tables remain readable, NAS metadata traffic falls, and Plex start/seek
+improves. Fresh installs legitimately have no detached tables.
+
+Rollback requires a reviewed forward recovery: remove the startup detachment
+queries first, keep affected writers disabled, then repair and deliberately
+reattach the retained tables through a repository-owned recovery path. A config
+revert does not reattach tables; blindly reattaching corrupt parts restarts the
+merge failures. Do not delete retained files. The cause of the corruption and
+independent datastore backup/restore remain unresolved storage work.
+
+See [ClickHouse DETACH](https://clickhouse.com/docs/reference/statements/detach)
+and the [incident evidence](../../../../docs/knowledge-base/operations/plex-recovery-2026-10-05.md).
+
 ## Validation
 
 Use the protected full Terragrunt apply or its dependency-aware

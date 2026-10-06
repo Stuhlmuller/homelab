@@ -35,6 +35,8 @@ what to read, what facts matter, and what must be updated with future changes.
 - [[talos-control-plane-maintenance]] records issuer drift repair and upgrade
   gates.
 - [[image-automation]] records Renovate policy and digest requirements.
+- [[../operations/plex-recovery-2026-10-05]] records QNAP Plex crash evidence
+  and the bounded server recovery path.
 
 ## Supporting Maps
 

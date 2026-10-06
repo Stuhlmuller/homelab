@@ -46,6 +46,9 @@ jobs:
       - name: Check whitespace
         run: git diff --check
 
+      - name: Check ClickHouse diagnostic quarantine
+        run: nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py --runtime docker
+
       - name: Install Python for gateway checks
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
         with:
