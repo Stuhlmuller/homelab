@@ -1189,3 +1189,15 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Supported-platform preparation (HOME-60)
+
+The [integrated preparation packet](../../home-60-supported-platform-preparation.md)
+consolidates HOME-54/55/58 with completed Recovery/adversarial findings.
+Talos 1.14.2 / Kubernetes 1.35.9 remains a candidate. A proposed 1.34.12
+checkpoint before OS hops requires separate bridge acceptance; expiry on
+October 6 at 18:00 UTC retains HOLD. Signed revision, QA, Recovery and exact
+operational authorization remain four independent gates. The packet replaces
+the original healthy-API rollback assumption with source-stack recovery gates
+and records unresolved installer identities, full renders, mesh compatibility
+and the unnamed receipt custodian. No runtime pins or infrastructure changed.
