@@ -10,10 +10,7 @@ Recheck these paths when upgrading the backend image.
 import copy
 import json
 import posixpath
-import shutil
-import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 
@@ -27,7 +24,6 @@ LITELLM_ROUTING_CONFIG = {
     "token_file": "/var/run/secrets/nofx/litellm/token",
 }
 ROOT = Path(__file__).resolve().parents[2]
-ACTIVATION_PATCH = ROOT / "docs/examples/langfuse/activate-nofx.patch"
 REGISTRY_TEMPLATE = (
     '{"auths":{"ghcr.io":{"auth":"'
     '{{ printf "rstuhlmuller:%s" .token | b64enc }}'
@@ -280,18 +276,6 @@ def validate(resources, active=False):
     return errors
 
 
-def activated_resources():
-    app = Path("clusters/homelab/apps/nofx")
-    with tempfile.TemporaryDirectory() as directory:
-        scratch = Path(directory)
-        shutil.copytree(ROOT / app, scratch / app, ignore=shutil.ignore_patterns("__pycache__"))
-        subprocess.run(["git", "apply", "--check", str(ACTIVATION_PATCH)], cwd=scratch, check=True)
-        subprocess.run(["git", "apply", str(ACTIVATION_PATCH)], cwd=scratch, check=True)
-        rendered = subprocess.check_output(["kubectl", "kustomize", scratch / app], text=True)
-        return json.loads(subprocess.check_output(
-            ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=rendered, text=True))
-
-
 def negative_checks(resources):
     """Mutate the real rendered contract, especially mount shadowing and identity."""
     cases = ("image-workdir", "sibling-path", "relative-command", "relative-database",
@@ -410,15 +394,11 @@ def negative_checks(resources):
 def main():
     source = sys.argv[1] if len(sys.argv) > 1 else "-"
     resources = json.loads(sys.stdin.read() if source == "-" else Path(source).read_text())
-    errors = validate(resources)
+    errors = validate(resources, active=True)
     if errors:
         raise ValueError("; ".join(errors))
-    activated = activated_resources()
-    errors = validate(activated, active=True)
-    if errors:
-        raise ValueError("activation patch: " + "; ".join(errors))
-    count = negative_checks(activated)
-    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth, staged LiteLLM route; "
+    count = negative_checks(resources)
+    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth, active LiteLLM route; "
           f"{count} regressions rejected")
 
 

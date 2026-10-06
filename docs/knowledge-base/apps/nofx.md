@@ -26,8 +26,10 @@ Runtime and read-only dashboard acceptance passed on 2026-09-29; live model
 completion remains partial as described below. Stop all traders before future
 rollouts and verify saved visibility settings after reload. Explicit capital
 and allocations remain user input; publication does not establish returns.
-Patch `0013` is included in the image but its gateway route and token remain
-unmounted. Gateway activation requires its separate reviewed prerequisites.
+Patch `0013` is included in the image. Its separate gateway activation pins the
+published image pair and mounts only the backend's file-backed LiteLLM route and
+dedicated read-only token after the stopped-trader gate passes. A correlated
+Langfuse generation remains required for runtime acceptance.
 The prepared source archive SHA-256 is
 `760e88843ea40956ace7bfb12d97304678dcb089da842f9b2fd646d237e0e904`.
 The served archive matched this hash after rollout. This verifies deployment of
