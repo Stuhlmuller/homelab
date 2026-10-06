@@ -10,8 +10,19 @@ exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
 
-Policy Bot accepts its configured Codex, owner, or organization-member review
-approval without requiring a commit signature.
+Policy Bot automatically approves PRs through `requires.count: 0` in
+[`.policy.yml`](../../../.policy.yml); human and Codex reviews are optional.
+Required GitHub checks and explicit Stuhlmuller organization-member disapproval
+still block merges. The policy takes effect from the target branch after merge;
+revert `.policy.yml` to restore review requirements.
+
+Read-only GitHub inspection on 2026-10-06 UTC confirmed that `main` ruleset
+`14700233` already requires zero approving reviews. The `homelab-plan` and
+`homelab-production` environments separately require `rstuhlmuller` approval,
+despite the canonical runbook describing production as having no reviewer.
+Policy changes do not remove those environment gates. Reconcile the environment
+configuration and runbook through the repository workflow before treating
+Terragrunt plans or applies as unattended.
 
 See [[../operations/validation-gates]] and [[../architecture/gitops-flow]].
 
