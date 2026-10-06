@@ -17,7 +17,8 @@ The `litellm-app-keys` revision `v2` refreshes the file-mounted OpenRouter
 credential after protected SSM injection. Merge this refresh only after the
 provider credential workflow succeeds. The gateway rereads the mounted key for
 each request; no manual restart is required. Verify a real gateway generation
-and its Langfuse trace before claiming recovery.
+and its Langfuse trace before claiming recovery. Explicit remote-reference
+defaults match the External Secrets API to prevent persistent Argo drift.
 
 | Caller | Gateway identity | State |
 | --- | --- | --- |
