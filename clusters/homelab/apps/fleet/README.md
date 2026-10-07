@@ -7,8 +7,8 @@ Registration inputs live in `IaC/stacks/fleet/stack.hcl`, indexed by
 No Fleet Premium license or subscription is provisioned.
 
 The [Fleet Free and Entra runbook](FREE-ENTRA.md) owns native Microsoft Mac
-Platform SSO, separate console SAML, Mac passcode profiles, platform reporting
-limits, and the interactive acceptance checklist. Profiles live in `profiles/`;
+Platform SSO, separate console SAML, Mac and iPhone/iPad passcode profiles,
+platform reporting limits, and the interactive acceptance checklist. Profiles live in `profiles/`;
 `scripts/fleet-free-setup.py` applies them through supported Free APIs. These
 application/device settings are a repository operator step after protected merge,
 not Kubernetes resources that Argo CD can apply itself.

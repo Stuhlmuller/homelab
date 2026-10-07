@@ -39,9 +39,9 @@ acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/READ
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
 separates native Microsoft Password Platform SSO from console SAML. Company
 Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers Mac profiles with host-scoped commands. The desired state
-retires the global **Family Mac security baseline** assignment; Fleet Free
-4.92.2 sends global Apple profiles to phones as well as Macs, and
+script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
+desired state retires the global **Family Mac security baseline** assignment;
+Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
 [Label scoping requires Premium](https://fleetdm.com/guides/custom-os-settings#target-hosts-with-labels).
 `mac-baseline --host-id` verifies an enrolled Mac and installs the new
@@ -51,8 +51,15 @@ identities prevent delayed catalog removals from erasing the replacement.
 The catalog action is removal-only and preserves other entries. New Macs need
 explicit installation; the baseline has no automatic assignment or drift repair.
 `mac-pilot` uses the new baseline with the existing Entra SSO profile.
-Verify the phone's assignment is absent and the new Mac profile remains after
-the old one is removed; [Validation Gates](../operations/validation-gates.md) owns live evidence.
+`ios-baseline --host-id` targets only one Fleet MDM-connected `ios`/`ipados`
+host and validates its Apple device identifier before delivering the stable
+iPhone/iPad passcode profile:
+non-simple six-character minimum, numeric passcodes allowed, five-minute idle
+lock, and immediate reauthentication. It has no global catalog assignment or
+automatic drift repair. `ProfileList` confirms delivery; `SecurityInfo` fields
+report passcode state but do not prove every setting took effect. A physical
+passcode/lock test remains required. [Validation Gates](../operations/validation-gates.md)
+owns live evidence.
 The console enterprise app permits only an individually assigned, precreated
 administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security

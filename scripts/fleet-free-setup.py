@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ROOT / "clusters/homelab/apps/fleet/profiles"
 CONSOLE_USER = "rodman@stinkyboi.com"
 MAC_FILES = ("macos-security-baseline-host.mobileconfig", "macos-entra-platform-sso.mobileconfig")
+IOS_FILES = ("ios-passcode-baseline.mobileconfig",)
 LEGACY_MAC_FILES = ("macos-security-baseline.mobileconfig",)  # Global assignment retired; removal only.
 POLICY = {
     "name": "Family Mac FileVault enabled",
@@ -94,8 +95,9 @@ def apply_profiles(api, mdm, token, host_uuid, desired, remove=False):
 
 def ios_host(api, mdm, token, host_id):
     host = api.request("GET", f"/api/v1/fleet/hosts/{host_id}", token=token)["host"]
-    if host.get("id") != host_id or host.get("platform") not in ("ios", "ipados"):
-        raise SetupError("Selected host is not an iPhone or iPad")
+    if (host.get("id") != host_id or host.get("platform") not in ("ios", "ipados")
+            or host.get("mdm", {}).get("connected_to_fleet") is not True):
+        raise SetupError("Selected host is not a Fleet-enrolled iPhone or iPad")
     mdm.device_identifier(host["uuid"])
     return host["uuid"]
 
@@ -244,7 +246,8 @@ def mac_baseline_catalog(api, token, remove=False):
 
 
 def execute(args):
-    desired = profiles(MAC_FILES[:1] if args.action == "mac-baseline" else MAC_FILES, 5)
+    desired = (profiles(IOS_FILES, 1) if args.action == "ios-baseline"
+               else profiles(MAC_FILES[:1] if args.action == "mac-baseline" else MAC_FILES, 5))
     api = module("fleet_api", "fleet-download-apple-csr.py")
     mdm = module("fleet_mdm", "fleet-verify-apple-mdm.py")
     api.MAX_RESPONSE = 16 * 1024 * 1024
@@ -266,13 +269,24 @@ def execute(args):
         elif args.action == "validate-profiles":
             api.request("POST", "/api/v1/fleet/configuration_profiles/batch?dry_run=true", {
                 "configuration_profiles": [{"profile": base64.b64encode(raw).decode()}
-                                           for raw, _ in desired],
+                                           for raw, _ in desired + profiles(IOS_FILES, 1)],
             }, token, accepted_status=204)
             print("Fleet Free profile validation passed; no profiles assigned")
         else:
-            host = (mac_host(api, mdm, token, args.host_id)
-                    if args.action == "mac-baseline" else mdm.local_host(api, token))
+            host = (ios_host(api, mdm, token, args.host_id) if args.action == "ios-baseline"
+                    else mac_host(api, mdm, token, args.host_id) if args.action == "mac-baseline"
+                    else mdm.local_host(api, token))
             apply_profiles(api, mdm, token, host, desired, remove=args.remove)
+            if args.action == "ios-baseline" and not args.remove:
+                info = mdm.command(api, token, host, {"RequestType": "SecurityInfo"}).get(
+                    "SecurityInfo", {})
+                if not isinstance(info, dict):
+                    raise SetupError("Passcode security response is invalid")
+                passcode = {key: info.get(key) for key in
+                            ("PasscodePresent", "PasscodeCompliant", "PasscodeCompliantWithProfiles")}
+                if any(value is not None and type(value) is not bool for value in passcode.values()):
+                    raise SetupError("Passcode security response has an invalid value type")
+                print(json.dumps(passcode))
     finally:
         api.request("POST", "/api/v1/fleet/logout", token=token)
         print("Fleet operator session revoked", flush=True)
@@ -280,25 +294,31 @@ def execute(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline", "mac-baseline-catalog", "console-sso", "reporting"))
-    parser.add_argument("--host-id", type=int, help="Explicit enrolled Fleet ID; required for mac-baseline")
-    parser.add_argument("--remove", action="store_true", help="Remove only the selected repository profiles; does not restore old passwords")
+    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline",
+                                            "mac-baseline-catalog", "console-sso", "reporting"))
+    parser.add_argument("--host-id", type=int,
+                        help="Explicit enrolled Fleet ID; required for mac-baseline or ios-baseline")
+    parser.add_argument("--remove", action="store_true",
+                        help="Remove only the selected repository profiles; does not restore old passwords")
     parser.add_argument("--execute", action="store_true", help="Apply through the authenticated Fleet API")
     args = parser.parse_args(argv)
-    if (args.action == "mac-baseline") != (args.host_id is not None) or (args.host_id is not None and args.host_id < 1):
-        parser.error("Only mac-baseline requires --host-id with a positive Fleet host ID")
-    if args.remove and args.action not in ("mac-pilot", "mac-baseline", "mac-baseline-catalog"):
+    if ((args.action in ("mac-baseline", "ios-baseline")) != (args.host_id is not None)
+            or (args.host_id is not None and args.host_id < 1)):
+        parser.error("Only mac-baseline and ios-baseline require --host-id with a positive Fleet host ID")
+    if args.remove and args.action not in ("mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog"):
         parser.error("--remove applies only to device profiles")
     try:
         if args.action == "mac-baseline-catalog" and not args.remove:
             raise SetupError("Global Mac baseline assignment is retired; mac-baseline-catalog requires --remove")
         profiles(MAC_FILES, 5)
+        profiles(IOS_FILES, 1)
         profiles(LEGACY_MAC_FILES, 5)
         if not args.execute:
             print("Dry run: profile files valid; no credentials or APIs accessed.\n"
                   "mac-pilot targets this exact Mac by serial AND hardware UUID.\n"
                   "Profile writes replace only stable repository identifiers, preserve other profiles, and never auto-retry.\n"
                   "mac-baseline targets only the selected Fleet-enrolled Mac; future Macs require an explicit install.\n"
+                  "ios-baseline targets only the selected iPhone or iPad; install and removal never use a global catalog.\n"
                   "mac-baseline-catalog --remove retires the old global assignment after host-scoped Mac installs.\n"
                   "console-sso uses the managed Entra unit outputs, precreates only the authorized SSO admin, and keeps recovery login.\n"
                   "reporting adds a macOS-only FileVault SQL policy without automatic remediation.")

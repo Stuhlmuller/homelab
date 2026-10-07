@@ -51,7 +51,8 @@ class FakeAPI:
         self.errors = {}
         self.config = {"license": {"tier": "free"}, "sso_settings": {"enable_sso": False}}
         self.users = [{"email": self.ADMIN_EMAIL, "sso_enabled": False, "global_role": "admin"}]
-        self.host = {"id": 2, "platform": "ios", "uuid": IOS_UUID}
+        self.host = {"id": 2, "platform": "ios", "uuid": IOS_UUID,
+                     "mdm": {"connected_to_fleet": True}}
         self.policies = []
         self.catalog = [copy.deepcopy(CATALOG_UNRELATED)]
         self.catalog_has_next = False
@@ -113,6 +114,8 @@ class FakeMDM:
         self.installed = [copy.deepcopy(UNRELATED)]
         self.drop_unrelated = False
         self.install_error = None
+        self.security = {"PasscodePresent": True, "PasscodeCompliant": True,
+                         "PasscodeCompliantWithProfiles": True}
 
     @staticmethod
     def profile_identifiers(reply):
@@ -140,6 +143,8 @@ class FakeMDM:
             self.installed = [item for item in self.installed
                               if item["PayloadIdentifier"] != command["Identifier"]]
             return {}
+        if request == "SecurityInfo":
+            return {"SecurityInfo": copy.deepcopy(self.security)}
         raise AssertionError("Unexpected MDM command")
 
 
@@ -148,7 +153,7 @@ class FleetFreeTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.profiles = Path(self.directory.name)
-        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES:
+        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.IOS_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
 
@@ -200,10 +205,10 @@ class FleetFreeTest(unittest.TestCase):
         return entry
 
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
-        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
+        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
             with self.subTest(action=action):
                 args = [action]
-                if action == "mac-baseline":
+                if action in ("mac-baseline", "ios-baseline"):
                     args += ["--host-id", "2"]
                 if action == "mac-baseline-catalog":
                     args += ["--remove"]
@@ -216,7 +221,8 @@ class FleetFreeTest(unittest.TestCase):
 
     def test_wrong_platform_and_boolean_platform_fail_before_login(self):
         for filename, value in ((helper.MAC_FILES[0], 1), (helper.MAC_FILES[0], 2),
-                                (helper.MAC_FILES[0], True)):
+                                (helper.MAC_FILES[0], True), (helper.IOS_FILES[0], 5),
+                                (helper.IOS_FILES[0], True)):
             with self.subTest(filename=filename, value=value):
                 path = self.profiles / filename
                 original = path.read_bytes()
@@ -318,8 +324,80 @@ class FleetFreeTest(unittest.TestCase):
         self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
         self.assertEqual(self.mdm.installed, [UNRELATED, entra, legacy])
 
+    def test_ios_baseline_targets_only_selected_device_and_reports_security_info(self):
+        for platform in ("ios", "ipados"):
+            with self.subTest(platform=platform):
+                self.api, self.mdm = FakeAPI(), FakeMDM()
+                self.api.host["platform"] = platform
+                status, output, _ = self.run_command(["ios-baseline", "--host-id", "2", "--execute"])
+                expected = plistlib.loads((self.profiles / helper.IOS_FILES[0]).read_bytes())
+                self.assertEqual(status, 0)
+                self.assertTrue(all(host == IOS_UUID for host, _ in self.mdm.calls))
+                self.assertEqual([command["RequestType"] for _, command in self.mdm.calls],
+                                 ["ProfileList", "InstallProfile", "ProfileList", "SecurityInfo"])
+                passcode = next(json.loads(line) for line in output.splitlines() if line.startswith("{"))
+                self.assertEqual(passcode, self.mdm.security)
+                self.assertEqual(self.mdm.installed, [UNRELATED, expected])
+                self.assertEqual(self.api.catalog, [CATALOG_UNRELATED])
+                self.mdm.local_host.assert_not_called()
+                self.assert_logged_out()
+
+    def test_ios_baseline_rejects_wrong_identity_or_platform_before_commands(self):
+        for field, value in (("platform", "darwin"), ("platform", "linux"), ("id", 3),
+                             ("uuid", "not-a-uuid"), ("mdm", {}),
+                             ("mdm", {"connected_to_fleet": False}),
+                             ("mdm", {"connected_to_fleet": "true"})):
+            with self.subTest(field=field, value=value):
+                self.api.host[field] = value
+                self.assertEqual(self.run_command(["ios-baseline", "--host-id", "2", "--execute"])[0], 1)
+                self.assert_no_setup_mutations()
+                self.mdm.local_host.assert_not_called()
+                self.assert_logged_out()
+                self.api.host = {"id": 2, "platform": "ios", "uuid": IOS_UUID,
+                                 "mdm": {"connected_to_fleet": True}}
+
+    def test_ios_baseline_removes_only_selected_profile_and_is_idempotent(self):
+        profile = plistlib.loads((self.profiles / helper.IOS_FILES[0]).read_bytes())
+        self.mdm.installed.append(profile)
+        args = ["ios-baseline", "--host-id", "2", "--remove", "--execute"]
+        self.assertEqual(self.run_command(args)[0], 0)
+        self.assertEqual([command for _, command in self.mdm.calls], [
+            {"RequestType": "ProfileList"},
+            {"RequestType": "RemoveProfile", "Identifier": profile["PayloadIdentifier"]},
+            {"RequestType": "ProfileList"},
+        ])
+        self.assertTrue(all(host == IOS_UUID for host, _ in self.mdm.calls))
+        self.assertEqual(self.mdm.installed, [UNRELATED])
+        self.assertEqual(self.api.catalog, [CATALOG_UNRELATED])
+        self.mdm.local_host.assert_not_called()
+        self.assert_logged_out()
+        self.mdm.calls.clear()
+        self.assertEqual(self.run_command(args)[0], 0)
+        self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
+        self.assertEqual(self.mdm.installed, [UNRELATED])
+
+    def test_ios_security_info_types_fail_closed_without_leaking_values(self):
+        for key, value, message in ((None, PRIVATE, "Passcode security response is invalid"),
+                                    ("PasscodePresent", PRIVATE,
+                                     "Passcode security response has an invalid value type"),
+                                    ("PasscodeCompliant", 1,
+                                     "Passcode security response has an invalid value type"),
+                                    ("PasscodeCompliantWithProfiles", "yes",
+                                     "Passcode security response has an invalid value type")):
+            with self.subTest(key=key, value_type=type(value).__name__):
+                if key is None:
+                    self.mdm.security = value
+                else:
+                    self.mdm.security[key] = value
+                status, output, _ = self.run_command(["ios-baseline", "--host-id", "2", "--execute"])
+                self.assertEqual(status, 1)
+                self.assertIn(message, output)
+                self.assertEqual(self.mdm.calls[-1][1]["RequestType"], "SecurityInfo")
+                self.assert_logged_out()
+                self.mdm = FakeMDM()
+
     def test_selected_device_actions_require_positive_host_ids_before_loading_credentials(self):
-        for action in ("mac-baseline",):
+        for action in ("mac-baseline", "ios-baseline"):
             for host_args in ([], ["--host-id", "0"], ["--host-id", "-1"]):
                 with self.subTest(action=action, host_args=host_args), \
                         patch.object(helper, "module") as loader, \
@@ -340,8 +418,9 @@ class FleetFreeTest(unittest.TestCase):
         submitted = [plistlib.loads(base64.b64decode(item["profile"]))
                      for item in self.api.calls[2][2]["configuration_profiles"]]
         self.assertEqual([profile["PayloadIdentifier"] for profile in submitted],
-                         [profile["PayloadIdentifier"] for _, profile in helper.profiles(helper.MAC_FILES, 5)])
-        self.assertTrue(all(profile["TargetDeviceType"] == 5 for profile in submitted))
+                         [profile["PayloadIdentifier"] for _, profile in
+                          helper.profiles(helper.MAC_FILES, 5) + helper.profiles(helper.IOS_FILES, 1)])
+        self.assertEqual([profile["TargetDeviceType"] for profile in submitted], [5, 5, 1])
         self.assertEqual(self.mdm.calls, [])
         self.assert_logged_out()
 
