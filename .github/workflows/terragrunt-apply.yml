@@ -188,11 +188,17 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
+          echo "::group::Kubeconfig setup"
           bash scripts/ci/install-kubeconfig.sh
+          echo "::group::Kubernetes API check"
           kubectl --request-timeout=15s version >/dev/null
+          echo "::group::Terragrunt apply"
           bash scripts/ci/terragrunt-apply.sh
           EOF
           then
+            if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then
+              bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"
+            fi
             echo "::error::Production apply failed; detailed output was withheld because this is a public repository. Reproduce it from an approved local operator session."
             exit 1
           fi

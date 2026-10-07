@@ -297,8 +297,20 @@ test_allows_exact_plan_stage_classifier if {
 	count(violations) == 0
 }
 
+test_allows_exact_apply_stage_classifier if {
+	violations := deny with input as workflow_with_live_run(classified_apply_run)
+	count(violations) == 0
+}
+
 test_rejects_unverified_plan_stage_classifier if {
 	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
+	violations := deny with input as workflow_with_live_run(run)
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
+test_rejects_unverified_apply_stage_classifier if {
+	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [apply_stage_call]))
 	violations := deny with input as workflow_with_live_run(run)
 	some msg in violations
 	contains(msg, "withhold sensitive command output")
@@ -339,6 +351,47 @@ test_rejects_modified_plan_stage_classifier if {
 		sprintf("%s\n  echo extra", [plan_stage_call]),
 	] {
 		run := replace(classified_live_run, plan_stage_call, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_apply_stage_guard if {
+	every replacement in [
+		replace(apply_stage_guard, "a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(apply_stage_guard, "sha256sum --check --status", "true"),
+		replace(apply_stage_guard, "sha256sum", "shasum"),
+		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
+		replace(apply_stage_guard, " --check", ""),
+		replace(apply_stage_guard, " --status", ""),
+		replace(apply_stage_guard, "stage.sh", "other.sh"),
+		replace(apply_stage_guard, " 2>/dev/null", ""),
+		replace(apply_stage_guard, "; then", " || true; then"),
+		sprintf("%s\n  echo extra", [apply_stage_guard]),
+	] {
+		run := replace(classified_apply_run, apply_stage_guard, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_apply_stage_classifier if {
+	every replacement in [
+		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
+		`bash scripts/ci/other.sh <"$private_log"`,
+		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh --verbose <"$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh "$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$other_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"; cat "$private_log"`,
+		`cat "$private_log"`,
+		`echo "$private_log details withheld"`,
+		`echo "$line details withheld"`,
+		sprintf("%s\n  echo extra", [apply_stage_call]),
+	] {
+		run := replace(classified_apply_run, apply_stage_call, replacement)
 		violations := deny with input as workflow_with_live_run(run)
 		some msg in violations
 		contains(msg, "withhold sensitive command output")
@@ -459,6 +512,12 @@ plan_stage_call := `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
+
+apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
+
+apply_stage_guard := `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
+
+classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
 
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT

@@ -124,8 +124,10 @@ contract for Grafana.
   diagnostic, and Cloudflare reconciliation output is also withheld from public
   Actions logs; reproduce failures from an approved local operator session.
   Workflow policy
-  rejects direct live CLI output or reading the private log after the wrapper,
-  and live credentials exist only on the exact step that consumes them. Static
+  rejects direct live CLI output or reading the private log after the wrapper.
+  On a protected apply failure, a reviewed classifier may print one fixed
+  phase label after verifying its SHA-256; raw output remains withheld.
+  Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
   pre-commit scan rejects plan/state filenames plus binary plans or JSON

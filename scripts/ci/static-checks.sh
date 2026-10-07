@@ -43,6 +43,7 @@ python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
+python3 scripts/ci/terragrunt-apply-stage-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
@@ -1030,7 +1031,7 @@ done <<'EOF'
 .github/workflows/octelium-public-tunnel.yml 80ea67e7fbd41ca506e34c64072f48ef281449c1c5017f489aa5b8e244abe0a0
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml c3225c6bf4cb456fc4d1becc7df44d30c72708da1cf5d5cbd07911eaf6c48a43
+.github/workflows/terragrunt-apply.yml e718b6d33369385553e99b2f84a2c50524eb882dc5020ba1d22436ba59572edb
 .github/workflows/terragrunt-plan.yml 0e990457caf2d33452b2a7e23a7440da4dc4245b78bdc8a03a68c4687921fa32
 EOF
 echo "::endgroup::"

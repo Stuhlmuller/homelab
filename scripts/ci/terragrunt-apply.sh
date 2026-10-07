@@ -208,7 +208,7 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
-  echo "::group::${TERRAGRUNT_ARGOCD_APP} targeted apply prerequisites"
+  echo "::group::Targeted Argo CD apply prerequisites"
   kubectl -n argocd get appproject homelab -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
     .spec |
     (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and

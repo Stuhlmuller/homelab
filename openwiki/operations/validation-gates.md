@@ -165,14 +165,15 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
-The live plan's sole diagnostic exception checks the classifier's SHA-256 pinned
-inside the hashed workflow before reading private output. A changed or missing
-helper is not executed; only the fixed withheld error remains. The verified helper
-reports a fixed last-recognized-stage label and the first recognized error hint
-(`aws-auth`, `kubernetes-auth`, `network`, `provider`, `policy`, or `unknown`).
-These are not verified causes: misleading private text can change a label but
-cannot expose its text. Raw output, plans, and credentials remain withheld and
-deleted.
+The live-plan and protected-apply diagnostic exceptions check a classifier's
+SHA-256 inside the hashed workflow before reading private output. A changed or
+missing helper is not executed; only the fixed withheld error remains. The
+live-plan classifier reports a fixed last-recognized-stage label and the first
+recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
+`policy`, or `unknown`); the apply classifier reports only its fixed phase
+label. These are not verified causes: misleading private text can change a
+label but cannot expose its text. Raw output, plans, and credentials remain
+withheld and deleted.
 
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
