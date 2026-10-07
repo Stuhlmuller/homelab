@@ -32,15 +32,16 @@ Options:
   --client-secret-parameter NAME     SSM parameter containing the client secret.
   --issuer-url-parameter NAME        SSM parameter containing the issuer URL.
   --admin-user-name NAME             Optional HUMAN user name to apply.
-  --admin-email EMAIL                Contact email only; never a login identifier.
+  --admin-email EMAIL                New-user contact email; expected old identifier for migration.
   --admin-object-id UUID             Immutable Entra object ID for the HUMAN user.
   --dry-run                         Validate mappings without reading the client secret or writing.
   -h, --help                         Show this help.
 
-All three admin options must be supplied together. Existing HUMAN fields and
-policies are preserved; only a new user receives allow-all. Legacy email matching
-can migrate only the selected sole Entra user; --admin-email must match its old
-identifier. Verify the object ID with Microsoft Graph first; Octelium cannot
+All three admin options must be supplied together. Existing HUMAN fields,
+including contact email and policies, are preserved; only a new user receives
+allow-all. Legacy email matching (including implicit email fallback) can migrate
+only the selected sole Entra user; --admin-email must match its old identifier.
+The migrated provider disables email fallback. Verify the object ID with Microsoft Graph first; Octelium cannot
 prove that an email and object ID belong to the same Entra account. Keep an
 independent authenticated operator session available: the user mapping and IdP update are not atomic.
 Verify fresh owner login before renaming or reusing any former email identifier.
@@ -212,6 +213,9 @@ def inventory(kind):
                              "--items-per-page", "1000", "-o", "json"],
                             capture_output=True, text=True, timeout=45)
     require(result.returncode == 0, "could not read Octelium identity inventory")
+    empty = {"identityprovider": "No IdentityProviders found", "user": "No Users found"}
+    if result.stdout.strip() == empty[kind]:
+        return []
     value = json.loads(result.stdout)
     items = value["items"]
     # ponytail: one complete page only; add pagination if the inventory exceeds it.
@@ -247,6 +251,12 @@ try:
             identifier = matches[0].get("identifier")
             require(isinstance(identifier, str) and identifier, "invalid Entra user identifier")
             bindings.append((user["metadata"]["name"], identifier))
+        elif (provider and not provider["spec"].get("disableEmailAsIdentity", False)
+              and user["spec"]["type"] == "HUMAN" and user["spec"].get("email")):
+            # Without an explicit match, Octelium also authenticates via spec.email.
+            # Count these users before changing the claim or disabling fallback.
+            require(isinstance(user["spec"]["email"], str), "invalid fallback email identifier")
+            bindings.append((user["metadata"]["name"], user["spec"]["email"]))
     require(provider is not None or not bindings, "Entra mappings exist without their provider")
     require(len({identifier.lower() for _, identifier in bindings}) == len(bindings),
             "duplicate Entra user identifiers")
@@ -264,8 +274,7 @@ try:
     if user_name:
         require(not owner or owner["spec"]["type"] == "HUMAN", "selected administrator is not HUMAN")
         owner = owner or {"metadata": {"name": user_name}, "spec": {
-            "type": "HUMAN", "authorization": {"policies": ["allow-all"]}}}
-        owner["spec"]["email"] = email
+            "type": "HUMAN", "email": email, "authorization": {"policies": ["allow-all"]}}}
         authentication = owner["spec"].setdefault("authentication", {})
         authentication["identities"] = [identity for identity in authentication.get("identities", [])
                                         if identity.get("identityProvider") != idp_name] + [
@@ -274,6 +283,7 @@ try:
                                                    "spec": owner["spec"]}))
     provider = provider or {"metadata": {"name": idp_name, "displayName": "Microsoft Entra"},
                             "spec": {"displayName": display_name, "oidc": {}}}
+    provider["spec"]["disableEmailAsIdentity"] = True
     provider["spec"]["oidc"].update({"issuerURL": issuer, "clientID": client_id,
         "clientSecret": {"fromSecret": secret_name}, "identifierClaim": "oid",
         "scopes": ["openid", "email", "profile"]})

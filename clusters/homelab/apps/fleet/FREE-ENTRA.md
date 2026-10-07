@@ -300,13 +300,13 @@ before authentication; its significance remains unverified until the correct
 organizational identity completes registration. Do not broaden profile URLs,
 remove Fleet enrollment, or reset credentials based on that warning alone.
 
-### Owner address migration proposal: not applied
+### Owner address migration: approved, not applied
 
 The operator selected a privately supplied replacement for the owner's directory mail,
 retaining `rodman@stuhlmuller.net` for the native pilot. Read-only checks found
 no matching active user, group, organizational contact or deleted user for the
-replacement address; `stinkyboi.com` is verified and managed. This selection
-authorizes investigation, not an owner change. Keep the owner UPN
+replacement address; `stinkyboi.com` is verified and managed. The operator
+approved the staged owner migration on October 6, 2026 PDT. Keep the owner UPN
 `rodman@stinkyboi.com`, object ID, external Microsoft-account identity,
 authentication methods, roles and application ownership unchanged.
 
@@ -322,16 +322,20 @@ Two prerequisites emerged from the October 6 investigation:
   isolate the pilot. Reusing the email could map the pilot to owner `allow-all`
   access; an actual pilot session has not been tested. Runtime HUMAN identifiers
   remain private. The [bootstrap](../../../../scripts/octelium-entra-oidc.sh)
-  now prepares immutable `oid` bindings with a complete-inventory preflight.
+  now prepares immutable `oid` bindings and disables email fallback through
+  `disableEmailAsIdentity`, with a complete-inventory preflight. An `oid` claim
+  alone does not prevent fallback through the separate OIDC email claim.
   Before email reuse, run the [guarded legacy migration](../../../../docs/octelium.md#entra-identity-migration)
   with a tested recovery path, then verify fresh owner access and a complete
-  inventory with no pilot object-ID binding or privileged email binding.
+  inventory with no pilot object-ID binding or privileged email binding, and
+  verify that email fallback is disabled.
 
 After those prerequisites, the separate
 [`operator/entra-owner-mail` unit](../../../../IaC/modules/entra-owner-mail/README.md)
 uses `msgraph_update_resource` to set only `mail` to the privately supplied
-address on the guarded existing owner object. Supply its identity baseline and
-replacement address through a private `-var-file`; keep saved plans and logs
+address on the guarded existing owner object. Supply its current-mail and
+identity baselines and replacement address through a private `-var-file`;
+keep saved plans and logs
 private. Review the exact mail-only PATCH and approve it separately. Do not
 import the owner into a managed `azuread_user`, reset invitation redemption,
 change `identities`, or remove `otherMails` speculatively. Fleet SAML and operator

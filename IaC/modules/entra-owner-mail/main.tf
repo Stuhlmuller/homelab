@@ -65,6 +65,18 @@ variable "expected_identities" {
   }
 }
 
+variable "expected_current_mail" {
+  description = "Exact current Graph mail from the fresh private baseline, including when preparing rollback."
+  type        = string
+  sensitive   = true
+  nullable    = false
+
+  validation {
+    condition     = can(regex("^[^@[:space:]<>\"']+@[^@[:space:]<>\"']+\\.[^@[:space:]<>\"']+$", var.expected_current_mail))
+    error_message = "expected_current_mail must be the existing email from the reviewed current owner."
+  }
+}
+
 variable "replacement_mail" {
   description = "Private, operator-confirmed reachable replacement mail; not an authentication identity change."
   type        = string
@@ -114,9 +126,9 @@ data "msgraph_resource" "owner" {
   url         = "users/${var.owner_object_id}"
   api_version = "v1.0"
   query_parameters = {
-    "$select" = [local.owner_fields]
+    "$select" = ["${local.owner_fields},mail"]
   }
-  response_export_values = local.owner_exports
+  response_export_values = merge(local.owner_exports, { mail = "mail" })
 }
 
 # This resource PATCHes only mail. Graph owns proxy recalculation; it does not
@@ -134,6 +146,11 @@ resource "msgraph_update_resource" "mail" {
 
   lifecycle {
     prevent_destroy = true
+
+    precondition {
+      condition     = try(data.msgraph_resource.owner.output.mail == var.expected_current_mail, false)
+      error_message = "Stop: existing owner mail differs from the reviewed current-mail baseline. Refresh and review a new plan."
+    }
 
     precondition {
       condition = try(

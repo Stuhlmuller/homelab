@@ -43,6 +43,8 @@ elif args[0] == "get":
         sys.exit(1)
     if kind == "secret":
         print("existing")
+    elif kind in state.get("inventory_text", {}):
+        print(state["inventory_text"][kind])
     else:
         items = state["providers" if kind == "identityprovider" else "users"]
         print(json.dumps({"items": items, "listResponseMeta": {
@@ -99,7 +101,14 @@ expected["spec"]["authentication"]["identities"] = [USER["spec"]["authentication
 assert owner == expected
 provider = migrated["providers"][0]
 assert provider["spec"]["oidc"]["identifierClaim"] == "oid"
+assert provider["spec"]["disableEmailAsIdentity"] is True
 assert provider["metadata"] == PROVIDER["metadata"]
+# The contact address is independent of the explicit old login identifier.
+different_contact = copy.deepcopy(USER)
+different_contact["spec"]["email"] = "notifications@example.com"
+result, distinct = exercise(users=[different_contact])
+assert result.returncode == 0, result.stderr
+assert distinct["users"][0]["spec"]["email"] == "notifications@example.com"
 # Reusing the former alias cannot authenticate as owner or replace an oid binding.
 assert all(item["identifier"] != "person@example.com" for item in owner["spec"]["authentication"]["identities"])
 assert owner["spec"]["authentication"]["identities"][-1]["identifier"] != PILOT
@@ -109,13 +118,16 @@ result, refreshed = exercise(provider=provider, users=[owner], args=[])
 assert result.returncode == 0, result.stderr
 assert refreshed["users"] == [owner]
 assert refreshed["providers"][0]["spec"]["oidc"]["identifierClaim"] == "oid"
+assert refreshed["providers"][0]["spec"]["disableEmailAsIdentity"] is True
 result, preview = exercise(args=ARGS + ["--dry-run"])
 assert result.returncode == 0, result.stderr
 assert not any("write" in event or event.get("read") == "client-secret" for event in preview["events"])
 # Legacy refresh, incomplete flags, invalid oid, reads and incomplete inventories fail closed.
 for options in ({"args": []}, {"args": ARGS[:-2]}, {"args": ARGS[:-1] + ["not-a-uuid"]},
                 {"args": [*ARGS[:3], "wrong@example.com", *ARGS[4:]]},
-                {"truncated": True}, {"read_error": "user"}, {"read_error": "identityprovider"}):
+                {"truncated": True}, {"read_error": "user"}, {"read_error": "identityprovider"},
+                {"inventory_text": {"user": "No IdentityProviders found"}},
+                {"inventory_text": {"identityprovider": "unrecognized inventory response"}}):
     no_write(*exercise(**options))
 other = copy.deepcopy(USER)
 other["metadata"]["name"] = "other-human"
@@ -131,10 +143,35 @@ duplicate = copy.deepcopy(USER)
 duplicate["spec"]["authentication"]["identities"].append(
     {"identityProvider": "entra", "identifier": "another@example.com"})
 no_write(*exercise(users=[duplicate]))
+# Email fallback is a real legacy mapping, including users bound only to another IdP.
+email_only = copy.deepcopy(USER)
+email_only["spec"]["authentication"]["identities"] = [USER["spec"]["authentication"]["identities"][1]]
+no_write(*exercise(users=[email_only], args=[]))
+result, fallback_migrated = exercise(users=[email_only])
+assert result.returncode == 0, result.stderr
+assert fallback_migrated["users"][0]["spec"]["email"] == USER["spec"]["email"]
+assert fallback_migrated["users"][0]["spec"]["authentication"]["identities"][-1]["identifier"] == OWNER
+email_only["metadata"]["name"] = "other-human"
+email_only["spec"]["email"] = "other@example.com"
+no_write(*exercise(users=[USER, email_only]))
+oid_with_fallback = copy.deepcopy(provider)
+oid_with_fallback["spec"].pop("disableEmailAsIdentity")
+no_write(*exercise(provider=oid_with_fallback, users=[owner, email_only], args=[]))
+no_write(*exercise(provider=oid_with_fallback, users=[email_only]))
+fallback_disabled = copy.deepcopy(PROVIDER)
+fallback_disabled["spec"]["disableEmailAsIdentity"] = True
+result, _ = exercise(provider=fallback_disabled, users=[USER, email_only])
+assert result.returncode == 0, result.stderr
 # A partially completed migration is retryable with the same verified object ID.
 result, retried = exercise(users=[owner])
 assert result.returncode == 0, result.stderr
 assert retried["providers"][0]["spec"]["oidc"]["identifierClaim"] == "oid"
+# A changed CLI email cannot become an owner login alias if the IdP retry fails.
+result, failed_retry = exercise(users=[owner], args=[*ARGS[:3], "reused@example.com", *ARGS[4:]],
+                               apply_error="IdentityProvider")
+assert result.returncode != 0
+assert failed_retry["providers"][0]["spec"]["oidc"]["identifierClaim"] == "preferred_username"
+assert failed_retry["users"][0]["spec"] == owner["spec"]
 wrong_tenant = copy.deepcopy(PROVIDER)
 wrong_tenant["spec"]["oidc"]["issuerURL"] = ISSUER.replace("44444444", "55555555")
 no_write(*exercise(provider=wrong_tenant))
@@ -148,4 +185,11 @@ result, fresh = exercise(provider=None, users=[])
 assert result.returncode == 0, result.stderr
 assert fresh["users"][0]["spec"]["authorization"]["policies"] == ["allow-all"]
 assert fresh["users"][0]["spec"]["authentication"]["identities"][0]["identifier"] == OWNER
+# Native CLI empty-list responses are valid complete inventories, not JSON errors.
+result, fresh = exercise(provider=None, users=[], inventory_text={
+    "identityprovider": "No IdentityProviders found", "user": "No Users found"})
+assert result.returncode == 0, result.stderr
+assert fresh["users"][0]["spec"]["email"] == "person@example.com"
+assert fresh["providers"][0]["spec"]["oidc"]["identifierClaim"] == "oid"
+assert fresh["providers"][0]["spec"]["disableEmailAsIdentity"] is True
 print("Octelium Entra oid migration boundary: passed")

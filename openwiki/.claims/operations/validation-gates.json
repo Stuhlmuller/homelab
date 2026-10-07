@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7452832dd41fc4d121826ce90347ac688be536bd477a1bf04a0ed97789f73cc7",
+  "pageVersion": "sha256:6d7fbce11482c9be33610aba311eef770e7fa60b38c7a0afdd03bfac3e54830e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
-      "statement": "Static checks include the Octelium immutable-identity regression and owner-mail plan tests; live migration additionally requires complete-inventory preflight, a private encrypted mail-only plan, fresh owner access and SMTP proxy readback before Mac SSO acceptance.",
+      "statement": "Static checks cover Octelium immutable bindings with disabled email fallback, complete fallback-user inventory, preserved contact fields and retries, plus owner-mail plan guards for current-mail and identity drift. Live migration requires private encrypted mail-only planning, fresh owner access and SMTP proxy release before Mac SSO acceptance.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
-          "version": "repo-file-v1:sha256:2977c25cb9664f0e0a36ea21f3feb38015c69f8365afc73958197bcbc25d1aaf"
+          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L18-L23",
-          "version": "repo-lines-v1:sha256:27a4f02c3878f666a573bb7471a9c339eb47471260912e9b1f443f3e019b4fcd:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmViMGJjMmM5ZjU4NGJiMGZlN2U1NWFmM2Q5MGUzNGE2MmFhODkyZWU2MjE5M2VkODJhMDFhYTFiNmZkMDAzYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzBjODAxMDY4ZWI2M2FmZDUwMWI4MjM2ZDkxMzhjMDgwYjczMDdkYjkxNmYzODY2YmE5Y2JmMjRlOGE4M2RkNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjBiN2U2MzIzOTYyY2FjMzFjM2Q4OWMyMjBjNjhjOWY0NGJiMGE2ZDgyMzBmNDU4Zjk3OGEwNDk0ODQ4N2UzNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGQyMzhhOWFiMWVkOWRiZDA0NzMwNjg2ZWExNTk2N2IxOWQ2ZjE5OTQ5NGY1ODc1ZGQxMDY3MTNkOTM4ZGFiMSJ9"
+          "resource": "repo://scripts/ci/octelium-entra-oidc-test.py",
+          "version": "repo-file-v1:sha256:d8ba5cb80354e9eb48327c6bd694820d9f3ff5ff0a0e31d0d09c822262341a3b"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L347-L357",
-          "version": "repo-lines-v1:sha256:893c3a60bdbd490ae545fce6045d434f3aceb07bab96abdc62248e615c0aa5cb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyNWNkYWU0YWI0ZWU1ZTY0YjM4YThhODdiNmM2NzMyNDZkMmJiYmI5ZDRmMDUzYzZkOTA4ZmJhOWUxMDQ3NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3NWU4NzBkNTYyM2ZlNzg2YmU0NzQ3MjAzODJkMDE3NTllNDNhNjhhOGZiZGNlZjAwY2I2NjMxNTQxYzAyNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgzYWE2ZTM2OTJmZjE4ZWU1YjY0YTEzZjFmZGViMWQ5YWM3NjMzNjVmZWY2OWMyMDliODM4MDA2MDc4NWZlOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNmZDZlMTI0NDdmMzJiZTY1Mzc5YjA2MjY1NWZiYTM0N2ExOTJiYTdkMmU5NjMwNjY5Zjk1MWE5Yjk0Zjk0YzgifQ"
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:dda9937e8e4afc2d9e74f6c5fb62380492a6cb09466a69f9542572a36a508190"
         }
       ]
     },
@@ -33,6 +33,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-07T04:52:53.816Z"
+    "at": "2026-10-07T06:13:26.356Z"
   }
 }

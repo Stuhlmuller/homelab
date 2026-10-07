@@ -18,8 +18,10 @@ file, put its values in Terragrunt inputs or environment variables, or include
 them in public plans, wiki pages, run metadata or review comments. The template
 is deliberately invalid until completed.
 
-Only the private `-var-file` supplies owner object ID, baseline identities and
-replacement mail. The shared root provides the existing S3 backend and KMS
+Only the private `-var-file` supplies owner object ID, baseline identities,
+`expected_current_mail` and replacement mail. Capture `expected_current_mail`
+from the same fresh Graph read; planning refuses a differing or missing mail.
+The shared root provides the existing S3 backend and KMS
 inputs; both OpenTofu state and saved plans enforce AES-GCM encryption with
 that AWS KMS key. The entire PATCH body is marked sensitive. Plan JSON and
 provider diagnostics can still contain private data: keep all plan/show/apply
@@ -51,7 +53,9 @@ redemption or start the pilot rename. Those require a separately reviewed,
 supported operation. No state operation proves successful sign-in.
 
 Rollback is another reviewed mail-only plan with the prior mailbox while its
-address remains available. After the pilot claims the old address, release it
+address remains available. Refresh `expected_current_mail` from live Graph
+before preparing that rollback; do not reuse the forward baseline. After the
+pilot claims the old address, release it
 from that pilot through its declared path before attempting owner rollback.
 Deleting `msgraph_update_resource` performs no Graph undo; `prevent_destroy`
 guards accidental state removal, but removing its configuration also removes
@@ -59,7 +63,7 @@ that guard. Do not delete the module or unit as a rollback.
 
 Run the synthetic plan-only regression with `tofu test -no-color` after
 backend-disabled initialization. It mocks Graph and checks the sensitive PATCH
-scope plus refusal when owner ID or identity differs. It does not test live
+scope plus refusal when owner ID, identity or current mail differs. It does not test live
 Graph recalculation or human authentication.
 
 References: [Graph user updates](https://learn.microsoft.com/en-us/graph/api/user-update?view=graph-rest-1.0),

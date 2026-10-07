@@ -12,5 +12,6 @@
       "issuerAssignedId": "rodman@stinkyboi.com"
     }
   ],
+  "expected_current_mail": "REPLACE_WITH_CURRENT_GRAPH_MAIL",
   "replacement_mail": "REPLACE_WITH_PRIVATE_REACHABLE_EMAIL"
 }

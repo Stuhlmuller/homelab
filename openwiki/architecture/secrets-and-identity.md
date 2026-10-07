@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: ["architecture", "secrets", "identity"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T04:18:31.623Z
+    at: 2026-10-07T06:13:26.356Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
@@ -17,7 +17,7 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
-generated: { by: "codex", at: "2026-10-07T04:18:31.623Z" }
+generated: { by: "codex", at: "2026-10-07T06:13:26.356Z" }
 ---
 
 # Secrets And Identity
@@ -535,32 +535,35 @@ password-change timestamp. The owner's existing mail/SMTP proxy uses the
 requested address, making it the leading conflict candidate, but Entra's audit
 did not name the conflicting property. The pilot-rename approval does not cover
 clearing owner aliases or converting that administrator; a separate owner-address
-migration is under investigation. The pilot's initial password change must finish
+migration was subsequently approved. The pilot's initial password change must finish
 before native Password PSSO registration. Fleet MDM enrollment remained intact;
 successful organizational device/user registration and password synchronization
 still require interactive acceptance. The runbook retains the separate,
 unresolved token-endpoint profile warning from the same attempt.
 
-The [separate owner-address proposal](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-proposal-not-applied)
+The [approved owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-approved-not-applied)
 selects a privately supplied replacement for directory mail while preserving the owner UPN,
 object ID and external authentication. No owner or Octelium change is applied.
 The owner was the only active Global Administrator found. Live Octelium uses a
 privileged email-based HUMAN mapping affected by address reuse; application
 assignment is not required and the OIDC scopes have tenant-wide consent.
 The [bootstrap](../../scripts/octelium-entra-oidc.sh) now uses immutable Entra
-`oid`, checks the complete live mapping inventory, and permits a guarded
-transition of the sole selected legacy HUMAN mapping. Existing user fields,
-policies and other identity-provider bindings remain intact; email becomes
-contact metadata. Its live read-only preflight passed. Apply the migration and
+`oid` with `disableEmailAsIdentity: true`, checks the complete live inventory
+including implicit email-fallback users, and permits a guarded transition of
+the sole selected legacy HUMAN mapping. Changing the claim alone does not
+prevent fallback through the separate OIDC email claim. Existing user fields,
+contact email, policies and other identity-provider bindings remain intact,
+including partial retries. Its live read-only preflight passed. Apply the migration and
 test fresh owner access and confirm no pilot object-ID or privileged email
-binding before email reuse. Test actual pilot login denial after its initial
+binding, with email fallback disabled, before email reuse. Test actual pilot login denial after its initial
 password change and MFA setup; an interrupted authentication flow is not proof
 of denial. Keep actual HUMAN identifiers private.
 
 The prepared [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
 owns only a mail PATCH on the existing owner. A private `-var-file` supplies the
-replacement address, object ID and full identity baseline; guards retain the
-enabled accepted external member and its UPN before and after the write. The
+replacement address, object ID, current-mail and full identity baselines; guards
+refuse a changed or missing current mail and retain the enabled accepted external
+member and its UPN before and after the write. The
 private encrypted plan passed the mail-only scope check. Neither change has
 been applied. Require fresh owner authentication and SMTP proxy readback before
 retrying the pilot rename: changing mail does not guarantee old-alias removal.

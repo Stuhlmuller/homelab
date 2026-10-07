@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a13211ed82d3a09a57515158dc8475e8406487dec17ad064bcc9e939def08914",
+  "pageVersion": "sha256:906ee115552cb1f4dcd582c65a8bc3693ec87e808c083b45aaa637896e5538ca",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -8,21 +8,21 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
-          "version": "repo-file-v1:sha256:2977c25cb9664f0e0a36ea21f3feb38015c69f8365afc73958197bcbc25d1aaf"
+          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:b7ef51b1fa904b137be3dd733a01964e08b954cfd3698646647a3e22563214ca"
+          "version": "repo-file-v1:sha256:2d7b3a4edfa2bd4928a8dab16db4bc3954f01fa121138a270293c2a45093bac3"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
-          "version": "repo-file-v1:sha256:ed372a6900cb0933ec2b302c6ccc9d01e8ab878fd5d87a7020d69f8b70e31638"
+          "version": "repo-file-v1:sha256:3b8a97cfcf69e9c7f91bf32cb87cc1fded8aeef5b9eca97d6c70851b2b3eeb80"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-07T04:18:31.623Z"
+    "at": "2026-10-07T06:13:26.356Z"
   }
 }

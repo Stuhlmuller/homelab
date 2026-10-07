@@ -314,11 +314,15 @@ scripts/octelium-entra-oidc.sh \
 The script reads the generated SSM parameters, creates or updates the Octelium
 native Secret `entra-oidc-client-secret`, applies IdentityProvider `entra`, and,
 when all three admin flags are supplied, creates or updates the HUMAN mapping.
-New administrators receive `allow-all`; existing users retain their fields and
-policies. Email is contact metadata. The IdentityProvider requests the
+New administrators receive `allow-all`; existing users retain their fields,
+contact email and policies. `--admin-email` sets contact email only for a new
+user. The IdentityProvider requests the
 `openid`, `email`, and `profile` OIDC scopes and uses immutable Entra `oid` as
-the login identifier. Email and `preferred_username` can change or be reassigned;
-they must not bind privileged access. Microsoft Entra may omit
+the login identifier, with `spec.disableEmailAsIdentity: true` disabling email
+fallback. Email and `preferred_username` can change or be reassigned;
+they must not bind privileged access. Octelium's OIDC email fallback can use
+the token's separate `email` claim even when the selected identifier is `oid`,
+so changing the identifier alone is insufficient. Microsoft Entra may omit
 `email_verified`, so the IdentityProvider intentionally does not require that
 claim.
 
@@ -349,17 +353,23 @@ aws ssm put-parameter \
 
 For an older `preferred_username` setup, keep an independent working operator
 session before changing the shared identity claim. Run the admin command above
-with `--dry-run` first, using the existing contact email and the owner's verified
-Entra object ID. Preflight checks the complete live mapping inventory before
-reading the client secret or writing resources. It permits the sole selected
-legacy mapping; additional legacy mappings require a separately reviewed
-migration. Never substitute a newly created user's object ID for the owner.
+with `--dry-run` first, using the old login identifier for `--admin-email` and
+the owner's verified Entra object ID. This leaves the existing contact email
+unchanged, including retries after a partial migration. Preflight checks the
+complete live mapping inventory before reading the client secret or writing
+resources. It includes HUMAN users who rely on Octelium's default email fallback
+without an explicit Entra binding, and permits only the sole selected legacy
+user. Additional users require a separately reviewed migration. Never substitute
+a newly created user's object ID for the owner.
+An existing `oid` provider with email-only users also fails preflight; disabling
+their fallback requires a separately reviewed migration.
 
 The user mapping changes before the IdP claim, so the transition is not atomic.
 Retain private copies of the current User and IdentityProvider for recovery;
 do not close the independent session until a fresh owner browser login works.
 Verify that the complete mapping inventory binds only the original owner's
-`oid` to owner access and contains no pilot `oid` binding. Only then reuse the
+`oid` to owner access, the IdP has `disableEmailAsIdentity: true`, and there is
+no pilot `oid` binding. Only then reuse the
 owner's former email. After the pilot completes its required initial password
 change and MFA setup, test actual fresh login denial; an interrupted password
 or MFA flow is not proof of authorization denial. Plain secret refreshes also run the

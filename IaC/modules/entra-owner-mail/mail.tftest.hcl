@@ -6,9 +6,10 @@ variables {
     { signInType = "federated", issuer = "MicrosoftAccount", issuerAssignedId = null },
     { signInType = "userPrincipalName", issuer = "example.onmicrosoft.com", issuerAssignedId = "rodman@stinkyboi.com" },
   ]
-  replacement_mail = "owner@example.net"
-  kms_key_id       = "alias/test"
-  kms_region       = "us-east-1"
+  expected_current_mail = "current@example.net"
+  replacement_mail      = "owner@example.net"
+  kms_key_id            = "alias/test"
+  kms_region            = "us-east-1"
 }
 
 override_data {
@@ -21,6 +22,7 @@ override_data {
       creation_type  = "Invitation"
       external_state = "Accepted"
       enabled        = true
+      mail           = "current@example.net"
       identities = [
         { signInType = "federated", issuer = "MicrosoftAccount", issuerAssignedId = null },
         { signInType = "userPrincipalName", issuer = "example.onmicrosoft.com", issuerAssignedId = "rodman@stinkyboi.com" },
@@ -69,6 +71,36 @@ run "rejects_changed_owner_identity" {
       { signInType = "federated", issuer = "MicrosoftAccount", issuerAssignedId = null },
       { signInType = "userPrincipalName", issuer = "changed.onmicrosoft.com", issuerAssignedId = "rodman@stinkyboi.com" },
     ]
+  }
+  expect_failures = [msgraph_update_resource.mail]
+}
+
+run "rejects_changed_current_mail" {
+  command = plan
+  variables {
+    expected_current_mail = "stale@example.net"
+  }
+  expect_failures = [msgraph_update_resource.mail]
+}
+
+run "rejects_missing_current_mail" {
+  command = plan
+  override_data {
+    target = data.msgraph_resource.owner
+    values = {
+      output = {
+        id             = "11111111-1111-1111-1111-111111111111"
+        upn            = "rodman@stinkyboi.com"
+        user_type      = "Member"
+        creation_type  = "Invitation"
+        external_state = "Accepted"
+        enabled        = true
+        identities = [
+          { signInType = "federated", issuer = "MicrosoftAccount", issuerAssignedId = null },
+          { signInType = "userPrincipalName", issuer = "example.onmicrosoft.com", issuerAssignedId = "rodman@stinkyboi.com" },
+        ]
+      }
+    }
   }
   expect_failures = [msgraph_update_resource.mail]
 }
