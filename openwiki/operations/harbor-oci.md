@@ -279,7 +279,7 @@ Static rendering did not catch either runtime validation issue.
 
 ## Proposed Chainguard automation
 
-The [Chainguard image automation specification](../../../specs/002-chainguard-image-automation/spec.md)
+The [Chainguard image automation specification](../../specs/002-chainguard-image-automation/spec.md)
 proposes migrating all compatible active workloads, recording exceptions,
 automatically importing Chainguard releases into Harbor, and restoring Argo CD
 Image Updater for digest-pinned updates committed directly to `main` by a GitHub
@@ -298,7 +298,7 @@ digest from reapplication. Unsafe or unknown compatibility and failed rollback
 would pause affected-application updates and alert the operator; data restores
 remain operator-led.
 
-The [implementation plan](../../../specs/002-chainguard-image-automation/plan.md)
+The [implementation plan](../../specs/002-chainguard-image-automation/plan.md)
 uses exact-name native Harbor replication rules: Chainguard's anonymous catalog
 API is unsupported, but known repository tag listing works. A verifier advertises
 only completely downloaded digests through a separate Harbor alias. Image
@@ -312,7 +312,7 @@ bypasses PR governance only; signatures and genuine checks remain required.
 Existing protected environments retain reviewers. Fresh proposer credentials
 and a separate CI-only promoter are activation prerequisites.
 
-The [implementation tasks](../../../specs/002-chainguard-image-automation/tasks.md)
+The [implementation tasks](../../specs/002-chainguard-image-automation/tasks.md)
 separate an import-only MVP from workload migration and bot activation. Direct
 updates stay paused until the independent checks and recovery readiness pass.
 Routine updates, bound rollback and control-only pause/rejection have distinct
@@ -323,7 +323,7 @@ eligibility is exempt. Release-sample acceptance and recovery drills run
 independently after activation, and both remain required for completion alongside
 the full migration assessment beyond the stateless pilot.
 
-The [initial inventory](../../../specs/002-chainguard-image-automation/migration-inventory.md)
+The [initial inventory](../../specs/002-chainguard-image-automation/migration-inventory.md)
 identifies the stateless Python Harbor vulnerability exporter as the first
 candidate. It also records a parser finding: `scripts/harbor-image-inventory.py`
 matches across the embedded Helm `image:`/`tag:` newline in
