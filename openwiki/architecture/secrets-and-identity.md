@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: ["architecture", "secrets", "identity"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T06:31:03.683Z
+    at: 2026-10-07T06:45:20.541Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
@@ -13,11 +13,11 @@ sources:
     resource: repo://docs/octelium.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-e9bb34bdbee430c2456beb6d
-    resource: repo://IaC/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
-generated: { by: "codex", at: "2026-10-07T06:31:03.683Z" }
+generated: { by: "codex", at: "2026-10-07T06:45:20.541Z" }
 ---
 
 # Secrets And Identity
@@ -570,6 +570,11 @@ grants and application ownership. The replacement became the primary SMTP
 address, but the old address remains a secondary alias. Address release failed,
 so the pilot rename was not retried. A supported repository-owned alias-release
 path is still required; changing mail did not release the requested pilot address.
+On October 7, 2026 UTC, authenticated Exchange Online lookups for this exact
+owner returned HTTP 404 `ManagementObjectNotFoundException`, including
+soft-deleted recipients. No mail-enabled recipient target exists in those
+results for `Set-MailUser`; Microsoft-supported remediation is required while
+preserving the identity. No Exchange write or additional permission grant occurred.
 
 ## Harbor registry identities
 

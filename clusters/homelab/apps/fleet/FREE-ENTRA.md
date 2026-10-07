@@ -353,6 +353,14 @@ the tenant returned no subscribed SKUs. Do not add Exchange or a license to
 clear this alias. Implement and review the applicable repository-owned removal
 path before proceeding.
 
+On October 7, 2026 UTC, authenticated read-only Exchange Online lookups for the
+exact owner in the verified tenant returned `ManagementObjectNotFoundException`
+(HTTP 404), including a lookup with soft-deleted recipients included. No
+mail-enabled recipient target was established for `Set-MailUser`, so that
+documented removal route is unavailable for this owner. Microsoft-supported
+remediation is required while preserving the existing identity. No Exchange
+write or additional permission grant was performed.
+
 Only after address release and fresh owner-access checks should a new pilot
 plan rename the existing native user. Then complete its initial password change
 and MFA setup through My Account. Test an actual fresh pilot login to Octelium:

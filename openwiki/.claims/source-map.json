@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:980db9d2e89e16c4e0863b15f9a2905a754610db68c8023f0cb826bf7b20a552",
+  "pageVersion": "sha256:33e5692e0df1160193e834491a0e5aa1fc103e0926c5a390dd59ca7450d3ea4f",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:9c8e0bb27fcd0f6afdc502614631f968c89a35fa53975185c5c4a9012079f493"
+          "version": "repo-file-v1:sha256:1cc878cdc1234a5c875e10601938a25ceac4ee9021264da7d5778ceae5095e10"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -23,6 +23,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-07T06:31:03.683Z"
+    "at": "2026-10-07T06:45:20.541Z"
   }
 }
