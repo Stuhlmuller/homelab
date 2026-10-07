@@ -772,8 +772,14 @@ and live Application each contained three sources. The resource was untainted;
 the existing untaint-only recovery does not apply.
 
 An operator-unit addition triggers all application plans through the shared
-stack filter, so this also blocks the identity PR's aggregate gate. Next,
-reproduce a focused Harbor plan and investigate the provider's computed-field
+stack filter, so the failure also blocked the identity PR's aggregate gate.
+The later [protected plan](https://github.com/Stuhlmuller/homelab/actions/runs/37580800923)
+passed on head `861fb9d7` against base `427b01ad`, including the aggregate gate;
+the Harbor error did not recur. This investigation applied no Harbor repair.
+If it recurs, reproduce a focused Harbor plan and investigate the provider's computed-field
 transformation against the saved state types. Keep state and logs private;
 do not skip Harbor, widen computed fields, or mutate state without a verified
-repository-owned repair. No repair or owner-mail migration was applied.
+repository-owned repair.
+The separately reviewed owner-mail operator plan later applied, but the old
+SMTP alias remains reserved; see the
+[migration outcome](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).

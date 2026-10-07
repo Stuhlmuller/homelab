@@ -4,6 +4,8 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
 sources:
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -12,10 +14,10 @@ sources:
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
-generated: { by: "codex", at: "2026-10-07T06:13:26.356Z" }
+generated: { by: "codex", at: "2026-10-07T06:34:36.213Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T06:13:26.356Z
+    at: 2026-10-07T06:34:36.213Z
 ---
 
 # Validation Gates
@@ -221,9 +223,16 @@ A private reproduction identified Harbor's Kubernetes provider `spec.sources`
 tuple reconciliation as the sole application failure. Stored, desired, and live
 source counts were all three; the resource was not tainted, so the existing
 untaint path is inapplicable. The operator-stack addition selects all application
-plans and exposes this blocker. Keep the required gate intact and investigate a
-focused Harbor plan through the [recorded recovery finding](../../docs/ci-cd.md#harbor-provider-plan-blocker-observed-october-7-2026-utc).
-The owner-mail migration remains unapplied.
+plans and exposed this blocker. The subsequent protected plan
+[37580800923](https://github.com/Stuhlmuller/homelab/actions/runs/37580800923)
+passed on `861fb9d7` against `427b01ad`, including the aggregate gate, without
+a Harbor repair by this investigation. Keep the required gate intact; if the
+error recurs, follow the [recorded recovery finding](../../docs/ci-cd.md#harbor-provider-plan-blocker-observed-october-7-2026-utc).
+The separate reviewed owner operator plan later applied, with fresh owner
+Octelium sessions verified before and after the mail change. The old SMTP alias
+remained secondary, so the pilot rename was not retried. This operator execution
+does not satisfy or bypass the protected CI plan gate; see the
+[dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the

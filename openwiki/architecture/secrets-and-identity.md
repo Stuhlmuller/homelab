@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: ["architecture", "secrets", "identity"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T06:13:26.356Z
+    at: 2026-10-07T06:31:03.683Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
@@ -17,7 +17,7 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
-generated: { by: "codex", at: "2026-10-07T06:13:26.356Z" }
+generated: { by: "codex", at: "2026-10-07T06:31:03.683Z" }
 ---
 
 # Secrets And Identity
@@ -541,32 +541,35 @@ successful organizational device/user registration and password synchronization
 still require interactive acceptance. The runbook retains the separate,
 unresolved token-endpoint profile warning from the same attempt.
 
-The [approved owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-approved-not-applied)
-selects a privately supplied replacement for directory mail while preserving the owner UPN,
-object ID and external authentication. No owner or Octelium change is applied.
-The owner was the only active Global Administrator found. Live Octelium uses a
-privileged email-based HUMAN mapping affected by address reuse; application
-assignment is not required and the OIDC scopes have tenant-wide consent.
+The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
+applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external
+authentication. The owner was the only active Global Administrator found.
+Octelium's previous email-based HUMAN mapping was affected by address reuse;
+application assignment is not required and the OIDC scopes have tenant-wide consent.
 The [bootstrap](../../scripts/octelium-entra-oidc.sh) now uses immutable Entra
 `oid` with `disableEmailAsIdentity: true`, checks the complete live inventory
 including implicit email-fallback users, and permits a guarded transition of
 the sole selected legacy HUMAN mapping. Changing the claim alone does not
 prevent fallback through the separate OIDC email claim. Existing user fields,
 contact email, policies and other identity-provider bindings remain intact,
-including partial retries. Its live read-only preflight passed. Apply the migration and
-test fresh owner access and confirm no pilot object-ID or privileged email
-binding, with email fallback disabled, before email reuse. Test actual pilot login denial after its initial
-password change and MFA setup; an interrupted authentication flow is not proof
-of denial. Keep actual HUMAN identifiers private.
+including partial retries. Complete-inventory preflight and the live migration
+passed. New owner Octelium sessions through Entra callbacks matched the original
+`oid` and rendered the Services page before and after the mail change; these
+checks did not exercise a new password or MFA challenge. Test actual pilot login
+denial after its initial password change and MFA setup; an interrupted
+authentication flow is not proof of denial. Keep actual HUMAN identifiers private.
 
-The prepared [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
+The [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
 owns only a mail PATCH on the existing owner. A private `-var-file` supplies the
 replacement address, object ID, current-mail and full identity baselines; guards
 refuse a changed or missing current mail and retain the enabled accepted external
 member and its UPN before and after the write. The
-private encrypted plan passed the mail-only scope check. Neither change has
-been applied. Require fresh owner authentication and SMTP proxy readback before
-retrying the pilot rename: changing mail does not guarantee old-alias removal.
+private encrypted plan passed the mail-only scope check and applied. Readback
+preserved the owner identity, enabled state, password-change timestamp, roles,
+grants and application ownership. The replacement became the primary SMTP
+address, but the old address remains a secondary alias. Address release failed,
+so the pilot rename was not retried. A supported repository-owned alias-release
+path is still required; changing mail did not release the requested pilot address.
 
 ## Harbor registry identities
 

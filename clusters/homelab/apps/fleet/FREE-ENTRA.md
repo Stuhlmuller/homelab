@@ -282,7 +282,7 @@ The 20:47 PDT retry again reached the personal-account tenant and returned
 `invalid_scope`; a fresh Graph read still showed the old pilot UPN and unchanged
 owner mail/proxy. Repeated registration attempts do not apply the identity fix.
 
-The existing tenant-owner identity `rodman@stinkyboi.com` has
+At that point, the tenant-owner identity `rodman@stinkyboi.com` held
 `rodman@stuhlmuller.net` as its mail and SMTP proxy address. This is the leading
 collision candidate; the audit does not identify the conflicting property or
 object. No active user/group nickname `rodman` or deleted user with the requested
@@ -300,7 +300,7 @@ before authentication; its significance remains unverified until the correct
 organizational identity completes registration. Do not broaden profile URLs,
 remove Fleet enrollment, or reset credentials based on that warning alone.
 
-### Owner address migration: approved, not applied
+### Owner address migration: alias release blocked
 
 The operator selected a privately supplied replacement for the owner's directory mail,
 retaining `rodman@stuhlmuller.net` for the native pilot. Read-only checks found
@@ -315,7 +315,7 @@ Two prerequisites emerged from the October 6 investigation:
 - The owner is the only active Global Administrator found. Capture the current
   attributes and grants privately and verify fresh owner sign-in before a
   migration; an existing cached session is insufficient recovery evidence.
-- Octelium uses `preferred_username` as its identity key, and the inspected
+- Before migration, Octelium used `preferred_username` as its identity key, and the inspected
   privileged runtime mapping is affected by the proposed address reuse. Its
   Entra service principal has assignment requirement disabled and tenant-wide
   consent covering the OIDC scopes. An owner-only assignment therefore does not
@@ -361,11 +361,24 @@ interruption is not authorization denial; record that test as untested until
 authentication completes. Continue with Mac registration acceptance.
 Rollback must release any address claimed by
 the pilot before restoring owner mail; removing an `msgraph_update_resource`
-does not restore its prior value. The module and Octelium guards are prepared;
-no owner migration or Octelium change has been applied. The read-only Octelium
-preflight passed against the complete live inventory, and the private encrypted
-owner plan contains only the existing owner's mail PATCH. These checks do not
-establish successful authentication or old-alias removal.
+does not restore its prior value.
+
+On October 7, 2026 UTC, the reviewed Octelium script applied the immutable owner
+`oid` binding and `disableEmailAsIdentity: true` after complete-inventory
+preflight. The reviewed encrypted owner plan then applied only the mail PATCH.
+Readback preserved the owner's object ID, UPN, external identities, enabled
+state, password-change timestamp, roles, grants and application ownership.
+New owner Octelium sessions through Entra callbacks matched the original `oid`
+before and after the mail change, and the Services page rendered successfully.
+These checks did not exercise a new password or MFA challenge.
+
+The replacement became the primary SMTP address, but the old address remained
+as a secondary SMTP alias. **Address release failed; the pilot rename was not
+retried.** The existing pilot retains its old UPN and initial-password-change
+requirement. A supported repository-owned alias-release path remains necessary
+before another pilot rename plan or native Mac registration attempt. Keep the
+replacement mailbox, account identifiers, saved plans and detailed evidence
+private.
 
 ## Platform differences and acceptance
 

@@ -375,6 +375,13 @@ change and MFA setup, test actual fresh login denial; an interrupted password
 or MFA flow is not proof of authorization denial. Plain secret refreshes also run the
 preflight and cannot silently switch a legacy mapping.
 
+On October 7, 2026 UTC, the reviewed migration applied the original owner's
+`oid` binding and disabled email fallback. New owner sessions through Entra
+callbacks verified that same object ID and rendered the Services page, both
+before and after the separate directory-mail change. This verifies Octelium
+identity resolution and app access; the old SMTP alias remains reserved, so
+the [pilot rename remains blocked](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
+
 ## Cutover Gate
 
 Run the e2e gate before declaring any Octelium app route ready:

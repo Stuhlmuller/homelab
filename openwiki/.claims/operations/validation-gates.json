@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6d7fbce11482c9be33610aba311eef770e7fa60b38c7a0afdd03bfac3e54830e",
+  "pageVersion": "sha256:46d91f734ec47833460d029ebe884e5a26a5a6f80454f4dec30354105687d199",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -22,17 +22,21 @@
     },
     {
       "id": "claim_b6e9dec699054f40ab7418dcafefa347",
-      "statement": "The October 7, 2026 UTC live-plan failure on PR 1219 was privately reproduced as Harbor's provider tuple reconciliation error despite matching stored, desired, and live source counts. The resource is untainted; the existing untaint recovery is inapplicable. Keep the required gate and investigate a focused Harbor plan; no owner-mail migration was applied.",
+      "statement": "PR 1219's October 7, 2026 UTC plan initially failed on Harbor tuple reconciliation despite equal source counts and untainted state. Subsequent protected run37580800923 passed on861fb9d7 against427b01ad, including the aggregate gate, without a Harbor repair by this investigation. The separate reviewed owner-mail plan applied with fresh owner Octelium sessions verified before and after; the old SMTP alias remained secondary and the pilot rename was not retried. Strict CI gates remain intact.",
       "evidence": [
         {
-          "resource": "repo://docs/ci-cd.md#L761-L777",
-          "version": "repo-lines-v1:sha256:835b6b66f2718d511ae310a59f1d5782cd8b5e10aaba83ce012adf1c06ce0414:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA4M2FiMzQ5N2Y2ODU0MDQ3NTdhZjc2OGM4NzVmNWZjYWEwYmRlMzU2ZWE0NTIwODNlYjdiNThjYzhhMjc0ZWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2M2IyYmQ3NDllYWY0ODQ1MDgzNTdiNDgzNDgwZGM2ZmQ5MWY3NjA3ODQ5YWIyMzUxYjU4MjFjYjIxMDBhYmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwNDYwMTU5ZGI4YTkxMjQ3NjNkMTVkN2E5YTc5MWY1OThhNjYyNGVkMGYyZjlhZGFkYWQ2NTc4ZDI1MzM4OWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:9c8e0bb27fcd0f6afdc502614631f968c89a35fa53975185c5c4a9012079f493"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:e5a10029aae574d399d403fde6348e96a0e6fa2e02bfee18115360fdeba59a71"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-07T06:13:26.356Z"
+    "at": "2026-10-07T06:34:36.213Z"
   }
 }
