@@ -610,6 +610,20 @@ async def check_openclaw_gateway():
 
 
 async def check():
+    # Real SDK spans cap attributes at 128; OpenClaw advertises 47 tools.
+    tracer = TracerProvider().get_tracer("tool-heavy-generation")
+    with tracer.start_as_current_span("generation") as span:
+        identity.langfuse.set_attributes(span, {
+            "model": "openrouter/free",
+            "optional_params": {"tools": [{"type": "function", "function": {
+                "name": f"tool_{i}", "description": "fixture", "parameters": {"type": "object"},
+            }} for i in range(47)]},
+            "messages": [{"role": "user", "content": "Reply OK"}],
+            "standard_logging_object": {"call_type": "acompletion", "metadata": {}, "model_parameters": {}},
+            "litellm_params": {"metadata": {"trace_user_id": "openclaw"}},
+        }, {"choices": [{"message": {"role": "assistant", "content": "OK"}}],
+            "usage": {"prompt_tokens": 8, "completion_tokens": 1, "total_tokens": 9}})
+        assert span.attributes.get("llm.model_name") == "openrouter/free", "Tool schemas evicted model identity"
     await check_admission()
     # NOFX's strict OpenRouter path must survive the provider translation.
     response_format = {"type": "json_schema", "json_schema": {
