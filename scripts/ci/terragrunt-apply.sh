@@ -245,7 +245,16 @@ if [[ -n "$repair_argocd_app_state_unit" ]]; then
   (
     cd "IaC/live/argocd-apps/${repair_argocd_app_state_unit}"
     terragrunt init -no-color
-    terragrunt run -- untaint -no-color kubernetes_manifest.this
+    if ! repair_output="$(terragrunt run -- untaint -no-color kubernetes_manifest.this 2>&1)"; then
+      printf '%s\n' "$repair_output"
+      if ! grep -Eiq 'not tainted|no such instance|does not exist' <<<"$repair_output"; then
+        echo "Argo CD Application state repair failed." >&2
+        exit 1
+      fi
+      echo "Argo CD Application state was already clean; continuing."
+    else
+      printf '%s\n' "$repair_output"
+    fi
   )
   echo "::endgroup::"
 fi
