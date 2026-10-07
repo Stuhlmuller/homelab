@@ -114,6 +114,9 @@ class SafeLangfuseLogger(LangfuseOtelLogger):
         # Streaming chat is still a model generation, not a generic OTEL span.
         if isinstance(standard, dict) and standard.get("call_type") in {"completion", "acompletion"}:
             span.set_attribute("langfuse.observation.type", "generation")
+            # Tool schemas can evict early attributes from the SDK's bounded span.
+            if kwargs.get("model"):
+                span.set_attribute("llm.model_name", kwargs["model"])
 
     @staticmethod
     def _error_summary(error):

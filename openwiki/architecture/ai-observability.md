@@ -50,6 +50,36 @@ See [GitOps Flow](gitops-flow.md) and Argo CD's
 
 ## Acceptance
 
+### Follow-up verification, October 6, 2026 PDT
+
+Live OpenClaw configuration now contains only the provider targeting
+`http://litellm.ai.svc.cluster.local:4000/v1`, default `openrouter/free`, no
+fallbacks or active auth profiles, and disabled OpenAI/Codex plugins. OpenClaw,
+LiteLLM, Multica, n8n, NOFX and Langfuse Applications report Synced/Healthy.
+These checks establish configuration and readiness, not inference acceptance.
+
+The isolated installed n8n `LmChatOpenAi` node completed a fresh request without
+executing downstream workflow actions. Langfuse generation `a82fef8bb18694a3`,
+trace `0640a8d5deac6725d1b702d25cc9c151`, matched marker
+`homelab-n8n-native-node-20261006`, identity `n8n`, output, and 244 tokens
+(43 input, 201 output). OpenRouter resolved the free alias to
+`nvidia/nemotron-3-super-120b-a12b:free`. Its timestamp is October 7 UTC;
+the first immediate query was empty and the subsequent query found the event.
+This closes native-node inference and tracing acceptance, not a full workflow
+execution.
+
+A fresh real OpenClaw agent turn returned `4` through `openrouter/free` without
+fallback. Langfuse generation `4fe660e4218bbdd7`, trace
+`6e7258a4f9893cce75ea36773559f639`, matched marker
+`homelab-openclaw-generation-20261006`, identity `openclaw`, output and 42041
+tokens (42039 input, 2 output). Generation typing is fixed, but its observation
+model field is empty; inspect the streaming exporter before claiming complete
+model visibility. A real SDK-span regression reproduced the cause: 47 tool
+schemas exceed the default 128-attribute limit and evict the early model
+attribute. The prepared callback revision 8 retains model identity after native
+metadata expansion; it still needs protected delivery and live verification.
+NOFX's gateway-only image rollout remains unverified.
+
 Configuration is not acceptance. For each active caller, verify a real request
 creates one Langfuse generation with its gateway app identity, `openrouter/free`,
 input/output and provider token usage. Verify error traces do not expose bearer
