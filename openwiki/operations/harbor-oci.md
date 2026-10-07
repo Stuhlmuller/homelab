@@ -341,8 +341,8 @@ the manual reviewed publication path.
 Read-only planning verified selected public registry access and GitHub protection
 constraints; it did not establish organization entitlements or runtime
 compatibility. Preserve the failure context in
-[the retirement runbook](../../argocd-image-updater.md) and
-[the mirror runbook](../../harbor-image-mirroring.md) while implementing the plan.
+[the image automation runbook](../runbooks/image-automation.md) and
+[the mirror runbook](../../docs/harbor-image-mirroring.md) while implementing the plan.
 
 ## Sources
 
