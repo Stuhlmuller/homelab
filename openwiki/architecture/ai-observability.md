@@ -169,6 +169,35 @@ successfully built, published, signed and verified both private images from
 come directly from its digest artifact. Live rollout and native NOFX inference
 acceptance remain pending; recheck stopped traders and simulations before merge.
 
+PR [#1221](https://github.com/Stuhlmuller/homelab/pull/1221) merged as
+`a6b2ee45deb04846dba4eeb66d896b5cbcf58427` on October 7 at 04:16 UTC.
+All exact-head checks passed; the verified signed squash commit has the tested
+tree. Immediately before merge, both required ExternalSecrets were Ready,
+running traders and running/paused backtests each counted zero, and the lock
+lookup succeeded with no results.
+
+At 04:20 UTC, rollout was blocked by infrastructure: `zimaboard-2` reported
+`Ready=Unknown` with `node.kubernetes.io/unreachable` taints. The unready
+`argocd-application-controller-0` on that node was marked for eviction.
+NOFX still reported the preceding revision `018218b0` and old image pair;
+its Healthy status was not evidence of the new deployment. No manual restart,
+force-sync, pod deletion or node mutation was performed. After node/controller
+recovery, verify Argo observes the merged revision, both published digests run,
+and traders remain stopped. Native NOFX inference and its Langfuse generation
+also remain pending an authenticated NOFX browser session; do not bypass login
+or activate trading for acceptance.
+
+The subsequent October 7 UTC check found the node Ready and NOFX
+Synced/Healthy at `2d8af0b36f04a032a27b98be106563c4d87701b6`, a descendant
+of the rollout merge, with its Argo operation Succeeded. Both running containers
+used the published backend `e42a347e...` and frontend `75e81702...` digests.
+The served source includes patch `0020` and no longer contains
+`addLiteLLMProviderAPIKey`. Fresh database checks again found zero running
+traders and running/paused backtests; the lock lookup succeeded with no results.
+This closes deployment verification, not inference acceptance. The browser
+remained at Octelium login; an authenticated NOFX session is still needed for
+the native nontrading AI test and matching Langfuse generation.
+
 ### Retirement gap: retained OpenClaw configuration
 
 Live inspection still found an enabled `codex` plugin, the OpenAI provider
