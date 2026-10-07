@@ -365,6 +365,11 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   permission. Future Langfuse IAM lifecycle or credential-rotation changes
   remain operator-owned through the same saved-plan path.
 - LiteLLM caller keys are generated separately for NOFX, Multica and n8n at
+  dedicated SSM paths. The prepared database-key migration adds separate
+  `/homelab/litellm/postgres-{admin,app}-password` parameters: admin is database
+  only; the client Secret exposes just the nonsuperuser database-owner password.
+  This prerequisite does not yet replace file-backed caller authentication.
+  Existing caller paths remain
   `/homelab/<app>/litellm-token`; OpenClaw uses
   `/homelab/openclaw/litellm-app-token`. The prior OpenClaw `litellm-token`
   remains a retired master-key alias with no workload consumer. LiteLLM alone

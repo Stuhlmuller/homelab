@@ -306,6 +306,20 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/litellm/postgres-admin-password" = {
+      description = "LiteLLM dedicated PostgreSQL administrator password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/litellm/postgres-app-password" = {
+      description = "LiteLLM PostgreSQL database owner password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/litellm/openai-api-key" = {
       description   = "LiteLLM OpenAI provider API key."
       initial_value = local.placeholder

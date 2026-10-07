@@ -21,6 +21,37 @@ disabled. The Langfuse keys are mounted only in LiteLLM.
 
 ## Validation and rollout
 
+### Database-key migration prerequisite
+
+The dedicated `litellm-postgres` StatefulSet prepares persistent storage for
+UI-visible virtual keys. This prerequisite does **not** change authentication
+or import keys yet; the gateway remains on existing file-backed keys until
+database readiness and the separate native-auth cutover are validated.
+Import the existing SSM caller values so clients need no key rotation.
+
+PostgreSQL reuses the mirrored PostgreSQL 14 image and a 20 GiB `nfs-default`
+claim, `data-litellm-postgres-0`. Generated SSM credentials are
+`/homelab/litellm/postgres-admin-password` and
+`/homelab/litellm/postgres-app-password`. Only PostgreSQL receives the admin
+password; `litellm-postgres-client` contains only the app password. The init
+script creates the nonsuperuser `litellm` role and owned database on an empty
+volume. Network and Istio policies admit port 5432 only from LiteLLM.
+
+Provision these parameters and exact reader grants through the reviewed shared
+SSM Terragrunt unit before acceptance. Require both ExternalSecrets Ready, the
+claim Bound, StatefulSet Ready and `SELECT 1` as the app role. Passwords are
+file-backed. SSM rotation alone does not change an initialized PostgreSQL role;
+use a reviewed role-password migration before changing mounts.
+
+Before schema upgrades or auth cutover, keep a private logical `pg_dump` of
+database `litellm` alongside its NFS snapshot and SSM recovery material. Restore
+the database before restoring database-backed authentication; retain its PVC
+during rollback. Returning to file-backed authentication would ignore UI
+revocations and must not be an automatic recovery action.
+
+Validate with
+`nix develop --command python3 -I scripts/ci/litellm-postgres-check.py`.
+
 Run:
 
 ```sh

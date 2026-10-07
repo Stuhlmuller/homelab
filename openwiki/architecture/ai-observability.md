@@ -20,6 +20,18 @@ by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/READM
 
 ## Caller inventory
 
+### UI-visible key migration (prepared, not deployed)
+
+The operator requested database-backed keys visible in LiteLLM's UI. The first
+prerequisite adds dedicated PostgreSQL storage and separate generated admin/app
+SSM credentials, reusing existing NFS and PostgreSQL patterns. File-backed
+authentication stays unchanged until database readiness is proven. The cutover
+must import existing caller values, use native database authentication, preserve
+inference-only/free-model restrictions and Langfuse attribution, and prove UI
+listing plus revocation enforcement. Copying rows into the UI while retaining
+file-based authentication is not completion. See the
+[gateway runbook](../../clusters/homelab/apps/litellm/README.md).
+
 The `litellm-app-keys` revision `v2` refreshes the file-mounted OpenRouter
 credential after protected SSM injection. Merge this refresh only after the
 provider credential workflow succeeds. The gateway rereads the mounted key for

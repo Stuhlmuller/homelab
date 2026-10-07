@@ -16,6 +16,7 @@ python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
 python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 -I scripts/ci/litellm-provider-credential-test.py
+python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 -I scripts/ci/octelium-entra-oidc-test.py

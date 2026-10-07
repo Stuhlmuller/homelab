@@ -7,6 +7,12 @@ tags: ["architecture", "storage", "stateful"]
 
 # Storage And State
 
+LiteLLM's prepared UI-key migration adds `ai/data-litellm-postgres-0`, a 20 GiB
+NFS claim for its dedicated PostgreSQL database. Preserve logical dumps, volume
+snapshots and SSM role passwords together. Key import and native-auth cutover
+remain separate acceptance gates; see the
+[LiteLLM runbook](../../clusters/homelab/apps/litellm/README.md).
+
 The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
 the existing S3 state bucket's encryption configuration, enabling S3 Bucket
 Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See
