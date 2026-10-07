@@ -133,6 +133,19 @@ def desired_registry(name):
     return CHAINGUARD_REGISTRY
 
 
+def registry_matches(actual, desired):
+    """Compare Harbor registry fields after its null-to-default normalization."""
+    for key, value in desired.items():
+        if key == "credential":
+            continue
+        actual_value = actual.get(key)
+        if key == "insecure" and actual_value is None:
+            actual_value = False
+        if actual_value != value:
+            return False
+    return True
+
+
 def reconcile_registry(client, name):
     desired = desired_registry(name)
     query = urllib.parse.urlencode({"name": name})
@@ -148,11 +161,11 @@ def reconcile_registry(client, name):
         if not isinstance(registry, dict) or registry.get("name") != name:
             raise BootstrapError("Harbor returned the wrong source registry")
         identifier = positive_id(registry.get("id"))
-        if any(registry.get(key) != value for key, value in desired.items() if key != "credential"):
+        if not registry_matches(registry, desired):
             client.request("PUT", f"/registries/{identifier}", desired, json_response=False)
     identifier = positive_id(registry.get("id"))
     verified, _ = client.request("GET", f"/registries/{identifier}")
-    if not isinstance(verified, dict) or any(verified.get(key) != value for key, value in desired.items() if key != "credential"):
+    if not isinstance(verified, dict) or not registry_matches(verified, desired):
         raise BootstrapError("Harbor source registry verification failed")
     return verified
 

@@ -294,6 +294,19 @@ class BootstrapTest(unittest.TestCase):
             ("GET", "/registries/42"),
         ])
 
+    def test_harbor_null_insecure_registry_field_matches_false(self):
+        class Client:
+            def request(self, method, path, body=None, expected=(200,), json_response=True):
+                registry = {"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
+                            "type": "docker-registry", "insecure": None,
+                            "credential": None}
+                if path == "/registries?name=cgr.dev" or path == "/registries/42":
+                    return ([registry] if "?" in path else registry), {}
+                raise AssertionError((method, path))
+
+        registry = bootstrap.reconcile_registry(Client(), "cgr.dev")
+        self.assertIsNone(registry["insecure"])
+
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
