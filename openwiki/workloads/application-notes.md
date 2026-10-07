@@ -125,8 +125,20 @@ PostgreSQL was Ready on `zimaboard-1`; all three app containers were Ready on
 reports Dispatcharr `0.31.0`. The loopback setup GET still returned
 `superuser_exists: false` and `setup_allowed: true`; the first-administrator
 form was opened for the operator. No account or source was created. IPTV-org
-import, channel exports and playback remain pending that setup, followed by
+import, channel exports and playback remained pending that setup, followed by
 private NAS routing and media-server acceptance.
+
+On October 6, 2026 PDT, the operator created the first administrator privately.
+Native UI setup added `IPTV-org USA` using the public USA M3U, Standard type,
+24-hour refresh and no provider stream limit. All 74 discovered group cards
+were enabled with Auto Channel Sync off. The refresh imported 1,451 streams;
+manual sequential channel creation produced 1,451 Channels. `/output/m3u` and
+`/hdhr/lineup.json` each returned HTTP 200 and 1,451 entries. CBS Sports Golazo
+preview advanced with decoded 1920x1080 video; its exported MPEG-TS endpoint
+returned 100 valid consecutive packet sync bytes. The sample establishes
+Dispatcharr playback, not availability of every listed feed or media-server
+acceptance. No guide source was supplied; EPG, private NAS routing and
+Jellyfin/Plex playback remain outstanding. No credentials were recorded.
 
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep
