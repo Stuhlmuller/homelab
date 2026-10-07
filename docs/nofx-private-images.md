@@ -94,6 +94,18 @@ closed even when static checks pass.
 
 ## Harbor runtime acceptance
 
+The gateway-only credential rollout targets source
+`a4d5dc78247ddf3e5a6a540c38f7de019c8ed225`, published by
+[run 37568856616](https://github.com/Stuhlmuller/homelab/actions/runs/37568856616).
+Tests/build, private signed publication and digest reporting all succeeded.
+The new deployment pair comes from its `nofx-published-images.txt` artifact;
+patch `0020` removes provider-key forwarding and the provider-key prerequisite
+from both routed chat paths. Patch `0019` retains the strict free-model timeout
+and cancellation behavior. Live rollout and inference acceptance remain pending.
+Keep traders stopped and apply the pre-merge checks below. Rollback to the
+previous pair restores the rejected provider-key forwarding; do not claim
+working gateway inference after such a rollback.
+
 The cash-spot rollout targets reviewed source
 `b78cc47ddd5bb9bdace4912b47886e799a9d5efd` from
 [NOFX Images run 36461239505](https://github.com/Stuhlmuller/homelab/actions/runs/36461239505).
