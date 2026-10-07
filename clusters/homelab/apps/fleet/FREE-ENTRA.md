@@ -70,25 +70,27 @@ See the [ingress contract](README.md#public-access-and-authentication) and
 
 These files are the source of truth:
 
-| Profile | Enforced settings |
+| Profile | Settings requested from Apple |
 | --- | --- |
 | [Host-scoped Mac baseline](profiles/macos-security-baseline-host.mobileconfig) | Password required, at least 8 characters, non-simple; maximum 5 minutes idle before screen lock; password required immediately after lock. No scheduled expiration, history requirement, forced next-login password change, or failed-attempt threshold is configured. |
+| [Host-scoped iPhone/iPad baseline](profiles/ios-passcode-baseline.mobileconfig) | Passcode required, at least 6 characters, non-simple; numeric passcodes allowed; maximum 5 minutes idle before lock; passcode required immediately. No scheduled expiration, passcode history, or failed-attempt erase threshold is configured. |
 | [Retired global Mac baseline](profiles/macos-security-baseline.mobileconfig) | Removal reference only. The operator permits deleting its global catalog assignment, not uploading it again. |
 | [Mac Platform SSO](profiles/macos-entra-platform-sso.mobileconfig) | Microsoft Company Portal extension, `Password` method, shared device keys, existing accounts only. No account creation, authorization/privilege changes, or forced online authentication. |
 
-The Mac baseline uses `com.apple.mobiledevice.passwordpolicy`. Apple applies the
+Both baselines use `com.apple.mobiledevice.passwordpolicy`. Apple applies the
 most restrictive combination when other passcode profiles exist. The Mac
 baseline deliberately avoids a mandatory symbol or longer minimum that could
 reject an otherwise valid Entra password. Entra's cloud password policy applies
 its own three-of-four character-category rule and weak-password checks; the
-local baseline alone does not implement that entire rule. After successful
+local Mac baseline alone does not implement that entire rule. After successful
 PSSO synchronization, the local account uses the accepted Entra password.
 See [Entra's policy](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad-combined-policy)
 and [Apple's passcode schema](https://raw.githubusercontent.com/apple/device-management/release/mdm/profiles/com.apple.mobiledevice.passwordpolicy.yaml).
 
-The Mac profiles explicitly target `TargetDeviceType=5`. The host-scoped Mac baseline has a distinct
-identifier and UUID from the retired global baseline; identities remain stable
-within each profile. They contain no passwords, enrollment secrets or tenant credentials.
+The Mac profiles explicitly target `TargetDeviceType=5`; the iPhone/iPad
+baseline targets `1`. The host-scoped Mac baseline has a distinct identifier
+and UUID from the retired global baseline; all profile identities remain stable
+across updates. They contain no passwords, enrollment secrets or tenant credentials.
 No profile enables FileVault, rotates recovery keys or changes encryption state.
 An already noncompliant local password can still produce an Apple password-change
 prompt; absent `changeAtNextAuth` does not exempt it from the enforced baseline.
@@ -147,6 +149,29 @@ enforcement without restoring an earlier password. `mac-pilot` installs or
 removes both the new baseline and Platform SSO on the privately matched local Mac.
 Record actual migration results in the knowledge base after execution; these
 instructions alone do not establish live acceptance.
+
+### iPhone/iPad baseline through individual installs
+
+The iPhone/iPad passcode baseline is also a host-scoped Free MDM command. It
+does not create a Fleet catalog entry, label assignment, team assignment, or
+automatic drift repair. `ios-baseline` accepts only an explicit Fleet ID,
+requires a Fleet MDM-connected `ios` or `ipados` host, and validates its Apple
+device identifier before a command is sent.
+
+```sh
+python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --execute
+python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --remove --execute
+```
+
+The operator reads `ProfileList` before and after the command, preserving
+unrelated profiles. After installation it also reports `SecurityInfo` fields
+`PasscodePresent`, `PasscodeCompliant`, and `PasscodeCompliantWithProfiles`.
+Those values are compliance observations, not proof that every passcode payload
+key took effect. Verify delivery with `ProfileList`, then physically test a
+non-simple passcode of at least six characters, the five-minute idle lock,
+and immediate reauthentication. User Enrollment can ignore passcode keys, so that test is
+required before treating the device as protected. These instructions do not
+record a live phone installation or acceptance result.
 
 ## Existing-account Platform SSO pilot
 
@@ -393,13 +418,15 @@ private.
 | Platform | Inventory and compliance evidence |
 | --- | --- |
 | macOS | fleetd/osquery supplies inventory and supported SQL policy results; Apple MDM supplies profile and command evidence. Agent heartbeat and MDM check-in are separate. Query success reports state; it does not enforce a setting. |
-| iPhone/iPad | Apple MDM supplies the inventory/status allowed by the enrollment mode. There is no normal desktop fleetd/osquery agent. Only supported MDM-backed tables/status can be reported; do not promise arbitrary desktop SQL, process inspection or parity with Mac policies. |
+| iPhone/iPad | Apple MDM supplies the host-scoped passcode profile plus inventory/status allowed by the enrollment mode. There is no normal desktop fleetd/osquery agent. `SecurityInfo` passcode fields are reporting evidence, not a complete enforcement test; do not promise arbitrary desktop SQL, process inspection or parity with Mac policies. |
 | Linux | fleetd/osquery supplies inventory and supported SQL policy results. Apple profiles and macOS Platform SSO do not apply. This change does not modify PAM, local Linux passwords or Linux enforcement. |
 
 Fleet's [profile-status guide](https://fleetdm.com/guides/custom-os-settings)
 distinguishes macOS osquery verification from iOS/iPadOS command acknowledgement.
 For this host-scoped command pilot, retain the actual command result and
-`ProfileList` evidence; do not assume a managed-profile UI status will appear.
+`ProfileList` evidence; for iPhone/iPad, retain the three `SecurityInfo`
+passcode fields as reporting evidence and the physical passcode/lock test.
+Do not assume a managed-profile UI status will appear.
 Missing/stale inventory or unexecuted queries remain untested. Vulnerability-feed
 scanning remains disabled under the existing resource decision in the
 [main runbook](README.md); enabling inventory does not enable those scans.
@@ -410,6 +437,7 @@ Record **passed**, **failed**, and **untested** separately for each device:
 | --- | --- |
 | Fleet enrollment/check-in | Exact device identity matches privately; fresh agent/MDM timestamps and acknowledged device query as applicable. |
 | Profile installation/enforcement | Correct profiles in `ProfileList`; inspect effective settings and test screen locking. |
+| iPhone/iPad passcode enforcement | The stable iPhone/iPad profile is in `ProfileList`; retain the three `SecurityInfo` passcode values and physically test passcode and lock behavior. Command acknowledgement or `SecurityInfo` alone is insufficient. |
 | Entra registration | `app-sso platform -s` reports device and current-user registration; matching tenant/device/user in Entra. Keep identifiers/tokens out of logs. |
 | Mac login | User locks and logs out/in with the Entra password; existing account and home data retained. |
 | Password-change synchronization | User changes their known Entra password through the cloud account flow, completes the Mac sync prompt, then verifies the new password. |
@@ -484,6 +512,7 @@ python3 -I scripts/fleet-free-setup.py validate-profiles --execute
 nix develop --command python3 -I scripts/fleet-free-setup.py console-sso --execute
 python3 -I scripts/fleet-free-setup.py reporting --execute
 python3 -I scripts/fleet-free-setup.py mac-pilot --execute
+python3 -I scripts/fleet-free-setup.py ios-baseline --host-id <IPHONE_FLEET_ID> --execute
 nix develop --command python3 -I scripts/fleet-entra-pilot-credentials.py --pilot stuhlmuller --output <PRIVATE_FILE_OUTSIDE_REPO>
 ```
 
@@ -503,7 +532,9 @@ a timeout does not prove that a change failed. Removal verifies the selected
 profile identifiers are absent and unrelated profiles remain installed. Mac
 pilot removal uses `mac-pilot --remove`; baseline-only removal uses
 `mac-baseline --host-id <MAC_FLEET_ID> --remove`. Retiring the old global baseline
-requires its separate catalog removal action. iPhone/iPad supports removal only.
+requires its separate catalog removal action. The iPhone/iPad baseline removes
+only from its selected host with `ios-baseline --host-id <IPHONE_FLEET_ID> --remove`;
+it has no global catalog assignment.
 PSSO removal does not revert the user's password or erase its Entra registration.
 
 The reporting action adds only the macOS FileVault observation policy. Linux
