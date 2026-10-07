@@ -35,14 +35,17 @@ Rollout depends on External Secrets, Istio ambient, Octelium,
 The active backend uses the dedicated ServiceAccount, fixed file-backed route at
 `/etc/nofx/litellm-routing.json`, and read-only token file. The route points only to
 `http://litellm.ai.svc.cluster.local:4000`; there are no routing environment
-variables. The existing encrypted database continues to own the OpenRouter provider key, Base URL
-`https://openrouter.ai/api/v1`, and model `openrouter/free`. The patched client
-forwards that original provider key in its request body to LiteLLM while using the
-file token for gateway authentication, and rejects any other configured model.
+variables. The encrypted database retains its provider configuration and model
+`openrouter/free`. Patch `0020` makes routed calls authenticate only with the
+mounted gateway token; the stored provider key is neither required nor forwarded.
+LiteLLM alone supplies the upstream OpenRouter key. Other configured models are
+rejected. Unrouted clients retain their provider configuration behavior.
 
-The activation is pinned to the reviewed image pair containing
-`0013-litellm-runtime-routing.patch`; both `nofx-litellm` and LiteLLM were Ready
-before the rollout. Validate a short historical `openrouter/free` run reaches
+The earlier image containing only the routing behavior from patch `0013`
+forwards the stored provider key in the body; the gateway now rejects that
+override. Publish and pin an image containing patch `0020` before claiming
+working inference. Require both `nofx-litellm` and LiteLLM Ready before rollout.
+Validate a short historical `openrouter/free` run reaches
 LiteLLM with one structured provider attempt and no raw provider or gateway
 credentials in application logs. Rollback restores the previous reviewed image pair
 and removes the route/token mounts through GitOps; retain `nofx-data`.

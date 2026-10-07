@@ -78,7 +78,21 @@ model visibility. A real SDK-span regression reproduced the cause: 47 tool
 schemas exceed the default 128-attribute limit and evict the early model
 attribute. The prepared callback revision 8 retains model identity after native
 metadata expansion; it still needs protected delivery and live verification.
-NOFX's gateway-only image rollout remains unverified.
+PR #1216 merged as `f7ddf33e76452716c24192175145f21ede2ee2f0`; GitOps
+deployed callback revision 8. A fresh real OpenClaw turn produced generation
+`67b9bc7760a75b0d`, trace `d1cadeb7dba7972fa54363db0fd53bbf`, with model
+`openrouter/free`, authenticated identity `openclaw`, matching marker
+`homelab-openclaw-revision8-20261006`, output, and 43007 tokens (42980 input,
+27 output). The native agent confirmed no fallback. This verifies the model
+retention correction live. NOFX's gateway-only image rollout remains unverified.
+
+A fresh installed Multica OpenCode run also succeeded on revision 8. Generation
+`054b15591f8c0ac1`, trace `3ad6047c4bb253380f478cda968dc0d1`, matched its
+synthetic marker, identity `multica`, model `openrouter/free`, input/output and
+7882 tokens. A second attributed generation used 833 tokens. Live config
+enabled only `litellm`, with both model slots pointing to `litellm/openrouter/free`
+and the API key referencing the mounted file. This remains installed-client
+acceptance, not a backend-dispatched task.
 
 Configuration is not acceptance. For each active caller, verify a real request
 creates one Langfuse generation with its gateway app identity, `openrouter/free`,
@@ -148,6 +162,12 @@ token. Synthetic tests cover both chat paths, absent provider credentials,
 token rotation and concurrent calls. Publish/verify a new private
 image through the declared build workflow before changing its deployment.
 Do not weaken the gateway guard or start trading to test the repair.
+
+Publication run [37568856616](https://github.com/Stuhlmuller/homelab/actions/runs/37568856616)
+successfully built, published, signed and verified both private images from
+`a4d5dc78247ddf3e5a6a540c38f7de019c8ed225`. The prepared deployment references
+come directly from its digest artifact. Live rollout and native NOFX inference
+acceptance remain pending; recheck stopped traders and simulations before merge.
 
 ### Retirement gap: retained OpenClaw configuration
 
