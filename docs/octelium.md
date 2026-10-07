@@ -307,15 +307,18 @@ commit personal email addresses or Entra identifiers into this public repo:
 ```sh
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
-  --admin-email '<entra-user-principal-name>'
+  --admin-email '<contact-email>' \
+  --admin-object-id '<entra-object-id>'
 ```
 
 The script reads the generated SSM parameters, creates or updates the Octelium
 native Secret `entra-oidc-client-secret`, applies IdentityProvider `entra`, and,
-when both admin flags are supplied, applies a HUMAN user with an explicit Entra
-identity and the built-in `allow-all` policy. The IdentityProvider requests the
-`openid`, `email`, and `profile` OIDC scopes, and Octelium uses the Entra
-`preferred_username` claim as the login identifier. Microsoft Entra may omit
+when all three admin flags are supplied, creates or updates the HUMAN mapping.
+New administrators receive `allow-all`; existing users retain their fields and
+policies. Email is contact metadata. The IdentityProvider requests the
+`openid`, `email`, and `profile` OIDC scopes and uses immutable Entra `oid` as
+the login identifier. Email and `preferred_username` can change or be reassigned;
+they must not bind privileged access. Microsoft Entra may omit
 `email_verified`, so the IdentityProvider intentionally does not require that
 claim.
 
@@ -341,6 +344,23 @@ aws ssm put-parameter \
   --overwrite \
   --value '<authentication-token>'
 ```
+
+### Entra identity migration
+
+For an older `preferred_username` setup, keep an independent working operator
+session before changing the shared identity claim. Run the admin command above
+with `--dry-run` first, using the existing contact email and the owner's verified
+Entra object ID. Preflight checks the complete live mapping inventory before
+reading the client secret or writing resources. It permits the sole selected
+legacy mapping; additional legacy mappings require a separately reviewed
+migration. Never substitute a newly created user's object ID for the owner.
+
+The user mapping changes before the IdP claim, so the transition is not atomic.
+Retain private copies of the current User and IdentityProvider for recovery;
+do not close the independent session until a fresh owner browser login works.
+Verify that an unprivileged user's different `oid` cannot resolve to the owner.
+Only then reuse the owner's former email. Plain secret refreshes also run the
+preflight and cannot silently switch a legacy mapping.
 
 ## Cutover Gate
 
@@ -438,7 +458,8 @@ Then authenticate and set up the cluster resources:
 octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
-  --admin-email '<entra-user-principal-name>'
+  --admin-email '<contact-email>' \
+  --admin-object-id '<entra-object-id>'
 octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \

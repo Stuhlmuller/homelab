@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "pages": {
+    "/openwiki/architecture/secrets-and-identity.md": {
+      "pageVersion": "sha256:b4d3bd27be05839e0b04bd96a4677a90e40937971dde53a02ef262268b1775fe",
+      "completedBy": "codex",
+      "completedRunId": "0b34e595-15d7-4577-8b07-7a5e496c85d8",
+      "gitHead": "6ccdde3538461ff540123517e2a3880e8f160611",
+      "sourceFingerprint": "sha256:ac9ff37f1dbd9f53436c920d6b52e605ddac0c5f4835068f5e7873a7782f544f"
+    },
+    "/openwiki/operations/validation-gates.md": {
+      "pageVersion": "sha256:a2447e0a744549e403d0146c90c631e78bb546e0d3e0321cefcb7bb00b66c4ce",
+      "completedBy": "codex",
+      "completedRunId": "0b34e595-15d7-4577-8b07-7a5e496c85d8",
+      "gitHead": "6ccdde3538461ff540123517e2a3880e8f160611",
+      "sourceFingerprint": "sha256:ac9ff37f1dbd9f53436c920d6b52e605ddac0c5f4835068f5e7873a7782f544f"
+    },
+    "/openwiki/quickstart.md": {
+      "gitHead": "6ccdde3538461ff540123517e2a3880e8f160611",
+      "sourceFingerprint": "sha256:8fc074a8ed372eb30b67f60855ed90fe72c11de9a2151584525d22e86914cd81",
+      "pageVersion": "sha256:f19c604aba6d16a9d564df8f5f62c67412812b5bb82fc26120805874579b0153",
+      "completedBy": "codex",
+      "completedRunId": "0c4bc290-4b15-4e20-8ac7-ad6b10aa5e98"
+    },
+    "/openwiki/source-map.md": {
+      "pageVersion": "sha256:84b15d633e84ab429215f8a21513ada382963bad576f9f4b0b2c603dc9a2ac77",
+      "completedBy": "codex",
+      "completedRunId": "0b34e595-15d7-4577-8b07-7a5e496c85d8",
+      "gitHead": "6ccdde3538461ff540123517e2a3880e8f160611",
+      "sourceFingerprint": "sha256:ac9ff37f1dbd9f53436c920d6b52e605ddac0c5f4835068f5e7873a7782f544f"
+    }
+  }
+}

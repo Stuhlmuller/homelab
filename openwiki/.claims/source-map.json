@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:84b15d633e84ab429215f8a21513ada382963bad576f9f4b0b2c603dc9a2ac77",
+  "claims": [
+    {
+      "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
+      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook are the canonical sources for immutable identity migration, private mail-only operator updates and Mac SSO acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "version": "repo-file-v1:sha256:2977c25cb9664f0e0a36ea21f3feb38015c69f8365afc73958197bcbc25d1aaf"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:44a6d661ae74dc2cf14b7e625894402c2196b365678e94b3d920b10e3493c267"
+        },
+        {
+          "resource": "repo://scripts/octelium-entra-oidc.sh",
+          "version": "repo-file-v1:sha256:ed372a6900cb0933ec2b302c6ccc9d01e8ab878fd5d87a7020d69f8b70e31638"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-07T04:01:36.226Z"
+  }
+}

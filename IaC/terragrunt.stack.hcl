@@ -404,3 +404,9 @@ unit "operator_entra_stuhlmuller_pilot_user" {
   path                    = "operator/entra-stuhlmuller-pilot-user"
   no_dot_terragrunt_stack = true
 }
+
+unit "operator_entra_owner_mail" {
+  source                  = "./.catalog/units/operator/entra-owner-mail"
+  path                    = "operator/entra-owner-mail"
+  no_dot_terragrunt_stack = true
+}

@@ -322,8 +322,11 @@ client material to `/homelab/octelium/entra/*`. Those parameters are not
 materialized by External Secrets. Run `scripts/octelium-entra-oidc.sh` after
 the Entra unit applies so the client secret is copied into the Octelium native
 Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
-`--admin-user-name` and `--admin-email` when creating the runtime-only HUMAN
-admin mapping; do not commit personal Entra identifiers into this public repo.
+`--admin-user-name`, `--admin-email` and `--admin-object-id` when creating the
+runtime-only HUMAN admin mapping. Email is contact metadata; the Entra `oid`
+claim supplies identity. Do not commit personal Entra identifiers into this
+public repo. Follow the [migration preflight](octelium.md#entra-identity-migration)
+before refreshing an older email-based mapping.
 
 The public Octelium control plane uses a Cloudflare Tunnel connector in
 `octelium-public`. Store the credentials JSON created by

@@ -259,6 +259,105 @@ legacy per-user MFA and security defaults are distinct settings. A local passwor
 policy stricter than Entra can also stop synchronization. See
 [Microsoft's known issues](https://learn.microsoft.com/en-us/entra/identity/devices/troubleshoot-macos-platform-single-sign-on-extension).
 
+## Registration failure: personal account and unapplied UPN correction
+
+On October 6, 2026 at 20:14 PDT, the Mac's Microsoft SSO extension reached
+the personal-account tenant and rejected `Device.Join` with `invalid_scope`
+(`MSIDOAuthErrorDomain -51413`). Microsoft identifies tenant
+`9188040d-6c67-4c5b-b112-36a304b66dad` as the
+[personal-account tenant](https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference).
+Read-only Graph inspection found the enabled cloud pilot still named
+`rodman.mac@stuhlmuller.net`; the intended `rodman@stuhlmuller.net` did not exist.
+The domain was already verified and managed. The UPN correction in merged
+[PR #1202](https://github.com/Stuhlmuller/homelab/pull/1202) required its focused
+operator apply; merging that change alone had not renamed the live identity.
+
+The authorized focused apply at 20:33 PDT failed with HTTP 400
+`Request_BadRequest`; Entra audit recorded `DirectoryUniquenessException`.
+The plan changed only UPN and mail nickname, preserving the object and password.
+Readback retained `rodman.mac@stuhlmuller.net`, its original nickname and password
+change timestamp. The pilot still requires its initial password change.
+Static checks, Conftest and focused unit validation passed before the attempt.
+The 20:47 PDT retry again reached the personal-account tenant and returned
+`invalid_scope`; a fresh Graph read still showed the old pilot UPN and unchanged
+owner mail/proxy. Repeated registration attempts do not apply the identity fix.
+
+The existing tenant-owner identity `rodman@stinkyboi.com` has
+`rodman@stuhlmuller.net` as its mail and SMTP proxy address. This is the leading
+collision candidate; the audit does not identify the conflicting property or
+object. No active user/group nickname `rodman` or deleted user with the requested
+UPN was found. Do not clear owner aliases or convert that administrator under
+the pilot-rename approval. Choose the existing pilot sign-in or review a separate
+owner-address migration, then reconcile the selected desired state and generate
+a fresh plan before any retry. The requested UPN remains unapplied.
+
+Complete the pilot's initial password change through Microsoft My Account using
+**Work or school account**, then retry macOS **Registration Required > Register**
+with the selected organizational identity.
+Fleet remained user-approved MDM; PSSO `registrationCompleted` was false.
+The same attempt also logged `Token endpoint URL is not approved profile URL`
+before authentication; its significance remains unverified until the correct
+organizational identity completes registration. Do not broaden profile URLs,
+remove Fleet enrollment, or reset credentials based on that warning alone.
+
+### Owner address migration proposal: not applied
+
+The operator selected a privately supplied replacement for the owner's directory mail,
+retaining `rodman@stuhlmuller.net` for the native pilot. Read-only checks found
+no matching active user, group, organizational contact or deleted user for the
+replacement address; `stinkyboi.com` is verified and managed. This selection
+authorizes investigation, not an owner change. Keep the owner UPN
+`rodman@stinkyboi.com`, object ID, external Microsoft-account identity,
+authentication methods, roles and application ownership unchanged.
+
+Two prerequisites emerged from the October 6 investigation:
+
+- The owner is the only active Global Administrator found. Capture the current
+  attributes and grants privately and verify fresh owner sign-in before a
+  migration; an existing cached session is insufficient recovery evidence.
+- Octelium uses `preferred_username` as its identity key, and the inspected
+  privileged runtime mapping is affected by the proposed address reuse. Its
+  Entra service principal has assignment requirement disabled and tenant-wide
+  consent covering the OIDC scopes. An owner-only assignment therefore does not
+  isolate the pilot. Reusing the email could map the pilot to owner `allow-all`
+  access; an actual pilot session has not been tested. Runtime HUMAN identifiers
+  remain private. The [bootstrap](../../../../scripts/octelium-entra-oidc.sh)
+  now prepares immutable `oid` bindings with a complete-inventory preflight.
+  Before email reuse, run the [guarded legacy migration](../../../../docs/octelium.md#entra-identity-migration)
+  with a tested recovery path, then verify fresh owner access and pilot denial.
+
+After those prerequisites, the separate
+[`operator/entra-owner-mail` unit](../../../../IaC/modules/entra-owner-mail/README.md)
+uses `msgraph_update_resource` to set only `mail` to the privately supplied
+address on the guarded existing owner object. Supply its identity baseline and
+replacement address through a private `-var-file`; keep saved plans and logs
+private. Review the exact mail-only PATCH and approve it separately. Do not
+import the owner into a managed `azuread_user`, reset invitation redemption,
+change `identities`, or remove `otherMails` speculatively. Fleet SAML and operator
+lookups retain the owner UPN; Grafana and Argo CD retain its object ID.
+
+[Graph supports updating mail](https://learn.microsoft.com/en-us/graph/api/user-update?view=graph-rest-1.0),
+but [proxy recalculation](https://learn.microsoft.com/en-us/graph/api/resources/user?view=graph-rest-1.0#mail-and-proxyaddresses-properties)
+does not promise removal of the old alias, and `proxyAddresses` is read-only.
+Treat this as a staged migration: verify unchanged owner authentication and
+read back mail/proxies before attempting the pilot rename. If the old SMTP
+alias remains, stop. An applicable existing Exchange mail-user recipient would
+offer [a documented external-address change](https://learn.microsoft.com/en-us/powershell/module/exchangepowershell/set-mailuser?view=exchange-ps#-externalemailaddress)
+that removes the previous proxy, but no such recipient has been established;
+the tenant returned no subscribed SKUs. Do not add Exchange or a license to
+clear this alias. Implement and review the applicable repository-owned removal
+path before proceeding.
+
+Only after address release and fresh owner-access checks should a new pilot
+plan rename the existing native user. Then complete its initial password change
+and Mac registration acceptance. Rollback must release any address claimed by
+the pilot before restoring owner mail; removing an `msgraph_update_resource`
+does not restore its prior value. The module and Octelium guards are prepared;
+no owner migration or Octelium change has been applied. The read-only Octelium
+preflight passed against the complete live inventory, and the private encrypted
+owner plan contains only the existing owner's mail PATCH. These checks do not
+establish successful authentication or old-alias removal.
+
 ## Platform differences and acceptance
 
 | Platform | Inventory and compliance evidence |

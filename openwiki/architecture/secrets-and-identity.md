@@ -3,6 +3,21 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-07T04:01:36.226Z
+sources:
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-aef98a0b80c0ff330c310ed1
+    resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-e9bb34bdbee430c2456beb6d
+    resource: repo://IaC/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-f8736ea9671721c61be0c639
+    resource: repo://IaC/modules/entra-verified-family-user/main.tf
+  - id: openwiki-source-45cdc02b9fdef209e9d530d7
+    resource: repo://scripts/octelium-entra-oidc.sh
+generated: { by: "codex", at: "2026-10-07T04:01:36.226Z" }
 ---
 
 # Secrets And Identity
@@ -509,6 +524,44 @@ email address alone is not an Entra password identity. Its guarded module is
 separate from the legacy AzureAD user module, and the AzureAD workflow selects
 that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
+
+The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+found a deployed pilot UPN mismatch: the Mac attempted personal-account device
+registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
+Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only
+change required a focused apply. The approved apply failed with
+`DirectoryUniquenessException`; the pilot retained its old UPN, nickname and
+password-change timestamp. The owner's existing mail/SMTP proxy uses the
+requested address, making it the leading conflict candidate, but Entra's audit
+did not name the conflicting property. The pilot-rename approval does not cover
+clearing owner aliases or converting that administrator; a separate owner-address
+migration is under investigation. The pilot's initial password change must finish
+before native Password PSSO registration. Fleet MDM enrollment remained intact;
+successful organizational device/user registration and password synchronization
+still require interactive acceptance. The runbook retains the separate,
+unresolved token-endpoint profile warning from the same attempt.
+
+The [separate owner-address proposal](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-proposal-not-applied)
+selects a privately supplied replacement for directory mail while preserving the owner UPN,
+object ID and external authentication. No owner or Octelium change is applied.
+The owner was the only active Global Administrator found. Live Octelium uses a
+privileged email-based HUMAN mapping affected by address reuse; application
+assignment is not required and the OIDC scopes have tenant-wide consent.
+The [bootstrap](../../scripts/octelium-entra-oidc.sh) now uses immutable Entra
+`oid`, checks the complete live mapping inventory, and permits a guarded
+transition of the sole selected legacy HUMAN mapping. Existing user fields,
+policies and other identity-provider bindings remain intact; email becomes
+contact metadata. Its live read-only preflight passed. Apply the migration and
+test fresh owner access and pilot denial before email reuse; keep actual HUMAN
+identifiers private.
+
+The prepared [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
+owns only a mail PATCH on the existing owner. A private `-var-file` supplies the
+replacement address, object ID and full identity baseline; guards retain the
+enabled accepted external member and its UPN before and after the write. The
+private encrypted plan passed the mail-only scope check. Neither change has
+been applied. Require fresh owner authentication and SMTP proxy readback before
+retrying the pilot rename: changing mail does not guarantee old-alias removal.
 
 ## Harbor registry identities
 

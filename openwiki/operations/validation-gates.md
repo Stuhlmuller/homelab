@@ -3,6 +3,15 @@ type: operation
 title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-07T04:01:36.226Z
+sources:
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
+generated: { by: "codex", at: "2026-10-07T04:01:36.226Z" }
 ---
 
 # Validation Gates
@@ -93,6 +102,24 @@ The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
+
+## Entra owner-mail and Octelium identity checks
+
+The static gate runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
+native APIs and the plan-only tests in `IaC/modules/entra-owner-mail`. These
+cover email-reuse isolation, complete mapping inventory, partial migration
+retry, preserved user fields, mail-only PATCH scope, identity drift and rollback.
+
+Before live work, run `scripts/octelium-entra-oidc.sh --dry-run` with the three
+privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-identity-migration)
+and retain an independent session. The owner operator unit requires a private
+`-var-file` and encrypted saved plan; inspect that plan privately for exactly one
+`msgraph_update_resource.mail` PATCH containing only `mail`. Follow the
+[module contract](../../IaC/modules/entra-owner-mail/README.md), then verify
+unchanged owner identity, fresh owner access and actual SMTP proxy release.
+Local tests and a valid plan do not prove Graph alias recalculation or Mac SSO;
+the [Fleet acceptance checks](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#platform-differences-and-acceptance)
+remain required after the pilot rename.
 
 ## GitHub Workflow Checks
 

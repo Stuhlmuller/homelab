@@ -112,17 +112,21 @@ scripts/octelium-entra-oidc.sh
 ```
 
 To make an operator able to log in, pass a runtime-only user mapping. Keep the
-actual Entra user principal name out of git:
+actual contact email and Entra object ID out of git:
 
 ```sh
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
-  --admin-email '<entra-user-principal-name>'
+  --admin-email '<contact-email>' \
+  --admin-object-id '<entra-object-id>'
 ```
 
 The script reads `/homelab/octelium/entra/*` from SSM, stores the generated
 client secret in an Octelium native Secret, and applies IdentityProvider
-`entra`.
+`entra`. It binds login to immutable Entra `oid`; email is contact metadata.
+Use `--dry-run` to preflight changes and follow the
+[legacy mapping migration](../../../../docs/octelium.md#entra-identity-migration)
+before upgrading an existing email-based mapping.
 
 Create an authentication token credential for the workload user:
 
@@ -218,7 +222,8 @@ Then authenticate and apply the catalog while the port-forward is running:
 octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
-  --admin-email '<entra-user-principal-name>'
+  --admin-email '<contact-email>' \
+  --admin-object-id '<entra-object-id>'
 octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
