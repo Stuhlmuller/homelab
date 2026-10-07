@@ -241,8 +241,10 @@ order work; they do not establish upstream readiness. Require Healthy/Synced
 External Secrets, Istio, storage and public-tunnel applications, a Ready
 `aws-ssm` store permitting namespace `fleet`, and the `homelab` AppProject's
 Fleet destination before dispatch. The scoped path avoids unrelated AzureAD
-changes that currently block a full apply when Azure credentials are absent.
-No manual Kubernetes or cloud mutation is needed.
+changes when a targeted Fleet rollout is appropriate. The earlier Azure
+credential gap is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+advanced the current checkpoint. No manual Kubernetes or cloud mutation is
+needed.
 
 The fixed Fleet mirror scope contains exactly the four images rendered by this
 application. It verifies each manifest digest and a complete anonymous pull,

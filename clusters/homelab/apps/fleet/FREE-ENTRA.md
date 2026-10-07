@@ -469,14 +469,13 @@ these two units from the authenticated operator session after their plans and
 the repository gate pass, using the same modules and encrypted remote state.
 
 These focused applies do **not** advance the full infrastructure checkpoint.
-The last successful full apply is [run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179)
-at `82ebd734ad61357faa0f03212613ef15f593ff80`. Before the Fleet identity changes,
-`main` already changed the Grafana/Octelium identity units and their shared root
-since that checkpoint. Provider OIDC activation and focused Fleet success do
-not reconcile that outstanding range. Preserve the fail-closed gate and
-checkpoint; review the complete outstanding plan and complete a real full apply
-before claiming recovery of the general infrastructure pipeline. Do not mark a
-focused run as `Full` or advance its baseline manually.
+The successful [full apply run 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+reconciled the outstanding range at signed `main` commit
+`f47cf006e1108f2c1d13f7d002b0611fcdfc22df`; it is the current checkpoint.
+It deliberately does not traverse `IaC/operator`, so it does not apply the
+pilot-user rename or prove native PSSO acceptance. Preserve the fail-closed
+gate for later ranges; do not mark a focused operator run as `Full` or advance
+its baseline manually.
 
 Generate the explicit stack, plan each unit, inspect the plans privately, then
 apply those exact plans after protected merge:
