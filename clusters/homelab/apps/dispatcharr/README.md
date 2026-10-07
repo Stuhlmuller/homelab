@@ -102,8 +102,9 @@ On September 6, the pinned `df768adc…` image reported version `0.29.0`; the
 loopback GET returned `superuser_exists: false` and `setup_allowed: true`. No
 setup POST or account creation was performed during that inspection. The user
 confirmed Dispatcharr was never configured. The public authenticated route
-reached the app, but
-first-run setup and functional acceptance remain open.
+reached the app, but first-run setup and functional acceptance remained open
+at that inspection. The operator completed administrator setup on October 6;
+the source acceptance below records the subsequent import and playback check.
 See [the workload note](../../../../openwiki/workloads/application-notes.md#dispatcharr)
 for the observed first-run state. Confirm account login, provider/EPG
 configuration, channel loading and playback before claiming full acceptance.
@@ -115,6 +116,13 @@ Configure those through the UI or a future ExternalSecret-backed integration.
 
 The selected source is the public [IPTV-org USA playlist](https://iptv-org.github.io/iptv/countries/us.m3u).
 Configure it through the authenticated native UI after first-run setup:
+
+On October 6, 2026 PDT, native setup imported 1,451 streams and created 1,451
+channels. Both M3U and HDHR lineup exports returned all 1,451 channels. CBS Sports
+Golazo played through the Dispatcharr preview; its exported transport stream
+also returned valid MPEG-TS packets. This verifies source setup and one sample,
+not every feed or playback through Jellyfin/Plex. EPG and the private NAS tuner
+route remain unconfigured.
 
 | Setting | Value |
 | --- | --- |
