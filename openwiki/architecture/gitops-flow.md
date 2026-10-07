@@ -20,8 +20,9 @@ git change
 Infrastructure and application registration are modeled through Terragrunt and
 OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
 that point back at repository-owned manifests, Helm values, or Kustomize
-overlays.
-Argo CD globally terminates sync operations after 15 minutes so one unhealthy
+overlays. Argo CD runs two application-controller replicas with parallel pod
+management, so loss of one worker does not strand reconciliation. It globally
+terminates sync operations after 15 minutes so one unhealthy
 resource cannot hold an Application operation forever and block later reviewed
 revisions.
 The bootstrap chart carries a revision annotation on the application-controller

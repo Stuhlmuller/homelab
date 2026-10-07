@@ -108,7 +108,9 @@ inputs = {
       }
 
       controller = {
-        metrics = local.argocd_metrics
+        replicas            = 2
+        podManagementPolicy = "Parallel"
+        metrics             = local.argocd_metrics
         podAnnotations = {
           "homelab.stuhlmuller.dev/sync-timeout-revision" = "v1"
         }
