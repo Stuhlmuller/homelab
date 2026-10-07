@@ -1,5 +1,25 @@
 # Independent application recovery (HOME-2)
 
+## Image automation pause and recovery controls
+
+Image updates are journaled with `auto_merge: false` and `auto_inactive: false`.
+An unresolved deployment blocks routine updates. A rollback may use only the
+same application's retained known-good deployment after a fresh `safe`
+current-data result; `unsafe` and `unknown` results pause and alert without
+restoring data. `pause-reject` is control-only and records the failed digest.
+The journal persists one recovery attempt before any ref movement, so restart
+cannot create a second revert. Resume requires reviewed resolution and a new
+healthy baseline.
+
+The offline contract can be exercised with:
+
+```sh
+python3 -I scripts/ci/image-automation.py gate \\
+  --application exporter --operation update
+python3 -I scripts/ci/image-automation.py recover \\
+  --application exporter --data-safety safe
+```
+
 This is a **staged implementation, not operational recovery proof**. Source was
 revalidated at `32dc911c8f86638ae2e2012afbe7f80c4d3f17b3` on 2026-09-29.
 No live cluster, S3 bucket, operator-managed backup, or recovery secret was

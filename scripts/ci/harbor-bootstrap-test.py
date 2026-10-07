@@ -36,6 +36,9 @@ class HarborAPI:
         self.passwords = {}
         self.repositories = []
         self.artifacts = {}
+        self.registries = {"cgr.dev": {"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
+                                        "type": "docker-registry", "insecure": False}}
+        self.replication_policies = {}
         self.requests = []
         self.override = None
 
@@ -51,6 +54,41 @@ class HarborAPI:
                     self.config[key]["value"] = value
                 return 200, b"", {}
             return 200, self.config, {}
+        if path.startswith("/registries?"):
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
+            registry = self.registries.get(query.get("name", [""])[0])
+            return 200, ([registry] if registry else []), {}
+        if path.startswith("/registries/"):
+            identifier = int(path.rsplit("/", 1)[1])
+            registry = next((item for item in self.registries.values() if item["id"] == identifier), None)
+            if registry is None:
+                return 404, {}, {}
+            if method == "PUT":
+                registry.update({key: copy.deepcopy(value) for key, value in body.items() if key != "credential"})
+                return 200, b"", {}
+            return 200, registry, {}
+        if path == "/registries" and method == "POST":
+            identifier = max((item["id"] for item in self.registries.values()), default=0) + 1
+            self.registries[body["name"]] = {**copy.deepcopy(body), "id": identifier}
+            return 201, self.registries[body["name"]], {}
+        if path.startswith("/replication/policies?"):
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
+            policy = self.replication_policies.get(query.get("name", [""])[0])
+            return 200, ([policy] if policy else []), {}
+        if path == "/replication/policies" and method == "POST":
+            identifier = max(self.replication_policies.values(), key=lambda item: item["id"], default={"id": 0})["id"] + 1
+            self.replication_policies[body["name"]] = {**copy.deepcopy(body), "id": identifier}
+            return 201, self.replication_policies[body["name"]], {}
+        if path.startswith("/replication/policies/"):
+            identifier = int(path.rsplit("/", 1)[1])
+            policy = next((item for item in self.replication_policies.values() if item["id"] == identifier), None)
+            if policy is None:
+                return 404, {}, {}
+            if method == "PUT":
+                policy.clear()
+                policy.update({**copy.deepcopy(body), "id": identifier})
+                return 200, b"", {}
+            return 200, policy, {}
         if path == "/projects" and method == "POST":
             name = body["project_name"]
             if name in self.projects:
@@ -154,6 +192,108 @@ class BootstrapTest(unittest.TestCase):
         self.endpoint = f"http://127.0.0.1:{self.server.server_port}"
         self.client = bootstrap.Client(ADMIN, self.endpoint)
 
+    def test_chainguard_policy_is_exact_hourly_and_non_destructive(self):
+        self.assertTrue(bootstrap.validate_replication_policy())
+        desired = bootstrap.desired_replication_policy(bootstrap.CHAINGUARD_REPLICATION["rules"][0], 42)
+        self.assertEqual(desired["src_registry"], {"id": 42})
+        self.assertEqual(desired["trigger"]["trigger_settings"], {"cron": "0 * * * *"})
+        self.assertFalse(desired["replicate_deletion"])
+        self.assertTrue(desired["override"])
+        self.assertTrue(desired["enabled"])
+        bad = copy.deepcopy(bootstrap.CHAINGUARD_REPLICATION)
+        bad["rules"] = ({**bad["rules"][0], "delete": True},)
+        with self.assertRaises(bootstrap.BootstrapError):
+            bootstrap.validate_replication_policy(bad)
+
+    def test_paused_policy_disables_native_rules(self):
+        rule = bootstrap.CHAINGUARD_REPLICATION["rules"][0]
+        desired = bootstrap.desired_replication_policy(rule, 42, paused=True)
+        self.assertFalse(desired["enabled"])
+
+    def test_empty_or_duplicate_replication_rules_are_rejected(self):
+        empty = copy.deepcopy(bootstrap.CHAINGUARD_REPLICATION)
+        empty["rules"] = ()
+        with self.assertRaises(bootstrap.BootstrapError):
+            bootstrap.validate_replication_policy(empty)
+        duplicate = copy.deepcopy(bootstrap.CHAINGUARD_REPLICATION)
+        duplicate["rules"] = (duplicate["rules"][0], duplicate["rules"][0])
+        with self.assertRaises(bootstrap.BootstrapError):
+            bootstrap.validate_replication_policy(duplicate)
+
+    def test_native_replication_reconciles_exact_rules_without_deletes(self):
+        class Client:
+            def __init__(self):
+                self.calls = []
+                self.policies = {}
+
+            def request(self, method, path, body=None, expected=(200,), json_response=True):
+                self.calls.append((method, path, body))
+                if path == "/registries?name=cgr.dev":
+                    return [{"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
+                             "type": "docker-registry", "insecure": False}], {}
+                if path == "/registries/42":
+                    return {"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
+                            "type": "docker-registry", "insecure": False}, {}
+                if path.startswith("/replication/policies?name=chainguard-"):
+                    name = path.split("=", 1)[1]
+                    return ([self.policies[name]] if name in self.policies else []), {}
+                if path == "/replication/policies" and method == "POST":
+                    policy = {**body, "id": 7 + len(self.policies)}
+                    self.policies[body["name"]] = policy
+                    return policy, {}
+                if path.startswith("/replication/policies/") and method == "GET":
+                    identifier = int(path.rsplit("/", 1)[1])
+                    return next(policy for policy in self.policies.values() if policy["id"] == identifier), {}
+                raise AssertionError((method, path))
+
+        client = Client()
+        bootstrap.reconcile_replication(client, bootstrap.CHAINGUARD_REPLICATION)
+        self.assertEqual([call[0:2] for call in client.calls], [
+            ("GET", "/registries?name=cgr.dev"),
+            ("GET", "/registries/42"),
+            ("GET", "/replication/policies?name=chainguard-python"),
+            ("POST", "/replication/policies"),
+            ("GET", "/replication/policies/7"),
+            ("GET", "/replication/policies?name=chainguard-curl"),
+            ("POST", "/replication/policies"),
+            ("GET", "/replication/policies/8"),
+        ])
+        policy = client.policies["chainguard-python"]
+        self.assertEqual(policy["trigger"]["trigger_settings"], {"cron": "0 * * * *"})
+        self.assertFalse(policy["replicate_deletion"])
+        self.assertTrue(policy["override"])
+        self.assertFalse(policy["filters"][0].get("flatten", False))
+        client.calls.clear()
+        bootstrap.reconcile_replication(client, bootstrap.CHAINGUARD_REPLICATION)
+        self.assertFalse(any(method in {"POST", "PUT", "DELETE"} for method, _, _ in client.calls))
+        self.assertFalse(any(method == "DELETE" for method, _, _ in client.calls))
+
+    def test_missing_chainguard_registry_is_created_before_policy_use(self):
+        class Client:
+            def __init__(self):
+                self.calls = []
+                self.registry = None
+
+            def request(self, method, path, body=None, expected=(200,), json_response=True):
+                self.calls.append((method, path))
+                if path == "/registries?name=cgr.dev":
+                    return ([] if self.registry is None else [self.registry]), {}
+                if path == "/registries" and method == "POST":
+                    self.registry = {**body, "id": 42}
+                    return self.registry, {}
+                if path == "/registries/42":
+                    return self.registry, {}
+                raise AssertionError((method, path))
+
+        client = Client()
+        registry = bootstrap.reconcile_registry(client, "cgr.dev")
+        self.assertEqual(registry["name"], "cgr.dev")
+        self.assertEqual(client.calls, [
+            ("GET", "/registries?name=cgr.dev"),
+            ("POST", "/registries"),
+            ("GET", "/registries/42"),
+        ])
+
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
@@ -171,7 +311,10 @@ class BootstrapTest(unittest.TestCase):
             (directory / "admin-password").write_text(ADMIN)
             for name, filename in bootstrap.SECRET_FILES.items():
                 (directory / filename).write_text(PASSWORDS[name])
+            replication = directory / "chainguard-replication.json"
+            replication.write_text(json.dumps(bootstrap.CHAINGUARD_REPLICATION))
             with patch.object(bootstrap, "SECRET_DIRECTORY", directory), \
+                    patch.object(bootstrap, "REPLICATION_FILE", replication), \
                     patch.object(bootstrap, "Client", lambda password: client_class(password, self.endpoint)), \
                     contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
                 result = bootstrap.main()

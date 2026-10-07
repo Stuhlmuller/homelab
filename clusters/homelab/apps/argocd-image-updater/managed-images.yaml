@@ -1,0 +1,6 @@
+# generated from image-automation.json
+{
+  "apiVersion": "image-automation.homelab/v1",
+  "kind": "ManagedImages",
+  "spec": []
+}

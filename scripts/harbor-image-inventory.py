@@ -34,7 +34,10 @@ def runtime_references(value):
             found.update(runtime_references(child))
     elif isinstance(value, str):
         found.update(re.findall(r"--[\w-]*(?:image|reloader)=([^\s]+)", value))
-        found.update(re.findall(r"(?m)^\s*image:\s*[\"']?([\w./-]+(?::[\w.-]+)?(?:@sha256:[a-f0-9]{64})?)", value))
+        # Only consume the value on the image line.  A multiline Helm block
+        # may contain a later `tag:` line; allowing newlines here fabricated
+        # docker.io/library/tag:latest entries.
+        found.update(re.findall(r"(?m)^\s*image:[ \t]*[\"']?([^\s\"']+)", value))
     return {image for image in found if image != "auto"}
 
 

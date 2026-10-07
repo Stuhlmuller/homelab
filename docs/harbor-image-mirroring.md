@@ -1,5 +1,18 @@
 # Kubernetes images in Harbor
 
+<!-- markdownlint-configure-file { "MD013": false } -->
+
+## Chainguard source provenance
+
+Known Chainguard repositories are imported into the private Harbor destination
+by exact repository and stable tag. The public Chainguard rules are enabled; their
+copies become deployment-eligible only after the release recipe verifies the
+source/index digest, required platform children, and complete consumer pulls.
+Successful copies retain their immutable `sha256-<hex>` tag and may advance
+`verified-stable`; failed, partial, or inaccessible copies never advance the
+alias and are retained for diagnosis. Existing upstream-origin digests remain
+available for cold bootstrap and rollback.
+
 Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
 project. Repository and Pod image names retain upstream provenance; their bytes
 come from `harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>`.
@@ -14,7 +27,8 @@ Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 read access is public, including through the existing public Harbor hostname.
 The separate `robot$mirror+publisher` can pull/push only within `mirror` and
-uses its own generated `/homelab/harbor/mirror-robot-push-password`. Nodes need no new credentials.
+uses its own generated `/homelab/harbor/mirror-robot-push-password`. Nodes need
+no new credentials.
 
 The normal project retains copied artifacts independently of upstream tags or
 deletion. It is deliberately not a proxy cache. The protected
@@ -25,8 +39,8 @@ Retries reuse an existing digest-named tag only after its manifest hash matches
 the catalog; a missing tag is copied from upstream. Missing-content detection
 accepts registry manifest/name-unknown errors and Harbor's exact expected
 artifact or repository `not found` message. Generic 404 responses and messages
-for another repository or digest tag still stop publication. Other lookup errors and
-unexpected hashes stop publication. Source-tag aliases are copied from that
+for another repository or digest tag still stop publication. Other lookup errors
+and unexpected hashes stop publication. Source-tag aliases are copied from that
 verified Harbor digest, avoiding a second upstream transfer. Every entry still
 receives a complete anonymous download and alias verification on each run.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
@@ -86,8 +100,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    registry-mirror differences, validates with `--mode metal --strict`, and
    applies with `--mode no-reboot`. It checks configuration readback and node
    readiness/boot identity, then requests `registry.k8s.io/pause:3.10` through
-   Talos's native `image pull --namespace system` using the selected client config.
-   Rollback and dry-run do not pull images. It never drains, restarts or deletes workloads.
+   Talos's native `image pull --namespace system` using the selected client
+   config. Rollback and dry-run do not pull images. It never drains, restarts or
+   deletes workloads.
 5. Verify every node's `registryconfigs` resource contains the committed
    endpoints and `skipFallback: true`. Correlate each native pause pull with
    Harbor manifest access logs from that node before claiming live migration.
@@ -182,8 +197,8 @@ python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 --rollback \
 ```
 
 Rollback uses the same explicit `--talosconfig` selection (default
-`.talos/talosconfig`), authenticates directly to Talos and verifies its boot identity; it
-does not require Kubernetes API availability or a Ready node. Exact-main
+`.talos/talosconfig`), authenticates directly to Talos and verifies its boot
+identity; it does not require Kubernetes API availability or a Ready node. Exact-main
 verification still requires GitHub access. Apply only through this validated
 repository-owned path. Retain mirrored blobs;
 rollback changes image transport, not workload versions or stored data.

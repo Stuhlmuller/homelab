@@ -99,12 +99,14 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   ID directly to `role:admin`, then evaluates group claims. It does not use a
   mutable email value for authorization, so the exact-UPN Mac PSSO pilot cannot
   inherit Argo CD administration from a matching email address.
-- Argo CD Image Updater's GitHub App credential contract is retired. The
-  ExternalSecret and generated Secret have no runtime consumer; Renovate owns
-  image update pull requests. Its three SSM paths remain declared only as
-  OpenTofu state tombstones, excluded from the External Secrets reader IAM
-  policy, until a separate reviewed secret-retirement change. See
-  [Image Automation](../runbooks/image-automation.md) and [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md).
+- Argo CD Image Updater is restored as a paused, zero-replica chart. The
+  proposer/promoter GitHub App credential lane remains unprovisioned; no private
+  key is committed and no runtime Secret is enabled. When provisioned, proposer
+  access is limited to the proposal branch and promoter access is limited to the
+  reviewed production workflow. Existing tombstone SSM paths remain separate
+  until the fresh identities and reader grants are reviewed. See
+  [Image Automation](../runbooks/image-automation.md) and
+  [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md).
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`. Grafana and Octelium passwords expire
   one year after creation, but their current resources have no rotation trigger;

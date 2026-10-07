@@ -9,6 +9,15 @@ tags: ["runbook", "secrets", "aws"]
 
 Canonical runbook: [`docs/secrets-aws-ssm.md`](../../docs/secrets-aws-ssm.md)
 
+## Image automation identities
+
+The Chainguard/Image Updater contract uses two future GitHub App identities:
+the proposer may write only `codex/image-updater-proposals`, while the promoter
+is used only by the reviewed `homelab-production` workflow for a non-force main
+update. Do not reuse the Terragrunt apply role or commit private keys. Add new
+SSM references and exact reader grants only in the companion governance change;
+until then the updater stays at zero replicas and no ExternalSecret is enabled.
+
 Commit SSM paths, ExternalSecret contracts, and safe placeholders only. Runtime
 values stay outside git; External Secrets materializes application credentials
 after the repository-managed bootstrap secret is available.
@@ -30,8 +39,9 @@ role, and consumers move together.
 
 1. Open a reviewed PR that changes the declared rotation trigger or keeper for
    `/homelab/multica/postgres-password` in
-   `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the generated-parameter workflow does not
-   have an explicit keeper yet, add one before rotating.
+   `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
+   generated-parameter workflow does not have an explicit keeper yet, add one
+   before rotating.
 2. regenerate the live stack, then plan and apply it so OpenTofu writes the new
    SecureString value to SSM.
 3. Pause Multica writes through GitOps, such as a reviewed change that

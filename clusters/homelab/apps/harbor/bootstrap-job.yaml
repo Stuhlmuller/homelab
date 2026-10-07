@@ -57,6 +57,10 @@ spec:
             - name: secrets
               mountPath: /secrets
               readOnly: true
+            - name: replication
+              mountPath: /replication/chainguard-replication.json
+              subPath: chainguard-replication.json
+              readOnly: true
       volumes:
         - name: script
           configMap:
@@ -75,3 +79,7 @@ spec:
                 path: robot-push-password
               - key: mirror-robot-push-password
                 path: mirror-robot-push-password
+        - name: replication
+          configMap:
+            name: harbor-chainguard-replication
+            defaultMode: 0444

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "paused": false,
+  "schedule": "0 * * * *",
+  "source_registry": "cgr.dev",
+  "rules": [
+    {
+      "repository": "chainguard/python",
+      "source_tag": "latest",
+      "destination": "homelab/chainguard-python",
+      "override": true,
+      "delete": false,
+      "flatten": false,
+      "access_class": "public"
+    },
+    {
+      "repository": "chainguard/curl",
+      "source_tag": "latest",
+      "destination": "homelab/chainguard-curl",
+      "override": true,
+      "delete": false,
+      "flatten": false,
+      "access_class": "public"
+    }
+  ]
+}

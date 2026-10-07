@@ -15,6 +15,15 @@
       "matchPackageNames": ["drakkarsoftware/octobot"],
       "matchFileNames": ["clusters/homelab/apps/octobot/values.yaml"],
       "allowedVersions": "2.1.1"
+    },
+    {
+      "description": "Image Updater exclusively owns enrolled Chainguard Harbor targets.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "harbor.stinkyboi.com/homelab/chainguard-python",
+        "harbor.stinkyboi.com/homelab/chainguard-curl"
+      ],
+      "enabled": false
     }
   ],
   "lockFileMaintenance": {

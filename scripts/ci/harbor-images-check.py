@@ -16,6 +16,9 @@ CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
+AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
+AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
+RENOVATE = ROOT / "renovate.json"
 
 
 def normalize(image):
@@ -118,6 +121,51 @@ def chart_sources():
     return [json.loads(item) for item in sorted({json.dumps(item, sort_keys=True) for item in charts})]
 
 
+def receipt_errors():
+    """Enrolled Harbor consumers require an immutable verified publication receipt."""
+    if not AUTOMATION.exists() or not AUTOMATION_STATE.exists():
+        return []
+    config = json.loads(AUTOMATION.read_text())
+    state = json.loads(AUTOMATION_STATE.read_text())
+    images = {item["image_id"]: item for item in config.get("images", [])}
+    receipts = state.get("receipts", {})
+    errors = []
+    for consumer in config.get("consumers", []):
+        if consumer.get("automation_status") != "enrolled":
+            continue
+        image = images.get(consumer.get("image_id"))
+        receipt = receipts.get(consumer.get("image_id"))
+        if not image or not isinstance(receipt, dict):
+            errors.append(f"Enrolled image lacks publication receipt: {consumer.get('image_id')}")
+            continue
+        if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
+            errors.append(f"Enrolled image receipt lacks intended Harbor access: {consumer['image_id']}")
+    return errors
+
+
+def ownership_errors():
+    """Image Updater targets must not also be eligible for Renovate updates."""
+    if not AUTOMATION.exists() or not RENOVATE.exists():
+        return []
+    config = json.loads(AUTOMATION.read_text())
+    renovate = json.loads(RENOVATE.read_text())
+    destinations = {
+        image["destination"].split("@", 1)[0].rsplit(":", 1)[0]
+        for image in config.get("images", [])
+        if any(consumer.get("image_id") == image.get("image_id")
+               and consumer.get("automation_status") == "enrolled"
+               for consumer in config.get("consumers", []))
+    }
+    disabled = {
+        package
+        for rule in renovate.get("packageRules", [])
+        if rule.get("enabled") is False
+        for package in rule.get("matchPackageNames", [])
+    }
+    return [f"Enrolled Harbor target remains Renovate-owned: {destination}"
+            for destination in sorted(destinations - disabled)]
+
+
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
@@ -134,6 +182,8 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
+    errors.extend(receipt_errors())
+    errors.extend(ownership_errors())
     scope_counts = {}
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
