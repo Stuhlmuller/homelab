@@ -152,8 +152,8 @@ The playlist currently supplies no XMLTV URL. Dispatcharr supplies placeholder
 programmes for unmapped channels; add a compatible guide for actual event times.
 Channel import does not establish premium-event coverage.
 Verify nonempty Channels, `/output/m3u` and
-`/hdhr/lineup.json`, then play a sample channel. Media-server connections remain
-pending NAS-route rollout and client acceptance. To remove this source, disable its
+`/hdhr/lineup.json`, then play a sample channel. Plex acceptance is recorded below;
+Jellyfin remains stopped. To remove this source, disable its
 account first; use the native UI to review associated channels before deleting.
 
 ## Live TV for Jellyfin and Plex
@@ -245,6 +245,27 @@ Only successful playback in Plex/Jellyfin completes client acceptance.
 
 To remove LAN access, revert the media ConfigMap, mount and NodePort Service in
 `values.yaml` through GitOps. Preserve the original app Service and both PVCs.
+
+## Verified client acceptance
+
+PR #1218 merged as `a4d5dc78`. Argo CD automatically reconciled that revision on
+October 7, 2026 at 03:57:57 UTC and reached `Synced/Healthy`; the new app Pod was
+3/3 Ready on `acer`, and both existing 20 GiB claims remained `Bound`.
+
+From QNAP, discovery returned the canonical LAN URLs; Sports M3U/HDHR returned
+65 channels and XMLTV returned 1,170 placeholder programmes. Admin paths returned
+404, direct upstream export returned 400 and POST returned 405. A workstation
+request with forged NAS headers still returned 403. Channel 1168, **CBS Sports
+Golazo Network**, delivered 8,955,380 bytes in the 20-second NAS probe with valid
+MPEG-TS packet alignment.
+
+Plex saved the Sports tuner and **IPTV-org Sports** XMLTV guide with 65 matched
+channels. Native Plex Web playback of channel 1168 decoded 1920x1080 video and
+advanced beyond 34 seconds; the test player was then closed. The separate channel
+889, **Golazo Network**, returned upstream 403 from its playlist redirector;
+use 1168. Other feeds were not individually tested. Placeholder guide entries
+are channel labels, not actual event times. Jellyfin remains disabled on QNAP,
+pending the operator's decision to re-enable it.
 
 ## Rollback
 

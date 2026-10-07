@@ -150,10 +150,26 @@ Nginx permits only QNAP `10.1.0.2`, GET/HEAD and bounded M3U/XMLTV, HDHR,
 stream-UUID and logo-cache paths. It rejects arbitrary queries and overwrites
 forwarded headers; administrative access remains behind Octelium. This avoids
 relying on unenforced NetworkPolicies or exposing the app's full `9191` port.
-The endpoint has no failover while `acer` is unavailable. Route rollout and
-Plex/Jellyfin playback remain acceptance gates; Jellyfin remains deliberately
-stopped until the operator requests otherwise. See the workload README for
-the test and rollback path.
+The endpoint has no failover while `acer` is unavailable. See the workload README
+for the test and rollback path.
+
+PR #1218 merged as `a4d5dc78`; Argo automatically reconciled at October 7, 2026
+03:57:57 UTC and reached `Synced/Healthy`. The new app Pod was 3/3 Ready on
+`acer`; both 20 GiB PVCs remained `Bound`. QNAP probes verified canonical URLs,
+65-channel M3U/HDHR, 1,170 XMLTV placeholders and channel 1168 transport playback
+(8,955,380 bytes in 20 seconds, valid MPEG-TS alignment). Negative probes blocked
+admin paths, POST, direct upstream export, and non-NAS requests with forged
+forwarded headers.
+
+Plex native setup saved the Sports tuner and `IPTV-org Sports` guide with all
+65 channels mapped. CBS Sports Golazo (1168) played in Plex Web at decoded
+1920x1080, with playback advancing beyond 34 seconds; the test player was closed.
+The different Golazo Network (889) feed returned upstream HTTP 403 from its
+playlist redirector. Use 1168 and review 889 after a source refresh; no fallback
+or all-feed reliability is claimed. Live ffmpeg also logged upstream timestamp
+corrections while 1168 played; the sample does not prove long-session stability.
+Jellyfin remains deliberately disabled (`Enable=FALSE`) until the operator
+requests otherwise; its connection and playback remain pending.
 
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep
