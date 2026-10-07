@@ -135,9 +135,10 @@ and retain the declared human owner. Application/service-principal destruction
 is guarded by `prevent_destroy` and is not routine rollback.
 
 An Entra-only verification does not advance the full homelab apply checkpoint.
-The outstanding full infrastructure range still needs its own reviewed plan and
-successful full apply. Native Mac Platform SSO, password sync and offline login
-remain separate acceptance tests in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+The successful [full apply run 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+advanced it to signed `main` commit `f47cf006e1108f2c1d13f7d002b0611fcdfc22df`.
+Native Mac Platform SSO, password sync and offline login remain separate
+acceptance tests in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 References:
 

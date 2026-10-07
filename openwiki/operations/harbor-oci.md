@@ -205,9 +205,10 @@ mirror rollout below extends this to third-party images.
    `IaC/live/argocd-apps/harbor`. Review saved plans and run Conftest before
    applying; reject deletes, replacements, or unrelated changes. The shared
    SSM unit must be inspected for earlier drift before calling it Harbor-only.
-   The full apply currently requires missing AzureAD credentials for unrelated
-   changes; the documented unit-level path avoids that scope. Require healthy
-   external secrets, storage, PostgreSQL and the bootstrap Job.
+   The earlier Azure credential gap is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+   advanced the current checkpoint. Use the unit-level path for scoped Harbor
+   changes, not to bypass a presumed Azure blocker. Require healthy external
+   secrets, storage, PostgreSQL and the bootstrap Job.
 3. From a clean checkout of that exact reviewed main revision, reconcile the
    fixed Octelium Service with the command below. Reconcile Tunnel DNS through
    the existing `octelium-public-tunnel.yml` workflow.
