@@ -105,7 +105,8 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   access is limited to the proposal branch and promoter access is limited to the
   reviewed production workflow. Existing tombstone SSM paths remain separate
   until the fresh identities and reader grants are reviewed. See
-  [[runbooks/image-automation]] and [[runbooks/secrets-aws-ssm]].
+  [Image Automation](../runbooks/image-automation.md) and
+  [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md).
 - Grafana Microsoft Entra SSO is managed through
   `IaC/live/azuread-applications/grafana`. Grafana and Octelium passwords expire
   one year after creation, but their current resources have no rotation trigger;

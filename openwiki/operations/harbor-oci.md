@@ -189,7 +189,8 @@ for the artifact name and CLI retrieval command.
 
 At the pre-cutover inspection on 2026-09-19, NOFX still used upstream images.
 The initial maintained Harbor rollout then merged in PR #1036 at `78ca869` and
-was verified Synced/Healthy with both `f76c278` images ready. See [[../apps/nofx]]
+was verified Synced/Healthy with both `f76c278` images ready. See
+[NOFX](../apps/nofx.md).
 for runtime evidence and `clusters/homelab/apps/nofx/deployment.yaml` for current
 desired references. Later source builds require a separate functional rollout.
 first verify copies and read-only pulls, then preserve that consumer's exact
