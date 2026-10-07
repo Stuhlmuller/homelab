@@ -5,13 +5,15 @@ description: "Static, policy, render, secret-scan, and live acceptance gates for
 tags: ["operations", "validation"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T04:01:36.226Z
+    at: 2026-10-07T04:52:53.816Z
 sources:
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
-generated: { by: "codex", at: "2026-10-07T04:01:36.226Z" }
+generated: { by: "codex", at: "2026-10-07T04:52:53.816Z" }
 ---
 
 # Validation Gates
@@ -208,6 +210,15 @@ AzureAD was skipped without local credentials. Protected CI run `36272981407`
 failed at the app stage. Its cause remains unknown; the fixed hints improve the
 next failure report without changing plan behavior or proving a CI fix. Local
 operator credentials, transport, and provider cache differ from CI.
+
+On October 7, 2026 UTC, PR #1219's live plan failed at the application stage.
+A private reproduction identified Harbor's Kubernetes provider `spec.sources`
+tuple reconciliation as the sole application failure. Stored, desired, and live
+source counts were all three; the resource was not tainted, so the existing
+untaint path is inapplicable. The operator-stack addition selects all application
+plans and exposes this blocker. Keep the required gate intact and investigate a
+focused Harbor plan through the [recorded recovery finding](../../docs/ci-cd.md#harbor-provider-plan-blocker-observed-october-7-2026-utc).
+The owner-mail migration remains unapplied.
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the
