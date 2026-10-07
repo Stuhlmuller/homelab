@@ -137,8 +137,23 @@ manual sequential channel creation produced 1,451 Channels. `/output/m3u` and
 preview advanced with decoded 1920x1080 video; its exported MPEG-TS endpoint
 returned 100 valid consecutive packet sync bytes. The sample establishes
 Dispatcharr playback, not availability of every listed feed or media-server
-acceptance. No guide source was supplied; EPG, private NAS routing and
-Jellyfin/Plex playback remain outstanding. No credentials were recorded.
+acceptance. No external guide source was supplied. A subsequent native `Sports`
+profile includes 65 channels across the five sports-tagged groups. Its HDHR
+lineup has 65 entries; native XMLTV provides 1,170 placeholder programmes rather
+than event schedules. No credentials were recorded.
+
+The NAS media route is declared in `dispatcharr/values.yaml`: the existing nginx
+adds listener `9192`, with a checksum-tracked ConfigMap and no extra container.
+NodePort `31991` preserves source IP through `externalTrafficPolicy: Local`;
+the app is pinned to its current `acer` node so `10.1.0.199:31991` stays stable.
+Nginx permits only QNAP `10.1.0.2`, GET/HEAD and bounded M3U/XMLTV, HDHR,
+stream-UUID and logo-cache paths. It rejects arbitrary queries and overwrites
+forwarded headers; administrative access remains behind Octelium. This avoids
+relying on unenforced NetworkPolicies or exposing the app's full `9191` port.
+The endpoint has no failover while `acer` is unavailable. Route rollout and
+Plex/Jellyfin playback remain acceptance gates; Jellyfin remains deliberately
+stopped until the operator requests otherwise. See the workload README for
+the test and rollback path.
 
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep

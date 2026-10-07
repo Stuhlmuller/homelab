@@ -30,8 +30,8 @@ are cleared during suspension.
 - PostgreSQL: dedicated `dispatcharr-postgres` PostgreSQL 17 StatefulSet
 - Redis: in-pod sidecar, ephemeral cache/queue state
 - HTTP port: `9191`
-- Access: private app hostname through Octelium, no public unauthenticated
-  route
+- Access: administration through Octelium; NAS-only media exports through
+  `http://10.1.0.199:31991`
 - Public IP lookup: disabled with `DISPATCHARR_ENABLE_IP_LOOKUP=false`
 
 The modular mode avoids the upstream all-in-one container's embedded PostgreSQL
@@ -121,8 +121,10 @@ On October 6, 2026 PDT, native setup imported 1,451 streams and created 1,451
 channels. Both M3U and HDHR lineup exports returned all 1,451 channels. CBS Sports
 Golazo played through the Dispatcharr preview; its exported transport stream
 also returned valid MPEG-TS packets. This verifies source setup and one sample,
-not every feed or playback through Jellyfin/Plex. EPG and the private NAS tuner
-route remain unconfigured.
+not every feed or playback through Jellyfin/Plex. A native `Sports` profile now
+contains the 65 channels tagged with a sports category. Its HDHR export has 65
+entries and its XMLTV export has 1,170 placeholder programmes. These are channel
+labels in four-hour blocks, not event schedules; no external guide was added.
 
 | Setting | Value |
 | --- | --- |
@@ -146,11 +148,12 @@ Manual channels preserve control of future EPG mappings and failover streams.
 Upstream [recommends bulk creation for regular lineups](https://dispatcharr.github.io/Dispatcharr-Docs/troubleshooting/#use-of-auto-channel-sync);
 reserve auto-sync for event groups whose channel identities follow the source.
 
-The playlist currently supplies no XMLTV URL. Leave EPG unconfigured until a
-compatible guide is selected; channel import does not establish programme data
-or premium-event coverage. Verify nonempty Channels, `/output/m3u` and
+The playlist currently supplies no XMLTV URL. Dispatcharr supplies placeholder
+programmes for unmapped channels; add a compatible guide for actual event times.
+Channel import does not establish premium-event coverage.
+Verify nonempty Channels, `/output/m3u` and
 `/hdhr/lineup.json`, then play a sample channel. Media-server connections remain
-pending private routing. To remove this source, disable its
+pending NAS-route rollout and client acceptance. To remove this source, disable its
 account first; use the native UI to review associated channels before deleting.
 
 ## Live TV for Jellyfin and Plex
@@ -162,9 +165,9 @@ subscription limited to the provider's own player is not an M3U source.
 
 October 6 inspection located both media servers on QNAP `10.1.0.2`.
 Plex responds on port `32400`; Jellyfin is deliberately disabled and its port
-`8096` is unavailable. Neither the cluster-only Service IP nor the protected
-browser-login route currently provides an unattended tuner connection from
-the NAS. Preserve the operator's Jellyfin stop while completing source setup.
+`8096` is unavailable. The private media route below supplies unattended tuner
+access without changing the protected browser-login route. Preserve the
+operator's Jellyfin stop until re-enabling it is explicitly requested.
 
 After the capacity and first-run checks above:
 
@@ -172,13 +175,12 @@ After the capacity and first-run checks above:
    allowance, and import only the required sports, local broadcast and event
    groups. Add its XMLTV guide privately.
 2. Create channels from the imported streams, map their guide entries, and
-   collect them in a `sports` Channel Profile. Copy the profile's output URLs
+   collect them in the `Sports` Channel Profile. Copy the profile's output URLs
    from **Channels**; an imported stream alone is not an exported channel.
 3. Choose a stable Dispatcharr address reachable from each media server. For
-   servers inside this cluster, the base is
-   `http://dispatcharr.media.svc.cluster.local:9191`. Outside the cluster, add
-   the appropriate private route through reviewed repository configuration
-   after identifying the server hosts. The existing Octelium browser-login
+   QNAP, use `http://10.1.0.199:31991`. For servers inside this cluster, the base
+   is `http://dispatcharr.media.svc.cluster.local:9191`. Other external hosts
+   require an explicitly reviewed source-address change. The Octelium browser-login
    hostname and a temporary workstation port-forward are not unattended tuner
    connections. Preserve the protected administrative route.
 4. Restrict Dispatcharr's **Network Access** allowlists for M3U/EPG/HDHR and
@@ -190,8 +192,8 @@ native connections are:
 
 | Server | Tuner | XMLTV guide |
 | --- | --- | --- |
-| Jellyfin | **Live TV → Tuner Devices → M3U Tuner**: `/output/m3u/sports` | **TV Guide Data Providers → XMLTV**: `/output/epg/sports` |
-| Plex | **Live TV & DVR → network tuner**, enter manually: `/hdhr/sports` | `/output/epg/sports?cachedlogos=false` |
+| Jellyfin | **Live TV → Tuner Devices → M3U Tuner**: `/output/m3u/Sports` | **TV Guide Data Providers → XMLTV**: `/output/epg/Sports` |
+| Plex | **Live TV & DVR → network tuner**, enter manually: `/hdhr/Sports` | `/output/epg/Sports?cachedlogos=false` |
 
 Leave Jellyfin's stream limit at `0` when Dispatcharr enforces the provider's
 limit. Plex DVR recording requires Plex Pass. Prefer source passthrough where
@@ -209,6 +211,40 @@ References: [Dispatcharr setup](https://dispatcharr.github.io/Dispatcharr-Docs/g
 [network access](https://dispatcharr.github.io/Dispatcharr-Docs/system/#network-access),
 [Jellyfin Live TV](https://jellyfin.org/docs/general/server/live-tv/setup-guide/),
 [Plex Live TV/DVR](https://support.plex.tv/articles/226463767-frequently-asked-questions-dvr-live-tv/).
+
+## Private NAS media route
+
+The existing web container's nginx includes a ConfigMap-backed second listener
+on `9192`, proxying permitted requests to its unchanged loopback `9191` server.
+Service `dispatcharr-media` exposes NodePort `31991` with
+`externalTrafficPolicy: Local`; the app is pinned to `acer` so the NAS uses a
+stable `10.1.0.199` endpoint and nginx sees its actual `10.1.0.2` source address.
+This makes media access unavailable while `acer` is down. No extra proxy Pod,
+public hostname or port-forward is needed.
+
+Nginx allows only that NAS source, GET/HEAD, default/`Sports` M3U/XMLTV and HDHR
+discovery/lineup endpoints, stream UUIDs, and cached logos. Other paths return
+404; arbitrary queries, including `direct=true`, are rejected. Forwarded host
+and source headers are overwritten; cookies and authorization are stripped.
+The administrative `9191` Service and Octelium route stay unchanged. The source
+restriction is enforced by nginx, not the currently unenforced NetworkPolicies.
+
+Before rollout, render app-template `4.4.0`, run Conftest, and execute:
+
+```sh
+nix shell --inputs-from . nixpkgs#nginx nixpkgs#yq-go \
+  -c python3 -I scripts/ci/dispatcharr-media-route-test.py
+```
+
+The test runs real nginx against a loopback upstream and checks routing, source
+restrictions, methods, query strings and forwarded headers. After Argo CD reports Synced/Healthy, verify
+from QNAP that discovery, lineup, XMLTV and a sample transport stream work and
+exported URLs use `10.1.0.199:31991`. Verify a non-NAS client gets 403 even with
+forged forwarded headers, and the NAS cannot access `/` or `/api/accounts/`.
+Only successful playback in Plex/Jellyfin completes client acceptance.
+
+To remove LAN access, revert the media ConfigMap, mount and NodePort Service in
+`values.yaml` through GitOps. Preserve the original app Service and both PVCs.
 
 ## Rollback
 
