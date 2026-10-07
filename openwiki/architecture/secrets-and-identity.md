@@ -5,19 +5,19 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: ["architecture", "secrets", "identity"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T04:01:36.226Z
+    at: 2026-10-07T04:18:31.623Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-785c903805cb6f5a9ea9ae91
+    resource: repo://docs/octelium.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
-  - id: openwiki-source-45cdc02b9fdef209e9d530d7
-    resource: repo://scripts/octelium-entra-oidc.sh
-generated: { by: "codex", at: "2026-10-07T04:01:36.226Z" }
+generated: { by: "codex", at: "2026-10-07T04:18:31.623Z" }
 ---
 
 # Secrets And Identity
@@ -552,8 +552,10 @@ The [bootstrap](../../scripts/octelium-entra-oidc.sh) now uses immutable Entra
 transition of the sole selected legacy HUMAN mapping. Existing user fields,
 policies and other identity-provider bindings remain intact; email becomes
 contact metadata. Its live read-only preflight passed. Apply the migration and
-test fresh owner access and pilot denial before email reuse; keep actual HUMAN
-identifiers private.
+test fresh owner access and confirm no pilot object-ID or privileged email
+binding before email reuse. Test actual pilot login denial after its initial
+password change and MFA setup; an interrupted authentication flow is not proof
+of denial. Keep actual HUMAN identifiers private.
 
 The prepared [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
 owns only a mail PATCH on the existing owner. A private `-var-file` supplies the

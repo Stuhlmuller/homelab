@@ -358,8 +358,11 @@ migration. Never substitute a newly created user's object ID for the owner.
 The user mapping changes before the IdP claim, so the transition is not atomic.
 Retain private copies of the current User and IdentityProvider for recovery;
 do not close the independent session until a fresh owner browser login works.
-Verify that an unprivileged user's different `oid` cannot resolve to the owner.
-Only then reuse the owner's former email. Plain secret refreshes also run the
+Verify that the complete mapping inventory binds only the original owner's
+`oid` to owner access and contains no pilot `oid` binding. Only then reuse the
+owner's former email. After the pilot completes its required initial password
+change and MFA setup, test actual fresh login denial; an interrupted password
+or MFA flow is not proof of authorization denial. Plain secret refreshes also run the
 preflight and cannot silently switch a legacy mapping.
 
 ## Cutover Gate

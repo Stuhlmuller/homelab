@@ -3,9 +3,6 @@ type: overview
 title: "Source Map"
 description: "Maps wiki topics to canonical repository guides, operational runbooks, workload READMEs, and source ownership."
 tags: ["knowledge-base", "source-map"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-07T04:01:36.226Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
 generated: { by: "codex", at: "2026-10-07T04:01:36.226Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-07T04:18:31.623Z
 ---
 
 # Source Map

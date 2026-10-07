@@ -324,7 +324,8 @@ Two prerequisites emerged from the October 6 investigation:
   remain private. The [bootstrap](../../../../scripts/octelium-entra-oidc.sh)
   now prepares immutable `oid` bindings with a complete-inventory preflight.
   Before email reuse, run the [guarded legacy migration](../../../../docs/octelium.md#entra-identity-migration)
-  with a tested recovery path, then verify fresh owner access and pilot denial.
+  with a tested recovery path, then verify fresh owner access and a complete
+  inventory with no pilot object-ID binding or privileged email binding.
 
 After those prerequisites, the separate
 [`operator/entra-owner-mail` unit](../../../../IaC/modules/entra-owner-mail/README.md)
@@ -350,7 +351,11 @@ path before proceeding.
 
 Only after address release and fresh owner-access checks should a new pilot
 plan rename the existing native user. Then complete its initial password change
-and Mac registration acceptance. Rollback must release any address claimed by
+and MFA setup through My Account. Test an actual fresh pilot login to Octelium:
+it must not resolve the owner or receive owner access. A password-change or MFA
+interruption is not authorization denial; record that test as untested until
+authentication completes. Continue with Mac registration acceptance.
+Rollback must release any address claimed by
 the pilot before restoring owner mail; removing an `msgraph_update_resource`
 does not restore its prior value. The module and Octelium guards are prepared;
 no owner migration or Octelium change has been applied. The read-only Octelium
