@@ -3,6 +3,21 @@ type: operation
 title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
+sources:
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-9d1513ec6ffec6dad14a5d87
+    resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
+generated: { by: "codex", at: "2026-10-07T06:34:36.213Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-07T06:45:20.541Z
 ---
 
 # Validation Gates
@@ -94,6 +109,27 @@ the permissions that protect the workflow from self-administration.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
 
+## Entra owner-mail and Octelium identity checks
+
+The static gate runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
+native APIs and the plan-only tests in `IaC/modules/entra-owner-mail`. These
+cover disabled email fallback, implicit fallback-user inventory, native empty
+lists, partial migration retry, preserved contact fields, mail-only PATCH scope,
+current-mail and identity drift, and rollback.
+
+Before live work, run `scripts/octelium-entra-oidc.sh --dry-run` with the three
+privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-identity-migration)
+and retain an independent session. Verify immutable owner binding and disabled
+email fallback before email reuse. The owner operator unit requires a private
+`-var-file` with current-mail and identity baselines and an encrypted saved plan;
+inspect that plan privately for exactly one
+`msgraph_update_resource.mail` PATCH containing only `mail`. Follow the
+[module contract](../../IaC/modules/entra-owner-mail/README.md), then verify
+unchanged owner identity, fresh owner access and actual SMTP proxy release.
+Local tests and a valid plan do not prove Graph alias recalculation or Mac SSO;
+the [Fleet acceptance checks](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#platform-differences-and-acceptance)
+remain required after the pilot rename.
+
 ## GitHub Workflow Checks
 
 A September 26 protected squash was blocked by an unsigned ancestor despite a
@@ -181,6 +217,22 @@ AzureAD was skipped without local credentials. Protected CI run `36272981407`
 failed at the app stage. Its cause remains unknown; the fixed hints improve the
 next failure report without changing plan behavior or proving a CI fix. Local
 operator credentials, transport, and provider cache differ from CI.
+
+On October 7, 2026 UTC, PR #1219's live plan failed at the application stage.
+A private reproduction identified Harbor's Kubernetes provider `spec.sources`
+tuple reconciliation as the sole application failure. Stored, desired, and live
+source counts were all three; the resource was not tainted, so the existing
+untaint path is inapplicable. The operator-stack addition selects all application
+plans and exposed this blocker. The subsequent protected plan
+[37580800923](https://github.com/Stuhlmuller/homelab/actions/runs/37580800923)
+passed on `861fb9d7` against `427b01ad`, including the aggregate gate, without
+a Harbor repair by this investigation. Keep the required gate intact; if the
+error recurs, follow the [recorded recovery finding](../../docs/ci-cd.md#harbor-provider-plan-blocker-observed-october-7-2026-utc).
+The separate reviewed owner operator plan later applied, with fresh owner
+Octelium sessions verified before and after the mail change. The old SMTP alias
+remained secondary, so the pilot rename was not retried. This operator execution
+does not satisfy or bypass the protected CI plan gate; see the
+[dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the

@@ -759,3 +759,27 @@ dispatch; that unit still owns other applications' secret contracts. Publish the
 reviewed images with `harbor-mirror.yml` first and reconcile public DNS with
 `octelium-public-tunnel.yml` afterward, following the
 [Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+
+### Harbor provider-plan blocker observed October 7, 2026 UTC
+
+[PR #1219's live plan](https://github.com/Stuhlmuller/homelab/actions/runs/37571659846)
+failed at the application stage. A private read-only reproduction at head
+`0ee6cf1e` against base `b8b8b677` identified Harbor as the sole application
+failure: provider `hashicorp/kubernetes` 3.2.1 reported
+`Failed to update proposed state from prior state` for `spec.sources`, with
+incompatible tuple arities. Stored manifest/object, rendered desired state,
+and live Application each contained three sources. The resource was untainted;
+the existing untaint-only recovery does not apply.
+
+An operator-unit addition triggers all application plans through the shared
+stack filter, so the failure also blocked the identity PR's aggregate gate.
+The later [protected plan](https://github.com/Stuhlmuller/homelab/actions/runs/37580800923)
+passed on head `861fb9d7` against base `427b01ad`, including the aggregate gate;
+the Harbor error did not recur. This investigation applied no Harbor repair.
+If it recurs, reproduce a focused Harbor plan and investigate the provider's computed-field
+transformation against the saved state types. Keep state and logs private;
+do not skip Harbor, widen computed fields, or mutate state without a verified
+repository-owned repair.
+The separately reviewed owner-mail operator plan later applied, but the old
+SMTP alias remains reserved; see the
+[migration outcome](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).

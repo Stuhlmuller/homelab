@@ -3,6 +3,21 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-07T06:45:20.541Z
+sources:
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-785c903805cb6f5a9ea9ae91
+    resource: repo://docs/octelium.md
+  - id: openwiki-source-aef98a0b80c0ff330c310ed1
+    resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-f8736ea9671721c61be0c639
+    resource: repo://IaC/modules/entra-verified-family-user/main.tf
+generated: { by: "codex", at: "2026-10-07T06:45:20.541Z" }
 ---
 
 # Secrets And Identity
@@ -509,6 +524,57 @@ email address alone is not an Entra password identity. Its guarded module is
 separate from the legacy AzureAD user module, and the AzureAD workflow selects
 that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
+
+The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+found a deployed pilot UPN mismatch: the Mac attempted personal-account device
+registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
+Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only
+change required a focused apply. The approved apply failed with
+`DirectoryUniquenessException`; the pilot retained its old UPN, nickname and
+password-change timestamp. The owner's existing mail/SMTP proxy uses the
+requested address, making it the leading conflict candidate, but Entra's audit
+did not name the conflicting property. The pilot-rename approval does not cover
+clearing owner aliases or converting that administrator; a separate owner-address
+migration was subsequently approved. The pilot's initial password change must finish
+before native Password PSSO registration. Fleet MDM enrollment remained intact;
+successful organizational device/user registration and password synchronization
+still require interactive acceptance. The runbook retains the separate,
+unresolved token-endpoint profile warning from the same attempt.
+
+The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
+applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external
+authentication. The owner was the only active Global Administrator found.
+Octelium's previous email-based HUMAN mapping was affected by address reuse;
+application assignment is not required and the OIDC scopes have tenant-wide consent.
+The [bootstrap](../../scripts/octelium-entra-oidc.sh) now uses immutable Entra
+`oid` with `disableEmailAsIdentity: true`, checks the complete live inventory
+including implicit email-fallback users, and permits a guarded transition of
+the sole selected legacy HUMAN mapping. Changing the claim alone does not
+prevent fallback through the separate OIDC email claim. Existing user fields,
+contact email, policies and other identity-provider bindings remain intact,
+including partial retries. Complete-inventory preflight and the live migration
+passed. New owner Octelium sessions through Entra callbacks matched the original
+`oid` and rendered the Services page before and after the mail change; these
+checks did not exercise a new password or MFA challenge. Test actual pilot login
+denial after its initial password change and MFA setup; an interrupted
+authentication flow is not proof of denial. Keep actual HUMAN identifiers private.
+
+The [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
+owns only a mail PATCH on the existing owner. A private `-var-file` supplies the
+replacement address, object ID, current-mail and full identity baselines; guards
+refuse a changed or missing current mail and retain the enabled accepted external
+member and its UPN before and after the write. The
+private encrypted plan passed the mail-only scope check and applied. Readback
+preserved the owner identity, enabled state, password-change timestamp, roles,
+grants and application ownership. The replacement became the primary SMTP
+address, but the old address remains a secondary alias. Address release failed,
+so the pilot rename was not retried. A supported repository-owned alias-release
+path is still required; changing mail did not release the requested pilot address.
+On October 7, 2026 UTC, authenticated Exchange Online lookups for this exact
+owner returned HTTP 404 `ManagementObjectNotFoundException`, including
+soft-deleted recipients. No mail-enabled recipient target exists in those
+results for `Set-MailUser`; Microsoft-supported remediation is required while
+preserving the identity. No Exchange write or additional permission grant occurred.
 
 ## Harbor registry identities
 

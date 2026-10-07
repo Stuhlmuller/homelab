@@ -3,6 +3,13 @@ type: overview
 title: "Homelab OpenWiki"
 description: "Task routes to homelab architecture, workload owners, bug diagnosis, validation, and agent skills."
 tags: [homelab, navigation, agents]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-07T03:28:13.795Z
+sources:
+  - id: openwiki-source-22e2bb4f70068fd836cc9813
+    resource: repo://scripts/ci/openwiki-check.py
+generated: { by: "codex", at: "2026-10-07T03:28:13.795Z" }
 ---
 
 # Homelab OpenWiki
@@ -10,6 +17,12 @@ tags: [homelab, navigation, agents]
 Start here for feature work and bug fixes. This wiki connects repository source,
 operating decisions, and runbooks. Current code and read-only live evidence
 settle discrepancies; dated incident notes are historical evidence.
+
+The wiki validation gate requires pages to be reachable from this entrypoint.
+Generated indexes: [root](index.md), [apps](apps/index.md),
+[architecture](architecture/index.md), [operations](operations/index.md),
+[patterns](patterns/index.md), [runbooks](runbooks/index.md), and
+[workloads](workloads/index.md).
 
 ## Find Task Context
 

@@ -18,6 +18,7 @@ python3 -I scripts/ci/nofx-registry-credential-test.py
 python3 -I scripts/ci/litellm-provider-credential-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
+python3 -I scripts/ci/octelium-entra-oidc-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py
 python3 -I scripts/ci/octelium-langfuse-reconcile-test.py
@@ -344,11 +345,14 @@ fi
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
 rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user; do
+for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-owner-mail; do
   (
     cd "IaC/operator/${operator_unit}"
     terragrunt --log-disable init -backend=false -no-color
     terragrunt --log-disable run --no-auto-init -- validate -no-color
+    if [[ "$operator_unit" == entra-owner-mail ]]; then
+      terragrunt --log-disable run --no-auto-init -- test -no-color
+    fi
   )
 done
 echo "::endgroup::"

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:e75ef971814ce87986d1120f9586b8eeef31322f485ecd5ecc5644b3fe4a4697",
+  "claims": [
+    {
+      "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
+      "statement": "Static checks cover Octelium immutable bindings with disabled email fallback, complete fallback-user inventory, preserved contact fields and retries, plus owner-mail plan guards for current-mail and identity drift. Live migration requires private encrypted mail-only planning, fresh owner access and SMTP proxy release before Mac SSO acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-entra-oidc-test.py",
+          "version": "repo-file-v1:sha256:d8ba5cb80354e9eb48327c6bd694820d9f3ff5ff0a0e31d0d09c822262341a3b"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:d04f70e9356662be8b770c724411df88b4eb093893802a6a6f781c315654385d"
+        }
+      ]
+    },
+    {
+      "id": "claim_b6e9dec699054f40ab7418dcafefa347",
+      "statement": "PR 1219's October 7, 2026 UTC plan initially failed on Harbor tuple reconciliation despite equal source counts and untainted state. Subsequent protected run37580800923 passed on861fb9d7 against427b01ad, including the aggregate gate, without a Harbor repair by this investigation. The separate reviewed owner-mail plan applied with fresh owner Octelium sessions verified before and after; the old SMTP alias remained secondary and the pilot rename was not retried. Strict CI gates remain intact.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:1cc878cdc1234a5c875e10601938a25ceac4ee9021264da7d5778ceae5095e10"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:69215fc98d5d46f6008587d8bbee3599ab38ff12129f2585bd4c49048ef93769"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-07T06:45:20.541Z"
+  }
+}
