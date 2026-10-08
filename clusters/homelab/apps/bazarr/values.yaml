@@ -46,7 +46,7 @@ controllers:
         dependsOn: prepare-config
         image:
           repository: ghcr.io/linuxserver/bazarr
-          tag: 1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+          tag: 1.6.2@sha256:c1673816321156b904af9b7e6415ea547ae9622e4acc375358f1e1eb9ed1e904
         command: [/lsiopy/bin/python3, /bootstrap/bootstrap.py, configure]
         securityContext:
           runAsGroup: 1000
@@ -67,7 +67,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/linuxserver/bazarr
-          tag: 1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+          tag: 1.6.2@sha256:c1673816321156b904af9b7e6415ea547ae9622e4acc375358f1e1eb9ed1e904
         workingDir: /app/bazarr/bin
         command:
           - /lsiopy/bin/python3
