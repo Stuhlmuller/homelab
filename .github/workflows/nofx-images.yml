@@ -181,7 +181,7 @@ jobs:
           printf '%s\n' "$BACKEND_REFERENCE" "$FRONTEND_REFERENCE" >"${RUNNER_TEMP:?}/nofx-published-images.txt"
 
       - name: Upload Published References
-        uses: chainguard-actions/actions-upload-artifact@dc8d35a3347d79eda9033e7af73f508094dd41b5 # v7.0.1
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
         with:
           name: nofx-published-images-${{ github.sha }}
           path: ${{ runner.temp }}/nofx-published-images.txt
