@@ -213,7 +213,7 @@ trivy:
 exporter:
   image:
     repository: docker.io/goharbor/harbor-exporter
-    tag: v2.15.2@sha256:e1b0a248f61aad5084c5d1612d5f1da89f99c23ce743eaf8cba913d6d00c0547
+    tag: v2.15.4@sha256:9ffede33dc519b4be035596a72f00f354754a22a3769077731f81ee7d6852f4f
   serviceAccountName: harbor
   resources:
     requests: {cpu: 25m, memory: 64Mi}
