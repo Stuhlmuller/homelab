@@ -1443,6 +1443,7 @@ echo "::endgroup::"
 
 echo "::group::Gluetun CPU capture"
 python3 scripts/ci/gluetun-cpu-profile-check.py
+python3 scripts/ci/deluge-daemon-status-test.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:78ba61366055a8906034f5ecf1bf9777c7dcdcd2a034f29322d3ddc77b001ade",
+  "claims": [
+    {
+      "id": "claim_39dc845af46742c3a132275588ffa9d7",
+      "statement": "Deluge shares a direct authenticated torrent-state RPC helper between startup/liveness probes and cached metrics while retaining the existing VPN and Web readiness gates and local-config/QNAP-download storage layout.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
+          "version": "repo-file-v1:sha256:096c18dd7a20c5bf2d633ebb52bfb3b35426d7d3856ae02ee058f7c7b5bad28e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/values.yaml",
+          "version": "repo-file-v1:sha256:32366a719bb6aa7eb2bc0d85f1c2db164654f8e1538ee389de16ee1e436eb74c"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-09T05:26:38.825Z"
+  }
+}

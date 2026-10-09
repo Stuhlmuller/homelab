@@ -4,16 +4,20 @@ title: "Source Map"
 description: "Maps wiki topics to canonical repository guides, operational runbooks, workload READMEs, and source ownership."
 tags: ["knowledge-base", "source-map"]
 sources:
+  - id: openwiki-source-efd15335758af38c6e6af9ab
+    resource: repo://clusters/homelab/apps/deluge/daemon-status.py
+  - id: openwiki-source-9f4d1b63d947cd42e3af68b2
+    resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
-generated: { by: "codex", at: "2026-10-07T04:01:36.226Z" }
+generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T06:45:20.541Z
+    at: 2026-10-09T05:26:38.825Z
 ---
 
 # Source Map
@@ -56,5 +60,6 @@ desired state.
 | --- | --- |
 | `clusters/homelab/apps/README.md` | [Application Notes](workloads/application-notes.md) |
 | `clusters/homelab/apps/*/README.md` | [Application Notes](workloads/application-notes.md) |
+| `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |

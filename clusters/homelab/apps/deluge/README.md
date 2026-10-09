@@ -60,19 +60,22 @@ and Radarr do not receive a ready Service endpoint while the web API on port
 `8112` is still refusing connections. Deluge daemon health is covered
 separately by the app startup and liveness probes plus the exported RPC metric.
 
-A `daemon-metrics` sidecar refreshes `deluge-console -c /config status` and the
+A `daemon-metrics` sidecar refreshes `python3 -B /scripts/daemon-status.py` and the
 Gluetun local health endpoint once per minute, then serves that cached snapshot
-without spawning a console process for every Prometheus scrape. It exposes
+without spawning a client process for every Prometheus scrape. The same helper
+gates app startup and liveness. It authenticates to the loopback daemon with
+the mounted `localclient` credential and queries torrent states directly,
+without loading the console UI and its command registry. It exposes
 `deluge_daemon_rpc_healthy` and `deluge_vpn_healthy` on the service `metrics`
 port as Prometheus text format. The cache starts unhealthy and every refresh is
-bounded, so a stuck console process cannot block the HTTP metrics endpoint.
+bounded, so a stuck RPC client cannot block the HTTP metrics endpoint.
 Prometheus scrapes it through
 `clusters/homelab/apps/prometheus/deluge-servicemonitor.yaml`, and Grafana
 alerts when either metric is missing or failing. Prometheus samples every 45
 seconds with a 30-second deadline; the cached daemon RPC refresh is capped at
 20 seconds so transient storage latency does not block scrapes. This catches
 both a failed VPN sidecar and the case where Kubernetes and Gluetun look
-healthy but `deluged` cannot restore state or accept console connections.
+healthy but `deluged` cannot restore state or answer authenticated RPC.
 
 ## Download Paths
 
@@ -288,6 +291,21 @@ minutes before liveness begins. Runtime liveness also requires 30 minutes of
 continuous daemon RPC failures before restarting the app. The existing
 25-second RPC timeout remains conservative for libtorrent recovery, but routine
 checks should no longer inherit QNAP config latency.
+
+If Web responds but startup remains unhealthy, run the exact RPC probe:
+
+```sh
+kubectl -n media exec deploy/deluge -c app -- \
+  timeout 25s python3 -B /scripts/daemon-status.py
+```
+
+Success prints aggregate torrent and error counts and exits zero. Missing
+credentials, RPC failure, or the caller's deadline fail the check. On October 8,
+2026, the console command exceeded 40 seconds on the busy worker while direct
+torrent-state RPC returned in 0.194 seconds after client startup. The health
+helper avoids that console overhead while preserving the existing recovery
+windows, VPN gate, and resource limits. Roll back through a reviewed revert of
+the helper and its values references; this restores the slower console checks.
 
 Before Deluge Web starts, the same wrapper normalizes legacy daemon hostlist
 entries from `localhost` to Deluge's default `127.0.0.1`. Sonarr's Deluge

@@ -11,6 +11,7 @@ resources:
 configMapGenerator:
   - name: deluge-catalog-recovery
     files:
+      - daemon-status.py
       - recover-torrent-catalog.py
       - reconcile-completed.py
 generatorOptions:
