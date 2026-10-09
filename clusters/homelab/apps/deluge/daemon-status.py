@@ -4,10 +4,10 @@
 import logging
 import sys
 
-logging.disable(logging.CRITICAL)
-
 from deluge.ui.client import client
 from twisted.internet import defer, task
+
+logging.disable(logging.CRITICAL)
 
 
 @defer.inlineCallbacks
