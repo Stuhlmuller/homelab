@@ -4,20 +4,24 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
 sources:
+  - id: openwiki-source-9f4d1b63d947cd42e3af68b2
+    resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-ebb70c48f85bc6100b070f01
+    resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
-generated: { by: "codex", at: "2026-10-07T06:34:36.213Z" }
+generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T06:45:20.541Z
+    at: 2026-10-09T05:26:38.825Z
 ---
 
 # Validation Gates
@@ -877,6 +881,24 @@ with the risk. Desired state must be represented in the repo before applying it.
 
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
+
+## Deluge daemon health
+
+Run `nix develop --command python3 -I scripts/ci/deluge-daemon-status-test.py`
+for aggregate counts, missing/malformed credentials, RPC failure and timeout,
+malformed replies, and disconnect failures. These offline coroutine tests mock
+Deluge/Twisted; they do not prove reactor behavior in the deployed image.
+Render app-template 4.4.0 and the Deluge Kustomization, verifying that app and
+daemon-metrics both mount `/scripts/daemon-status.py` and retain their existing
+timeouts and VPN gating.
+
+After reviewed Argo reconciliation, run
+`kubectl -n media exec deploy/deluge -c app -- timeout 25s python3 -B /scripts/daemon-status.py`.
+Require zero exit status, expected torrent count, healthy cached RPC/VPN
+metrics, a serving Service endpoint and successful access through the original
+route. A direct loopback check alone does not prove browser access. See the
+[Deluge runbook](../../clusters/homelab/apps/deluge/README.md#troubleshooting)
+and [October incident](deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure).
 
 ## Gluetun CPU capture
 

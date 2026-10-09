@@ -917,7 +917,7 @@ alerting:
             for: 5m
             annotations:
               summary: Deluge's VPN or daemon health probe is failing or missing.
-              description: The daemon-metrics sidecar could not reach Gluetun's health endpoint, could not query `deluge-console status`, or Prometheus is not scraping those metrics. Check Gluetun health, Deluge app logs, port-config logs, and the session.state recovery runbook.
+              description: The daemon-metrics sidecar could not reach Gluetun's health endpoint, could not query authenticated daemon RPC, or Prometheus is not scraping those metrics. Check Gluetun health, Deluge app logs, port-config logs, and the session.state recovery runbook.
               runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/deluge/README.md
             labels:
               severity: critical

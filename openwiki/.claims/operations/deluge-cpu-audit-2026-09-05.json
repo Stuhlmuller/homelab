@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:22463bb122b83fa5bc0d48cda95b65a7a72767d189aa686f0b89d474a383635a",
+  "claims": [
+    {
+      "id": "claim_5852cb4ec9ee4d05a76611e5bce93231",
+      "statement": "Deluge startup, liveness and cached metrics use a shared direct authenticated RPC helper that reads localclient credentials, queries torrent state counts and fails nonzero on RPC errors, with caller-owned 25-second probe and 20-second metrics deadlines.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
+          "version": "repo-file-v1:sha256:096c18dd7a20c5bf2d633ebb52bfb3b35426d7d3856ae02ee058f7c7b5bad28e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/values.yaml#L230-L268",
+          "version": "repo-lines-v1:sha256:63dd5000d46e133cea10576bccdcbb554f399c095b840b27ed7f45a5127f923d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyMmJmNmY4Y2Q2MTMwYjJkZGVmMWM3ZGE4M2M5MjZlZjE2YWU2ZTcyZTBhZGNlODYxZDkwYTUyZmE2YTdhN2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxNzYxNGE3MTg0MjI0NmZkYjQyZDIxODBkOTVjMjUwMTU4Y2RkOTY2MzRmN2E5NDllMDhkYmYzODJjMTc3YmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY1YWVmYmM1NzMzOTUxYWIyNTI2NWJjNmExODFlZTEyMzIyYmE2YmRmNGI2NThkNzQ0NjFlMGJiNmQ0ZDY1ZWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2ZDkyZjYzOWMxYmEzYzk1NDBmMzYzMjdmZjI3OThhNWE4NzI4NzNmMGZkNmI0ZWVkZTQ3ZWJiNjIxYzRiMmEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/values.yaml#L369-L386",
+          "version": "repo-lines-v1:sha256:332f499dd82a9a682f61207191d6057a1c0625b348e8df4560cfed89640f9ae3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0MjVlMzg1YTRkMTg5YjhkOTcxNjQyYWEyYTY5YTliZjBhNjMxZGY0MzZkODNlNDVhNGNlMmMwN2FlZTg2NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ZTQzZmQwOTBmMjViY2FlNTM4YmY3OTQ3YjU1MzVmOGI5YTQ3N2YyMDZjZjRlMTNjODM3NjNjMjY0Zjc2OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzMWFlY2NkZTg1ZDY5ZGQyMTAwYzZlODM1ODYwN2M2ZjkxYTQ1NmI4OGIwNzc0YzAwZWNjNjZkZjE2ZjNlMjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA3Y2Y3ZjIzMjI3ZmIxMjQ1YmM2OTFhZWIwN2Q2MmZhNTk3Njg4NTlkOTJhYWVmNjZiZjFhOGYzMzRmNzE2NzcifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-09T05:26:38.825Z"
+  }
+}

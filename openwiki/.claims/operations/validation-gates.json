@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e75ef971814ce87986d1120f9586b8eeef31322f485ecd5ecc5644b3fe4a4697",
+  "pageVersion": "sha256:1ff339fde545c6ed10881dca193ed813df7c88d5e84950580e60079ec728390e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:d04f70e9356662be8b770c724411df88b4eb093893802a6a6f781c315654385d"
+          "version": "repo-file-v1:sha256:1191c3337e7bc92b390ab5f9597091c96c488b0234276c7bde6bbf25c5ebce6a"
         }
       ]
     },
@@ -26,17 +26,31 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:1cc878cdc1234a5c875e10601938a25ceac4ee9021264da7d5778ceae5095e10"
+          "version": "repo-file-v1:sha256:f1ef36e0167be6795c6f630e1deabc1a6de490342c2e596f4cc90fd346fe119e"
         },
         {
           "resource": "repo://docs/ci-cd.md",
           "version": "repo-file-v1:sha256:69215fc98d5d46f6008587d8bbee3599ab38ff12129f2585bd4c49048ef93769"
         }
       ]
+    },
+    {
+      "id": "claim_e34b7110aa27441f8c4013ef038b2c2a",
+      "statement": "Deluge's focused offline health test checks credential, RPC, timeout, malformed-status and disconnect failures with mocked Deluge/Twisted; deployed verification additionally requires bounded helper execution, cached VPN/RPC metrics and original-route acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/README.md#L294-L318",
+          "version": "repo-lines-v1:sha256:96815d421639dc75048e6c4788ba003cd0d53676952a93278b3bd49957721ba7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MDE0NzUyYWY1MThmYWVjYTA2MDYzZmQ5MjIyODczNjMzYzAwMzk0Y2QxZWNkOTA3MTY0YmI2N2M3NTE3MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZTk5NmQ0NmZhMjU1YzA2YWMzNjJmYWYxYWQ5YjdlMDJjYjYyZjZhNTJlYTA5YjA2ZGFhNmNhODNjZmM0ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMmFhZGY1ZGI3YTA1ZTFmY2YwMWRlOTMzNTlmNzgwMDEzMTk4YzBkMTZhZjE5YjVjMGYzYmIyN2Q4NTA0MTMifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/deluge-daemon-status-test.py",
+          "version": "repo-file-v1:sha256:40b9bed8f66679a0d89fe554f886419e57bf3daa662eebe6d42614fca8fb2d39"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-07T06:45:20.541Z"
+    "at": "2026-10-09T05:26:38.825Z"
   }
 }

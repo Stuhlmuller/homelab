@@ -3,16 +3,62 @@ type: operation
 title: "Deluge CPU Audit \u2014 2026-09-05"
 description: "Historical Gluetun CPU throttling, Deluge capacity evidence, and profiling gates required before changing the VPN CPU limit."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-09T05:26:38.825Z
+sources:
+  - id: openwiki-source-efd15335758af38c6e6af9ab
+    resource: repo://clusters/homelab/apps/deluge/daemon-status.py
+  - id: openwiki-source-653e94c230cb8a02b742f512
+    resource: repo://clusters/homelab/apps/deluge/values.yaml
+generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
 ---
 
 # Deluge CPU Audit — 2026-09-05
 
-Status: diagnostic code prepared with profiling disabled; activation and capture
+September status: diagnostic code prepared with profiling disabled; activation and capture
 remain unverified. The September observations are historical; current high CPU
 has not been revalidated. Diagnosis is required before changing the VPN CPU cap.
 
 Source: `clusters/homelab/apps/deluge/values.yaml`, read-only Kubernetes and
 Prometheus inspection on September 5 Pacific / September 6 UTC.
+
+## October 8 Daemon Health Failure
+
+Read-only inspection on October 8 Pacific / October 9 UTC found Deluge `3/4`
+Ready with no serving Service endpoint. Gluetun was healthy and local Web
+returned HTTP 200, but the console-based daemon health check failed. The old
+pod had 106 Gluetun and four app restarts. An operator-triggered Argo restart
+at 05:21:48 UTC produced a fresh pod with the same failed startup check.
+
+The daemon loaded all 43 torrents. Direct authenticated RPC reported zero
+error-state entries: client imports took 5.785 seconds, connection 2.422
+seconds, daemon info 0.004 seconds and torrent states 0.194 seconds. A separate
+session-status call took 0.003 seconds. The console took 22.723 seconds in the
+metrics sidecar (above its 20-second deadline) and exceeded 40 seconds in the
+600m app container. Calling the console's Python entry point directly also
+exceeded 35 seconds. Worker CPU was 86–95% in snapshots; the app was throttled.
+These checks establish a health-client false negative, not a damaged catalog.
+The wider worker pressure and earlier restarts remain separate findings.
+
+The [daemon-status helper](../../clusters/homelab/apps/deluge/daemon-status.py)
+uses the installed Deluge client to authenticate with the mounted local
+credential and request only torrent states. Startup, liveness and cached
+metrics share it; callers retain their 25/20-second deadlines, recovery
+windows and fail-closed behavior. A live stdin execution returned 43 torrents
+and zero errors before deployment. This evidence does not establish that the
+new GitOps revision is deployed. Verify readiness, metrics, the Service path
+and original user access after merge. Browser sign-in was skipped at the
+operator's request.
+
+VPN startup also selected IPv6 endpoints that repeatedly failed DNS health
+checks before an IPv4 endpoint succeeded. The pinned Gluetun version treats
+[any non-loopback IPv6 route as IPv6 support](https://github.com/qdm12/gluetun/blob/v3.41.3/internal/netlink/ipv6.go),
+then allows IPv6 server selection. Stripping the client's IPv6 address does
+not restrict remote endpoint selection. Preserve this as an open VPN finding:
+evaluate a supported endpoint-family fix or a reviewed IPv4 endpoint pin with
+its loss of automatic server rotation documented. No VPN, CPU-cap or storage
+change is part of the health repair.
 
 ## Finding
 

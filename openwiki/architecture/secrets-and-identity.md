@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: ["architecture", "secrets", "identity"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-07T06:45:20.541Z
+    at: 2026-10-09T05:26:38.825Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
