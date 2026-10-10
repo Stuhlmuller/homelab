@@ -254,8 +254,8 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         original, normalized, candidate = (directory / name for name in ("original.yaml", "normalized.yaml", "candidate.yaml"))
 
         def capture(path):
-            resource = json.loads(run(*client, "get", "machineconfig", "persistent", "-o", "json"))
-            if resource["metadata"]["id"] != "persistent" or not isinstance(resource["spec"], str):
+            resource = json.loads(run(*client, "get", "machineconfig", "v1alpha1", "-o", "json"))
+            if resource["metadata"]["id"] != "v1alpha1" or not isinstance(resource["spec"], str):
                 raise RuntimeError("Expected the full persistent machine configuration")
             path.write_text(resource["spec"])
             path.chmod(0o600)

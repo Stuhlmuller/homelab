@@ -20,6 +20,8 @@ cluster cannot bootstrap its own in-cluster registry.
    pinned to the verified index digest.
 2. Test each consumer's command, user, CA trust, mounts and original action.
    Python exporter and shell-free curl readiness are the first stateless targets.
+   The pinned Python candidate contains `3.15.0_git20261010-r0`; its `latest`
+   tag is not proof of a stable release or compatibility with existing scripts.
    BusyBox consumers require applet and filesystem ownership checks. PostgreSQL,
    Redis and Valkey require version, persisted-data, backup/restore and rollback
    acceptance; a major-version substitution is not an image-only update.

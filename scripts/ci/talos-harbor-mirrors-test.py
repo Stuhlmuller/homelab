@@ -102,8 +102,9 @@ class RolloutTest(unittest.TestCase):
                     calls.append(command)
                     if command == ("talosctl", "version", "--client", "--short"):
                         return "Client:\nTalos v1.11.3\n"
-                    if "persistent" in command:
-                        return json.dumps({"metadata": {"id": "persistent"}, "spec": json.dumps(current)})
+                    if "get" in command and "machineconfig" in command:
+                        self.assertEqual(command[-5:], ("get", "machineconfig", "v1alpha1", "-o", "json"))
+                        return json.dumps({"metadata": {"id": "v1alpha1"}, "spec": json.dumps(current)})
                     if command[:3] == ("talosctl", "machineconfig", "patch"):
                         value = json.loads(Path(command[3]).read_text())
                         for operation in json.loads(command[5]):
@@ -246,11 +247,12 @@ class RolloutTest(unittest.TestCase):
                         return "Client:\nTalos v1.13.0\n" if scenario == "wrong-client" else "Client:\nTalos v1.11.3\n"
                     if "read" in command:
                         return "87654321-0000-0000-0000-000000000000" if applied and scenario == "rollback-reboot" else "12345678-0000-0000-0000-000000000000"
-                    if "persistent" in command:
+                    if "get" in command and "machineconfig" in command:
+                        self.assertEqual(command[-5:], ("get", "machineconfig", "v1alpha1", "-o", "json"))
                         captures.append(command)
                         if scenario == "race" and len(captures) == 2:
                             current[0]["machine"]["unrelated"] = True
-                        return json.dumps({"metadata": {"id": "persistent"}, "spec": json.dumps(current)})
+                        return json.dumps({"metadata": {"id": "v1alpha1"}, "spec": json.dumps(current)})
                     if command[:3] == ("talosctl", "machineconfig", "patch"):
                         path = Path(command[3])
                         self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)

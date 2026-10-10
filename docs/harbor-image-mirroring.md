@@ -150,6 +150,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
    before claiming a fresh fetch. Do not delete cached images to force this test.
    Unchanged Pod image strings are not evidence of an upstream pull.
 
+The operator helper captures `MachineConfigs.config.talos.dev/v1alpha1`, the
+resource ID observed on Talos 1.11.3 on 2026-10-10. The old `persistent` ID
+returns NotFound before validation. Capture and readback must use the exact
+`v1alpha1` ID and its complete string spec, retaining every configuration
+document and all unrelated settings. Private client files must contain the
+configured homelab context; an empty file is not an enrolled client. No private
+machine configuration or raw failed-command output is printed.
+
 Talos 1.11.3 [kubelet](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/system/services/kubelet.go#L64-L74)
 and [etcd](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/system/services/etcd.go#L88-L104)
 use the CRI daemon's `system` namespace and the same registry builder as the
