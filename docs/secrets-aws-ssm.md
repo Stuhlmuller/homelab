@@ -78,8 +78,8 @@ same PR that adds its first ExternalSecret.
 
 ## AI gateway contract
 
-Use the `LiteLLM Provider Credential` workflow to populate or rotate the
-external OpenRouter slot. Temporarily store the key in the `homelab-production`
+Use the `LiteLLM Provider Credential` workflow to populate or refresh the
+OpenRouter bootstrap/recovery slot. Temporarily store the key in the `homelab-production`
 environment secret `LITELLM_OPENROUTER_API_KEY`, then dispatch
 `litellm-provider-credential.yml` on `main` with its exact current commit as
 `expected_sha`. The workflow validates provider authentication without a
@@ -90,9 +90,15 @@ after successful transfer. Never pass the key as a workflow input or argument.
 
 After the write succeeds, advance the committed `litellm-app-keys`
 `generated-secret-revision` annotation and let Argo reconcile its `OnChange`
-ExternalSecret. Verify one gateway generation and the attributed Langfuse
-trace. Reverting manifests does not restore an old external credential; use
-this workflow again with a valid replacement when rollback requires one.
+ExternalSecret. The native gateway imports that value only once into the
+encrypted `openrouter` credential shown under **Models → LLM Credentials**.
+After `homelab-provider-credential-import-v1` exists, rotate the active key in
+LiteLLM's UI/API; neither SSM edits nor Pod restarts overwrite it or restore a
+deleted credential. Enter a complete replacement key in the pinned UI edit
+form, not its prefilled mask. Verify one gateway generation and the attributed
+Langfuse trace. Restore the database for rollback; never revert to file-backed
+inference, which would bypass UI changes. See the
+[gateway recovery contract](../clusters/homelab/apps/litellm/README.md#ui-managed-openrouter-credential).
 
 `/homelab/litellm/openai-api-key` is an existing operator-supplied OpenRouter
 provider credential. LiteLLM is its only Kubernetes consumer. Generated caller
@@ -110,7 +116,9 @@ gateway. Both use `OnChange`. The gateway imports existing caller values once
 into native database keys, atomically with `homelab-native-key-import-v1`.
 After import, SSM edits alone do not rotate keys; coordinate the database key
 and caller refresh. Restarts never recreate deleted keys or undo UI blocks.
-Preserve initialized role passwords, the database and import marker together
+The provider row uses native encryption with the existing master key; preserve
+that key with the database and re-encrypt before any master-key rotation.
+Preserve initialized role passwords, the database and both import markers together
 during recovery. Live cutover acceptance remains separate from source checks.
 
 ## External Secrets AWS Auth Bootstrap

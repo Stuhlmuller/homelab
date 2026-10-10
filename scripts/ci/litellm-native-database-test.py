@@ -9,10 +9,13 @@ import shutil
 import sys
 import tempfile
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from urllib.parse import quote
 
-from prisma import Prisma
+from fastapi import HTTPException
+from prisma import Json, Prisma
+from litellm.proxy import proxy_server
+from litellm.proxy.common_utils.encrypt_decrypt_utils import decrypt_value_helper, encrypt_value_helper
 from litellm.proxy.db.prisma_client import PrismaWrapper
 from litellm_proxy_extras.utils import ProxyExtrasDBManager
 import yaml
@@ -53,6 +56,7 @@ async def check_database(url, directory):
             assert await database.litellm_verificationtoken.count() == 3
             assert (await database.litellm_verificationtoken.find_unique(where={"token": first.token})).blocked
             assert await database.litellm_verificationtoken.find_unique(where={"token": second.token}) is None
+            await check_provider_database(database, client, directory)
 
             await database.litellm_verificationtoken.delete_many()
             await database.litellm_usertable.delete_many()
@@ -68,6 +72,95 @@ async def check_database(url, directory):
             assert [user.user_id for user in users] == ["nofx"], "Import marker or users escaped rollback"
     finally:
         await database.disconnect()
+
+
+async def provider_unavailable():
+    try:
+        await native_keys.provider_api_key()
+    except HTTPException as error:
+        assert error.status_code == 503
+        assert error.detail == "OpenRouter credential is unavailable"
+    else:
+        raise AssertionError("Unavailable provider credential must fail closed")
+
+
+async def check_provider_database(database, client, directory):
+    credential_file = directory / "openrouter"
+    original, rotated = "sk-or-" + "a" * 48, "sk-or-" + "b" * 48
+    credential_file.write_text(original)
+    credentials = database.litellm_credentialstable
+    credential_where = {"credential_name": "openrouter"}
+    marker_where = {"user_id": native_keys.PROVIDER_IMPORT_MARKER}
+    assert native_keys.PROVIDER_IMPORT_MARKER == "homelab-provider-credential-import-v1"
+    assert native_keys.PROVIDER_IMPORT_MARKER != native_keys.IMPORT_MARKER
+    with patch.object(proxy_server, "master_key", "sk-" + "m" * 48), \
+            patch.object(proxy_server, "prisma_client", client):
+        await asyncio.gather(native_keys.import_provider_credential(client),
+                             native_keys.import_provider_credential(client))
+        assert await credentials.count() == 1
+        assert await database.litellm_usertable.count(where=marker_where) == 1
+        credential = await credentials.find_unique(where=credential_where)
+        encrypted = credential.credential_values["api_key"]
+        assert encrypted != original and original not in json.dumps(credential.credential_values)
+        assert decrypt_value_helper(encrypted, "api_key") == original
+        assert credential.credential_info["custom_llm_provider"] == "Openrouter"
+        assert await native_keys.provider_api_key() == original
+
+        rotated_values = {"api_key": encrypt_value_helper(rotated)}
+        await credentials.update(where=credential_where, data={"credential_values": Json(rotated_values)})
+        assert await native_keys.provider_api_key() == rotated, "Provider reads must see UI rotations immediately"
+        await native_keys.import_provider_credential(client)
+        assert (await credentials.find_unique(where=credential_where)).credential_values == rotated_values
+
+        for invalid in (None, {}, "", "sk-or-short", "sk-" + "x" * 48):
+            await credentials.update(where=credential_where, data={
+                "credential_values": Json({"api_key": encrypt_value_helper(invalid)}),
+            })
+            await provider_unavailable()
+        await credentials.update(where=credential_where, data={"credential_values": Json({"api_key": original})})
+        await provider_unavailable()
+        await credentials.delete(where=credential_where)
+        await provider_unavailable()
+        credential_file.unlink()
+        await native_keys.import_provider_credential(client)
+        assert await credentials.count() == 0, "Startup recreated a credential deleted in the UI"
+        await provider_unavailable()
+
+        failing_client = SimpleNamespace(db=SimpleNamespace(litellm_credentialstable=SimpleNamespace(
+            find_unique=AsyncMock(side_effect=RuntimeError("database detail " + original)),
+        )))
+        with patch.object(proxy_server, "prisma_client", failing_client):
+            await provider_unavailable()
+        with patch.object(proxy_server, "prisma_client", None):
+            await provider_unavailable()
+
+        await database.litellm_usertable.delete(where=marker_where)
+        credential_file.write_text(original)
+        await credentials.create(data={
+            "credential_name": "openrouter", "credential_values": Json(rotated_values),
+            "credential_info": Json({"custom_llm_provider": "Openrouter"}),
+            "created_by": "fixture", "updated_by": "fixture",
+        })
+        try:
+            await native_keys.import_provider_credential(client)
+        except Exception:
+            pass
+        else:
+            raise AssertionError("Existing provider credential collision must reject import")
+        assert await credentials.count() == 1
+        assert (await credentials.find_unique(where=credential_where)).credential_values == rotated_values
+        assert await database.litellm_usertable.find_unique(where=marker_where) is None
+        await credentials.delete(where=credential_where)
+        for invalid in ("REPLACE_ME", "sk-or-short", "sk-" + "x" * 48):
+            credential_file.write_text(invalid)
+            try:
+                await native_keys.import_provider_credential(client)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("Invalid provider credential was imported")
+            assert await credentials.count() == 0
+            assert await database.litellm_usertable.find_unique(where=marker_where) is None
 
 
 def check_config(directory):
@@ -116,7 +209,7 @@ def main():
             asyncio.run(check_database(url, directory))
         finally:
             run("pg_ctl", "-D", data, "-w", "-t", "30", "-m", "immediate", "stop")
-    print("Native PostgreSQL key import: atomicity, concurrent startup, revocation preservation and file credentials passed")
+    print("Native PostgreSQL keys: atomic import, concurrency, UI revocation/rotation, provider encryption and fail-closed reads passed")
 
 
 if __name__ == "__main__":

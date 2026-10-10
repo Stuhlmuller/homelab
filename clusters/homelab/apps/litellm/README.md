@@ -5,7 +5,8 @@ and NOFX. It exposes only `openrouter/free`.
 
 The existing `/homelab/litellm/openai-api-key` SSM SecureString is the
 OpenRouter upstream credential for this gateway. Its legacy name is retained to
-avoid a secret migration. It is mounted only in LiteLLM; callers authenticate
+avoid a secret-path migration. It seeds the encrypted UI credential once and
+remains mounted only in LiteLLM for initial bootstrap; callers authenticate
 with separate inference-only keys:
 
 - `/homelab/openclaw/litellm-app-token`
@@ -58,7 +59,7 @@ restarts. Do not delete this marker. An existing user/key collision aborts
 startup rather than overwriting operator state. No custom-auth hook remains:
 the native database verifier authorizes requests, while ASGI admission blocks
 provider and telemetry overrides before native error logging can parse them.
-Only the trusted pre-call hook inserts the file-mounted upstream credential.
+Only the trusted pre-call hook inserts the database-backed upstream credential.
 Telemetry admission covers management and model-discovery routes too: native
 authentication failures can parse their bodies before logging. Model/provider
 restrictions apply only to inference, preserving native key-management bodies.
@@ -75,6 +76,45 @@ implicit test dependency is not evidence that the deployed image is safe.
 SSM provides initial caller material, not a continuous key reconciliation
 loop. After import, changing SSM alone does not rotate a database key. Coordinate
 any later UI/API rotation with that caller's SSM value and refresh contract.
+
+### UI-managed OpenRouter credential
+
+`native_keys.py` imports the existing OpenRouter value into native
+`LiteLLM_CredentialsTable` as `openrouter`, encrypted with LiteLLM's native
+encryption helper. Its independent `homelab-provider-credential-import-v1`
+marker commits in the same locked transaction. Existing credential collisions
+abort startup; completed imports never overwrite UI edits or recreate deletion.
+The four caller keys stay under **Virtual Keys**; OpenRouter appears under
+**Models → LLM Credentials**. The bootstrap master key and PostgreSQL/Langfuse
+credentials retain their separate administrative and infrastructure roles.
+
+The pre-call hook reads and decrypts only this row's `api_key` on each request.
+UI replacement/deletion affects subsequent requests without restarting; missing,
+invalid or unreadable credentials return 503 with no mounted-secret fallback.
+Inference admission also rejects `litellm_credential_name` overrides. Native
+`store_model_in_db` enables the UI credential loader and its 30-second refresh;
+the gateway loads credentials again after first import, before serving traffic.
+`supported_db_objects: []` keeps models and other routing objects in Git.
+The inference model remains restricted to `openrouter/free`.
+
+After migration, change the provider credential in the UI/API. Updating SSM
+alone no longer rotates the active provider key. Keep SSM as bootstrap/recovery
+material and preserve the database plus import markers. The existing master key
+is the native encryption key because no separate salt is configured: retain it
+with database backups, and do not rotate it without re-encrypting stored values.
+Never return to file-backed inference during rollback; restore the database.
+
+Pinned 1.80.8 UI limitation: editing a credential preloads a masked value. Enter
+the complete replacement key before saving; saving that mask can overwrite the
+credential. Review the upstream credential edit flow during the next image
+upgrade. Native stdout/client errors also remain outside the existing Langfuse
+redaction guarantee; see the [AI observability findings](../../../../openwiki/architecture/ai-observability.md).
+
+Before rollout, capture a private logical backup. After rollout, require the
+`openrouter` entry from `/credentials`, one encrypted database row, unchanged
+caller aliases, and a bounded real generation. Local database tests cover
+encryption, concurrent import, collision rollback, UI rotation/deletion,
+restart preservation and unavailable-credential failure without using live keys.
 
 PostgreSQL reuses the mirrored PostgreSQL 14 image and a 20 GiB `nfs-default`
 claim, `data-litellm-postgres-0`. Generated SSM credentials are
