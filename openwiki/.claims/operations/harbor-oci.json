@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc5abaf48f42835e9cf5c9392d9c4b30425361fca18e106420a7f25d775b00d1",
+  "pageVersion": "sha256:d3ac917f535509dc798a0280264f83e8d31a341eed2cf4cd3773fbff86e6b96c",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:603468eb7e19fb49c8fc3c0df83a64bbcaec8854885b83ead65dffb052a07bdc"
+          "version": "repo-file-v1:sha256:116940348830c8c6ecff1d2c55914ffd03387b11f24b8beecab222930f2120db"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -26,11 +26,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:424a34d497732a8ef948884ef677a4fce6a7bb059acafcd13a0a29c86ccf8eae"
+          "version": "repo-file-v1:sha256:69029dba5101f021ffb651fe7ee368c080078bbbeb68513167b582c5bfa29c40"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:f06a816cbb6e034c1e396ae104f15124ee989af6286bacfcff68dd4497e7395f"
+          "version": "repo-file-v1:sha256:142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -91,6 +91,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:39:58.912Z"
+    "at": "2026-10-10T21:57:36.377Z"
   }
 }

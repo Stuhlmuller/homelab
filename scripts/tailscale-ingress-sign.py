@@ -72,7 +72,7 @@ def validate_target(target, source, pod, status, lock, signer):
     require(any(entry.get("hostname") == dns for entry in published)
             and all(entry["ip"] in addresses for entry in published if "ip" in entry),
             "Controller-published ingress identity differs from the proxy")
-    peers = [p for p in signer.get("VisiblePeers", []) + signer.get("FilteredPeers", [])
+    peers = [p for p in (signer.get("VisiblePeers") or []) + (signer.get("FilteredPeers") or [])
              if p.get("ID") == own.get("ID")]
     require(len(peers) == 1 and peers[0].get("NodeKey") == lock["NodeKey"]
             and peers[0].get("DNSName", "").rstrip(".") == dns

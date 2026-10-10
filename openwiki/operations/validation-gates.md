@@ -5,7 +5,7 @@ description: "Static, policy, render, secret-scan, and live acceptance gates for
 tags: ["operations", "validation"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T21:39:58.912Z
+    at: 2026-10-10T21:57:36.377Z
 sources:
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
@@ -57,7 +57,7 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
-generated: { by: "codex", at: "2026-10-10T21:39:58.912Z" }
+generated: { by: "codex", at: "2026-10-10T21:57:36.377Z" }
 ---
 
 # Validation Gates
@@ -181,7 +181,8 @@ private. Generation rotation must replace keys, not merely update a description.
 The static gate also runs the fixed ingress signer and CI publisher tests. They
 reject wrong proxy ownership/identity, wrong tailnet or signing profile, stale or
 unsigned main, misplaced secrets, invalid provider keys, and unsafe private cache
-permissions. Publication tests require all three secret writes and metadata
+permissions. Signer fixtures also cover the CLI's null empty peer classes before
+any proxy is visible and after every proxy is signed. Publication tests require all three secret writes and metadata
 checks before deleting the old variables, reuse cached signatures on retry, and
 restrict authority retirement to previous generations. Mock provider tests cover
 tag, expiry and explicit-rotation contracts; real provider planning remains the

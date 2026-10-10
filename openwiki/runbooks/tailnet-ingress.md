@@ -3,9 +3,6 @@ type: runbook
 title: "Tailnet And App Ingress"
 description: "Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover."
 tags: [runbook, networking, ingress]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T21:39:58.912Z
 sources:
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
@@ -46,6 +43,9 @@ sources:
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
 generated: { by: "codex", at: "2026-10-10T21:39:58.912Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T21:57:36.377Z
 ---
 
 # Tailnet And App Ingress

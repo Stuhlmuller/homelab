@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:252bf7af2c2f8ee3b66eafc575014f2fc86154481e19cd3ee1ccd208a0e9d85b",
+  "pageVersion": "sha256:d3b0af1f4607dab55d522e549ef0784919ecb5b5b5a06a7bde29aa7ef7a74e48",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -120,7 +120,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
-          "version": "repo-file-v1:sha256:075804acae50632ac1f39ab6476b4bea5a67744c853d92a8072378e46f2eac0c"
+          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
     },
@@ -145,6 +145,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:39:58.912Z"
+    "at": "2026-10-10T21:57:36.377Z"
   }
 }

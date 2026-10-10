@@ -46,6 +46,18 @@ class IngressSigning(unittest.TestCase):
         data[4]["VisiblePeers"] = data[4].pop("FilteredPeers")
         self.assertTrue(self.validate(data)["signed"])
 
+    def test_null_filtered_peers_after_all_targets_are_signed(self):
+        data = fixture()
+        data[3]["NodeKeySigned"] = True
+        data[4]["VisiblePeers"] = data[4]["FilteredPeers"]
+        data[4]["FilteredPeers"] = None
+        self.assertTrue(self.validate(data)["signed"])
+
+    def test_null_visible_peers_before_any_target_is_signed(self):
+        data = fixture()
+        data[4]["VisiblePeers"] = None
+        self.assertFalse(self.validate(data)["signed"])
+
     def test_wrong_owner_or_unready_pod(self):
         for field, value in [("app", "another-resource"), ("tailscale.com/parent-resource", "fleet")]:
             with self.subTest(field=field):
