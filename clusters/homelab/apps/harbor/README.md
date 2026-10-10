@@ -38,12 +38,11 @@ The PostSync bootstrap creates the private `homelab` project and reconciles:
 | `robot$homelab+publisher` | Pull/push repository | Protected image publishing and migration |
 | `robot$mirror+publisher` | Pull/push within public `mirror` only | Public upstream image copies |
 
-Bootstrap and Harbor image references retain upstream names. After verified
-copies, Talos redirects pulls to the public upstream-only `mirror` project.
-Fresh bootstrap and registry recovery use the upstream rollback patch; see
-[the cluster-wide mirror runbook](../../../../docs/harbor-image-mirroring.md). Keep original migration
-sources until independent pulls and workload rollouts succeed. Do not delete
-old GHCR artifacts as part of migration.
+Normal Harbor and bootstrap-Job image references use internal mirror paths.
+Publish and completely verify the pinned catalog before consuming these refs.
+Empty-cluster recovery uses the explicit [upstream overlays](../harbor-bootstrap/README.md)
+and reviewed temporary Application source changes, together with the Talos
+mirror rollback; normal operation never silently falls back to public registries.
 
 ## Image scanning
 

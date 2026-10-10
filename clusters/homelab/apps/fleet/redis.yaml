@@ -52,7 +52,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redis
-          image: redis:7.2.16-alpine@sha256:29e8589c3f9ba699b5f7aa4b3c7733c58852a3626439e619aa0ee78de08c6ca0
+          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:7.2.16-alpine@sha256:29e8589c3f9ba699b5f7aa4b3c7733c58852a3626439e619aa0ee78de08c6ca0
           imagePullPolicy: IfNotPresent
           command: [redis-server, /run/secrets/fleet-redis/redis.conf]
           ports:

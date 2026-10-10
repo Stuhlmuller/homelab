@@ -28,7 +28,7 @@ inputs = {
         targetRevision = "1.27.3"
         helm = {
           releaseName = "istiod"
-          valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+          valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml", "$values/clusters/homelab/apps/istio/pilot-values.yaml"]
           parameters = [
             {
               name  = "pilot.resources.requests.memory"
@@ -45,7 +45,7 @@ inputs = {
         targetRevision = "1.27.3"
         helm = {
           releaseName          = "istio-cni"
-          valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml"]
+          valueFiles           = ["$values/clusters/homelab/apps/istio/values.yaml", "$values/clusters/homelab/apps/istio/cni-values.yaml"]
           skipSchemaValidation = true
         }
       },
@@ -56,7 +56,7 @@ inputs = {
         targetRevision = "1.27.3"
         helm = {
           releaseName = "ztunnel"
-          valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml"]
+          valueFiles  = ["$values/clusters/homelab/apps/istio/values.yaml", "$values/clusters/homelab/apps/istio/ztunnel-values.yaml"]
           parameters = [
             {
               name  = "resources.requests.memory"

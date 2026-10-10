@@ -38,7 +38,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: ghcr.io/octelium/octeliumee-cloudman:0.22.0@sha256:66cccf10e7fc91ca2979212bad6e56e72f29fab3c88eafdf2e9d8600c7c1669b
+      - image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-cloudman:0.22.0@sha256:66cccf10e7fc91ca2979212bad6e56e72f29fab3c88eafdf2e9d8600c7c1669b
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -117,7 +117,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-clusterman:0.22.0@sha256:b35f44142b3201a2446ec43a98066e81762c3e9652b5bc2aab6a4fab0d2071c1
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-clusterman:0.22.0@sha256:b35f44142b3201a2446ec43a98066e81762c3e9652b5bc2aab6a4fab0d2071c1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -196,7 +196,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-collector:0.22.0@sha256:e4497f2029c9ed35af8e8652464a332fd04bd8fd133b14cd5922c5ba03ef6382
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-collector:0.22.0@sha256:e4497f2029c9ed35af8e8652464a332fd04bd8fd133b14cd5922c5ba03ef6382
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -270,7 +270,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: ghcr.io/octelium/octeliumee-logstore:0.22.0@sha256:4f8cf484cdc0416649efb52ba184465923ef42e8bda280153146316c798e1406
+      - image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-logstore:0.22.0@sha256:4f8cf484cdc0416649efb52ba184465923ef42e8bda280153146316c798e1406
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -351,7 +351,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: ghcr.io/octelium/octeliumee-metricstore:0.22.0@sha256:d026839d818634aab28850ded68420a4def0752d0f75cc2b816405ef9a49c3ff
+      - image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-metricstore:0.22.0@sha256:d026839d818634aab28850ded68420a4def0752d0f75cc2b816405ef9a49c3ff
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -435,7 +435,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-nocturne:0.22.0@sha256:102c907933ed10b992d213a7392a60d9eaa1eac589593d153b6662b9e4c4f201
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-nocturne:0.22.0@sha256:102c907933ed10b992d213a7392a60d9eaa1eac589593d153b6662b9e4c4f201
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -514,7 +514,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: ghcr.io/octelium/octeliumee-policyportal:0.22.0@sha256:fb77c65f2f0fc4dab9c1835a55083633e847683f3380bf24b0d849d4d7740a4a
+      - image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-policyportal:0.22.0@sha256:fb77c65f2f0fc4dab9c1835a55083633e847683f3380bf24b0d849d4d7740a4a
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -653,7 +653,7 @@ spec:
             secretKeyRef:
               key: use_tls
               name: octelium-redis
-        image: ghcr.io/octelium/octeliumee-rscserver:0.22.0@sha256:7021192b770ae6edf97e7ea4ed09da3f42708869765ea4818f001185de9f1447
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-rscserver:0.22.0@sha256:7021192b770ae6edf97e7ea4ed09da3f42708869765ea4818f001185de9f1447
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -738,7 +738,7 @@ spec:
       automountServiceAccountToken: false
       initContainers: []
       containers:
-      - image: ghcr.io/octelium/octeliumee-rscstore:0.22.0@sha256:c7d56cc2cc56422f051be8176e7f3220523e9ff1249dbd711e633542ed82e358
+      - image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-rscstore:0.22.0@sha256:c7d56cc2cc56422f051be8176e7f3220523e9ff1249dbd711e633542ed82e358
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -856,7 +856,7 @@ spec:
               key: no_ssl
               name: octelium-postgres
         # checkov:skip=CKV_SECRET_6: Image digest pin, not secret material.
-        image: ghcr.io/octelium/octeliumee-secretman:0.22.0@sha256:e863e39c0234cd8ee1e69bcc220230d0abb9ea8ff24aa91cccf9444938a32a2f
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-secretman:0.22.0@sha256:e863e39c0234cd8ee1e69bcc220230d0abb9ea8ff24aa91cccf9444938a32a2f
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -961,7 +961,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1000,7 +1000,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1106,7 +1106,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1145,7 +1145,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-dirsync:0.22.0@sha256:20946aba4ccf6a22d8f9e28a92db054fd70a31609f737843b6d9852a7ccac4b0
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-dirsync:0.22.0@sha256:20946aba4ccf6a22d8f9e28a92db054fd70a31609f737843b6d9852a7ccac4b0
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1251,7 +1251,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1290,7 +1290,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-apiserver:0.22.0@sha256:7f05db4fd9b463c134c90e076ec8cd8698c35bb4efc3d7a638a1f73aff15ff94
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-apiserver:0.22.0@sha256:7f05db4fd9b463c134c90e076ec8cd8698c35bb4efc3d7a638a1f73aff15ff94
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1396,7 +1396,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
@@ -1435,7 +1435,7 @@ spec:
           value: default
         - name: OCTELIUM_REGION_UID
           value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-        image: ghcr.io/octelium/octeliumee-publicserver:0.22.0@sha256:096c5fdc761e6663f9a52b976056d03e1d0fdb287ad971596c6f66dccc57aa38
+        image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-publicserver:0.22.0@sha256:096c5fdc761e6663f9a52b976056d03e1d0fdb287ad971596c6f66dccc57aa38
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

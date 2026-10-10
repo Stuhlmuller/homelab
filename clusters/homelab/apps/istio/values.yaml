@@ -6,6 +6,11 @@ cni:
   podAnnotations:
     homelab.rst.io/ambient-ip-family: ipv4
 global:
+  hub: harbor.stinkyboi.com/mirror/docker.io/istio
+  proxy:
+    image: harbor.stinkyboi.com/mirror/docker.io/istio/proxyv2:1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1
+  proxy_init:
+    image: harbor.stinkyboi.com/mirror/docker.io/istio/proxyv2:1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1
   logging:
     level: default:info
 pilot:

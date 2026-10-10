@@ -33,8 +33,12 @@ cluster cannot bootstrap its own in-cluster registry.
 5. Merge consuming changes through normal protection, then verify Argo's
    observed revision, rollout, imageID and original application behavior.
 
-No workload references or live node settings change in the publication
-prerequisite. Removing old artifacts is not a vulnerability remediation method;
+The publication prerequisite changes no workloads or live node settings.
+The transport-only consumer draft changes named references while preserving
+tags, digests and all other workload fields; Helm defaults and generated images
+remain separate completion gates. Its source-normalized YAML comparison covered
+66 changed files. The explicit Harbor bootstrap overlays are inactive in normal
+Application sources and still require cold-recovery acceptance. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
 ## Read-only findings, 2026-10-10
