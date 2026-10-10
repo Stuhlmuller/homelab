@@ -132,6 +132,10 @@ contract for Grafana.
   until its complete normalized definition is reviewed and hashed. The
   pre-commit scan rejects plan/state filenames plus binary plans or JSON
   plan/state exports hidden behind arbitrary names.
+  Renovate action upgrades also need their exact test pins and normalized
+  workflow security hashes updated in the same PR after review. PR #1233's
+  artifact-action update failed the Terragrunt static gate because those
+  companion updates were missing; rerunning an unchanged PR cannot fix it.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`

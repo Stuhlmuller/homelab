@@ -835,7 +835,7 @@ class PublishedDigestReport(unittest.TestCase):
         self.assertNotIn("secrets.", json.dumps(self.job))
         self.assertEqual(len(self.job["steps"]), 2)
         upload = self.job["steps"][1]
-        self.assertEqual(upload["uses"], "chainguard-actions/actions-upload-artifact@dc8d35a3347d79eda9033e7af73f508094dd41b5")
+        self.assertEqual(upload["uses"], "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6")
         self.assertNotIn("if", upload)
         self.assertEqual(upload["with"], {
             "name": "nofx-published-images-${{ github.sha }}",
