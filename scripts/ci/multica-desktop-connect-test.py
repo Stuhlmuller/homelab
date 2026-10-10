@@ -45,6 +45,15 @@ class MigrationTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     desktop.mesh_addresses()
 
+    def test_resume_waits_for_same_profile_network_extension(self):
+        stopped = copy.deepcopy(STATUS)
+        stopped['BackendState'] = 'Stopped'
+        stopped['Self']['Online'] = False
+        with patch.object(desktop, 'run', side_effect=[json.dumps(stopped), '', json.dumps(stopped), json.dumps(STATUS)]), \
+                patch.object(desktop.time, 'sleep') as sleep:
+            self.assertEqual(desktop.mesh_addresses(True), ADDRESSES)
+            sleep.assert_called_once_with(0.5)
+
     def test_resume_only_never_migrates_desktop_or_carrier(self):
         with patch.object(desktop.sys, 'argv', ['multica-desktop-connect.py', '--resume-only']), \
              patch.object(desktop.sys, 'platform', 'darwin'), \

@@ -1,24 +1,38 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1f5d4c0e3c151f3c2029b9cdb7f13ac9a9a3faaa0a3b8b2594f7ce8465fc5074",
+  "pageVersion": "sha256:d306b80685805e87cc3e5438da9869aa28e1e475a8467e8eabf36b90bf06d29f",
   "claims": [
     {
-      "id": "claim_a4056b3112a94021b79a8ff21d8b24fd",
-      "statement": "The staged migration declares Traefik private ingress and the Tailscale operator API proxy while retaining old CI and native operator transport until mesh DNS and identity acceptance.",
+      "id": "claim_6955e53fbb7e432da5bbc402bfcad89e",
+      "statement": "Phase2a declares private application ingress through Tailscale and Traefik while retaining native Cordium Kubernetes access and deferring CI transport cutover until mesh DNS and identity acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/tailscale/README.md",
-          "version": "repo-file-v1:sha256:f3760c1d7db3f575df258ef712ebb33debe4abc39400e69655f897ef1c195057"
+          "version": "repo-file-v1:sha256:7623fb0e8b5d747a580a9b938324fca05d6787af979549c0cdb46908b9277cb4"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+        }
+      ]
+    },
+    {
+      "id": "claim_7e36fd35e6d4442ab4a6658b1dca9351",
+      "statement": "CoreDNS rewrites canonical Octelium API and Harbor names to traefik-private; Talos host registry access uses the separate registry-only Service and requires node image-pull acceptance before external Harbor DNS changes.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:57:31.494Z"
+    "at": "2026-10-10T22:12:32.276Z"
   }
 }

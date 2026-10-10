@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:68ab6f52523c01d7b815f810d3ca425f1d0fd1f4bf55ba54a407a233548446b4",
+  "pageVersion": "sha256:1667371aaf61a96d618a42ef492cbe2ab97c9fd4ca7589c2a233a7a25e34d316",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/values.yaml",
-          "version": "repo-file-v1:sha256:32366a719bb6aa7eb2bc0d85f1c2db164654f8e1538ee389de16ee1e436eb74c"
+          "version": "repo-file-v1:sha256:378173f5cbd803316856898c4644517703355501f0d46bfd648ddcdde76a2751"
         }
       ]
     },
@@ -35,16 +35,24 @@
       ]
     },
     {
-      "id": "claim_aa6ba6972ee14b5aaa1f8e270b77cd14",
-      "statement": "Phase2a routes internal Octelium API and Harbor DNS through the Traefik private Service and advertises n8n's Funnel webhook URL; the old DNS writer is retired while the Tunnel Deployment and native catalog remain until replacement acceptance.",
+      "id": "claim_66b837170fff4ec090762f920b8f418f",
+      "statement": "Phase2a routes internal Octelium API and Harbor DNS to Traefik, advertises n8n's Funnel webhook URL, and adds intended Cordium bootstrap network peers while retaining old tunnel/native/CI transports until staged acceptance; Flannel does not enforce NetworkPolicy.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
+        },
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
           "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:03e63cd1c3337749e09f50a0c18caa8462603e1d9678dd8cccd49aef92f58c2d"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
@@ -55,6 +63,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:51:47.381Z"
+    "at": "2026-10-10T22:12:32.276Z"
   }
 }

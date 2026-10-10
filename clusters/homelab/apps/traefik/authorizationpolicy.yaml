@@ -20,7 +20,17 @@ spec:
     - from:
         - source:
             notPrincipals: ["*"]
-            ipBlocks: ["10.1.0.199/32", "10.1.0.200/32", "10.1.0.201/32", "10.1.0.202/32"]
+            # Talos host-to-Service traffic can use the node's cni0 source.
+            # Keep exact node/bridge addresses; never permit whole Pod CIDRs.
+            ipBlocks:
+              - "10.1.0.199/32"
+              - "10.1.0.200/32"
+              - "10.1.0.201/32"
+              - "10.1.0.202/32"
+              - "10.244.1.1/32"
+              - "10.244.2.1/32"
+              - "10.244.3.1/32"
+              - "10.244.4.1/32"
       to:
         - operation:
             ports: ["9443"]

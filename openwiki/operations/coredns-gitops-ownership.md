@@ -5,15 +5,13 @@ description: "Ordered CoreDNS handoff from Talos to Argo CD, preserving resolver
 tags: ["homelab", "navigation"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T20:51:47.381Z
+    at: 2026-10-10T22:12:32.276Z
 sources:
-  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
-    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e20ef91bfc85ec57d6b2e621
     resource: repo://clusters/homelab/platform/dns/README.md
-generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
+generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
 ---
 
 # CoreDNS GitOps Ownership
@@ -23,6 +21,22 @@ owns all six CoreDNS resources while preserving DNS behavior and pinning the
 running image content. New clusters still require the ordered takeover below;
 the declaration alone does not complete it. Source and DNS checks are in the
 [platform DNS runbook](../../clusters/homelab/platform/dns/README.md).
+
+## Traefik Routing Change
+
+Phase 2a preserves this ownership handoff and changes only the two internal
+hostname rewrites: `octelium-api.stinkyboi.com` and `harbor.stinkyboi.com` now
+point to `traefik-private.traefik.svc.cluster.local`. Clients retain the original
+TLS name and SNI. Public forwarding remains `1.1.1.1` and `1.0.0.1`.
+
+Converge Traefik, its certificate and upstream routes before this Corefile.
+Require the expected Service IP plus working native Cordium API requests and
+Harbor pulls; name resolution alone is insufficient. Talos hosts use the separate
+registry-only Service through their guarded host mapping, not this Pod DNS
+rewrite. External DNS and callbacks follow the
+[ordered cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
+This prepared source is not evidence of live DNS acceptance. The dated takeover
+and upgrade checks below retain their original historical context.
 
 ## Why The Handoff Is Required
 
@@ -38,16 +52,6 @@ Talos gives [inline manifests priority `99`](https://github.com/siderolabs/talos
 while the default CoreDNS resources use
 [`11-core-dns` and `11-core-dns-svc`](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/manifest.go#L191-L209).
 The upgrade processes both objects rather than merging their desired content.
-
-## Current Internal Routes
-
-The staged Tailscale cutover rewrites both `octelium-api.stinkyboi.com` and
-`harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. This
-keeps in-cluster callers on a Kubernetes Service while external DNS moves to
-mesh addresses. Require Traefik certificates and upstream routes healthy before
-converging the Corefile; then verify both DNS answers, native Cordium API calls,
-and Harbor pulls. The six-resource ownership contract remains unchanged. See
-[the ordered cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
 
 ## Ordered Takeover
 
@@ -100,7 +104,7 @@ and Harbor pulls. The six-resource ownership contract remains unchanged. See
    using the reviewed image digest, with no crash-looping or failed probes;
    Pod UIDs change as expected. The
    [runbook lookups](../../clusters/homelab/platform/dns/README.md) must resolve
-   public names and the currently declared internal API/Harbor addresses through cluster DNS.
+   public names and the Octelium gateway address correctly through cluster DNS.
 3. Only after these gates pass, render the current private control-plane config
    with the repository patch
    [controlplane-coredns-gitops-ownership.yaml](../../.talos/patches/controlplane-coredns-gitops-ownership.yaml).

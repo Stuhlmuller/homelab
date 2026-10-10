@@ -14,6 +14,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-bef786188ec490a342373148
+    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -38,6 +40,10 @@ sources:
     resource: repo://scripts/ci/tailscale-access-check-test.py
   - id: openwiki-source-f8287cec4efc309562629516
     resource: repo://scripts/ci/tailscale-access-check.py
+  - id: openwiki-source-fc269dae2f6a8501f0c0fb75
+    resource: repo://scripts/ci/tailscale-ci-configure-test.py
+  - id: openwiki-source-4ac432ebb03e57e6e256a336
+    resource: repo://scripts/ci/tailscale-ingress-sign-test.py
   - id: openwiki-source-511191e55632b55651ad4318
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
@@ -50,10 +56,12 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
-generated: { by: "codex", at: "2026-10-10T20:40:01.656Z" }
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T20:51:47.381Z
+    at: 2026-10-10T22:12:32.276Z
 ---
 
 # Validation Gates
@@ -148,8 +156,10 @@ otherwise Terragrunt can initialize the real S3 backend before running them.
 ## Tailscale and Traefik foundation
 
 The static gate runs `traefik-routes-test.py` and `install-kubeconfig-test.py`.
-The first checks the fixed private inventory, callback/registry boundaries and
-Fleet setup denial. The second checks tokenless API-proxy configuration and
+The first checks the fixed private inventory, callback/registry boundaries,
+Fleet setup denial, and the exact four LAN plus four bridge `/32` sources for
+registry port 9443 in both ingress policies. Adjacent LAN addresses and ordinary
+Pod addresses remain outside that source boundary. The second checks tokenless API-proxy configuration and
 plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
 and run Conftest on all declared routing resources.
 
@@ -167,15 +177,48 @@ earlier-response confusion, and malformed bodies before DNS can change.
 
 Validate and test the Tailscale provider module, compare the complete live policy,
 and import the existing ACL before the private authenticated saved plan. Do not
-apply the initial four-create plan: adoption must produce a policy update and
-three new federated identities. Keep state, token and plan material private.
+apply a plan that replaces the existing ACL. After foundation adoption, the
+Tailnet Lock addition must create exactly three scoped CI auth keys and preserve
+the ACL and dormant federated identities. Keep state, tokens and saved plans
+private. Generation rotation must replace keys, not merely update a description.
+
+The static gate also runs the fixed ingress signer and CI publisher tests. They
+reject wrong proxy ownership/identity, wrong tailnet or signing profile, stale or
+unsigned main, misplaced secrets, invalid provider keys, and unsafe private cache
+permissions. Signer fixtures also cover the CLI's null empty peer classes before
+any proxy is visible and after every proxy is signed. Publication tests require all three secret writes and metadata
+checks before deleting the old variables, reuse cached signatures on retry, and
+restrict authority retirement to previous generations. Mock provider tests cover
+tag, expiry and explicit-rotation contracts; real provider planning remains the
+proof of replacement behavior.
+
+Before mesh acceptance, run `tailscale-ingress-sign.py` in preview mode, then
+execute only from reviewed current main. Each proxy's public node and rotation
+keys must match the exact controller-owned Kubernetes resource and local lock
+peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
 
 Before traffic cutover, verify observed Argo revision and health, certificate
 readiness, real mesh application access, Fleet device check-in, native Cordium
-execution/reconnection, and an uncached Talos registry pull. Prove callback
+execution/reconnection, and an uncached Talos registry pull from every node.
+Converge the exact node/bridge source policies before host-only node migration;
+a successful mapping or loopback preflight does not prove the node's SNAT path.
+Prove callback
 admin/root rejection off mesh and actual signed webhook delivery. Run protected
 CI plan/apply through the operator API proxy, with a denied real plan-identity
 write. Local tests and HTTP health alone do not satisfy these gates.
+
+The Talos helper regression covers full active/persistent resource capture,
+additional-document divergence, a normal STATE-only boot with active version 1,
+missing persistent after a later active change, duplicate resources, read failure,
+and missing active config. Those checks repeat before and after apply while
+preserving the node identity, configuration-scope and no-reboot gates.
+
+Phase 2a removes the public DNS restoration workflow and helper, changes internal
+CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness before
+n8n rolls out because it can register hooks on startup. External DNS execution,
+Mac hosts migration, old-TTL expiry and normal canonical DNS/API verification
+remain ordered steps; callback receipts require fresh natural deliveries. Old
+CI and native operator transport stay until their later acceptance stage.
 
 The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
@@ -184,7 +227,8 @@ See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/modules/tailscale-access/README.md).
 
 The additive cutover utilities have focused static tests for fixed DNS ownership,
-Mac credential/profile preservation and carrier rollback, non-executing webhook
+Mac credential/profile preservation, bounded same-profile reconnect and carrier
+rollback, non-executing webhook
 preflights, and fresh delivery receipts. DNS API readback is separate from normal
 OS resolution: migrate the owned Mac hosts override, wait the previous DNS TTL,
 then run `tailscale-private-dns-check.py --verify-dns`. The
@@ -508,16 +552,16 @@ still require authenticated `octeliumctl` with a configured native transport
 or the existing private route. Also verify authenticated console rendering,
 audit queries, and real Cordium execution/reconnects before declaring recovery.
 
-Before treating Tailscale as unnecessary for Kubernetes access, validate both
-human paths from outside the homelab. On the operator workstation, run
+For retained native Cordium access, validate the existing human and Workspace
+paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
 and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
 config, mode, and `kubectl` check inside a Cordium Workspace, whose client
 session is created automatically. Also require Secret reads and a server-side
 dry-run create to be denied there; Cordium has restricted read-only access.
-Keep the Tailscale fallback until both pass; Talos transport is a separate
-retirement gate.
+Keep Tailscale for private applications and remote Talos/LAN access. These legacy
+checks do not replace the staged Traefik DNS and CI acceptance gates above.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.

@@ -18,10 +18,14 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
-generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
+  - id: openwiki-source-81658af78f4007503983579d
+    resource: repo://scripts/tailscale-ingress-sign.py
+generated: { by: "codex", at: "2026-10-10T21:24:31.626Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:43:31.576Z
+    at: 2026-10-10T21:57:36.377Z
 ---
 
 # Source Map
@@ -47,7 +51,9 @@ desired state.
 | `docs/image-automation.md` | [Image Automation](runbooks/image-automation.md) |
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
-| `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider identity ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
+| `scripts/tailscale-ci-configure.py` | [Scoped CI key publication and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/talos-harbor-mirrors.py` | [Private node registry path](operations/harbor-oci.md#private-node-registry-foundation) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |

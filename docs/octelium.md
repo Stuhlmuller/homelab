@@ -528,7 +528,7 @@ The following carrier procedure is only for pre-cutover access or reviewed
 rollback. After normal canonical DNS/API validation, native clients use
 Tailscale directly and must not recreate a loopback API override.
 
-Native clients need a local TCP carrierNative clients need a local TCP carrier and a resolver mapping scoped to
+Native clients need a local TCP carrier and a resolver mapping scoped to
 their execution environment. The pinned Octelium client calls the canonical
 API hostname on port 443:
 

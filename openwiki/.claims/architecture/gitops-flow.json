@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8db42f2a978871d21554fbd0ce223406110145c4dee5344f6c7cccc74da444f9",
+  "pageVersion": "sha256:bcd3a37f41ae79283e1a0fe2ead0d4f35e427df4232cc9035da96b8648c18cea",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
-      "statement": "The Tailscale ingress foundation registers Traefik through Argo CD while the operator-only Tailscale unit owns full-policy adoption and federated CI identity provisioning.",
+      "statement": "The Tailscale ingress foundation registers Traefik through Argo CD while the operator-only Tailscale unit owns full-policy adoption and three scoped CI auth keys with committed rotation generations; Tailnet Lock remains enabled and dormant federated identities stay protected until final migration retirement.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:b31d6bb55e271012d2171ac5446890a7ddb36717fb11a0c3fe51036b4a8d4275"
+          "version": "repo-file-v1:sha256:d46159ddc9297a0f2e03be43d81912f9d5c155e1402ac304846c35632bc128de"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
-          "version": "repo-file-v1:sha256:678b9938d982d43961084e16f28e9dc86cfcc69e748d94233140fc60a722e108"
+          "version": "repo-file-v1:sha256:a252bd4eb32ef86b5c10c3d33be6db8357b054e3e03f990e6d7387154f3d0512"
         },
         {
           "resource": "repo://IaC/stacks/traefik/stack.hcl",
@@ -21,12 +21,16 @@
       ]
     },
     {
-      "id": "claim_620a3d2e09f448a7893eaca9e242fe20",
-      "statement": "Phase2a retires the public-DNS restoration workflow; Fleet retains its hostname and moves to private mesh DNS through the staged guarded writer, with no Funnel route.",
+      "id": "claim_875d2ec5fa5e45b684c9a5e9389a7b1f",
+      "statement": "Phase2a changes internal CoreDNS and n8n's advertised Funnel URL and removes the old public DNS writer/workflow; guarded external DNS execution and later CI/native retirement remain separate acceptance stages, with Fleet private and no Funnel route.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
@@ -37,6 +41,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:51:47.381Z"
+    "at": "2026-10-10T22:12:32.276Z"
   }
 }

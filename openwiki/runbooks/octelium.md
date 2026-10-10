@@ -5,7 +5,7 @@ description: "Octelium access ownership, browser gRPC-Web versus native TLS tran
 tags: ["runbook", "octelium", "access"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T20:51:47.381Z
+    at: 2026-10-10T22:12:32.276Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
@@ -13,19 +13,19 @@ sources:
     resource: repo://docs/octelium.md
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
     resource: repo://scripts/multica-desktop-connect.py
-generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
+generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
 ---
 
 # Octelium
 
 Canonical runbook: [`docs/octelium.md`](../../docs/octelium.md)
 
-Octelium application, callback, and CI routes remain during the staged Traefik
-cutover; final ownership is Cordium and its required control endpoints. Keep
-existing operator sessions and `kubernetes-api.homelab` access until their
-replacement passes acceptance. Cordium retains its restricted native Kubernetes
-Service. Cluster bootstrap, Enterprise adoption, and Entra OIDC stay on their
-repository-owned scripts and manifests. The catalog
+Octelium application, callback, and CI routes remain during staged Traefik
+cutover; final ownership is Cordium and its required control endpoints. Preserve
+existing operator sessions and `kubernetes-api.homelab` access until replacement
+acceptance. Cordium retains its restricted native Kubernetes Service. Cluster
+bootstrap, Enterprise adoption, and Entra OIDC stay on their repository-owned
+scripts and manifests. The catalog
 also owns the core human session ceiling; apply its `ClusterConfig` include
 separately before the normal catalog apply.
 
@@ -34,9 +34,9 @@ control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.
 The bootstrap script refuses to mutate the cluster if these selectors fail,
 including a missing node or failed API lookup.
 
-The retained Cloudflare Tunnel provides the old browser and native carrier
-routes until mesh acceptance. Its DNS-restoration workflow and old DNS writer
-are removed in phase 2a. Follow the
+The retained Cloudflare Tunnel provides old browser and native carrier routes
+until mesh acceptance. Its DNS-restoration workflow and old DNS writer are
+removed in phase 2a. Follow the
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) for guarded
 DNS-only mesh records, Mac migration, callback delivery, and later CI transport.
 Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
@@ -61,7 +61,7 @@ private DNS is written, the full migration preserves Desktop credentials and
 removes only owned transports after authenticated canonical API checks.
 
 The retained `scripts/octelium-macos-api-carrier.py install` supports reviewed
-rollback to the loopback native API carrier during cutover. macOS requires administrator permission for
+rollback to the loopback API carrier. macOS requires administrator permission for
 its port 443 listener. The installer checks TLS, native gRPC, and browser
 gRPC-Web before adding one marked canonical API hostname entry to `/etc/hosts`;
 public DNS remains unchanged. It rejects conflicting local hostname entries or
@@ -72,8 +72,9 @@ check in `scripts/ci/octelium-macos-api-carrier-test.py`.
 On 2026-10-01 both protocol probes, privileged installation, authenticated
 native status, private Multica HTTP 200, and desktop runtime refresh passed on
 the home LAN. `scripts/multica-desktop-connect.py` owns the user LaunchAgent and
-backed-up desktop HTTP/WebSocket endpoint configuration. At that time it installed login startup and
-failed-client restart behavior; the current helper migrates that owned state. Off-LAN and new chat-send acceptance remain separate
+backed-up desktop HTTP/WebSocket endpoint configuration. At that time it installed
+login startup and client restart behavior; the current helper migrates that owned
+state. Off-LAN and new chat-send acceptance remain separate
 checks. This carrier grants no Octelium permissions and does not
 bypass session expiry. See [the macOS setup procedure](../../docs/octelium.md).
 

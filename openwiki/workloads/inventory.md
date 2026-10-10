@@ -4,6 +4,8 @@ title: "Workload Inventory"
 description: "Application and platform namespaces, GitOps paths, dependencies, resource and state contracts, and runtime readiness boundaries."
 tags: ["workloads", "argocd", "inventory"]
 sources:
+  - id: openwiki-source-812216982d0b6a887bf09651
+    resource: repo://clusters/homelab/apps/cordium/networkpolicy.yaml
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
@@ -14,16 +16,18 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-ac4e5166b14da067a9c57d03
+    resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
+generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T20:51:47.381Z
+    at: 2026-10-10T22:12:32.276Z
 ---
 
 # Workload Inventory
@@ -117,9 +121,9 @@ and device connection tests.
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
 sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
-It rewrites in-cluster `octelium-api.stinkyboi.com` and `harbor.stinkyboi.com`
-lookups to `traefik-private.traefik.svc.cluster.local`, preserving a Service
-route for internal callers before external DNS moves to mesh addresses.
+Phase 2a rewrites in-cluster `octelium-api.stinkyboi.com` and
+`harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, preserving
+a Service route for internal callers before external DNS moves to mesh addresses.
 It now declares all six CoreDNS resources and pins the running image content,
 with a controlled rolling replacement. The Talos bootstrap handoff remains a
 separate, gated step; see [CoreDNS GitOps Ownership](../operations/coredns-gitops-ownership.md).
@@ -153,31 +157,11 @@ AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
 
-The retained Istio API gateway still serves legacy Tunnel traffic during
-cutover. Phase 2a removes the old DNS writer and restoration workflow, and
-n8n advertises its Funnel webhook URL. The tunnel Deployment and native
-catalog remain until the replacement client, callback, and CI paths pass
+The retained Istio API gateway serves legacy Tunnel traffic during cutover.
+Phase 2a removes the old DNS writer and restoration workflow, and n8n advertises
+its Funnel webhook URL. The tunnel Deployment, native catalog, credentials and
+CI transport remain until replacement client, callback and CI paths pass
 [staged acceptance](../../clusters/homelab/apps/traefik/CUTOVER.md).
-
-## Backup scheduling finding (2026-10-10)
-
-Before the ingress rollout, Bazarr and media-postgres were Synced but Degraded
-because their October 10 backup Jobs exceeded their 30-minute deadlines.
-Retained metrics showed both backup pods remained unscheduled; their application
-pods remained Ready. The previous successful backups were October 9.
-
-PostgreSQL's pinned node had about 15.7 MiB of unreserved memory before scheduler
-overhead, below the backup's 64 MiB request. Bazarr's exact scheduling rejection
-was no longer retained. This is a backup reliability finding, not evidence of
-an application or network failure. The relevant contracts are the
-[PostgreSQL backup](../../clusters/homelab/apps/media-postgres/backup-cronjob.yaml)
-and [Bazarr backup](../../clusters/homelab/apps/bazarr/backup-cronjob.yaml).
-
-Capture `PodScheduled` and `FailedScheduling` evidence on the next scheduled
-runs, compare effective requests with node capacity, then adjust placement or
-measured reservations through repository manifests. Preserve the backups' data
-locality and verify a completed backup; increasing deadlines alone does not fix
-persistent scheduling starvation. Do not delete failed Jobs to clear health.
 
 ## Requested Applications
 
@@ -215,15 +199,17 @@ persistent scheduling starvation. Do not delete failed Jobs to clear health.
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 LiteLLM's native-key cutover uses its dedicated PostgreSQL database, imports the
-four existing service keys once, and removes the custom-auth bypass. UI listing,
-revocation and each caller's fresh Langfuse generation remain rollout gates;
+four existing service keys once, and removes the custom-auth bypass. Native API
+listing and revocation passed; each caller's fresh Langfuse generation remains
+a rollout gate;
 see [AI observability](../architecture/ai-observability.md).
 
 Langfuse web allows ten minutes for database migrations before liveness checks
 begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
 Web, worker and Valkey temporarily declare zero replicas for the October 10
-offline AOF capture. A credential-free inspector mounts only the queue PVC,
-read-only; restoring service requires a reviewed follow-up. The separate 1Gi
+offline AOF repair. A credential-free inspector was used for capture and
+approved promotion; this GitOps revision prunes it before a separate reviewed
+writer restart. The separate 1Gi
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
@@ -316,6 +302,11 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   `ambient.istio.io/redirection=enabled`.
 - `media` stays out of ambient while Deluge Gluetun/WireGuard and the media app
   ingress model need a repo-owned waypoint or equivalent policy design.
+
+Phase 2a adds intended Traefik peers for Cordium genesis and cluster-config
+bootstrap traffic on port 8443, with matching bootstrap egress declarations.
+Flannel still does not enforce these NetworkPolicies. Require native API
+acceptance after the CoreDNS rewrite; manifest presence is not connectivity proof.
 
 The Traefik foundation adds `cluster.local/ns/traefik/sa/traefik` to the
 application ingress allows above. Its namespace joins ambient; the private TLS,

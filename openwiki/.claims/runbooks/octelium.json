@@ -1,28 +1,38 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a00ccf9cc9681151b9c9fd61edd8b8002d49e1dd97f75ae5683417ec7b02d809",
+  "pageVersion": "sha256:cb00131cbc400a407a1eb493784a22a2509353c250ba2160b79b9ef6cbb2d34f",
   "claims": [
     {
-      "id": "claim_6d6eaceb34124ce5a821e699942b2156",
-      "statement": "Phase2a removes the old DNS writer and restoration workflow while retaining Cloudflare Tunnel and the native catalog until staged mesh, Mac, callback and CI acceptance; the saved-profile-only Mac reconnect precedes DNS and full credential-preserving migration follows it.",
+      "id": "claim_7ff19d2b3cf94bcda26039f6b8c2abfe",
+      "statement": "Phase2a removes the legacy public DNS writer and restoration workflow but retains the Cloudflare Tunnel, native catalog and credentials until application, callback, CI and Cordium replacement acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
         },
         {
           "resource": "repo://docs/octelium.md",
-          "version": "repo-file-v1:sha256:ef06176f6a273916ad7215d3c773b25a5be524183c043ecb838a6ffaebf83665"
+          "version": "repo-file-v1:sha256:9ec11f15d358b2c120806139a1594058bbcece75562cf0cb3a7219768e78c942"
+        }
+      ]
+    },
+    {
+      "id": "claim_9e27187b5b034ff8be90a25b90ed672f",
+      "statement": "Mac migration first resumes only the verified saved Tailscale profile without changing Desktop/carrier state, then preserves existing credentials while retiring owned transports only after canonical API checks; the existing carrier installer remains a reviewed rollback path during cutover.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:51:47.381Z"
+    "at": "2026-10-10T22:12:32.276Z"
   }
 }

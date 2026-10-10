@@ -70,13 +70,29 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
-   `image_scope` accepts only `all`, `fleet`, `bazarr`, or `traefik`; no image,
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image. Its publication uses the same all-platform digest copy, reviewed tag
    alias, and fresh complete anonymous download checks. A scoped success proves
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
+
+   The `chainguard` scope selects the seven digest-pinned public candidates in
+   `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
+   Redis, Valkey, PostgreSQL and Cosign. It publishes to the same normal
+   `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
+   digest preservation and fresh anonymous downloads. It does not change
+   consumers or prove runtime compatibility. Run after the prerequisite merges:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
+   ```
+
+   See [migration gates and current findings](image-egress-hardening.md).
+   Keep the public import source distinct from the internal runtime reference.
+   New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:latest@sha256:<verified-index-digest>`
+   only after successful publication and compatibility validation.
 
    Require a successful run, including complete anonymous downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication
@@ -170,6 +186,19 @@ of the four Talos nodes. This DNS cutover must preserve that state: it does
 **not** activate the strict mirror patch. The helper preserves unrelated host
 aliases, refuses a conflicting existing Harbor mapping, and validates that
 the complete machine configuration changes only `extraHostEntries`.
+
+Talos 1.11.3 can expose only the active `v1alpha1` machine-config resource after
+loading configuration from STATE at boot; `persistent` is populated by later
+configuration submissions. The helper reads the complete active document stream.
+When `persistent` exists, both streams must agree, including additional documents;
+staged or try-mode differences fail closed. An absent persistent resource is
+accepted only for initial active resource version 1. Changed active state without
+that counterpart requires investigation, not a forced apply. Read errors, unknown
+or duplicate resources, and missing active configuration remain fatal. Every
+pre-apply and post-apply capture repeats these checks; unrelated configuration,
+node identity, no-reboot and image-pull gates remain intact.
+[Upstream boot acquisition](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/config/acquire.go#L195-L205),
+[resource lifecycle](https://github.com/siderolabs/talos/blob/v1.11.3/pkg/machinery/resources/config/machine_config.go#L21-L31).
 All four live configurations passed the hostname-only strict validation on
 2026-10-10, workers first, without applying. An existing host-network Flannel
 Pod on `zimaboard-0` also reached Harbor's existing ClusterIP and received the

@@ -1,28 +1,18 @@
 # Staged Tailscale cutover
 
-The foundation deploys parallel Traefik ingress and operator utilities. Cutover
-uses two separate source changes so DNS does not strand CI or operator access:
-
-- **Phase 2a, before DNS:** after Traefik, both Funnel proxies, certificates,
-  and provider-owned policy pass live acceptance, remove the legacy DNS writer
-  and its restoration workflow. Switch internal API/Harbor CoreDNS, n8n's
-  advertised webhook URL, and the additive Cordium/Traefik NetworkPolicies.
-  Existing CI and native operator transport remain available.
-- **Phase 2b, after DNS:** after Mac migration and normal canonical DNS/API
-  acceptance, switch all eight CI workflows and the shared native operator
-  transport to Tailscale. Publish and verify the scoped CI identity bindings
-  before merging this change.
-
-The new Funnel route must work before the n8n rollout: restarting n8n can
-re-register external hooks using its new URL. CoreDNS and access policies move
-before public DNS so in-cluster Octelium callers already have working API and
-Harbor paths. Keep the existing Octelium routes, Cloudflare Tunnel Deployment,
-legacy callback names, native catalog, credentials, and owned Mac backups until
-replacement acceptance. Fleet has no Funnel route.
+This change prepares parallel Traefik ingress and operator utilities. Merging it
+alone does not migrate DNS, Mac clients, GitHub callbacks, or CI transport.
+Keep the existing Octelium routes, Cloudflare Tunnel, callback URLs, native
+catalog, and macOS carrier available until their replacement passes acceptance.
+Fleet has no Funnel route; its existing hostname moves to private mesh DNS.
 
 ## Before execution
 
 Merge the reviewed source and use a clean checkout of the exact current `main`.
+Keep Tailnet Lock enabled. Connect the existing trusted Mac's saved Tailscale
+profile, then preview and execute `scripts/tailscale-ingress-sign.py` as described
+in the [signing runbook](README.md#tailnet-lock). All three proxy identities must
+be signed before mesh/Funnel acceptance; Kubernetes readiness alone is insufficient.
 Confirm Traefik and both Funnel proxies are synced and healthy, certificates are
 Ready, and the private ingress Service publishes the unique online
 `homelab-ingress.tail67beb.ts.net` peer. Before DNS changes, reconnect the Mac's
@@ -36,8 +26,9 @@ This verifies the saved tailnet and owner before reconnecting, then requires the
 ingress peer online. Complete the Desktop/carrier migration only at step 5.
 
 The DNS utility uses the existing `octelium-nofx-reconcile.py` reviewed-main
-guard only. Keep its old native transport through phase 2a; changing that
-shared transport before DNS and Mac migration would strand its existing callers.
+guard only. Its old native transport remains unchanged during preparation;
+changing that shared transport before DNS and Mac migration would strand its
+existing callers.
 
 Run local checks before executing any utility:
 
@@ -51,11 +42,16 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
 
 ## Cutover order
 
-1. Keep working operator access. Before changing Harbor DNS, converge the
-   reviewed Talos host-only registry mapping and prove image pulls from every
-   node. Converge any required internal CoreDNS, application access, and n8n
-   `WEBHOOK_URL` changes through the reviewed phase 2a GitOps change. Confirm
-   n8n uses `https://n8n-webhook.tail67beb.ts.net/` after its rollout.
+1. Keep working operator access. Before changing Harbor DNS, verify the merged
+   Traefik registry policies allow the four exact LAN and four `cni0` bridge
+   addresses on port 9443. Host-to-ClusterIP SNAT can select a bridge source;
+   LAN-only allowances rejected the first mapped node before Traefik. Wait for
+   Argo convergence, then use the reviewed Talos host-only helper, workers first,
+   and prove uncached image pulls from every node. Do not advance the remaining
+   nodes while the first pull fails. Converge internal CoreDNS, additive
+   application access, and n8n `WEBHOOK_URL` changes through this reviewed
+   phase 2a GitOps change. Confirm n8n uses
+   `https://n8n-webhook.tail67beb.ts.net/` after its rollout.
 2. Phase 2a removes the legacy `octelium-public-tunnel.yml` DNS-restoration
    workflow and `octelium-public-dns.sh`. Wait for any in-flight run to finish
    before writing private DNS. Keep the tunnel Deployment running for remaining
@@ -125,12 +121,22 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
 
    These checks never trigger an event or redelivery. Both delivery ID and
    timestamp must be newer than the saved cutover. Old successes do not count.
-8. Merge phase 2b only after the operator's normal DNS/API path passes step 6
-   and the provider-owned CI identity bindings are published. Verify a protected
-   plan and apply, the plan identity's real admission-denial check, and Cordium
-   native execution/denial/cleanup from the runner. The same change moves the
-   shared native operator transport; retain the legacy catalog and credentials
-   until those acceptance checks pass.
+8. Move each CI consumer only after its Tailscale trust, connectivity, RBAC, and
+   real admission-denial checks pass. Cordium CI additionally needs the canonical
+   native API path from the runner. Change the shared native operator transport
+   only after the operator's normal DNS/API path passes step 6.
+
+## Observed node readiness interruption
+
+On October 10, 2026, `zimaboard-2` reported a reboot and returned Ready at
+21:29:52 UTC after a NotReady event at 21:13:45 UTC. Fresh authenticated Talos
+reads at 21:31–21:32 UTC found services healthy and all eight scheduled Pods
+Ready. The host-only helper had rejected preflight before mutating that node.
+Bounded current-boot logs did not establish the reboot cause; prior-boot evidence
+was unavailable. This snapshot does not prove durable recovery. Require fresh
+all-node readiness and current leases before retrying the worker-first helper.
+If it flaps again, capture prior-boot/hardware power evidence privately; never
+bypass readiness or issue an ad hoc reboot.
 
 ## Final retirement
 

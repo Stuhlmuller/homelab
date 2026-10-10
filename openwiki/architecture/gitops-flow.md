@@ -6,6 +6,8 @@ tags: ["architecture", "argocd", "terragrunt"]
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
@@ -14,10 +16,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
+generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T20:51:47.381Z
+    at: 2026-10-10T22:12:32.276Z
 ---
 
 # GitOps Flow
@@ -108,20 +110,29 @@ and Argo CD sync path.
 
 The staged migration adds the `traefik` Application and the administrator-owned
 `operator/tailscale-access` unit. The latter imports the existing full policy
-before applying the reviewed policy and GitHub federated identities with the
+before applying the reviewed policy and three scoped CI auth keys with the
 Tailscale Terraform provider; CI cannot administer its own tailnet grants.
+Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
+fixed publisher; committed generation changes drive 60-day rotation of keys
+with 90-day expiry. The three unused federated identities remain protected until
+the final migration retirement, after signed-key CI acceptance.
 Follow its [private saved-plan runbook](../../IaC/modules/tailscale-access/README.md).
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
 Terragrunt Apply on exact current `main` and check Argo's observed revision.
 Application registration order alone does not establish certificate, proxy,
-Funnel, or application readiness. Fleet has only a private mesh target route.
+Funnel, or application readiness. The fixed ingress signer verifies the three
+operator-owned proxy identities before signing them; ordinary node approval
+does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
-Existing DNS, Cloudflare transport, and CI access remain during this foundation.
-Switch each only after its replacement passes the
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). This addition does not
-claim that traffic has moved or old native Octelium Services have been retired.
+Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
+removes the legacy public DNS helper and restoration workflow. External DNS
+writes still require the guarded operator command after signed proxy, TLS,
+backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
+old native catalog, credentials, and CI transport through their separate
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
+does not claim that traffic has moved or old native Services have been retired.
 
 ## Important Paths
 
@@ -205,12 +216,11 @@ changes during a deliberately scoped rollout. The earlier Azure credential gap
 is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
 advanced the current checkpoint. Mirror the reviewed Fleet/MySQL/Redis/bootstrap
 digests to Harbor with the fixed `image_scope=fleet` dispatch before registering
-the new app. The old public-DNS restoration workflow is retired; move Fleet's
-existing hostname to private mesh addresses using the guarded
+the new app. The old public-DNS restoration workflow is removed; move Fleet's
+existing hostname to private mesh addresses through the guarded
 [DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Fleet has no Funnel
-route. The app's internal
-PostSync bootstrap creates its first administrator, followed by a verified
-database backup; both setup API aliases remain blocked. See the
+route. The app's internal PostSync bootstrap creates its first administrator,
+followed by a verified database backup; both setup API aliases remain blocked. See the
 [Fleet rollout](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not

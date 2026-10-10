@@ -44,7 +44,7 @@ Keep this Connector for remote Talos/LAN access. Application traffic moves to
 private Traefik and CI moves to the operator API proxy in separate cutover
 phases. Cordium retains its restricted native Octelium Kubernetes Service.
 
-The complete reviewed policy and CI federated identities are managed through
+The complete reviewed policy and pre-signed CI auth keys are managed through
 the [Tailscale provider unit](../../../../IaC/modules/tailscale-access/README.md).
 That unit owns operator tag permissions and automatic exit-node/subnet-route
 approvals. Apply reviewed source through its saved-plan workflow; do not edit

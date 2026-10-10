@@ -6,6 +6,7 @@ python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
+python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
@@ -37,6 +38,7 @@ python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
 python3 -I scripts/ci/bazarr-bootstrap-test.py
 python3 -I scripts/ci/nas-media-permissions-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
+python3 -I scripts/ci/harbor-vulnerability-exporter-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py
 python3 -I scripts/ci/fleet-apple-csr-test.py
@@ -1035,7 +1037,7 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-mirror.yml 5cfba2fa6450befbe4ef769dca1634f075daabbbdbff5abe9962ec9ab8ec9b0f
+.github/workflows/harbor-mirror.yml 684394de02b5aebc8fb04a45caf111c03f1fba666c1e944bd94ddaf866e01b78
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
 .github/workflows/nofx-images.yml 1e641356d76b777a04b34a0d32c3bbfb0000ef76ca4ad8e2c1c23163b212921a
@@ -1452,6 +1454,7 @@ echo "::endgroup::"
 echo "::group::Gluetun CPU capture"
 python3 scripts/ci/gluetun-cpu-profile-check.py
 python3 scripts/ci/deluge-daemon-status-test.py
+python3 -I scripts/ci/deluge-catalog-recovery-test.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

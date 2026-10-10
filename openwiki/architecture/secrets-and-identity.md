@@ -8,8 +8,12 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -18,12 +22,18 @@ sources:
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
+  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+    resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-43b94de29b6b12121d020dc6
+    resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
+generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T20:51:47.381Z
+    at: 2026-10-10T22:12:32.276Z
 ---
 
 # Secrets And Identity
@@ -59,10 +69,29 @@ Funnel permission is scoped to `tag:homelab-funnel` rather than every operator p
 The local provider reads a private administrator token file. The temporary
 bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
 S3 state and private encrypted saved plans retain the existing KMS boundary.
-Three federated identities trust GitHub's issuer, repository, workflow and subject
-constraints; they can mint node keys only for their own plan, apply or Cordium tag.
-Their client IDs are non-secret GitHub variables. See the module runbook for the
-exact environment scopes and adoption sequence.
+Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
+and Cordium tags and expire after 90 days. The committed generation drives
+rotation every 60 days; an invalid key is not silently recreated. Tailnet Lock
+requires signatures in addition to enrollment. The unused federated identities
+remain protected until final migration retirement after signed-key acceptance.
+
+The fixed publisher reads sensitive encrypted-state outputs privately, verifies
+the trusted Mac's online homelab profile, signs with file-backed arguments, and
+publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
+repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
+metadata confirmation must be followed by protected CI acceptance. Only after
+all three writes and metadata checks succeed does it delete the corresponding
+three unused client-ID variables. Exact-main and trusted-PR workflow gates still
+matter: these credentials do not encode GitHub OIDC subject claims.
+
+Wrapped keys contain private Tailnet Lock signing authority, broader than their
+normal tag enrollment permissions. The private `0600` cache preserves signatures
+across retries. Auth-key expiry or revocation does not remove that authority;
+after replacement CI acceptance, the explicit `--retire-previous` operation
+removes only cached older-generation authorities while preserving unrelated
+signers. Keep an encrypted private cache backup and use the
+[module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
+recovery. The operator OAuth SSM contract remains separate and unchanged.
 
 The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
 read resources, including Helm release Secrets, and submit Argo Application
@@ -70,6 +99,13 @@ dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
 Apply retains cluster administration for existing bootstrap and RBAC ownership;
 Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
 until authenticated plan/apply and denial checks succeed over the new proxy.
+
+Phase 2a removes the old public DNS writer and restoration workflow while
+retaining Tunnel credentials, existing Octelium identities, and native carrier
+recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
+token to write only its fixed mesh A/AAAA inventory from reviewed current main.
+Credential retirement follows application, callback, CI, and Cordium acceptance;
+changing DNS alone does not authorize deleting those credentials.
 
 ## AWS SSM Pattern
 

@@ -30,7 +30,19 @@ nodes; TLS still validates that hostname. Its router permits only `/v2`,
 Harbor dashboards, management APIs, and every other application host are excluded.
 The ambient AuthorizationPolicy restricts the registry listener to the declared
 node source addresses; local-node traffic also follows Istio's trusted probe
-bypass. Validate containerd pulls from each node before changing DNS.
+bypass. Talos host-to-ClusterIP routing can SNAT the source to its `cni0` bridge.
+The registry policies therefore allow only the four LAN node addresses and their
+verified bridge addresses `10.244.1.1` through `10.244.4.1`, each as a `/32`, on
+port 9443. They do not allow whole Pod CIDRs or change private/Funnel permissions.
+If node placement or Pod CIDRs change, recheck authenticated Talos address/route
+resources before revising this fixed inventory. Validate containerd pulls from
+each node before changing DNS.
+
+During the October 10, 2026 rollout, the host-only mapping on `zimaboard-1`
+(`10.1.0.201`) was applied with `NoReboot` and read back, but its image pull
+failed: ztunnel observed source `10.244.3.1` and rejected port 9443 before Traefik.
+This policy correction remains subject to GitOps convergence and a successful
+uncached pull from every node; the earlier mapping alone is not acceptance.
 
 The private Service is `traefik-private`; its Tailscale hostname is
 `homelab-ingress`. Public callbacks terminate TLS at their Tailscale proxies and
@@ -58,6 +70,29 @@ characters. Without that middleware, `/api%2fv1%2fsetup` bypasses Traefik's path
 matcher before a backend decodes it. Normalized dot segments and duplicate
 slashes remain subject to the route exclusions.
 [Encoded-character filtering](https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/encodedcharacters/).
+
+## Tailnet Lock
+
+This tailnet keeps Tailnet Lock enabled. New Kubernetes proxy nodes can be
+Ready and authorized while remaining invisible to mesh clients until signed.
+From the existing trusted Mac signer, connect its saved Tailscale profile, then
+run the fixed repository helper from clean, signed current main:
+
+```sh
+python3 -I scripts/tailscale-ingress-sign.py
+python3 -I scripts/tailscale-ingress-sign.py --execute
+```
+
+It reads public node and rotation keys directly from the three Ready
+operator-managed proxy pods, checks their parent Kubernetes resource UID,
+tailnet, exact hostname, tag, addresses and local lock identity, then signs
+only those keys. It preserves Tailnet Lock and never adds signing authorities.
+An already-signed run is a no-op. Repeat after a proxy loses its persistent
+Tailscale state; normal pod replacement retains the controller-managed state.
+The helper deliberately accepts no arbitrary node or key argument. Review a
+replaced identity before re-running; do not disable lock to bypass a failure.
+See [Tailnet Lock](https://tailscale.com/docs/features/tailnet-lock) and the
+[CI key rotation runbook](../../../../IaC/modules/tailscale-access/README.md).
 
 ## Mesh and certificates
 

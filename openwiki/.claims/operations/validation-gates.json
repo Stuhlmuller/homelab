@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6ee290b646ba073c37a8286c28124383a6261e035c49ffb3924f3512f13af046",
+  "pageVersion": "sha256:09a59ccc64fa9fac1b4aa38ae3f110c9a7a50b5f356e4372cced5f152b3b3ab3",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:6aacf0935d155e0008ca653a7d42b65b4f7cdd3172f4d318e790bfb8b330bdee"
+          "version": "repo-file-v1:sha256:c35127d0ce1b5eb33e057bf22a07dd219aee751f051a67e9f3a596f905cd468d"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "statement": "Deluge's focused offline health test checks credential, RPC, timeout, malformed-status and disconnect failures with mocked Deluge/Twisted; deployed verification additionally requires bounded helper execution, cached VPN/RPC metrics and original-route acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/deluge/README.md#L294-L318",
+          "resource": "repo://clusters/homelab/apps/deluge/README.md#L295-L319",
           "version": "repo-lines-v1:sha256:96815d421639dc75048e6c4788ba003cd0d53676952a93278b3bd49957721ba7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MDE0NzUyYWY1MThmYWVjYTA2MDYzZmQ5MjIyODczNjMzYzAwMzk0Y2QxZWNkOTA3MTY0YmI2N2M3NTE3MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZTk5NmQ0NmZhMjU1YzA2YWMzNjJmYWYxYWQ5YjdlMDJjYjYyZjZhNTJlYTA5YjA2ZGFhNmNhODNjZmM0ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMmFhZGY1ZGI3YTA1ZTFmY2YwMWRlOTMzNTlmNzgwMDEzMTk4YzBkMTZhZjE5YjVjMGYzYmIyN2Q4NTA0MTMifQ"
         },
         {
@@ -50,15 +50,15 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "The static gate includes Traefik route and tokenless kubeconfig boundary checks, while the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L17",
-          "version": "repo-lines-v1:sha256:aadb39e3ad312d3f94e7d207e9127d90e4e055b4a5da7e4c779602612679a60c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L18",
+          "version": "repo-lines-v1:sha256:f8bbfb2d52c3d6601e9fa25fef879f8a7b2578165a8c3c027b7e590886fb4ac3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
+          "version": "repo-file-v1:sha256:dc793b4994e877b3ff26230c763a07df543f215e83f8f297021fe660572d68c2"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -82,15 +82,15 @@
     },
     {
       "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
-      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
+      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
-          "version": "repo-file-v1:sha256:1a701185a8fd5d25f4975381fe572f742234bc59a447bd06fa4630269a21a865"
+          "version": "repo-file-v1:sha256:c4bd586a1cd8425864b99026735861f3954413cae95b7094087a995f7adde1c4"
         },
         {
           "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
@@ -126,11 +126,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f918de1b7e1b29944af9845a1938e766e7aea12237343c6540a95210c3497fcc"
+          "version": "repo-file-v1:sha256:6856a1784820d2d447b3d54a1af42161f8133da407ab2dfce4394fb40e3d9585"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:f5a4f26e15b2de6631af044b3c578e5146eba4a73bb4e21f5c674ed207d486cc"
+          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
         }
       ]
     },
@@ -155,10 +155,60 @@
           "version": "repo-file-v1:sha256:14ff49ccbdd8c013a129e874d251acc9e0e9ea8ec237c8a94c6140f327ab9208"
         }
       ]
+    },
+    {
+      "id": "claim_5104356bd18d495ea36ca01a2201fb0f",
+      "statement": "The static gate tests fixed ingress-signing ownership and peer identity, null empty CLI peer classes, trusted homelab signer requirements, secret publication ordering, private cache reuse and generation-specific authority retirement; live mesh/CI acceptance remains separate from these offline checks.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
+          "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
+          "version": "repo-file-v1:sha256:ed5bae367436012f2423c2e52ef4b2a2d0d676c40d1d947b2edf2ef80964fedd"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
+          "version": "repo-file-v1:sha256:079ceef243831262e78d6115923c02e92071b3d89e2db2a882c6a531bc0555e0"
+        }
+      ]
+    },
+    {
+      "id": "claim_5dca1fba012d46dd82d821d79a05c521",
+      "statement": "Talos Harbor regression checks full active/persistent streams, additional-document divergence, version1 freshboot without persistent, later active changes without persistent, duplicate or missing active resources and read failures, preserving scope and no-reboot gates.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:d64881033a76b7c1df294226339e58e8766fecb556947f4fe9cde013ae4b863a"
+        }
+      ]
+    },
+    {
+      "id": "claim_b75f79856d6948dcbfeb441ca94403a0",
+      "statement": "Phase2a removes public DNS restoration paths and changes CoreDNS/n8n source; Funnel readiness must precede n8n rollout, while external DNS, Mac migration, TTL expiry, canonical API checks and fresh callback delivery remain ordered acceptance steps before later CI/native retirement.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+        },
+        {
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:bddcda1f8d57dfa0580b8f76bdaa34494e7554e5464d53454b7523342b48098d"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:51:47.381Z"
+    "at": "2026-10-10T22:12:32.276Z"
   }
 }

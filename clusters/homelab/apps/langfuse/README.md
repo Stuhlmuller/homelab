@@ -75,17 +75,21 @@ restarted repeatedly. HTTP readiness of the web service does not prove event
 ingestion while the queue is unavailable.
 
 [`scripts/langfuse-valkey-recovery.py`](../../../../scripts/langfuse-valkey-recovery.py)
-is a copy-only inspection helper, not a production repair command. This
-temporary GitOps stage sets web, worker and Valkey replicas to zero, then
-deploys `langfuse-valkey-inspection` with the existing queue PVC mounted
-read-only. The inspector has no credentials, API token or network access.
-PostgreSQL, ClickHouse and all retained claims are unchanged. Langfuse UI and
-ingestion remain unavailable until a separately reviewed restoration.
+supports separate capture and explicitly approved promotion modes. Capture
+required a read-only inspector; promotion used a writable inspector while web,
+worker and Valkey replicas stayed at zero. The inspector had no credentials,
+API token or network access; its image root was read-only. This revision prunes
+it before restarting writers. PostgreSQL, ClickHouse and all retained claims
+are unchanged. Langfuse UI and ingestion remain unavailable until restoration.
 
-Build the matching checker from the official Valkey 8.0.11 source at commit
+For the completed inspection, build the matching checker from the official
+Valkey 8.0.11 source at commit
 `4bf1df6441949d70b38e748ffe39daaca9f6f89c`, using
-`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. From a clean checkout of
-the exact merged current `main`, after Argo finishes this rollout:
+`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. Capture ran from a clean
+checkout of the exact merged read-only-inspector revision after both PVC and
+volume-mount `readOnly` fields were true and all three writers had stopped.
+The following capture command is historical; without that inspected revision
+and Pod it cannot run against current `main`.
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
@@ -108,12 +112,36 @@ passed to `--fix`. The report measures discarded bytes, not lost event count;
 inspect it privately before requesting approval for a live replacement. Keep a
 separate off-NAS backup: a directory on the same NAS is not disaster recovery.
 
-No live replacement or automatic recovery is enabled. Only after inspecting
-the measured loss and obtaining approval may a separate repository-owned
-replacement path use the candidate. Preserve the archive, original and all
-PVCs throughout rollback. To end inspection, a reviewed follow-up removes the
-inspector and restores global/web/worker and Valkey replicas to one. Merely
-restarting the original corrupt queue does not restore service.
+On October 10, the operator approved the verified prefix repair: only
+`appendonlydir/appendonly.aof.4.incr.aof` changes, from 10,328,329 to
+9,987,809 bytes (340,520 bytes discarded). This does not quantify lost events.
+The following command was run from the clean, exact merged promotion revision
+while the writable inspector was present. It cannot be rerun after this
+inspector-removal revision reaches `main`:
+
+```sh
+python3 -I scripts/langfuse-valkey-recovery.py \
+  --promote-cluster /private/durable-off-nas/existing-valkey-inspection \
+  --expected-sha '<merged-main-sha>' --approved-discarded-bytes 340520
+```
+
+Promotion verifies the archive checksum and contents, unchanged original,
+candidate hashes, one prefix-only truncation and exact approved byte loss.
+It requires all writers stopped, the expected PVC/image and a writable
+inspector without credentials. It uploads a private staging file, rechecks
+Pod identity and original/staged hashes, then atomically renames that one file.
+It never runs `--fix` against live data and never starts writers. A retry
+accepts an exact already-promoted set; drift or unexpected staging files stop
+recovery. Keep writers stopped on failure and inspect retained files before
+retrying. Do not restore the corrupt original and restart it as rollback.
+
+On October 10, the approved candidate was installed and its live hashes
+verified. This first GitOps follow-up removes only the inspector; all three
+writers remain at zero. Wait for Argo to prune the inspector and verify no Pod
+mounts `langfuse-valkey-data` before a separate reviewed revision restores
+global/web/worker and Valkey replicas to one. Preserve the private original and
+all PVCs throughout recovery. Merely restarting the corrupt original does not
+restore service.
 Require stable Valkey and worker readiness, then fresh correlated Langfuse
 generations from each caller. Safety tests cover offline guards and candidate
 isolation. Run the native checker fixture with
