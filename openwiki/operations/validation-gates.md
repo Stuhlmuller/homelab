@@ -306,6 +306,11 @@ AI routing requires both the source gates and per-caller live evidence in
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
 import, UI revocation or cache invalidation in production.
+`scripts/ci/litellm-native-database-test.py` runs pinned native migrations in
+disposable PostgreSQL as a nonsuperuser owner, then tests concurrent atomic
+import, collision rollback, private file-backed config and persistence of key
+blocks/deletions across repeat startup. The attribution gate now invokes its
+previously uncalled streaming fixture with native auth and isolated SDK caches.
 `scripts/ci/langfuse-staging-check.py` preserves current runtime secret/provider
 contracts and verifies that the incomplete activation hook/template is absent.
 It must pass again after overlapping caller changes. The separate activation

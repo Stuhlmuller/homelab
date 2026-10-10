@@ -20,17 +20,40 @@ by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/READM
 
 ## Caller inventory
 
-### UI-visible key migration (database deployed, policy reconciliation pending)
+### UI-visible key migration (native cutover awaiting deployment)
 
 The operator requested database-backed keys visible in LiteLLM's UI. The first
-prerequisite adds dedicated PostgreSQL storage and separate generated admin/app
-SSM credentials, reusing existing NFS and PostgreSQL patterns. File-backed
-authentication stays unchanged until database readiness is proven. The cutover
-must import existing caller values, use native database authentication, preserve
-inference-only/free-model restrictions and Langfuse attribution, and prove UI
+prerequisite added dedicated PostgreSQL storage and separate generated admin/app
+SSM credentials, reusing existing NFS and PostgreSQL patterns. The native cutover
+imports existing caller values in one transaction with a durable import marker,
+so restarts do not undo UI revocations. It uses database authentication, preserves
+inference-only/free-model restrictions and Langfuse attribution. Still prove UI
 listing plus revocation enforcement. Copying rows into the UI while retaining
 file-based authentication is not completion. See the
 [gateway runbook](../../clusters/homelab/apps/litellm/README.md).
+
+October 10 security gate: the pinned LiteLLM 1.80.8 is within the affected
+range (`<1.84.0`) of
+[GHSA-4xpc-pv4p-pm3w](https://github.com/BerriAI/litellm/security/advisories/GHSA-4xpc-pv4p-pm3w).
+A crafted Host header can make native authentication evaluate a different
+route from FastAPI. The prepared ASGI guard now rejects malformed and duplicate
+Host headers before native authentication on all HTTP routes. The regression
+pins the live image's FastAPI 0.120.1 and Starlette 0.49.1, reproduces an
+unauthenticated management-route bypass without admission, and rejects it with
+admission. Local auth and attribution tests pass; the mitigation is not yet
+deployed or verified through the live internal service. The local environment
+previously resolved a newer Starlette with a fixed parser, hiding this exposure.
+Keep the guard until a reviewed image upgrade establishes the upstream fix.
+The separately inspected
+[salt-key advisory](https://github.com/BerriAI/litellm/security/advisories/GHSA-7hp6-4w63-5g45)
+does not include 1.80.8 in its affected ranges.
+
+The synthetic streaming failure fixture also exposed native Router logs
+echoing a synthetic provider credential embedded in upstream error text.
+Langfuse redaction does not protect native stdout. No production credential
+was used in this fixture. Add and test credential redaction for native error
+logs, and inspect client error responses, before claiming end-to-end secret
+redaction.
 
 On October 10, PR #1230's SSM credentials and PostgreSQL were provisioned;
 the app role passed local-socket `SELECT 1` and remained a nonsuperuser.
@@ -42,6 +65,13 @@ failure before starting the database. This correction requires protected merge
 and automatic reconciliation; no live policy bypass or node changes were made.
 Keep native authentication, UI listing and revocation marked unverified until
 the separate key migration and its live acceptance finish.
+
+Pre-cutover inspection found zero public tables in the live `litellm` database
+and confirmed its owner is not a superuser. A private off-NAS custom-format
+`pg_dump` was captured and its archive table of contents verified before any
+native schema migration. This is a readable logical backup, not a completed
+restore drill. The local PostgreSQL fixture passed the pinned native migrations,
+concurrent atomic import, collision rollback and preservation of revocations.
 
 PR #1238 merged as `cecd243f`; Argo observed that revision and its operation
 succeeded. The database AuthorizationPolicy is now present at wave `-1` with

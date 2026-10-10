@@ -368,7 +368,12 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   dedicated SSM paths. The prepared database-key migration adds separate
   `/homelab/litellm/postgres-{admin,app}-password` parameters: admin is database
   only; the client Secret exposes just the nonsuperuser database-owner password.
-  This prerequisite does not yet replace file-backed caller authentication.
+  The native cutover imports existing caller values once in a locked database
+  transaction, with a durable `homelab-native-key-import-v1` marker. Native
+  authentication replaces the file-only bypass; startup does not recreate
+  deleted keys or undo UI blocks. Subsequent rotation must coordinate the
+  database value and the caller's SSM refresh. Live UI/revocation acceptance
+  remains pending until deployed and exercised.
   Existing caller paths remain
   `/homelab/<app>/litellm-token`; OpenClaw uses
   `/homelab/openclaw/litellm-app-token`. The prior OpenClaw `litellm-token`

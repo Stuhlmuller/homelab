@@ -3,6 +3,8 @@
 import asyncio
 from hashlib import sha256
 import importlib
+from importlib.metadata import version
+from pathlib import Path
 import sys
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -14,6 +16,10 @@ from litellm.caching.caching import DualCache
 from litellm.proxy._types import ProxyException, UserAPIKeyAuth
 
 auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "clusters/homelab/apps/litellm"))
+from gateway import TelemetryAdmission
+
+assert version("starlette") == "0.49.1", "Match the deployed Host parser, not a newer implicit fix"
 
 
 async def check():
@@ -48,6 +54,8 @@ async def check():
 
     @app.post("/v1/chat/completions")
     @app.post("/key/generate")
+    @app.get("/models")
+    @app.get("/v1/models")
     async def endpoint(user=Depends(auth.user_api_key_auth)):
         return {"alias": user.key_alias}
 
@@ -71,7 +79,31 @@ async def check():
             state["blocked"] = False
             state["revoked"] = True
             assert (await request()).status_code == 401
-    print("Native LiteLLM auth: stored key, model/route limits, blocked and deleted key checks passed")
+
+        # Exercise the pinned image's vulnerable parser, not newer Starlette's fix.
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                     base_url="http://fixture") as client:
+            response = await client.post("/key/generate", headers={"Host": "fixture/#"}, json={})
+            assert response.status_code == 200, "Fixture no longer reproduces the unguarded native bypass"
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=TelemetryAdmission(app)),
+                                     base_url="http://fixture") as client:
+            for host in ("fixture/#", "fixture/?", "fixture/health/liveliness#", "fixture@elsewhere",
+                         "fixture\\path", "fixture%23", "fixture\t", "fixture\n", ""):
+                for path in ("/key/generate", "/v1/chat/completions"):
+                    response = await client.post(path, headers={"Host": host}, json={})
+                    assert response.status_code == 400, (host, path, response.status_code)
+            response = await client.post("/key/generate", headers=[("Host", "fixture"), ("Host", "fixture/#")], json={})
+            assert response.status_code == 400, "Ambiguous duplicate Host headers must fail closed"
+            state["revoked"] = False
+            for host in ("fixture", "litellm.ai.svc.cluster.local:4000", "10.1.0.199:4000", "[::1]:4000"):
+                response = await client.post("/v1/chat/completions", headers={**headers, "Host": host},
+                                             json={"model": "openrouter/free", "messages": []})
+                assert response.status_code == 200, (host, response.text)
+            for path in ("/models", "/v1/models"):
+                response = await client.get(path, headers=headers)
+                assert response.status_code == 200, (path, response.text)
+                assert (await client.get(path)).status_code == 401
+    print("Native LiteLLM auth: key store, model/route limits, revocation and Host bypass regression passed")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # LiteLLM gateway
 
-LiteLLM is the internal OpenAI-compatible gateway for OpenClaw, Multica, and
-NOFX. It exposes only `openrouter/free`.
+LiteLLM is the internal OpenAI-compatible gateway for OpenClaw, Multica, n8n
+and NOFX. It exposes only `openrouter/free`.
 
 The existing `/homelab/litellm/openai-api-key` SSM SecureString is the
 OpenRouter upstream credential for this gateway. Its legacy name is retained to
@@ -13,21 +13,46 @@ with separate inference-only keys:
 - `/homelab/nofx/litellm-token`
 - `/homelab/n8n/litellm-token`
 
-The guarded ASGI entrypoint authenticates the caller before LiteLLM processes a
-request. It rejects caller-controlled provider credentials, routing, callbacks
+The guarded ASGI entrypoint rejects caller-controlled provider credentials,
+routing and telemetry before native authentication. It rejects callbacks
 and telemetry configuration; injects the upstream credential only in memory;
 and emits trusted caller attribution to Langfuse. Raw request logging is
 disabled. The Langfuse keys are mounted only in LiteLLM.
 
 ## Validation and rollout
 
-### Database-key migration prerequisite
+### Native database-backed service keys
 
-The dedicated `litellm-postgres` StatefulSet prepares persistent storage for
-UI-visible virtual keys. This prerequisite does **not** change authentication
-or import keys yet; the gateway remains on existing file-backed keys until
-database readiness and the separate native-auth cutover are validated.
-Import the existing SSM caller values so clients need no key rotation.
+The dedicated `litellm-postgres` StatefulSet stores UI-visible virtual keys.
+The gateway reads its nonsuperuser database password from a mounted file and
+creates a private temporary native config before CLI initialization. Native
+LiteLLM applies its pinned schema migrations. Before accepting HTTP traffic,
+`native_keys.py` imports the four existing SSM caller values as hashed native
+keys and creates their internal-user records in one locked transaction.
+Clients need no key rotation. Each key permits only model discovery and free
+chat completions, including both versioned and unversioned paths.
+
+The `homelab-native-key-import-v1` user record marks completed import in the
+same transaction. Once present, startup never recreates keys or restores old
+permissions. UI deletion, blocking and rotation remain authoritative across
+restarts. Do not delete this marker. An existing user/key collision aborts
+startup rather than overwriting operator state. No custom-auth hook remains:
+the native database verifier authorizes requests, while ASGI admission blocks
+provider and telemetry overrides before native error logging can parse them.
+Only the trusted pre-call hook inserts the file-mounted upstream credential.
+
+The pinned image is affected by
+[GHSA-4xpc-pv4p-pm3w](https://github.com/BerriAI/litellm/security/advisories/GHSA-4xpc-pv4p-pm3w).
+Admission rejects malformed or duplicate Host headers on every HTTP route
+before native authentication, including direct ClusterIP access. Tests pin the
+deployed FastAPI/Starlette versions: the unguarded management route reproduces
+the bypass and the guarded route rejects it. Keep this mitigation until an
+image upgrade and its regression tests establish the upstream fix; a newer
+implicit test dependency is not evidence that the deployed image is safe.
+
+SSM provides initial caller material, not a continuous key reconciliation
+loop. After import, changing SSM alone does not rotate a database key. Coordinate
+any later UI/API rotation with that caller's SSM value and refresh contract.
 
 PostgreSQL reuses the mirrored PostgreSQL 14 image and a 20 GiB `nfs-default`
 claim, `data-litellm-postgres-0`. Generated SSM credentials are
@@ -60,8 +85,22 @@ the database before restoring database-backed authentication; retain its PVC
 during rollback. Returning to file-backed authentication would ignore UI
 revocations and must not be an automatic recovery action.
 
-Validate with
-`nix develop --command python3 -I scripts/ci/litellm-postgres-check.py`.
+Validate with `scripts/ci/litellm-postgres-check.py`, the pinned SDK
+`litellm-attribution-check.py` and `litellm-native-auth-test.py`, plus
+`litellm-native-database-test.py` under the Nix shell with the generated Prisma
+0.11.0 client. The database test uses isolated local PostgreSQL, the pinned
+native migrations, and a nonsuperuser owner. It proves atomic concurrent import,
+rollback on collision, and preservation of deleted/blocked keys after restart.
+CI runs these without production credentials.
+
+Before rollout, take the private logical backup described above and verify the
+database policies, Ready Secret/PVC and app-role connection. After rollout,
+require four aliases (`openclaw`, `multica`, `nofx`, `n8n`) in the UI and test a
+separate disposable key through UI/API create, authenticate, block and delete.
+Prove cache invalidation and restart preservation, then each native caller's
+inference and correlated Langfuse generation. Local fixtures do not prove these
+live acceptance gates. Never roll back to file-only authentication: that would
+silently ignore database revocations. Preserve the database and import marker.
 
 Run:
 
