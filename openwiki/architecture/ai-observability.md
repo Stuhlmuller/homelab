@@ -20,7 +20,7 @@ by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/READM
 
 ## Caller inventory
 
-### UI-visible key migration (prepared, not deployed)
+### UI-visible key migration (database deployed, policy reconciliation pending)
 
 The operator requested database-backed keys visible in LiteLLM's UI. The first
 prerequisite adds dedicated PostgreSQL storage and separate generated admin/app
@@ -31,6 +31,17 @@ inference-only/free-model restrictions and Langfuse attribution, and prove UI
 listing plus revocation enforcement. Copying rows into the UI while retaining
 file-based authentication is not completion. See the
 [gateway runbook](../../clusters/homelab/apps/litellm/README.md).
+
+On October 10, PR #1230's SSM credentials and PostgreSQL were provisioned;
+the app role passed local-socket `SELECT 1` and remained a nonsuperuser.
+An outage of `zimaboard-1` removed Istio's admission endpoint. Argo exhausted
+its retries and the database AuthorizationPolicy remained absent, even after
+the worker and `istiod` recovered. Both database access policies now precede
+PostgreSQL in sync wave `-1`, so future initial deployments stop at admission
+failure before starting the database. This correction requires protected merge
+and automatic reconciliation; no live policy bypass or node changes were made.
+Keep native authentication, UI listing and revocation marked unverified until
+the separate key migration and its live acceptance finish.
 
 The `litellm-app-keys` revision `v2` refreshes the file-mounted OpenRouter
 credential after protected SSM injection. Merge this refresh only after the
