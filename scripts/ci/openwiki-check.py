@@ -11,6 +11,9 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 LINK = re.compile(r'\]\(\s*(?:<([^>]+)>|((?:\\.|[^\s()]|\([^()]*\))+))(?:\s+["\'][^\n]*?["\'])?\s*\)')
+REFERENCE_LINK = re.compile(r'\[(?:\\.|[^\]\\\r\n])+\]:[ \t]*(?:\r?\n[ \t]*)?(?:<([^<>\r\n]+)>|(\S+))')
+ANGLE_LINK = re.compile(r"<([^<>\r\n]+)>")
+URL = re.compile(r'''(?:[A-Za-z][A-Za-z0-9+.-]*:)?//[^\s<>"'`]+''')
 INLINE_CODE = re.compile(r'(`+)(.*?)\1', re.DOTALL)
 FRONTMATTER = re.compile(r'\A---\n(.*?)\n---(?:\n|$)', re.DOTALL)
 
@@ -143,18 +146,65 @@ def check(root):
     for name in ("openwiki", "homelab-knowledge-base"):
         if not (skills / name / "SKILL.md").is_file():
             errors.append(f".agents/skills/{name}/SKILL.md: missing agent entrypoint")
-    sources = {root / "README.md", root / "AGENTS.md"}
-    for directory in (skills, root / "clusters", root / "docs"):
-        sources.update(directory.rglob("*"))
-    for path in sorted(sources):
-        if path.is_file() and "docs/knowledge-base" in path.read_text(errors="replace"):
-            errors.append(f"{path.relative_to(root)}: stale docs/knowledge-base reference")
+    retired = root / "docs/knowledge-base"
+    sources = subprocess.run(
+        ["git", "-C", str(root), "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+        capture_output=True, check=True, text=True,
+    ).stdout.split("\0")
+    # This checker contains deliberate stale-reference fixtures.
+    for name in sorted(set(sources) - {"", "scripts/ci/openwiki-check.py"}):
+        path = root / name
+        if path.is_symlink() or not path.is_file():
+            continue
+        data = path.read_bytes()
+        if b"\0" in data:
+            continue
+        text = data.decode(errors="replace")
+        targets = []
+        plain = text
+        for pattern in (LINK, REFERENCE_LINK):
+            targets.extend(match[1] or match[2] for match in pattern.finditer(plain))
+            plain = pattern.sub(" ", plain)
+        for pattern in (ANGLE_LINK, URL):
+            targets.extend(pattern.findall(plain))
+            plain = pattern.sub(" ", plain)
+        targets.extend(re.findall(r'''[^\s<>"'`()\[\]{},;=:]+/[^\s<>"'`()\[\]{},;=:]*''', plain))
+        stale = re.search(r"(?<![\w./\\-])docs/knowledge-base(?=$|[^\w.-])", plain) or re.search(
+            r"(?m)^docs/\r?\n(?:[ │]*[├└]── [^\r\n]*\r?\n)*[├└]── knowledge-base/", text,
+        )
+        for target in targets:
+            try:
+                link = urlsplit(target)
+            except ValueError:
+                # Source literals also include URL templates and regular expressions.
+                continue
+            if link.scheme == "repo":
+                candidate = root / unquote(link.netloc + link.path).lstrip("/")
+            elif link.scheme in ("", "http", "https") and link.netloc.lower() in (
+                "github.com", "raw.githubusercontent.com",
+            ):
+                view = r"(?:blob|tree|raw)/" if link.netloc.lower() == "github.com" else ""
+                github = re.fullmatch(r"/Stuhlmuller/homelab/" + view + r"[^/]+/(.+)",
+                                      unquote(link.path), re.IGNORECASE)
+                if not github:
+                    continue
+                candidate = root / github[1]
+            elif link.scheme or link.netloc or link.path.startswith("/"):
+                continue
+            else:
+                candidate = path.parent / unquote(link.path)
+            if candidate.resolve().is_relative_to(retired):
+                stale = True
+                break
+        if stale:
+            errors.append(f"{name}: stale docs/knowledge-base reference")
     return errors
 
 
 def self_test():
     with tempfile.TemporaryDirectory(prefix="openwiki check ") as temporary:
         root = Path(temporary)
+        subprocess.run(["git", "init", "--quiet", str(root)], check=True)
         wiki = root / "openwiki"
         wiki.mkdir()
         header = "---\ntype: reference\ntitle: Test\ndescription: A fixture.\ntags:\n  - test\n---\n"
@@ -202,14 +252,98 @@ def self_test():
         quickstart.write_text(valid)
         (wiki / "topic.md").write_text("# Topic\n## Repeated\n## Repeated\n")
         assert any("missing frontmatter" in error for error in check(root))
+        (wiki / "topic.md").write_text(header + "# Topic\n## Repeated\n## Repeated\n")
+        subprocess.run(["git", "-C", str(root), "add", "README.md"], check=True)
         for name in (".agents/skills/openwiki/SKILL.md", "clusters/app/values.yaml",
-                     "docs/runbook.md", "README.md", "AGENTS.md"):
+                     "docs/runbook.md", "README.md", "AGENTS.md", "specs/feature/spec.md",
+                     "IaC/stack.hcl", "scripts/operator.sh", ".github/workflows/check.yml"):
             source = root / name
             source.parent.mkdir(parents=True, exist_ok=True)
             saved = source.read_text() if source.exists() else ""
             source.write_text("docs/knowledge-base/00-home.md")
             assert f"{name}: stale docs/knowledge-base reference" in check(root)
             source.write_text(saved)
+        plan = root / "specs/feature/plan.md"
+        for tree in ("docs/\n\u2514\u2500\u2500 knowledge-base/\n",
+                     "docs/\n\u251c\u2500\u2500 one.md\n\u251c\u2500\u2500 two.md\n\u2514\u2500\u2500 knowledge-base/\n"):
+            plan.write_text(tree)
+            assert "specs/feature/plan.md: stale docs/knowledge-base reference" in check(root)
+        plan.write_text(".agents/skills/\n\u2514\u2500\u2500 homelab-knowledge-base/\nopenwiki/\n")
+        runbook = root / "docs/runbook.md"
+        for target in ("knowledge-base/00-home.md", "./knowledge-base/00-home.md",
+                       "%6bnowledge-base/00-home.md"):
+            runbook.write_text(f"[old page]({target})\n")
+            assert "docs/runbook.md: stale docs/knowledge-base reference" in check(root)
+        for text in ("[legacy]: knowledge-base/00-home.md",
+                     '[legacy]: <./knowledge-base/00-home.md> "Old page"',
+                     "[legacy]:\n    %6bnowledge-base/00-home.md 'Old page'",
+                     "[old page](<knowledge-base/00-home.md>)", "<knowledge-base/00-home.md>"):
+            runbook.write_text(text)
+            assert "docs/runbook.md: stale docs/knowledge-base reference" in check(root), text
+        for text in ("[vendor](https://vendor.example/knowledge-base/article)",
+                     "[other](../other/knowledge-base/article.md)", "other/knowledge-base/article.md",
+                     '[vendor]: <https://vendor.example/knowledge-base/article> "Vendor"',
+                     "[other]:\n    ../other/knowledge-base/article.md",
+                     "<https://vendor.example/knowledge-base/article>", "<../other/knowledge-base/article.md>",
+                     "[current skill](../.agents/skills/homelab-knowledge-base/SKILL.md)"):
+            runbook.write_text(text)
+            assert not check(root), check(root)
+        for target, rejected in (
+            ("https://vendor.example/docs/knowledge-base/article", False),
+            ("https://vendor.example/?path=docs/knowledge-base/article", False),
+            ("//vendor.example/docs/knowledge-base/article", False),
+            ("https://github.com/other/repo/blob/main/docs/knowledge-base/article", False),
+            ("https://github.com/Stuhlmuller/homelab/blob/main/other/docs/knowledge-base/article", False),
+            ("https://raw.githubusercontent.com/other/repo/main/docs/knowledge-base/article", False),
+            ("https://raw.githubusercontent.com/Stuhlmuller/homelab/main/other/docs/knowledge-base/article", False),
+            ("other/docs/knowledge-base/article.md", False),
+            ("docs/knowledge-base-backup/article.md", False),
+            ("repo://other/docs/knowledge-base/article.md", False),
+            ("https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/article.md", True),
+            ("//github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/article.md", True),
+            ("https://raw.githubusercontent.com/Stuhlmuller/homelab/main/docs/knowledge-base/article.md", True),
+            ("repo://docs/knowledge-base/article.md", True),
+        ):
+            for template in ("{}", "[reference]({})", "[reference]: {}", "<{}>"):
+                runbook.write_text(template.format(target))
+                errors = check(root)
+                expected = ["docs/runbook.md: stale docs/knowledge-base reference"] if rejected else []
+                assert errors == expected, (target, template, errors)
+        for text in ('path = "docs/knowledge-base/article.md"', "# See docs/knowledge-base/article.md"):
+            runbook.write_text(text)
+            assert "docs/runbook.md: stale docs/knowledge-base reference" in check(root), text
+        runbook.write_text('[nested docs](docs/knowledge-base/article.md)\npattern = "^https://[^/]+"\n')
+        assert not check(root), check(root)
+        for name, target, rejected in (
+            ("scripts/foo.sh", "../docs/knowledge-base/00-home.md", True),
+            ("scripts/nested/foo.sh", "../../docs/knowledge-base/00-home.md", True),
+            ("scripts/foo.sh", "../other/../docs/knowledge-base/00-home.md", True),
+            ("scripts/foo.sh", "../other/docs/knowledge-base/00-home.md", False),
+            ("scripts/foo.sh", "./docs/knowledge-base/00-home.md", False),
+            ("operator.sh", "./docs/knowledge-base/00-home.md", True),
+            ("operator.sh", "other/../docs/knowledge-base/00-home.md", True),
+            ("docs/consumer.txt", "knowledge-base/00-home.md", True),
+        ):
+            source = root / name
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(f'cat "{target}"\n')
+            errors = check(root)
+            expected = [f"{name}: stale docs/knowledge-base reference"] if rejected else []
+            assert errors == expected, (name, target, errors)
+            source.write_text("")
+        for tree in ("other/\n\u2514\u2500\u2500 knowledge-base/\n",
+                     "docs/\n\u2514\u2500\u2500 runbook.md\nother/\n\u2514\u2500\u2500 knowledge-base/\n",
+                     "docs/\n\u2514\u2500\u2500 other/\n    \u2514\u2500\u2500 knowledge-base/\n"):
+            plan.write_text(tree)
+            assert not check(root), check(root)
+        (root / ".gitignore").write_text("ignored-secret\n")
+        (root / "ignored-secret").write_text("docs/knowledge-base/private.md")
+        (root / "secret-link").symlink_to(root / "ignored-secret")
+        (root / "binary").write_bytes(b"\0docs/knowledge-base")
+        guard = root / "scripts/ci/openwiki-check.py"
+        guard.parent.mkdir(parents=True)
+        guard.write_text("docs/knowledge-base")
+        assert not check(root), check(root)
 
 
 if __name__ == "__main__":

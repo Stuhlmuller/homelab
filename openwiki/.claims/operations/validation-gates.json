@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:823bfed8e5205e308de0a0262dfac2127189775d813f44ddc07e35493939de40",
+  "pageVersion": "sha256:65bf0e74f37e1c765e9bebbc51dd1a1fc2454486a33fc64be94617ae31fd9f85",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:65110fa78c3f44df28f7284b776c5092c943ce544bc17c5ed1baf21ac7f60387"
+          "version": "repo-file-v1:sha256:9cf20c2a56be7cb23edef5c120e3b7c062ad4d0c28b50e5fea643a842c6a9446"
         }
       ]
     },
@@ -39,7 +39,7 @@
       "statement": "Deluge's focused offline health test checks credential, RPC, timeout, malformed-status and disconnect failures with mocked Deluge/Twisted; deployed verification additionally requires bounded helper execution, cached VPN/RPC metrics and original-route acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/deluge/README.md#L294-L318",
+          "resource": "repo://clusters/homelab/apps/deluge/README.md#L295-L319",
           "version": "repo-lines-v1:sha256:96815d421639dc75048e6c4788ba003cd0d53676952a93278b3bd49957721ba7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MDE0NzUyYWY1MThmYWVjYTA2MDYzZmQ5MjIyODczNjMzYzAwMzk0Y2QxZWNkOTA3MTY0YmI2N2M3NTE3MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZTk5NmQ0NmZhMjU1YzA2YWMzNjJmYWYxYWQ5YjdlMDJjYjYyZjZhNTJlYTA5YjA2ZGFhNmNhODNjZmM0ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMmFhZGY1ZGI3YTA1ZTFmY2YwMWRlOTMzNTlmNzgwMDEzMTk4YzBkMTZhZjE5YjVjMGYzYmIyN2Q4NTA0MTMifQ"
         },
         {
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f918de1b7e1b29944af9845a1938e766e7aea12237343c6540a95210c3497fcc"
+          "version": "repo-file-v1:sha256:6856a1784820d2d447b3d54a1af42161f8133da407ab2dfce4394fb40e3d9585"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -159,6 +159,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:42:52.728Z"
+    "at": "2026-10-10T21:46:55.335Z"
   }
 }

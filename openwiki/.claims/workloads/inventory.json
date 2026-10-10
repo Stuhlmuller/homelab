@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0b850917c00ee0c0068b03844c9f65299995bc436518e47abd2691a407353435",
+  "pageVersion": "sha256:16527432848fe51f230dc97183bbfd5171746607873a5125b02bf96475079fa0",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/values.yaml",
-          "version": "repo-file-v1:sha256:32366a719bb6aa7eb2bc0d85f1c2db164654f8e1538ee389de16ee1e436eb74c"
+          "version": "repo-file-v1:sha256:378173f5cbd803316856898c4644517703355501f0d46bfd648ddcdde76a2751"
         }
       ]
     },
@@ -73,6 +73,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:20:28.071Z"
+    "at": "2026-10-10T21:33:00.766Z"
   }
 }

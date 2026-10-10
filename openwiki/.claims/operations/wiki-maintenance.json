@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:46e6005f16f06a128a6acfa104a6762645519746f9b5fe37acbdf6ef37d15245",
+  "pageVersion": "sha256:9f7c0b347ac8f09c27dcd90c8e0806ec3dd51f2318df464955e5ebc5f4d84246",
   "claims": [
     {
       "id": "claim_1bb0059e50364c2aa2e502983cadaca8",
-      "statement": "The repository's wiki validator checks local links, anchors, frontmatter, navigation and skill entrypoints, and rejects retired knowledge-base paths in skills, workload sources, docs and root README/AGENTS guidance.",
+      "statement": "The repository's wiki validator checks local links, anchors, frontmatter, navigation and skill entrypoints, and rejects retired knowledge-base paths across Git-visible text files. It resolves inline, reference-style and angle-bracket Markdown targets and bare relative source paths against their containing file, and checks repository GitHub and repo URLs, standalone root paths and directory trees. External URLs and unrelated paths remain valid; symlinks, NUL-containing binaries and the checker's deliberate fixtures are excluded.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/openwiki-check.py#L89-L153",
-          "version": "repo-lines-v1:sha256:f62c90de06724e17e2b8fea95aa89051a4a9372566bea1eb16327299b036a6f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmNjE3Y2ZjMjEwMTc1M2VhM2ZkZDg5NTliNjUwNmY3MTdiYmMzNmM0ZGEwODBjY2YwOTYyYzNkMWI4ODQ3MDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3MjIzMTA2ZmQ4NzQyYjcwZWEyMzNmOWRjMzU5ZjRiMDJiYmIwNjliNzI4M2VlZjc2MjQ5OTUxNmJkN2I5YzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0NDQwYzg0MTMzNmZlOWM1MjZiMjZkZWJiMjhmZjIxMTFmMWNiZTBkODcyMzU0N2RhNzI2YzhiYjRiYmQwNWIifQ"
+          "resource": "repo://scripts/ci/openwiki-check.py#L92-L201",
+          "version": "repo-lines-v1:sha256:7478853655e901d4e9a65b1ee563f4f9104c8557882d16f552c65678cc2f10e5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI4ZjYxN2NmYzIxMDE3NTNlYTNmZGQ4OTU5YjY1MDZmNzE3YmJjMzZjNGRhMDgwY2NmMDk2MmMzZDFiODg0NzA1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI3NmFmN2MyYWMyMjc5NjBmY2Q1YzNjYzg4MGQ1YjA4Y2ZiMzk3MTEyZGE4MTBiZjc1YzNmNGViYWEzYTM3ZTVkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkNzIyMzEwNmZkODc0MmI3MGVhMjMzZjlkYzM1OWY0YjAyYmJiMDY5YjcyODNlZWY3NjI0OTk1MTZiZDdiOWM4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMzM0YzczNWVlNzVmYjFiMGRhOGM3YTJmN2ViYmMwOTcwNDkzY2NkNDBhZjM4MDYyZGRkM2FhYjFhYmM4YWU2In0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:20:28.071Z"
+    "at": "2026-10-10T22:24:18.297Z"
   }
 }

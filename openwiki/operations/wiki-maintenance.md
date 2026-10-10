@@ -3,13 +3,13 @@ type: workflow
 title: "OpenWiki Maintenance"
 description: "Repository-scoped OpenWiki installation, focused retrieval, safe updates, validation, and rollback."
 tags: [openwiki, agents, documentation]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T21:20:28.071Z
 sources:
   - id: openwiki-source-22e2bb4f70068fd836cc9813
     resource: repo://scripts/ci/openwiki-check.py
-generated: { by: "codex", at: "2026-10-10T21:20:28.071Z" }
+generated: { by: "codex", at: "2026-10-10T22:24:18.297Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T22:24:18.297Z
 ---
 
 # OpenWiki Maintenance
@@ -87,9 +87,15 @@ git diff --check
 The static CI gate runs the wiki check. It uses the existing Nix `yq` parser
 to reject malformed YAML and invalid metadata types, then checks local links,
 heading anchors, navigation reachability, and active skill routes. It also rejects
-old knowledge-base paths in skills, workload sources, runbooks, and root agent
-guidance. Run focused
-Markdown lint too. The explicit secret scanner covers `openwiki/` and `.codex/`
+old knowledge-base paths in Git-tracked and untracked, non-ignored text files,
+including inline, reference-style, and angle-bracket Markdown links and
+directory-tree listings in specs, IaC, scripts, and workflows.
+Relative links and bare source paths resolve against their containing file.
+This repository's GitHub and `repo://` URLs, root paths, and directory trees
+are also checked; external URLs and unrelated paths remain valid.
+Symlinks, binary files, and the checker's intentional negative fixtures are
+excluded. Run focused Markdown lint
+too. The explicit secret scanner covers `openwiki/` and `.codex/`
 alongside the existing source paths. The source probe test reads the migrated validation page:
 
 ```sh
