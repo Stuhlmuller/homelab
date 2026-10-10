@@ -16,6 +16,14 @@ cmp "$rendered_dir/first.yaml" "$rendered_dir/second.yaml"
   # becoming a periodically recreated Argo application resource.
   cat clusters/homelab/apps/harbor/signing-job.yaml
 } >"$rendered_dir/resources.yaml"
+kubectl kustomize clusters/homelab/apps/harbor-bootstrap >"$rendered_dir/recovery.yaml"
+recovery_images="$(yq ea -N '.. | select(tag == "!!map" and has("image")) | .image | select(tag == "!!str")' "$rendered_dir/recovery.yaml")"
+[[ -n "$recovery_images" ]]
+if rg -q '^harbor\.stinkyboi\.com/' <<<"$recovery_images" || \
+   rg -qv '@sha256:[0-9a-f]{64}$' <<<"$recovery_images"; then
+  echo "Harbor recovery workloads must use pinned upstream images" >&2
+  exit 1
+fi
 conftest test --policy policy "$rendered_dir/first.yaml" "$rendered_dir/resources.yaml"
 yq ea -o=json -I=0 '[.]' "$rendered_dir/first.yaml" "$rendered_dir/resources.yaml" |
   python3 -I scripts/ci/harbor-render-check.py

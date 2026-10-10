@@ -58,3 +58,8 @@ They change only repositories and retain cataloged digests. They contain no
 credentials. Restore all normal source lists after verified publication and
 private transport acceptance. The cold install/restore sequence remains
 unproven; render acceptance cannot establish the documented single-apply path.
+
+The Kustomize recovery overlay handles both the retained Python repository and
+the staged Chainguard Python replacement. CI rejects any remaining Harbor image
+in recovery workloads, so a later self-hosted image change must update this
+profile before rollout. The full catalog coverage gate checks the preserved pins.
