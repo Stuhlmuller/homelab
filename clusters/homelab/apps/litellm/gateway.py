@@ -15,7 +15,7 @@ from litellm.types.utils import StandardCallbackDynamicParams
 from starlette.requests import ClientDisconnect, Request
 from starlette.responses import JSONResponse
 from starlette.exceptions import HTTPException
-from native_keys import database_config, import_service_keys
+from native_keys import database_config, import_provider_credential, import_service_keys
 
 LOGGING_OVERRIDES = set(StandardCallbackDynamicParams.__annotations__) | {
     "success_callback", "failure_callback", "callbacks", "no-log",
@@ -25,6 +25,7 @@ PROVIDER_OVERRIDES = {
     "fallbacks", "context_window_fallbacks", "content_policy_fallbacks", "model_list",
     "extra_body", "models", "route", "deployment_id", "azure", "user_config",
     "mock_response", "mock_tool_calls", "mock_timeout", "provider_specific_header", "ssl_verify",
+    "litellm_credential_name",
 }
 MAX_BODY_BYTES = 32 * 1024 * 1024  # Bounded text/image JSON admission, including chunked uploads.
 HOST_AUTHORITY = re.compile(rb"(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::[0-9]{1,5})?")
@@ -154,6 +155,8 @@ def main(args=None):
         async def database_lifespan(application):
             async with native_lifespan(application):
                 await import_service_keys(proxy_server.prisma_client)
+                await import_provider_credential(proxy_server.prisma_client)
+                await proxy_server.proxy_config.get_credentials(proxy_server.prisma_client)
                 yield
 
         app.router.lifespan_context = database_lifespan

@@ -79,7 +79,7 @@ def rotate():
     version = result.get('Version')
     if type(version) is not int or version < 1:
         raise RuntimeError('Uncertain write result')
-    print(f'OpenRouter credential validated; SSM version {version} stored. Advance the GitOps ExternalSecret revision next.')
+    print(f'OpenRouter credential validated; bootstrap SSM version {version} stored. Advance the GitOps ExternalSecret revision; an already-imported UI credential is unchanged.')
 
 
 def main():
