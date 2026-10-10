@@ -5,6 +5,12 @@ python3 -I scripts/ci/openwiki-check.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
+python3 -I scripts/ci/tailscale-ci-configure-test.py
+python3 -I scripts/ci/tailscale-access-check-test.py
+python3 -I scripts/ci/tailscale-private-dns-test.py
+python3 -I scripts/ci/multica-desktop-connect-test.py
+python3 -I scripts/ci/policy-bot-webhook-test.py
+python3 -I scripts/ci/n8n-github-webhooks-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"

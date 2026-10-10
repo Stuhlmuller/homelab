@@ -1,0 +1,39 @@
+{
+  "ingress_hostname": "homelab-ingress.tail67beb.ts.net",
+  "hostnames": [
+    "stinkyboi.com",
+    "affine.stinkyboi.com",
+    "argocd.stinkyboi.com",
+    "bazarr.stinkyboi.com",
+    "compass.stinkyboi.com",
+    "deluge.stinkyboi.com",
+    "dispatcharr.stinkyboi.com",
+    "fleet.stinkyboi.com",
+    "grafana.stinkyboi.com",
+    "harbor.stinkyboi.com",
+    "kiali.stinkyboi.com",
+    "langfuse.stinkyboi.com",
+    "litellm.stinkyboi.com",
+    "multica.stinkyboi.com",
+    "n8n.stinkyboi.com",
+    "nofx.stinkyboi.com",
+    "octobot.stinkyboi.com",
+    "openclaw.stinkyboi.com",
+    "policy-bot.stinkyboi.com",
+    "prowlarr.stinkyboi.com",
+    "radarr.stinkyboi.com",
+    "sonarr.stinkyboi.com",
+    "cordium.stinkyboi.com",
+    "*.cordium.stinkyboi.com",
+    "console.stinkyboi.com",
+    "octelium.stinkyboi.com",
+    "octelium-api.stinkyboi.com",
+    "portal.stinkyboi.com"
+  ],
+  "retired_hostnames": [
+    "octelium-transport.stinkyboi.com",
+    "kubernetes-api-ci.stinkyboi.com",
+    "n8n-webhook.stinkyboi.com",
+    "policy-bot-hook.stinkyboi.com"
+  ]
+}

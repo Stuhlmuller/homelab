@@ -5,7 +5,7 @@ description: "Terragrunt registration, Argo CD runtime ownership, operator excep
 tags: ["architecture", "argocd", "terragrunt"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T18:57:48.826Z
+    at: 2026-10-10T19:43:31.576Z
 sources:
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
@@ -13,7 +13,7 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
 ---
 
 # GitOps Flow
@@ -112,7 +112,7 @@ Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
 Terragrunt Apply on exact current `main` and check Argo's observed revision.
 Application registration order alone does not establish certificate, proxy,
-Funnel, or application readiness. Fleet stays on private mesh routes.
+Funnel, or application readiness. Fleet has only a private mesh target route.
 
 Existing DNS, Cloudflare transport, and CI access remain during this foundation.
 Switch each only after its replacement passes the

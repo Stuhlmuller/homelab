@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50ce2f061cf88d33417751445f6ebec83b01016d9446df782a0c950fca8a3155",
+  "pageVersion": "sha256:5e2a6b44af7541a5d1773709ae8a2f194f49f7612972ba09a24f478f06f5b80e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:4b4551c92cf3215575a29c50f1566fa921e4e49de819b7f72f4c73376a0673d6"
+          "version": "repo-file-v1:sha256:4bd7aaad9682606aa251c4884c47bace46947f2b8338b76dae03b386cd4d766c"
         }
       ]
     },
@@ -53,8 +53,8 @@
       "statement": "The static gate includes Traefik route and tokenless kubeconfig boundary checks, while the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L10",
-          "version": "repo-lines-v1:sha256:269ee1e9fc99a811bf38a5cda4db9953b4cfb98ecbffe70b58fb86ffa38e929d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
+          "version": "repo-lines-v1:sha256:b20deeecd0021efac15f5931065a7dd6f3da28a86340737c173d07db01fbc41c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -79,10 +79,64 @@
           "version": "repo-file-v1:sha256:5ab9ee2b8f5500fef4376258bea3883bdf998ad1481f84865039cb0ad5f87c79"
         }
       ]
+    },
+    {
+      "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
+      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:7f9cfada78d3672012ca5fff2a4d352187508ca7863eeb30d8401d064b07d4d2"
+        },
+        {
+          "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
+          "version": "repo-file-v1:sha256:2a4ab853403aa440ecfaaac1fd50620a4b94e7864a09394a88be7d3d5587980e"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
+          "version": "repo-file-v1:sha256:20babf4f92d0236178ccef926a946c19c34e8cea1183ce9df1a5c7100e1d0db7"
+        },
+        {
+          "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
+          "version": "repo-file-v1:sha256:2d81216ad766d1b5122f5f3e8dd8d73dbec998737d759c90b78657d8ace2f5d1"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:6c7c0e62171fd646b98e86bd206fbb603360566a80e59c00210645c73afa0206"
+        }
+      ]
+    },
+    {
+      "id": "claim_2a90abe5d9844863b42e97da364565c4",
+      "statement": "The CI access checker verifies the scoped impersonated tag and allows an empty dry-run patch but requires the same real empty patch to be denied by the plan admission policy; apply mode checks administration permission without mutation.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check-test.py",
+          "version": "repo-file-v1:sha256:e3c6ddf149737edb47473d8b5b8fd561e55d70b4478718b7d5af48e2de1a7cb5"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check.py",
+          "version": "repo-file-v1:sha256:fefd87182bb9ec85396ce701e7fddfa674e0531a8ee3290f75c615254614533c"
+        }
+      ]
+    },
+    {
+      "id": "claim_091ce963d4324833853a0c259f070cb2",
+      "statement": "Traefik scoped image publication retains digest, tag alias and complete anonymous-pull verification, while Talos regression tests reject scoped, untitled and mismatched-revision receipts as full-catalog evidence.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:f918de1b7e1b29944af9845a1938e766e7aea12237343c6540a95210c3497fcc"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:f5a4f26e15b2de6631af044b3c578e5146eba4a73bb4e21f5c674ed207d486cc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:05:45.723Z"
+    "at": "2026-10-10T19:46:54.910Z"
   }
 }

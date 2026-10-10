@@ -62,6 +62,18 @@ The output `github_identity_client_ids` contains non-secret identity selectors:
 | `apply` | `TAILSCALE_CLIENT_ID` | `homelab-production` environment |
 | `cordium` | `TAILSCALE_CORDIUM_CLIENT_ID` | Repository |
 
+Publish those fixed bindings through the repository-owned operator helper after
+applying the saved provider plan. The default previews; `--execute` requires a
+clean checkout at signed, verified current `main`, checks the existing GitHub
+owner-review/environment protection rules, and verifies all three written values.
+It accepts neither client IDs nor GitHub targets as arguments and creates no
+OAuth secret. Re-running reconciles the same three variables.
+
+```sh
+nix develop --command python3 -I scripts/tailscale-ci-configure.py
+nix develop --command python3 -I scripts/tailscale-ci-configure.py --execute
+```
+
 Plan/apply identity subjects require their protected GitHub environments.
 Production additionally requires a workflow from `refs/heads/main`. Cordium
 keeps branch subjects and its existing wrong-ref/wrong-workflow Octelium denial
@@ -79,7 +91,15 @@ cluster administration for the existing Argo CD bootstrap and cluster RBAC.
 Deploy and verify the API proxy, admission policy, and RBAC before switching CI.
 After identity publication, require an authenticated protected plan and apply
 through `homelab-tailscale-operator.tail67beb.ts.net`, a rejected real write by
-the plan group, and the existing Cordium denial/cleanup checks. Only then retire
+the plan group, and the existing Cordium denial/cleanup checks. The CI cutover
+wires `scripts/ci/tailscale-access-check.py plan` into the plan workflow. It
+verifies the proxy's actual
+impersonated tag, accepts a server-side dry-run empty JSON Patch of the existing
+Tailscale Application, then requires the identical real request to fail with the
+specific admission-policy denial. The empty patch cannot change the Application
+even if that guard is missing. The same cutover wires `apply` mode into the
+existing diagnostics workflow to verify the apply tag and its cluster permission
+without real writes. Only then retire
 the old clientless Kubernetes endpoint. Roll back through reviewed source while
 preserving the old transport until these checks pass.
 
@@ -90,4 +110,6 @@ tofu -chdir=IaC/modules/tailscale-access init -backend=false
 tofu -chdir=IaC/modules/tailscale-access validate
 tofu -chdir=IaC/modules/tailscale-access test
 nix develop --command python3 -I scripts/ci/install-kubeconfig-test.py
+python3 -I scripts/ci/tailscale-ci-configure-test.py
+python3 -I scripts/ci/tailscale-access-check-test.py
 ```

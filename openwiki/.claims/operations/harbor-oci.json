@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5a4679dabce8056d3905f0dff708c15177b575249f30c1f04b73aba9db8d4228",
+  "pageVersion": "sha256:fdd8a125e21e6d287ee8b8bc59b249c51f73c57b57fbe51ac4b4df738a99ba3a",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,17 +12,49 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:0bd318b5ce1b6698180dd7febb33e8ff9941bf114dd0eb7fe6422f57d77088c4"
+          "version": "repo-file-v1:sha256:603468eb7e19fb49c8fc3c0df83a64bbcaec8854885b83ead65dffb052a07bdc"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:0a2ce7192d9e36708f873331440fd4fc9239ca6340bf3f74e8c74c2d5c8cd284"
+          "version": "repo-file-v1:sha256:41e02d2c0b750ae4feaf0dae27f23d8b2779e0427d0527d837ef991495f918f4"
+        }
+      ]
+    },
+    {
+      "id": "claim_6e195784924949f099a02a853c474ea4",
+      "statement": "Harbor publication supports a fixed Traefik-only subset of the reviewed full image catalog and preserves all-platform digest copying, tag alias verification and fresh complete anonymous pulls without caller-selected images or destinations.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-mirror.yml",
+          "version": "repo-file-v1:sha256:424a34d497732a8ef948884ef677a4fce6a7bb059acafcd13a0a29c86ccf8eae"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:f06a816cbb6e034c1e396ae104f15124ee989af6286bacfcff68dd4497e7395f"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-traefik-images.json",
+          "version": "repo-file-v1:sha256:a9486da7fd94d173ca7fa9888e507236c24b43f201967618edd0db2271dbd5f1"
+        }
+      ]
+    },
+    {
+      "id": "claim_e99e15b69847424091edfdfb4e5ea068",
+      "statement": "Full-catalog Talos mirror verification requires a successful workflow run titled Mirror all @ followed by that run's full head SHA and an unchanged publication bundle, rejecting scoped, untitled and mismatched-revision runs.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:f5a4f26e15b2de6631af044b3c578e5146eba4a73bb4e21f5c674ed207d486cc"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:41e02d2c0b750ae4feaf0dae27f23d8b2779e0427d0527d837ef991495f918f4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T18:57:48.826Z"
+    "at": "2026-10-10T19:43:31.576Z"
   }
 }

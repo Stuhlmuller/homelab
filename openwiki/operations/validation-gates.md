@@ -8,6 +8,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -18,18 +20,34 @@ sources:
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-0e4e3673c8be0ce1ef65beca
+    resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-9572753e0a38126e57fa7042
+    resource: repo://scripts/ci/multica-desktop-connect-test.py
+  - id: openwiki-source-3b37d159fd7aec286d251f6b
+    resource: repo://scripts/ci/n8n-github-webhooks-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-54912e76b9bc176f1d28ff87
+    resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
+  - id: openwiki-source-2ec3653fcc5fbc3a0f24c7a1
+    resource: repo://scripts/ci/tailscale-access-check-test.py
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
+  - id: openwiki-source-511191e55632b55651ad4318
+    resource: repo://scripts/ci/tailscale-private-dns-test.py
+  - id: openwiki-source-b5db2a15b5e0f805364647e7
+    resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
-generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:05:45.723Z
+    at: 2026-10-10T19:46:54.910Z
 ---
 
 # Validation Gates
@@ -152,6 +170,20 @@ manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/modules/tailscale-access/README.md).
+
+The additive cutover utilities have focused static tests for fixed DNS ownership,
+Mac credential/profile preservation and carrier rollback, non-executing webhook
+preflights, and fresh delivery receipts. DNS API readback is separate from normal
+OS resolution: migrate the owned Mac hosts override, wait the previous DNS TTL,
+then run `tailscale-private-dns-check.py --verify-dns`. The
+[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) retains old access
+until replacement acceptance.
+
+The CI boundary helper is
+`scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated
+tag, permits an empty server-side dry-run patch and requires the identical real
+empty patch to receive the specific admission denial. Its `apply` mode verifies
+the protected tag's administration permission without changing resources.
 
 ## Entra owner-mail and Octelium identity checks
 
@@ -1273,6 +1305,12 @@ verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+The fixed Traefik publication scope retains all-platform digest, tag alias and
+fresh complete anonymous-pull checks. The Talos regression rejects scoped,
+untitled and mismatched-revision run receipts as full-catalog evidence before
+provenance or registry access; cluster-wide mirror verification requires
+`Mirror all @ <run head SHA>` and the unchanged publication bundle.
 
 The full Harbor chart is rendered twice to reject randomly generated state,
 then combined with the owned manifests to validate prerequisite references and

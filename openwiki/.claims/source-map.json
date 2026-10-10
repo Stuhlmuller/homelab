@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c10a6492c724954c1ebf9b0afaed20243e29781d9301cc0f9bbc89e3a9366ca3",
+  "pageVersion": "sha256:59ee0846579b70cd83aed280fcf37b7f3877f7a3b04c97ddb2c70f983f0df764",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:81ba3c876250b2c4087daa37f08b9b5394a928f9c8636dd43c249466f012026e"
+          "version": "repo-file-v1:sha256:b31d6bb55e271012d2171ac5446890a7ddb36717fb11a0c3fe51036b4a8d4275"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -51,6 +51,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T18:57:48.826Z"
+    "at": "2026-10-10T19:43:31.576Z"
   }
 }

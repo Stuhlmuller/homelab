@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:be09bb8ee0a0d44b1c17057f853924b88763691004c6538afa6a0a2a390f2e10",
+  "pageVersion": "sha256:d86f7e254b53acc5a7496900386b4be933e2aa78f34c2153c4229e7c5305da51",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -33,10 +33,46 @@
           "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
         }
       ]
+    },
+    {
+      "id": "claim_c259cf35c0ff478ea1a083b2450394ee",
+      "statement": "The additive DNS cutover writes only fixed DNS-only A/AAAA mesh records from reviewed main and preserves legacy CI, callback and carrier names; Mac credential-preserving migration and the prior TTL precede explicit normal-DNS acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:7f9cfada78d3672012ca5fff2a4d352187508ca7863eeb30d8401d064b07d4d2"
+        },
+        {
+          "resource": "repo://scripts/multica-desktop-connect.py",
+          "version": "repo-file-v1:sha256:06f9b9df849997b21fba0c843caae044dbe580743a648982346576cb95154c1c"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh",
+          "version": "repo-file-v1:sha256:df06298c6267d82fa16874faee14c98e74927a885b11301a6a926b8280cb0c1a"
+        }
+      ]
+    },
+    {
+      "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
+      "statement": "Fixed callback helpers preserve existing webhook credentials, use non-executing preflights and require both newer delivery IDs and timestamps from saved cutover receipts; the CI helper publishes only three provider-output identity variables behind current-main and environment-protection guards.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/n8n-github-webhooks.py",
+          "version": "repo-file-v1:sha256:306ff8ce24d966f3c233427b37484a2ea6b9989fa1e644328c8976fb1dd6c22f"
+        },
+        {
+          "resource": "repo://scripts/policy-bot-webhook.py",
+          "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:bf1b844976c62ee1ede86ba454170cf0a3720ce209fd5da1600945c4470893a8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T18:57:48.826Z"
+    "at": "2026-10-10T19:43:31.576Z"
   }
 }
