@@ -30,11 +30,11 @@
       "completedRunId": "d7f1b905-4dfb-4bff-aa38-b66c36151a0d"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:5e2a6b44af7541a5d1773709ae8a2f194f49f7612972ba09a24f478f06f5b80e",
+      "pageVersion": "sha256:edc66a81178bebb7e89f449ff257e21120abc4ec7bc16163db79baede0316445",
       "completedBy": "codex",
-      "completedRunId": "7226120e-3232-4444-8c99-a56faf4fc27e",
-      "gitHead": "7c024871aaa33dec8cefc8ff71111b97488fbf5a",
-      "sourceFingerprint": "sha256:c28be088701faf2680972bd9ff5c81e6190d579b97781eac4fce75176d7a80a6"
+      "completedRunId": "988fa74b-dee3-4349-a348-7e0043e956ae",
+      "gitHead": "77a98cac9efcb3276212bd9064ba137054ca6e89",
+      "sourceFingerprint": "sha256:cab35c5c2c57aae6c261a8cc5a620d043609db66e1db5a0f18b563bfb07437bd"
     },
     "/openwiki/patterns/helm-chart-organization.md": {
       "gitHead": "502f60fe2ec8754dc30895d59ec4e20c320163ea",

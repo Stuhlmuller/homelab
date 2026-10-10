@@ -21,9 +21,11 @@ class WebhookTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         receipts = patch.object(HOOKS, 'RECEIPTS', Path(temporary.name))
-        receipts.start(); self.addCleanup(receipts.stop)
+        receipts.start()
+        self.addCleanup(receipts.stop)
         clock = patch.object(HOOKS.CALLBACKS.time, 'time', return_value=1791590400)
-        clock.start(); self.addCleanup(clock.stop)
+        clock.start()
+        self.addCleanup(clock.stop)
 
     def api(self, *, drift=False, changed=False, fresh=True):
         hooks = {identifier: {'id': identifier, 'name': 'web', 'active': True, 'events': ['pull_request'],
@@ -43,7 +45,8 @@ class WebhookTests(unittest.TestCase):
                 self.assertEqual(suffix, str(identifier) + '/config')
                 self.assertEqual(body, {'url': HOOKS.HOST + '/webhook/' + HOOKS.HOOKS[identifier]})
                 hooks[identifier]['config'].update(body)
-                if changed: hooks[identifier]['config']['secret'] = 'changed'
+                if changed:
+                    hooks[identifier]['config']['secret'] = 'changed'
                 patched.add(identifier)
                 return deepcopy(hooks[identifier]['config'])
             if suffix == str(identifier):
@@ -101,7 +104,8 @@ class WebhookTests(unittest.TestCase):
         response = Mock(status=204, headers={'Access-Control-Allow-Methods': 'OPTIONS, POST'})
         response.__enter__ = Mock(return_value=response)
         response.__exit__ = Mock(return_value=False)
-        opener = Mock(); opener.open.return_value = response
+        opener = Mock()
+        opener.open.return_value = response
         with patch.object(HOOKS.urllib.request, 'build_opener', return_value=opener) as factory:
             HOOKS.safe_probe(HOOKS.HOST + '/webhook/' + next(iter(HOOKS.HOOKS.values())), 'OPTIONS')
             request = opener.open.call_args.args[0]

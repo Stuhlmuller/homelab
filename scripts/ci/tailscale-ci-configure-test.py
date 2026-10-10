@@ -85,7 +85,8 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         invalid.append(output)
         for output in invalid:
             with self.subTest(output=output):
-                fake = FakeCommands(); fake.outputs = output
+                fake = FakeCommands()
+                fake.outputs = output
                 status, _ = self.run_script(fake, ["--execute"])
                 self.assertEqual(status, 1)
                 self.assertEqual(fake.writes, [])
@@ -103,11 +104,16 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         for variant in ("dirty", "stale", "unsigned", "unprotected", "bypass"):
             with self.subTest(variant=variant):
                 fake = FakeCommands()
-                if variant == "dirty": fake.dirty = "?? untracked\n"
-                elif variant == "stale": fake.main["sha"] = "b" * 40
-                elif variant == "unsigned": fake.main["commit"]["verification"]["verified"] = False
-                elif variant == "unprotected": fake.protected = False
-                else: fake.environments["homelab-production"]["can_admins_bypass"] = True
+                if variant == "dirty":
+                    fake.dirty = "?? untracked\n"
+                elif variant == "stale":
+                    fake.main["sha"] = "b" * 40
+                elif variant == "unsigned":
+                    fake.main["commit"]["verification"]["verified"] = False
+                elif variant == "unprotected":
+                    fake.protected = False
+                else:
+                    fake.environments["homelab-production"]["can_admins_bypass"] = True
                 status, _ = self.run_script(fake, ["--execute"])
                 self.assertEqual(status, 1)
                 self.assertEqual(fake.writes, [])
@@ -118,14 +124,17 @@ class TailscaleCIConfigureTest(unittest.TestCase):
             name = "TAILSCALE_CORDIUM_CLIENT_ID" if scope else "TAILSCALE_CLIENT_ID"
             fake.names["variable", scope] = [{"name": name}]
             status, _ = self.run_script(fake, ["--execute"])
-            self.assertEqual(status, 1); self.assertEqual(fake.writes, [])
+            self.assertEqual(status, 1)
+            self.assertEqual(fake.writes, [])
         fake = FakeCommands()
         with patch.object(MODULE.GUARDS, "verify_main", side_effect=[BASE.SHA, "b" * 40]):
             status, _ = self.run_script(fake, ["--execute"])
-        self.assertEqual(status, 1); self.assertEqual(fake.writes, [])
+        self.assertEqual(status, 1)
+        self.assertEqual(fake.writes, [])
 
     def test_mismatched_readback_fails(self):
-        fake = FakeCommands(); fake.readback_wrong = True
+        fake = FakeCommands()
+        fake.readback_wrong = True
         status, output = self.run_script(fake, ["--execute"])
         self.assertEqual(status, 1)
         self.assertIn("verification failed", output)

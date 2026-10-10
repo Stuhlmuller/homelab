@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5e2a6b44af7541a5d1773709ae8a2f194f49f7612972ba09a24f478f06f5b80e",
+  "pageVersion": "sha256:edc66a81178bebb7e89f449ff257e21120abc4ec7bc16163db79baede0316445",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -94,15 +94,15 @@
         },
         {
           "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
-          "version": "repo-file-v1:sha256:20babf4f92d0236178ccef926a946c19c34e8cea1183ce9df1a5c7100e1d0db7"
+          "version": "repo-file-v1:sha256:ae365f23de9ca311b7128fd51365dde7bc596e201b79fb5248815cd71541ca39"
         },
         {
           "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
-          "version": "repo-file-v1:sha256:2d81216ad766d1b5122f5f3e8dd8d73dbec998737d759c90b78657d8ace2f5d1"
+          "version": "repo-file-v1:sha256:fe09c366c013279628638ff80992573158f2970dde5c87da141e543a1789b0ae"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:6c7c0e62171fd646b98e86bd206fbb603360566a80e59c00210645c73afa0206"
+          "version": "repo-file-v1:sha256:9de59b02507b727edb86853d4d8620fc86a4056ee7221bf32915008707a720dd"
         }
       ]
     },
@@ -137,6 +137,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:46:54.910Z"
+    "at": "2026-10-10T19:52:47.904Z"
   }
 }

@@ -162,9 +162,12 @@ class DNS(unittest.TestCase):
                 host = inventory['hostnames'][1]
                 initial[host].append({'id':'duplicate-correct-a', 'name':host, 'type':'A',
                                       'content':'100.100.100.1', 'proxied':False, 'ttl':60})
-            state = base/'state.json'; state.write_text(json.dumps(initial))
-            calls = base/'calls.jsonl'; calls.write_text('')
-            binary = base/'bin'; binary.mkdir()
+            state = base/'state.json'
+            state.write_text(json.dumps(initial))
+            calls = base/'calls.jsonl'
+            calls.write_text('')
+            binary = base/'bin'
+            binary.mkdir()
             fake = r'''
 import json, os, sys
 from pathlib import Path
@@ -179,7 +182,8 @@ elif name == 'aws':
     print('fake-secret-must-not-leak')
 elif name == 'python3':
     with (BASE/'calls.jsonl').open('a') as stream: stream.write(json.dumps(['preflight',args])+ '\n')
-    if '--addresses-json' in args: print(json.dumps({'addresses':{'A':['100.100.100.1'],'AAAA':['fd7a:115c:a1e0::1']},'previous_ttl':300}))
+    if '--addresses-json' in args:
+        print(json.dumps({'addresses':{'A':['100.100.100.1'],'AAAA':['fd7a:115c:a1e0::1']},'previous_ttl':300}))
     sys.exit(1 if failure == 'preflight' else 0)
 else:
     method = args[args.index('-X')+1]
@@ -193,7 +197,8 @@ else:
     elif method == 'GET':
         host = parse_qs(path.query)['name'][0]
         result = state.get(host,[])
-        if failure == 'read' and host == 'sonarr.stinkyboi.com': sys.exit(22)
+        if failure == 'read' and host == 'sonarr.stinkyboi.com':
+            sys.exit(22)
     elif method == 'DELETE':
         ident = path.path.rsplit('/',1)[1]
         state = {host:[record for record in records if record['id'] != ident] for host,records in state.items()}

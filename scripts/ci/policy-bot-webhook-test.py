@@ -22,11 +22,14 @@ class WebhookTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         receipt = patch.object(webhook, 'RECEIPT', Path(temporary.name)/'receipt.json')
-        receipt.start(); self.addCleanup(receipt.stop)
+        receipt.start()
+        self.addCleanup(receipt.stop)
         clock = patch.object(webhook.time, 'time', return_value=1791590400)
-        clock.start(); self.addCleanup(clock.stop)
+        clock.start()
+        self.addCleanup(clock.stop)
         self.preflight = patch.object(webhook, 'preflight_target')
-        self.preflight.start(); self.addCleanup(self.preflight.stop)
+        self.preflight.start()
+        self.addCleanup(self.preflight.stop)
 
     def receipt(self):
         webhook.save_receipt(webhook.RECEIPT, {'url': webhook.URL, 'started_at': '2026-10-10T00:00:00+00:00', 'previous_delivery_id': 10})
@@ -166,7 +169,8 @@ class WebhookTests(unittest.TestCase):
         with patch.object(webhook.time, 'time', return_value=2000000000):
             token = webhook.app_jwt('123', private_key)
         header, payload, signature = token.split('.')
-        decode = lambda value: base64.urlsafe_b64decode(value + '=' * (-len(value) % 4))
+        def decode(value):
+            return base64.urlsafe_b64decode(value + '=' * (-len(value) % 4))
         self.assertEqual(json.loads(decode(header)), {'alg': 'RS256', 'typ': 'JWT'})
         self.assertEqual(json.loads(decode(payload)), {'iat': 1999999940, 'exp': 2000000540, 'iss': '123'})
         with tempfile.TemporaryDirectory() as directory:
