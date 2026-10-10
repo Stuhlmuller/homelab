@@ -147,6 +147,18 @@ verification. Approval and local tests are not evidence of completed recovery.
 LiteLLM's later native-key rollout is now recorded in its
 [owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
+On October 10, [PR #1247](https://github.com/Stuhlmuller/homelab/pull/1247)
+merged the guarded promotion as verified commit `b1eef48921ef8b3a6302276e85decad86fbd2ef5`.
+The live queue remains unmodified: `zimaboard-2` became NotReady, stranding
+Argo controller `0`, so Langfuse still observes the earlier read-only inspector.
+The node's old NOFX and n8n PostgreSQL Pods mount NFS claims; a replacement
+NOFX Pod is already Ready on another node. Authenticated Talos reports
+`kubelet` unhealthy. One targeted `talosctl service kubelet restart` stalled
+while sending SIGTERM; do not repeat it or force-delete Pods. The operator must
+fence the exact worker and verify PVC writers before any node power cycle or
+stranded-Pod deletion. Resume promotion only after Argo observes the merged
+revision and the writable inspector passes the helper's live guards.
+
 Native-key cutover inspection confirmed all four mounted caller credentials
 already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
 `GenerateKeyRequest.key` accepts an existing value, so import need not rotate
