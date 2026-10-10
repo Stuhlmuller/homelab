@@ -3,6 +3,17 @@ type: operation
 title: "Harbor Private OCI Registry"
 description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
 tags: ["harbor", "oci", "packages", "gitops"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T18:57:48.826Z
+sources:
+  - id: openwiki-source-1daf47fd9af9a465c8f39005
+    resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
 ---
 
 # Harbor Private OCI Registry
@@ -35,6 +46,34 @@ for the Kubernetes Service hostname, as declared in
 `docs/examples/octelium/homelab-services.yaml`. Public clients and CI still
 verify Harbor TLS. A shared ingress hardening change should establish a trusted
 upstream server name/CA and remove this bypass across the service catalog.
+
+## Private node registry foundation
+
+October 10 read-only Talos inspection found no configured registry mirrors or
+extra host entries on the four nodes. The strict mirror patches below remain
+a separate rollout; the mesh migration must not activate them implicitly.
+
+The staged Traefik `traefik-registry` Service reserves `10.96.0.50:443`.
+Its dedicated listener permits only Harbor `/v2` descendants and the token
+endpoint, preserves Authorization, and excludes management/dashboard routes.
+The host-only patch resolves `harbor.stinkyboi.com` there on Talos while retaining
+hostname-valid TLS. Cluster Service routing is required, so cold bootstrap
+still needs upstream images before Kubernetes networking and Harbor are ready.
+
+[`talos-harbor-mirrors.py --registry-host-only`](../../scripts/talos-harbor-mirrors.py)
+preserves the live registry configuration and unrelated hosts. It defaults to
+strict validation, uses the matching Talos executable, and requires exact reviewed
+main for execution. Preflight checks the dedicated Service, TLS, registry/token
+paths and dashboard denial before any node change. Roll out workers first;
+correlate an uncached native node pull with Traefik/Harbor logs afterward.
+
+Flannel does not enforce the declared NetworkPolicy. Traefik's Istio policy
+restricts cross-node registry sources to the declared node IPs; trusted
+node-local traffic has Istio's bypass behavior. The listener's path boundary
+and Harbor's own artifact authorization remain required. This foundation is
+not evidence of deployed node DNS, successful cold pulls, or strict mirroring.
+See the [host-only runbook](../../docs/harbor-image-mirroring.md) and
+[ingress contract](../runbooks/tailnet-ingress.md).
 
 ## Identity And State
 

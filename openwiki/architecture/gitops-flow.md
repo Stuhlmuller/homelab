@@ -3,19 +3,31 @@ type: architecture
 title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T18:57:48.826Z
+sources:
+  - id: openwiki-source-77d110fdd1547564be86e611
+    resource: repo://IaC/modules/tailscale-access/main.tf
+  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+    resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-da61504fb6ba4ceba279edb0
+    resource: repo://IaC/stacks/traefik/stack.hcl
+generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
 ---
 
 # GitOps Flow
 
 ## Flow
 
-```text
-git change
-  -> Terragrunt/OpenTofu registration
-  -> Argo CD Application
-  -> Helm, Kustomize, or repo-owned manifests
-  -> Kubernetes cluster state
+```mermaid
+flowchart LR
+    Git[Reviewed source] --> TG[Terragrunt registration]
+    TG --> Argo[Argo CD Application]
+    Argo --> Runtime[Helm and Kustomize runtime]
 ```
+
+Reviewed source separates infrastructure registration from runtime reconciliation.
 
 Infrastructure and application registration are modeled through Terragrunt and
 OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
@@ -87,6 +99,25 @@ default and requires a clean checkout matching reviewed current `main` for
 authorization and public routing, and requires a second apply with no changes.
 The Kubernetes application itself follows the protected Terragrunt registration
 and Argo CD sync path.
+
+## Tailscale ingress foundation
+
+The staged migration adds the `traefik` Application and the administrator-owned
+`operator/tailscale-access` unit. The latter imports the existing full policy
+before applying the reviewed policy and GitHub federated identities with the
+Tailscale Terraform provider; CI cannot administer its own tailnet grants.
+Follow its [private saved-plan runbook](../../IaC/modules/tailscale-access/README.md).
+
+Publish the pinned Traefik image before merging its consuming runtime source.
+Apply the operator policy before registering Traefik, then use protected
+Terragrunt Apply on exact current `main` and check Argo's observed revision.
+Application registration order alone does not establish certificate, proxy,
+Funnel, or application readiness. Fleet stays on private mesh routes.
+
+Existing DNS, Cloudflare transport, and CI access remain during this foundation.
+Switch each only after its replacement passes the
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). This addition does not
+claim that traffic has moved or old native Octelium Services have been retired.
 
 ## Important Paths
 

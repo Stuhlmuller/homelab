@@ -14,10 +14,18 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: traefik
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: istio-system
       ports:
         - protocol: TCP
           port: 3010
+        - protocol: TCP
+          port: 15008
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

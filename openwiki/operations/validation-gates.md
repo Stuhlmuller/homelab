@@ -8,20 +8,28 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-f7b4195d4d622f91da5cc07b
+    resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-a3ec8939cc4b10401bd16cd8
+    resource: repo://policy/kubernetes.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
-generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
+  - id: openwiki-source-c5bae48eacfc2b48af15ad5a
+    resource: repo://scripts/ci/traefik-routes-test.py
+  - id: openwiki-source-c78947a32d84fb4e618c32da
+    resource: repo://scripts/ci/traefik-runtime-check.py
+generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-09T05:26:38.825Z
+    at: 2026-10-10T19:05:45.723Z
 ---
 
 # Validation Gates
@@ -112,6 +120,38 @@ The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
+
+## Tailscale and Traefik foundation
+
+The static gate runs `traefik-routes-test.py` and `install-kubeconfig-test.py`.
+The first checks the fixed private inventory, callback/registry boundaries and
+Fleet setup denial. The second checks tokenless API-proxy configuration and
+plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
+and run Conftest on all declared routing resources.
+
+Use `traefik-runtime-check.py --binary /absolute/path/to/traefik` with the declared
+version to exercise the actual proxy on loopback. It downloads nothing and
+checks Host/path isolation, encoded path rejection, WebSockets, h2c, console
+upstream TLS/SNI, Harbor Authorization preservation and projected certificate
+reload. Test certificate verification bypasses are confined to this local harness.
+
+Validate and test the Tailscale provider module, compare the complete live policy,
+and import the existing ACL before the private authenticated saved plan. Do not
+apply the initial four-create plan: adoption must produce a policy update and
+three new federated identities. Keep state, token and plan material private.
+
+Before traffic cutover, verify observed Argo revision and health, certificate
+readiness, real mesh application access, Fleet device check-in, native Cordium
+execution/reconnection, and an uncached Talos registry pull. Prove callback
+admin/root rejection off mesh and actual signed webhook delivery. Run protected
+CI plan/apply through the operator API proxy, with a denied real plan-identity
+write. Local tests and HTTP health alone do not satisfy these gates.
+
+The current Flannel CNI does not enforce NetworkPolicy. Do not count those
+manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
+listener path boundaries and application authentication through their real paths.
+See [ingress](../runbooks/tailnet-ingress.md) and the
+[provider runbook](../../IaC/modules/tailscale-access/README.md).
 
 ## Entra owner-mail and Octelium identity checks
 
@@ -476,10 +516,11 @@ Bot webhook probe must use the POST shape GitHub sends and require the app-level
 HTTP 400 webhook validation response, not just any non-404 response.
 
 Rendered Kubernetes policy also enforces the access contract:
-`policy/kubernetes.rego` rejects Tailscale Funnel and classifies every
+`policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Those resources must declare `homelab.rst.io/access-plane: octelium`; only
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
 `homelab.rst.io/public-callback-*` annotations for unauthenticated callback

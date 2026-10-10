@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:69401f34b5b1ea9ac137295f47336fc2d7787d218c5c669e9739ad99e508ae05",
+  "claims": [
+    {
+      "id": "claim_0f406983655244d4a8a09171533840a5",
+      "statement": "The Tailscale ingress foundation registers Traefik through Argo CD while the operator-only Tailscale unit owns full-policy adoption and federated CI identity provisioning.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:81ba3c876250b2c4087daa37f08b9b5394a928f9c8636dd43c249466f012026e"
+        },
+        {
+          "resource": "repo://IaC/modules/tailscale-access/main.tf",
+          "version": "repo-file-v1:sha256:678b9938d982d43961084e16f28e9dc86cfcc69e748d94233140fc60a722e108"
+        },
+        {
+          "resource": "repo://IaC/stacks/traefik/stack.hcl",
+          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T18:57:48.826Z"
+  }
+}

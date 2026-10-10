@@ -3,15 +3,15 @@ type: operation
 title: "Deluge CPU Audit \u2014 2026-09-05"
 description: "Historical Gluetun CPU throttling, Deluge capacity evidence, and profiling gates required before changing the VPN CPU limit."
 tags: ["homelab", "navigation"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-09T05:26:38.825Z
 sources:
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
 generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T18:57:48.826Z
 ---
 
 # Deluge CPU Audit — 2026-09-05

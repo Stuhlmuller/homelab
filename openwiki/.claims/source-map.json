@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6c026fbe9efc49022ef7b8117c563e142854259da68a8942dd3701b209761dc7",
+  "pageVersion": "sha256:c10a6492c724954c1ebf9b0afaed20243e29781d9301cc0f9bbc89e3a9366ca3",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -30,13 +30,27 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
-          "version": "repo-file-v1:sha256:096c18dd7a20c5bf2d633ebb52bfb3b35426d7d3856ae02ee058f7c7b5bad28e"
+          "version": "repo-file-v1:sha256:4e0447410f1c132218fe77d21a0f32b298bbf91461f496c648b369ecf81bc25e"
+        }
+      ]
+    },
+    {
+      "id": "claim_8d503c93f9684f708a42cd045c5bdf97",
+      "statement": "Traefik's explicit routes and README own the staged mesh ingress contract; the Tailscale module owns provider adoption and CI identity setup.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:81ba3c876250b2c4087daa37f08b9b5394a928f9c8636dd43c249466f012026e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:b85229bc4f2139e71679bf73e9ba73d67494de18acae306e6e9979bd9d7d153f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-09T05:26:38.825Z"
+    "at": "2026-10-10T18:57:48.826Z"
   }
 }

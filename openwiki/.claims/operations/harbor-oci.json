@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5a4679dabce8056d3905f0dff708c15177b575249f30c1f04b73aba9db8d4228",
+  "claims": [
+    {
+      "id": "claim_0a59e498ea474869b56bee24c9a1f386",
+      "statement": "The host-only Harbor migration changes Talos host resolution to a dedicated Traefik registry Service while preserving live registry mirror configuration and unrelated hosts; execution is guarded by route validation and exact reviewed main.",
+      "evidence": [
+        {
+          "resource": "repo://.talos/patches/harbor-registry-host.yaml",
+          "version": "repo-file-v1:sha256:b6d09a30663aebd50bbe739ecc0ae4ca3785d1bcee83b2dab2c0c9a80f19f77a"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:0bd318b5ce1b6698180dd7febb33e8ff9941bf114dd0eb7fe6422f57d77088c4"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:0a2ce7192d9e36708f873331440fd4fc9239ca6340bf3f74e8c74c2d5c8cd284"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T18:57:48.826Z"
+  }
+}

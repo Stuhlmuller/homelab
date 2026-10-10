@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1ff339fde545c6ed10881dca193ed813df7c88d5e84950580e60079ec728390e",
+  "pageVersion": "sha256:50ce2f061cf88d33417751445f6ebec83b01016d9446df782a0c950fca8a3155",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:1191c3337e7bc92b390ab5f9597091c96c488b0234276c7bde6bbf25c5ebce6a"
+          "version": "repo-file-v1:sha256:4b4551c92cf3215575a29c50f1566fa921e4e49de819b7f72f4c73376a0673d6"
         }
       ]
     },
@@ -47,10 +47,42 @@
           "version": "repo-file-v1:sha256:40b9bed8f66679a0d89fe554f886419e57bf3daa662eebe6d42614fca8fb2d39"
         }
       ]
+    },
+    {
+      "id": "claim_fed10c4041d84a8c89efec2369232427",
+      "statement": "The static gate includes Traefik route and tokenless kubeconfig boundary checks, while the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L10",
+          "version": "repo-lines-v1:sha256:269ee1e9fc99a811bf38a5cda4db9953b4cfb98ecbffe70b58fb86ffa38e929d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-routes-test.py",
+          "version": "repo-file-v1:sha256:6556442b6977e20df1b1245a96aea2ccd23d808033fd384c9aa2cbc6c840f8c9"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-runtime-check.py",
+          "version": "repo-file-v1:sha256:5c993dccbf1652d6ab77fd415943487b44ff1245cd79d74080828ab4acea229b"
+        }
+      ]
+    },
+    {
+      "id": "claim_0a91419461aa413eb385fc662718c291",
+      "statement": "Rendered policy permits only two explicitly reviewed Tailscale Funnel Ingresses backed by the separate Traefik callback service and rejects other Funnel declarations.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/funnel.yaml",
+          "version": "repo-file-v1:sha256:e017cd5b6d59009f056c9031722d45e14dd6fb97bc9c3b3bed5f14f6c79d3439"
+        },
+        {
+          "resource": "repo://policy/kubernetes.rego",
+          "version": "repo-file-v1:sha256:5ab9ee2b8f5500fef4376258bea3883bdf998ad1481f84865039cb0ad5f87c79"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-09T05:26:38.825Z"
+    "at": "2026-10-10T19:05:45.723Z"
   }
 }

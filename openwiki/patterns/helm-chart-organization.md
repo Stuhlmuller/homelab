@@ -3,6 +3,15 @@ type: pattern
 title: "Helm Chart Organization"
 description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
+generated: { by: "codex", at: "2026-10-10T19:05:45.723Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T19:05:45.723Z
+sources:
+  - id: openwiki-source-6b180a65c4c19509fe94c982
+    resource: repo://IaC/.catalog/units/live/argocd-app/terragrunt.hcl
+  - id: openwiki-source-da61504fb6ba4ceba279edb0
+    resource: repo://IaC/stacks/traefik/stack.hcl
 ---
 
 # Helm Chart Organization
@@ -29,9 +38,9 @@ clusters/homelab/apps/<app>/
 Platform resources keep their existing `clusters/homelab/platform/<service>`
 ownership. The inspected repository has no committed `Chart.yaml` or
 `Chart.lock`; it already references remote charts directly. Its
-[application stacks](../../IaC/stacks),
-[OpenClaw values and extras](../../clusters/homelab/apps/openclaw), and
-[Harbor values and extras](../../clusters/homelab/apps/harbor) demonstrate
+[application stack](../../IaC/stacks/traefik/stack.hcl),
+[OpenClaw values and extras](../../clusters/homelab/apps/openclaw/README.md), and
+[Harbor values and extras](../../clusters/homelab/apps/harbor/README.md) demonstrate
 this layout.
 
 Argo CD supports an upstream Helm source plus Git-hosted `$values`, avoiding a

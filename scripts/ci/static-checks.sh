@@ -3,6 +3,8 @@ set -euo pipefail
 python3 -I scripts/ci/speckit-check.py
 python3 -I scripts/ci/openwiki-check.py
 python3 -I scripts/ci/multica-runtime-check.py
+python3 -I scripts/ci/traefik-routes-test.py
+python3 -I scripts/ci/install-kubeconfig-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"

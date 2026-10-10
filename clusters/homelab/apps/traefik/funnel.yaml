@@ -1,0 +1,45 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: n8n-webhook
+  namespace: traefik
+  annotations:
+    tailscale.com/funnel: "true"
+    tailscale.com/tags: tag:homelab-funnel
+    homelab.rst.io/access-plane: tailscale
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "Only n8n webhook paths; editor and APIs remain private."
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: traefik-funnel
+      port:
+        number: 8080
+  tls:
+    - hosts: [n8n-webhook]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: policy-bot-hook
+  namespace: traefik
+  annotations:
+    tailscale.com/funnel: "true"
+    tailscale.com/tags: tag:homelab-funnel
+    homelab.rst.io/access-plane: tailscale
+    homelab.rst.io/public-funnel: "true"
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "Only the signed GitHub App webhook; Policy Bot UI remains private."
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: traefik-funnel
+      port:
+        number: 8080
+  tls:
+    - hosts: [policy-bot-hook]

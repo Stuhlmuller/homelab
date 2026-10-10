@@ -1,0 +1,267 @@
+# Private application routes and the two reviewed public callback surfaces.
+http:
+  routers:
+    affine:
+      entryPoints: [websecure]
+      rule: Host(`affine.stinkyboi.com`)
+      service: affine
+      tls: {}
+    argocd:
+      entryPoints: [websecure]
+      rule: Host(`argocd.stinkyboi.com`)
+      service: argocd
+      tls: {}
+    bazarr:
+      entryPoints: [websecure]
+      rule: Host(`bazarr.stinkyboi.com`)
+      service: bazarr
+      tls: {}
+    compass:
+      entryPoints: [websecure]
+      rule: Host(`compass.stinkyboi.com`)
+      service: compass
+      tls: {}
+    deluge:
+      entryPoints: [websecure]
+      rule: Host(`deluge.stinkyboi.com`)
+      service: deluge
+      tls: {}
+    dispatcharr:
+      entryPoints: [websecure]
+      rule: Host(`dispatcharr.stinkyboi.com`)
+      service: dispatcharr
+      tls: {}
+    fleet:
+      entryPoints: [websecure]
+      # Excluding setup leaves no matching router, so Traefik returns 404.
+      rule: Host(`fleet.stinkyboi.com`) && !PathRegexp(`^/(api/(v1/)?)?setup(/|$)`)
+      middlewares: [reject-ambiguous-paths]
+      service: fleet
+      tls: {}
+    grafana:
+      entryPoints: [websecure]
+      rule: Host(`grafana.stinkyboi.com`)
+      service: grafana
+      tls: {}
+    harbor:
+      entryPoints: [websecure]
+      rule: Host(`harbor.stinkyboi.com`)
+      service: harbor
+      tls: {}
+    kiali:
+      entryPoints: [websecure]
+      rule: Host(`kiali.stinkyboi.com`)
+      service: kiali
+      tls: {}
+    langfuse:
+      entryPoints: [websecure]
+      rule: Host(`langfuse.stinkyboi.com`)
+      service: langfuse
+      tls: {}
+    litellm:
+      entryPoints: [websecure]
+      rule: Host(`litellm.stinkyboi.com`)
+      service: litellm
+      tls: {}
+    multica:
+      entryPoints: [websecure]
+      rule: Host(`multica.stinkyboi.com`)
+      service: multica
+      tls: {}
+    n8n:
+      entryPoints: [websecure]
+      rule: Host(`n8n.stinkyboi.com`)
+      service: n8n
+      tls: {}
+    nofx:
+      entryPoints: [websecure]
+      rule: Host(`nofx.stinkyboi.com`)
+      service: nofx
+      tls: {}
+    octobot:
+      entryPoints: [websecure]
+      rule: Host(`octobot.stinkyboi.com`)
+      service: octobot
+      tls: {}
+    openclaw:
+      entryPoints: [websecure]
+      rule: Host(`openclaw.stinkyboi.com`)
+      service: openclaw
+      tls: {}
+    policy-bot:
+      entryPoints: [websecure]
+      rule: Host(`policy-bot.stinkyboi.com`)
+      service: policy-bot
+      tls: {}
+    prowlarr:
+      entryPoints: [websecure]
+      rule: Host(`prowlarr.stinkyboi.com`)
+      service: prowlarr
+      tls: {}
+    radarr:
+      entryPoints: [websecure]
+      rule: Host(`radarr.stinkyboi.com`)
+      service: radarr
+      tls: {}
+    sonarr:
+      entryPoints: [websecure]
+      rule: Host(`sonarr.stinkyboi.com`)
+      service: sonarr
+      tls: {}
+    cordium:
+      entryPoints: [websecure]
+      rule: Host(`cordium.stinkyboi.com`) || HostRegexp(`^[^.]+\.cordium\.stinkyboi\.com$`)
+      service: cordium
+      tls: {}
+    octelium-cluster:
+      entryPoints: [websecure]
+      rule: Host(`stinkyboi.com`) || Host(`portal.stinkyboi.com`)
+      service: octelium-cluster
+      tls: {}
+    octelium-alias:
+      entryPoints: [websecure]
+      rule: Host(`octelium.stinkyboi.com`)
+      middlewares: [octelium-canonical-host]
+      service: octelium-cluster
+      tls: {}
+    octelium-api:
+      entryPoints: [websecure]
+      rule: Host(`octelium-api.stinkyboi.com`)
+      service: octelium-api
+      tls: {}
+    octelium-console:
+      entryPoints: [websecure]
+      rule: Host(`console.stinkyboi.com`)
+      service: octelium-console
+      tls: {}
+    n8n-webhook:
+      entryPoints: [funnel]
+      rule: Host(`n8n-webhook.tail67beb.ts.net`) && PathRegexp(`^/(webhook|webhook-test|webhook-waiting)(/|$)`)
+      middlewares: [reject-ambiguous-paths]
+      service: n8n
+    policy-bot-hook:
+      entryPoints: [funnel]
+      rule: Host(`policy-bot-hook.tail67beb.ts.net`) && Path(`/api/github/hook`)
+      middlewares: [reject-ambiguous-paths]
+      service: policy-bot
+    harbor-registry:
+      entryPoints: [registry]
+      rule: Host(`harbor.stinkyboi.com`) && (Path(`/v2`) || PathPrefix(`/v2/`) || Path(`/service/token`))
+      middlewares: [reject-ambiguous-paths]
+      service: harbor
+      tls: {}
+  middlewares:
+    reject-ambiguous-paths:
+      # Matchers preserve encoded reserved characters; backends may decode them.
+      encodedCharacters:
+        allowEncodedSlash: false
+    octelium-canonical-host:
+      headers:
+        customRequestHeaders:
+          Host: stinkyboi.com
+  serversTransports:
+    octelium-console:
+      serverName: console.stinkyboi.com
+  services:
+    affine:
+      loadBalancer:
+        servers:
+          - url: http://affine.affine.svc.cluster.local:3010
+    argocd:
+      loadBalancer:
+        servers:
+          - url: http://argocd-server.argocd.svc.cluster.local:80
+    bazarr:
+      loadBalancer:
+        servers:
+          - url: http://bazarr.media.svc.cluster.local:6767
+    compass:
+      loadBalancer:
+        servers:
+          - url: http://compass.monitoring.svc.cluster.local:8080
+    deluge:
+      loadBalancer:
+        servers:
+          - url: http://deluge.media.svc.cluster.local:8112
+    dispatcharr:
+      loadBalancer:
+        servers:
+          - url: http://dispatcharr.media.svc.cluster.local:9191
+    fleet:
+      loadBalancer:
+        servers:
+          - url: http://fleet.fleet.svc.cluster.local:8080
+    grafana:
+      loadBalancer:
+        servers:
+          - url: http://grafana.monitoring.svc.cluster.local:80
+    harbor:
+      loadBalancer:
+        servers:
+          - url: http://harbor.harbor.svc.cluster.local:80
+    kiali:
+      loadBalancer:
+        servers:
+          - url: http://kiali.monitoring.svc.cluster.local:20001
+    langfuse:
+      loadBalancer:
+        servers:
+          - url: http://langfuse-web.langfuse.svc.cluster.local:3000
+    litellm:
+      loadBalancer:
+        servers:
+          - url: http://litellm.ai.svc.cluster.local:4000
+    multica:
+      loadBalancer:
+        servers:
+          - url: http://multica-frontend.ai.svc.cluster.local:3000
+    n8n:
+      loadBalancer:
+        servers:
+          - url: http://n8n.automation.svc.cluster.local:5678
+    nofx:
+      loadBalancer:
+        servers:
+          - url: http://nofx-frontend.nofx.svc.cluster.local:80
+    octobot:
+      loadBalancer:
+        servers:
+          - url: http://octobot.finance.svc.cluster.local:5001
+    openclaw:
+      loadBalancer:
+        servers:
+          - url: http://openclaw.ai.svc.cluster.local:8080
+    policy-bot:
+      loadBalancer:
+        servers:
+          - url: http://policy-bot.automation.svc.cluster.local:8080
+    prowlarr:
+      loadBalancer:
+        servers:
+          - url: http://prowlarr.media.svc.cluster.local:9696
+    radarr:
+      loadBalancer:
+        servers:
+          - url: http://radarr.media.svc.cluster.local:7878
+    sonarr:
+      loadBalancer:
+        servers:
+          - url: http://sonarr.media.svc.cluster.local:8989
+    cordium:
+      loadBalancer:
+        servers:
+          - url: http://svc-default-cordium.octelium.svc.cluster.local:8080
+    octelium-cluster:
+      loadBalancer:
+        servers:
+          - url: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+    octelium-api:
+      loadBalancer:
+        servers:
+          - url: h2c://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
+    octelium-console:
+      loadBalancer:
+        # Retain Istio's conditional Octelium login-return redirect fix.
+        serversTransport: octelium-console
+        servers:
+          - url: https://istio-ingressgateway.istio-system.svc.cluster.local:443

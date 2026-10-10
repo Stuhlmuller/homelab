@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:78ba61366055a8906034f5ecf1bf9777c7dcdcd2a034f29322d3ddc77b001ade",
+  "pageVersion": "sha256:1b2ceb916175a6ed1d4ce4c547496b7bd1aee8554b03ab65548432e555a4762b",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -8,17 +8,35 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
-          "version": "repo-file-v1:sha256:096c18dd7a20c5bf2d633ebb52bfb3b35426d7d3856ae02ee058f7c7b5bad28e"
+          "version": "repo-file-v1:sha256:4e0447410f1c132218fe77d21a0f32b298bbf91461f496c648b369ecf81bc25e"
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/values.yaml",
           "version": "repo-file-v1:sha256:32366a719bb6aa7eb2bc0d85f1c2db164654f8e1538ee389de16ee1e436eb74c"
         }
       ]
+    },
+    {
+      "id": "claim_b8332b3662c74fc595c3b0a4a2269a4b",
+      "statement": "Traefik is a stateless Argo CD ingress application dependent on cert-manager, Istio and Tailscale; the staged Tailscale operator configuration enables its authenticated Kubernetes API proxy.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/traefik/stack.hcl",
+          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/tailscale/values.yaml",
+          "version": "repo-file-v1:sha256:acf126bb0362a908906fbd122424b5b0848514a02310a08c8b0f96f35e87713d"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
+          "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-09T05:26:38.825Z"
+    "at": "2026-10-10T18:57:48.826Z"
   }
 }
