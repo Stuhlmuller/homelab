@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eb041bf6967d2f10508102c627e5d1d2d60556ffb582d81049475ceaf9a0418e",
+  "pageVersion": "sha256:04014a4f33c3605881f6b5695f77c16c81dadeadc513c847e5ce3e00675bc704",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:d46159ddc9297a0f2e03be43d81912f9d5c155e1402ac304846c35632bc128de"
+          "version": "repo-file-v1:sha256:660ab3e8444dedb02525d9fe69aea69b76c60764f85fb2a9e7b142f940a06ccf"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:603fb298567b0e749756958f37a6551c0ab65c3c5d7dac1350dcb73e420cab69"
+          "version": "repo-file-v1:sha256:65cce4cd523e981134629958a6de1743a8f6c24e18fec3b24731838994921b5c"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -59,6 +59,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:57:36.377Z"
+    "at": "2026-10-10T22:19:34.059Z"
   }
 }

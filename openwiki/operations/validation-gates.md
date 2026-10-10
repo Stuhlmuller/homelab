@@ -58,10 +58,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
+    at: 2026-10-10T22:23:52.052Z
 ---
 
 # Validation Gates
@@ -186,7 +186,10 @@ The static gate also runs the fixed ingress signer and CI publisher tests. They
 reject wrong proxy ownership/identity, wrong tailnet or signing profile, stale or
 unsigned main, misplaced secrets, invalid provider keys, and unsafe private cache
 permissions. Signer fixtures also cover the CLI's null empty peer classes before
-any proxy is visible and after every proxy is signed. Publication tests require all three secret writes and metadata
+any proxy is visible and after every proxy is signed. Publisher fixtures use
+distinct delegated and trusted signer keys. They reject missing, ambiguous or
+unrelated trust changes after signing, and mismatched cached authority identities
+or metadata. Publication tests require all three secret writes and metadata
 checks before deleting the old variables, reuse cached signatures on retry, and
 restrict authority retirement to previous generations. Mock provider tests cover
 tag, expiry and explicit-rotation contracts; real provider planning remains the

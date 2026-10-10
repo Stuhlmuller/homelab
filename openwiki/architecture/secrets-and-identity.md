@@ -30,10 +30,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
+    at: 2026-10-10T22:23:52.052Z
 ---
 
 # Secrets And Identity
@@ -84,9 +84,13 @@ all three writes and metadata checks succeed does it delete the corresponding
 three unused client-ID variables. Exact-main and trusted-PR workflow gates still
 matter: these credentials do not encode GitHub OIDC subject claims.
 
-Wrapped keys contain private Tailnet Lock signing authority, broader than their
-normal tag enrollment permissions. The private `0600` cache preserves signatures
-across retries. Auth-key expiry or revocation does not remove that authority;
+Wrapped keys contain a delegated private node-signing key, separate from the
+trusted credential authority's private voting key. The publisher requires exactly
+one new authority with matching auth-key metadata after signing, with every prior
+trust mapping unchanged. Its private `0600` cache records that separate public
+authority identity with the wrapper; reuse and retirement require a unique
+metadata match. Delegated node-signing capability exceeds normal tag enrollment
+permissions. Auth-key expiry or revocation does not remove that authority;
 after replacement CI acceptance, the explicit `--retire-previous` operation
 removes only cached older-generation authorities while preserving unrelated
 signers. Keep an encrypted private cache backup and use the

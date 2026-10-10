@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:30c9c46b8049381938d4bb25b7808b42613993046e632062c3cb2e4982fe5980",
+  "pageVersion": "sha256:5759b11890c3266a42c49c50d114d48589ed543ef8488fa9ebc001c0967f09bd",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -54,8 +54,12 @@
     },
     {
       "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
-      "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts; the CI publisher instead signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards, retiring old variables only after all writes and metadata checks.",
+      "statement": "Fixed callback helpers preserve credentials and require non-executing preflights plus newer delivery IDs/timestamps. The CI publisher separately signs private provider keys behind current-main, environment and trusted-signer guards, verifies and caches the distinct public credential authority, publishes only three secrets, and removes old variables after all writes/readbacks. Wrappers embed delegated private node-signing keys; old cached authorities require explicit retirement after new CI acceptance.",
       "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:660ab3e8444dedb02525d9fe69aea69b76c60764f85fb2a9e7b142f940a06ccf"
+        },
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
           "version": "repo-file-v1:sha256:306ff8ce24d966f3c233427b37484a2ea6b9989fa1e644328c8976fb1dd6c22f"
@@ -66,7 +70,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:603fb298567b0e749756958f37a6551c0ab65c3c5d7dac1350dcb73e420cab69"
+          "version": "repo-file-v1:sha256:65cce4cd523e981134629958a6de1743a8f6c24e18fec3b24731838994921b5c"
         }
       ]
     },
@@ -171,6 +175,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T22:23:52.052Z"
   }
 }

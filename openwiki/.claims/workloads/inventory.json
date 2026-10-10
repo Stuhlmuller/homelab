@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1667371aaf61a96d618a42ef492cbe2ab97c9fd4ca7589c2a233a7a25e34d316",
+  "pageVersion": "sha256:b2f892ffcce922c02b836681e6c0a535e0e44ebd52e5c817215c142a8ce759e5",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -59,10 +59,28 @@
           "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
         }
       ]
+    },
+    {
+      "id": "claim_9ebafd9d2b91492e84e00d45fca58025",
+      "statement": "Langfuse web, worker and Valkey declare one replica after verified offline AOF repair and prior GitOps pruning of the credential-free inspector; retained recovery PVCs remain, and Pod readiness alone does not establish UI or telemetry acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/README.md#L133-L148",
+          "version": "repo-lines-v1:sha256:7a6a3e5d80c8f02c8c97edd1eaae29e8cb34e4c2eda61a322c63ff570b2b2448:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwMGU0ZmYzNjZmNmNkMjIyMDFmMmFhZjNkMzE3YTM3MmFmN2NmMGM2NGJkMDhmOGU5Nzk5MDdkOWY3M2MwNDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5MWUyYzZmOTYzM2ZhYTA0MjNjN2U1YjU5YTY0NjU3NTViZTBlOThkMzI4NDEyY2QwY2VjMjEzODIwMTMyMzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3Njk2MDJhNmE1MWMxMjI2ZGU3NGU3YjQ5NTk3MTM1ZGZjNThkODIwZDhiZTY1MGI1MTQ1ZmM2MTM2YzEwNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUwYWY5ZDZlODA4N2MyOWVjZDVmMDc4MWVkYzhkMjc2Y2RiOWQ5M2VjMTc5ZmMyYTJiOGRhMWZmNDEyNmNiZGIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/datastores.yaml",
+          "version": "repo-file-v1:sha256:ac6fc4338213052c02c1d36bbdb932ae747f08f6206717cd84b187a12b1a03e7"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
+          "version": "repo-file-v1:sha256:ea29bef0def377bb90504bcfb9c907fec8b9aa65a4ea97eaf7c768161bdd89a5"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T22:23:52.052Z"
   }
 }

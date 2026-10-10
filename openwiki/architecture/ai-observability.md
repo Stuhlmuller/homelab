@@ -144,9 +144,10 @@ keeps all writers stopped, changes only the inspector's PVC mount to writable,
 verifies archive/original/candidate integrity and exact live hashes, and stages
 then atomically replaces only the approved incremental AOF. The approved
 candidate was promoted and exact live hashes verified. A reviewed GitOps change
-removes the inspector first, with writers still stopped; another revision
-restores writers after its Pod and PVC mount disappear. Runtime loading and
-fresh ingestion remain unverified.
+removed the inspector first, with writers still stopped. Argo observed merged
+`836e7f0f`, pruned the inspector and reported Synced/Healthy; no Pod mounted
+its PVC. This separate reviewed revision restores writers. Runtime loading
+and fresh ingestion remain unverified until live checks pass.
 LiteLLM's later native-key rollout is now recorded in its
 [owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 

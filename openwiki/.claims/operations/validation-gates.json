@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:09a59ccc64fa9fac1b4aa38ae3f110c9a7a50b5f356e4372cced5f152b3b3ab3",
+  "pageVersion": "sha256:0b6c1ad997298bb497f7bb4bbf28e44a60c363ce44463eb38ddc3f9ff6a51637",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -158,7 +158,7 @@
     },
     {
       "id": "claim_5104356bd18d495ea36ca01a2201fb0f",
-      "statement": "The static gate tests fixed ingress-signing ownership and peer identity, null empty CLI peer classes, trusted homelab signer requirements, secret publication ordering, private cache reuse and generation-specific authority retirement; live mesh/CI acceptance remains separate from these offline checks.",
+      "statement": "The static gate tests fixed ingress signing ownership/peer identity, null empty peer classes, trusted signing profile, secret publication order and generation-specific retirement. Publisher fixtures distinguish delegated and trusted signer keys and reject missing/ambiguous/unrelated trust changes and cached authority identity or metadata mismatches; live acceptance remains separate.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
@@ -170,7 +170,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
-          "version": "repo-file-v1:sha256:ed5bae367436012f2423c2e52ef4b2a2d0d676c40d1d947b2edf2ef80964fedd"
+          "version": "repo-file-v1:sha256:48e745d138096e1bb0de4fad913e4e2fbd8ff5e3c7bc3742e9366257bbda10ed"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -209,6 +209,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T22:23:52.052Z"
   }
 }
