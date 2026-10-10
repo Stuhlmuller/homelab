@@ -52,6 +52,8 @@ def verify_copies(expected):
                 not re.fullmatch(r"[0-9a-f]{40}", item["head_sha"])):
             continue
         revision = item["head_sha"]
+        if item.get("display_title") != f"Mirror all @ {revision}":
+            continue
         try:
             run("git", "merge-base", "--is-ancestor", revision, expected)
             published = all(run("git", "show", f"{revision}:{path}", binary=True) ==
@@ -64,7 +66,7 @@ def verify_copies(expected):
         if published:
             break
     if not published:
-        raise RuntimeError("No successful Harbor mirror workflow for this publication bundle")
+        raise RuntimeError("No successful full-catalog Harbor mirror workflow for this publication bundle")
     images = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
     if not images:
         raise RuntimeError("Mirror inventory is empty")

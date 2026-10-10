@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr) ]] || {
-  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik) ]] || {
+  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr|mirror-traefik' >&2
   exit 2
 }
 mode="$1"
@@ -14,6 +14,9 @@ if [[ "$mode" == mirror-fleet ]]; then
 elif [[ "$mode" == mirror-bazarr ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-bazarr-images.json
+elif [[ "$mode" == mirror-traefik ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-traefik-images.json
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]

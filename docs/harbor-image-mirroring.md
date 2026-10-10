@@ -63,11 +63,32 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha"
    ```
 
+   For the Traefik ingress prerequisite, use the fixed one-image scope already
+   selected from the full reviewed catalog:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
+   ```
+
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, or `traefik`; no image,
+   digest, inventory path, or destination can be supplied by the caller.
+   `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
+   image. Its publication uses the same all-platform digest copy, reviewed tag
+   alias, and fresh complete anonymous download checks. A scoped success proves
+   only its selected entries; it cannot establish full-catalog coverage. Require
+   successful Traefik publication before merging the consuming ingress rollout.
+
    Require a successful run, including complete anonymous downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication
    bundle is byte-identical to current reviewed `main`: `scripts/config/harbor-images.json`,
    `.github/workflows/harbor-mirror.yml`, `scripts/ci/harbor-publish.sh`,
-   `scripts/ci/install-kubeconfig.sh`, `flake.nix`, and `flake.lock`.
+   `scripts/ci/install-kubeconfig.sh`, `flake.nix`, and `flake.lock`. A scoped
+   receipt additionally requires the same selected scope and byte-identical
+   scope inventory (for Traefik, `scripts/config/harbor-traefik-images.json`).
+   Run titles record the scope and full commit: `Mirror traefik @ <SHA>`, for
+   example. The Talos helper requires the exact `Mirror all @ <run head SHA>`
+   title for full-catalog provenance; scoped or older untitled runs do not
+   qualify. Publish `image_scope=all` if that evidence is absent.
    Missing commit history or blobs cannot establish that evidence. Probe or docs
    changes alone therefore do not require another full image copy. New workflow
    dispatches and credential access still require exact current `main`.
