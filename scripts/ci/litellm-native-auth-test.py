@@ -17,7 +17,7 @@ from litellm.proxy._types import ProxyException, UserAPIKeyAuth
 
 auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "clusters/homelab/apps/litellm"))
-from gateway import TelemetryAdmission
+TelemetryAdmission = importlib.import_module("gateway").TelemetryAdmission
 
 assert version("starlette") == "0.49.1", "Match the deployed Host parser, not a newer implicit fix"
 

@@ -1,6 +1,7 @@
 """Import fixture keys into disposable PostgreSQL using the pinned native schema."""
 
 import asyncio
+import importlib
 import json
 from pathlib import Path
 import subprocess
@@ -18,7 +19,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "clusters/homelab/apps/litellm"))
-import native_keys
+native_keys = importlib.import_module("native_keys")
 
 
 def run(*command):

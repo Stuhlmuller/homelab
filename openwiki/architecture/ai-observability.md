@@ -80,6 +80,13 @@ reports its StatefulSet OutOfSync although `kubectl diff` is empty; inspect
 Argo's normalized comparison before declaring full convergence. No PVC was
 replaced and no live force-sync was used.
 
+Follow-up read-only inspection found no diff through the controller's native
+`argocd app diff --core`. A Kubernetes server-side dry run using field manager
+`argocd-controller` also found no change after including Argo's generated
+tracking annotation. PostgreSQL's current/update revisions match, its replica
+is Ready, and both database ExternalSecrets are Ready. Argo's OutOfSync status
+remains unexplained; no ignore rule, force-sync or live repair was introduced.
+
 The `litellm-app-keys` revision `v2` refreshes the file-mounted OpenRouter
 credential after protected SSM injection. Merge this refresh only after the
 provider credential workflow succeeds. The gateway rereads the mounted key for
