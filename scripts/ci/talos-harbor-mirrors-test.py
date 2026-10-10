@@ -33,7 +33,8 @@ class RolloutTest(unittest.TestCase):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
                          "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection",
                          "prior-success", "later-page-success", "bundle-changed", "non-ancestor", "missing-history", "missing-blob",
-                         "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha"):
+                         "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha",
+                         "fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "scripts/config").mkdir(parents=True)
@@ -89,8 +90,15 @@ class RolloutTest(unittest.TestCase):
                                 "conclusion": "failure" if scenario == "wrong-conclusion" else "success"}
                         if scenario == "short-sha":
                             item["head_sha"] = SHA[:7]
+                        item["display_title"] = f"Mirror all @ {item['head_sha']}"
+                        if scenario in ("fleet-only", "bazarr-only", "traefik-only"):
+                            item["display_title"] = f"Mirror {scenario.removesuffix('-only')} @ {item['head_sha']}"
+                        elif scenario == "untitled":
+                            item.pop("display_title")
+                        elif scenario == "wrong-title-sha":
+                            item["display_title"] = f"Mirror all @ {PRIOR_SHA}"
                         if scenario == "later-page-success":
-                            return json.dumps([{"workflow_runs": [{**item, "head_sha": "c" * 40}] * 100},
+                            return json.dumps([{"workflow_runs": [{**item, "head_sha": "c" * 40, "display_title": f"Mirror all @ {'c' * 40}"}] * 100},
                                                {"workflow_runs": [item]}])
                         return json.dumps([{"workflow_runs": [] if scenario == "workflow" else [item]}])
                     if command[0] == "curl":
@@ -181,8 +189,11 @@ class RolloutTest(unittest.TestCase):
                                      {"scripts/config/harbor-images.json", ".github/workflows/harbor-mirror.yml",
                                       "scripts/ci/harbor-publish.sh", "scripts/ci/install-kubeconfig.sh", "flake.nix", "flake.lock"})
                 if scenario in ("bundle-changed", "non-ancestor", "missing-history", "missing-blob", "wrong-branch",
-                                "wrong-event", "wrong-status", "wrong-conclusion", "short-sha"):
+                                "wrong-event", "wrong-status", "wrong-conclusion", "short-sha",
+                                "fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha"):
                     self.assertFalse(any(call[0] == "curl" for call in calls))
+                if scenario in ("fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha"):
+                    self.assertFalse(any(call[:2] == ("git", "merge-base") for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
                 self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success"))

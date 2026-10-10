@@ -323,11 +323,14 @@ case "$IMAGE_SCOPE" in
   bazarr)
     bash scripts/ci/harbor-publish.sh mirror-bazarr
     ;;
+  traefik)
+    bash scripts/ci/harbor-publish.sh mirror-traefik
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7c925c8f9a41207b63a485f7a27d666623ba777f8c40fdebd20bdbfe4b655bdc  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'f06a816cbb6e034c1e396ae104f15124ee989af6286bacfcff68dd4497e7395f  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

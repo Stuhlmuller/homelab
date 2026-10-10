@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6c026fbe9efc49022ef7b8117c563e142854259da68a8942dd3701b209761dc7",
+  "pageVersion": "sha256:d362fbdc2a0e9766faf4a838c2d480b98bdd9ece8d707f44e64554321f6f4088",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -30,13 +30,13 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
-          "version": "repo-file-v1:sha256:096c18dd7a20c5bf2d633ebb52bfb3b35426d7d3856ae02ee058f7c7b5bad28e"
+          "version": "repo-file-v1:sha256:4e0447410f1c132218fe77d21a0f32b298bbf91461f496c648b369ecf81bc25e"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-09T05:26:38.825Z"
+    "at": "2026-10-10T19:29:29.016Z"
   }
 }

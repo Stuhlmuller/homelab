@@ -5,7 +5,7 @@ description: "Historical Gluetun CPU throttling, Deluge capacity evidence, and p
 tags: ["homelab", "navigation"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-09T05:26:38.825Z
+    at: 2026-10-10T19:29:29.016Z
 sources:
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
