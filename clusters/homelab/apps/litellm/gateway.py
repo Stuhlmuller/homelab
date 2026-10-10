@@ -69,11 +69,10 @@ class TelemetryAdmission:
             return await JSONResponse({"error": "Invalid Host header"}, status_code=400)(scope, receive, send)
         request = Request(scope, receive)
         route = get_request_route(request)
+        inference = (RouteChecks.is_llm_api_route(route)
+                     or RouteChecks.check_route_access(route, LiteLLMRoutes.llm_api_routes.value))
         if request.method == "GET" and route in {"/models", "/v1/models"}:
-            return await self.app(scope, receive, send)
-        if not (RouteChecks.is_llm_api_route(route)
-                or RouteChecks.check_route_access(route, LiteLLMRoutes.llm_api_routes.value)):
-            return await self.app(scope, receive, send)
+            inference = False
         size = 0
         async def bounded_receive():
             nonlocal size
@@ -110,13 +109,13 @@ class TelemetryAdmission:
         if LOGGING_OVERRIDES.intersection(keys):
             return await JSONResponse({"error": "Request-level logging overrides are disabled"},
                                       status_code=400)(scope, receive, send)
-        if PROVIDER_OVERRIDES.intersection(keys):
+        if inference and PROVIDER_OVERRIDES.intersection(keys):
             return await JSONResponse({"error": "Provider routing overrides are disabled"},
                                       status_code=400)(scope, receive, send)
-        if request.method != "POST" or route not in {"/chat/completions", "/v1/chat/completions"}:
+        if inference and (request.method != "POST" or route not in {"/chat/completions", "/v1/chat/completions"}):
             return await JSONResponse({"error": "Only free chat completions are enabled"},
                                       status_code=400)(scope, receive, send)
-        if model != "openrouter/free":
+        if inference and model != "openrouter/free":
             return await JSONResponse({"error": "Only OpenRouter free models are enabled"},
                                       status_code=400)(scope, receive, send)
         del request

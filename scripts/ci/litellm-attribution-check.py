@@ -238,8 +238,11 @@ async def check_admission():
         assert await invoke(raw, cache, content_type) == 400
     assert reached == ["http"]
     for path in ("/v1beta/models/fixture:generateContent", "/guardrails/apply_guardrail",
-                 "/openai/v1/chat/completions", "/openai/deployments/fixture/chat/completions"):
+                 "/openai/v1/chat/completions", "/openai/deployments/fixture/chat/completions",
+                 "/key/generate", "/key/update", "/user/new"):
         assert await invoke(b'{"callbacks":[]}', path=path) == 400
+        assert await invoke(b"callbacks=langfuse_otel", content_type=b"application/x-www-form-urlencoded", path=path) == 400
+        assert await invoke(b"{}", cached={"langfuse_host": "https://untrusted.invalid"}, path=path) == 400
     assert await invoke(b'{"callbacks":[]}', path="/gateway/v1/chat/completions", root_path="/gateway") == 400
     with patch.object(gateway_launcher, "MAX_BODY_BYTES", 16):
         assert await invoke(b'{"model":"fixture"}') == 413, "Count bytes, not the misleading Content-Length"

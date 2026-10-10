@@ -40,6 +40,9 @@ startup rather than overwriting operator state. No custom-auth hook remains:
 the native database verifier authorizes requests, while ASGI admission blocks
 provider and telemetry overrides before native error logging can parse them.
 Only the trusted pre-call hook inserts the file-mounted upstream credential.
+Telemetry admission covers management and model-discovery routes too: native
+authentication failures can parse their bodies before logging. Model/provider
+restrictions apply only to inference, preserving native key-management bodies.
 
 The pinned image is affected by
 [GHSA-4xpc-pv4p-pm3w](https://github.com/BerriAI/litellm/security/advisories/GHSA-4xpc-pv4p-pm3w).

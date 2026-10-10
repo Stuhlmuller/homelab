@@ -87,6 +87,16 @@ async def check():
             assert response.status_code == 200, "Fixture no longer reproduces the unguarded native bypass"
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=TelemetryAdmission(app)),
                                      base_url="http://fixture") as client:
+            # Management auth failures also parse caller telemetry before logging.
+            proxy.proxy_logging_obj.post_call_failure_hook.reset_mock()
+            for override in ("langfuse_host", "callbacks", "success_callback"):
+                for method, path in (("POST", "/key/generate"), ("GET", "/v1/models")):
+                    response = await client.request(method, path, json={override: "https://untrusted.invalid"})
+                    assert response.status_code == 400, (path, override, response.status_code)
+            proxy.proxy_logging_obj.post_call_failure_hook.assert_not_called()
+            response = await client.post("/key/generate", headers={"Authorization": "Bearer " + proxy.master_key},
+                                         json={"models": ["openrouter/free"]})
+            assert response.status_code == 200, "Management bodies must not receive inference-only restrictions"
             for host in ("fixture/#", "fixture/?", "fixture/health/liveliness#", "fixture@elsewhere",
                          "fixture\\path", "fixture%23", "fixture\t", "fixture\n", ""):
                 for path in ("/key/generate", "/v1/chat/completions"):
