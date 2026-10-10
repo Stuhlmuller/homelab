@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:65bf0e74f37e1c765e9bebbc51dd1a1fc2454486a33fc64be94617ae31fd9f85",
+  "pageVersion": "sha256:a4dcad8bd7b8eb7b64bc0b65c7eaeb3f5fa9502bbf24fea22be280ad68c247bf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9cf20c2a56be7cb23edef5c120e3b7c062ad4d0c28b50e5fea643a842c6a9446"
+          "version": "repo-file-v1:sha256:43e42004de9c9ed22eca8ed3ddb855bdb597d194f0835fee9e8f7c48383ce6ad"
         }
       ]
     },
@@ -50,15 +50,15 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "The static gate includes Traefik route and tokenless kubeconfig boundary checks, while the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L17",
-          "version": "repo-lines-v1:sha256:aadb39e3ad312d3f94e7d207e9127d90e4e055b4a5da7e4c779602612679a60c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L18",
+          "version": "repo-lines-v1:sha256:f8bbfb2d52c3d6601e9fa25fef879f8a7b2578165a8c3c027b7e590886fb4ac3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
+          "version": "repo-file-v1:sha256:dc793b4994e877b3ff26230c763a07df543f215e83f8f297021fe660572d68c2"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -82,15 +82,15 @@
     },
     {
       "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
-      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
+      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
-          "version": "repo-file-v1:sha256:1a701185a8fd5d25f4975381fe572f742234bc59a447bd06fa4630269a21a865"
+          "version": "repo-file-v1:sha256:c4bd586a1cd8425864b99026735861f3954413cae95b7094087a995f7adde1c4"
         },
         {
           "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
@@ -155,10 +155,28 @@
           "version": "repo-file-v1:sha256:14ff49ccbdd8c013a129e874d251acc9e0e9ea8ec237c8a94c6140f327ab9208"
         }
       ]
+    },
+    {
+      "id": "claim_a7ed2b737fcd4aeb8d2d62a4c1910698",
+      "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
+          "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L344-L416",
+          "version": "repo-lines-v1:sha256:c7b9f848043465aa8548f1b1914a2e976a41c076e90381c769eb0210a98dea9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMzk5NTA1YmZlNmU3NmM0M2MyMjgxNzk5ZjAzODg4MGQzODUyNWJjOGQ5MDhmNWY4YTI1YjMwNDRlY2Q3ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMTFiY2U5MDBkOTA3ZGNmYWQxZjc4ZDM0M2M3NDM3ZmQ1NjUxODNhMzJmMzMwYzg2YTRjNmY3NjdkNmIzM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRkMzZmOTA5MzkwZjJlNGNiMjk5OWVhNTllOGE2M2MxODk5MWM5MzYyMDI2NGMzY2E1ZWQ3YWM0NWQyNTgzOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjYzA3MjQyYzhjMzM2MThjYmRkYWRiNmVjNjgzN2JiNTFiMDZjZGI1NDkwMzRiYTZlNTUyYzA0Y2ZmZGY2YTYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
+          "version": "repo-file-v1:sha256:079ceef243831262e78d6115923c02e92071b3d89e2db2a882c6a531bc0555e0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:46:55.335Z"
+    "at": "2026-10-10T22:48:00.170Z"
   }
 }

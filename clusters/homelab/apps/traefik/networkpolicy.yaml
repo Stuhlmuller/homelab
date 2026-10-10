@@ -33,6 +33,11 @@ spec:
         - ipBlock: {cidr: 10.1.0.200/32}
         - ipBlock: {cidr: 10.1.0.201/32}
         - ipBlock: {cidr: 10.1.0.202/32}
+        # Host-to-ClusterIP SNAT can select the node's cni0 address.
+        - ipBlock: {cidr: 10.244.1.1/32}
+        - ipBlock: {cidr: 10.244.2.1/32}
+        - ipBlock: {cidr: 10.244.3.1/32}
+        - ipBlock: {cidr: 10.244.4.1/32}
       ports:
         - {protocol: TCP, port: 9443}
     - from:

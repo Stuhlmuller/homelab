@@ -1,10 +1,11 @@
 mock_provider "tailscale" {}
 
 variables {
-  policy       = "{\"grants\":[]}"
-  kms_key_id   = "alias/test-only"
-  kms_region   = "us-east-1"
-  kms_key_spec = "AES_256"
+  ci_key_generation = 1
+  policy            = "{\"grants\":[]}"
+  kms_key_id        = "alias/test-only"
+  kms_region        = "us-east-1"
+  kms_key_spec      = "AES_256"
 }
 
 run "identity_boundaries" {
@@ -33,4 +34,24 @@ run "reject_unknown_policy_baseline" {
     policy = "{\"_bootstrap_required\":true}"
   }
   expect_failures = [var.policy]
+}
+
+run "locked_ci_keys" {
+  command = plan
+  assert {
+    condition = alltrue([for name, key in tailscale_tailnet_key.github :
+      key.reusable && key.ephemeral && key.preauthorized && key.expiry == 7776000 &&
+      key.recreate_if_invalid == "never" && key.tags == toset(["tag:homelab-ci-${name}"]) &&
+      key.description == "Homelab CI ${name} generation 1"
+    ]) && length(tailscale_tailnet_key.github) == 3
+    error_message = "CI keys must remain separate, tagged, ephemeral, reusable and bounded to 90 days with explicit generation rotation."
+  }
+}
+
+run "reject_untracked_rotation" {
+  command = plan
+  variables {
+    ci_key_generation = 0
+  }
+  expect_failures = [var.ci_key_generation]
 }

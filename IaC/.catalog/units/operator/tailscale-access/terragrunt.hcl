@@ -17,5 +17,7 @@ EOF
 }
 
 inputs = {
-  policy = file("${dirname(find_in_parent_folders("root.hcl"))}/../scripts/config/tailscale-policy.json")
+  # Generation 1 prepared 2026-10-10 UTC; rotate 60 days after provider creation.
+  ci_key_generation = 1
+  policy            = file("${dirname(find_in_parent_folders("root.hcl"))}/../scripts/config/tailscale-policy.json")
 }

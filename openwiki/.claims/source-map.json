@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ab6bfd0389e583d9fc3a45bab425ee84fb8b695e86b303af498c3380e93fbd6a",
+  "pageVersion": "sha256:f277ce2d03559638e9fef0e8cba37de6a1fcdc6948b30e681bd166a445742543",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -25,7 +25,7 @@
       "statement": "The Deluge daemon-status helper and workload README own the bounded authenticated daemon-health check and its operational verification.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/deluge/README.md#L294-L318",
+          "resource": "repo://clusters/homelab/apps/deluge/README.md#L295-L319",
           "version": "repo-lines-v1:sha256:96815d421639dc75048e6c4788ba003cd0d53676952a93278b3bd49957721ba7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MDE0NzUyYWY1MThmYWVjYTA2MDYzZmQ5MjIyODczNjMzYzAwMzk0Y2QxZWNkOTA3MTY0YmI2N2M3NTE3MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZTk5NmQ0NmZhMjU1YzA2YWMzNjJmYWYxYWQ5YjdlMDJjYjYyZjZhNTJlYTA5YjA2ZGFhNmNhODNjZmM0ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMmFhZGY1ZGI3YTA1ZTFmY2YwMWRlOTMzNTlmNzgwMDEzMTk4YzBkMTZhZjE5YjVjMGYzYmIyN2Q4NTA0MTMifQ"
         },
         {
@@ -36,21 +36,29 @@
     },
     {
       "id": "claim_8d503c93f9684f708a42cd045c5bdf97",
-      "statement": "Traefik's explicit routes and README own the staged mesh ingress contract; the Tailscale module owns provider adoption and CI identity setup.",
+      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, rotation and previous-authority retirement.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:b31d6bb55e271012d2171ac5446890a7ddb36717fb11a0c3fe51036b4a8d4275"
+          "version": "repo-file-v1:sha256:4bbd0eb778739f526292a5975edb7bb21be325ee62786dda822f93dbe485e08e"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:b85229bc4f2139e71679bf73e9ba73d67494de18acae306e6e9979bd9d7d153f"
+          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:c78c279677bbe9746f1e7d65b80e83653de90b87d5a40402f80572f4f751baf1"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ingress-sign.py",
+          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:43:31.576Z"
+    "at": "2026-10-10T22:48:00.170Z"
   }
 }
