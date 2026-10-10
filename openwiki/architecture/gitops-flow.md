@@ -6,6 +6,8 @@ tags: ["architecture", "argocd", "terragrunt"]
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-77d110fdd1547564be86e611
@@ -16,10 +18,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T23:03:36.138Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T23:03:36.138Z
 ---
 
 # GitOps Flow

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0b6c1ad997298bb497f7bb4bbf28e44a60c363ce44463eb38ddc3f9ff6a51637",
+  "pageVersion": "sha256:322016b205d6e8c9936c751f94cb0c6093515de10c01685f8f32768b026ed7e0",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -86,7 +86,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:add23655cc03e4085d3b041ba5187c3f2ed948e356a78d76931c63c51cde379f"
+          "version": "repo-file-v1:sha256:d05faa1d52ae1d8e9021e75e1de88e504147ea4c50cf7155ba790de57ed70bbf"
         }
       ]
     },
@@ -144,7 +144,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:add23655cc03e4085d3b041ba5187c3f2ed948e356a78d76931c63c51cde379f"
+          "version": "repo-file-v1:sha256:d05faa1d52ae1d8e9021e75e1de88e504147ea4c50cf7155ba790de57ed70bbf"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -152,25 +152,21 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:14ff49ccbdd8c013a129e874d251acc9e0e9ea8ec237c8a94c6140f327ab9208"
+          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
         }
       ]
     },
     {
-      "id": "claim_5104356bd18d495ea36ca01a2201fb0f",
-      "statement": "The static gate tests fixed ingress signing ownership/peer identity, null empty peer classes, trusted signing profile, secret publication order and generation-specific retirement. Publisher fixtures distinguish delegated and trusted signer keys and reject missing/ambiguous/unrelated trust changes and cached authority identity or metadata mismatches; live acceptance remains separate.",
+      "id": "claim_a7ed2b737fcd4aeb8d2d62a4c1910698",
+      "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
       "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
-        },
         {
           "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
           "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
-          "version": "repo-file-v1:sha256:48e745d138096e1bb0de4fad913e4e2fbd8ff5e3c7bc3742e9366257bbda10ed"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L344-L416",
+          "version": "repo-lines-v1:sha256:c7b9f848043465aa8548f1b1914a2e976a41c076e90381c769eb0210a98dea9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMzk5NTA1YmZlNmU3NmM0M2MyMjgxNzk5ZjAzODg4MGQzODUyNWJjOGQ5MDhmNWY4YTI1YjMwNDRlY2Q3ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMTFiY2U5MDBkOTA3ZGNmYWQxZjc4ZDM0M2M3NDM3ZmQ1NjUxODNhMzJmMzMwYzg2YTRjNmY3NjdkNmIzM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRkMzZmOTA5MzkwZjJlNGNiMjk5OWVhNTllOGE2M2MxODk5MWM5MzYyMDI2NGMzY2E1ZWQ3YWM0NWQyNTgzOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjYzA3MjQyYzhjMzM2MThjYmRkYWRiNmVjNjgzN2JiNTFiMDZjZGI1NDkwMzRiYTZlNTUyYzA0Y2ZmZGY2YTYifQ"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -179,36 +175,46 @@
       ]
     },
     {
-      "id": "claim_5dca1fba012d46dd82d821d79a05c521",
-      "statement": "Talos Harbor regression checks full active/persistent streams, additional-document divergence, version1 freshboot without persistent, later active changes without persistent, duplicate or missing active resources and read failures, preserving scope and no-reboot gates.",
+      "id": "claim_777dbffac471441a8d6c2bc78dec1167",
+      "statement": "Private DNS readiness accepts HTTP502 or503 only for AFFiNE when repository and live Deployment explicitly have integer zero replicas and no live replicas remain; other application5xx responses and failed suspension reads reject readiness.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L114-L155",
+          "version": "repo-lines-v1:sha256:19e3eba1e88d470527a613f84ec85ecee39a873caa537fa5435480ea96f7f7f9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNWRkZWExYjY0OTIxNmQ5N2YxZGQxYjlkNTg1OWE1ZDE3ZTFmOGUyZGRiNjIwZTIxYWEzYjZkNmU4ZTU2NTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YzdmMDlkN2Q4MDY4MDMxNWIwNGY0OWJhMjU4OTgxZjMxODUxMzJiMGM0MTBhOTI3NDRlODIxZjRjMGVmMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ODU1M2UwOTJlMTk2Y2VkYTYyYzZmYzM5MTJlNDNhOWQ1YzE5YzllYWYyZDhmYjhmNjI2ZWU5MGViOWFkYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MjZjYzU0MDQzNGIzMzI5MWRlYTdmZTk3ZGVjYjM0NTZhOTBiZmRmMzM0OGFlN2VkNGM3NDZhOGIzZDA0NTMifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L123-L157",
+          "version": "repo-lines-v1:sha256:f39bdd9bf02db7bcabd1997f1a995ecd30990f2dad414ca82f2f29771812066d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0YzlmYmM4NGY5NTNhMzE3NjEzNTc1ZWNiOTBkMWI2YjQ1OWZlZDQ5MTcxZDJmZDIxNWMzNTNlNjlkOTBhOWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1YjEzMjY4MWIxMWY2NDBkNWZkMGFlMWZjMDczZTU1MmJiNWZkZmExYzIxNmMyZTU5NGVjM2VmODk5MzgxZDcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6f6ab95b89bc466f8e513d60d8bafe7c",
+      "statement": "Talos host-only regression rejects differences across complete active/persistent streams, accepts missing persistent only at initial active resource version1 and preserves scope, node identity and no-reboot checks before and after apply.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
           "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:d64881033a76b7c1df294226339e58e8766fecb556947f4fe9cde013ae4b863a"
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L256-L332",
+          "version": "repo-lines-v1:sha256:b14885de04159029e95302b12201e18b120d6e00c9118bcc5b817fa25e58b35b:eyJzZWxlY3RlZExpbmVDb3VudCI6NzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0MzFiZmU0MTU1NDk0MTljZDAyZGUzNWQwZjZmZGU4N2IwODdmNjRiYzhmMjNiN2I5MDI0ZjQ3YmE3OTE0NDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjZkNTI0ODc5ZTQzNjY3MjRhOTkyNDRhODI4OWQxYzc3YjdkNjk2YjBjOWFkMmExYTNiZTBkMmFiNTBhNTAifQ"
         }
       ]
     },
     {
-      "id": "claim_b75f79856d6948dcbfeb441ca94403a0",
-      "statement": "Phase2a removes public DNS restoration paths and changes CoreDNS/n8n source; Funnel readiness must precede n8n rollout, while external DNS, Mac migration, TTL expiry, canonical API checks and fresh callback delivery remain ordered acceptance steps before later CI/native retirement.",
+      "id": "claim_d8004a74253344439e07e3c5f206f216",
+      "statement": "Phase2a removes legacy DNS writers and declares internal CoreDNS routing plus n8n Funnel advertisement; external DNS, Mac migration, DNS TTL expiry, callbacks and later CI transport acceptance remain ordered separate gates.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
-        },
-        {
-          "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:bddcda1f8d57dfa0580b8f76bdaa34494e7554e5464d53454b7523342b48098d"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:23:52.052Z"
+    "at": "2026-10-10T23:03:36.138Z"
   }
 }

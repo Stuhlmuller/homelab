@@ -6,8 +6,6 @@ tags: [runbook, networking, ingress]
 sources:
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
-  - id: openwiki-source-812216982d0b6a887bf09651
-    resource: repo://clusters/homelab/apps/cordium/networkpolicy.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-d190dbce4c50934f34b78ce1
@@ -34,10 +32,10 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-511191e55632b55651ad4318
+    resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
@@ -50,12 +48,14 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
+  - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
+    resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
+generated: { by: "codex", at: "2026-10-10T23:03:36.138Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T23:03:36.138Z
 ---
 
 # Tailnet And App Ingress
@@ -140,11 +140,14 @@ Mac and published by `tailscale-ci-configure.py`. Run its read-only preview and
 then `--execute`; it accepts no arbitrary key or GitHub target. Preserve its
 private signature cache, which stores each wrapper and its separately verified
 public credential authority identity. The embedded private key delegates node
-signing and is distinct from the authority's private voting key. Rotate the
-committed generation every 60 days, before 90-day expiry, and verify protected
-plan/apply/Cordium acceptance. Then use `--retire-previous --execute` to remove
-only cached older-generation signing authorities. Expired auth keys alone do not
-revoke the delegated signing capability.
+signing; it is not the authority's private voting key. Rotate the committed
+generation every 60 days, before 90-day expiry, and verify protected plan/apply/Cordium acceptance. Then use
+`--retire-previous` to preview and `--retire-previous --execute` to remove only
+cached older-generation signing authorities. Both modes validate every current
+signature and all previous authority metadata before any removal. Execute
+rechecks each target and safely handles an already-absent previous authority;
+preview never signs, publishes or changes cache contents. Expired auth keys alone
+do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
 tradeoff. Each CI job must supply a private `statedir` to the pinned action.
@@ -193,6 +196,12 @@ to `traefik-private`, additive Cordium bootstrap network peers, and n8n's
 readiness before n8n restarts because it can register hooks during startup.
 Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
+
+The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
+the repository and live Deployment explicitly declare zero replicas and no
+live replicas remain. This accounts for Traefik's static ClusterIP backend
+while AFFiNE is suspended. All other application 5xx responses fail; this
+exception does not establish AFFiNE runtime health.
 
 Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most

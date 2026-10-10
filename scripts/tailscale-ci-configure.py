@@ -251,12 +251,22 @@ def previous_records(keys, cache):
     return previous
 
 
-def retire(keys, cache):
-    # Explicit post-acceptance operation. Never remove an arbitrary trusted signer.
+def retirement_preflight(keys, cache):
     if not {fingerprint(entry) for entry in keys.values()}.issubset({entry["fingerprint"] for entry in cache}):
         raise GUARDS.Failure("Publish and validate current signed keys before retiring previous authority")
     signed_keys(keys, cache)  # All current keys must already be cached; this cannot create new signatures.
-    for record in previous_records(keys, cache):
+    previous = previous_records(keys, cache)
+    trusted = lock_status()
+    for record in previous:
+        public = record["authority"]
+        if public in trusted and not authority_matches(record["wrapped"], public, trusted):
+            raise GUARDS.Failure("Previous signing authority does not match the private CI cache")
+    return previous
+
+
+def retire(keys, cache):
+    # Validate the complete inventory before removal; recheck each target for drift.
+    for record in retirement_preflight(keys, cache):
         trusted = lock_status()
         public = record["authority"]
         if public in trusted:
@@ -279,8 +289,11 @@ def main(argv=None):
         keys = read_identity()
         verify_destinations()
         lock_status()
-        previous_records(keys, read_cache())
+        cache = read_cache()
+        previous_records(keys, cache)
         if not args.execute:
+            if args.retire_previous:
+                retirement_preflight(keys, cache)
             print("Preview passed: provider keys, destination scopes and local signer validated; nothing changed.")
             return 0
         with locked_cache():

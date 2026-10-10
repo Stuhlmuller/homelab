@@ -3,9 +3,6 @@ type: runbook
 title: "Octelium"
 description: "Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence."
 tags: ["runbook", "octelium", "access"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
     resource: repo://scripts/multica-desktop-connect.py
 generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:03:36.138Z
 ---
 
 # Octelium

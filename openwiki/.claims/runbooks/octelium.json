@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb00131cbc400a407a1eb493784a22a2509353c250ba2160b79b9ef6cbb2d34f",
+  "pageVersion": "sha256:05355dcbb3859f9b8827dcefd446b4e4ca831785d69deb61f88b4fe27bb94192",
   "claims": [
     {
       "id": "claim_7ff19d2b3cf94bcda26039f6b8c2abfe",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://docs/octelium.md",
@@ -22,7 +22,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -33,6 +33,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T23:03:36.138Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f67c31eb6c9d1d19135a37c58a1aea5f9d8c21bd0e14637dc00b3e90c1bf6a31",
+  "pageVersion": "sha256:9d7eeea51b7cfb71bd9e615ad7610143f83b6ca3f4467bc707e72f38ffb0dbdc",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -53,7 +53,7 @@
       ]
     },
     {
-      "id": "claim_7f59ba79be0046418d48dbf929924297",
+      "id": "claim_590031ddaaf7450ab33897e0d461f9a8",
       "statement": "The Traefik registry listener permits only the four fixed Talos LAN node addresses and four individual cni0 bridge addresses on port 9443, retaining notPrincipals and OCI/token-only routing; whole Pod CIDRs remain excluded and Flannel NetworkPolicy is not enforced.",
       "evidence": [
         {
@@ -71,12 +71,12 @@
       ]
     },
     {
-      "id": "claim_b6720f6b2b6148178913f9a3ca709742",
+      "id": "claim_5fbfe74ec1e54bcc8a76911c6ac51cab",
       "statement": "The staged cutover requires registry policy convergence and successful uncached image pulls from every node before advancing Harbor DNS; the October 10 failed first pull and unresolved zimaboard-2 reboot do not establish rollout success or durable node recovery.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -89,44 +89,36 @@
       ]
     },
     {
-      "id": "claim_e6d9aa1914f54caca4b36afee635b14c",
-      "statement": "Talos Harbor helper captures full active v1alpha1 and optional persistent resource streams; all configuration documents must agree when persistent exists, and missing persistent is accepted only at initial active version1. Staged/try divergence, malformed/duplicate/unknown resources, read failure and absent active config stop before overwrite.",
+      "id": "claim_dd58098c01744c378eecdd52b53844ed",
+      "statement": "Phase2a routes in-cluster Harbor DNS through Traefik and removes the old public DNS writer while retaining the legacy Service and Tunnel for remaining callers; external DNS waits for private node-registry acceptance.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:ac99e4d3e7139b62101def707c97ce8dbeedbc271f80c6cc0dc0e3e09175d051"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+        }
+      ]
+    },
+    {
+      "id": "claim_aa99888910c940a0b7be74f746bf153e",
+      "statement": "The Talos helper captures the full machineconfig resource stream before and after apply, requires all active/persistent documents to match when both exist, and accepts missing persistent only with active resource version 1; staged differences, duplicate or unknown resources and failed reads stop the operation.",
+      "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
           "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L256-L288",
-          "version": "repo-lines-v1:sha256:16c5ac24beec4f3b4cdb65cfa929158941e943efd2c696ad10875cbc6f22b235:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjN2E4YTk1ZWEzMjg0NGQwOWRkYTMzZDM3NmZhZDQwZDlkZjAwMjhlNDRjM2I4MTFkOTc0ZWI5ODVlZDdmMTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ2NDM1NzNkNDYxNmFmOWY3NzY1NzQwOTUyMjliNjZkNDg2YWQyZjg3Nzc2MWNkNmJmMjNkY2IyMzVhNzBiOTAifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_bae52c267bba465cad2c68a8b9d69c7b",
-      "statement": "Phase2a routes in-cluster Harbor DNS through Traefik and removes the legacy public DNS writer/workflow; node host mapping and private external DNS acceptance precede retirement, while hosted CI retains its old transport until phase2b.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
-        },
-        {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
-          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b"
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L256-L287",
+          "version": "repo-lines-v1:sha256:95a6766003596b04afabd4aea35c7ae7a311041fa6e979f5f79a06d8352efe8e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4NGJiMzdiMjU4NjZjYmFiZDQ0YTI3NjQ2Yjg4YTFjMGU2OTI4M2FhODYwMjk5MTQ4ZWRhMzQ0YjkyMzE3NWIifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T23:03:36.138Z"
   }
 }

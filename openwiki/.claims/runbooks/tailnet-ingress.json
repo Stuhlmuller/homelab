@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5759b11890c3266a42c49c50d114d48589ed543ef8488fa9ebc001c0967f09bd",
+  "pageVersion": "sha256:d880c1f26b393a6038faabb8e057dec0113fbe9dee437219ce243ed38cf77407",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -54,11 +54,11 @@
     },
     {
       "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
-      "statement": "Fixed callback helpers preserve credentials and require non-executing preflights plus newer delivery IDs/timestamps. The CI publisher separately signs private provider keys behind current-main, environment and trusted-signer guards, verifies and caches the distinct public credential authority, publishes only three secrets, and removes old variables after all writes/readbacks. Wrappers embed delegated private node-signing keys; old cached authorities require explicit retirement after new CI acceptance.",
+      "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts. The CI publisher signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards; it caches the separate credential authority identity alongside the wrapped delegated node-signing key, and retires old variables only after all secret writes and metadata checks.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:660ab3e8444dedb02525d9fe69aea69b76c60764f85fb2a9e7b142f940a06ccf"
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L161",
+          "version": "repo-lines-v1:sha256:ac9718d5c69bf763dcf45a1779f1cab09b81a1ec04da62df5a2d93aeaff37b77:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
         },
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
@@ -69,8 +69,8 @@
           "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:65cce4cd523e981134629958a6de1743a8f6c24e18fec3b24731838994921b5c"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L324",
+          "version": "repo-lines-v1:sha256:54cf2770458ad4dab2a698f385dc5eca42201c4906f5b4586d68b947292f4316:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -80,7 +80,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -115,7 +115,7 @@
       ]
     },
     {
-      "id": "claim_b957a7c01ccc404a925acd5fef0c760e",
+      "id": "claim_edab07e8064e49849b7bb6fd9bacd525",
       "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy and two Funnel proxies after verifying exact controller ownership, Ready state, tailnet, tags, published addresses, public node/rotation keys and local peer identity; already-signed targets are skipped without adding signing authorities.",
       "evidence": [
         {
@@ -129,12 +129,12 @@
       ]
     },
     {
-      "id": "claim_c50b266c9794472d9c1fc8184a7eb055",
+      "id": "claim_a059c652889b45e79db0e082f246ab7a",
       "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from the four fixed LAN node addresses and their individually verified cni0 bridge /32s; node-to-Service SNAT requires those bridge sources, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -147,34 +147,54 @@
       ]
     },
     {
-      "id": "claim_936311083306473d8e1089a473606d9d",
-      "statement": "Phase2a removes the legacy DNS writer/workflow, routes internal Octelium API and Harbor DNS to Traefik, adds Cordium bootstrap network peers and sets n8n's Funnel WEBHOOK_URL; Funnel readiness precedes n8n rollout, and CI/shared native operator transport changes wait for canonical mesh acceptance.",
+      "id": "claim_208c9773be7a4580a2432d6ead9cd707",
+      "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L126-L155",
+          "version": "repo-lines-v1:sha256:a6b451b4ea561729e49731ddcff0d38bb542df71d21bc376cdf3007c6f4101be:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYzEzMTA4MWJjZjk2ZTdlMzJlM2FlYWIzYWFmZTI3NGJiY2VmNGUxMzg2YzFmMzNkMGRmMGE0ZmM5NjYxZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MjY0NDYyYzNiOWM5OWYzMjgyNGY5MmFjYmZjZmNkNDI3MzliNzA2MGRjMjhhNTdlMjI4ODBmNGNiOWZhNjcifQ"
         },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L254-L311",
+          "version": "repo-lines-v1:sha256:0060cbd98b372f78c13341a3b1c6050d18093086e6082c90a389d14e6d55f4e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1NzJkYTlmMGM5ZTFkZGRhYzZkOWY1MWE2YjVjMjM2MjY0N2NiOWNjMDQyMGNhNGJhNWM5OTMzZWJlMjhiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMmQ2YjgwZTRlNjEwMjg2YzA3ZjdmNThiODU1YWFhM2YyZWRkOGYzMjhiNzI4MWNjYWEwMWY5OTA2Yzg0MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMmVjODA5OTE5ZWEyYzZlNTg3ODQ1OTViZGJiNmQwYzM4MTczNzhhOTkyNGQ5N2Q2ZDFmYTZkMjdlM2NjNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjAxMTdmMTBiY2VjZDlhZWI4OWIzYzhlMmFlYmYyNDJjODk4NTZlMDQxNzRkYjBlZjUwZjI1MWY4ZjQ4YTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_010c1a54c11e4e1d814e848844e130f8",
+      "statement": "Phase 2a removes the legacy DNS writer and workflow, routes internal Harbor and Octelium API DNS through traefik-private, adds intended Cordium bootstrap peers and advertises the n8n Funnel webhook URL; CI and native operator transport remain until their later acceptance.",
+      "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
           "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
           "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+        }
+      ]
+    },
+    {
+      "id": "claim_6cb4a132ac244661ad8a58252af938f1",
+      "statement": "Private DNS readiness permits AFFiNE HTTP 502 or 503 only when the repository and live Deployment explicitly declare zero replicas and no live replicas remain; all other application 5xx responses fail readiness.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L114-L155",
+          "version": "repo-lines-v1:sha256:19e3eba1e88d470527a613f84ec85ecee39a873caa537fa5435480ea96f7f7f9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNWRkZWExYjY0OTIxNmQ5N2YxZGQxYjlkNTg1OWE1ZDE3ZTFmOGUyZGRiNjIwZTIxYWEzYjZkNmU4ZTU2NTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YzdmMDlkN2Q4MDY4MDMxNWIwNGY0OWJhMjU4OTgxZjMxODUxMzJiMGM0MTBhOTI3NDRlODIxZjRjMGVmMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ODU1M2UwOTJlMTk2Y2VkYTYyYzZmYzM5MTJlNDNhOWQ1YzE5YzllYWYyZDhmYjhmNjI2ZWU5MGViOWFkYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MjZjYzU0MDQzNGIzMzI5MWRlYTdmZTk3ZGVjYjM0NTZhOTBiZmRmMzM0OGFlN2VkNGM3NDZhOGIzZDA0NTMifQ"
         },
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:bddcda1f8d57dfa0580b8f76bdaa34494e7554e5464d53454b7523342b48098d"
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L123-L157",
+          "version": "repo-lines-v1:sha256:f39bdd9bf02db7bcabd1997f1a995ecd30990f2dad414ca82f2f29771812066d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0YzlmYmM4NGY5NTNhMzE3NjEzNTc1ZWNiOTBkMWI2YjQ1OWZlZDQ5MTcxZDJmZDIxNWMzNTNlNjlkOTBhOWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1YjEzMjY4MWIxMWY2NDBkNWZkMGFlMWZjMDczZTU1MmJiNWZkZmExYzIxNmMyZTU5NGVjM2VmODk5MzgxZDcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:23:52.052Z"
+    "at": "2026-10-10T23:03:36.138Z"
   }
 }

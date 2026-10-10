@@ -14,8 +14,6 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -58,10 +56,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
+generated: { by: "codex", at: "2026-10-10T23:03:36.138Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T23:03:36.138Z
 ---
 
 # Validation Gates
@@ -191,7 +189,11 @@ distinct delegated and trusted signer keys. They reject missing, ambiguous or
 unrelated trust changes after signing, and mismatched cached authority identities
 or metadata. Publication tests require all three secret writes and metadata
 checks before deleting the old variables, reuse cached signatures on retry, and
-restrict authority retirement to previous generations. Mock provider tests cover
+restrict authority retirement to previous generations. Retirement regressions
+corrupt each current or previous record, including later list positions, and
+require both preview and execution to fail with zero removals, unchanged cache,
+and no signing/publication. They also cover target drift after preflight and
+already-absent previous authority retries. Mock provider tests cover
 tag, expiry and explicit-rotation contracts; real provider planning remains the
 proof of replacement behavior.
 
@@ -215,6 +217,12 @@ additional-document divergence, a normal STATE-only boot with active version 1,
 missing persistent after a later active change, duplicate resources, read failure,
 and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
+
+The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
+the repository and live Deployment explicitly declare zero replicas and no
+live replicas remain. This accounts for Traefik's static ClusterIP backend
+while AFFiNE is suspended. All other application 5xx responses fail; this
+exception does not establish AFFiNE runtime health.
 
 Phase 2a removes the public DNS restoration workflow and helper, changes internal
 CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness before

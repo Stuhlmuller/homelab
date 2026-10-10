@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb2cc25b78221d81fd05da173a3c3bd616cb186aa94d3b19e3c66e441b6bf100",
+  "pageVersion": "sha256:62a992b09ab35ffc8f337cef8a77a4fbe097960895c6fae42f4d0dbe10de5441",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:660ab3e8444dedb02525d9fe69aea69b76c60764f85fb2a9e7b142f940a06ccf"
+          "version": "repo-file-v1:sha256:4bbd0eb778739f526292a5975edb7bb21be325ee62786dda822f93dbe485e08e"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -21,16 +21,26 @@
       ]
     },
     {
-      "id": "claim_875d2ec5fa5e45b684c9a5e9389a7b1f",
-      "statement": "Phase2a changes internal CoreDNS and n8n's advertised Funnel URL and removes the old public DNS writer/workflow; guarded external DNS execution and later CI/native retirement remain separate acceptance stages, with Fleet private and no Funnel route.",
+      "id": "claim_f7f2adc55f9340afb7fea4deaee6f8a6",
+      "statement": "Phase2a changes internal CoreDNS and the n8n advertised webhook URL and removes the old public DNS writer/restoration workflow; external DNS, legacy Tunnel retirement and CI migration remain separately gated operations.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://docs/ci-cd.md",
           "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
+        }
+      ]
+    },
+    {
+      "id": "claim_7061d88dd0754ea1a2cb05457fb10bf8",
+      "statement": "Fleet's existing hostname moves through the guarded private DNS cutover and has no Funnel route; setup API aliases remain blocked.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
@@ -41,6 +51,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:23:52.052Z"
+    "at": "2026-10-10T23:03:36.138Z"
   }
 }
