@@ -29,9 +29,9 @@ jobs:
       - name: Check published Chainguard Python compatibility
         # CI uses the identical public-source digest; live Harbor access is verified separately.
         run: |
-          image="$(nix develop --command yq -r '.spec.template.spec.containers[0].image' clusters/homelab/apps/harbor/vulnerability-exporter.yaml)"
+          image="$(nix develop --command yq -r 'select(.kind == "Deployment") | .spec.template.spec.containers[] | select(.name == "exporter") | .image' clusters/homelab/apps/harbor/vulnerability-exporter.yaml)"
           for job in harbor fleet; do
-            test "$image" = "$(nix develop --command yq -r '.spec.template.spec.containers[0].image' "clusters/homelab/apps/${job}/bootstrap-job.yaml")"
+            test "$image" = "$(nix develop --command yq -r 'select(.kind == "Job") | .spec.template.spec.containers[] | select(.name == "bootstrap") | .image' "clusters/homelab/apps/${job}/bootstrap-job.yaml")"
           done
           image="${image#harbor.stinkyboi.com/mirror/}"
           for test in harbor-bootstrap-test.py harbor-vulnerability-exporter-test.py fleet-bootstrap-test.py; do
