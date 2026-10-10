@@ -108,21 +108,23 @@ may host user workloads and remains outside this cluster-owned routing contract.
 
 ### October 10, 2026: Langfuse queue recovery
 
+#### Pre-repair state (historical)
+
 Read-only follow-up found `langfuse-valkey` in CrashLoopBackOff and its worker
 restarting. Valkey 8.0.11 loaded its base RDB, then rejected
 `appendonly.aof.4.incr.aof` as malformed. The PVC `langfuse-valkey-data` is
-retained; no files were removed or repaired. Trace acceptance is blocked even
-though the web Pod is Ready. Queue repair requires a private backup and reviewed
-repository-owned recovery path; truncation can discard queued events after the
-corruption point. Obtain approval for that risk before any repair, then require
+retained; at this stage no files had been removed or repaired. Trace acceptance
+was blocked even though the web Pod was Ready. The repair required a private
+backup, a reviewed repository-owned recovery path, and approval for possible
+loss of queued events after the corruption point. Acceptance also required
 stable Valkey/worker readiness and a fresh correlated generation per caller.
 The [copy-only inspection helper](../../scripts/langfuse-valkey-recovery.py)
 preserves a verified original and repairs only a private candidate. Its safety
 tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
-The authorized capture stage stops web/worker/Valkey through GitOps and mounts
-the queue read-only in a credential-free inspector. The helper verifies all
+The authorized capture stage stopped web/worker/Valkey through GitOps and mounted
+the queue read-only in a credential-free inspector. The helper verified all
 writers exited before capture to private off-NAS storage. No live replacement
-path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+path was activated at this stage; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
 [PR #1240](https://github.com/Stuhlmuller/homelab/pull/1240) merged as verified
 `fe1838c49eaa11897f5d7f375eae94ba439e3f4f`. Argo observed that revision and
@@ -135,8 +137,10 @@ from 10,328,329 to 9,987,809 bytes, discarding 340,520 bytes. Original source
 and backup hashes stayed unchanged. This measures bytes, not lost events, and
 does not prove runtime loading or fresh ingestion. Langfuse remained
 intentionally offline pending approved replacement and a repository-owned
-restart. LiteLLM native/UI-visible key migration has since completed; live
-trace acceptance remains pending.
+restart. LiteLLM native/UI-visible key migration had completed, but live
+trace acceptance was still pending at this stage.
+
+#### Recovery and verification
 
 Subsequent October 10 approval explicitly permits the 340,520-byte truncation
 and restart while retaining the off-NAS original. The prepared promotion path
