@@ -51,12 +51,12 @@ spec:
           volumeMounts:
             - name: source
               mountPath: /source
-              readOnly: true
+              readOnly: false
       volumes:
         - name: source
           persistentVolumeClaim:
             claimName: langfuse-valkey-data
-            readOnly: true
+            readOnly: false
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

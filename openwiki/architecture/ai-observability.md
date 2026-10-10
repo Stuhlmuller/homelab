@@ -137,6 +137,16 @@ does not prove runtime loading or fresh ingestion. Langfuse remains intentionall
 offline pending explicit approval and a separate repository-owned replacement
 and restart path. LiteLLM native/UI-visible key migration remains incomplete.
 
+Subsequent October 10 approval explicitly permits the 340,520-byte truncation
+and restart while retaining the off-NAS original. The prepared promotion path
+keeps all writers stopped, changes only the inspector's PVC mount to writable,
+verifies archive/original/candidate integrity and exact live hashes, and stages
+then atomically replaces only the approved incremental AOF. A separate reviewed
+GitOps change must remove the inspector and restore writers after replacement
+verification. Approval and local tests are not evidence of completed recovery.
+LiteLLM's later native-key rollout is now recorded in its
+[owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
+
 Native-key cutover inspection confirmed all four mounted caller credentials
 already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
 `GenerateKeyRequest.key` accepts an existing value, so import need not rotate
