@@ -9,6 +9,10 @@ Fleet has no Funnel route; its existing hostname moves to private mesh DNS.
 ## Before execution
 
 Merge the reviewed source and use a clean checkout of the exact current `main`.
+Keep Tailnet Lock enabled. Connect the existing trusted Mac's saved Tailscale
+profile, then preview and execute `scripts/tailscale-ingress-sign.py` as described
+in the [signing runbook](README.md#tailnet-lock). All three proxy identities must
+be signed before mesh/Funnel acceptance; Kubernetes readiness alone is insufficient.
 Confirm Traefik and both Funnel proxies are synced and healthy, certificates are
 Ready, and the private ingress Service publishes the unique online
 `homelab-ingress.tail67beb.ts.net` peer. Before DNS changes, reconnect the Mac's
@@ -38,10 +42,15 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
 
 ## Cutover order
 
-1. Keep working operator access. Before changing Harbor DNS, converge the
-   reviewed Talos host-only registry mapping and prove image pulls from every
-   node. Converge any required internal CoreDNS, application access, and n8n
-   `WEBHOOK_URL` changes through their separate GitOps change.
+1. Keep working operator access. Before changing Harbor DNS, verify the merged
+   Traefik registry policies allow the four exact LAN and four `cni0` bridge
+   addresses on port 9443. Host-to-ClusterIP SNAT can select a bridge source;
+   LAN-only allowances rejected the first mapped node before Traefik. Wait for
+   Argo convergence, then use the reviewed Talos host-only helper, workers first,
+   and prove uncached image pulls from every node. Do not advance the remaining
+   nodes while the first pull fails. Converge any required internal CoreDNS,
+   application access, and n8n `WEBHOOK_URL` changes through their separate
+   GitOps change.
 2. Disable the legacy `octelium-public-tunnel.yml` DNS-restoration workflow
    through a reviewed repository change and wait for in-flight runs to finish.
    Keep its tunnel Deployment running. Do not dispatch the old DNS helper after
@@ -115,6 +124,18 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    real admission-denial checks pass. Cordium CI additionally needs the canonical
    native API path from the runner. Change the shared native operator transport
    only after the operator's normal DNS/API path passes step 6.
+
+## Observed node readiness interruption
+
+On October 10, 2026, `zimaboard-2` reported a reboot and returned Ready at
+21:29:52 UTC after a NotReady event at 21:13:45 UTC. Fresh authenticated Talos
+reads at 21:31–21:32 UTC found services healthy and all eight scheduled Pods
+Ready. The host-only helper had rejected preflight before mutating that node.
+Bounded current-boot logs did not establish the reboot cause; prior-boot evidence
+was unavailable. This snapshot does not prove durable recovery. Require fresh
+all-node readiness and current leases before retrying the worker-first helper.
+If it flaps again, capture prior-boot/hardware power evidence privately; never
+bypass readiness or issue an ad hoc reboot.
 
 ## Final retirement
 

@@ -28,6 +28,8 @@ resource "tailscale_acl" "homelab" {
   }
 }
 
+# Retained unused during the Tailnet Lock transition. Remove in a separately
+# reviewed retirement after signed-key CI acceptance; do not bypass prevent_destroy.
 resource "tailscale_federated_identity" "github" {
   for_each = local.identities
 
@@ -45,5 +47,22 @@ resource "tailscale_federated_identity" "github" {
 
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "tailscale_tailnet_key" "github" {
+  for_each = local.identities
+
+  description         = "Homelab CI ${each.key} generation ${var.ci_key_generation}"
+  reusable            = true
+  ephemeral           = true
+  preauthorized       = true
+  expiry              = 7776000 # 90 days; rotate through reviewed generation changes every 60 days.
+  recreate_if_invalid = "never"
+  tags                = [each.value.tag]
+  depends_on          = [tailscale_acl.homelab]
+
+  lifecycle {
+    create_before_destroy = true
   }
 }

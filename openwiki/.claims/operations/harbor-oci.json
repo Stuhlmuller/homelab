@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fdd8a125e21e6d287ee8b8bc59b249c51f73c57b57fbe51ac4b4df738a99ba3a",
+  "pageVersion": "sha256:bc5abaf48f42835e9cf5c9392d9c4b30425361fca18e106420a7f25d775b00d1",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -51,10 +51,46 @@
           "version": "repo-file-v1:sha256:41e02d2c0b750ae4feaf0dae27f23d8b2779e0427d0527d837ef991495f918f4"
         }
       ]
+    },
+    {
+      "id": "claim_7f59ba79be0046418d48dbf929924297",
+      "statement": "The Traefik registry listener permits only the four fixed Talos LAN node addresses and four individual cni0 bridge addresses on port 9443, retaining notPrincipals and OCI/token-only routing; whole Pod CIDRs remain excluded and Flannel NetworkPolicy is not enforced.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:5822456261be6dbdd1c6e6a435927111761b33f4b2f70d8fafde8d9222cb8d27"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:9ecd7ae83e632b874acb5437c8301edacc5761b8da29457eaab0d1a479586c03"
+        }
+      ]
+    },
+    {
+      "id": "claim_b6720f6b2b6148178913f9a3ca709742",
+      "statement": "The staged cutover requires registry policy convergence and successful uncached image pulls from every node before advancing Harbor DNS; the October 10 failed first pull and unresolved zimaboard-2 reboot do not establish rollout success or durable node recovery.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:41e02d2c0b750ae4feaf0dae27f23d8b2779e0427d0527d837ef991495f918f4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:43:31.576Z"
+    "at": "2026-10-10T21:39:58.912Z"
   }
 }

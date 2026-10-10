@@ -3,11 +3,22 @@ type: operation
 title: "Harbor Private OCI Registry"
 description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
 tags: ["harbor", "oci", "packages", "gitops"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T21:39:58.912Z
 sources:
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-1ab63006818d653aed251f6d
+    resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-ac4e5166b14da067a9c57d03
+    resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
+  - id: openwiki-source-fbaccd01ca51226fa9e5324d
+    resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -18,10 +29,7 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T19:43:31.576Z
+generated: { by: "codex", at: "2026-10-10T21:39:58.912Z" }
 ---
 
 # Harbor Private OCI Registry
@@ -57,8 +65,8 @@ upstream server name/CA and remove this bypass across the service catalog.
 
 ## Private node registry foundation
 
-October 10 read-only Talos inspection found no configured registry mirrors or
-extra host entries on the four nodes. The strict mirror patches below remain
+Before the October 10 rollout, read-only Talos inspection found no configured
+registry mirrors or extra host entries on the four nodes. The strict mirror patches below remain
 a separate rollout; the mesh migration must not activate them implicitly.
 
 The staged Traefik `traefik-registry` Service reserves `10.96.0.50:443`.
@@ -76,10 +84,31 @@ paths and dashboard denial before any node change. Roll out workers first;
 correlate an uncached native node pull with Traefik/Harbor logs afterward.
 
 Flannel does not enforce the declared NetworkPolicy. Traefik's Istio policy
-restricts cross-node registry sources to the declared node IPs; trusted
-node-local traffic has Istio's bypass behavior. The listener's path boundary
-and Harbor's own artifact authorization remain required. This foundation is
-not evidence of deployed node DNS, successful cold pulls, or strict mirroring.
+restricts registry sources to the four declared LAN node addresses and their
+four individual `cni0` bridge `/32`s on port 9443, retaining the unauthenticated
+source restriction. Host-to-Service SNAT can select a bridge source; whole Pod
+CIDRs remain excluded. Authenticated Talos AddressStatuses confirmed bridges
+`10.244.1.1` through `10.244.4.1` on nodes `.199` through `.202`, respectively.
+Trusted node-local traffic still has Istio's bypass behavior. The listener's
+path boundary and Harbor's artifact authorization remain required.
+
+The first host-only mapping on `zimaboard-1` (`10.1.0.201`) was applied with
+`NoReboot` and read back on October 10. Its uncached pull failed before Traefik:
+ztunnel rejected source `10.244.3.1` at registry port 9443. The repository-owned
+rollback subsequently removed that Harbor hosts entry without reboot, verified
+in `/etc/hosts`. No successful private node pull is claimed. Merge and converge
+the source-policy correction before retrying; hold remaining nodes and Harbor
+DNS until every node passes an uncached pull with correlated registry logs.
+
+Separately, `zimaboard-2` rebooted and returned Ready at 21:29:52 UTC after a
+21:13:45 NotReady event. At 21:31–21:32, authenticated Talos reads and all eight
+scheduled Pods were healthy. The helper had rejected preflight before changing
+that node. Bounded current-boot logs did not identify the cause; prior-boot
+logs were unavailable. Require fresh all-node readiness and current leases
+before retrying. If it flaps, retain prior-boot and hardware power evidence
+privately; do not bypass readiness or issue an ad hoc reboot. The
+[cutover record](../../clusters/homelab/apps/traefik/CUTOVER.md#observed-node-readiness-interruption)
+keeps this as an unresolved observation, not durable recovery proof.
 See the [host-only runbook](../../docs/harbor-image-mirroring.md) and
 [ingress contract](../runbooks/tailnet-ingress.md).
 

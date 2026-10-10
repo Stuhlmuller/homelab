@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:afc90144e2361746ab781a473cf0ef4bea9bb2aeb7452c524a8461e133b4d995",
+  "pageVersion": "sha256:252bf7af2c2f8ee3b66eafc575014f2fc86154481e19cd3ee1ccd208a0e9d85b",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -40,11 +40,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
@@ -54,7 +54,7 @@
     },
     {
       "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
-      "statement": "Fixed callback helpers preserve existing webhook credentials, use non-executing preflights and require both newer delivery IDs and timestamps from saved cutover receipts; the CI helper publishes only three provider-output identity variables behind current-main and environment-protection guards.",
+      "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts; the CI publisher instead signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards, retiring old variables only after all writes and metadata checks.",
       "evidence": [
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
@@ -66,21 +66,21 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:bf1b844976c62ee1ede86ba454170cf0a3720ce209fd5da1600945c4470893a8"
+          "version": "repo-file-v1:sha256:603fb298567b0e749756958f37a6551c0ab65c3c5d7dac1350dcb73e420cab69"
         }
       ]
     },
     {
       "id": "claim_4401749129e3443ea1ab04852a131389",
-      "statement": "The Mac helper's --resume-only mode reconnects the verified saved tailnet profile and requires the ingress peer online without migrating Desktop credentials or the local carrier.",
+      "statement": "The Mac helper's --resume-only mode reconnects the verified saved homelab profile, polls at most 20 times with half-second pauses while retaining each CLI call's 45-second timeout, and requires the same owner/profile and online ingress peer without migrating Desktop credentials or the carrier.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
         }
       ]
     },
@@ -106,13 +106,45 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
+          "version": "repo-file-v1:sha256:dc793b4994e877b3ff26230c763a07df543f215e83f8f297021fe660572d68c2"
+        }
+      ]
+    },
+    {
+      "id": "claim_b957a7c01ccc404a925acd5fef0c760e",
+      "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy and two Funnel proxies after verifying exact controller ownership, Ready state, tailnet, tags, published addresses, public node/rotation keys and local peer identity; already-signed targets are skipped without adding signing authorities.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md#L74-L95",
+          "version": "repo-lines-v1:sha256:b42a967cf619c082eb5e6fe842fa7e93f5b602bdeb1d02629afbdefda918a789:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOWY1Mzg4ZTg3YjA3NDg4MjBmODBmNzllNWQ2YmE1MzYwOWNhNzI2MzkyMDhlZjA1MDE0ZWNkN2MwYmVlNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjBhY2QxNzk2MzA4MDA5M2FhMTEyZGU1NzhjZDY1YzY4Y2U4NDM4MjQyNGEzZjRiZGVlZTBjNzNhODM1YWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2YzZiNWJhMmM4YjA5MDcyNjEwZmI0MjRlMjdhZDIwNGQ5ZDFiZTExOGM2YjBmNDhjMmNkMGY3ODA5YTQ4NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiNmY5MzM0MWE4MzM3YjFlYTA3MjBmMjk1Y2ZiNGY0YjljN2I1NjAwN2VmYmIwZTc5OGU5MDMyYTdkYTYyYjkifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ingress-sign.py",
+          "version": "repo-file-v1:sha256:075804acae50632ac1f39ab6476b4bea5a67744c853d92a8072378e46f2eac0c"
+        }
+      ]
+    },
+    {
+      "id": "claim_c50b266c9794472d9c1fc8184a7eb055",
+      "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from the four fixed LAN node addresses and their individually verified cni0 bridge /32s; node-to-Service SNAT requires those bridge sources, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:5822456261be6dbdd1c6e6a435927111761b33f4b2f70d8fafde8d9222cb8d27"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:9ecd7ae83e632b874acb5437c8301edacc5761b8da29457eaab0d1a479586c03"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:59:10.633Z"
+    "at": "2026-10-10T21:39:58.912Z"
   }
 }

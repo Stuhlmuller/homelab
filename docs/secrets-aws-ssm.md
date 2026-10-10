@@ -76,6 +76,30 @@ repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
+## Tailscale CI signing contract
+
+The administrator-only `IaC/operator/tailscale-access` unit owns three Tailscale
+CI auth keys in encrypted OpenTofu state. These are not SSM parameters and are
+not available to External Secrets or application Pods. The operator OAuth SSM
+parameters in the matrix remain unchanged.
+
+`scripts/tailscale-ci-configure.py` signs the provider keys on the trusted Mac,
+then publishes only `TAILSCALE_AUTH_KEY` in each of `homelab-plan` and
+`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. The first two
+retain owner-review environment protection; Cordium's separate tag has no
+Kubernetes RBAC. No private kubeconfig or Tailscale administrator token is copied
+to GitHub. The three old client-ID variables are retired only after all secret
+writes and metadata checks succeed. Dormant provider OIDC identities remain
+protected pending separate retirement.
+
+Tailnet Lock remains enabled. Wrapped keys include private signing authority;
+protect the publisher's `0600` cache outside git and retain an encrypted recovery
+copy. Increment the committed generation and rotate every 60 days (90-day key
+expiry), then explicitly retire old cached signing authorities after CI
+acceptance. Expiring an auth key alone does not remove that authority. The
+[module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
+acceptance, rotation, and recovery commands.
+
 ## AI gateway contract
 
 Use the `LiteLLM Provider Credential` workflow to populate or refresh the

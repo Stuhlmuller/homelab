@@ -5,7 +5,7 @@ description: "Terragrunt registration, Argo CD runtime ownership, operator excep
 tags: ["architecture", "argocd", "terragrunt"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:43:31.576Z
+    at: 2026-10-10T21:24:31.626Z
 sources:
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
@@ -13,7 +13,7 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
+generated: { by: "codex", at: "2026-10-10T21:24:31.626Z" }
 ---
 
 # GitOps Flow
@@ -104,15 +104,21 @@ and Argo CD sync path.
 
 The staged migration adds the `traefik` Application and the administrator-owned
 `operator/tailscale-access` unit. The latter imports the existing full policy
-before applying the reviewed policy and GitHub federated identities with the
+before applying the reviewed policy and three scoped CI auth keys with the
 Tailscale Terraform provider; CI cannot administer its own tailnet grants.
+Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
+fixed publisher; committed generation changes drive 60-day rotation of keys
+with 90-day expiry. The three unused federated identities remain protected until
+the final migration retirement, after signed-key CI acceptance.
 Follow its [private saved-plan runbook](../../IaC/modules/tailscale-access/README.md).
 
 Publish the pinned Traefik image before merging its consuming runtime source.
 Apply the operator policy before registering Traefik, then use protected
 Terragrunt Apply on exact current `main` and check Argo's observed revision.
 Application registration order alone does not establish certificate, proxy,
-Funnel, or application readiness. Fleet has only a private mesh target route.
+Funnel, or application readiness. The fixed ingress signer verifies the three
+operator-owned proxy identities before signing them; ordinary node approval
+does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
 Existing DNS, Cloudflare transport, and CI access remain during this foundation.
 Switch each only after its replacement passes the

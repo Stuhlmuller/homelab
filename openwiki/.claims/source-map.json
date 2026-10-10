@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ab6bfd0389e583d9fc3a45bab425ee84fb8b695e86b303af498c3380e93fbd6a",
+  "pageVersion": "sha256:abb0cfd53473973eabe9fb85f58218b8a313a04ea03fe0ede845d9398bc8703e",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -36,21 +36,29 @@
     },
     {
       "id": "claim_8d503c93f9684f708a42cd045c5bdf97",
-      "statement": "Traefik's explicit routes and README own the staged mesh ingress contract; the Tailscale module owns provider adoption and CI identity setup.",
+      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, rotation and previous-authority retirement.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:b31d6bb55e271012d2171ac5446890a7ddb36717fb11a0c3fe51036b4a8d4275"
+          "version": "repo-file-v1:sha256:d46159ddc9297a0f2e03be43d81912f9d5c155e1402ac304846c35632bc128de"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:b85229bc4f2139e71679bf73e9ba73d67494de18acae306e6e9979bd9d7d153f"
+          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:603fb298567b0e749756958f37a6551c0ab65c3c5d7dac1350dcb73e420cab69"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ingress-sign.py",
+          "version": "repo-file-v1:sha256:075804acae50632ac1f39ab6476b4bea5a67744c853d92a8072378e46f2eac0c"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:43:31.576Z"
+    "at": "2026-10-10T21:39:58.912Z"
   }
 }
