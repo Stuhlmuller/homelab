@@ -180,8 +180,9 @@ Tunnel workflow owns public DNS.
 
 Langfuse web allows ten minutes for database migrations before liveness checks
 begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
-Web and worker each declare one replica; their schema initialization remains
-part of normal application startup. The separate 1Gi
+Web, worker and Valkey temporarily declare zero replicas for the October 10
+offline AOF capture. A credential-free inspector mounts only the queue PVC,
+read-only; restoring service requires a reviewed follow-up. The separate 1Gi
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
