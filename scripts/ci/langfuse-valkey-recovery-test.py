@@ -3,10 +3,12 @@
 import importlib.util
 import argparse
 import copy
+import hashlib
 import json
 from pathlib import Path
 import subprocess
 import tempfile
+import tarfile
 import unittest
 from unittest.mock import patch
 
@@ -18,7 +20,7 @@ CHECKER = None
 
 
 class ManifestTests(unittest.TestCase):
-    def test_capture_is_offline_and_read_only(self):
+    def test_promotion_is_offline_and_explicitly_writable(self):
         app = MODULE.ROOT / "clusters/homelab/apps/langfuse"
         values = json.loads(subprocess.check_output(
             ["yq", "-o=json", ".langfuse", str(app / "values.yaml")], text=True))
@@ -35,7 +37,9 @@ class ManifestTests(unittest.TestCase):
         deployments = [{"metadata": {"name": name, "generation": 1},
                         "spec": {"replicas": 0}, "status": {"observedGeneration": 1}}
                        for name in MODULE.WRITERS]
-        MODULE.offline_pod(deployments, [pod])
+        MODULE.offline_pod(deployments, [pod], writable=True)
+        with self.assertRaises(AssertionError):
+            MODULE.offline_pod(deployments, [pod])
 
 
 class OfflineGuardTests(unittest.TestCase):
@@ -71,6 +75,100 @@ class OfflineGuardTests(unittest.TestCase):
         self.pod["spec"]["volumes"][0]["persistentVolumeClaim"]["readOnly"] = False
         with self.assertRaises(AssertionError):
             MODULE.offline_pod(self.deployments, [self.pod])
+
+    def test_promotion_requires_both_writable_mount_flags(self):
+        with self.assertRaises(AssertionError):
+            MODULE.offline_pod(self.deployments, [self.pod], writable=True)
+        self.pod['spec']['volumes'][0]['persistentVolumeClaim']['readOnly'] = False
+        self.pod['spec']['containers'][0]['volumeMounts'][0]['readOnly'] = False
+        self.assertEqual(MODULE.offline_pod(self.deployments, [self.pod], writable=True)[1], 'test')
+
+
+class PromotionTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.name = 'appendonlydir/appendonly.aof.4.incr.aof'
+        for part, data in (('source', b'valid-corrupt'), ('inspection/original', b'valid-corrupt'),
+                           ('inspection/candidate', b'valid')):
+            path = self.root / part / self.name
+            path.parent.mkdir(parents=True)
+            path.write_bytes(data)
+        before = MODULE.fingerprint(self.root / 'source')
+        after = MODULE.fingerprint(self.root / 'inspection/candidate')
+        self.report = dict(source_unchanged=True, backup_verified=True, candidate_valid=True,
+                           before=before, candidate=after, discarded_bytes=8)
+        (self.root / 'inspection/report.json').write_text(json.dumps(self.report))
+        with tarfile.open(self.root / 'original.tar', 'w') as bundle:
+            bundle.add(self.root / 'source', arcname='.')
+        with (self.root / 'original.tar').open('rb') as stream:
+            digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+        (self.root / 'original.tar.sha256').write_text(digest + '  original.tar\n')
+        self.before = {name: entry['sha256'] for name, entry in before.items()}
+        self.after = {name: entry['sha256'] for name, entry in after.items()}
+        self.stage = 'appendonlydir/.homelab-repaired-' + self.after[self.name]
+
+    def test_source_requires_exact_loss_backup_and_prefix(self):
+        self.assertEqual(MODULE.promotion_source(self.root, 8)[0], self.name)
+        with self.assertRaises(AssertionError):
+            MODULE.promotion_source(self.root, 9)
+        (self.root / 'inspection/candidate' / self.name).write_bytes(b'other')
+        self.report['candidate'] = MODULE.fingerprint(self.root / 'inspection/candidate')
+        (self.root / 'inspection/report.json').write_text(json.dumps(self.report))
+        with self.assertRaises(AssertionError):
+            MODULE.promotion_source(self.root, 8)
+
+    def test_changed_backup_rejected(self):
+        (self.root / 'original.tar.sha256').write_text('incorrect')
+        with self.assertRaises(AssertionError):
+            MODULE.promotion_source(self.root, 8)
+
+    def test_promotion_order_and_idempotency(self):
+        staged = {**self.before, self.stage: self.after[self.name]}
+        with patch.object(MODULE, 'release_guard') as release, \
+                patch.object(MODULE, 'cluster_guard', return_value=('pod', 'uid')), \
+                patch.object(MODULE, 'remote_hashes', side_effect=[self.before, staged, staged, self.after]), \
+                patch.object(MODULE.subprocess, 'run') as upload, patch.object(MODULE, 'output') as rename:
+            MODULE.promote(self.root, 'a' * 40, 8)
+            self.assertEqual(release.call_count, 2)
+            self.assertEqual(upload.call_count, 1)
+            self.assertIn('mv -T', rename.call_args.args[10])
+        with patch.object(MODULE, 'release_guard'), \
+                patch.object(MODULE, 'cluster_guard', return_value=('pod', 'uid')), \
+                patch.object(MODULE, 'remote_hashes', return_value=self.after), \
+                patch.object(MODULE.subprocess, 'run') as upload, patch.object(MODULE, 'output') as rename:
+            MODULE.promote(self.root, 'a' * 40, 8)
+            upload.assert_not_called()
+            rename.assert_not_called()
+
+    def test_live_drift_or_bad_upload_never_renames(self):
+        for hashes in ([{}], [self.before, self.before, {self.stage: 'wrong'}]):
+            with self.subTest(hashes=hashes), patch.object(MODULE, 'release_guard'), \
+                    patch.object(MODULE, 'cluster_guard', return_value=('pod', 'uid')), \
+                    patch.object(MODULE, 'remote_hashes', side_effect=hashes), \
+                    patch.object(MODULE.subprocess, 'run'), patch.object(MODULE, 'output') as rename:
+                with self.assertRaises(AssertionError):
+                    MODULE.promote(self.root, 'a' * 40, 8)
+                rename.assert_not_called()
+
+    def test_writer_change_after_upload_never_renames(self):
+        with patch.object(MODULE, 'release_guard'), \
+                patch.object(MODULE, 'cluster_guard', side_effect=[('pod', 'uid'), ('pod', 'new-uid')]), \
+                patch.object(MODULE, 'remote_hashes', return_value=self.before), \
+                patch.object(MODULE.subprocess, 'run'), patch.object(MODULE, 'output') as rename:
+            with self.assertRaises(AssertionError):
+                MODULE.promote(self.root, 'a' * 40, 8)
+            rename.assert_not_called()
+
+    def test_already_promoted_with_leftover_stage_rejected(self):
+        with patch.object(MODULE, 'release_guard'), \
+                patch.object(MODULE, 'cluster_guard', return_value=('pod', 'uid')), \
+                patch.object(MODULE, 'remote_hashes', return_value={**self.after, self.stage: 'partial'}), \
+                patch.object(MODULE.subprocess, 'run') as upload:
+            with self.assertRaises(AssertionError):
+                MODULE.promote(self.root, 'a' * 40, 8)
+            upload.assert_not_called()
 
 
 class RecoveryTests(unittest.TestCase):
