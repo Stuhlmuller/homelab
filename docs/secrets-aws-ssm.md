@@ -65,10 +65,12 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 Fleet's five generated `/homelab/fleet/` parameters supply MySQL user/root
 passwords, a Redis password, the stable 32-byte server encryption key and the
-initial administrator password. Separate ExternalSecrets keep the root and
-administrator credentials out of Fleet server Pods. Preserve the encryption key
-with MySQL backups. Platform APNs/WSTEP identities are additional enrollment
-prerequisites; see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+local Fleet recovery-administrator password. It signs in
+`rodman@stinkyboi.com` before and after the Entra conversion; the target Fleet
+account is SSO-only. Separate ExternalSecrets keep the root and administrator
+credentials out of Fleet server Pods. Preserve the encryption key with MySQL
+backups. Platform APNs/WSTEP identities are additional enrollment prerequisites;
+see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,

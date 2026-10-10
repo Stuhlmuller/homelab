@@ -21,7 +21,7 @@ PILOTS = {
     },
     "stuhlmuller": {
         "unit": "IaC/operator/entra-stuhlmuller-pilot-user",
-        "upn": "rodman@stuhlmuller.net",
+        "upn": "rodman.mac@stuhlmuller.net",
     },
 }
 
@@ -56,7 +56,7 @@ def main():
                 f"Fleet Mac pilot ({args.pilot}) — native Microsoft Entra account\n\n"
                 f"Sign-in: {upn}\nInitial password: {password}\n\n"
                 "Use https://myaccount.microsoft.com and sign in with this work/school account.\n"
-                "Change the temporary password and complete required MFA before Platform SSO registration.\n"
+                "Change the temporary password, register Microsoft Authenticator, and complete required MFA before Platform SSO registration.\n"
                 "Do not reuse or share this initial password; it becomes obsolete after the change.\n"
                 "Do not enroll Company Portal into Intune. Fleet remains your MDM.\n"
             )

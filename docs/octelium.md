@@ -351,38 +351,31 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-### Entra identity migration
+### Entra owner conversion
 
-For an older `preferred_username` setup, keep an independent working operator
-session before changing the shared identity claim. Run the admin command above
-with `--dry-run` first, using the old login identifier for `--admin-email` and
-the owner's verified Entra object ID. This leaves the existing contact email
-unchanged, including retries after a partial migration. Preflight checks the
-complete live mapping inventory before reading the client secret or writing
-resources. It includes HUMAN users who rely on Octelium's default email fallback
-without an explicit Entra binding, and permits only the sole selected legacy
-user. Additional users require a separately reviewed migration. Never substitute
-a newly created user's object ID for the owner.
-An existing `oid` provider with email-only users also fails preflight; disabling
-their fallback requires a separately reviewed migration.
+Octelium binds privileged access to immutable Entra `oid` and has
+`disableEmailAsIdentity: true`. That binding must remain unchanged when the
+owner's external sign-in is converted in place to the internal
+`rodman@stuhlmuller.net` UPN: the Entra object ID remains the same, while email
+and `preferred_username` may change. Do not bind privileged access to the new
+UPN or a new pilot user.
 
-The user mapping changes before the IdP claim, so the transition is not atomic.
-Retain private copies of the current User and IdentityProvider for recovery;
-do not close the independent session until a fresh owner browser login works.
-Verify that the complete mapping inventory binds only the original owner's
-`oid` to owner access, the IdP has `disableEmailAsIdentity: true`, and there is
-no pilot `oid` binding. Only then reuse the
-owner's former email. After the pilot completes its required initial password
-change and MFA setup, test actual fresh login denial; an interrupted password
-or MFA flow is not proof of authorization denial. Plain secret refreshes also run the
-preflight and cannot silently switch a legacy mapping.
+Before conversion, retain an independent working Octelium session and create,
+then test, an independent cloud-only Entra Global Administrator. The complete
+live mapping inventory must bind only the original owner `oid` to owner access,
+show no email fallback, and contain no target-pilot binding. Do not close the
+working session until a fresh owner browser login with the converted internal
+identity renders the Services page.
 
 On October 7, 2026 UTC, the reviewed migration applied the original owner's
-`oid` binding and disabled email fallback. New owner sessions through Entra
-callbacks verified that same object ID and rendered the Services page, both
-before and after the separate directory-mail change. This verifies Octelium
-identity resolution and app access; the old SMTP alias remains reserved, so
-the [pilot rename remains blocked](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
+`oid` binding and disabled email fallback. Fresh owner sessions through Entra
+callbacks rendered the Services page before and after the separate directory-mail
+attempt. That proves the `oid` binding only. The mail attempt left the old SMTP
+alias reserved, so its alias-release and pilot-rename route is retired. The
+supported continuation is the in-place Entra conversion documented in the
+[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md), followed by fresh
+Octelium and Fleet-console SAML sign-ins. No support case, Exchange
+license, or email-based identity workaround is needed.
 
 ## Cutover Gate
 

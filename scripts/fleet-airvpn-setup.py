@@ -279,12 +279,8 @@ def execute(args, catalog, desired):
     api = setup.module("fleet_api", "fleet-download-apple-csr.py")
     mdm = setup.module("fleet_mdm", "fleet-verify-apple-mdm.py")
     api.MAX_RESPONSE = 16 * 1024 * 1024
-    password = read_password(args.password_file) if args.password_file else api.initial_password()
-    token = api.request("POST", "/api/v1/fleet/login", {
-        "email": api.ADMIN_EMAIL, "password": password,
-    }).get("token")
-    if not isinstance(token, str) or not token:
-        raise SetupError("Fleet login did not return a session")
+    password = read_password(args.password_file) if args.password_file else None
+    token = api.password_login(password)
     try:
         settings = api.request("GET", "/api/v1/fleet/config", token=token)
         if settings.get("license", {}).get("tier") != "free":

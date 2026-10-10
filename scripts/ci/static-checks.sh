@@ -29,6 +29,7 @@ python3 -I scripts/ci/litellm-provider-credential-test.py
 python3 -I scripts/ci/litellm-postgres-check.py
 python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
+python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
 python3 -I scripts/ci/octelium-entra-oidc-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
@@ -358,14 +359,64 @@ fi
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
 rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-owner-mail; do
+rg -Fq 'user_principal_name      = "rodman.mac@stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+rg -Fq 'homelab-emergency-admin' IaC/modules/entra-emergency-global-admin/main.tf
+rg -Fq '62e90394-69f5-4237-9190-012177145e10' IaC/modules/entra-emergency-global-admin/main.tf
+rg -Fq 'azuread_directory_role_assignment' IaC/modules/entra-emergency-global-admin/main.tf
+rg -Fq 'disable_password_expiration = true' IaC/modules/entra-emergency-global-admin/main.tf
+gate_unit="IaC/operator/entra-emergency-global-admin"
+gate_config="$gate_unit/terragrunt.hcl"
+if rg -Fq 'feature "emergency_global_admin"' "$gate_config"; then
+  echo "The emergency administrator activation must remain source-controlled." >&2
+  exit 1
+fi
+gate_enabled="$(rg -o '^[[:space:]]*emergency_global_admin_enabled[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$' "$gate_config" | sed -E 's/.*=[[:space:]]*//; s/[[:space:]]*$//')"
+case "$gate_enabled" in
+  true|false) ;;
+  *)
+    echo "The emergency administrator activation literal is invalid." >&2
+    exit 1
+    ;;
+esac
+rg -Fq 'if      = !local.emergency_global_admin_enabled' "$gate_config"
+rg -Fq 'no_run  = true' "$gate_config"
+rg -Fq 'actions = ["apply", "destroy"]' "$gate_config"
+(
+  terragrunt --working-dir "$gate_unit" --log-disable render --json --write=false --no-color \
+    | jq -e --argjson enabled "$gate_enabled" '
+        .locals.emergency_global_admin_enabled == $enabled and
+        .exclude.if == (if $enabled then false else true end) and
+        .exclude.actions == ["apply", "destroy"]
+      ' >/dev/null
+  if [ "$gate_enabled" = false ]; then
+    gate_dir="$(mktemp -d)"
+    trap 'rm -rf "$gate_dir"' EXIT
+    gate_tofu="$gate_dir/tofu-blocker"
+    cat > "$gate_tofu" <<'EOF'
+#!/bin/sh
+case "$1" in
+  -version|version)
+    echo "OpenTofu v1.10.0"
+    exit 0
+    ;;
+  *)
+    exit 99
+    ;;
+esac
+EOF
+    chmod 700 "$gate_tofu"
+    terragrunt --working-dir "$gate_unit" --log-disable apply --tf-path "$gate_tofu" \
+      -auto-approve -no-color
+  fi
+)
+python3 -I scripts/ci/entra-emergency-global-admin-plan-test.py
+rg -Fq 'from = msgraph_update_resource.mail' IaC/modules/entra-owner-mail/main.tf
+rg -Fq 'destroy = false' IaC/modules/entra-owner-mail/main.tf
+for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-emergency-global-admin entra-owner-mail; do
   (
     cd "IaC/operator/${operator_unit}"
     terragrunt --log-disable init -backend=false -no-color
     terragrunt --log-disable run --no-auto-init -- validate -no-color
-    if [[ "$operator_unit" == entra-owner-mail ]]; then
-      terragrunt --log-disable run --no-auto-init -- test -no-color
-    fi
   )
 done
 echo "::endgroup::"
