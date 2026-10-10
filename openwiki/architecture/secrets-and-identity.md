@@ -18,12 +18,18 @@ sources:
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
+  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+    resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-43b94de29b6b12121d020dc6
+    resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
+generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:08:29.122Z
+    at: 2026-10-10T22:48:00.170Z
 ---
 
 # Secrets And Identity
@@ -59,10 +65,36 @@ Funnel permission is scoped to `tag:homelab-funnel` rather than every operator p
 The local provider reads a private administrator token file. The temporary
 bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
 S3 state and private encrypted saved plans retain the existing KMS boundary.
-Three federated identities trust GitHub's issuer, repository, workflow and subject
-constraints; they can mint node keys only for their own plan, apply or Cordium tag.
-Their client IDs are non-secret GitHub variables. See the module runbook for the
-exact environment scopes and adoption sequence.
+Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
+and Cordium tags and expire after 90 days. The committed generation drives
+rotation every 60 days; an invalid key is not silently recreated. Tailnet Lock
+requires signatures in addition to enrollment. The unused federated identities
+remain protected until final migration retirement after signed-key acceptance.
+
+The fixed publisher reads sensitive encrypted-state outputs privately, verifies
+the trusted Mac's online homelab profile, signs with file-backed arguments, and
+publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
+repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
+metadata confirmation must be followed by protected CI acceptance. Only after
+all three writes and metadata checks succeed does it delete the corresponding
+three unused client-ID variables. Exact-main and trusted-PR workflow gates still
+matter: these credentials do not encode GitHub OIDC subject claims.
+
+Wrapped keys contain a delegated private node-signing key, not the trusted
+credential authority's private voting key. The publisher requires exactly one
+new authority with matching auth-key metadata after signing, with every prior
+trust mapping unchanged. Its private `0600` cache records that separate public
+authority identity with the wrapper; reuse and retirement require a unique
+metadata match. Delegated node-signing capability exceeds normal tag enrollment
+permissions. Auth-key expiry or revocation does not remove that authority;
+after replacement CI acceptance, the explicit `--retire-previous` operation
+removes only cached older-generation authorities while preserving unrelated
+signers. Preview and execution validate every cached current signature and all
+previous authority metadata before any removal. Execution rechecks each target;
+an already-absent previous authority remains safe to retry. Preview never signs,
+publishes or changes cache contents. Keep an encrypted private cache backup and use the
+[module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
+recovery. The operator OAuth SSM contract remains separate and unchanged.
 
 The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
 read resources, including Helm release Secrets, and submit Argo Application

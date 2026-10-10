@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Offline inventory and access-boundary checks for the Traefik cutover."""
+import ipaddress
 import json
 from pathlib import Path
 import re
@@ -31,6 +32,12 @@ APPS = {
     "radarr": "radarr.media:7878",
     "sonarr": "sonarr.media:8989",
 }
+
+
+NODE_REGISTRY_SOURCES = [
+    "10.1.0.199/32", "10.1.0.200/32", "10.1.0.201/32", "10.1.0.202/32",
+    "10.244.1.1/32", "10.244.2.1/32", "10.244.3.1/32", "10.244.4.1/32",
+]
 
 
 def read_yaml(relative):
@@ -141,8 +148,8 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(policy["rules"], [
             {"from": [{"source": {"notPrincipals": ["*"]}}],
              "to": [{"operation": {"ports": ["8000", "8080", "8443"]}}]},
-            {"from": [{"source": {"notPrincipals": ["*"], "ipBlocks": [
-                "10.1.0.199/32", "10.1.0.200/32", "10.1.0.201/32", "10.1.0.202/32"]}}],
+            {"from": [{"source": {"notPrincipals": ["*"],
+                                    "ipBlocks": NODE_REGISTRY_SOURCES}}],
              "to": [{"operation": {"ports": ["9443"]}}]},
             {"to": [{"operation": {"ports": ["9000"]}}]},
         ])
@@ -166,6 +173,21 @@ class RouteTests(unittest.TestCase):
                     "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "traefik"}},
                     "podSelector": {"matchLabels": {"app.kubernetes.io/name": "traefik"}},
                 }, cleartext["from"])
+
+    def test_node_registry_sources_are_exact_hosts_and_bridges(self):
+        policy = read_yaml("clusters/homelab/apps/traefik/networkpolicy.yaml")["spec"]
+        registry, = [rule for rule in policy["ingress"]
+                     if {"protocol": "TCP", "port": 9443} in rule["ports"]]
+        self.assertEqual(registry, {
+            "from": [{"ipBlock": {"cidr": source}} for source in NODE_REGISTRY_SOURCES],
+            "ports": [{"protocol": "TCP", "port": 9443}],
+        })
+        # A nearby LAN host or ordinary Pod must not match this source boundary.
+        networks = [ipaddress.ip_network(source["ipBlock"]["cidr"])
+                    for source in registry["from"]]
+        for address in ("10.1.0.198", "10.1.0.203", "10.244.1.2", "10.244.2.2",
+                        "10.244.3.2", "10.244.4.2"):
+            self.assertFalse(any(ipaddress.ip_address(address) in net for net in networks))
 
     def test_node_registry_has_no_dashboard_or_other_app_route(self):
         registry = {name: route for name, route in ROUTERS.items()
