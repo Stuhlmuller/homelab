@@ -3,6 +3,15 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T20:57:31.494Z
+sources:
+  - id: openwiki-source-bcf299afd34b5d6fd43aa9a0
+    resource: repo://clusters/homelab/apps/tailscale/README.md
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+generated: { by: "codex", at: "2026-10-10T20:57:31.494Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -252,8 +261,12 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 
 - Talos endpoint: `10.1.0.199`
 - Kubernetes API endpoint: `https://10.1.0.199:6443`
-- Remote Kubernetes Service: `kubernetes-api.homelab` through
+- Retained native Kubernetes Service: `kubernetes-api.homelab` through
   `octelium connect` and an Octelium-generated kubeconfig
+- Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
+  through Traefik; canonical custom hostnames move during the staged DNS cutover
+- Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
+  CI switches separately after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -270,9 +283,10 @@ not retain stale SANs or append duplicates.
 
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
-resources and subresources stay denied. Tailscale remains only as the temporary
-remote Talos/LAN fallback; Octelium does not provide a Talos-native Service
-mode.
+resources and subresources stay denied. Tailscale provides remote Talos/LAN
+access and the declared application ingress. The old CI and operator transports
+remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
+Octelium does not provide a Talos-native Service mode.
 
 ## Source Files
 

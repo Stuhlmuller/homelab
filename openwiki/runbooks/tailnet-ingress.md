@@ -6,6 +6,10 @@ tags: [runbook, networking, ingress]
 sources:
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
+  - id: openwiki-source-812216982d0b6a887bf09651
+    resource: repo://clusters/homelab/apps/cordium/networkpolicy.yaml
+  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
+    resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-d190dbce4c50934f34b78ce1
     resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-c6350999c9f74bf0f53f9005
@@ -18,10 +22,14 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
+  - id: openwiki-source-ac4e5166b14da067a9c57d03
+    resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
@@ -34,10 +42,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T19:59:10.633Z" }
+generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:59:10.633Z
+    at: 2026-10-10T20:51:47.381Z
 ---
 
 # Tailnet And App Ingress
@@ -52,8 +60,8 @@ Canonical desired state and validation:
 [Traefik README](../../clusters/homelab/apps/traefik/README.md),
 [route inventory](../../clusters/homelab/apps/traefik/routes.yaml), and
 [Tailscale provider runbook](../../IaC/modules/tailscale-access/README.md).
-The older [ingress runbook](../../docs/networking-tailnet-ingress.md) describes
-the retained migration source path until its traffic-cutover revision lands.
+The [ingress runbook](../../docs/networking-tailnet-ingress.md) describes the
+current staged source and the acceptance required before final retirement.
 
 ```mermaid
 flowchart LR
@@ -122,14 +130,20 @@ owned DNS/node helpers for rollback; never repair live routing by hand.
 Follow the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
 The additive `tailscale-private-dns.sh` previews by default and requires exact
 reviewed main to write only its fixed DNS-only A/AAAA inventory. It preserves
-legacy CI, callback and carrier names. First disable the old DNS-restoration
-workflow through code, preserve its tunnel, and verify Talos registry access.
+legacy CI, callback and carrier names. Phase 2a removes the old DNS-restoration
+workflow and writer, preserves their tunnel, and requires verified Talos registry
+access. It sends internal API and Harbor DNS to Traefik, advertises n8n's Funnel
+URL, and adds the unmeshed Cordium/Traefik peer allowances. Require healthy
+Traefik, certificates, both Funnel proxies, and adopted tailnet policy before
+that GitOps change; n8n can re-register external hooks when it restarts.
 Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer; it leaves
 Desktop credentials and the local carrier unchanged.
 After DNS readback, the Mac helper migrates the verified existing account while
 preserving credentials and owned-file rollback. Wait the reported former TTL,
-then explicitly verify normal DNS, canonical TLS and native gRPC.
+then explicitly verify normal DNS, canonical TLS and native gRPC. Only then
+merge phase 2b, which moves CI workflows and shared native operator transport
+after the provider-owned identity bindings have been published.
 
 The callback helpers change only the fixed n8n hooks and Policy Bot App webhook
 URL. Non-executing preflights protect live workflows; private local receipts

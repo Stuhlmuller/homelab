@@ -72,8 +72,10 @@ and has no backup contract.
 ## Rollout and acceptance
 
 1. Merge the reviewed transport and CI changes after their checks pass.
-2. Reconcile Tunnel DNS through `octelium-public-tunnel.yml` and pass
-   `scripts/octelium-tunnel-check.py`. Let Argo CD apply the Cordium limits.
+2. Follow the [ordered DNS cutover](../clusters/homelab/apps/traefik/CUTOVER.md).
+   The legacy public DNS writer and restoration workflow are removed; retain
+   the existing carrier until the later CI/native transport change passes
+   canonical DNS/API acceptance. Let Argo CD apply the Cordium limits.
 3. Reconcile only the three CI resources with the fixed operator command below.
    The NOFX native transport helper must already be merged; broad catalog apply
    is not this rollout path.

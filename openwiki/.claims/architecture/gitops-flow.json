@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c47b8aeb81a4d6ead505cf628ba965f219e72ee3cb0b1e818f1e6f075e7139c8",
+  "pageVersion": "sha256:8db42f2a978871d21554fbd0ce223406110145c4dee5344f6c7cccc74da444f9",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -19,10 +19,24 @@
           "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
         }
       ]
+    },
+    {
+      "id": "claim_620a3d2e09f448a7893eaca9e242fe20",
+      "statement": "Phase2a retires the public-DNS restoration workflow; Fleet retains its hostname and moves to private mesh DNS through the staged guarded writer, with no Funnel route.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh",
+          "version": "repo-file-v1:sha256:df06298c6267d82fa16874faee14c98e74927a885b11301a6a926b8280cb0c1a"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:43:31.576Z"
+    "at": "2026-10-10T20:51:47.381Z"
   }
 }

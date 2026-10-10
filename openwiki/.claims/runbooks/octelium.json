@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:a00ccf9cc9681151b9c9fd61edd8b8002d49e1dd97f75ae5683417ec7b02d809",
+  "claims": [
+    {
+      "id": "claim_6d6eaceb34124ce5a821e699942b2156",
+      "statement": "Phase2a removes the old DNS writer and restoration workflow while retaining Cloudflare Tunnel and the native catalog until staged mesh, Mac, callback and CI acceptance; the saved-profile-only Mac reconnect precedes DNS and full credential-preserving migration follows it.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+        },
+        {
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:ef06176f6a273916ad7215d3c773b25a5be524183c043ecb838a6ffaebf83665"
+        },
+        {
+          "resource": "repo://scripts/multica-desktop-connect.py",
+          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T20:51:47.381Z"
+  }
+}

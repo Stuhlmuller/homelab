@@ -26,6 +26,19 @@ spec:
               app.kubernetes.io/name: harbor-image-signing
       ports:
         - {protocol: TCP, port: 8443}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: octelium
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: cordium
+            matchExpressions:
+              - key: app.kubernetes.io/component
+                operator: In
+                values: [genesis, cluster-config]
+      ports:
+        - {protocol: TCP, port: 8443}
     - ports:
         - {protocol: TCP, port: 15008}
     - from:

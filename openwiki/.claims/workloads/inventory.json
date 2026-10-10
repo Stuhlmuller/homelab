@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0cd41de3faaeedbb2d9e02cff9138a6ba0e5046a39d3e0f59650c2ff3881727a",
+  "pageVersion": "sha256:68ab6f52523c01d7b815f810d3ca425f1d0fd1f4bf55ba54a407a233548446b4",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -33,10 +33,28 @@
           "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
         }
       ]
+    },
+    {
+      "id": "claim_aa6ba6972ee14b5aaa1f8e270b77cd14",
+      "statement": "Phase2a routes internal Octelium API and Harbor DNS through the Traefik private Service and advertises n8n's Funnel webhook URL; the old DNS writer is retired while the Tunnel Deployment and native catalog remain until replacement acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
+          "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T18:57:48.826Z"
+    "at": "2026-10-10T20:51:47.381Z"
   }
 }

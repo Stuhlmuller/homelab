@@ -8,16 +8,22 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
+    resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-19486243ca5f1efdd808adf2
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T18:57:48.826Z
+    at: 2026-10-10T20:51:47.381Z
 ---
 
 # Workload Inventory
@@ -111,9 +117,9 @@ and device connection tests.
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without
 sinkholing Prowlarr indexer domains through Cloudflare Family category filters.
-It also rewrites in-cluster `octelium-api.stinkyboi.com` lookups to the
-dedicated Istio gateway Service, so Cordium and other cluster clients do not
-depend on the router's WAN mapping.
+It rewrites in-cluster `octelium-api.stinkyboi.com` and `harbor.stinkyboi.com`
+lookups to `traefik-private.traefik.svc.cluster.local`, preserving a Service
+route for internal callers before external DNS moves to mesh addresses.
 It now declares all six CoreDNS resources and pins the running image content,
 with a controlled rolling replacement. The Talos bootstrap handoff remains a
 separate, gated step; see [CoreDNS GitOps Ownership](../operations/coredns-gitops-ownership.md).
@@ -147,9 +153,31 @@ AFFiNE, n8n, Dispatcharr, and media PostgreSQL readiness and liveness checks
 execute `SELECT 1`; `pg_isready` remains only as the recovery-aware startup
 gate.
 
-Istio's API gateway now receives outbound Tunnel traffic: browser gRPC-Web
-over HTTPS and native TLS gRPC through a separate TCP carrier. The production
-Tunnel workflow owns public DNS.
+The retained Istio API gateway still serves legacy Tunnel traffic during
+cutover. Phase 2a removes the old DNS writer and restoration workflow, and
+n8n advertises its Funnel webhook URL. The tunnel Deployment and native
+catalog remain until the replacement client, callback, and CI paths pass
+[staged acceptance](../../clusters/homelab/apps/traefik/CUTOVER.md).
+
+## Backup scheduling finding (2026-10-10)
+
+Before the ingress rollout, Bazarr and media-postgres were Synced but Degraded
+because their October 10 backup Jobs exceeded their 30-minute deadlines.
+Retained metrics showed both backup pods remained unscheduled; their application
+pods remained Ready. The previous successful backups were October 9.
+
+PostgreSQL's pinned node had about 15.7 MiB of unreserved memory before scheduler
+overhead, below the backup's 64 MiB request. Bazarr's exact scheduling rejection
+was no longer retained. This is a backup reliability finding, not evidence of
+an application or network failure. The relevant contracts are the
+[PostgreSQL backup](../../clusters/homelab/apps/media-postgres/backup-cronjob.yaml)
+and [Bazarr backup](../../clusters/homelab/apps/bazarr/backup-cronjob.yaml).
+
+Capture `PodScheduled` and `FailedScheduling` evidence on the next scheduled
+runs, compare effective requests with node capacity, then adjust placement or
+measured reservations through repository manifests. Preserve the backups' data
+locality and verify a completed backup; increasing deadlines alone does not fix
+persistent scheduling starvation. Do not delete failed Jobs to clear health.
 
 ## Requested Applications
 

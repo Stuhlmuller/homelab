@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:afc90144e2361746ab781a473cf0ef4bea9bb2aeb7452c524a8461e133b4d995",
+  "pageVersion": "sha256:f470ebdc63f5a689c3a265617a5aca08832d1b38106f2ebc85e4b159ff8b0ff5",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -76,7 +76,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -109,10 +109,36 @@
           "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
         }
       ]
+    },
+    {
+      "id": "claim_b321d5a752e04ed09c40c0f32d62b413",
+      "statement": "Phase2a removes the legacy DNS writer and restoration workflow, moves internal API/Harbor DNS to Traefik, advertises n8n's Funnel URL and adds unmeshed Cordium peer allowances after foundation health; phase2b switches CI and shared native transport only after canonical DNS/API acceptance and identity publication.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
+          "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:e65983c946259e3689b1ef287bd93ff428a42d3df2eb0bb33f84b74e72fea84e"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:59:10.633Z"
+    "at": "2026-10-10T20:51:47.381Z"
   }
 }

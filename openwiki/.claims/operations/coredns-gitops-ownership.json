@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:dfd152b89d2874c678a74759c8936f2eb84a78655d816d5aa37a83e94b440bfb",
+  "claims": [
+    {
+      "id": "claim_c877284e0bb740b8aeb1c1a20f71f7c6",
+      "statement": "The staged CoreDNS policy rewrites the canonical Octelium API and Harbor names to traefik-private.traefik.svc.cluster.local before external DNS cutover, preserving the six-resource DNS ownership contract and requiring route acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/README.md",
+          "version": "repo-file-v1:sha256:01bf410d0608feebbc2c874b9c852e4b52465482db606963a0910a084eb6d3b0"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T20:51:47.381Z"
+  }
+}

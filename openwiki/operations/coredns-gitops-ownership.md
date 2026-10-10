@@ -3,6 +3,17 @@ type: operation
 title: "CoreDNS GitOps Ownership"
 description: "Ordered CoreDNS handoff from Talos to Argo CD, preserving resolver and Octelium rewrite behavior during upgrades."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T20:51:47.381Z
+sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-e20ef91bfc85ec57d6b2e621
+    resource: repo://clusters/homelab/platform/dns/README.md
+generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
 ---
 
 # CoreDNS GitOps Ownership
@@ -27,6 +38,16 @@ Talos gives [inline manifests priority `99`](https://github.com/siderolabs/talos
 while the default CoreDNS resources use
 [`11-core-dns` and `11-core-dns-svc`](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/manifest.go#L191-L209).
 The upgrade processes both objects rather than merging their desired content.
+
+## Current Internal Routes
+
+The staged Tailscale cutover rewrites both `octelium-api.stinkyboi.com` and
+`harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. This
+keeps in-cluster callers on a Kubernetes Service while external DNS moves to
+mesh addresses. Require Traefik certificates and upstream routes healthy before
+converging the Corefile; then verify both DNS answers, native Cordium API calls,
+and Harbor pulls. The six-resource ownership contract remains unchanged. See
+[the ordered cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
 
 ## Ordered Takeover
 
@@ -79,7 +100,7 @@ The upgrade processes both objects rather than merging their desired content.
    using the reviewed image digest, with no crash-looping or failed probes;
    Pod UIDs change as expected. The
    [runbook lookups](../../clusters/homelab/platform/dns/README.md) must resolve
-   public names and the Octelium gateway address correctly through cluster DNS.
+   public names and the currently declared internal API/Harbor addresses through cluster DNS.
 3. Only after these gates pass, render the current private control-plane config
    with the repository patch
    [controlplane-coredns-gitops-ownership.yaml](../../.talos/patches/controlplane-coredns-gitops-ownership.yaml).

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:1f5d4c0e3c151f3c2029b9cdb7f13ac9a9a3faaa0a3b8b2594f7ce8465fc5074",
+  "claims": [
+    {
+      "id": "claim_a4056b3112a94021b79a8ff21d8b24fd",
+      "statement": "The staged migration declares Traefik private ingress and the Tailscale operator API proxy while retaining old CI and native operator transport until mesh DNS and identity acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/tailscale/README.md",
+          "version": "repo-file-v1:sha256:f3760c1d7db3f575df258ef712ebb33debe4abc39400e69655f897ef1c195057"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T20:57:31.494Z"
+  }
+}

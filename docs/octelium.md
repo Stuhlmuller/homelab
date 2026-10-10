@@ -2,21 +2,23 @@
 
 # Octelium Access Plane
 
-This repository uses Octelium for human access to homelab applications. App
-hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
-records point those names at the public Cloudflare Tunnel, the tunnel forwards
-them to the Octelium public ingress, and Octelium `WEB` Services proxy to the
-existing Istio app routes. All app Services except AFFiNE enforce Octelium
-login. AFFiNE permits anonymous transport so its native client can delegate
-login to the application.
+Application and control hostnames retain their existing `*.stinkyboi.com`
+names while moving to private Traefik ingress on Tailscale. Only n8n and
+Policy Bot callbacks use public Funnel URLs. Follow the
+[ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md); DNS changes,
+Mac migration, and CI/native transport changes have separate acceptance gates.
 
-Human and Cordium Workspace Kubernetes access uses the private Octelium
-`kubernetes-api.homelab` Service. CI uses the separate public, workload-only
-`kubernetes-api-ci` Service. Tailscale remains deployed as a temporary
-LAN/egress fallback, but it is not required for normal app or Kubernetes API
-access.
+This guide retains the existing Octelium catalog, credentials, bootstrap, and
+carrier recovery procedures until replacement acceptance. Their presence does
+not authorize restoring public Tunnel DNS. Cordium and its required Octelium
+control plane remain; retiring other native resources is a separate change.
 
 ## Current Model
+
+The following catalog model describes the retained legacy resources during
+cutover. The [network guide](networking-tailnet-ingress.md) owns the target
+routing model; old clientless app routes stop receiving application DNS traffic
+after the private records converge.
 
 The Argo CD Application at `IaC/live/argocd-apps/octelium` installs the
 repo-owned Kubernetes manifests from `clusters/homelab/apps/octelium`.
@@ -384,6 +386,10 @@ the [pilot rename remains blocked](../clusters/homelab/apps/fleet/FREE-ENTRA.md#
 
 ## Cutover Gate
 
+The checks below describe the retained legacy ingress. They are not acceptance
+for the Traefik migration; use the ordered cutover and its per-application,
+callback, native API, and CI checks for that transition.
+
 Run the e2e gate before declaring any Octelium app route ready:
 
 ```sh
@@ -508,24 +514,21 @@ and reconnect tests before treating this as a proven execution transport.
 An account policy requiring Cloudflare Access may add a separate login gate;
 the carrier does not grant Octelium authorization.
 
-After Argo CD loads the new `octelium-public` pod revision, run the protected
-workflow to reconcile Tunnel DNS:
+The public DNS-restoration workflow is removed before private DNS cutover.
+Use `scripts/tailscale-private-dns.sh --dry-run` and the
+[ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md), which requires
+verified peer addresses and a reviewed exact-main execute command. Keep the
+Tunnel Deployment and old carrier only until replacement acceptance. Reverting
+transport requires a reviewed desired-state change; do not restore public DNS
+through a historical workflow or an ad hoc command.
 
-```sh
-gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-nix develop --command python3 scripts/octelium-tunnel-check.py
-```
+### Retained carrier rollback
 
-The workflow uses the production AWS role to read the scoped DNS token and
-Tunnel UUID from SSM. API responses stay in a temporary private log. Retry after
-correcting declared inputs if a stage fails; DNS reconciliation is idempotent.
-The dedicated gateway and cluster split DNS serve in-cluster clients.
+The following carrier procedure is only for pre-cutover access or reviewed
+rollback. After normal canonical DNS/API validation, native clients use
+Tailscale directly and must not recreate a loopback API override.
 
-For rollback, revert the Tunnel configuration and pod revision through a
-reviewed PR. Do not restore WAN DNS or port forwarding without a separately
-reviewed transport change. Preserve private cluster access during rollout.
-
-Native clients need a local TCP carrier and a resolver mapping scoped to
+Native clients need a local TCP carrierNative clients need a local TCP carrier and a resolver mapping scoped to
 their execution environment. The pinned Octelium client calls the canonical
 API hostname on port 443:
 
@@ -602,22 +605,16 @@ Secret name to match that SSM version, bump
 the connector pod annotations, sync the `octelium` Argo CD Application, then
 run `scripts/octelium-e2e-check.sh`.
 
-After the Octelium Gateways report public addresses, reconcile exact Cloudflare
-DNS records for their `_gw-*` hostnames when gateway hostnames are needed, then
-publish the control-plane, app, and external callback hostnames through the
-public Cloudflare Tunnel:
+Gateway `_gw-*` records remain a separate native transport concern. Private
+application/control DNS must follow the [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md):
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-gateway-dns.sh
-scripts/octelium-public-dns.sh --dry-run
-scripts/octelium-public-dns.sh
+scripts/tailscale-private-dns.sh --dry-run
 ```
 
-The public reconciler manages exact proxied CNAME records for all declared
-browser, API, transport, app, and callback hostnames. The gateway reconciler
-separately manages `_gw-*` records. Prefer the protected Tunnel workflow for
-public DNS changes so credentials stay in CI.
+The canonical helper reconciles only its fixed DNS-only A/AAAA inventory. It
+preserves old callback, CI, carrier, and unrelated records until retirement.
 
 ## Octelium Enterprise Package
 
@@ -773,13 +770,13 @@ roll out instead of using Octelium's portal-authenticated wait mode. Existing
 Cluster upgrades therefore require `octeliumctl`, `jq`, and an Octelium admin
 login in addition to the Kubernetes access used by `octops`.
 
-Then reconcile public DNS:
+Then follow the private DNS acceptance order before executing DNS changes:
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-gateway-dns.sh
-scripts/octelium-public-dns.sh --dry-run
-scripts/octelium-public-dns.sh
+scripts/tailscale-private-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
 ```
 
 After `octops` completes, apply the service catalog and create the connector
@@ -816,7 +813,7 @@ kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/istio
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
-bash -n scripts/octelium-public-dns.sh
+bash -n scripts/tailscale-private-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
@@ -838,7 +835,7 @@ kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-public-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
@@ -909,17 +906,12 @@ the parent Kustomization and sync `cordium` before deleting the parent
 Application. The child Application's foreground resources finalizer cascades
 its tracked bootstrap resources, preventing an orphaned genesis identity.
 
-Set the connector Deployment replicas to `0` and sync the `octelium` Argo CD
-Application. That stops the connector without restoring Tailscale Funnel.
-
-If the external resources are no longer wanted, delete the homelab Services,
-the `homelab-octelium-client` User, the `homelab-ci` User, and the
-homelab Policies
-from the Octelium Cluster with `octeliumctl`. Do not reintroduce Tailscale
-Funnel during rollback; external callback routes should either stay on
-`octelium-public` or be removed until a replacement is reviewed. The Tailscale
-LAN/exit-node utility is separate from the Octelium app, callback, VPN, and CI
-backbone.
+Do not retire the connector, application catalog, shared Kubernetes Secret, or
+Tunnel Deployment until the [replacement acceptance gate](../clusters/homelab/apps/traefik/CUTOVER.md#final-retirement)
+passes. Express rollback or retirement in reviewed repository desired state and
+use its declared operator path. Funnel remains the approved callback transport;
+private application DNS remains on Tailscale unless a reviewed rollback changes
+it. Keep Cordium state and its required native services.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before

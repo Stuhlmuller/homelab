@@ -3,17 +3,21 @@ type: architecture
 title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T19:43:31.576Z
 sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
+  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
+    resource: repo://scripts/tailscale-private-dns.sh
+generated: { by: "codex", at: "2026-10-10T20:51:47.381Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T20:51:47.381Z
 ---
 
 # GitOps Flow
@@ -201,10 +205,12 @@ changes during a deliberately scoped rollout. The earlier Azure credential gap
 is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
 advanced the current checkpoint. Mirror the reviewed Fleet/MySQL/Redis/bootstrap
 digests to Harbor with the fixed `image_scope=fleet` dispatch before registering
-the new app; reconcile the declared public DNS through
-`octelium-public-tunnel.yml`. The app's internal
+the new app. The old public-DNS restoration workflow is retired; move Fleet's
+existing hostname to private mesh addresses using the guarded
+[DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Fleet has no Funnel
+route. The app's internal
 PostSync bootstrap creates its first administrator, followed by a verified
-database backup; both public setup API aliases remain blocked. See the
+database backup; both setup API aliases remain blocked. See the
 [Fleet rollout](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not

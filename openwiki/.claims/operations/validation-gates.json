@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:823bfed8e5205e308de0a0262dfac2127189775d813f44ddc07e35493939de40",
+  "pageVersion": "sha256:6ee290b646ba073c37a8286c28124383a6261e035c49ffb3924f3512f13af046",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:65110fa78c3f44df28f7284b776c5092c943ce544bc17c5ed1baf21ac7f60387"
+          "version": "repo-file-v1:sha256:6aacf0935d155e0008ca653a7d42b65b4f7cdd3172f4d318e790bfb8b330bdee"
         }
       ]
     },
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:69215fc98d5d46f6008587d8bbee3599ab38ff12129f2585bd4c49048ef93769"
+          "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
         }
       ]
     },
@@ -86,7 +86,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:e69fe30b15b7c72fda0a6b39973284c326f2bfa34d91c56ae4f4d75709973771"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
@@ -159,6 +159,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T20:42:52.728Z"
+    "at": "2026-10-10T20:51:47.381Z"
   }
 }

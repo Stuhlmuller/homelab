@@ -446,7 +446,7 @@ echo "::group::Cloudflare API response handling"
     cf_api GET "/zones/mock"
   )
 
-  for script in scripts/octelium-public-dns.sh scripts/octelium-gateway-dns.sh; do
+  for script in scripts/tailscale-private-dns.sh scripts/octelium-gateway-dns.sh; do
     success_response='{"success":true,"result":[]}'
     [[ "$(check_cloudflare_response "$script" "$success_response")" == "$success_response" ]]
 
@@ -999,7 +999,6 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
-    '.github/workflows/octelium-public-tunnel.yml:reconcile' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -1043,7 +1042,6 @@ done <<'EOF'
 .github/workflows/nofx-registry-credential.yml 57da09cc6bcecfaf820c85961ef19ad624e62e3a033d4b7aa12cb8eeae35e1e8
 .github/workflows/litellm-provider-credential.yml a6d4fe36ccd7986c9cb35811fd70ec795458cc095758b302f1d9bd25b7d77416
 .github/workflows/octelium-private-kubernetes-apply.yml 76d81812010b3a1546b053a57e8e8d2b67cea86fd36b87d3356dc48575dca065
-.github/workflows/octelium-public-tunnel.yml 80ea67e7fbd41ca506e34c64072f48ef281449c1c5017f489aa5b8e244abe0a0
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml e718b6d33369385553e99b2f84a2c50524eb882dc5020ba1d22436ba59572edb
@@ -1056,7 +1054,6 @@ for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
-  '.github/workflows/octelium-public-tunnel.yml:reconcile' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
