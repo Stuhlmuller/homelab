@@ -10,9 +10,16 @@ Fleet has no Funnel route; its existing hostname moves to private mesh DNS.
 
 Merge the reviewed source and use a clean checkout of the exact current `main`.
 Confirm Traefik and both Funnel proxies are synced and healthy, certificates are
-Ready, and the existing authorized Tailscale profile is connected. Verify the
-private ingress Service publishes the unique online
-`homelab-ingress.tail67beb.ts.net` peer.
+Ready, and the private ingress Service publishes the unique online
+`homelab-ingress.tail67beb.ts.net` peer. Before DNS changes, reconnect the Mac's
+existing authorized Tailscale profile without changing Desktop or its carrier:
+
+```sh
+python3 -I scripts/multica-desktop-connect.py --resume-only
+```
+
+This verifies the saved tailnet and owner before reconnecting, then requires the
+ingress peer online. Complete the Desktop/carrier migration only at step 5.
 
 The DNS utility uses the existing `octelium-nofx-reconcile.py` reviewed-main
 guard only. Its old native transport remains unchanged during preparation;

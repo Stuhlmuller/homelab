@@ -147,6 +147,26 @@ class RouteTests(unittest.TestCase):
             {"to": [{"operation": {"ports": ["9000"]}}]},
         ])
 
+    def test_ambient_app_policies_separate_hbone_from_cleartext_sources(self):
+        for app, name, port in (("affine", "affine-server", 3010),
+                                ("nofx", "nofx-frontend", 80),
+                                ("openclaw", "openclaw", 8080),
+                                ("policy-bot", "policy-bot", 8080)):
+            with self.subTest(app=app):
+                policies = json.loads(subprocess.check_output([
+                    "yq", "ea", "-o=json", "[.]",
+                    str(ROOT / f"clusters/homelab/apps/{app}/networkpolicy.yaml")], text=True))
+                policy, = [item for item in policies if item["metadata"]["name"] == name]
+                ingress = policy["spec"]["ingress"]
+                self.assertEqual([rule for rule in ingress if not rule.get("from")],
+                                 [{"ports": [{"protocol": "TCP", "port": 15008}]}])
+                cleartext, = [rule for rule in ingress if rule.get("from")]
+                self.assertEqual(cleartext["ports"], [{"protocol": "TCP", "port": port}])
+                self.assertIn({
+                    "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "traefik"}},
+                    "podSelector": {"matchLabels": {"app.kubernetes.io/name": "traefik"}},
+                }, cleartext["from"])
+
     def test_node_registry_has_no_dashboard_or_other_app_route(self):
         registry = {name: route for name, route in ROUTERS.items()
                     if "registry" in route["entryPoints"]}

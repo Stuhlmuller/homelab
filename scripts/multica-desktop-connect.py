@@ -166,11 +166,17 @@ def migrate(home, addresses):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--resume-tailscale", action="store_true", help="Reconnect the existing homelab app profile if stopped; never select or authenticate a new profile")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--resume-tailscale", action="store_true", help="Reconnect the existing homelab app profile if stopped, then migrate Desktop")
+    mode.add_argument("--resume-only", action="store_true", help="Reconnect the saved homelab profile and verify ingress; keep Desktop and carrier unchanged")
     args = parser.parse_args()
     if sys.platform != "darwin" or os.geteuid() == 0:
         parser.error("Run as the signed-in macOS user, without sudo")
-    migrate(Path.home(), mesh_addresses(args.resume_tailscale))
+    addresses = mesh_addresses(args.resume_tailscale or args.resume_only)
+    if args.resume_only:
+        print("Existing Tailscale profile and ingress are online; Desktop and carrier are unchanged.")
+        return
+    migrate(Path.home(), addresses)
     print("Multica now uses the mesh endpoint; token and user marker preserved. Restart Multica to load it.")
 
 

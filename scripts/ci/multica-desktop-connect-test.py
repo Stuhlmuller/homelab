@@ -45,6 +45,16 @@ class MigrationTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     desktop.mesh_addresses()
 
+    def test_resume_only_never_migrates_desktop_or_carrier(self):
+        with patch.object(desktop.sys, 'argv', ['multica-desktop-connect.py', '--resume-only']), \
+             patch.object(desktop.sys, 'platform', 'darwin'), \
+             patch.object(desktop.os, 'geteuid', return_value=501), \
+             patch.object(desktop, 'mesh_addresses', return_value=ADDRESSES) as mesh, \
+             patch.object(desktop, 'migrate') as migrate:
+            desktop.main()
+            mesh.assert_called_once_with(True)
+            migrate.assert_not_called()
+
     def test_auth_requires_mesh_dns_valid_tls_and_exact_user_without_redirects(self):
         response = SimpleNamespace(status=200, read=lambda _limit: b'{"id":"owner"}')
         connection = Mock()

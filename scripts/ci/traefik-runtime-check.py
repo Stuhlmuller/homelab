@@ -153,6 +153,7 @@ try:
             if status == 200:
                 break
         except (RuntimeError, ValueError):
+            # Startup probes can race either listener; retry until the bounded deadline.
             pass
         time.sleep(.1)
     else:

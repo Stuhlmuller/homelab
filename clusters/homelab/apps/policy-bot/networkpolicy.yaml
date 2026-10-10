@@ -26,5 +26,7 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+    # HBONE is encrypted; AuthorizationPolicy checks workload identity and ports.
+    - ports:
         - protocol: TCP
           port: 15008

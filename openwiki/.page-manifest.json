@@ -30,11 +30,11 @@
       "completedRunId": "d7f1b905-4dfb-4bff-aa38-b66c36151a0d"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:edc66a81178bebb7e89f449ff257e21120abc4ec7bc16163db79baede0316445",
+      "pageVersion": "sha256:9f61772c605104384bf812e636f6b22f75f616532a0a88a81a379da2777a5504",
       "completedBy": "codex",
-      "completedRunId": "988fa74b-dee3-4349-a348-7e0043e956ae",
-      "gitHead": "77a98cac9efcb3276212bd9064ba137054ca6e89",
-      "sourceFingerprint": "sha256:cab35c5c2c57aae6c261a8cc5a620d043609db66e1db5a0f18b563bfb07437bd"
+      "completedRunId": "cf3766bb-a353-42a0-aee5-ce57d124d90e",
+      "gitHead": "deafc950f59e11c27f17ed38f081ba7e050cdb8e",
+      "sourceFingerprint": "sha256:5e1375ebf86bba4a3442f666c409f7255e14d8748373d69783d1b9e86f60d6fc"
     },
     "/openwiki/patterns/helm-chart-organization.md": {
       "gitHead": "502f60fe2ec8754dc30895d59ec4e20c320163ea",
@@ -51,11 +51,11 @@
       "completedRunId": "0c4bc290-4b15-4e20-8ac7-ad6b10aa5e98"
     },
     "/openwiki/runbooks/tailnet-ingress.md": {
-      "gitHead": "7c024871aaa33dec8cefc8ff71111b97488fbf5a",
-      "sourceFingerprint": "sha256:2848b08c5d3bca1294a1273f794dc7faeddba29ee31e6b161943a195c1554f2e",
-      "pageVersion": "sha256:d86f7e254b53acc5a7496900386b4be933e2aa78f34c2153c4229e7c5305da51",
+      "pageVersion": "sha256:afc90144e2361746ab781a473cf0ef4bea9bb2aeb7452c524a8461e133b4d995",
       "completedBy": "codex",
-      "completedRunId": "d7f1b905-4dfb-4bff-aa38-b66c36151a0d"
+      "completedRunId": "cf3766bb-a353-42a0-aee5-ce57d124d90e",
+      "gitHead": "deafc950f59e11c27f17ed38f081ba7e050cdb8e",
+      "sourceFingerprint": "sha256:5e1375ebf86bba4a3442f666c409f7255e14d8748373d69783d1b9e86f60d6fc"
     },
     "/openwiki/source-map.md": {
       "gitHead": "7c024871aaa33dec8cefc8ff71111b97488fbf5a",

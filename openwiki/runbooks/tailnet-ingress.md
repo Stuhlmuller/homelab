@@ -4,8 +4,16 @@ title: "Tailnet And App Ingress"
 description: "Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover."
 tags: [runbook, networking, ingress]
 sources:
+  - id: openwiki-source-0108413231c2f8b3f2972abd
+    resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
+  - id: openwiki-source-d190dbce4c50934f34b78ce1
+    resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-c6350999c9f74bf0f53f9005
     resource: repo://clusters/homelab/apps/octelium-cluster/console-redirect.yaml
+  - id: openwiki-source-df94d6406e64c190589692a0
+    resource: repo://clusters/homelab/apps/openclaw/networkpolicy.yaml
+  - id: openwiki-source-fa98853a4d8b97699eb08972
+    resource: repo://clusters/homelab/apps/policy-bot/networkpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -14,6 +22,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
+  - id: openwiki-source-c5bae48eacfc2b48af15ad5a
+    resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
     resource: repo://scripts/multica-desktop-connect.py
   - id: openwiki-source-a8e2cab0bb2d9f7f664ad849
@@ -24,10 +34,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
+generated: { by: "codex", at: "2026-10-10T19:59:10.633Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:43:31.576Z
+    at: 2026-10-10T19:59:10.633Z
 ---
 
 # Tailnet And App Ingress
@@ -87,6 +97,9 @@ Harbor management or unrelated application hosts.
 Traefik joins ambient and app authorization policies trust its dedicated service
 account. Tailscale ACLs govern external mesh access. Flannel does not enforce the
 NetworkPolicy manifests: they express intended peers, not current isolation.
+AFFiNE, NOFX, OpenClaw and Policy Bot allow encrypted HBONE on port 15008
+separately from cleartext source selectors, leaving workload identity and
+destination-port checks to Istio AuthorizationPolicy.
 Istio rejects unrelated authenticated mesh principals; unmeshed intra-cluster
 callers still require application authentication. Registry source-IP restrictions
 have a trusted node-local bypass. Do not claim full east-west isolation.
@@ -111,6 +124,9 @@ The additive `tailscale-private-dns.sh` previews by default and requires exact
 reviewed main to write only its fixed DNS-only A/AAAA inventory. It preserves
 legacy CI, callback and carrier names. First disable the old DNS-restoration
 workflow through code, preserve its tunnel, and verify Talos registry access.
+Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects only
+the verified saved tailnet profile and checks the ingress peer; it leaves
+Desktop credentials and the local carrier unchanged.
 After DNS readback, the Mac helper migrates the verified existing account while
 preserving credentials and owned-file rollback. Wait the reported former TTL,
 then explicitly verify normal DNS, canonical TLS and native gRPC.

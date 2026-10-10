@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:edc66a81178bebb7e89f449ff257e21120abc4ec7bc16163db79baede0316445",
+  "pageVersion": "sha256:9f61772c605104384bf812e636f6b22f75f616532a0a88a81a379da2777a5504",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,11 +58,11 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:6556442b6977e20df1b1245a96aea2ccd23d808033fd384c9aa2cbc6c840f8c9"
+          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
-          "version": "repo-file-v1:sha256:5c993dccbf1652d6ab77fd415943487b44ff1245cd79d74080828ab4acea229b"
+          "version": "repo-file-v1:sha256:078abb835cbc9f68940fd96b6570539984ee740e4781ead029e862dfeb2e733c"
         }
       ]
     },
@@ -86,11 +86,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:7f9cfada78d3672012ca5fff2a4d352187508ca7863eeb30d8401d064b07d4d2"
+          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
-          "version": "repo-file-v1:sha256:2a4ab853403aa440ecfaaac1fd50620a4b94e7864a09394a88be7d3d5587980e"
+          "version": "repo-file-v1:sha256:1a701185a8fd5d25f4975381fe572f742234bc59a447bd06fa4630269a21a865"
         },
         {
           "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
@@ -137,6 +137,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:52:47.904Z"
+    "at": "2026-10-10T19:59:10.633Z"
   }
 }
