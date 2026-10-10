@@ -28,10 +28,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
+generated: { by: "codex", at: "2026-10-10T23:50:03.392Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:30:33.938Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Secrets And Identity
@@ -325,15 +325,13 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-homelab-octelium-public`. The same tunnel is the external callback backbone
-  for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
-  routes remain unauthenticated at Octelium but path-limited in Istio and
-  validated by the receiving application credentials or signatures.
-  The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
-  production AWS role for SSM reads and the SSM-backed DNS token. Native TLS
-  gRPC uses the separate Tunnel TCP carrier. Token values never enter git or
-  workflow output.
+homelab-octelium-public`. This retained tunnel supports legacy callers only
+  until the staged replacement gates pass. Its public DNS writer and restoration
+  workflow are removed. The canonical mesh DNS helper reuses the scoped
+  cert-manager token; n8n and Policy Bot external registrations move to Funnel
+  through their fixed helpers, preserving credentials and requiring fresh signed
+  delivery receipts. Native carrier and CI secrets remain until separate
+  acceptance. Token values never enter git or workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -503,8 +501,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure
   the GitHub App webhook URL to
-  `https://policy-bot-hook.stinkyboi.com/api/github/hook` after the
-  `octelium-public` DNS/tunnel route is live; keep the webhook secret in
+  `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through the guarded
+  callback helper after Funnel routing and negative-path preflights pass;
+  require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
 - OctoBot currently has no repository-owned SSM contract. Its first-run setup,
   exchange credentials, tentacles, and strategy state live on the finance

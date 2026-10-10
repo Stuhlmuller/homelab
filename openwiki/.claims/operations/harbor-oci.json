@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e9578915c1161550fac01fb27c3eb67216c0e70230fb3c9269ee77ac29079f5b",
+  "pageVersion": "sha256:bf505b35068249d81290339de9cef8acd318523c548d23559fd31bb7307f982d",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -62,11 +62,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:5822456261be6dbdd1c6e6a435927111761b33f4b2f70d8fafde8d9222cb8d27"
+          "version": "repo-file-v1:sha256:5064fa74df0e516848ce5a0ddc7677f2789ff0e68670591f03c997645cf49bad"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:03e63cd1c3337749e09f50a0c18caa8462603e1d9678dd8cccd49aef92f58c2d"
+          "version": "repo-file-v1:sha256:ff416a6ea053612e2694602952cfee18e744c3c4404284072ebdb0c955de8122"
         }
       ]
     },
@@ -105,6 +105,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:30:33.938Z"
+    "at": "2026-10-10T23:43:46.551Z"
   }
 }

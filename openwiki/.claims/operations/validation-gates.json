@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ebc5f71fa7a5a540e52438d73e81924c767e98690563e9b4faed34cf475104d2",
+  "pageVersion": "sha256:11a8189e89a4fdc065e688650b4f93550f8bc32fb0630894a49de75a12a0b570",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:dc793b4994e877b3ff26230c763a07df543f215e83f8f297021fe660572d68c2"
+          "version": "repo-file-v1:sha256:e8c4f279160c32d83b429ad875931074bd399bfa1f6cbcac345cbcd9214c7ab1"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -194,11 +194,11 @@
     },
     {
       "id": "claim_977876eb50cc4ae688f8f70cc3c7b039",
-      "statement": "PolicyBot's non-executing preflight requires hook404 with one valid20-character backend X-Request-ID and root404 with no such header; it checks routing, while fresh signed GitHub delivery remains required for callback acceptance.",
+      "statement": "PolicyBot's non-executing preflight requires hook HTTP404 with one valid 20-character backend X-Request-ID and root404 without that header; it checks routing, while fresh signed GitHub delivery remains required for callback acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:a2c66de54a9c15a13c8ca0bca7e7f44af41174200120b2f94f069bad41e382ca"
+          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
         },
         {
           "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
@@ -233,10 +233,20 @@
           "version": "repo-lines-v1:sha256:5d58625ad5a9c2bf1cece2d24349e32ee3ca2a8df30a90c798bbefcc8723427a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTFmNWZiMzdkZmNiODE2NTU3ZjRmOWY0NmYxNDAxYTU0NzdlNjViOWY1OWY0ODBkN2NmNzkxYjM5MDIyN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyNzM1NWVjOTcwNzllZWI0NTA4MTZmOGQyOGNiYWZiYzY1OTE4MjlkNWY2MmMyYTIwYzlkNDBmY2EyZWExNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ZDM1MjQwMzA4NWFiZTM0MDVhYmJkMWFlZDYzZDY1YzQ0NjM4ZTMwMWZhMzE4ZjU1ZGNiOGE1NzQ3MWYzZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTEyMjgxZDkwZjI3NzZlZjhhYmUzYWE3ZGNmMjU4YjI2ZmY4Mjc0ZTU0MTdlY2QyYjllODBlZGJmY2I0NWIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_51286ed45a16426ba190cbe16c99a1d2",
+      "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:30:33.938Z"
+    "at": "2026-10-10T23:50:03.392Z"
   }
 }

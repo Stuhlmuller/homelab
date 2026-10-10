@@ -60,10 +60,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:30:33.938Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Validation Gates
@@ -215,6 +215,13 @@ Prove callback
 admin/root rejection off mesh and actual signed webhook delivery. Run protected
 CI plan/apply through the operator API proxy, with a denied real plan-identity
 write. Local tests and HTTP health alone do not satisfy these gates.
+
+The retained ambient `octelium-client` is an authenticated principal, so the
+private TLS listener temporarily permits its exact service account on 8443.
+The focused regression rejects wrong namespace/account identities and callback
+or registry ports, and requires the matching exact Pod/namespace NetworkPolicy
+selector. Require connector readiness and authenticated native API access after
+CoreDNS reconciliation; offline assertions do not prove live authorization.
 
 The Talos helper regression covers full active/persistent resource capture,
 additional-document divergence, a normal STATE-only boot with active version 1,
@@ -514,7 +521,7 @@ kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
 bash -n \
   scripts/octelium-gateway-dns.sh \
-  scripts/octelium-public-dns.sh \
+  scripts/tailscale-private-dns.sh \
   scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```

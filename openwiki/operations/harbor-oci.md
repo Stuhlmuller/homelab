@@ -29,7 +29,7 @@ sources:
 generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:30:33.938Z
+    at: 2026-10-10T23:43:46.551Z
 ---
 
 # Harbor Private OCI Registry

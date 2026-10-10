@@ -289,8 +289,9 @@ Before a follow-up activation PR:
 1. Complete the protected full `Terragrunt Apply` or its dependency-aware
    `argocd_app=langfuse` dispatch described above. Both plan/policy-check and
    apply SSM/S3 producers before registering Langfuse.
-2. Reconcile the separate Octelium Service and public DNS paths. Terragrunt does
-   not apply either. The existing `homelab-human-web-access` Policy must already
+2. Follow the [private ingress cutover](../traefik/CUTOVER.md) for the canonical
+   Langfuse hostname. The following native Service command is retained legacy
+   recovery only; Terragrunt does not apply it. The `homelab-human-web-access` Policy must already
    exist. Install the pinned client through `scripts/install-octeliumctl.sh` and
    use an existing native operator login. Preview from a trusted checkout:
 
@@ -323,23 +324,17 @@ Before a follow-up activation PR:
    CLI errors reported with exit zero. Do not add `--prune`. Repair or roll back
    the declared Service through a reviewed PR and rerun the helper; removing
    the helper does not remove the live Service or bypass its human policy.
-   Wait for Argo CD's `octelium-public` Application to be
-   Synced/Healthy with the new tunnel pod revision before dispatching DNS:
-
-   ```sh
-   gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-   ```
-
-   Obtain normal `homelab-production` approval and require that exact run to
-   succeed. If `main` changed, review the new commit before redispatching; do
-   not bypass SHA or environment gates or edit DNS in the provider console.
+   The old public DNS writer and restoration workflow are removed. Use the
+   staged DNS helper after Traefik, signed mesh peers and backend readiness pass;
+   preserve legacy runtime routes until replacement acceptance. Never recreate
+   public app CNAMEs or edit DNS directly in a provider console.
 3. Verify the Langfuse Application is Synced/Healthy, datastore and retained
    recovery PVCs are Bound, the project is initialized, and the authenticated
-   UI opens through Octelium.
+   UI opens from the mesh through Traefik with Langfuse authentication.
    Verify `langfuse-secrets` and `litellm-app-keys`
    ExternalSecrets are Ready without printing their values.
-   Run `nix develop --command python3 scripts/octelium-tunnel-check.py` and
-   `scripts/octelium-e2e-check.sh`; DNS/catalog/backend or login failures block
+   Run the staged canonical DNS/TLS and application checks; the old Tunnel/e2e
+   probes describe legacy recovery only. DNS/backend or login failures block
    caller activation. An unauthenticated redirect alone is not UI acceptance.
 4. Implement caller activation in a separate PR. This foundation intentionally
    contains no activation patch or gateway callback implementation: the prior

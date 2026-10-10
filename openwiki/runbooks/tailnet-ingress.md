@@ -56,10 +56,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:30:33.938Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Tailnet And App Ingress
@@ -171,6 +171,12 @@ destination-port checks to Istio AuthorizationPolicy.
 Istio rejects unrelated authenticated mesh principals; unmeshed intra-cluster
 callers still require application authentication. Registry source-IP restrictions
 have a trusted node-local bypass. Do not claim full east-west isolation.
+
+During the staged CoreDNS switch, Traefik also permits only the retained
+`cluster.local/ns/octelium-client/sa/octelium-client` principal on private TLS
+port 8443. The intended NetworkPolicy peer requires its exact namespace and
+both connector pod labels. Remove this temporary allowance with the connector
+after acceptance; it grants no callback or registry listener access.
 
 Publish Traefik's reviewed image, adopt policy through the operator Terraform
 unit, then register and verify the GitOps resources. Require Ready certificates,

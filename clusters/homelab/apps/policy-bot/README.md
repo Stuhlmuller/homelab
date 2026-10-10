@@ -26,18 +26,19 @@ disqualified.
 
 ## Routes
 
-- Octelium-backed operator UI, details pages, static assets, OAuth callback, and normal
-  Policy Bot page routes: `https://policy-bot.stinkyboi.com`.
+- Private operator UI, details, assets and OAuth:
+  `https://policy-bot.stinkyboi.com` through Tailscale and Traefik.
 - Public GitHub webhook:
-  `https://policy-bot-hook.stinkyboi.com/api/github/hook`.
+  `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel.
 
-The public webhook uses a dedicated Istio `VirtualService` reached through the
-repo-owned `octelium-public` Cloudflare Tunnel connector. The reviewed public
-surface is the `/api/github/hook` prefix, and Policy Bot still validates the
-GitHub webhook HMAC secret before accepting a delivery. Do not add the Policy
-Bot UI host or root route to the public callback hostname.
-After rollout, update the GitHub App webhook URL to
-`https://policy-bot-hook.stinkyboi.com/api/github/hook`.
+Traefik exposes only the exact `/api/github/hook` callback path. Policy Bot
+retains GitHub HMAC verification; its UI and callback root stay private or denied.
+After Funnel readiness, preview `python3 -I scripts/policy-bot-webhook.py`, then
+follow the [guarded callback cutover](../traefik/CUTOVER.md) from clean reviewed
+main. The helper changes only the fixed GitHub App webhook URL, preserving its
+secret. Require a fresh successful signed delivery before retiring the previous
+`policy-bot-hook.stinkyboi.com` Tunnel route. Source changes alone do not move
+that external registration.
 
 ## Secrets
 
@@ -72,10 +73,12 @@ rendered again.
 ```sh
 kubectl kustomize clusters/homelab/apps/policy-bot
 kubectl -n automation get deploy/policy-bot svc/policy-bot virtualservice/policy-bot-octelium virtualservice/policy-bot-webhook-octelium externalsecret/policy-bot-config
-kubectl -n octelium-public get deploy cloudflared
+kubectl -n traefik get deployment/traefik service/traefik-private
+kubectl -n traefik get ingress
 curl -I https://policy-bot.stinkyboi.com/
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
-curl -sS -D - -o /dev/null https://policy-bot-hook.stinkyboi.com/api/github/hook
+curl -sS -D - -o /dev/null https://policy-bot-hook.tail67beb.ts.net/api/github/hook
+curl -sS -D - -o /dev/null https://policy-bot-hook.tail67beb.ts.net/
 ```
 
 Expected workload behavior: the Deployment has one available replica. Expected
@@ -96,8 +99,9 @@ not successful callback delivery. See the [staged cutover](../traefik/CUTOVER.md
 
 ## Rollback
 
-Rollback removes the public callback route first by reverting this app or
-removing `virtualservice-webhook.yaml` from the kustomization in a PR, then
-syncing the Argo CD Application and removing `policy-bot-hook.stinkyboi.com`
-from the `octelium-public` tunnel/DNS reconciler. The app is stateless, so
-there are no PVCs to preserve.
+Revert a failed application revision through GitOps while preserving its working
+Funnel callback registration. A transport rollback needs a separate reviewed
+route/URL change and fresh signed-delivery verification; do not restore the
+deleted public DNS writer. Keep the previous Tunnel route until replacement
+acceptance. The app is stateless; preserve its existing App credentials and
+webhook secret rather than rebuilding them for a routing rollback.

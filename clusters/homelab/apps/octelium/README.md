@@ -159,25 +159,15 @@ the connector pod annotations when the SSM version changes. Let Argo CD sync
 `octelium`; the active connector then serves each configured Octelium Service
 from inside the homelab cluster.
 
-After the service catalog is applied, reconcile public DNS for the control
-plane, app hostnames, and reviewed external callback hostnames:
+After the retained catalog is ready, use the
+[staged private DNS cutover](../traefik/CUTOVER.md) for existing application and
+control names. The old public DNS writer is removed. Keep legacy callbacks and
+native routes only until their replacements pass authenticated acceptance.
 
-```sh
-scripts/octelium-public-dns.sh
-```
-
-Then run:
-
-```sh
-scripts/octelium-e2e-check.sh
-```
-
-The gate uses ordinary public HTTPS requests to the existing app hostnames and
-fails if any hostname still resolves to private Octelium service IPs or if any
-app returns a public routing 404. It also requires every active connector pod
-to report `ambient.istio.io/redirection=enabled` and probes the reviewed
-callback hosts `n8n-webhook.stinkyboi.com` and
-`policy-bot-hook.stinkyboi.com`.
+`scripts/octelium-e2e-check.sh` describes the legacy public routing contract;
+it is not a Traefik acceptance gate and can fail intentionally after DNS moves.
+Use it only when diagnosing the retained pre-cutover path. The staged runbook
+owns private canonical TLS, native API, callback and Cordium checks.
 
 Use separate contexts when the Octelium control plane is not the homelab
 cluster:
@@ -278,18 +268,18 @@ kubectl kustomize clusters/homelab/apps/octelium
 kubectl kustomize clusters/homelab/apps/istio
 scripts/octelium-enterprise-package.sh --help
 bash -n scripts/octelium-entra-oidc.sh
-bash -n scripts/octelium-gateway-dns.sh scripts/octelium-public-dns.sh
+bash -n scripts/octelium-gateway-dns.sh scripts/tailscale-private-dns.sh
 scripts/octelium-e2e-check.sh --help
 ```
 
-After activation:
+After activation, inspect retained connector state; the e2e command below is legacy-only:
 
 ```sh
 kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-public-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
@@ -338,51 +328,24 @@ octelium disconnect --domain stinkyboi.com
 
 ## Adding A Service
 
-1. Add the Octelium `Service` to
-   `docs/examples/octelium/homelab-services.yaml`.
-2. For app UI routes, use a valid Octelium service name in the `homelab`
-   namespace, set `mode: WEB`, `isPublic: true`, and forward HTTPS to the
-   in-cluster Istio gateway while preserving the original app hostname headers.
-3. Add the app hostname to `clusters/homelab/apps/octelium-public/configmap.yaml`
-   and `scripts/octelium-public-dns.sh` so the hostname reaches the Octelium
-   ingress dataplane through the public tunnel.
-4. Keep the destination app `VirtualService` annotated with
-   `homelab.rst.io/access-plane: octelium` and
-   `homelab.rst.io/public-funnel: "false"`.
-5. If the destination workload has an Istio `AuthorizationPolicy`, add
-   `cluster.local/ns/octelium-client/sa/octelium-client` as an allowed source.
-6. If the destination workload has a Kubernetes `NetworkPolicy`, add the
-   `octelium-client` namespace as an ingress source. This is currently intent
-   only while kube-flannel is the CNI.
-7. Re-render the Octelium app and the changed destination app.
+New application routes belong in [Traefik's fixed route inventory](../traefik/README.md)
+and the guarded mesh DNS inventory. Keep canonical application hostnames private;
+only the two reviewed callback hosts use Funnel. Do not add application hosts to
+the retained Tunnel or recreate its deleted DNS writer.
+
+Octelium's retained catalog serves Cordium and required control/Kubernetes
+access. Changes to that catalog still require its reviewed reconciliation path
+and preservation of Cordium identity and denied-resource boundaries.
 
 ## Rollback
 
-Set the connector Deployment replicas to `0` and sync the Argo CD Application.
-That stops the connector without touching Tailscale.
+Use reviewed GitOps reverts and the [ordered cutover rollback](../traefik/CUTOVER.md).
+Preserve the connector, native credentials and carrier recovery until replacement
+acceptance. A separate retirement change owns obsolete app routes; never bulk
+delete the retained Cordium Kubernetes Service, policies or Enterprise state.
+Tailscale/Traefik remains the target private application path, with public Funnel
+limited to the reviewed n8n and Policy Bot callbacks.
 
-To remove the external Octelium resources:
-
-```sh
-for service in \
-  affine.homelab argocd.homelab compass.homelab deluge.homelab \
-  dispatcharr.homelab grafana.homelab homelab-demo.homelab \
-  kiali.homelab kubernetes-api.homelab litellm.homelab langfuse.homelab n8n.homelab \
-  octobot.homelab openclaw.homelab policy-bot.homelab \
-  prowlarr.homelab radarr.homelab sonarr.homelab; do
-  octeliumctl delete svc "${service}"
-done
-
-octeliumctl delete user homelab-octelium-client
-octeliumctl delete policy homelab-private-kubernetes-access
-octeliumctl delete policy homelab-human-web-access
-```
-
-Do not reintroduce Tailscale Funnel as part of Octelium rollback. The app
-VirtualServices are retained as private Istio backend routing for Octelium
-Services; the remaining Tailscale resources are secondary LAN/egress utilities,
-not the app, callback, VPN, or GitHub Actions backbone.
-
-Remove or downgrade the Enterprise package through an Octelium-supported
-package operation. Update the desired package version in this README and the
-knowledge-base runbook before running the wrapper again.
+Remove or downgrade the Enterprise package only through an Octelium-supported
+package operation. Update the desired version and knowledge-base runbook before
+running the wrapper again; preserve Enterprise PVCs and Cordium state.

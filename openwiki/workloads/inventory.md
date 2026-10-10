@@ -12,14 +12,22 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-b935b76b60643a425fe849c6
+    resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-a11878298975bc4bd3bbaf7d
+    resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
+  - id: openwiki-source-1ab63006818d653aed251f6d
+    resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
@@ -36,10 +44,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:30:33.938Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Workload Inventory
@@ -74,9 +82,10 @@ source path; they are not proof that cutover has happened. See
 
 Fleet Free adds family device management in namespace `fleet`, registered by
 `IaC/live/argocd-apps/fleet` from `clusters/homelab/apps/fleet`. It depends on
-SSM, External Secrets, Istio, retained NFS and `octelium-public`. The reviewed
-`fleet.stinkyboi.com` native-client route uses Fleet authentication and permanently
-blocks public first-admin setup. MySQL, Redis and nightly MySQL backups use
+SSM, External Secrets, Istio and retained NFS; registration retains the legacy
+`octelium-public` dependency until staged retirement. The declared
+`fleet.stinkyboi.com` route is private Tailscale-to-Traefik ingress, uses Fleet
+authentication and denies setup paths. Fleet has no public or Funnel route. MySQL, Redis and nightly MySQL backups use
 retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
@@ -207,7 +216,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `openclaw`             | `ai`               | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`             | NAS configuration/workspace; retained node-local SQLite state on zimaboard-1; daily verified NAS database snapshots; `6Gi` ephemeral cap; exact-image-version external Discord npm package with no floating fallback; a dedicated LiteLLM caller key and OpenAI-compatible internal endpoint provide `openrouter/free`; Kubernetes-only containment with sandboxing off until a supported Docker, SSH, or OpenShell backend exists; explicit agent resources; HTTP proxy probes; pinned to `zimaboard-1` for persistent local runtime state                                                                                                                                                                                                                                                                                   | external-secrets, cert-manager, istio, litellm, platform-storage                                                    |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
-| `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; GitHub webhooks use `https://policy-bot-hook.stinkyboi.com/api/github/hook` through `octelium-public`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
+| `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
@@ -326,6 +335,10 @@ Phase 2a adds intended Traefik peers for Cordium genesis and cluster-config
 bootstrap traffic on port 8443, with matching bootstrap egress declarations.
 Flannel still does not enforce these NetworkPolicies. Require native API
 acceptance after the CoreDNS rewrite; manifest presence is not connectivity proof.
+The retained connector also has an explicit temporary Traefik authorization for
+`cluster.local/ns/octelium-client/sa/octelium-client` only on port 8443, with an
+intended peer matching its namespace and both pod labels. Retire this allowance
+with the connector after acceptance.
 
 The Traefik foundation adds `cluster.local/ns/traefik/sa/traefik` to the
 application ingress allows above. Its namespace joins ambient; the private TLS,
