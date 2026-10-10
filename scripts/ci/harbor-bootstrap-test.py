@@ -212,6 +212,16 @@ class BootstrapTest(unittest.TestCase):
         desired = bootstrap.desired_replication_policy(rule, 42, paused=True)
         self.assertFalse(desired["enabled"])
 
+    def test_native_policy_omits_false_replication_flag(self):
+        desired = bootstrap.desired_replication_policy(bootstrap.CHAINGUARD_REPLICATION["rules"][0], 42)
+        actual = copy.deepcopy(desired)
+        actual.pop("replicate_deletion")
+        self.assertTrue(bootstrap.replication_matches(actual, desired))
+        actual["replicate_deletion"] = None
+        self.assertTrue(bootstrap.replication_matches(actual, desired))
+        actual["replicate_deletion"] = True
+        self.assertFalse(bootstrap.replication_matches(actual, desired))
+
     def test_creation_location_is_scoped_to_the_requested_endpoint(self):
         self.assertEqual(bootstrap.created_id({"Location": "/api/v2.0/registries/42"}, "/registries"), 42)
         for location in ("", "/api/v2.0/registries/0", "/api/v2.0/robots/42",
@@ -257,8 +267,10 @@ class BootstrapTest(unittest.TestCase):
                 if path.startswith("/replication/policies/") and method == "GET":
                     identifier = int(path.rsplit("/", 1)[1])
                     policy = next(policy for policy in self.policies.values() if policy["id"] == identifier)
-                    return {**policy, "src_registry": {**policy["src_registry"], "name": "cgr.dev"},
-                            "dest_registry": None}, {}
+                    response = {**policy, "src_registry": {**policy["src_registry"], "name": "cgr.dev"},
+                                "dest_registry": None}
+                    response.pop("replicate_deletion")
+                    return response, {}
                 raise AssertionError((method, path))
 
         client = Client()
