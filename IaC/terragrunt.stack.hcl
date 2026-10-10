@@ -318,6 +318,14 @@ unit "argocd_apps_tailscale" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailscale/stack.hcl").inputs
 }
 
+unit "argocd_apps_traefik" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/traefik"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/traefik/stack.hcl").inputs
+}
+
 unit "aws_ssm_parameters" {
   source                  = "./.catalog/units/live/aws-ssm-parameters"
   path                    = "live/aws-ssm-parameters"
@@ -408,5 +416,11 @@ unit "operator_entra_stuhlmuller_pilot_user" {
 unit "operator_entra_owner_mail" {
   source                  = "./.catalog/units/operator/entra-owner-mail"
   path                    = "operator/entra-owner-mail"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_tailscale_access" {
+  source                  = "./.catalog/units/operator/tailscale-access"
+  path                    = "operator/tailscale-access"
   no_dot_terragrunt_stack = true
 }

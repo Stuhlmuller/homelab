@@ -204,7 +204,7 @@ repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
   terragrunt_argocd_app_state_repair_unit
 )"
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" ]]; then
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
@@ -213,12 +213,15 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     .spec |
     (.sourceRepos | index("https://github.com/Stuhlmuller/homelab.git") != null) and
     ($app != "langfuse" or (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null)) and
+    ($app != "traefik" or (.sourceRepos | index("https://bjw-s-labs.github.io/helm-charts") != null)) and
     any(.destinations[]; .namespace == $app and .server == "https://kubernetes.default.svc") and
     any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace")
   ' >/dev/null
   prerequisite_apps=(external-secrets cert-manager istio platform-storage)
-  if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
-    prerequisite_apps+=(octelium-public)
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "traefik" ]]; then
+    prerequisite_apps=(cert-manager istio tailscale)
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+    prerequisite_apps+=(traefik)
   fi
   kubectl -n argocd get applications "${prerequisite_apps[@]}" -o json | jq -e \
     --argjson expected "${#prerequisite_apps[@]}" '
@@ -229,14 +232,24 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     crd/externalsecrets.external-secrets.io crd/clustersecretstores.external-secrets.io
     crd/authorizationpolicies.security.istio.io crd/virtualservices.networking.istio.io
   )
-  kubectl wait --for=condition=Established --timeout=0s "${prerequisite_crds[@]}"
-  kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
-  if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
-    kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
-      any(.spec.conditions[]?.namespaces[]?; . == $app)
-    ' >/dev/null
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "traefik" ]]; then
+    prerequisite_crds=(
+      crd/certificates.cert-manager.io crd/clusterissuers.cert-manager.io
+      crd/authorizationpolicies.security.istio.io
+    )
   fi
-  kubectl get storageclass nfs-default -o name >/dev/null
+  kubectl wait --for=condition=Established --timeout=0s "${prerequisite_crds[@]}"
+  if [[ "$TERRAGRUNT_ARGOCD_APP" == "traefik" ]]; then
+    kubectl wait --for=condition=Ready --timeout=0s clusterissuer/letsencrypt-cloudflare
+  else
+    kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
+    if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+      kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
+        any(.spec.conditions[]?.namespaces[]?; . == $app)
+      ' >/dev/null
+    fi
+    kubectl get storageclass nfs-default -o name >/dev/null
+  fi
   echo "::endgroup::"
 fi
 

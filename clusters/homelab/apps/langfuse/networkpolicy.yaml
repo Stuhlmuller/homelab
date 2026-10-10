@@ -22,6 +22,12 @@ spec:
               kubernetes.io/metadata.name: ai
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: traefik
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: istio-system
       ports:
         - {protocol: TCP, port: 3000}

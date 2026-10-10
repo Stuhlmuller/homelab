@@ -1,0 +1,29 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: traefik-allow-ingress-proxies
+  namespace: traefik
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  action: ALLOW
+  rules:
+    # External access is controlled by Tailscale. NetworkPolicy is declarative
+    # intent only until the cluster installs an enforcing CNI.
+    - from:
+        - source:
+            notPrincipals: ["*"]
+      to:
+        - operation:
+            ports: ["8000", "8080", "8443"]
+    - from:
+        - source:
+            notPrincipals: ["*"]
+            ipBlocks: ["10.1.0.199/32", "10.1.0.200/32", "10.1.0.201/32", "10.1.0.202/32"]
+      to:
+        - operation:
+            ports: ["9443"]
+    - to:
+        - operation:
+            ports: ["9000"]

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:14f58dd8e139736e540a72631a4355b143daac330d1bcb6d5f6299448a2cf607",
+  "pageVersion": "sha256:823bfed8e5205e308de0a0262dfac2127189775d813f44ddc07e35493939de40",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:ff5c38590c7cd81c2e08f8684e68621b50a0ecd3991408a399431404a7dd5c46"
+          "version": "repo-file-v1:sha256:65110fa78c3f44df28f7284b776c5092c943ce544bc17c5ed1baf21ac7f60387"
         }
       ]
     },
@@ -49,26 +49,116 @@
       ]
     },
     {
-      "id": "claim_18eebc2e988b48408b2de9e956de2e0a",
-      "statement": "The fixed Traefik publication scope retains digest, tag alias and complete anonymous pull checks; static regression tests also reject scoped, untitled and mismatched-revision receipts as full-catalog mirror evidence before provenance or registry access.",
+      "id": "claim_fed10c4041d84a8c89efec2369232427",
+      "statement": "The static gate includes Traefik route and tokenless kubeconfig boundary checks, while the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L17",
+          "version": "repo-lines-v1:sha256:aadb39e3ad312d3f94e7d207e9127d90e4e055b4a5da7e4c779602612679a60c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-routes-test.py",
+          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-runtime-check.py",
+          "version": "repo-file-v1:sha256:078abb835cbc9f68940fd96b6570539984ee740e4781ead029e862dfeb2e733c"
+        }
+      ]
+    },
+    {
+      "id": "claim_0a91419461aa413eb385fc662718c291",
+      "statement": "Rendered policy permits only two explicitly reviewed Tailscale Funnel Ingresses backed by the separate Traefik callback service and rejects other Funnel declarations.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/funnel.yaml",
+          "version": "repo-file-v1:sha256:e017cd5b6d59009f056c9031722d45e14dd6fb97bc9c3b3bed5f14f6c79d3439"
+        },
+        {
+          "resource": "repo://policy/kubernetes.rego",
+          "version": "repo-file-v1:sha256:5ab9ee2b8f5500fef4376258bea3883bdf998ad1481f84865039cb0ad5f87c79"
+        }
+      ]
+    },
+    {
+      "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
+      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+        },
+        {
+          "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
+          "version": "repo-file-v1:sha256:1a701185a8fd5d25f4975381fe572f742234bc59a447bd06fa4630269a21a865"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
+          "version": "repo-file-v1:sha256:ae365f23de9ca311b7128fd51365dde7bc596e201b79fb5248815cd71541ca39"
+        },
+        {
+          "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
+          "version": "repo-file-v1:sha256:fe09c366c013279628638ff80992573158f2970dde5c87da141e543a1789b0ae"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:add23655cc03e4085d3b041ba5187c3f2ed948e356a78d76931c63c51cde379f"
+        }
+      ]
+    },
+    {
+      "id": "claim_2a90abe5d9844863b42e97da364565c4",
+      "statement": "The CI access checker verifies the scoped impersonated tag and allows an empty dry-run patch but requires the same real empty patch to be denied by the plan admission policy; apply mode checks administration permission without mutation.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check-test.py",
+          "version": "repo-file-v1:sha256:e3c6ddf149737edb47473d8b5b8fd561e55d70b4478718b7d5af48e2de1a7cb5"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check.py",
+          "version": "repo-file-v1:sha256:fefd87182bb9ec85396ce701e7fddfa674e0531a8ee3290f75c615254614533c"
+        }
+      ]
+    },
+    {
+      "id": "claim_091ce963d4324833853a0c259f070cb2",
+      "statement": "Traefik scoped image publication retains digest, tag alias and complete anonymous-pull verification, while Talos regression tests reject scoped, untitled and mismatched-revision receipts as full-catalog evidence.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
           "version": "repo-file-v1:sha256:f918de1b7e1b29944af9845a1938e766e7aea12237343c6540a95210c3497fcc"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:ff5c38590c7cd81c2e08f8684e68621b50a0ecd3991408a399431404a7dd5c46"
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:f5a4f26e15b2de6631af044b3c578e5146eba4a73bb4e21f5c674ed207d486cc"
+        }
+      ]
+    },
+    {
+      "id": "claim_1e82b4e911194104b9c8bdd95a5b45da",
+      "statement": "Private DNS readiness uses a transport-neutral parser for the final HTTP2 response, native +proto and gRPC-Web trailers, rejecting duplicate/conflicting statuses, earlier-response confusion and malformed bodies before DNS changes.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/octelium-api-response-test.py",
+          "version": "repo-file-v1:sha256:7376b4c37f3c5a7ec64b9b046a2b2d8b54c47994819e168ab09a1b8479f1a1c1"
         },
         {
-          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:6172a71a0f40070114036b9ffb4ea45df7006c12c32be8ce0f6afcad23e071a2"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:add23655cc03e4085d3b041ba5187c3f2ed948e356a78d76931c63c51cde379f"
+        },
+        {
+          "resource": "repo://scripts/octelium-api-response.py",
+          "version": "repo-file-v1:sha256:5e0442a431c91c8ad85cfb80e43212ac3c13f1e5f6e4aaae7532d2f077758379"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py",
+          "version": "repo-file-v1:sha256:14ff49ccbdd8c013a129e874d251acc9e0e9ea8ec237c8a94c6140f327ab9208"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:29:29.016Z"
+    "at": "2026-10-10T20:42:52.728Z"
   }
 }

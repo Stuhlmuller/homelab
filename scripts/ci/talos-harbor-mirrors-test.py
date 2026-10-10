@@ -29,6 +29,115 @@ ORIGINAL = [{"version": "v1alpha1", "machine": {"type": "worker"},
 
 
 class RolloutTest(unittest.TestCase):
+    def test_private_registry_preflight_rejects_tls_redirects_and_dashboard_exposure(self):
+        for failure in (None, "tls", "dashboard", "service"):
+            with self.subTest(failure=failure):
+                service = {"spec": {"type": "LoadBalancer" if failure == "service" else "ClusterIP",
+                           "clusterIP": "10.96.0.50", "ports": [{"port": 443, "targetPort": 9443}],
+                           "selector": {"app.kubernetes.io/name": "traefik"}}}
+
+                def run(*command, binary=False):
+                    if command[0] == "kubectl":
+                        return json.dumps(service)
+                    self.assertEqual(command[0], "curl")
+                    self.assertNotIn("--insecure", command)
+                    self.assertNotIn("--doh-url", command)
+                    self.assertIn("harbor.stinkyboi.com:443:127.0.0.1:50443", command)
+                    if command[-1].endswith("/v2/"):
+                        return 'HTTP/2 302\n' if failure == "tls" else 'HTTP/2 401\nwww-authenticate: Bearer realm="https://harbor.stinkyboi.com/service/token",service="harbor-registry"\n'
+                    if "/service/token?" in command[-1]:
+                        return '{"token":"test"}'
+                    return "200" if failure == "dashboard" else "404"
+
+                with patch.object(rollout, "run", run), patch.object(rollout.subprocess, "Popen") as process, \
+                        patch.object(rollout.socket, "socket") as listener, \
+                        patch.object(rollout.socket, "create_connection"):
+                    listener.return_value.__enter__.return_value.getsockname.return_value = ("127.0.0.1", 50443)
+                    process.return_value.poll.return_value = None
+                    if failure:
+                        with self.assertRaises(RuntimeError):
+                            rollout.verify_registry_route()
+                    else:
+                        rollout.verify_registry_route()
+                    if failure == "service":
+                        process.assert_not_called()
+                    else:
+                        process.return_value.terminate.assert_called_once()
+                        process.return_value.wait.assert_called_once_with(timeout=5)
+
+    def test_registry_hosts_preserve_unrelated_entries_and_refuse_conflicts(self):
+        declaration = [{"ip": "10.96.0.50", "aliases": ["harbor.stinkyboi.com"]}]
+        other = {"ip": "10.1.0.2", "aliases": ["nas.example.test"]}
+        shared = {"ip": "10.96.0.50", "aliases": ["harbor.stinkyboi.com", "other.example.test"]}
+        desired = [other, {"ip": "10.96.0.50", "aliases": ["other.example.test"]}, *declaration]
+        self.assertEqual(rollout.registry_hosts([other, shared], declaration, False), desired)
+        self.assertEqual(rollout.registry_hosts(desired, declaration, False), desired)
+        self.assertEqual(rollout.registry_hosts(desired, declaration, True), desired[:-1])
+        with self.assertRaisesRegex(RuntimeError, "Conflicting"):
+            rollout.registry_hosts([{"ip": "10.1.0.10", "aliases": ["harbor.stinkyboi.com"]}], declaration, False)
+        candidate = copy.deepcopy(ORIGINAL)
+        candidate[0]["machine"]["network"] = {"extraHostEntries": declaration}
+        rollout.hosts_only(ORIGINAL, candidate, declaration)
+        candidate[0]["machine"]["registries"] = {"mirrors": MIRRORS}
+        with self.assertRaisesRegex(RuntimeError, "outside"):
+            rollout.hosts_only(ORIGINAL, candidate, declaration)
+
+    def test_hosts_only_apply_and_rollback_never_change_mirror_configuration(self):
+        for execute, rollback in ((False, False), (True, False), (True, True)):
+            with self.subTest(execute=execute, rollback=rollback), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                (root / ".talos/patches").mkdir(parents=True)
+                (root / ".talos/talosconfig").touch()
+                declaration = [{"ip": "10.96.0.50", "aliases": ["harbor.stinkyboi.com"]}]
+                (root / ".talos/patches/harbor-registry-host.yaml").write_text(json.dumps(
+                    {"machine": {"network": {"extraHostEntries": declaration}}}))
+                current = copy.deepcopy(ORIGINAL)
+                current[0]["machine"]["registries"] = {"mirrors": MIRRORS}
+                other = {"ip": "10.1.0.2", "aliases": ["nas.example.test"]}
+                current[0]["machine"]["network"] = {"extraHostEntries": [other] + (declaration if rollback else [])}
+                calls = []
+
+                def run(*command, binary=False):
+                    nonlocal current
+                    calls.append(command)
+                    if command == ("talosctl", "version", "--client", "--short"):
+                        return "Client:\nTalos v1.11.3\n"
+                    if "persistent" in command:
+                        return json.dumps({"metadata": {"id": "persistent"}, "spec": json.dumps(current)})
+                    if command[:3] == ("talosctl", "machineconfig", "patch"):
+                        value = json.loads(Path(command[3]).read_text())
+                        for operation in json.loads(command[5]):
+                            self.assertEqual(operation["path"], "/machine/network/extraHostEntries")
+                            value[0]["machine"]["network"]["extraHostEntries"] = operation["value"]
+                        Path(command[-1]).write_text(json.dumps(value))
+                    elif "apply-config" in command:
+                        self.assertIn("no-reboot", command)
+                        current = json.loads(Path(command[-1]).read_text())
+                    elif "image" in command:
+                        self.assertEqual(command[-1], "harbor.stinkyboi.com/mirror/registry.k8s.io/pause:3.10")
+                    elif command[:2] not in (("talosctl", "validate"), ("kubectl", "wait")):
+                        raise AssertionError(command)
+                    return ""
+
+                def documents(path):
+                    value = json.loads(path.read_text())
+                    return value if isinstance(value, list) else [value]
+
+                with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
+                        patch.object(rollout, "documents", documents), patch.object(rollout, "verify_main"), \
+                        patch.object(rollout, "verify_copies") as copies, \
+                        patch.object(rollout, "verify_registry_route") as route, \
+                        patch.object(rollout, "ready", return_value="stable"), \
+                        patch.object(rollout, "talos_boot", return_value="stable"), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    rollout.reconcile("10.1.0.202", execute, SHA, rollback, registry_host_only=True)
+                copies.assert_not_called()
+                self.assertEqual(route.call_count, int(execute and not rollback))
+                self.assertEqual(current[0]["machine"]["registries"], {"mirrors": MIRRORS})
+                self.assertEqual(current[0]["machine"]["network"]["extraHostEntries"],
+                                 [other] + (declaration if execute and not rollback else []))
+                self.assertEqual(any("image" in command for command in calls), execute and not rollback)
+
     def test_dry_run_execution_and_fail_closed_gates(self):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
                          "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection",

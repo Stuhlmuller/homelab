@@ -3,12 +3,11 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-09T05:26:38.825Z
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-ce0cca7cf82efeb87c709d2b
+    resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
@@ -17,7 +16,14 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
-generated: { by: "codex", at: "2026-10-07T06:45:20.541Z" }
+  - id: openwiki-source-77d110fdd1547564be86e611
+    resource: repo://IaC/modules/tailscale-access/main.tf
+  - id: openwiki-source-87a43c568d1aa897dc611cdf
+    resource: repo://scripts/config/tailscale-policy.json
+generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T19:08:29.122Z
 ---
 
 # Secrets And Identity
@@ -40,6 +46,30 @@ by `runtime_kms_key_id` in `IaC/root.hcl`. The OpenTofu client-side state key
 remains `alias/homelab-opentofu` in `us-east-1`. See
 [State Encryption](../operations/state-encryption.md) for state-bucket ownership and confidential
 recovery archive retention.
+
+## Tailscale provider foundation
+
+The staged ingress migration uses `tailscale/tailscale` 0.29.2 in the operator-only
+[`tailscale-access` module](../../IaC/modules/tailscale-access/README.md).
+It adopts the complete existing policy before changing it; applying an additive
+fragment would overwrite unrelated access. The committed policy preserves legacy
+users, tags, SSH and route approvals while giving new CI tags only explicit grants.
+Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
+
+The local provider reads a private administrator token file. The temporary
+bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
+S3 state and private encrypted saved plans retain the existing KMS boundary.
+Three federated identities trust GitHub's issuer, repository, workflow and subject
+constraints; they can mint node keys only for their own plan, apply or Cordium tag.
+Their client IDs are non-secret GitHub variables. See the module runbook for the
+exact environment scopes and adoption sequence.
+
+The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
+read resources, including Helm release Secrets, and submit Argo Application
+dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
+Apply retains cluster administration for existing bootstrap and RBAC ownership;
+Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
+until authenticated plan/apply and denial checks succeed over the new proxy.
 
 ## AWS SSM Pattern
 

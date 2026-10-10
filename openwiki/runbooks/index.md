@@ -11,6 +11,6 @@
 - [Runtime Isolation](runtime-isolation.md) - Pod Security, service accounts, Istio authorization, workload security contexts, and unenforced NetworkPolicy limits on flannel.
 - [AWS SSM Secret References](secrets-aws-ssm.md) - SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume.
 - [NFS Storage](storage-nfs.md) - QNAP NFS exports, default StorageClass and media volumes, with provisioning, persistence, backup, and restore validation.
-- [Tailnet And App Ingress](tailnet-ingress.md) - Octelium primary access, Istio ClusterIP ingress, temporary Tailscale fallback, and explicit path-limited public callbacks.
+- [Tailnet And App Ingress](tailnet-ingress.md) - Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover.
 - [Talos Control-Plane Maintenance](talos-control-plane-maintenance.md) - Authenticated Talos maintenance, etcd snapshot integrity, macOS backup scheduling, retention, offsite publication, and recovery limits.
 - [Validation](validation.md) - Canonical validation runbook and focused Terragrunt, Kubernetes render, policy, secret-scan, and live readiness checks.
