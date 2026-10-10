@@ -308,6 +308,14 @@ ephemeral GitHub Actions runner and refuses to replace an existing kubeconfig.
 It uses the fixed TLS operator endpoint with an empty credential entry; network
 identity supplies authentication. No persistent Kubernetes token enters GitHub.
 
+Apply and Cordium CI tags can reach shared `tag:homelab-ingress` TCP443,
+including every Traefik virtual host on that endpoint. Tailscale grants do not
+inspect HTTP Host. App authentication and native Cordium policy supply the
+application checks; the plan tag is denied shared ingress. Separate proxy
+identities would be needed for host-level CI isolation. The committed boundary
+is in [the tailnet policy](../scripts/config/tailscale-policy.json) and
+[Traefik routes](../clusters/homelab/apps/traefik/routes.yaml).
+
 After merge, require a protected plan including its real write-denial check,
 an exact-main apply, diagnostics verifying the apply tag, both image publishers,
 and Cordium execution/denial/cleanup. Logs remain private and successful checks

@@ -344,24 +344,71 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 0)
         self.assertEqual(len(fake.retired), 3)
 
-    def test_previous_authority_metadata_mismatch_never_removes_any_signer(self):
+    def test_retirement_preflights_every_current_and_previous_authority(self):
+        for current in (False, True):
+            for index in (0, 1, 2):
+                with self.subTest(current=current, index=index):
+                    self.cache.unlink(missing_ok=True)
+                    fake = FakeCommands()
+                    self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+                    fake.outputs = outputs(generation=2)
+                    self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+                    records = json.loads(self.cache.read_text())
+                    authority = records[index + (3 if current else 0)]["authority"]
+                    fake.trusted[authority]["authkey_stableid"] = "unrelated"
+                    before = self.cache.read_bytes()
+                    writes = len(fake.writes)
+                    signs = sum(call[1] == "CI key signing" for call in fake.calls)
+                    for arguments in (["--retire-previous"], ["--retire-previous", "--execute"]):
+                        self.assertEqual(self.run_script(fake, arguments)[0], 1)
+                        self.assertEqual(fake.retired, [])
+                        self.assertEqual(self.cache.read_bytes(), before)
+                        self.assertEqual(len(fake.writes), writes)
+                        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), signs)
+
+    def test_retirement_rechecks_target_after_inventory_preflight(self):
         fake = FakeCommands()
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
-        previous = json.loads(self.cache.read_text())[0]["authority"]
         fake.outputs = outputs(generation=2)
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
-        fake.trusted[previous]["authkey_stableid"] = "unrelated"
-        self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 1)
+        before = self.cache.read_bytes()
+        preflight = MODULE.retirement_preflight
+
+        def changed_after_preflight(keys, cache):
+            previous = preflight(keys, cache)
+            fake.trusted[previous[0]["authority"]]["authkey_stableid"] = "changed"
+            return previous
+
+        with patch.object(MODULE, "retirement_preflight", side_effect=changed_after_preflight):
+            self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 1)
         self.assertEqual(fake.retired, [])
-        self.assertIn(previous, fake.trusted)
-        self.assertEqual(len(json.loads(self.cache.read_text())), 6)
+        self.assertEqual(self.cache.read_bytes(), before)
+
+    def test_already_absent_previous_authority_is_retired_idempotently(self):
+        fake = FakeCommands()
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+        previous = [entry["authority"] for entry in json.loads(self.cache.read_text())]
+        fake.outputs = outputs(generation=2)
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+        del fake.trusted[previous[0]]
+        before = self.cache.read_bytes()
+        self.assertEqual(self.run_script(fake, ["--retire-previous"])[0], 0)
+        self.assertEqual(self.cache.read_bytes(), before)
+        self.assertEqual(fake.retired, [])
+        self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 0)
+        self.assertEqual(fake.retired, previous[1:])
+        self.assertEqual(len(json.loads(self.cache.read_text())), 3)
+        self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 0)
+        self.assertEqual(fake.retired, previous[1:])
 
     def test_generation_rollback_and_uncached_retirement_fail_closed(self):
         fake = FakeCommands()
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
         fake.outputs = outputs(generation=2)
-        self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 1)
+        for arguments in (["--retire-previous"], ["--retire-previous", "--execute"]):
+            self.assertEqual(self.run_script(fake, arguments)[0], 1)
         self.assertEqual(fake.retired, [])
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
         fake.outputs = outputs(generation=1)
         fake.outputs["github_auth_keys"]["value"]["plan"]["key"] += "changed"
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)

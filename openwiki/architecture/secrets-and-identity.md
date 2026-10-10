@@ -10,6 +10,8 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
@@ -30,18 +32,16 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
-  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
-    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
+generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:32:50.214Z
+    at: 2026-10-10T23:09:14.896Z
 ---
 
 # Secrets And Identity
@@ -101,7 +101,10 @@ metadata match. Delegated node-signing capability exceeds normal tag enrollment
 permissions. Auth-key expiry or revocation does not remove that authority;
 after replacement CI acceptance, the explicit `--retire-previous` operation
 removes only cached older-generation authorities while preserving unrelated
-signers. Keep an encrypted private cache backup and use the
+signers. Preview and execution validate every cached current signature and all
+previous authority metadata before any removal. Execution rechecks each target;
+an already-absent previous authority remains safe to retry. Preview never signs,
+publishes or changes cache contents. Keep an encrypted private cache backup and use the
 [module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
 recovery. The operator OAuth SSM contract remains separate and unchanged.
 
@@ -114,6 +117,12 @@ scoped keys, verify an exact single node tag and tailnet before live commands,
 and create tokenless kubeconfigs for the fixed TLS proxy endpoint. Authenticated
 plan/apply and denial checks remain live acceptance gates; old native catalog
 and credentials are retained until those gates pass.
+
+Apply and Cordium CI tags can reach shared `tag:homelab-ingress` TCP443,
+including every Traefik virtual host on that endpoint. Tailscale grants do not
+inspect HTTP Host. App authentication and native Cordium policy supply the
+application checks; the plan tag is denied shared ingress. Separate proxy
+identities would be the next step if host-level CI isolation is required.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
@@ -337,11 +346,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
   routes remain unauthenticated at Octelium but path-limited in Istio and
   validated by the receiving application credentials or signatures.
-  The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
-  production AWS role for SSM reads and the SSM-backed DNS token. Native TLS
-  gRPC uses the separate Tunnel TCP carrier. Token values never enter git or
-  workflow output.
+  The current private DNS reconciler reuses the cert-manager Cloudflare DNS
+  token. Phase 2a removes the former `octelium-public-tunnel.yml` writer;
+  retained Tunnel routes are rollback infrastructure. Migrated native clients
+  use verified mesh TLS. Token values never enter git or workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into

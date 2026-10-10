@@ -30,10 +30,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
+generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:32:50.214Z
+    at: 2026-10-10T23:09:14.896Z
 ---
 
 # Source Map

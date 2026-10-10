@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7df4c04fef4ec419d224e157e2ef3bf0704a23821b68149a10a69796c3d71fd2",
+  "pageVersion": "sha256:eb66be8f6cbaca59355409c39765ba05c6e3b73d7665bae3a2ee5dc6614a1e35",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:660ab3e8444dedb02525d9fe69aea69b76c60764f85fb2a9e7b142f940a06ccf"
+          "version": "repo-file-v1:sha256:4bbd0eb778739f526292a5975edb7bb21be325ee62786dda822f93dbe485e08e"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:65cce4cd523e981134629958a6de1743a8f6c24e18fec3b24731838994921b5c"
+          "version": "repo-file-v1:sha256:c78c279677bbe9746f1e7d65b80e83653de90b87d5a40402f80572f4f751baf1"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -57,12 +57,12 @@
       ]
     },
     {
-      "id": "claim_36cab220612c4b0e9dc2b79ecb34f47d",
-      "statement": "Phase2b separates joined Tailscale identity checks from tokenless operator API configuration and independent native Cordium authorization; shared native callers retain their catalog and credential lifecycle through the verified direct mesh helper.",
+      "id": "claim_baca203fd7a242e1bfe5a41b32fedee3",
+      "statement": "CI transport ownership separates exact Tailscale node verification and tokenless operator API kubeconfigs from native Cordium authorization; shared native catalog callers retain their scoped lifecycle through verified direct mesh transport.",
       "evidence": [
         {
-          "resource": "repo://docs/cordium-ci.md#L27-L43",
-          "version": "repo-lines-v1:sha256:fc35912718664c306d2bf321bec417e14a5a81d5ddbe04165ca9b967c4a64d01:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4YmUxMDFkNzU5OGYzZTAxY2JkZmFhOWI2OTkyYzhjOGYzMTRiZjc1Zjg4NzhhMzY3ZjEzNDZjNTIxMjc5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmNTM0YzFiM2MyZTIxNTAzNDdmZWZkZTZkMzA5MzRkY2Q3NDQ5YjY4M2VkN2ZlOWNjMGRkNzc1Zjc1OTA1MzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY0YTYwZWRjM2I4ZmU2MzgyZGVkYzJhMmFlYmU4YmJlYTdmYWM1NjQzZTZmOGU1ZTYzMTU2NTA5MzQyZmQ3YzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkYjYxOTdhNjNkYTE3MmQ2NWIwNWU5NTk0NDk3ODFlNDU4ZDFjZTAwYWQxYmJmZDE1Nzk3YmVlZDRiYTg0ZTgifQ"
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
@@ -73,14 +73,14 @@
           "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
         },
         {
-          "resource": "repo://scripts/octelium-nofx-reconcile.py#L69-L115",
-          "version": "repo-lines-v1:sha256:df778d3074f633af9e1ce04052c7fb171cee7bdae8b1d07ea9b954bf15677812:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYjY1NjljZTYyNWQ4NDU2MzJiMjRjMTBkZDA3ZmNkNWJiNGQ2YTNhMWQyYzkyZjg4MmY5MmY3YmRiNTFiZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5MTA0NWMzNDNhODlmNTM5ZTU1NDIxYWZjOTY5OTgzMWU1Njg2ZDVjN2ZmZDM1YzYwMmEzNGU0Mzk3YWE1ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0NWZjMDEyMjliNmNmMWJjYjA3ODVlYWMwMmQ3NmE1MWYxMTg3NTQ1MDYwMDdhNmRiZTM0MDFmNDVkZGVhYTYifQ"
+          "resource": "repo://scripts/octelium-nofx-reconcile.py",
+          "version": "repo-file-v1:sha256:be898d1d8531dbdffb3b4878c1ad566f52cbb16b6eb9824e872ee86010ea414a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:32:50.214Z"
+    "at": "2026-10-10T23:09:14.896Z"
   }
 }

@@ -3,9 +3,6 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T22:38:39.317Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
@@ -17,7 +14,10 @@ sources:
     resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-10T22:38:39.317Z" }
+generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:09:14.896Z
 ---
 
 <!-- markdownlint-disable MD013 -->

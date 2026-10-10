@@ -1,6 +1,6 @@
 ---
 # Temporary: use the capacity, 24-hour stability, and direct native Pod-probe
-# removal gate in docs/knowledge-base/architecture/cluster-topology.md.
+# removal gate in openwiki/architecture/cluster-topology.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

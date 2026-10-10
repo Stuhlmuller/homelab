@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a6cd2b70fbcefe21bd33b43ee4bd911b59056ac5509919a4c429ffcc6c63054a",
+  "pageVersion": "sha256:853d50304549388ca76775eaaa76203095fd43edbfd907354afc03fef2fb0129",
   "claims": [
     {
       "id": "claim_7ff19d2b3cf94bcda26039f6b8c2abfe",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://docs/octelium.md",
@@ -22,7 +22,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -31,26 +31,26 @@
       ]
     },
     {
-      "id": "claim_41c8dc0a5dbc4ca0814355e2a0717e58",
-      "statement": "Phase2b shared native transport requires the declared online tailnet/ingress peer, canonical DNS limited to that peer's mesh addresses and strict native/gRPC-Web TLS probes with proxy overrides removed; callers retain existing narrow resource/review guards, while Cordium CI uses independent native OIDC after its mesh join.",
+      "id": "claim_2894ac6a170b4121a76fb960e773f9c6",
+      "statement": "The shared native transport verifies the declared online mesh peer and canonical DNS, strips proxy overrides and probes strict native/gRPC-Web responses before direct TLS calls; Cordium CI separately retains native OIDC and cleanup, while legacy retirement awaits live acceptance.",
       "evidence": [
         {
-          "resource": "repo://docs/cordium-ci.md#L27-L43",
-          "version": "repo-lines-v1:sha256:fc35912718664c306d2bf321bec417e14a5a81d5ddbe04165ca9b967c4a64d01:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4YmUxMDFkNzU5OGYzZTAxY2JkZmFhOWI2OTkyYzhjOGYzMTRiZjc1Zjg4NzhhMzY3ZjEzNDZjNTIxMjc5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmNTM0YzFiM2MyZTIxNTAzNDdmZWZkZTZkMzA5MzRkY2Q3NDQ5YjY4M2VkN2ZlOWNjMGRkNzc1Zjc1OTA1MzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY0YTYwZWRjM2I4ZmU2MzgyZGVkYzJhMmFlYmU4YmJlYTdmYWM1NjQzZTZmOGU1ZTYzMTU2NTA5MzQyZmQ3YzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkYjYxOTdhNjNkYTE3MmQ2NWIwNWU5NTk0NDk3ODFlNDU4ZDFjZTAwYWQxYmJmZDE1Nzk3YmVlZDRiYTg0ZTgifQ"
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
         },
         {
           "resource": "repo://scripts/ci/cordium-ci.sh",
           "version": "repo-file-v1:sha256:da1bbb4f1745e68c1a11fc0938dca2be131b4ddca7c87edfc4457291e4dd04b5"
         },
         {
-          "resource": "repo://scripts/octelium-nofx-reconcile.py#L69-L115",
-          "version": "repo-lines-v1:sha256:df778d3074f633af9e1ce04052c7fb171cee7bdae8b1d07ea9b954bf15677812:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYjY1NjljZTYyNWQ4NDU2MzJiMjRjMTBkZDA3ZmNkNWJiNGQ2YTNhMWQyYzkyZjg4MmY5MmY3YmRiNTFiZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5MTA0NWMzNDNhODlmNTM5ZTU1NDIxYWZjOTY5OTgzMWU1Njg2ZDVjN2ZmZDM1YzYwMmEzNGU0Mzk3YWE1ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0NWZjMDEyMjliNmNmMWJjYjA3ODVlYWMwMmQ3NmE1MWYxMTg3NTQ1MDYwMDdhNmRiZTM0MDFmNDVkZGVhYTYifQ"
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L71-L110",
+          "version": "repo-lines-v1:sha256:c58ff8efc0f881ecf96f62386af4fcdde963616ac60d1826966009f5470c821c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNzI5ZWU3MjczMDVjMTI1NjAzOWZkNWRlYjc4Zjc3ZTE5N2FiNGE0ODA2MTVmMWYwNmI3YjM3ZTVhNTQ1OWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjRiNTM3ZmEwYjYzYTI3Y2YyMDM0NGExZDVlYjg1MTY1ZTQ4MzVkNzJhYzgzYTM2NmMzZjg2YzczMDgxNTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZmNiMDA3NzExMWM5MWI0M2U5ZDA4NTUwNGRmODMzYTFlYzIyYmRiZGU4ZmNlN2NjNDMzNjk5MTE5ZDIwYTcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:32:50.214Z"
+    "at": "2026-10-10T23:09:14.896Z"
   }
 }

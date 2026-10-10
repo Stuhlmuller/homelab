@@ -134,8 +134,12 @@ nix develop --command python3 -I scripts/tailscale-ci-configure.py --retire-prev
 
 The retirement mode removes only older-generation authorities recorded by this
 publisher and matched to their original auth-key metadata. It requires valid,
-cached current signatures first. `tailscale lock remove` re-signs existing nodes
-by default; the helper never disables Tailnet Lock or removes unrelated signers.
+cached current signatures first. Preview and execution both validate every
+current signature and all previous authority metadata before any removal;
+execution rechecks each target immediately before removing it. Already-absent
+previous authorities remain safe to retry. Preview never signs, publishes or
+changes the cache. `tailscale lock remove` re-signs existing nodes by default;
+the helper never disables Tailnet Lock or removes unrelated signers.
 It deletes old wrapped cache entries only after authority removal is confirmed.
 Do not roll back a generation or restore revoked keys; prepare a fresh generation.
 

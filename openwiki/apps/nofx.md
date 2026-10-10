@@ -5,6 +5,15 @@ description: "NOFX access, Harbor images, cash-spot competition, SQLite persiste
 tags: ["homelab", "navigation"]
 workload_status: active
 updated: 2026-09-29
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:09:14.896Z
+sources:
+  - id: openwiki-source-b11e34f0c0d38354842445ae
+    resource: repo://docs/octelium-nofx-reconciliation.md
+  - id: openwiki-source-ff63d9d82b2370adf56a5f28
+    resource: repo://scripts/octelium-nofx-reconcile.py
+generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
 ---
 
 # NOFX
@@ -151,17 +160,19 @@ contract from AWS SSM:
   The separate `nofx-registry-auth` ExternalSecret refreshes every five minutes
   into a retained recovery Docker config Secret, without mounting it in NOFX.
 
-The Cloudflare public tunnel provides browser transport. The Istio
-`VirtualService` keeps the direct public path disabled with
-`homelab.rst.io/public-funnel: "false"`.
+The staged access migration preserves `https://nofx.stinkyboi.com` through
+private Traefik on Tailscale. Its native Octelium Service and legacy Tunnel
+remain declared for rollback until application, client, and CI acceptance;
+preparing this source does not establish live cutover. NOFX is not a Funnel route.
 
 Live validation on 2026-08-22 found the Argo CD Application synced and healthy,
 both deployments ready with zero restarts, the 10 GiB claim bound, and the
 ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
-gate are owned by `clusters/homelab/apps/octelium-public`,
+gate were then owned by `clusters/homelab/apps/octelium-public`,
 `scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
-The public Tunnel workflow now reconciles all declared CNAMEs, including the
-browser API and native TCP carrier.
+That historical public Tunnel workflow reconciled browser and native carrier
+CNAMEs. The staged DNS cutover removes that writer; use the
+[current private DNS and acceptance runbook](../runbooks/tailnet-ingress.md).
 
 On 2026-09-04, the public root and `/api/health` returned HTTP 200 without
 Octelium denial headers. A read-only projection from `octelium_resources`
@@ -171,8 +182,9 @@ git. Desired state now explicitly declares `isAnonymous: false`; the existing
 policy and `authorizationMode: PASS` remain required.
 
 Use the [fixed NOFX operator path](../../docs/octelium-nofx-reconciliation.md) after
-its review and merge. It verifies the pinned native client, starts the scoped
-Tunnel transport, and defaults to read-only inspection:
+its review and merge. It verifies the pinned native client, the declared mesh
+peer, canonical DNS, TLS and native protocols, then connects directly with
+inherited proxy settings removed. It defaults to read-only inspection:
 
 ```sh
 nix develop --command python3 -I scripts/octelium-nofx-reconcile.py

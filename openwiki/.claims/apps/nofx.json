@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:38bc5487a5d7cc3b9b045ec04483916bf0dc15bc69cf90da3de60ad2911d4818",
+  "claims": [
+    {
+      "id": "claim_9c9c0df7095645148d641e214099b6fb",
+      "statement": "The retained NOFX reconciliation helper defaults to read-only inspection over verified direct mesh TLS, requires canonical DNS to the declared online ingress peer, and removes inherited proxy settings.",
+      "evidence": [
+        {
+          "resource": "repo://docs/octelium-nofx-reconciliation.md#L24-L44",
+          "version": "repo-lines-v1:sha256:9c8267b8d74b4124863c14cef5fd12fac45daffcc48005bda7b1c5636887cd37:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwOGM4MmU2NGIxZWZhNDYwZjFhMjNjZmM2Y2ZlNDhhOGRjNmM3MDhhNjNlZDMzNWRjOWNmZjI2NWRiMDIyNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ODRkYjRiNzI4NTk3Y2I2MWY4ZmRiNTU5Y2E5NGM5ZWIzOTdkY2Y0MWFiN2ZiNDhkNDM4YTlmYmU4OWE2MjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3OWRkNTRjMGM4YTY1ODk2MzgwNTNmOTBlOGRjMjU4Mjk1MDc2YmM2ZjVjMTBhODIxY2ZjM2U4M2I5NWUwYTYifQ"
+        },
+        {
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L71-L110",
+          "version": "repo-lines-v1:sha256:c58ff8efc0f881ecf96f62386af4fcdde963616ac60d1826966009f5470c821c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNzI5ZWU3MjczMDVjMTI1NjAzOWZkNWRlYjc4Zjc3ZTE5N2FiNGE0ODA2MTVmMWYwNmI3YjM3ZTVhNTQ1OWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjRiNTM3ZmEwYjYzYTI3Y2YyMDM0NGExZDVlYjg1MTY1ZTQ4MzVkNzJhYzgzYTM2NmMzZjg2YzczMDgxNTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZmNiMDA3NzExMWM5MWI0M2U5ZDA4NTUwNGRmODMzYTFlYzIyYmRiZGU4ZmNlN2NjNDMzNjk5MTE5ZDIwYTcifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T23:09:14.896Z"
+  }
+}

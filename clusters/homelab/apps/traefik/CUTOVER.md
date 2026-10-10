@@ -64,6 +64,11 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    scripts/tailscale-private-dns.sh --dry-run
    ```
 
+   AFFiNE may return 502 or 503 while suspended because Traefik uses its static
+   ClusterIP backend. The check accepts either status only when the repository
+   and live Deployment both explicitly declare zero replicas and no live replicas
+   remain. Other application 5xx responses still fail readiness.
+
 4. Apply DNS from the reviewed clean checkout:
 
    ```sh

@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -26,10 +28,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
+generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:32:50.214Z
+    at: 2026-10-10T23:09:14.896Z
 ---
 
 # Harbor Private OCI Registry
@@ -203,8 +205,8 @@ snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
 
-`harbor-mirror.yml` accepts only `image_scope=all` (the default), `fleet`,
-`bazarr`, `traefik`, or `chainguard`.
+`harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
+`bazarr`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -337,7 +339,7 @@ nix develop --command python3 -I scripts/octelium-harbor-reconcile.py \
 
 The helper defaults to read-only without `--execute`. Execution selects only
 `harbor.default`, requires exact clean reviewed main, reuses the pinned native
-TLS carrier, verifies a second apply has no change, and reads back its access
+direct mesh TLS transport, verifies a second apply has no change, and reads back its access
 contract. It never creates operator credentials or applies the entire catalog.
 
 ## Current Evidence

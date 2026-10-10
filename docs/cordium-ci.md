@@ -27,8 +27,13 @@ does not propagate server-side logout failures.
 The pinned Tailscale GitHub Action uses the repository secret
 `TAILSCALE_CORDIUM_AUTH_KEY`: a pre-signed reusable ephemeral key carrying only
 `tag:homelab-ci-cordium`. Tailnet Lock remains enabled. The joined node's exact
-tag and tailnet are checked before native login. This tag reaches private ingress
-and has no Kubernetes grant. The reviewed workflow accepts main or the fixed
+tag and tailnet are checked before native login. This tag reaches shared private
+ingress TCP443 and has no Kubernetes grant. Both apply and Cordium CI tags can
+reach every virtual host there at the network layer: Tailscale grants do not
+inspect HTTP Host. App authentication and native Cordium policy supply the
+application checks; the plan tag is denied shared ingress. Separate proxy
+identities would be needed for host-level CI isolation. The reviewed workflow
+accepts main or the fixed
 wrong-ref denial case; Octelium's separate OIDC assertion still requires main for
 execution. Possession of this network key does not grant Cordium methods.
 See [key publication, rotation, and runner state lifecycle](ci-cd.md#tailscale-ci-access-setup).
@@ -193,7 +198,7 @@ Do not infer remote revocation from logout's exit status.
 
 ## Fixed native catalog reconciliation
 
-The operator path reuses the pinned CLI and verified TLS carrier from
+The operator path reuses the pinned CLI and verified direct mesh TLS transport from
 [NOFX reconciliation](octelium-nofx-reconciliation.md). Install its pinned client
 first and use an existing private operator session. Preview current presence
 and exact declared-spec equality without applying anything:
@@ -263,9 +268,9 @@ In a reviewed retirement commit, remove both `cordium-check.yml` and
 catalog definitions, but retain `scripts/cordium-ci-retire.py` and its shared
 `scripts/octelium-nofx-reconcile.py` guard. Normal catalog
 reapplication does not prune absent native resources. Using an operator admin
-session, run the fixed retirement path from that commit. The Nix environment
-supplies `cloudflared`; execution verifies the pinned `octeliumctl` release and
-uses the same private TLS carrier as reconciliation for every read and deletion.
+session, run the fixed retirement path from that commit. Execution verifies the
+pinned `octeliumctl` release and uses the same direct mesh TLS transport as
+reconciliation for every read and deletion.
 The dry run only reports the fixed targets and opens no native transport:
 
 ```sh
@@ -295,9 +300,9 @@ Unmerged or local-only removals cannot authorize retirement. It removes only
 `homelab-cordium-ci-oidc`, `homelab-cordium-ci`, and
 `homelab-cordium-ci-execution`, in that order, and verifies each is absent.
 Authentication/network errors are failures, not evidence of absence. Repeating
-it skips already-absent objects. Unpinned clients and failed carrier setup stop
-before native operations. The carrier and its private temporary logs are closed
-on success, failure, or SIGTERM. Keep the helper until retirement is verified.
+it skips already-absent objects. Unpinned clients or failed mesh, canonical DNS,
+TLS, or protocol checks stop before native operations. The transport starts no
+carrier or proxy. Keep the helper until retirement is verified.
 Restore previous Cordium capacity limits through Argo CD only if reverting that
 capacity decision is intended. OpenClaw execution uses a separate future
 identity and is not enabled by this CI workflow.
