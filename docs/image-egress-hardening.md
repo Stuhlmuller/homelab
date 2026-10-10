@@ -68,6 +68,24 @@ component paths were not anonymously readable. Denial does not prove an image
 is absent from Chainguard's production catalog. No production organization
 credentials are assumed; approved exceptions remain Harbor-hosted.
 
+## Verified Chainguard publication
+
+[Run 38092077585](https://github.com/Stuhlmuller/homelab/actions/runs/38092077585)
+completed successfully on reviewed `main`
+`31245542329cb3f74709356c755b3264683e1ef4` on 2026-10-10. The user authorized
+its production-environment approval. It published only the seven pinned
+entries in [the Chainguard scope](../scripts/config/harbor-chainguard-images.json),
+with all-platform digest preservation, matching source-tag aliases and fresh
+complete anonymous downloads. The shared full catalog was not published by
+this scoped run.
+
+Read-only Harbor API inspection found every expected index digest under
+`mirror/cgr.dev/chainguard/<name>`, with successful scan status and two child
+references. A missing severity map is not proof of zero vulnerabilities;
+require completed summaries for the exact deployed architecture/digest before
+claiming CVE remediation. No consuming applications or node configuration were
+changed by this publication.
+
 ## Egress enforcement contract
 
 The cluster uses Istio ambient and Flannel. Flannel does not enforce the
