@@ -31,6 +31,8 @@ Treat state recovery as unverified until a restore procedure and drill exist.
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
+The worker cannot schedule on `zimaboard-2`: its 1 GiB limit can overwhelm that
+worker's 1.28 GiB allocatable memory alongside node services and PostgreSQL.
 The pinned image uses Node 24 with no runtime heap override. Reserve the full
 container budget so scheduling accounts for memory beyond the JavaScript heap.
 The pinned-chart check verifies both rendered web memory values.
