@@ -1,16 +1,12 @@
 """Attach database-authenticated caller identity to safe Langfuse telemetry."""
 
-from pathlib import Path
-
 from fastapi import HTTPException
 from litellm.integrations.custom_logger import CustomLogger
 from litellm.integrations.langfuse.langfuse_otel import LangfuseOtelLogger
 from litellm.proxy._types import LitellmUserRoles
 from litellm.proxy.litellm_pre_call_utils import clean_headers
 from gateway import LOGGING_OVERRIDES, langfuse_config
-from native_keys import APPS
-
-KEY_DIRECTORY = Path("/var/run/secrets/litellm-apps")
+from native_keys import APPS, provider_api_key
 
 
 class AppAttribution(CustomLogger):
@@ -43,10 +39,7 @@ class AppAttribution(CustomLogger):
                 key: value for key, value in clean_headers(stored.get("headers", {})).items()
                 if not key.lower().startswith("langfuse_")
             }
-        provider = (KEY_DIRECTORY / "openrouter").read_text().strip()
-        if not provider.startswith("sk-or-") or len(provider) < 32:
-            raise HTTPException(503, "OpenRouter credential is not initialized")
-        data["api_key"] = provider
+        data["api_key"] = await provider_api_key()
         return data
 
 

@@ -15,7 +15,7 @@ service:
   type: ClusterIP
   port: 4000
 podAnnotations:
-  homelab.stuhlmuller.dev/app-identity-revision: "9"
+  homelab.stuhlmuller.dev/app-identity-revision: "10"
 volumes:
   - name: app-identity
     configMap:
@@ -47,6 +47,8 @@ masterkeySecretKey: LITELLM_MASTER_KEY
 proxy_config:
   general_settings:
     master_key: os.environ/LITELLM_MASTER_KEY
+    store_model_in_db: true
+    supported_db_objects: []
   litellm_settings:
     set_verbose: false
     log_raw_request_response: false
