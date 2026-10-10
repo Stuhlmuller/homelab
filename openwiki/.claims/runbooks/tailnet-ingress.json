@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2edc3db12513c890c8fc4941ae4ca323e32edbc245499c0a56b3c4906513ba37",
+  "pageVersion": "sha256:f365b32f52fecf2a63eaa533da830286f2f7f33818bf04c70ff471f2435acb13",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -57,8 +57,8 @@
       "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts. The CI publisher signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards; it caches the separate credential authority identity alongside the wrapped delegated node-signing key, and retires old variables only after all secret writes and metadata checks.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L157",
-          "version": "repo-lines-v1:sha256:ff913f22b25dc3f23ca4ebc847cb1afae5c6e39bfc3aab0f937255f0890f2b2f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L161",
+          "version": "repo-lines-v1:sha256:ac9718d5c69bf763dcf45a1779f1cab09b81a1ec04da62df5a2d93aeaff37b77:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
         },
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
@@ -69,8 +69,8 @@
           "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L311",
-          "version": "repo-lines-v1:sha256:5f9a2eabea0054ed27a91335ea71d532aafe93034d03580c1ec06a989a9539d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L324",
+          "version": "repo-lines-v1:sha256:54cf2770458ad4dab2a698f385dc5eca42201c4906f5b4586d68b947292f4316:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -145,10 +145,24 @@
           "version": "repo-file-v1:sha256:9ecd7ae83e632b874acb5437c8301edacc5761b8da29457eaab0d1a479586c03"
         }
       ]
+    },
+    {
+      "id": "claim_208c9773be7a4580a2432d6ead9cd707",
+      "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L126-L155",
+          "version": "repo-lines-v1:sha256:a6b451b4ea561729e49731ddcff0d38bb542df71d21bc376cdf3007c6f4101be:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYzEzMTA4MWJjZjk2ZTdlMzJlM2FlYWIzYWFmZTI3NGJiY2VmNGUxMzg2YzFmMzNkMGRmMGE0ZmM5NjYxZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MjY0NDYyYzNiOWM5OWYzMjgyNGY5MmFjYmZjZmNkNDI3MzliNzA2MGRjMjhhNTdlMjI4ODBmNGNiOWZhNjcifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L254-L311",
+          "version": "repo-lines-v1:sha256:0060cbd98b372f78c13341a3b1c6050d18093086e6082c90a389d14e6d55f4e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1NzJkYTlmMGM5ZTFkZGRhYzZkOWY1MWE2YjVjMjM2MjY0N2NiOWNjMDQyMGNhNGJhNWM5OTMzZWJlMjhiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMmQ2YjgwZTRlNjEwMjg2YzA3ZjdmNThiODU1YWFhM2YyZWRkOGYzMjhiNzI4MWNjYWEwMWY5OTA2Yzg0MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMmVjODA5OTE5ZWEyYzZlNTg3ODQ1OTViZGJiNmQwYzM4MTczNzhhOTkyNGQ5N2Q2ZDFmYTZkMjdlM2NjNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjAxMTdmMTBiY2VjZDlhZWI4OWIzYzhlMmFlYmYyNDJjODk4NTZlMDQxNzRkYjBlZjUwZjI1MWY4ZjQ4YTQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:36:11.265Z"
+    "at": "2026-10-10T22:48:00.170Z"
   }
 }

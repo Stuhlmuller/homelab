@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:13ffc24a0e3902d3a25d31036b971eec2138a63ad58c2f6469cf79020826a83c",
+  "pageVersion": "sha256:7203648f18613c17a422a661f0a1d39fe75ef02a559bf9ffa63dc85f459966ec",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:660ab3e8444dedb02525d9fe69aea69b76c60764f85fb2a9e7b142f940a06ccf"
+          "version": "repo-file-v1:sha256:4bbd0eb778739f526292a5975edb7bb21be325ee62786dda822f93dbe485e08e"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -23,6 +23,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:36:11.265Z"
+    "at": "2026-10-10T22:48:00.170Z"
   }
 }

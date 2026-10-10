@@ -44,10 +44,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
+generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:36:11.265Z
+    at: 2026-10-10T22:48:00.170Z
 ---
 
 # Tailnet And App Ingress
@@ -134,8 +134,12 @@ private signature cache, which stores each wrapper and its separately verified
 public credential authority identity. The embedded private key delegates node
 signing; it is not the authority's private voting key. Rotate the committed
 generation every 60 days, before 90-day expiry, and verify protected plan/apply/Cordium acceptance. Then use
-`--retire-previous --execute` to remove only cached older-generation signing
-authorities. Expired auth keys alone do not revoke the delegated signing capability.
+`--retire-previous` to preview and `--retire-previous --execute` to remove only
+cached older-generation signing authorities. Both modes validate every current
+signature and all previous authority metadata before any removal. Execute
+rechecks each target and safely handles an already-absent previous authority;
+preview never signs, publishes or changes cache contents. Expired auth keys alone
+do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
 tradeoff. Each CI job must supply a private `statedir` to the pinned action.

@@ -26,10 +26,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
+generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:36:11.265Z
+    at: 2026-10-10T22:48:00.170Z
 ---
 
 # Secrets And Identity
@@ -89,7 +89,10 @@ metadata match. Delegated node-signing capability exceeds normal tag enrollment
 permissions. Auth-key expiry or revocation does not remove that authority;
 after replacement CI acceptance, the explicit `--retire-previous` operation
 removes only cached older-generation authorities while preserving unrelated
-signers. Keep an encrypted private cache backup and use the
+signers. Preview and execution validate every cached current signature and all
+previous authority metadata before any removal. Execution rechecks each target;
+an already-absent previous authority remains safe to retry. Preview never signs,
+publishes or changes cache contents. Keep an encrypted private cache backup and use the
 [module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
 recovery. The operator OAuth SSM contract remains separate and unchanged.
 

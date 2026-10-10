@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fe064cbc97fd5586350e2ec3befbda0ec5a8cb87370637e25d36b8060e54b926",
+  "pageVersion": "sha256:a4dcad8bd7b8eb7b64bc0b65c7eaeb3f5fa9502bbf24fea22be280ad68c247bf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -158,19 +158,15 @@
     },
     {
       "id": "claim_a7ed2b737fcd4aeb8d2d62a4c1910698",
-      "statement": "The static gate tests fixed ingress ownership and peer identity, null empty CLI peer classes, trusted homelab signers, distinct delegated and authority keys, exact new-authority trust changes, metadata-bound cache reuse and generation-specific retirement, and secret publication ordering; real mesh and CI acceptance remain separate from offline checks.",
+      "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
       "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
-        },
         {
           "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
           "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
-          "version": "repo-file-v1:sha256:48e745d138096e1bb0de4fad913e4e2fbd8ff5e3c7bc3742e9366257bbda10ed"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L344-L416",
+          "version": "repo-lines-v1:sha256:c7b9f848043465aa8548f1b1914a2e976a41c076e90381c769eb0210a98dea9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMzk5NTA1YmZlNmU3NmM0M2MyMjgxNzk5ZjAzODg4MGQzODUyNWJjOGQ5MDhmNWY4YTI1YjMwNDRlY2Q3ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMTFiY2U5MDBkOTA3ZGNmYWQxZjc4ZDM0M2M3NDM3ZmQ1NjUxODNhMzJmMzMwYzg2YTRjNmY3NjdkNmIzM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRkMzZmOTA5MzkwZjJlNGNiMjk5OWVhNTllOGE2M2MxODk5MWM5MzYyMDI2NGMzY2E1ZWQ3YWM0NWQyNTgzOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjYzA3MjQyYzhjMzM2MThjYmRkYWRiNmVjNjgzN2JiNTFiMDZjZGI1NDkwMzRiYTZlNTUyYzA0Y2ZmZGY2YTYifQ"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -181,6 +177,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:36:11.265Z"
+    "at": "2026-10-10T22:48:00.170Z"
   }
 }

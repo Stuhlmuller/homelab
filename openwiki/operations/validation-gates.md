@@ -54,10 +54,10 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
-generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
+generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:36:11.265Z
+    at: 2026-10-10T22:48:00.170Z
 ---
 
 # Validation Gates
@@ -187,7 +187,11 @@ distinct delegated and trusted signer keys. They reject missing, ambiguous or
 unrelated trust changes after signing, and mismatched cached authority identities
 or metadata. Publication tests require all three secret writes and metadata
 checks before deleting the old variables, reuse cached signatures on retry, and
-restrict authority retirement to previous generations. Mock provider tests cover
+restrict authority retirement to previous generations. Retirement regressions
+corrupt each current or previous record, including later list positions, and
+require both preview and execution to fail with zero removals, unchanged cache,
+and no signing/publication. They also cover target drift after preflight and
+already-absent previous authority retries. Mock provider tests cover
 tag, expiry and explicit-rotation contracts; real provider planning remains the
 proof of replacement behavior.
 
