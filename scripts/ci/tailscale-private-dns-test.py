@@ -58,7 +58,20 @@ class Readiness(unittest.TestCase):
             host = command[-1].split('/')[2]
             if host == 'octelium-api.stinkyboi.com':
                 protocol = next(value.split(': ', 1)[1] for value in command if value.startswith('content-type: '))
-                return f'HTTP/2 200\ncontent-type: {protocol}\ngrpc-status: {0 if failure == "grpc" else 16}\n\n200'
+                body = b''
+                status = f'grpc-status: {0 if failure == "grpc" else 16}\n'
+                if failure == 'duplicate-status':
+                    status += 'grpc-status: 0\n'
+                if failure == 'native-proto' and protocol == 'application/grpc':
+                    protocol += '+proto'
+                if failure == 'browser-body' and protocol == 'application/grpc-web+proto':
+                    trailer = b'grpc-status: 16\r\n'
+                    body = b'\x80' + len(trailer).to_bytes(4, 'big') + trailer
+                    status = ''
+                if failure == 'parameters':
+                    protocol += '; charset=utf-8'
+                Path(command[command.index('--output') + 1]).write_bytes(body)
+                return f'HTTP/2 200\ncontent-type: {protocol}\n{status}\n200'
             if host == 'harbor.stinkyboi.com':
                 realm = 'wrong.example' if failure == 'realm' else host
                 return f'HTTP/2 401\nwww-authenticate: Bearer realm="https://{realm}/service/token"\n\n401'
@@ -81,6 +94,13 @@ class Readiness(unittest.TestCase):
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
             with self.subTest(failure=failure), self.assertRaises(RuntimeError):
                 self.exercise(failure)
+
+    def test_api_parser_accepts_protocol_variants_and_rejects_conflicting_status(self):
+        for response in ('native-proto', 'browser-body', 'parameters'):
+            with self.subTest(response=response):
+                self.exercise(response)
+        with self.assertRaisesRegex(RuntimeError, 'authentication probes'):
+            self.exercise('duplicate-status')
 
     def test_execute_checks_reviewed_main_before_readiness(self):
         with patch.object(sys, 'argv', ['check', '--execute', '--expected-sha', 'a'*40]), \

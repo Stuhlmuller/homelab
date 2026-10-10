@@ -26,6 +26,8 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-f6fba8ad33526ba318c4d722
+    resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
@@ -44,10 +46,14 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
-generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
+  - id: openwiki-source-b4247f9b4622fc86c02f0ce3
+    resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
+    resource: repo://scripts/tailscale-private-dns-check.py
+generated: { by: "codex", at: "2026-10-10T20:40:01.656Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:59:10.633Z
+    at: 2026-10-10T20:42:52.728Z
 ---
 
 # Validation Gates
@@ -152,6 +158,12 @@ version to exercise the actual proxy on loopback. It downloads nothing and
 checks Host/path isolation, encoded path rejection, WebSockets, h2c, console
 upstream TLS/SNI, Harbor Authorization preservation and projected certificate
 reload. Test certificate verification bypasses are confined to this local harness.
+
+Private DNS readiness uses the transport-neutral `octelium-api-response.py`
+parser. It checks only the final HTTP/2 response, retains duplicate fields for
+rejection, accepts native `+proto` and gRPC-Web trailer frames, and requires one
+unambiguous unauthenticated status. Focused tests reject conflicting statuses,
+earlier-response confusion, and malformed bodies before DNS can change.
 
 Validate and test the Tailscale provider module, compare the complete live policy,
 and import the existing ACL before the private authenticated saved plan. Do not

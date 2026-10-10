@@ -10,8 +10,10 @@ import ipaddress
 import json
 from pathlib import Path
 import re
+import runpy
 import socket
 import subprocess
+import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
@@ -71,7 +73,14 @@ def probe(host, address=None, path="/", protocol=None):
         command += ["--http2", "--header", f"content-type: {protocol}", "--header", "TE: trailers",  # codespell:ignore te
                     "--header", "x-grpc-web: 1", "--data-binary", ""]
     command += [f"https://{host}{path}"]
-    headers, status = run(*command).rsplit("\n", 1)
+    with tempfile.TemporaryDirectory(prefix="homelab-api-probe-") as temporary:
+        body = Path(temporary) / "body"
+        command[command.index("--output") + 1] = str(body)
+        headers, status = run(*command).rsplit("\n", 1)
+        if protocol:
+            validate = runpy.run_path(str(ROOT / "scripts/octelium-api-response.py"))["unauthenticated"]
+            if int(status) != 200 or not validate(headers.encode(), body.read_bytes(), native=protocol == "application/grpc"):
+                raise RuntimeError("Octelium API native and browser HTTP/2 authentication probes must pass")
     return int(status), [line.strip().lower() for line in headers.splitlines()]
 
 
@@ -129,10 +138,7 @@ def routes(value, address=None):
     for hostname in value["hostnames"]:
         if hostname == "octelium-api.stinkyboi.com":
             for protocol in ("application/grpc", "application/grpc-web+proto"):
-                status, headers = probe(hostname, address, "/octelium.api.main.user.v1.MainService/GetStatus", protocol)
-                if (status != 200 or "http/2 200" not in headers or "grpc-status: 16" not in headers
-                        or f"content-type: {protocol}" not in headers):
-                    raise RuntimeError("Octelium API native and browser HTTP/2 authentication probes must pass")
+                probe(hostname, address, "/octelium.api.main.user.v1.MainService/GetStatus", protocol)
         else:
             wildcard = hostname.startswith("*.")
             test_host = hostname.replace("*.", "dns-preflight.", 1) if wildcard else hostname

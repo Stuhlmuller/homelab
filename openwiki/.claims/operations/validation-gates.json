@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9f61772c605104384bf812e636f6b22f75f616532a0a88a81a379da2777a5504",
+  "pageVersion": "sha256:823bfed8e5205e308de0a0262dfac2127189775d813f44ddc07e35493939de40",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:4bd7aaad9682606aa251c4884c47bace46947f2b8338b76dae03b386cd4d766c"
+          "version": "repo-file-v1:sha256:65110fa78c3f44df28f7284b776c5092c943ce544bc17c5ed1baf21ac7f60387"
         }
       ]
     },
@@ -53,8 +53,8 @@
       "statement": "The static gate includes Traefik route and tokenless kubeconfig boundary checks, while the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
-          "version": "repo-lines-v1:sha256:b20deeecd0021efac15f5931065a7dd6f3da28a86340737c173d07db01fbc41c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L17",
+          "version": "repo-lines-v1:sha256:aadb39e3ad312d3f94e7d207e9127d90e4e055b4a5da7e4c779602612679a60c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -102,7 +102,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:9de59b02507b727edb86853d4d8620fc86a4056ee7221bf32915008707a720dd"
+          "version": "repo-file-v1:sha256:add23655cc03e4085d3b041ba5187c3f2ed948e356a78d76931c63c51cde379f"
         }
       ]
     },
@@ -133,10 +133,32 @@
           "version": "repo-file-v1:sha256:f5a4f26e15b2de6631af044b3c578e5146eba4a73bb4e21f5c674ed207d486cc"
         }
       ]
+    },
+    {
+      "id": "claim_1e82b4e911194104b9c8bdd95a5b45da",
+      "statement": "Private DNS readiness uses a transport-neutral parser for the final HTTP2 response, native +proto and gRPC-Web trailers, rejecting duplicate/conflicting statuses, earlier-response confusion and malformed bodies before DNS changes.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/octelium-api-response-test.py",
+          "version": "repo-file-v1:sha256:7376b4c37f3c5a7ec64b9b046a2b2d8b54c47994819e168ab09a1b8479f1a1c1"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:add23655cc03e4085d3b041ba5187c3f2ed948e356a78d76931c63c51cde379f"
+        },
+        {
+          "resource": "repo://scripts/octelium-api-response.py",
+          "version": "repo-file-v1:sha256:5e0442a431c91c8ad85cfb80e43212ac3c13f1e5f6e4aaae7532d2f077758379"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py",
+          "version": "repo-file-v1:sha256:14ff49ccbdd8c013a129e874d251acc9e0e9ea8ec237c8a94c6140f327ab9208"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:59:10.633Z"
+    "at": "2026-10-10T20:42:52.728Z"
   }
 }
