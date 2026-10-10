@@ -1,0 +1,25 @@
+{
+  "images": [
+    {
+      "source": "cgr.dev/chainguard/busybox:latest@sha256:f7d9063f22547e726221275158930e5033be3c6d8340c6867afb7d0d779fad8d"
+    },
+    {
+      "source": "cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18"
+    },
+    {
+      "source": "cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4"
+    },
+    {
+      "source": "cgr.dev/chainguard/postgres:latest@sha256:b409d66dd4c3e7138a7e06ebdfe46966843e9e1a9322cb3b20a13928011ad398"
+    },
+    {
+      "source": "cgr.dev/chainguard/python:latest@sha256:197cf542e9f4dc373864faecd4fd1a4f642622e654e9196881ca852e8fdf26bd"
+    },
+    {
+      "source": "cgr.dev/chainguard/redis:latest@sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29"
+    },
+    {
+      "source": "cgr.dev/chainguard/valkey:latest@sha256:f61f933bd00446d2a28ca0c7ea4dc1f5c73a323191f173c40e2e86749a1db76b"
+    }
+  ]
+}
