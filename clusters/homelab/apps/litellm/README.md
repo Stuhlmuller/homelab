@@ -82,6 +82,18 @@ metadata). This setting uses admission-aware dry runs without ignoring fields
 or changing database resources. Apply the reviewed registration with the
 targeted `litellm` Terragrunt workflow; require actual Synced/Healthy afterward.
 
+On October 10, 2026, PR #1244 merged as `058fec59`; targeted apply
+[38082662328](https://github.com/Stuhlmuller/homelab/actions/runs/38082662328)
+succeeded and the live Application has `ServerSideDiff=true`. PostgreSQL and
+its PVC/secrets remain Ready/Bound. The first post-apply comparison still
+reported the previous OutOfSync result.
+[Argo 3.4.2 cache selection](https://github.com/argoproj/argo-cd/blob/v3.4.2/controller/state.go#L1036-L1072)
+does not invalidate cached diffs for this metadata-only change, and server-side
+diff keeps that cache across ordinary status expiration. A new source revision
+invalidates it. Verify the next observed Git revision and fresh Synced/Healthy
+result before the native-key cutover; do not treat successful apply alone as
+convergence or bypass it with an ignored-field rule.
+
 Provision these parameters and exact reader grants through the reviewed shared
 SSM Terragrunt unit before acceptance. Require both ExternalSecrets Ready, the
 claim Bound, StatefulSet Ready and `SELECT 1` as the app role. Passwords are
