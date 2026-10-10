@@ -70,13 +70,29 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
-   `image_scope` accepts only `all`, `fleet`, `bazarr`, or `traefik`; no image,
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image. Its publication uses the same all-platform digest copy, reviewed tag
    alias, and fresh complete anonymous download checks. A scoped success proves
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
+
+   The `chainguard` scope selects the seven digest-pinned public candidates in
+   `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
+   Redis, Valkey, PostgreSQL and Cosign. It publishes to the same normal
+   `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
+   digest preservation and fresh anonymous downloads. It does not change
+   consumers or prove runtime compatibility. Run after the prerequisite merges:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
+   ```
+
+   See [migration gates and current findings](image-egress-hardening.md).
+   Keep the public import source distinct from the internal runtime reference.
+   New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:latest@sha256:<verified-index-digest>`
+   only after successful publication and compatibility validation.
 
    Require a successful run, including complete anonymous downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication
