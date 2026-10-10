@@ -980,6 +980,42 @@ Do not restore the dataplane label as a rollback on this undersized worker.
 Restore redundancy only after a dedicated replacement passes the capacity and
 24-hour stability gates in the knowledge-base topology note.
 
+### October 10 fenced-Pod recovery
+
+If this worker becomes unreachable while PVC-backed Pods remain bound to it,
+the ordinary reboot preflight above fails. On October 10, its kubelet was
+unhealthy and a targeted Talos service restart stalled at SIGTERM. The
+operator physically powered off this exact worker (`10.1.0.202`) and must
+keep it off until the stranded Pods are released and their replacement writers
+are healthy. Talos API timeout alone does not prove physical fencing.
+
+From a clean checkout of the exact reviewed current `main`, use the narrowly
+scoped [recovery helper](../scripts/zimaboard-2-fenced-recovery.py). It verifies
+the canonical cluster, three healthy nodes, the unreachable worker's UID and
+taint, its closed Talos port, and the UIDs, owners, terminating state, node
+binding and PVCs of exactly three Pods. Deletion uses a Kubernetes API UID
+precondition, zero grace period and the operator's physical-fence attestation.
+It never deletes a replacement Pod or changes a PVC. First run preflight:
+
+```sh
+python3 -I scripts/zimaboard-2-fenced-recovery.py --expected-sha '<reviewed-main-sha>'
+```
+
+Only after confirming the worker remains physically off, run:
+
+```sh
+python3 -I scripts/zimaboard-2-fenced-recovery.py --expected-sha '<reviewed-main-sha>' \
+  --execute --fence-confirmation 'zimaboard-2 powered off'
+```
+
+Require a new Ready Argo controller `0`, a healthy n8n PostgreSQL Pod with the
+retained claim, and only the replacement NOFX backend. Keep the worker off
+until those writers and Argo reconciliation are verified. If a Pod UID changed,
+stop and review the new live state; do not force-delete by name. This exception
+does not authorize deletion of any other terminating Pod or a second Talos
+restart. Once Argo observes the Langfuse promotion revision, resume its own
+offline repair runbook before restoring Langfuse writers.
+
 ## Talos And Kubernetes Upgrade Checklist
 
 Use this checklist before changing Talos or Kubernetes versions. The verified

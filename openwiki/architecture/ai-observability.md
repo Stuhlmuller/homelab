@@ -154,10 +154,12 @@ Argo controller `0`, so Langfuse still observes the earlier read-only inspector.
 The node's old NOFX and n8n PostgreSQL Pods mount NFS claims; a replacement
 NOFX Pod is already Ready on another node. Authenticated Talos reports
 `kubelet` unhealthy. One targeted `talosctl service kubelet restart` stalled
-while sending SIGTERM; do not repeat it or force-delete Pods. The operator must
-fence the exact worker and verify PVC writers before any node power cycle or
-stranded-Pod deletion. Resume promotion only after Argo observes the merged
-revision and the writable inspector passes the helper's live guards.
+while sending SIGTERM; do not repeat it. The operator then physically powered
+off the exact worker and agreed to keep it off. The reviewed
+[fenced-Pod recovery](../../docs/talos-control-plane-maintenance.md#october-10-fenced-pod-recovery)
+must release the old PVC writers before the node is powered on again. Resume
+promotion only after Argo observes the merged revision and the writable
+inspector passes the helper's live guards.
 
 Native-key cutover inspection confirmed all four mounted caller credentials
 already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
