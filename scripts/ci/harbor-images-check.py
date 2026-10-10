@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
+CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
@@ -188,6 +189,8 @@ def check():
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
+        ("Chainguard", CHAINGUARD_CATALOG,
+         {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}

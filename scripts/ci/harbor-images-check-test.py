@@ -106,6 +106,8 @@ with tempfile.TemporaryDirectory() as directory:
     check.CATALOG = check.ROOT / "images.json"
     check.FLEET_CATALOG = check.ROOT / "fleet-images.json"
     check.BAZARR_CATALOG = check.ROOT / "bazarr-images.json"
+    check.CHAINGUARD_CATALOG = check.ROOT / "chainguard-images.json"
+    check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     check.CHARTS = check.ROOT / "charts.json"
     catalog = {"images": [
         {"source": "docker.io/library/busybox@" + digest},
@@ -175,6 +177,15 @@ with tempfile.TemporaryDirectory() as directory:
     else:
         raise AssertionError("Bazarr scope source absent from the full catalog passed")
     check.BAZARR_CATALOG.write_text(json.dumps(catalog))
+    unreviewed = {"source": "cgr.dev/chainguard/python:latest@sha256:" + "c" * 64}
+    check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": [unreviewed]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Chainguard mirror scope source absent from full catalog" in str(error)
+    else:
+        raise AssertionError("Unreviewed Chainguard publication scope passed")
+    check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     documents[0]["initContainers"][0]["image"] = "busybox:missing"
     try:
         check.check()
