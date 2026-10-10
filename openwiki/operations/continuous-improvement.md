@@ -3,13 +3,13 @@ type: operation
 title: "Continuous Improvement"
 description: "Security and reliability stewardship, source-backed finding format, open operational risks, and concrete follow-up gates."
 tags: ["operations", "security", "reliability", "stewardship"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T22:45:18.562Z
 sources:
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
 generated: { by: "codex", at: "2026-10-10T22:45:18.562Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:10:58.872Z
 ---
 
 # Continuous Improvement
