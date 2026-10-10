@@ -98,3 +98,12 @@ For telemetry rollback, revert the Kiali values and Prometheus monitor changes
 in git and let Argo CD reconcile both apps. Historical metrics remain until
 normal retention expires. A green Argo CD status alone does not prove traffic
 visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.
+
+## Internal image contract
+
+`values.yaml` pins the operator and its supported default server image to
+Harbor copies of the reviewed 2.26.0 digests. `RELATED_IMAGE_kiali_default` is
+the operator's supported image override; `allowAdHocKialiImage` remains false,
+so Kiali CRs cannot replace that default. The image version includes the digest
+because this pinned chart formats images as repository plus colon plus version.
+Verify the generated server Deployment as well as the Helm operator render.

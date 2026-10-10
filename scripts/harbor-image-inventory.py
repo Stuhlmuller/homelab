@@ -25,7 +25,8 @@ def runtime_references(value):
     """Read controller image arguments, env values, and embedded Pod templates."""
     found = set()
     if isinstance(value, dict):
-        if str(value.get("name", "")).endswith("IMAGE") and isinstance(value.get("value"), str):
+        name = str(value.get("name", ""))
+        if (name.endswith("IMAGE") or name.startswith("RELATED_IMAGE_")) and isinstance(value.get("value"), str):
             found.add(value["value"])
         for child in value.values():
             found.update(runtime_references(child))

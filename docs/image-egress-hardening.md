@@ -119,3 +119,29 @@ Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practic
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
 and the [existing isolation contract](runtime-isolation.md).
+
+## Chart-generated internal references
+
+The staged internal-reference migration overrides the Istio injector, Kiali's
+supported default server image and Tailscale's generated proxy image, alongside
+their controller images. Kiali keeps ad-hoc CR images disabled. Tailscale
+ProxyClass and kube-apiserver ProxyGroup image overrides need separate review.
+Grafana's main/test/dashboard images and the Prometheus stack's operator,
+config reloader, certificate hooks, kube-state-metrics, Prometheus and
+Alertmanager use the cataloged Harbor digests. The operator's default base
+repositories also point to Harbor; its Thanos default is pinned. New custom
+resources still require an explicitly published version/digest before rollout. Prometheus and Alertmanager
+version fields remain separate from their digest-bearing image tags.
+
+These settings preserve existing versions and do not remediate the retained
+images' CVEs. Pinned Helm renders and controller-created live Pods both need
+verification. Full-catalog publication, private node routing, remaining chart
+and controller defaults, compatible Chainguard upgrades and enforced egress
+remain rollout gates; the seven-image publication proves only its fixed scope.
+
+The unchanged Prometheus chart also renders an unused default Alertmanager
+Secret despite the existing `configSecret` reference. Generic raw-Secret
+Conftest rejects that resource in both before/after renders; the canonical
+comparison proves its content unchanged. The image migration does not commit
+that generated Secret. Review chart `useExistingSecret` ownership separately;
+retain the declared ExternalSecret-backed runtime configuration.
