@@ -3,6 +3,13 @@ type: operation
 title: "Continuous Improvement"
 description: "Security and reliability stewardship, source-backed finding format, open operational risks, and concrete follow-up gates."
 tags: ["operations", "security", "reliability", "stewardship"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T22:45:18.562Z
+sources:
+  - id: openwiki-source-e84e79af70aa76ff1e5928ad
+    resource: repo://docs/argocd-node-pressure-2026-10-10.md
+generated: { by: "codex", at: "2026-10-10T22:45:18.562Z" }
 ---
 
 # Continuous Improvement
@@ -66,6 +73,21 @@ while Dependabot automated fixes stay disabled to avoid duplicate PRs. The
 organization-policy blocker is tracked below.
 
 ## Open Findings
+
+- **Status:** recovered; capacity follow-up open
+- **Area:** Talos / Argo CD reconciliation, 2026-10-10
+- **Evidence:** [Dated incident record](../../docs/argocd-node-pressure-2026-10-10.md).
+  `zimaboard-2` lost kubelet health; its Argo controller stopped reconciling.
+  Automatic eviction and replacement restored reconciliation by 22:38:34 UTC,
+  without manual mutation. Low available memory and high memory/I/O PSI
+  suggest a resource stall; the exact cause remains unproven.
+- **Risk:** Worker capacity remains unresolved. Stale `Healthy`/`Synced` status
+  hid the unobserved merge until revision and reconciliation timestamps were
+  checked. The node hosted a PostgreSQL PVC writer, so force-deletion would
+  have risked concurrent writers.
+- **Next step:** Measure sustained pressure and NFS latency; review controller
+  placement, workload budgets, and stale-reconciliation alerts through reviewed
+  desired state. Preserve database writer fencing during any recovery.
 
 - **Area:** OpenClaw assistant scheduling
 - **Finding:** Before the cleanup rollout, Gateway readiness and SQLite mount
