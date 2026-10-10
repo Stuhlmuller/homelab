@@ -165,7 +165,8 @@ metadata:
     app.kubernetes.io/instance: langfuse
     app.kubernetes.io/component: valkey
 spec:
-  replicas: 1
+  # Keep the original AOF offline while a read-only capture pod mounts it.
+  replicas: 0
   strategy:
     type: Recreate
   selector:

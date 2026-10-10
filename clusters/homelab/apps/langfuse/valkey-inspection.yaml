@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: langfuse-valkey-inspection
+  namespace: langfuse
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse-valkey-inspection
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: langfuse-valkey-inspection
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: inspection
+          image: docker.io/valkey/valkey:8.0@sha256:4436c94fc34ce4af0354b9379d433a1f258998fb955f995c89822f98c14a8cab
+          command: ["/bin/sh", "-ec", "exec sleep infinity"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          readinessProbe:
+            exec:
+              command: ["test", "-r", "/source/appendonlydir/appendonly.aof.manifest"]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["test", "-d", "/source"]
+            periodSeconds: 30
+          volumeMounts:
+            - name: source
+              mountPath: /source
+              readOnly: true
+      volumes:
+        - name: source
+          persistentVolumeClaim:
+            claimName: langfuse-valkey-data
+            readOnly: true
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: langfuse-valkey-inspection
+  namespace: langfuse
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: langfuse-valkey-inspection
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []
