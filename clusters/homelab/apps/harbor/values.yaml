@@ -84,7 +84,7 @@ portal:
 core:
   image:
     repository: docker.io/goharbor/harbor-core
-    tag: v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7
+    tag: v2.15.4@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112
   serviceAccountName: harbor
   replicas: 1
   existingSecret: harbor-secrets
