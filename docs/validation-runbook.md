@@ -237,6 +237,12 @@ grep -i webhook /tmp/n8n-webhook-body.txt
 
 ## Current Validation Record
 
+- Legacy artifact cleanup on 2026-10-10 verified that the
+  `grafana-alert-cleanup` Application and its retired monitoring resources were
+  absent before removing the empty source. Grafana runbook URLs and OpenClaw
+  instructions now use canonical `openwiki/` pages; the old redirects and their
+  validation fixtures were removed. Active migration helpers, state tombstones,
+  and rollback assets remain because they still support current operations.
 - Read-only `showmount -e 10.1.0.2` verified the QNAP `/homelab` export is
   allow-listed to the four Talos node IPs.
 - Read-only `showmount -e 10.1.0.2` on 2026-05-26 verified the QNAP `/media`

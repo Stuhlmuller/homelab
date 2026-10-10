@@ -2,9 +2,13 @@
 
 ## Current contract
 
-The controller is restored as a paused, zero-replica deployment. Enrollment is
-generated from `clusters/homelab/apps/harbor/image-automation.json` and must
-match `python3 -I scripts/ci/image-automation.py render-check`. The intended
+The controller source is staged with zero replicas; its stack is not registered
+in `IaC/terragrunt.stack.hcl`. Read-only checks on 2026-10-10 confirmed that its
+Argo CD Application and Deployment are absent. Register the stack through the
+normal Terragrunt workflow before treating the controller as deployed.
+Enrollment is generated from
+`clusters/homelab/apps/harbor/image-automation.json` and must match
+`python3 -I scripts/ci/image-automation.py render-check`. The intended
 write-back branch is `main:codex/image-updater-proposals`; a separate main-owned
 workflow validates signed single-parent candidates before any non-force update.
 Routine updates require verified Harbor receipts, complete platform pulls and
@@ -17,9 +21,9 @@ targets transfer ownership only after their `automation_status` becomes
 `enrolled`; the checked-in pilot is still `not-enrolled` while publication and
 compatibility evidence are pending.
 
-The Terragrunt Application uses three sources: the pinned Image Updater Helm
-chart, a repository values ref, and the Kustomize source containing the paused
-configuration. The controller is deliberately zero replicas until recovery
+The staged Terragrunt Application defines three sources: the pinned Image
+Updater Helm chart, a repository values ref, and the Kustomize source containing
+the paused configuration. The configured replica count stays at zero until recovery
 readiness is accepted.
 
 ## Verification

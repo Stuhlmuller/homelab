@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0cd41de3faaeedbb2d9e02cff9138a6ba0e5046a39d3e0f59650c2ff3881727a",
+  "pageVersion": "sha256:0b850917c00ee0c0068b03844c9f65299995bc436518e47abd2691a407353435",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -33,10 +33,46 @@
           "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
         }
       ]
+    },
+    {
+      "id": "claim_ee8a0395031d4da0adcfa408edcd63dd",
+      "statement": "Image Updater has staged Helm/Kustomize source configured with zero replicas but no root Terragrunt Application registration; its runbook records the Application and Deployment as absent on 2026-10-10.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/argocd-image-updater/stack.hcl",
+          "version": "repo-file-v1:sha256:026a1c7562a1d4f1335f41c4285521aaa50b54da43592ca7a46a7926dd60b55e"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:510846c1c3aee93d1ce6dc33a2cd10781c8072129736a5cf1f80859364c54080"
+        },
+        {
+          "resource": "repo://docs/argocd-image-updater.md",
+          "version": "repo-file-v1:sha256:fdf2b1e4c2f765eadfc3b159466985451614033bc656c43a73b917d859e04e71"
+        }
+      ]
+    },
+    {
+      "id": "claim_3721ab9175c04691af669e80a24c966f",
+      "statement": "cert-manager's registered Application uses chart v1.20.3 and its versioned digest-pinned values, while rollback to v1.19.2 restores matching values from the documented pre-upgrade Git revision.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/cert-manager/stack.hcl",
+          "version": "repo-file-v1:sha256:607da59a2a06fd6d7a351378ebfc5985efe479f9ee895e25dc39a60721c433a7"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml",
+          "version": "repo-file-v1:sha256:288c12e698c394a549175802f19aab69e86eca34a0f44c52040c9edede72673a"
+        },
+        {
+          "resource": "repo://docs/rollback-argocd-apps.md#L33-L49",
+          "version": "repo-lines-v1:sha256:de8c2d79a1add616514d8c7ea0d41a6ce55ae0968df1bf17b9f4de9ff97a39f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTM2ZjczMWVkYTgyZDY0OGZiZTFjNjJlMThmMTI1OGE1OGQ0YTIyYTYyOWUwNTg3YWQ5MDRmNjQ2MjNjYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNGRhNTllMzcxNzJjYmRmNjAzNzVkOTI3N2I0ZDA1MDM5MWE4N2YyNDc4YjE4ZWQwNDc2YjgxNjQ1OGZlMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZGM0MGViNDVkMjhiOWEyYjJhMzZmZjVhZDQ4ZWUxZTUzMzMyZjkwM2MwZGQyYWI0ODhlMmU3MTg1NzY5MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzE2OWFhMmQ2ZmY2YjZlYTVkYzI3NTJkNzVhODRkYjhlM2JiMDc1MjhkYTE5ZTkyNWQxNGMyYTgwOGEyMDkifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T18:57:48.826Z"
+    "at": "2026-10-10T21:20:28.071Z"
   }
 }

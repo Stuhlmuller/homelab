@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:46e6005f16f06a128a6acfa104a6762645519746f9b5fe37acbdf6ef37d15245",
+  "claims": [
+    {
+      "id": "claim_1bb0059e50364c2aa2e502983cadaca8",
+      "statement": "The repository's wiki validator checks local links, anchors, frontmatter, navigation and skill entrypoints, and rejects retired knowledge-base paths in skills, workload sources, docs and root README/AGENTS guidance.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openwiki-check.py#L89-L153",
+          "version": "repo-lines-v1:sha256:f62c90de06724e17e2b8fea95aa89051a4a9372566bea1eb16327299b036a6f4:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmNjE3Y2ZjMjEwMTc1M2VhM2ZkZDg5NTliNjUwNmY3MTdiYmMzNmM0ZGEwODBjY2YwOTYyYzNkMWI4ODQ3MDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ3MjIzMTA2ZmQ4NzQyYjcwZWEyMzNmOWRjMzU5ZjRiMDJiYmIwNjliNzI4M2VlZjc2MjQ5OTUxNmJkN2I5YzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ0NDQwYzg0MTMzNmZlOWM1MjZiMjZkZWJiMjhmZjIxMTFmMWNiZTBkODcyMzU0N2RhNzI2YzhiYjRiYmQwNWIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T21:20:28.071Z"
+  }
+}

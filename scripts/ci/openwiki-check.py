@@ -7,18 +7,12 @@ import re
 import subprocess
 import sys
 import tempfile
-from os.path import relpath
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 LINK = re.compile(r'\]\(\s*(?:<([^>]+)>|((?:\\.|[^\s()]|\([^()]*\))+))(?:\s+["\'][^\n]*?["\'])?\s*\)')
 INLINE_CODE = re.compile(r'(`+)(.*?)\1', re.DOTALL)
 FRONTMATTER = re.compile(r'\A---\n(.*?)\n---(?:\n|$)', re.DOTALL)
-COMPATIBILITY = (
-    "docs/knowledge-base/00-home.md",
-    "docs/knowledge-base/architecture/cluster-topology.md",
-    "docs/knowledge-base/operations/pvc-metrics-recovery.md",
-)
 
 
 def unique_keys(pairs):
@@ -102,12 +96,6 @@ def check(root):
     heading_cache = {}
     skills = root / ".agents/skills"
     documents = pages | {path: path.read_text() for path in sorted(skills.rglob("*.md"))}
-    for name in COMPATIBILITY:
-        path = root / name
-        if path.is_file():
-            documents[path] = path.read_text()
-        else:
-            errors.append(f"{name}: missing compatibility page")
     entry = wiki / "quickstart.md"
     if entry not in pages:
         errors.append("openwiki/quickstart.md: missing wiki entrypoint")
@@ -155,7 +143,10 @@ def check(root):
     for name in ("openwiki", "homelab-knowledge-base"):
         if not (skills / name / "SKILL.md").is_file():
             errors.append(f".agents/skills/{name}/SKILL.md: missing agent entrypoint")
-    for path in sorted(skills.rglob("*")):
+    sources = {root / "README.md", root / "AGENTS.md"}
+    for directory in (skills, root / "clusters", root / "docs"):
+        sources.update(directory.rglob("*"))
+    for path in sorted(sources):
         if path.is_file() and "docs/knowledge-base" in path.read_text(errors="replace"):
             errors.append(f"{path.relative_to(root)}: stale docs/knowledge-base reference")
     return errors
@@ -166,10 +157,6 @@ def self_test():
         root = Path(temporary)
         wiki = root / "openwiki"
         wiki.mkdir()
-        for name in COMPATIBILITY:
-            stub = root / name
-            stub.parent.mkdir(parents=True, exist_ok=True)
-            stub.write_text(f"[Moved]({relpath(wiki / 'quickstart.md', stub.parent)})\n")
         header = "---\ntype: reference\ntitle: Test\ndescription: A fixture.\ntags:\n  - test\n---\n"
         for name in ("openwiki", "homelab-knowledge-base"):
             skill = root / ".agents/skills" / name / "SKILL.md"
@@ -205,13 +192,6 @@ def self_test():
         skill.write_text("[Missing](missing.md)\n")
         assert any("SKILL.md:1: broken link" in error for error in check(root))
         skill.write_text("# Skill\n")
-        stub = root / COMPATIBILITY[0]
-        saved = stub.read_text()
-        stub.write_text("[Missing](missing.md)\n")
-        assert any("00-home.md:1: broken link" in error for error in check(root))
-        stub.unlink()
-        assert any("missing compatibility page" in error for error in check(root))
-        stub.write_text(saved)
         for link, expected in (("[bad](missing.md)", "broken link"),
                                ("[bad](topic.md#missing)", "broken heading anchor"),
                                ("[[topic|Old link]]", "leftover Obsidian wikilink")):
@@ -222,8 +202,14 @@ def self_test():
         quickstart.write_text(valid)
         (wiki / "topic.md").write_text("# Topic\n## Repeated\n## Repeated\n")
         assert any("missing frontmatter" in error for error in check(root))
-        (root / ".agents/skills/openwiki/SKILL.md").write_text("docs/knowledge-base/00-home.md")
-        assert any("stale docs/knowledge-base" in error for error in check(root))
+        for name in (".agents/skills/openwiki/SKILL.md", "clusters/app/values.yaml",
+                     "docs/runbook.md", "README.md", "AGENTS.md"):
+            source = root / name
+            source.parent.mkdir(parents=True, exist_ok=True)
+            saved = source.read_text() if source.exists() else ""
+            source.write_text("docs/knowledge-base/00-home.md")
+            assert f"{name}: stale docs/knowledge-base reference" in check(root)
+            source.write_text(saved)
 
 
 if __name__ == "__main__":
