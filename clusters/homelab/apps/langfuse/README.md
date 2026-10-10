@@ -136,12 +136,12 @@ recovery. Keep writers stopped on failure and inspect retained files before
 retrying. Do not restore the corrupt original and restart it as rollback.
 
 On October 10, the approved candidate was installed and its live hashes
-verified. This first GitOps follow-up removes only the inspector; all three
-writers remain at zero. Wait for Argo to prune the inspector and verify no Pod
-mounts `langfuse-valkey-data` before a separate reviewed revision restores
-global/web/worker and Valkey replicas to one. Preserve the private original and
-all PVCs throughout recovery. Merely restarting the corrupt original does not
-restore service.
+verified. The first GitOps follow-up removed the inspector while all writers
+remained stopped. Argo observed merged `836e7f0f`, pruned the inspector, and
+reported Synced/Healthy at 22:05 UTC; no Pod mounted
+`langfuse-valkey-data`. This revision restores global/web/worker and Valkey
+replicas to one. Preserve the private original and all PVCs throughout
+recovery. Merely restarting the corrupt original does not restore service.
 Require stable Valkey and worker readiness, then fresh correlated Langfuse
 generations from each caller. Safety tests cover offline guards and candidate
 isolation. Run the native checker fixture with

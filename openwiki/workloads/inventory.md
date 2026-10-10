@@ -194,10 +194,9 @@ see [AI observability](../architecture/ai-observability.md).
 
 Langfuse web allows ten minutes for database migrations before liveness checks
 begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
-Web, worker and Valkey temporarily declare zero replicas for the October 10
-offline AOF repair. A credential-free inspector was used for capture and
-approved promotion; this GitOps revision prunes it before a separate reviewed
-writer restart. The separate 1Gi
+Web, worker and Valkey return to one replica after the October 10 offline AOF
+repair. A credential-free inspector was used for capture and approved promotion;
+Argo pruned it in a separate revision before this writer restart. The separate 1Gi
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
