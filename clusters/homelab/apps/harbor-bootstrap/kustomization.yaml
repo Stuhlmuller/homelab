@@ -7,3 +7,5 @@ images:
     newName: docker.io/library/postgres
   - name: harbor.stinkyboi.com/mirror/docker.io/library/python
     newName: docker.io/library/python
+  - name: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python
+    newName: cgr.dev/chainguard/python
