@@ -70,15 +70,17 @@ class HarborAPI:
         if path == "/registries" and method == "POST":
             identifier = max((item["id"] for item in self.registries.values()), default=0) + 1
             self.registries[body["name"]] = {**copy.deepcopy(body), "id": identifier}
-            return 201, self.registries[body["name"]], {}
+            return 201, b"", {"Location": f"/api/v2.0/registries/{identifier}"}
         if path.startswith("/replication/policies?"):
             query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
             policy = self.replication_policies.get(query.get("name", [""])[0])
             return 200, ([policy] if policy else []), {}
         if path == "/replication/policies" and method == "POST":
+            if len(body["trigger"]["trigger_settings"]["cron"].split()) != 6:
+                return 400, {"error": "invalid cron string"}, {}
             identifier = max(self.replication_policies.values(), key=lambda item: item["id"], default={"id": 0})["id"] + 1
             self.replication_policies[body["name"]] = {**copy.deepcopy(body), "id": identifier}
-            return 201, self.replication_policies[body["name"]], {}
+            return 201, b"", {"Location": f"/api/v2.0/replication/policies/{identifier}"}
         if path.startswith("/replication/policies/"):
             identifier = int(path.rsplit("/", 1)[1])
             policy = next((item for item in self.replication_policies.values() if item["id"] == identifier), None)
@@ -196,7 +198,7 @@ class BootstrapTest(unittest.TestCase):
         self.assertTrue(bootstrap.validate_replication_policy())
         desired = bootstrap.desired_replication_policy(bootstrap.CHAINGUARD_REPLICATION["rules"][0], 42)
         self.assertEqual(desired["src_registry"], {"id": 42})
-        self.assertEqual(desired["trigger"]["trigger_settings"], {"cron": "0 * * * *"})
+        self.assertEqual(desired["trigger"]["trigger_settings"], {"cron": "0 0 * * * *"})
         self.assertFalse(desired["replicate_deletion"])
         self.assertTrue(desired["override"])
         self.assertTrue(desired["enabled"])
@@ -209,6 +211,14 @@ class BootstrapTest(unittest.TestCase):
         rule = bootstrap.CHAINGUARD_REPLICATION["rules"][0]
         desired = bootstrap.desired_replication_policy(rule, 42, paused=True)
         self.assertFalse(desired["enabled"])
+
+    def test_creation_location_is_scoped_to_the_requested_endpoint(self):
+        self.assertEqual(bootstrap.created_id({"Location": "/api/v2.0/registries/42"}, "/registries"), 42)
+        for location in ("", "/api/v2.0/registries/0", "/api/v2.0/robots/42",
+                         "https://example.invalid/api/v2.0/registries/42",
+                         "/api/v2.0/registries/42?redirect=true"):
+            with self.subTest(location=location), self.assertRaises(bootstrap.BootstrapError):
+                bootstrap.created_id({"Location": location}, "/registries")
 
     def test_empty_or_duplicate_replication_rules_are_rejected(self):
         empty = copy.deepcopy(bootstrap.CHAINGUARD_REPLICATION)
@@ -238,12 +248,17 @@ class BootstrapTest(unittest.TestCase):
                     name = path.split("=", 1)[1]
                     return ([self.policies[name]] if name in self.policies else []), {}
                 if path == "/replication/policies" and method == "POST":
+                    if len(body["trigger"]["trigger_settings"]["cron"].split()) != 6:
+                        raise bootstrap.APIError(400)
+                    assert json_response is False
                     policy = {**body, "id": 7 + len(self.policies)}
                     self.policies[body["name"]] = policy
-                    return policy, {}
+                    return None, {"Location": f"/api/v2.0/replication/policies/{policy['id']}"}
                 if path.startswith("/replication/policies/") and method == "GET":
                     identifier = int(path.rsplit("/", 1)[1])
-                    return next(policy for policy in self.policies.values() if policy["id"] == identifier), {}
+                    policy = next(policy for policy in self.policies.values() if policy["id"] == identifier)
+                    return {**policy, "src_registry": {**policy["src_registry"], "name": "cgr.dev"},
+                            "dest_registry": None}, {}
                 raise AssertionError((method, path))
 
         client = Client()
@@ -259,7 +274,7 @@ class BootstrapTest(unittest.TestCase):
             ("GET", "/replication/policies/8"),
         ])
         policy = client.policies["chainguard-python"]
-        self.assertEqual(policy["trigger"]["trigger_settings"], {"cron": "0 * * * *"})
+        self.assertEqual(policy["trigger"]["trigger_settings"], {"cron": "0 0 * * * *"})
         self.assertFalse(policy["replicate_deletion"])
         self.assertTrue(policy["override"])
         self.assertFalse(policy["filters"][0].get("flatten", False))
@@ -279,8 +294,9 @@ class BootstrapTest(unittest.TestCase):
                 if path == "/registries?name=cgr.dev":
                     return ([] if self.registry is None else [self.registry]), {}
                 if path == "/registries" and method == "POST":
+                    assert json_response is False
                     self.registry = {**body, "id": 42}
-                    return self.registry, {}
+                    return None, {"Location": "/api/v2.0/registries/42"}
                 if path == "/registries/42":
                     return self.registry, {}
                 raise AssertionError((method, path))
