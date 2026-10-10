@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1ff339fde545c6ed10881dca193ed813df7c88d5e84950580e60079ec728390e",
+  "pageVersion": "sha256:14f58dd8e139736e540a72631a4355b143daac330d1bcb6d5f6299448a2cf607",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:1191c3337e7bc92b390ab5f9597091c96c488b0234276c7bde6bbf25c5ebce6a"
+          "version": "repo-file-v1:sha256:ff5c38590c7cd81c2e08f8684e68621b50a0ecd3991408a399431404a7dd5c46"
         }
       ]
     },
@@ -47,10 +47,28 @@
           "version": "repo-file-v1:sha256:40b9bed8f66679a0d89fe554f886419e57bf3daa662eebe6d42614fca8fb2d39"
         }
       ]
+    },
+    {
+      "id": "claim_18eebc2e988b48408b2de9e956de2e0a",
+      "statement": "The fixed Traefik publication scope retains digest, tag alias and complete anonymous pull checks; static regression tests also reject scoped, untitled and mismatched-revision receipts as full-catalog mirror evidence before provenance or registry access.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:f918de1b7e1b29944af9845a1938e766e7aea12237343c6540a95210c3497fcc"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:ff5c38590c7cd81c2e08f8684e68621b50a0ecd3991408a399431404a7dd5c46"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:6172a71a0f40070114036b9ffb4ea45df7006c12c32be8ce0f6afcad23e071a2"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-09T05:26:38.825Z"
+    "at": "2026-10-10T19:29:29.016Z"
   }
 }

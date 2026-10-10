@@ -3,15 +3,15 @@ type: workload
 title: "Workload Inventory"
 description: "Application and platform namespaces, GitOps paths, dependencies, resource and state contracts, and runtime readiness boundaries."
 tags: ["workloads", "argocd", "inventory"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-09T05:26:38.825Z
 sources:
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
 generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T19:29:29.016Z
 ---
 
 # Workload Inventory

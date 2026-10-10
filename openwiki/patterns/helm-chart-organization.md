@@ -3,6 +3,7 @@ type: pattern
 title: "Helm Chart Organization"
 description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
+generated: { by: "codex", at: "2026-10-10T19:29:29.016Z" }
 ---
 
 # Helm Chart Organization
@@ -29,8 +30,11 @@ clusters/homelab/apps/<app>/
 Platform resources keep their existing `clusters/homelab/platform/<service>`
 ownership. The inspected repository has no committed `Chart.yaml` or
 `Chart.lock`; it already references remote charts directly. Its
+<!-- openwiki: broken internal link [../../IaC/stacks] file "../../IaC/stacks" does not exist. Fix the href or restore the target, then delete this comment. -->
 [application stacks](../../IaC/stacks),
+<!-- openwiki: broken internal link [../../clusters/homelab/apps/openclaw] file "../../clusters/homelab/apps/openclaw" does not exist. Fix the href or restore the target, then delete this comment. -->
 [OpenClaw values and extras](../../clusters/homelab/apps/openclaw), and
+<!-- openwiki: broken internal link [../../clusters/homelab/apps/harbor] file "../../clusters/homelab/apps/harbor" does not exist. Fix the href or restore the target, then delete this comment. -->
 [Harbor values and extras](../../clusters/homelab/apps/harbor) demonstrate
 this layout.
 
