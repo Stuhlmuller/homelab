@@ -29,7 +29,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: import-key
-          image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+          image: harbor.stinkyboi.com/mirror/ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
           imagePullPolicy: IfNotPresent
           args: [import-key-pair, --key, /key/tls.key, --output-key-prefix, /work/cosign]
           workingDir: /work
@@ -51,7 +51,7 @@ spec:
             - {name: key, mountPath: /key, readOnly: true}
             - {name: work, mountPath: /work}
         - name: sign
-          image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+          image: harbor.stinkyboi.com/mirror/ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
           imagePullPolicy: IfNotPresent
           # The publisher appends exactly the two verified NOFX digest references.
           args:
@@ -84,7 +84,7 @@ spec:
             - {name: registry, mountPath: /registry, readOnly: true}
       containers:
         - name: public-key
-          image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+          image: harbor.stinkyboi.com/mirror/ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
           imagePullPolicy: IfNotPresent
           args: [public-key, --key, /work/cosign.key, --outfile, /dev/termination-log]
           workingDir: /work

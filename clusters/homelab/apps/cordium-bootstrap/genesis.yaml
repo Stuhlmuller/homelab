@@ -160,7 +160,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: genesis
-          image: ghcr.io/octelium/cordium-genesis:0.12.7@sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/cordium-genesis:0.12.7@sha256:bc2911c5c17dc431d6b39471235c5bfe929241979a215a491a97fb53f5bbc401
           imagePullPolicy: IfNotPresent
           args:
             - init
@@ -305,7 +305,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cleanup
-          image: registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250
+          image: harbor.stinkyboi.com/mirror/registry.k8s.io/kubectl:v1.34.1@sha256:59bafa07ff3a6d4b417e7633ddb9d79a9606ca98bf64bac080b3e65748669250
           imagePullPolicy: IfNotPresent
           args:
             - delete

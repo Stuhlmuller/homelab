@@ -59,7 +59,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redis
-          image: redis:8.2.1-bookworm@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff
+          image: harbor.stinkyboi.com/mirror/docker.io/library/redis:8.2.1-bookworm@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh

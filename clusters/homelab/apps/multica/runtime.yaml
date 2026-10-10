@@ -39,7 +39,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: install-multica
-          image: ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
+          image: harbor.stinkyboi.com/mirror/ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66
           imagePullPolicy: IfNotPresent
           command: [/bin/sh, -ec]
           args:
@@ -69,7 +69,7 @@ spec:
             - name: home
               mountPath: /home/multica
         - name: configure-runtime
-          image: docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
           imagePullPolicy: IfNotPresent
           command: [/bin/bash, -euc]
           args:
@@ -113,7 +113,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: daemon
-          image: docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
+          image: harbor.stinkyboi.com/mirror/docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d
           imagePullPolicy: IfNotPresent
           command: [/tools/multica, daemon, start, --foreground]
           workingDir: /home/multica

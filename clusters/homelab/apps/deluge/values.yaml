@@ -28,7 +28,7 @@ controllers:
     initContainers:
       download-dirs:
         image:
-          repository: busybox
+          repository: harbor.stinkyboi.com/mirror/docker.io/library/busybox
           tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
         command:
           - /bin/sh
@@ -41,7 +41,7 @@ controllers:
               /downloads/complete/manual
       gluetun:
         image:
-          repository: ghcr.io/qdm12/gluetun
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/qdm12/gluetun
           tag: v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027
         restartPolicy: Always
         lifecycle:
@@ -142,7 +142,7 @@ controllers:
     containers:
       app:
         image:
-          repository: lscr.io/linuxserver/deluge
+          repository: harbor.stinkyboi.com/mirror/lscr.io/linuxserver/deluge
           tag: 18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9
         command:
           - /bin/sh
@@ -268,7 +268,7 @@ controllers:
               timeoutSeconds: 30
       port-config:
         image:
-          repository: lscr.io/linuxserver/deluge
+          repository: harbor.stinkyboi.com/mirror/lscr.io/linuxserver/deluge
           tag: 18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9
         env:
           DELUGE_INCOMING_PORT: "5983"
@@ -338,7 +338,7 @@ controllers:
           runAsUser: 1000
       daemon-metrics:
         image:
-          repository: lscr.io/linuxserver/deluge
+          repository: harbor.stinkyboi.com/mirror/lscr.io/linuxserver/deluge
           tag: 18.04.1@sha256:0ac8716243944d28890565f759c7cedfc9e36a3fd5a827c9d0927abc0c8f97c9
         command:
           - python3

@@ -79,7 +79,7 @@ controllers:
     containers:
       app:
         image:
-          repository: ghcr.io/dispatcharr/dispatcharr
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/dispatcharr/dispatcharr
           tag: latest@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f
         command:
           - /bin/bash
@@ -129,7 +129,7 @@ controllers:
             memory: 4Gi
       celery:
         image:
-          repository: ghcr.io/dispatcharr/dispatcharr
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/dispatcharr/dispatcharr
           tag: latest@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f
         command:
           - /app/docker/entrypoint.celery.sh
@@ -156,7 +156,7 @@ controllers:
             memory: 2Gi
       redis:
         image:
-          repository: redis
+          repository: harbor.stinkyboi.com/mirror/docker.io/library/redis
           tag: 8.10.1-alpine@sha256:ef216d85ec44f4fdf7c0e6df2d1757a4734ed32fbb278cabd3181b5a27353b79
         probes:
           readiness:

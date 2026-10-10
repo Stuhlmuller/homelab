@@ -12,7 +12,7 @@
     {
       "description": "Keep OctoBot on the last image compatible with its retained config.",
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["drakkarsoftware/octobot"],
+      "matchPackageNames": ["drakkarsoftware/octobot", "harbor.stinkyboi.com/mirror/docker.io/drakkarsoftware/octobot"],
       "matchFileNames": ["clusters/homelab/apps/octobot/values.yaml"],
       "allowedVersions": "2.1.1"
     },
