@@ -76,21 +76,20 @@ ingestion while the queue is unavailable.
 
 [`scripts/langfuse-valkey-recovery.py`](../../../../scripts/langfuse-valkey-recovery.py)
 supports separate capture and explicitly approved promotion modes. Capture
-requires a read-only inspector. The current approved promotion stage keeps
-web, worker and Valkey replicas at zero and mounts the existing queue PVC
-writable in `langfuse-valkey-inspection`. The inspector has no credentials,
-API token or network access; its image root remains read-only.
-PostgreSQL, ClickHouse and all retained claims are unchanged. Langfuse UI and
-ingestion remain unavailable until a separately reviewed restoration.
+required a read-only inspector; promotion used a writable inspector while web,
+worker and Valkey replicas stayed at zero. The inspector had no credentials,
+API token or network access; its image root was read-only. This revision prunes
+it before restarting writers. PostgreSQL, ClickHouse and all retained claims
+are unchanged. Langfuse UI and ingestion remain unavailable until restoration.
 
-Build the matching checker from the official Valkey 8.0.11 source at commit
+For the completed inspection, build the matching checker from the official
+Valkey 8.0.11 source at commit
 `4bf1df6441949d70b38e748ffe39daaca9f6f89c`, using
-`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. From a clean checkout of
-the exact merged current `main`, capture is available only after a separately
-reviewed read-only inspector revision has converged (both PVC and volume-mount
-`readOnly` fields must be `true`, with all three writers still stopped).
-Do not run capture against the current writable promotion stage; use its
-existing verified off-NAS capture instead.
+`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. Capture ran from a clean
+checkout of the exact merged read-only-inspector revision after both PVC and
+volume-mount `readOnly` fields were true and all three writers had stopped.
+The following capture command is historical; without that inspected revision
+and Pod it cannot run against current `main`.
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
@@ -116,8 +115,9 @@ separate off-NAS backup: a directory on the same NAS is not disaster recovery.
 On October 10, the operator approved the verified prefix repair: only
 `appendonlydir/appendonly.aof.4.incr.aof` changes, from 10,328,329 to
 9,987,809 bytes (340,520 bytes discarded). This does not quantify lost events.
-After this writable-inspector revision merges and Argo finishes, run from its
-clean, exact current-main checkout:
+The following command was run from the clean, exact merged promotion revision
+while the writable inspector was present. It cannot be rerun after this
+inspector-removal revision reaches `main`:
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
