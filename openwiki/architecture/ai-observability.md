@@ -363,21 +363,21 @@ This closes deployment verification, not inference acceptance. The browser
 remained at Octelium login; an authenticated NOFX session is still needed for
 the native nontrading AI test and matching Langfuse generation.
 
-### Retirement gap: retained OpenClaw configuration
+### Pre-cutover retirement gap: retained OpenClaw configuration
 
-Live inspection still found an enabled `codex` plugin, the OpenAI provider
+Before the migration, live inspection found an enabled `codex` plugin, the OpenAI provider
 pointing at the ChatGPT Codex backend, subscription auth-profile references,
 and `openai/gpt-5.5` / `openai/gpt-6-astra` model and allowlist entries.
-The default uses LiteLLM, but full subscription retirement is not established.
+The default used LiteLLM, but full subscription retirement was not established then.
 `assistant/bootstrap.py` recursively merges providers/models and appends to
 existing allowlists, so omitting old entries from the managed patch does not
 remove them. The prepared migration replaces provider/model maps, restricts each
 configured agent to the gateway model, disables OpenAI/Codex plugins, and removes
 subscription auth-profile references. Original config and private credential
-files are retained, not revoked or erased. Offline regression covers legacy
-defaults, non-main overrides, unrelated settings and idempotence. Deployment is
-pending the merge hold; inspect session overrides and actual-agent traces before
-claiming every runtime uses LiteLLM.
+files were retained, not revoked or erased. Offline regression covered legacy
+defaults, non-main overrides, unrelated settings and idempotence. The later
+live config check above confirms only `openrouter/free` is allowed and both
+plugins are disabled; a post-recovery native agent action remains unverified.
 The offline CLI displays 16 old Codex model/runtime associations among 37
 stored sessions, but these are not proof of current routing overrides. Native
 read-only store projection found no explicit model/provider/runtime overrides;
