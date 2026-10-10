@@ -333,6 +333,13 @@ rg -n \
 
 ## Kubernetes Source Checks
 
+`scripts/ci/langfuse-valkey-recovery-test.py` checks stopped-writer guards,
+backup integrity and candidate-only AOF repair. Its optional `--checker` runs
+a synthetic corrupt tail through the matching Valkey 8.0.11 executable.
+The [capture runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection)
+requires offline live guards, off-NAS hashes and measured loss before requesting
+live replacement; fixture success alone is not production recovery.
+
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
 `scripts/ci/langfuse-staging-check.py` preserves current runtime secret/provider

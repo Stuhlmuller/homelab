@@ -43,6 +43,13 @@ and automatic reconciliation; no live policy bypass or node changes were made.
 Keep native authentication, UI listing and revocation marked unverified until
 the separate key migration and its live acceptance finish.
 
+PR #1238 merged as `cecd243f`; Argo observed that revision and its operation
+succeeded. The database AuthorizationPolicy is now present at wave `-1` with
+the exact LiteLLM principal and port 5432. PostgreSQL remains Ready. Argo still
+reports its StatefulSet OutOfSync although `kubectl diff` is empty; inspect
+Argo's normalized comparison before declaring full convergence. No PVC was
+replaced and no live force-sync was used.
+
 The `litellm-app-keys` revision `v2` refreshes the file-mounted OpenRouter
 credential after protected SSM injection. Merge this refresh only after the
 provider credential workflow succeeds. The gateway rereads the mounted key for
@@ -61,6 +68,25 @@ AFFiNE has no active AI workload. OctoBot's AI evaluators are disabled. Cordium
 may host user workloads and remains outside this cluster-owned routing contract.
 
 ## Current rollout dependency
+
+### October 10, 2026: Langfuse queue recovery pending
+
+Read-only follow-up found `langfuse-valkey` in CrashLoopBackOff and its worker
+restarting. Valkey 8.0.11 loaded its base RDB, then rejected
+`appendonly.aof.4.incr.aof` as malformed. The PVC `langfuse-valkey-data` is
+retained; no files were removed or repaired. Trace acceptance is blocked even
+though the web Pod is Ready. Queue repair requires a private backup and reviewed
+repository-owned recovery path; truncation can discard queued events after the
+corruption point. Obtain approval for that risk before any repair, then require
+stable Valkey/worker readiness and a fresh correlated generation per caller.
+The [copy-only inspection helper](../../scripts/langfuse-valkey-recovery.py)
+preserves a verified original and repairs only a private candidate. Its safety
+tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
+The authorized capture stage stops web/worker/Valkey through GitOps and mounts
+the queue read-only in a credential-free inspector. The helper verifies all
+writers exited before capture to private off-NAS storage. Actual discarded
+bytes and candidate validity remain unmeasured until capture. No live
+replacement path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
 An earlier ClickHouse logging change exposed a sync-wave dependency: its
 generated ConfigMap followed the Deployment, so Argo waited for a Pod that

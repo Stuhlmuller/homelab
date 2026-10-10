@@ -67,6 +67,61 @@ nix develop --command bash scripts/ci/langfuse-startup-check.sh
 kubectl -n langfuse get pvc langfuse-migration-recovery
 ```
 
+## Valkey offline capture and candidate inspection
+
+On October 10, 2026, the pinned Valkey 8.0.11 process rejected
+`appendonly.aof.4.incr.aof` as malformed after loading its base RDB. The worker
+restarted repeatedly. HTTP readiness of the web service does not prove event
+ingestion while the queue is unavailable.
+
+[`scripts/langfuse-valkey-recovery.py`](../../../../scripts/langfuse-valkey-recovery.py)
+is a copy-only inspection helper, not a production repair command. This
+temporary GitOps stage sets web, worker and Valkey replicas to zero, then
+deploys `langfuse-valkey-inspection` with the existing queue PVC mounted
+read-only. The inspector has no credentials, API token or network access.
+PostgreSQL, ClickHouse and all retained claims are unchanged. Langfuse UI and
+ingestion remain unavailable until a separately reviewed restoration.
+
+Build the matching checker from the official Valkey 8.0.11 source at commit
+`4bf1df6441949d70b38e748ffe39daaca9f6f89c`, using
+`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. From a clean checkout of
+the exact merged current `main`, after Argo finishes this rollout:
+
+```sh
+python3 -I scripts/langfuse-valkey-recovery.py \
+  --capture-cluster --expected-sha '<merged-main-sha>' \
+  --destination /private/durable-off-nas/new-valkey-inspection \
+  --checker /private/valkey-8.0.11/src/valkey-check-aof
+```
+
+The destination must not exist; its parent must exist on durable private
+off-NAS storage with room for five copies plus 64 MiB. Do not use an ephemeral
+temporary directory. The helper checks the canonical cluster endpoint, stopped
+Deployments, absence of writer Pods, and the inspector's read-only mount before
+capture. It streams `original.tar` locally and verifies source hashes and Pod
+identity again afterward. The private (0700) directory retains that archive,
+its SHA-256 digest, extracted `source`, and `inspection/` containing an
+unmodified `original`, separately repaired `candidate`, checker logs and
+`report.json`. Source changes, unsafe archive/manifest paths, reused destinations,
+checker errors and invalid candidates fail closed. Only the candidate is ever
+passed to `--fix`. The report measures discarded bytes, not lost event count;
+inspect it privately before requesting approval for a live replacement. Keep a
+separate off-NAS backup: a directory on the same NAS is not disaster recovery.
+
+No live replacement or automatic recovery is enabled. Only after inspecting
+the measured loss and obtaining approval may a separate repository-owned
+replacement path use the candidate. Preserve the archive, original and all
+PVCs throughout rollback. To end inspection, a reviewed follow-up removes the
+inspector and restores global/web/worker and Valkey replicas to one. Merely
+restarting the original corrupt queue does not restore service.
+Require stable Valkey and worker readiness, then fresh correlated Langfuse
+generations from each caller. Safety tests cover offline guards and candidate
+isolation. Run the native checker fixture with
+`python3 -I scripts/ci/langfuse-valkey-recovery-test.py --checker <checker-path>`;
+synthetic corruption tests do not establish production recovery.
+
+Source: [Valkey persistence and AOF corruption](https://valkey.io/topics/persistence/).
+
 ## ClickHouse diagnostic quarantine
 
 Six `system` log tables had corrupt parts and repeated failed merges, generating
