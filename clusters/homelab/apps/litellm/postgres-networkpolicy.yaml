@@ -3,6 +3,8 @@ kind: NetworkPolicy
 metadata:
   name: litellm-postgres
   namespace: ai
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   podSelector:
     matchLabels:
@@ -23,6 +25,8 @@ kind: AuthorizationPolicy
 metadata:
   name: litellm-postgres
   namespace: ai
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
   selector:
     matchLabels:
