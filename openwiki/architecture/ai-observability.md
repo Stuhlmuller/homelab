@@ -84,9 +84,34 @@ preserves a verified original and repairs only a private candidate. Its safety
 tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
 The authorized capture stage stops web/worker/Valkey through GitOps and mounts
 the queue read-only in a credential-free inspector. The helper verifies all
-writers exited before capture to private off-NAS storage. Actual discarded
-bytes and candidate validity remain unmeasured until capture. No live
-replacement path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+writers exited before capture to private off-NAS storage. No live replacement
+path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+
+[PR #1240](https://github.com/Stuhlmuller/homelab/pull/1240) merged as verified
+`fe1838c49eaa11897f5d7f375eae94ba439e3f4f`. Argo observed that revision and
+finished Synced/Healthy; all three writer Pods exited, the read-only inspector
+became Ready, and PostgreSQL/ClickHouse remained Ready. Full static validation,
+26,152 rendered policy checks and all required CI gates passed.
+The private off-NAS archive passed SHA-256 verification. Native Valkey 8.0.11
+validated the repaired candidate: only `appendonly.aof.4.incr.aof` changed,
+from 10,328,329 to 9,987,809 bytes, discarding 340,520 bytes. Original source
+and backup hashes stayed unchanged. This measures bytes, not lost events, and
+does not prove runtime loading or fresh ingestion. Langfuse remains intentionally
+offline pending explicit approval and a separate repository-owned replacement
+and restart path. LiteLLM native/UI-visible key migration remains incomplete.
+
+Native-key cutover inspection confirmed all four mounted caller credentials
+already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
+`GenerateKeyRequest.key` accepts an existing value, so import need not rotate
+clients. Its custom-auth branch returns before database key verification;
+adding database rows alone would not enforce UI revocation. The new
+`scripts/ci/litellm-native-auth-test.py` exercises the actual pinned native
+authentication dependency with an in-memory store: existing keys authenticate;
+blocked/deleted keys, disallowed models and management routes are denied.
+Allowed routes must include both versioned and unversioned paths. This does
+not test a live database, UI mutation or cache invalidation. Database connection,
+one-time import and removal of the custom-auth bypass remain required before
+claiming migration; retain pre-auth telemetry admission and provider controls.
 
 An earlier ClickHouse logging change exposed a sync-wave dependency: its
 generated ConfigMap followed the Deployment, so Argo waited for a Pod that

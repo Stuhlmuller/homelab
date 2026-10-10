@@ -60,6 +60,7 @@ jobs:
           source "${RUNNER_TEMP}/litellm-test/bin/activate"
           python -m pip install 'litellm[proxy]==1.80.8' 'opentelemetry-sdk==1.25.0' 'openai==2.8.0' 'httpx==0.28.1'
           python scripts/ci/litellm-attribution-check.py
+          python scripts/ci/litellm-native-auth-test.py
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh

@@ -302,6 +302,10 @@ live replacement; fixture success alone is not production recovery.
 
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
+`scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
+dependencies and exercises native key lookup, blocking/deletion, model and
+route restrictions against an in-memory store. It does not prove database
+import, UI revocation or cache invalidation in production.
 `scripts/ci/langfuse-staging-check.py` preserves current runtime secret/provider
 contracts and verifies that the incomplete activation hook/template is absent.
 It must pass again after overlapping caller changes. The separate activation
