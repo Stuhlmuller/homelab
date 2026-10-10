@@ -37,6 +37,7 @@ python3 -I scripts/ci/octelium-bazarr-reconcile-test.py
 python3 -I scripts/ci/bazarr-bootstrap-test.py
 python3 -I scripts/ci/nas-media-permissions-test.py
 python3 -I scripts/ci/harbor-bootstrap-test.py
+python3 -I scripts/ci/harbor-vulnerability-exporter-test.py
 python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py
 python3 -I scripts/ci/fleet-apple-csr-test.py
@@ -1455,6 +1456,7 @@ echo "::endgroup::"
 echo "::group::Gluetun CPU capture"
 python3 scripts/ci/gluetun-cpu-profile-check.py
 python3 scripts/ci/deluge-daemon-status-test.py
+python3 -I scripts/ci/deluge-catalog-recovery-test.py
 echo "::endgroup::"
 
 echo "::group::OpenClaw Discord plugin"

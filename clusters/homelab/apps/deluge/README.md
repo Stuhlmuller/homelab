@@ -280,7 +280,8 @@ catalog. If that catalog is empty or invalid while `.torrent` metadata remains,
 startup first restores a non-empty validated catalog backup. When both catalog
 copies are unusable, the repo-owned recovery script rebuilds the catalog only
 if every `.torrent` info hash has an exact fast-resume match and every recovered
-save path stays under `/downloads`. It checks the live fast-resume file first,
+save path stays under `/downloads`, rejecting parent (`..`) components before
+restoring any state. It checks the live fast-resume file first,
 then retained `/config/archive/*.tar.xz` snapshots from newest to oldest. It
 archives the old catalogs, atomically restores the complete fast-resume data
 and catalog, and stops without changing state if validation fails. Downloaded

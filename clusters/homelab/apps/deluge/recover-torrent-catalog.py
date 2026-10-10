@@ -88,7 +88,8 @@ def decode_text(value, field):
 def validated_download_path(value):
     path = PurePosixPath(decode_text(value, "save_path"))
     downloads = PurePosixPath("/downloads")
-    if not path.is_absolute() or (path != downloads and downloads not in path.parents):
+    if (not path.is_absolute() or '..' in path.parts
+            or (path != downloads and downloads not in path.parents)):
         raise ValueError(f"resume data save_path is outside /downloads: {path}")
     return str(path)
 
