@@ -371,7 +371,7 @@ Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
 `--admin-user-name`, `--admin-email` and `--admin-object-id` when creating the
 runtime-only HUMAN admin mapping. Email is contact metadata; the Entra `oid`
 claim supplies identity. Do not commit personal Entra identifiers into this
-public repo. Follow the [migration preflight](octelium.md#entra-identity-migration)
+public repo. Follow the [owner-conversion preflight](octelium.md#entra-owner-conversion)
 before refreshing an older email-based mapping.
 
 The legacy `octelium-public` Cloudflare Tunnel Deployment and its existing
