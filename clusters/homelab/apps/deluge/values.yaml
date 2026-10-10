@@ -23,6 +23,7 @@ controllers:
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
         homelab.rst.io/wireguard-profile-renderer-revision: "strip-ipv6-routes-v1"
         homelab.rst.io/wireguard-profile-ssm-version: "4"
+        homelab.rst.io/catalog-recovery-script-revision: "reject-parent-paths-v1"
     strategy: Recreate
     initContainers:
       download-dirs:

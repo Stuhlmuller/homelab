@@ -71,7 +71,10 @@ credential out of process arguments and environment variables. Harbor omits
 zero-valued severity buckets, so a completed scan without a `Critical` bucket
 correctly contributes zero rather than failing collection.
 
-The ServiceMonitor is scraped every minute. Grafana alerts after five minutes
+The ServiceMonitor is scraped every minute. Collection runs in the background;
+scrapes and readiness probes return cached totals immediately even when Harbor
+responds slowly. Initial collection returns unavailable until totals exist.
+Grafana alerts after five minutes
 when any completed image scan has one or more critical findings. Missing metric
 data and evaluation errors are also alerting. Cached scan totals expire no later
 than six minutes after the last successful collection, so a failed collector
