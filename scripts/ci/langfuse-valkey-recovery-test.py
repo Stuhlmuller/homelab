@@ -83,6 +83,16 @@ class OfflineGuardTests(unittest.TestCase):
         self.pod['spec']['containers'][0]['volumeMounts'][0]['readOnly'] = False
         self.assertEqual(MODULE.offline_pod(self.deployments, [self.pod], writable=True)[1], 'test')
 
+    def test_api_omits_default_false_flags(self):
+        del self.pod['spec']['volumes'][0]['persistentVolumeClaim']['readOnly']
+        del self.pod['spec']['containers'][0]['volumeMounts'][0]['readOnly']
+        self.assertEqual(MODULE.offline_pod(self.deployments, [self.pod], writable=True)[1], 'test')
+        with self.assertRaises(AssertionError):
+            MODULE.offline_pod(self.deployments, [self.pod])
+        self.pod['spec']['containers'][0]['volumeMounts'][0]['readOnly'] = True
+        with self.assertRaises(AssertionError):
+            MODULE.offline_pod(self.deployments, [self.pod], writable=True)
+
 
 class PromotionTests(unittest.TestCase):
     def setUp(self):

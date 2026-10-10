@@ -50,8 +50,11 @@ def offline_pod(deployments, pods, writable=False):
     assert container["command"] == ["/bin/sh", "-ec", "exec sleep infinity"]
     mount = next(m for m in container["volumeMounts"] if m["mountPath"] == "/source")
     volume = next(v for v in spec["volumes"] if v["name"] == mount["name"])
-    assert mount["readOnly"] is (not writable)
-    assert volume["persistentVolumeClaim"] == {"claimName": "langfuse-valkey-data", "readOnly": not writable}
+    # Kubernetes omits default-false fields in live Pod JSON.
+    assert mount.get("readOnly", False) is (not writable)
+    claim = volume["persistentVolumeClaim"]
+    assert claim["claimName"] == "langfuse-valkey-data"
+    assert claim.get("readOnly", False) is (not writable)
     return inspector["metadata"]["name"], inspector["metadata"]["uid"]
 
 
