@@ -20,7 +20,10 @@ by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/READM
 
 ## Caller inventory
 
-### UI-visible key migration (native cutover awaiting deployment)
+### UI-visible key migration (historical pre-cutover plan)
+
+This section records the preparation and its then-open gates. For the deployed
+native-key state, use the [current gateway runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
 The operator requested database-backed keys visible in LiteLLM's UI. The first
 prerequisite added dedicated PostgreSQL storage and separate generated admin/app
@@ -140,7 +143,7 @@ intentionally offline pending approved replacement and a repository-owned
 restart. LiteLLM native/UI-visible key migration had completed, but live
 trace acceptance was still pending at this stage.
 
-#### Recovery and verification
+#### Queue recovery and direct gateway verification
 
 Subsequent October 10 approval explicitly permits the 340,520-byte truncation
 and restart while retaining the off-NAS original. The prepared promotion path
@@ -168,13 +171,16 @@ Langfuse v2 observations recorded `GENERATION`s with the matching input marker,
 
 The first n8n request resolved to a free content-safety model and returned no
 assistant text; the second returned `READY` and is the observation above. These
-are direct gateway requests with each service key, not native app actions.
+are direct gateway requests with each service key, not native app actions. They
+verify the repaired telemetry path but do not close the per-caller native-app
+generation gate in the [workload inventory](../workloads/inventory.md).
 Live n8n database inspection found all three inventoried model nodes targeting
 `openrouter/free` and `litellm-managed`; its two inactive workflows stayed
 inactive. OpenClaw's live default and allowed model are `openrouter/free`, with
 no active auth profiles and both Codex/OpenAI plugins disabled. Native
-post-recovery app actions, visual UI key listing, and an independent datastore
-restore drill remain unverified.
+post-recovery app actions and their correlated generations, visual UI key
+listing, and an independent datastore restore drill remain unverified. The
+native NOFX action is intentionally skipped at the operator's request.
 
 During the final rollout check, `zimaboard-2` became unreachable and its
 terminating `n8n-postgres-0` left n8n at 0/1 Ready even though both Argo
