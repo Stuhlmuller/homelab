@@ -26,6 +26,12 @@ Runtime secret contract: declared SSM parameters use AWS-managed `alias/aws/ssm`
 Secret/state recovery copies and encryption ownership are recorded in
 [State Encryption](../operations/state-encryption.md).
 
+LiteLLM's UI-key migration prepares a dedicated `litellm-postgres` StatefulSet
+inside its existing `ai` Application, with a 20 GiB NFS claim and separate
+admin/app SSM credentials. This prerequisite is not live key migration;
+database readiness and native-auth cutover remain pending. See
+[AI observability](../architecture/ai-observability.md).
+
 ## Import Note
 
 This note reflects the current working tree. Human app access, operator,

@@ -102,6 +102,14 @@ to the in-cluster gateway; none grants direct provider access. Do not read,
 copy or place any of these values in Git, workflow exports or application
 configuration.
 
+LiteLLM's database-key migration adds generated
+`/homelab/litellm/postgres-{admin,app}-password` parameters.
+`ai/litellm-postgres-auth` supplies both only to PostgreSQL;
+`ai/litellm-postgres-client` exposes only the app password for the future gateway
+cutover. Both use `OnChange`. These credentials prepare database storage;
+they do not import service keys or change authentication. Preserve initialized
+role passwords and the database together during recovery.
+
 ## External Secrets AWS Auth Bootstrap
 
 External Secrets cannot read Parameter Store until the cluster has the

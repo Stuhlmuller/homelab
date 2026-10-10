@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: litellm-postgres
+  namespace: ai
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: litellm-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: litellm
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: litellm-postgres
+  namespace: ai
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: litellm-postgres
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/ai/sa/litellm
+      to:
+        - operation:
+            ports: ["5432"]
