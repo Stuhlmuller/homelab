@@ -82,8 +82,10 @@ nix develop --command python3 -I scripts/tailscale-ci-configure.py
 nix develop --command python3 -I scripts/tailscale-ci-configure.py --execute
 ```
 
-Signing uses `tailscale lock sign file:<private temporary file>`. Wrapped keys
-are saved at `~/.config/homelab/tailscale/ci-signed-keys.json` with mode `0600`
+Signing uses `tailscale lock sign file:<private temporary file>`. The helper
+requires exactly one new trusted credential signer with matching auth-key metadata
+and no unrelated trust changes. Wrapped keys and that separate public authority
+identity are saved at `~/.config/homelab/tailscale/ci-signed-keys.json` with mode `0600`
 in an owned `0700` directory before GitHub publication. Keep an encrypted private
 backup of that cache: retries reuse the same signatures instead of adding new
 trusted authorities. An uncached existing signature fails closed; restore the
@@ -137,17 +139,22 @@ by default; the helper never disables Tailnet Lock or removes unrelated signers.
 It deletes old wrapped cache entries only after authority removal is confirmed.
 Do not roll back a generation or restore revoked keys; prepare a fresh generation.
 
-A pre-signed key embeds a private Tailnet Lock signing key. Its cryptographic
-signing authority is broader than its normal auth-key tag permissions, and that
-authority remains trusted after auth-key expiry/revocation. The explicit retirement
-step is therefore required, not optional cleanup. Treat any leak as a signing-key
+A pre-signed key embeds a delegated private node-signing key and its credential,
+not the trusted authority's private voting key. The CLI creates a distinct
+trusted credential signer; the private cache records its public identity for
+reuse and retirement. Delegated node-signing capability is broader than normal
+auth-key tag permissions and survives auth-key expiry/revocation while that
+authority remains trusted. The explicit retirement step is therefore required,
+not optional cleanup. Treat any leak as a signing-key
 incident using Tailscale's recovery procedure, not merely an auth-key rotation.
 This deployment intentionally accepts that tradeoff to retain Tailnet Lock while
 using ephemeral GitHub-hosted runners.
 
 Primary references: [pinned GitHub Action Tailnet Lock setup](https://github.com/tailscale/github-action/blob/d1b6cd204f8dceda5b3eaad7f1f767be390056cd/README.md#tailnet-lock),
 [CLI signing and authority removal](https://tailscale.com/docs/reference/tailscale-cli/lock),
-[provider auth-key resource](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/tailnet_key).
+[provider auth-key resource](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/tailnet_key),
+[pinned CLI authority creation](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/tailscale/cli/tailnet-lock.go#L750-L783),
+[separate delegated key construction](https://github.com/tailscale/tailscale/blob/v1.102.3/ipn/ipnlocal/tailnet-lock.go#L1220-L1249).
 
 ## API proxy acceptance
 

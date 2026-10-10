@@ -20,15 +20,15 @@ CHECKER = None
 
 
 class ManifestTests(unittest.TestCase):
-    def test_inspector_retirement_keeps_writers_offline(self):
+    def test_restored_writers_have_no_inspector(self):
         app = MODULE.ROOT / "clusters/homelab/apps/langfuse"
         values = json.loads(subprocess.check_output(
             ["yq", "-o=json", ".langfuse", str(app / "values.yaml")], text=True))
-        self.assertEqual([values["replicas"], values["web"]["replicas"], values["worker"]["replicas"]], [0, 0, 0])
+        self.assertEqual([values["replicas"], values["web"]["replicas"], values["worker"]["replicas"]], [1, 1, 1])
         valkey = json.loads(subprocess.check_output(
             ["yq", "-o=json", 'select(.metadata.name == "langfuse-valkey" and .kind == "Deployment")',
              str(app / "datastores.yaml")], text=True))
-        self.assertEqual(valkey["spec"]["replicas"], 0)
+        self.assertEqual(valkey["spec"]["replicas"], 1)
         self.assertNotIn("valkey-inspection.yaml", (app / "kustomization.yaml").read_text())
 
 

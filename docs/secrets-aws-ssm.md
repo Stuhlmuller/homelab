@@ -92,9 +92,10 @@ to GitHub. The three old client-ID variables are retired only after all secret
 writes and metadata checks succeed. Dormant provider OIDC identities remain
 protected pending separate retirement.
 
-Tailnet Lock remains enabled. Wrapped keys include private signing authority;
-protect the publisher's `0600` cache outside git and retain an encrypted recovery
-copy. Increment the committed generation and rotate every 60 days (90-day key
+Tailnet Lock remains enabled. Wrapped keys include a delegated private
+node-signing key, not the trusted authority's private voting key. Protect the
+publisher's `0600` cache, including its separate public authority identities,
+outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
 expiry), then explicitly retire old cached signing authorities after CI
 acceptance. Expiring an auth key alone does not remove that authority. The
 [module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,

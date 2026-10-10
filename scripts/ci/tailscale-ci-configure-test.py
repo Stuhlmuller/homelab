@@ -46,6 +46,7 @@ class FakeCommands(BASE.FakeCommands):
         self.fail_publication = False
         self.missing_metadata = False
         self.retired = []
+        self.authority_change = None
         for environment, _, name in MODULE.BINDINGS.values():
             self.names["variable", environment] = [{"name": name}]
 
@@ -65,10 +66,13 @@ class FakeCommands(BASE.FakeCommands):
                 assert path.stat().st_mode & 0o777 == 0o600
                 raw = path.read_text()
                 stable_id = raw.removeprefix(MODULE.AUTH_PREFIX).split("-", 1)[0]
-                public = hashlib.sha256(stable_id.encode()).digest()
+                public = hashlib.sha256((stable_id + "delegate").encode()).digest()
+                authority = "tlpub:" + hashlib.sha256((stable_id + "authority").encode()).hexdigest()
                 private = b"0" * 32 + public
                 wrapped = raw + "--TL" + base64.b64encode(b"signature").decode().rstrip("=") + "-" + base64.b64encode(private).decode().rstrip("=")
-                self.trusted["tlpub:" + public.hex()] = {"purpose": "pre-auth key", "authkey_stableid": stable_id}
+                self.trusted[authority] = {"purpose": "pre-auth key", "authkey_stableid": stable_id}
+                if self.authority_change:
+                    self.authority_change(self.trusted, authority)
                 return wrapped + "\n"
             if args[1:3] == ["lock", "remove"]:
                 self.retired.append(args[3])
@@ -135,6 +139,10 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         self.assertEqual(self.cache.stat().st_mode & 0o777, 0o600)
         self.assertEqual(self.cache.parent.stat().st_mode & 0o777, 0o700)
         self.assertEqual(len(list(self.cache.parent.iterdir())), 2)  # cache and mutex; raw keys removed
+        for record in json.loads(self.cache.read_text()):
+            delegate = base64.b64decode(record["wrapped"].split("--TL", 1)[1].split("-", 1)[1] + "==")[32:]
+            self.assertNotEqual(record["authority"], "tlpub:" + delegate.hex())
+            self.assertIn(record["authority"], fake.trusted)
         first_sign = next(i for i, call in enumerate(fake.calls) if call[1] == "CI key signing")
         self.assertEqual(sum(call[1] == "verified main lookup" for call in fake.calls[:first_sign]), 2)
 
@@ -144,6 +152,76 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
         self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
         self.assertEqual(len(fake.trusted), 4)
+
+    def test_unexpected_signing_authority_changes_stop_before_publication(self):
+        def remove_added(trusted, authority):
+            del trusted[authority]
+
+        def wrong_metadata(trusted, authority):
+            trusted[authority]["purpose"] = "unrelated signer"
+
+        def duplicate_match(trusted, authority):
+            trusted["tlpub:" + "c" * 64] = trusted[authority].copy()
+
+        def unrelated_added(trusted, authority):
+            trusted["tlpub:" + "c" * 64] = {}
+
+        def unrelated_removed(trusted, authority):
+            del trusted[SIGNER]
+
+        def unrelated_changed(trusted, authority):
+            trusted[SIGNER] = {"purpose": "changed"}
+
+        for mutation in (remove_added, wrong_metadata, duplicate_match, unrelated_added,
+                         unrelated_removed, unrelated_changed):
+            with self.subTest(mutation=mutation.__name__):
+                fake = FakeCommands()
+                fake.authority_change = mutation
+                status, _ = self.run_script(fake, ["--execute"])
+                self.assertEqual(status, 1)
+                self.assertEqual(fake.writes, [])
+                self.assertFalse(self.cache.exists())
+
+    def test_cached_authority_identity_or_metadata_mismatch_stops_reuse_and_retirement(self):
+        for variant in ("identity", "purpose", "stable_id", "duplicate"):
+            with self.subTest(variant=variant):
+                self.cache.unlink(missing_ok=True)
+                fake = FakeCommands()
+                self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+                records = json.loads(self.cache.read_text())
+                authority = records[0]["authority"]
+                if variant == "identity":
+                    records[0]["authority"] = SIGNER
+                    self.cache.write_text(json.dumps(records))
+                elif variant == "purpose":
+                    fake.trusted[authority]["purpose"] = "unrelated signer"
+                elif variant == "stable_id":
+                    fake.trusted[authority]["authkey_stableid"] = "unrelated"
+                else:
+                    fake.trusted["tlpub:" + "c" * 64] = fake.trusted[authority].copy()
+                writes = len(fake.writes)
+                self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+                self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 1)
+                self.assertEqual(len(fake.writes), writes)
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
+
+    def test_malformed_or_wrong_provider_wrapper_stops_before_publication(self):
+        for invalid in ("malformed", "wrong-prefix"):
+            fake = FakeCommands()
+            command = fake.__call__
+
+            def altered(args, operation, *, data=None):
+                value = command(args, operation, data=data)
+                if args[:3] == [MODULE.TAILSCALE, "lock", "sign"]:
+                    return value + "!" if invalid == "malformed" else "changed" + value
+                return value
+
+            with patch.object(MODULE.GUARDS, "command", side_effect=altered), \
+                    redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                self.assertEqual(MODULE.main(["--execute"]), 1)
+            self.assertEqual(fake.writes, [])
+            self.assertFalse(self.cache.exists())
 
     def test_partial_publication_or_missing_metadata_retains_all_variables(self):
         for variant in ("fail_publication", "missing_metadata"):
@@ -265,6 +343,18 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         self.assertEqual(len(json.loads(self.cache.read_text())), 3)
         self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 0)
         self.assertEqual(len(fake.retired), 3)
+
+    def test_previous_authority_metadata_mismatch_never_removes_any_signer(self):
+        fake = FakeCommands()
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+        previous = json.loads(self.cache.read_text())[0]["authority"]
+        fake.outputs = outputs(generation=2)
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+        fake.trusted[previous]["authkey_stableid"] = "unrelated"
+        self.assertEqual(self.run_script(fake, ["--retire-previous", "--execute"])[0], 1)
+        self.assertEqual(fake.retired, [])
+        self.assertIn(previous, fake.trusted)
+        self.assertEqual(len(json.loads(self.cache.read_text())), 6)
 
     def test_generation_rollback_and_uncached_retirement_fail_closed(self):
         fake = FakeCommands()

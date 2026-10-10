@@ -5,7 +5,7 @@ description: "Terragrunt registration, Argo CD runtime ownership, operator excep
 tags: ["architecture", "argocd", "terragrunt"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T21:24:31.626Z
+    at: 2026-10-10T22:19:34.059Z
 sources:
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf

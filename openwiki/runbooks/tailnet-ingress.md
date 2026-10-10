@@ -28,6 +28,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
+  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+    resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
@@ -42,10 +44,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T21:39:58.912Z" }
+generated: { by: "codex", at: "2026-10-10T22:19:34.059Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T21:57:36.377Z
+    at: 2026-10-10T22:19:34.059Z
 ---
 
 # Tailnet And App Ingress
@@ -128,10 +130,12 @@ same guarded process again.
 CI uses three provider-managed reusable ephemeral keys, signed on the trusted
 Mac and published by `tailscale-ci-configure.py`. Run its read-only preview and
 then `--execute`; it accepts no arbitrary key or GitHub target. Preserve its
-private signature cache. Rotate the committed generation every 60 days, before
-90-day expiry, and verify protected plan/apply/Cordium acceptance. Then use
+private signature cache, which stores each wrapper and its separately verified
+public credential authority identity. The embedded private key delegates node
+signing; it is not the authority's private voting key. Rotate the committed
+generation every 60 days, before 90-day expiry, and verify protected plan/apply/Cordium acceptance. Then use
 `--retire-previous --execute` to remove only cached older-generation signing
-authorities. Expired auth keys alone do not remove embedded signing authority.
+authorities. Expired auth keys alone do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
 tradeoff. Each CI job must supply a private `statedir` to the pinned action.

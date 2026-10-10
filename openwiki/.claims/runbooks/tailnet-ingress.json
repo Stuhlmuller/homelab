@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d3b0af1f4607dab55d522e549ef0784919ecb5b5b5a06a7bde29aa7ef7a74e48",
+  "pageVersion": "sha256:765253a8a2452ff66eb5644f0baeffc980ac9855aa1f1860aa696eb84b3fbd74",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -54,8 +54,12 @@
     },
     {
       "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
-      "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts; the CI publisher instead signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards, retiring old variables only after all writes and metadata checks.",
+      "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts. The CI publisher signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards; it caches the separate credential authority identity alongside the wrapped delegated node-signing key, and retires old variables only after all secret writes and metadata checks.",
       "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L157",
+          "version": "repo-lines-v1:sha256:ff913f22b25dc3f23ca4ebc847cb1afae5c6e39bfc3aab0f937255f0890f2b2f:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
+        },
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
           "version": "repo-file-v1:sha256:306ff8ce24d966f3c233427b37484a2ea6b9989fa1e644328c8976fb1dd6c22f"
@@ -65,8 +69,8 @@
           "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:603fb298567b0e749756958f37a6551c0ab65c3c5d7dac1350dcb73e420cab69"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L311",
+          "version": "repo-lines-v1:sha256:5f9a2eabea0054ed27a91335ea71d532aafe93034d03580c1ec06a989a9539d4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -145,6 +149,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:57:36.377Z"
+    "at": "2026-10-10T22:19:34.059Z"
   }
 }

@@ -106,9 +106,9 @@ def lock_status():
     return trusted
 
 
-def wrapped_public(wrapped):
-    # Upstream tka.DecodeWrappedAuthkey: --TL<signature>-<Ed25519 private key>.
-    # The last 32 bytes of the 64-byte Ed25519 private key are its public key.
+def validate_wrapped_key(wrapped):
+    # Upstream tka.DecodeWrappedAuthkey: --TL<credential>-<delegated private key>.
+    # The delegated key is distinct from the trusted credential signer.
     try:
         _, suffix = wrapped.split("--TL", 1)
         signature, encoded = suffix.split("-", 1)
@@ -116,7 +116,6 @@ def wrapped_public(wrapped):
         sig = base64.b64decode(signature + "=" * (-len(signature) % 4), validate=True)
         if len(raw) != 64 or not sig or len(wrapped) > 16384:
             raise ValueError
-        return "tlpub:" + raw[32:].hex()
     except (ValueError, TypeError, AttributeError):
         raise GUARDS.Failure("Signed-key output or private cache is invalid; details withheld") from None
 
@@ -141,12 +140,14 @@ def read_cache():
     if not isinstance(value, list):
         raise GUARDS.Failure("Tailscale private cache is invalid")
     for entry in value:
-        if (set(entry) != {"identity", "generation", "fingerprint", "wrapped"}
+        if (set(entry) != {"identity", "generation", "fingerprint", "wrapped", "authority"}
                 or entry["identity"] not in BINDINGS or type(entry["generation"]) is not int
-                or not re.fullmatch(r"[0-9a-f]{64}", entry["fingerprint"])):
+                or not re.fullmatch(r"[0-9a-f]{64}", entry["fingerprint"])
+                or not re.fullmatch(r"tlpub:[0-9a-f]{64}", entry["authority"])):
             raise GUARDS.Failure("Tailscale private cache is invalid")
-        wrapped_public(entry["wrapped"])
-    if len({entry["fingerprint"] for entry in value}) != len(value):
+        validate_wrapped_key(entry["wrapped"])
+    if (len({entry["fingerprint"] for entry in value}) != len(value)
+            or len({entry["authority"] for entry in value}) != len(value)):
         raise GUARDS.Failure("Tailscale private cache contains duplicate key records")
     return value
 
@@ -179,11 +180,12 @@ def fingerprint(entry):
     return hashlib.sha256(entry["key"].encode()).hexdigest()
 
 
-def authority_matches(wrapped, trusted):
-    metadata = trusted.get(wrapped_public(wrapped))
+def authority_matches(wrapped, authority, trusted):
     stable_id = wrapped.removeprefix(AUTH_PREFIX).split("-", 1)[0]
-    return (isinstance(metadata, dict) and metadata.get("purpose") == "pre-auth key"
-            and metadata.get("authkey_stableid") == stable_id)
+    matches = [public for public, metadata in trusted.items()
+               if isinstance(metadata, dict) and metadata.get("purpose") == "pre-auth key"
+               and metadata.get("authkey_stableid") == stable_id]
+    return matches == [authority]
 
 
 def signed_keys(keys, cache):
@@ -195,7 +197,7 @@ def signed_keys(keys, cache):
             saved = matches[0]
             if (saved["identity"] != identity or saved["generation"] != entry["generation"]
                     or not saved["wrapped"].startswith(entry["key"] + "--TL")
-                    or not authority_matches(saved["wrapped"], trusted)):
+                    or not authority_matches(saved["wrapped"], saved["authority"], trusted)):
                 raise GUARDS.Failure("Cached signed key no longer matches trusted provider state")
             result[identity] = saved["wrapped"]
             continue
@@ -207,10 +209,19 @@ def signed_keys(keys, cache):
             raw.flush()
             wrapped = GUARDS.command([TAILSCALE, "lock", "sign", "file:" + raw.name],
                                      "CI key signing").strip()
-        if not wrapped.startswith(entry["key"] + "--TL") or not authority_matches(wrapped, lock_status()):
+        validate_wrapped_key(wrapped)
+        after = lock_status()
+        added = set(after) - set(trusted)
+        # CLI wrapAuthKey adds one credential signer; its separate delegated key
+        # is embedded in the wrapper. Preserve the exact successful CLI receipt.
+        if (not wrapped.startswith(entry["key"] + "--TL") or len(added) != 1
+                or any(public not in after or after[public] != metadata for public, metadata in trusted.items())):
+            raise GUARDS.Failure("Signing changed an unexpected trusted authority; publication stopped")
+        authority = added.pop()
+        if not authority_matches(wrapped, authority, after):
             raise GUARDS.Failure("New signed key did not match the provider key and trusted signing authority")
         cache.append({"identity": identity, "generation": entry["generation"],
-                      "fingerprint": fingerprint(entry), "wrapped": wrapped})
+                      "fingerprint": fingerprint(entry), "wrapped": wrapped, "authority": authority})
         save_cache(cache)  # Persist each signature before any GitHub write so retry does not add authorities.
         result[identity] = wrapped
     return result
@@ -247,9 +258,9 @@ def retire(keys, cache):
     signed_keys(keys, cache)  # All current keys must already be cached; this cannot create new signatures.
     for record in previous_records(keys, cache):
         trusted = lock_status()
-        public = wrapped_public(record["wrapped"])
+        public = record["authority"]
         if public in trusted:
-            if not authority_matches(record["wrapped"], trusted):
+            if not authority_matches(record["wrapped"], public, trusted):
                 raise GUARDS.Failure("Previous signing authority does not match the private CI cache")
             GUARDS.command([TAILSCALE, "lock", "remove", public], "previous CI signing-authority retirement")
             if public in lock_status():
