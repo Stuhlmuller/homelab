@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:afc90144e2361746ab781a473cf0ef4bea9bb2aeb7452c524a8461e133b4d995",
+  "pageVersion": "sha256:f365b32f52fecf2a63eaa533da830286f2f7f33818bf04c70ff471f2435acb13",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -40,11 +40,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
@@ -54,8 +54,12 @@
     },
     {
       "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
-      "statement": "Fixed callback helpers preserve existing webhook credentials, use non-executing preflights and require both newer delivery IDs and timestamps from saved cutover receipts; the CI helper publishes only three provider-output identity variables behind current-main and environment-protection guards.",
+      "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts. The CI publisher signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards; it caches the separate credential authority identity alongside the wrapped delegated node-signing key, and retires old variables only after all secret writes and metadata checks.",
       "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L161",
+          "version": "repo-lines-v1:sha256:ac9718d5c69bf763dcf45a1779f1cab09b81a1ec04da62df5a2d93aeaff37b77:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
+        },
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
           "version": "repo-file-v1:sha256:306ff8ce24d966f3c233427b37484a2ea6b9989fa1e644328c8976fb1dd6c22f"
@@ -65,22 +69,22 @@
           "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:bf1b844976c62ee1ede86ba454170cf0a3720ce209fd5da1600945c4470893a8"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L324",
+          "version": "repo-lines-v1:sha256:54cf2770458ad4dab2a698f385dc5eca42201c4906f5b4586d68b947292f4316:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
     {
       "id": "claim_4401749129e3443ea1ab04852a131389",
-      "statement": "The Mac helper's --resume-only mode reconnects the verified saved tailnet profile and requires the ingress peer online without migrating Desktop credentials or the local carrier.",
+      "statement": "The Mac helper's --resume-only mode reconnects the verified saved homelab profile, polls at most 20 times with half-second pauses while retaining each CLI call's 45-second timeout, and requires the same owner/profile and online ingress peer without migrating Desktop credentials or the carrier.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
         }
       ]
     },
@@ -106,13 +110,59 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
+          "version": "repo-file-v1:sha256:dc793b4994e877b3ff26230c763a07df543f215e83f8f297021fe660572d68c2"
+        }
+      ]
+    },
+    {
+      "id": "claim_edab07e8064e49849b7bb6fd9bacd525",
+      "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy and two Funnel proxies after verifying exact controller ownership, Ready state, tailnet, tags, published addresses, public node/rotation keys and local peer identity; already-signed targets are skipped without adding signing authorities.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md#L74-L95",
+          "version": "repo-lines-v1:sha256:b42a967cf619c082eb5e6fe842fa7e93f5b602bdeb1d02629afbdefda918a789:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOWY1Mzg4ZTg3YjA3NDg4MjBmODBmNzllNWQ2YmE1MzYwOWNhNzI2MzkyMDhlZjA1MDE0ZWNkN2MwYmVlNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjBhY2QxNzk2MzA4MDA5M2FhMTEyZGU1NzhjZDY1YzY4Y2U4NDM4MjQyNGEzZjRiZGVlZTBjNzNhODM1YWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2YzZiNWJhMmM4YjA5MDcyNjEwZmI0MjRlMjdhZDIwNGQ5ZDFiZTExOGM2YjBmNDhjMmNkMGY3ODA5YTQ4NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiNmY5MzM0MWE4MzM3YjFlYTA3MjBmMjk1Y2ZiNGY0YjljN2I1NjAwN2VmYmIwZTc5OGU5MDMyYTdkYTYyYjkifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ingress-sign.py",
+          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
+        }
+      ]
+    },
+    {
+      "id": "claim_a059c652889b45e79db0e082f246ab7a",
+      "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from the four fixed LAN node addresses and their individually verified cni0 bridge /32s; node-to-Service SNAT requires those bridge sources, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:5822456261be6dbdd1c6e6a435927111761b33f4b2f70d8fafde8d9222cb8d27"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:9ecd7ae83e632b874acb5437c8301edacc5761b8da29457eaab0d1a479586c03"
+        }
+      ]
+    },
+    {
+      "id": "claim_208c9773be7a4580a2432d6ead9cd707",
+      "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L126-L155",
+          "version": "repo-lines-v1:sha256:a6b451b4ea561729e49731ddcff0d38bb542df71d21bc376cdf3007c6f4101be:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYzEzMTA4MWJjZjk2ZTdlMzJlM2FlYWIzYWFmZTI3NGJiY2VmNGUxMzg2YzFmMzNkMGRmMGE0ZmM5NjYxZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MjY0NDYyYzNiOWM5OWYzMjgyNGY5MmFjYmZjZmNkNDI3MzliNzA2MGRjMjhhNTdlMjI4ODBmNGNiOWZhNjcifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L254-L311",
+          "version": "repo-lines-v1:sha256:0060cbd98b372f78c13341a3b1c6050d18093086e6082c90a389d14e6d55f4e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1NzJkYTlmMGM5ZTFkZGRhYzZkOWY1MWE2YjVjMjM2MjY0N2NiOWNjMDQyMGNhNGJhNWM5OTMzZWJlMjhiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMmQ2YjgwZTRlNjEwMjg2YzA3ZjdmNThiODU1YWFhM2YyZWRkOGYzMjhiNzI4MWNjYWEwMWY5OTA2Yzg0MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMmVjODA5OTE5ZWEyYzZlNTg3ODQ1OTViZGJiNmQwYzM4MTczNzhhOTkyNGQ5N2Q2ZDFmYTZkMjdlM2NjNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjAxMTdmMTBiY2VjZDlhZWI4OWIzYzhlMmFlYmYyNDJjODk4NTZlMDQxNzRkYjBlZjUwZjI1MWY4ZjQ4YTQifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T19:59:10.633Z"
+    "at": "2026-10-10T22:48:00.170Z"
   }
 }

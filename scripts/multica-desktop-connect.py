@@ -13,6 +13,7 @@ import ssl
 import subprocess
 import sys
 import tempfile
+import time
 from urllib.parse import urlsplit
 
 API = "https://multica.stinkyboi.com"
@@ -36,10 +37,21 @@ def mesh_addresses(resume=False):
             or not own.get("ID") or not own.get("UserID") or not own.get("TailscaleIPs")
             or own.get("Expired") or before.get("AuthURL")):
         raise RuntimeError("An existing authenticated homelab Tailscale profile is required")
-    if before.get("BackendState") == "Stopped" and resume:
+    reconnecting = before.get("BackendState") == "Stopped" and resume
+    if reconnecting:
         # No flags: reconnect the current profile without changing saved preferences.
         run(TAILSCALE, "up")
     after = status()
+    # The macOS CLI can return before its network extension finishes connecting.
+    for _ in range(20):
+        if not reconnecting or (after.get("BackendState") == "Running" and after.get("Self", {}).get("Online")):
+            break
+        if (after.get("Self", {}).get("ID") != own["ID"]
+                or after.get("Self", {}).get("UserID") != own["UserID"]
+                or after.get("CurrentTailnet", {}).get("MagicDNSSuffix") != TAILNET):
+            break
+        time.sleep(0.5)
+        after = status()
     if (after.get("BackendState") != "Running" or not after.get("Self", {}).get("Online")
             or after.get("Self", {}).get("ID") != own["ID"]
             or after.get("Self", {}).get("UserID") != own["UserID"]
