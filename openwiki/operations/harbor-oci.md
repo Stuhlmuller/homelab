@@ -3,9 +3,6 @@ type: operation
 title: "Harbor Private OCI Registry"
 description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
 tags: ["harbor", "oci", "packages", "gitops"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T21:57:36.377Z
 sources:
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
@@ -29,7 +26,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T21:57:36.377Z" }
+generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T22:36:11.265Z
 ---
 
 # Harbor Private OCI Registry
@@ -190,8 +190,8 @@ snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
 
-`harbor-mirror.yml` accepts only `image_scope=all` (the default), `fleet`,
-`bazarr`, `traefik`, or `chainguard`.
+`harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
+`bazarr`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,

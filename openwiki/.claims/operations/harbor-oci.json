@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d3ac917f535509dc798a0280264f83e8d31a341eed2cf4cd3773fbff86e6b96c",
+  "pageVersion": "sha256:4fc3e7bf3269a1de05c914b36a9db751c8383b5caec67bba7d41ee344daf34cc",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -53,7 +53,7 @@
       ]
     },
     {
-      "id": "claim_7f59ba79be0046418d48dbf929924297",
+      "id": "claim_590031ddaaf7450ab33897e0d461f9a8",
       "statement": "The Traefik registry listener permits only the four fixed Talos LAN node addresses and four individual cni0 bridge addresses on port 9443, retaining notPrincipals and OCI/token-only routing; whole Pod CIDRs remain excluded and Flannel NetworkPolicy is not enforced.",
       "evidence": [
         {
@@ -71,7 +71,7 @@
       ]
     },
     {
-      "id": "claim_b6720f6b2b6148178913f9a3ca709742",
+      "id": "claim_5fbfe74ec1e54bcc8a76911c6ac51cab",
       "statement": "The staged cutover requires registry policy convergence and successful uncached image pulls from every node before advancing Harbor DNS; the October 10 failed first pull and unresolved zimaboard-2 reboot do not establish rollout success or durable node recovery.",
       "evidence": [
         {
@@ -91,6 +91,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T21:57:36.377Z"
+    "at": "2026-10-10T22:36:11.265Z"
   }
 }

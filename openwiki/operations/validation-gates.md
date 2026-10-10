@@ -54,10 +54,10 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
-generated: { by: "codex", at: "2026-10-10T22:19:34.059Z" }
+generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:19:34.059Z
+    at: 2026-10-10T22:36:11.265Z
 ---
 
 # Validation Gates

@@ -52,7 +52,7 @@ IaC/operator/**/terragrunt.values.hcl
 .DS_Store
 .pytest_cache/
 __pycache__/
-*.pyc
+*.py[cod]
 plan.out
 plan.json
 *.plan
@@ -67,29 +67,12 @@ secrets/
 *.key
 *.crt
 
-# Kubernetes and local cluster credentials
-*.secret.yaml
-secrets/
-.kube/
-kubeconfig*
+# Talos client credentials
 .talos/talosconfig
-*.key
-*.crt
-
-# Python bytecode
-__pycache__/
-*.py[cod]
 
 #Ignore vscode AI rules
 .github/copilot-instructions.md
 
-# Obsidian local workspace state
-docs/knowledge-base/.obsidian/workspace*.json
-docs/knowledge-base/.obsidian/plugins/
-docs/knowledge-base/.obsidian/snippets/
-docs/knowledge-base/.trash/
-docs/knowledge-base/.obsidian/appearance.json
-docs/knowledge-base/.obsidian/graph.json
 # Talos generated/local credential material
 .talos/secrets.yaml
 .talos/controlplane.yaml

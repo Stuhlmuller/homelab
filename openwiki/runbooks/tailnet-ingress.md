@@ -44,10 +44,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:19:34.059Z" }
+generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:19:34.059Z
+    at: 2026-10-10T22:36:11.265Z
 ---
 
 # Tailnet And App Ingress

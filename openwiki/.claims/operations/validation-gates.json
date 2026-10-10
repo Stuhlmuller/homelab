@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b0e07a871c4fe19279544903a3bf65f9762a7ad1ad5e1724286eca13526c8779",
+  "pageVersion": "sha256:fe064cbc97fd5586350e2ec3befbda0ec5a8cb87370637e25d36b8060e54b926",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -157,7 +157,7 @@
       ]
     },
     {
-      "id": "claim_5104356bd18d495ea36ca01a2201fb0f",
+      "id": "claim_a7ed2b737fcd4aeb8d2d62a4c1910698",
       "statement": "The static gate tests fixed ingress ownership and peer identity, null empty CLI peer classes, trusted homelab signers, distinct delegated and authority keys, exact new-authority trust changes, metadata-bound cache reuse and generation-specific retirement, and secret publication ordering; real mesh and CI acceptance remain separate from offline checks.",
       "evidence": [
         {
@@ -181,6 +181,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:19:34.059Z"
+    "at": "2026-10-10T22:36:11.265Z"
   }
 }

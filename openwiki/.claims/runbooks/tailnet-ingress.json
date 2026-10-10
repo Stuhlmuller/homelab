@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:765253a8a2452ff66eb5644f0baeffc980ac9855aa1f1860aa696eb84b3fbd74",
+  "pageVersion": "sha256:2edc3db12513c890c8fc4941ae4ca323e32edbc245499c0a56b3c4906513ba37",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -115,7 +115,7 @@
       ]
     },
     {
-      "id": "claim_b957a7c01ccc404a925acd5fef0c760e",
+      "id": "claim_edab07e8064e49849b7bb6fd9bacd525",
       "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy and two Funnel proxies after verifying exact controller ownership, Ready state, tailnet, tags, published addresses, public node/rotation keys and local peer identity; already-signed targets are skipped without adding signing authorities.",
       "evidence": [
         {
@@ -129,7 +129,7 @@
       ]
     },
     {
-      "id": "claim_c50b266c9794472d9c1fc8184a7eb055",
+      "id": "claim_a059c652889b45e79db0e082f246ab7a",
       "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from the four fixed LAN node addresses and their individually verified cni0 bridge /32s; node-to-Service SNAT requires those bridge sources, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
       "evidence": [
         {
@@ -149,6 +149,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:19:34.059Z"
+    "at": "2026-10-10T22:36:11.265Z"
   }
 }

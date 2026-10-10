@@ -26,10 +26,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T22:19:34.059Z" }
+generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:19:34.059Z
+    at: 2026-10-10T22:36:11.265Z
 ---
 
 # Secrets And Identity
