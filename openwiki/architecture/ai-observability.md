@@ -171,6 +171,13 @@ inactive. OpenClaw's live default and allowed model are `openrouter/free`, with
 no active auth profiles and both Codex/OpenAI plugins disabled. Native
 post-recovery app actions, visual UI key listing, and an independent datastore
 restore drill remain unverified.
+
+During the final rollout check, `zimaboard-2` became unreachable and its
+terminating `n8n-postgres-0` left n8n at 0/1 Ready even though both Argo
+Applications reported Synced/Healthy. Kubernetes recreated PostgreSQL on
+`zimaboard-0` after the node returned; PostgreSQL and n8n then reached 1/1
+without manual mutation. Keep workload readiness in release checks rather than
+using Argo health alone for this dependency chain.
 LiteLLM's later native-key rollout is now recorded in its
 [owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
