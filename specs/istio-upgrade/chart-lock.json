@@ -1,0 +1,122 @@
+[
+  {
+    "chart": "base",
+    "version": "1.27.3",
+    "url": "https://istio-release.storage.googleapis.com/charts/base-1.27.3.tgz",
+    "sha256": "4b3069a8f68224a385725fb9c64b47282ff62eefdd306229258000f6f04fceb6"
+  },
+  {
+    "chart": "istiod",
+    "version": "1.27.3",
+    "url": "https://istio-release.storage.googleapis.com/charts/istiod-1.27.3.tgz",
+    "sha256": "560adf601edaf0682a8126a6c54eafc2636878bf452a113d83f50b78230a1174"
+  },
+  {
+    "chart": "cni",
+    "version": "1.27.3",
+    "url": "https://istio-release.storage.googleapis.com/charts/cni-1.27.3.tgz",
+    "sha256": "fa60f8b5e80ee72c48ea72f2a0b63f9ed1b82fdffc57d1c59241bbbcba2b9f0a"
+  },
+  {
+    "chart": "ztunnel",
+    "version": "1.27.3",
+    "url": "https://istio-release.storage.googleapis.com/charts/ztunnel-1.27.3.tgz",
+    "sha256": "6573f2645e87d5161ea5bc143c3ff9782dd392fd74b5f5e39326a05d81f174d1"
+  },
+  {
+    "chart": "gateway",
+    "version": "1.27.3",
+    "url": "https://istio-release.storage.googleapis.com/charts/gateway-1.27.3.tgz",
+    "sha256": "3f015a461362227ad8e70955129a0f4389d6dc545977b9088b15aa44d2bad78b"
+  },
+  {
+    "chart": "base",
+    "version": "1.28.10",
+    "url": "https://istio-release.storage.googleapis.com/charts/base-1.28.10.tgz",
+    "sha256": "32b3d9833cf6473e8e567407855c029012b1080416ae4f9ee7bd4ce93617e132"
+  },
+  {
+    "chart": "istiod",
+    "version": "1.28.10",
+    "url": "https://istio-release.storage.googleapis.com/charts/istiod-1.28.10.tgz",
+    "sha256": "125367e6eec08c8e7fc6e165c35ecf306dc23ea069b7953aed57fe83098004f1"
+  },
+  {
+    "chart": "cni",
+    "version": "1.28.10",
+    "url": "https://istio-release.storage.googleapis.com/charts/cni-1.28.10.tgz",
+    "sha256": "7fd3133f6232c590493bb94974b2647dc287cd9a3a6acde621f6d4c7c1939295"
+  },
+  {
+    "chart": "ztunnel",
+    "version": "1.28.10",
+    "url": "https://istio-release.storage.googleapis.com/charts/ztunnel-1.28.10.tgz",
+    "sha256": "02dc5cee6532b0ed7ebf289e4dff003518a9bda5f09ab1ff7eff8c2530d6fc49"
+  },
+  {
+    "chart": "gateway",
+    "version": "1.28.10",
+    "url": "https://istio-release.storage.googleapis.com/charts/gateway-1.28.10.tgz",
+    "sha256": "7c79ecf1ca2b79760be73ad521b50cc1fa573297c41169042a116a13ce3005df"
+  },
+  {
+    "chart": "base",
+    "version": "1.29.8",
+    "url": "https://istio-release.storage.googleapis.com/charts/base-1.29.8.tgz",
+    "sha256": "6bd9f4b75d9223bd6e86a9a0136f7ffb6619386174294a1e74f2122034a21043"
+  },
+  {
+    "chart": "istiod",
+    "version": "1.29.8",
+    "url": "https://istio-release.storage.googleapis.com/charts/istiod-1.29.8.tgz",
+    "sha256": "ef4f8c5203cafcc66055572f3c720a48371ece9d60044890b619b41c065c9615"
+  },
+  {
+    "chart": "cni",
+    "version": "1.29.8",
+    "url": "https://istio-release.storage.googleapis.com/charts/cni-1.29.8.tgz",
+    "sha256": "d5db9721d4eb8f0f3e499194bc979d228639e55f59050c31b13d142005713438"
+  },
+  {
+    "chart": "ztunnel",
+    "version": "1.29.8",
+    "url": "https://istio-release.storage.googleapis.com/charts/ztunnel-1.29.8.tgz",
+    "sha256": "79fc4d0dbb6fb793574838b8ed872d60f7c0d1188e1f0653d3db69cb003da44f"
+  },
+  {
+    "chart": "gateway",
+    "version": "1.29.8",
+    "url": "https://istio-release.storage.googleapis.com/charts/gateway-1.29.8.tgz",
+    "sha256": "92fa64a35412ede8d076827feaaf9cb3104efec80c7cab92a78d9cbe6b3f97f5"
+  },
+  {
+    "chart": "base",
+    "version": "1.30.5",
+    "url": "https://istio-release.storage.googleapis.com/charts/base-1.30.5.tgz",
+    "sha256": "585a2eff20163239121c8eff3d48a2498b5af458418b1a2eee9f282846fca635"
+  },
+  {
+    "chart": "istiod",
+    "version": "1.30.5",
+    "url": "https://istio-release.storage.googleapis.com/charts/istiod-1.30.5.tgz",
+    "sha256": "c91d0f8c102a377795da2145eb23912dc648a3277c973b9cfd0049a4d76f096a"
+  },
+  {
+    "chart": "cni",
+    "version": "1.30.5",
+    "url": "https://istio-release.storage.googleapis.com/charts/cni-1.30.5.tgz",
+    "sha256": "778e098e11880b8490a4003159e3cf33c991af830e37e8f7b9a58c4099aacadb"
+  },
+  {
+    "chart": "ztunnel",
+    "version": "1.30.5",
+    "url": "https://istio-release.storage.googleapis.com/charts/ztunnel-1.30.5.tgz",
+    "sha256": "bc285ca0f2d858befa13887ecdb086d14c8009a8ecd370829591c4bc95e89cd1"
+  },
+  {
+    "chart": "gateway",
+    "version": "1.30.5",
+    "url": "https://istio-release.storage.googleapis.com/charts/gateway-1.30.5.tgz",
+    "sha256": "08ae2c62f52097094643b0c78d7053ef24ad04e96e27fc75b441254fbbb373cd"
+  }
+]
