@@ -31,3 +31,30 @@ acceptance remains required; successful rendering alone does not prove recovery.
 
 See [image delivery](../../../../docs/harbor-image-mirroring.md) and
 [application recovery](../../../../docs/application-recovery.md).
+
+## Bootstrap controller dependencies
+
+Once normal controller references are internal, recovering only Harbor's own
+images is insufficient. Before an empty-cluster apply, include these inactive
+values in the same reviewed temporary recovery change, after normal values:
+
+| Application | Recovery values under this directory |
+| --- | --- |
+| cert-manager | `cert-manager-values.yaml` |
+| external-secrets | `external-secrets-values.yaml` |
+| traefik | `traefik-values.yaml` |
+| each Istio Helm source | `istio-values.yaml` plus the corresponding `istio-pilot-values.yaml`, `istio-cni-values.yaml` or `istio-ztunnel-values.yaml` when that source deploys the component |
+
+Use `$values/clusters/homelab/apps/harbor-bootstrap/<file>` in the owning
+Application's `helm.valueFiles`. Preserve every normal value file and its order;
+append the recovery override last. The root bootstrap Argo CD release currently
+uses upstream chart defaults and does not yet require an internal-image override.
+Flannel and Talos bootstrap images require the reviewed node mirror rollback.
+No recovery file is registered in the normal stack.
+
+These overrides let certificate issuance, ExternalSecret-backed Harbor
+credentials and the node-facing registry route start before Harbor has content.
+They change only repositories and retain cataloged digests. They contain no
+credentials. Restore all normal source lists after verified publication and
+private transport acceptance. The cold install/restore sequence remains
+unproven; render acceptance cannot establish the documented single-apply path.

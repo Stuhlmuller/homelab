@@ -145,3 +145,24 @@ Conftest rejects that resource in both before/after renders; the canonical
 comparison proves its content unchanged. The image migration does not commit
 that generated Secret. Review chart `useExistingSecret` ownership separately;
 retain the declared ExternalSecret-backed runtime configuration.
+
+Platform defaults are also overridden for External Secrets (including webhook
+and cert controller), descheduler, metrics-server, Crossplane core/RBAC manager
+and all five cert-manager images, including generated ACME solver Pods.
+Metrics-server and Crossplane use repository-owned Helm `valuesObject` inputs;
+no local environment supplies image selection. Provider/function images are not
+declared by the Crossplane core chart and require their own cataloged references.
+
+Inactive recovery profiles for cert-manager, External Secrets, Traefik and
+Istio live beside the Harbor recovery overlay. They preserve reviewed image
+versions/digests while restoring public repositories through an explicit,
+temporary source change. Normal sources never include them. This resolves the
+configuration needed to start Harbor prerequisites, but a cold install/restore
+and return to internal-only transport still need live acceptance.
+
+Generic rendered-policy checks also reject the unchanged Crossplane TLS scaffold
+Secrets (`crossplane-root-ca`, `crossplane-tls-server`, `crossplane-tls-client`)
+and External Secrets' `external-secrets-webhook` scaffold. Compare baseline and
+updated renders before interpreting these as migration failures; no raw Secret
+manifest is added to git. Review scaffold/controller ownership separately from
+image replacement, without relaxing the public-repository Secret rule.
