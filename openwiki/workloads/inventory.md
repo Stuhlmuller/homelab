@@ -44,10 +44,10 @@ Runtime secret contract: declared SSM parameters use AWS-managed `alias/aws/ssm`
 Secret/state recovery copies and encryption ownership are recorded in
 [State Encryption](../operations/state-encryption.md).
 
-LiteLLM's UI-key migration uses a dedicated `litellm-postgres` StatefulSet
+LiteLLM's UI-key migration prepares a dedicated `litellm-postgres` StatefulSet
 inside its existing `ai` Application, with a 20 GiB NFS claim and separate
-admin/app SSM credentials. Four service keys are live in its native database;
-fresh attributed gateway generations reached recovered Langfuse. See
+admin/app SSM credentials. This prerequisite is not live key migration;
+database readiness and native-auth cutover remain pending. See
 [AI observability](../architecture/ai-observability.md).
 
 ## Import Note
@@ -208,15 +208,15 @@ State tombstones, active migration helpers, and rollback assets remain; see the
 
 LiteLLM's native-key cutover uses its dedicated PostgreSQL database, imports the
 four existing service keys once, and removes the custom-auth bypass. Native API
-listing and revocation passed; all four direct service-key gateway generations
-were traced. Native post-recovery app actions remain an acceptance gate;
+listing and revocation passed; each caller's fresh Langfuse generation remains
+a rollout gate;
 see [AI observability](../architecture/ai-observability.md).
 
 Langfuse web allows ten minutes for database migrations before liveness checks
 begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
-Web, worker and Valkey run at one replica after the October 10 offline AOF
+Web, worker and Valkey return to one replica after the October 10 offline AOF
 repair. A credential-free inspector was used for capture and approved promotion;
-Argo pruned it in a separate revision before the writer restart. The separate 1Gi
+Argo pruned it in a separate revision before this writer restart. The separate 1Gi
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
