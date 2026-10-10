@@ -73,6 +73,15 @@ recovered; this ordering correction supplies a new reviewed revision for
 normal automatic reconciliation. Require Synced/Healthy, a successful sync,
 and the policy present before native-key migration. Do not bypass admission.
 
+The Application enables
+[server-side diff](https://argo-cd.readthedocs.io/en/stable/user-guide/diff-strategies/)
+through `IaC/stacks/litellm/stack.hcl`. Argo's older structured-merge comparison
+reported the Ready PostgreSQL StatefulSet OutOfSync while both the normal CLI
+diff and Kubernetes server-side dry run were empty (including Argo tracking
+metadata). This setting uses admission-aware dry runs without ignoring fields
+or changing database resources. Apply the reviewed registration with the
+targeted `litellm` Terragrunt workflow; require actual Synced/Healthy afterward.
+
 Provision these parameters and exact reader grants through the reviewed shared
 SSM Terragrunt unit before acceptance. Require both ExternalSecrets Ready, the
 claim Bound, StatefulSet Ready and `SELECT 1` as the app role. Passwords are
