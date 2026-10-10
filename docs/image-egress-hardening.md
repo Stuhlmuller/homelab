@@ -37,6 +37,22 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
+## Publication acceptance, 2026-10-10
+
+The seven-image [publication run](https://github.com/Stuhlmuller/homelab/actions/runs/38092077585)
+completed successfully. Read-only Harbor API inspection found completed scans
+with zero reported vulnerabilities for all seven indexes and their fourteen
+Linux amd64/arm64 manifests. The [scan receipt](chainguard-publication-scans.json)
+records exact digests and scan times; child digests match the public source indexes.
+This is a scanner snapshot of published artifacts. Active workload migration
+and scan coverage for retained exceptions remain unverified.
+
+[Linux compatibility CI](https://github.com/Stuhlmuller/homelab/actions/runs/38094665951)
+passed 42 behavior tests inside the exact published Chainguard Python digest:
+29 Harbor bootstrap, two exporter and eleven Fleet bootstrap tests, using UID
+65532, no network and read-only roots. The Python/curl consumer change remains
+staged until private node-to-Harbor transport and original app acceptance pass.
+
 ## Read-only findings, 2026-10-10
 
 Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
