@@ -106,7 +106,7 @@ may host user workloads and remains outside this cluster-owned routing contract.
 
 ## Current rollout dependency
 
-### October 10, 2026: Langfuse queue recovery pending
+### October 10, 2026: Langfuse queue recovery
 
 Read-only follow-up found `langfuse-valkey` in CrashLoopBackOff and its worker
 restarting. Valkey 8.0.11 loaded its base RDB, then rejected
@@ -146,8 +146,31 @@ then atomically replaces only the approved incremental AOF. The approved
 candidate was promoted and exact live hashes verified. A reviewed GitOps change
 removed the inspector first, with writers still stopped. Argo observed merged
 `836e7f0f`, pruned the inspector and reported Synced/Healthy; no Pod mounted
-its PVC. This separate reviewed revision restores writers. Runtime loading
-and fresh ingestion remain unverified until live checks pass.
+its PVC. PR #1261 merged as verified `ee807517` and restored all three
+writers. Valkey loaded its base RDB and repaired incremental AOF without a
+corruption error or restart; web and worker reached 1/1 Ready, and Langfuse
+reported Synced/Healthy at that revision.
+
+Fresh bounded gateway requests authenticated with each dedicated mounted key.
+Langfuse v2 observations recorded `GENERATION`s with the matching input marker,
+`openrouter/free` route, caller identity, output and nonzero usage:
+
+| Caller | Observation | Tokens |
+| --- | --- | ---: |
+| OpenClaw | `e8eff862d6c4b2e7` | 86 |
+| Multica | `41fc201db4cdb962` | 83 |
+| n8n | `8c3a6a7fa7c8cff7` | 173 |
+| NOFX | `1bb76f16d66e0f38` | 75 |
+
+The first n8n request resolved to a free content-safety model and returned no
+assistant text; the second returned `READY` and is the observation above. These
+are direct gateway requests with each service key, not native app actions.
+Live n8n database inspection found all three inventoried model nodes targeting
+`openrouter/free` and `litellm-managed`; its two inactive workflows stayed
+inactive. OpenClaw's live default and allowed model are `openrouter/free`, with
+no active auth profiles and both Codex/OpenAI plugins disabled. Native
+post-recovery app actions, visual UI key listing, and an independent datastore
+restore drill remain unverified.
 LiteLLM's later native-key rollout is now recorded in its
 [owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
@@ -357,9 +380,13 @@ new streamed agent trace; the earlier observations are not relabeled.
 
 ### Operational finding: Langfuse worker instability
 
-The same read-only check found 67 worker restarts and a non-retryable
+The earlier read-only check found 67 worker restarts and a non-retryable
 ClickHouse `system.query_log` read error (3400 bytes read, 3456 expected),
 reported by `v4-legacy-api-usage-job`. Ingestion eventually completed, so this
 does not establish the cause of its delay. Diagnose the worker termination and
 ClickHouse part integrity before proposing repository-owned recovery; do not
-delete data or restart workloads manually. No repair was performed.
+delete data or restart workloads manually. No repair was performed. After the
+October 10 Valkey recovery, the restarted worker is Ready but that legacy job
+now reports `system.query_log` missing under the declared diagnostic quarantine.
+Fresh generation ingestion succeeded, so this error does not block current
+telemetry; the periodic job still needs a separate compatibility fix.

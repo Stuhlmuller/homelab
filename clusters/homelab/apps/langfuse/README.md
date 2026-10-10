@@ -139,11 +139,15 @@ On October 10, the approved candidate was installed and its live hashes
 verified. The first GitOps follow-up removed the inspector while all writers
 remained stopped. Argo observed merged `836e7f0f`, pruned the inspector, and
 reported Synced/Healthy at 22:05 UTC; no Pod mounted
-`langfuse-valkey-data`. This revision restores global/web/worker and Valkey
-replicas to one. Preserve the private original and all PVCs throughout
-recovery. Merely restarting the corrupt original does not restore service.
-Require stable Valkey and worker readiness, then fresh correlated Langfuse
-generations from each caller. Safety tests cover offline guards and candidate
+`langfuse-valkey-data`. PR #1261 then restored global/web/worker and Valkey
+replicas to one. Valkey loaded both the base RDB and repaired incremental AOF,
+reported Ready, and stayed restart-free; web and worker reached 1/1 Ready, with
+Argo Synced/Healthy at `ee807517`. Four fresh service-key generations appeared
+in Langfuse with correct caller attribution, route and usage. Preserve the
+private original and all PVCs until an independent restore drill; the 340,520
+discarded bytes cannot be translated to an event count. Native caller actions
+and browser UI remain separate acceptance gates. Safety tests cover offline
+guards and candidate
 isolation. Run the native checker fixture with
 `python3 -I scripts/ci/langfuse-valkey-recovery-test.py --checker <checker-path>`;
 synthetic corruption tests do not establish production recovery.
