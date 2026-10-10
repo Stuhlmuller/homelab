@@ -37,6 +37,11 @@ def normalize(image):
     return repository + ("@" + digest if separator else ":" + tag)
 
 
+def catalog_reference(image):
+    """Compare an internal mirror ref with its reviewed upstream provenance."""
+    return normalize(image.removeprefix("harbor.stinkyboi.com/mirror/"))
+
+
 def declared_images(value):
     """Walk manifests and chart image maps, including embedded Helm values."""
     images, digests = set(), set()
@@ -177,10 +182,10 @@ def check():
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
     images, digests = declared_images(yaml_documents(paths))
     missing = sorted(normalize(image) for image in images
-                     if not image.startswith("harbor.stinkyboi.com/")
-                     and normalize(image) not in known | known_tags)
+                     if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and catalog_reference(image) not in known | known_tags)
     missing_digests = sorted(digests - known_digests - {
-        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
+        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
     errors.extend(receipt_errors())
@@ -194,7 +199,7 @@ def check():
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
-        required = {normalize(image) for image in required_images}
+        required = {catalog_reference(image) for image in required_images}
         errors.extend(f"{name} mirror scope missing required image: " + image
                       for image in sorted(required - known_scope))
         errors.extend(f"{name} mirror scope has unused image: " + image
