@@ -25,10 +25,12 @@ Kubernetes Secret named `argocd-oidc-sso`.
 
 The Helm values keep Argo CD off `zimaboard-2`: its 1.28 GiB allocatable memory
 cannot safely host an application controller that reached 658 MiB during the
-October 2026 kubelet stall. The other three nodes retain controller redundancy.
+October 2026 kubelet stall. The other three nodes remain eligible; soft pod
+anti-affinity makes node-level controller redundancy best effort.
 
 The Helm values run two application-controller replicas with parallel pod
-management so loss of one worker does not strand GitOps reconciliation. They
+management so one controller can keep reconciling if the replicas land on
+different nodes and one fails. They
 also enable metrics services for the application controller, repo server, and
 API server. Prometheus `ServiceMonitor` resources live in
 `clusters/homelab/apps/prometheus` so the bootstrap stack does not depend on
