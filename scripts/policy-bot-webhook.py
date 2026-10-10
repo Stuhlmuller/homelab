@@ -104,15 +104,18 @@ def github_client(jwt):
 
 def preflight_target():
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
-    for url, expected in ((URL, 400), (URL.removesuffix('/api/github/hook') + '/', 404)):
+    for url, hook in ((URL, True), (URL.removesuffix('/api/github/hook') + '/', False)):
         try:
-            with opener.open(urllib.request.Request(url, method='GET'), timeout=20) as response:
-                status = response.status
+            response = opener.open(urllib.request.Request(url, method='GET'), timeout=20)
         except urllib.error.HTTPError as error:
-            status = error.code
-            error.close()
-        if status != expected:
-            raise RuntimeError('Funnel callback routing preflight failed; webhook configuration unchanged')
+            response = error
+        with response:
+            # Policy Bot 1.41.2 registers POST only; GET reaches its 404 handler.
+            # Its baseapp middleware adds an xid. Unmatched Traefik routes do not.
+            request_ids = response.headers.get_all('X-Request-ID', [])
+            backend = len(request_ids) == 1 and re.fullmatch(r'[0-9a-v]{20}', request_ids[0])
+            if response.status != 404 or (hook and not backend) or (not hook and request_ids):
+                raise RuntimeError('Funnel callback routing preflight failed; webhook configuration unchanged')
 
 
 def timestamp(value):

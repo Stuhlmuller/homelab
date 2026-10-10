@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6902fd04725a1f7da806ea82b332714af838509b8564e1973856b47015ccba9c",
+  "pageVersion": "sha256:f4017a53e8e9fd1996d5943087e5b28c4ec72aa0a7bf2dfe56dd10b13db646db",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -71,44 +71,34 @@
       ]
     },
     {
-      "id": "claim_78b3f14a0ec443c8a72aa8c2d4ba0912",
-      "statement": "Phase 2a CoreDNS rewrites canonical Octelium API and Harbor hostnames to traefik-private while n8n advertises its path-limited Funnel webhook URL; existing registrations migrate separately after public readiness.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
-          "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
-        },
-        {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
-          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
-        }
-      ]
-    },
-    {
-      "id": "claim_f75885bb5db342bf8b20dda57ee9b28b",
-      "statement": "Phase 2a declares matching Traefik ingress and Cordium genesis/cluster-config bootstrap egress peers on 8443; these NetworkPolicies express intended connectivity because current Flannel does not enforce them.",
+      "id": "claim_3ccf5c866bd8436cb9145831f0469cde",
+      "statement": "Phase2a routes internal Octelium API and Harbor DNS through Traefik, advertises n8n's Funnel webhook URL and declares Cordium bootstrap peers, while retaining runtime legacy routes and credentials until staged acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L182-L182",
+          "version": "repo-lines-v1:sha256:99318850c1f543624298c240bb03499865d6a3a220bd65878919258c3373b9fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTkzMTg4NTBjMWY1NDM2MjQyOThjMjQwYmIwMzQ5OTg2NWQ2YTNhMjIwYmQ2NTg3ODkxOTI1OGMzMzczYjlmZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTkzMTg4NTBjMWY1NDM2MjQyOThjMjQwYmIwMzQ5OTg2NWQ2YTNhMjIwYmQ2NTg3ODkxOTI1OGMzMzczYjlmZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2U0ODU5NDlkMzIwZmZhOTgzYjc3OTZlOTY2ZTc5MTM3ZTY0ZDhmYTM4MzJmYWE3ZjA3OTQ3YjA3ZmU4ZjU0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmJhZTgzZWJlNWFiYmExYzRlZWVhZGNmZWI0N2VkNWYxMWE2N2RkMmE0YTRmZDZkNjI5Y2Q2YjMyMDM2N2U5ZSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:03e63cd1c3337749e09f50a0c18caa8462603e1d9678dd8cccd49aef92f58c2d"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
+          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:03:36.138Z"
+    "at": "2026-10-10T23:30:33.938Z"
   }
 }

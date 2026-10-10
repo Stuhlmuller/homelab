@@ -8,8 +8,6 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
-  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
-    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -30,10 +28,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T23:03:36.138Z" }
+generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:03:36.138Z
+    at: 2026-10-10T23:30:33.938Z
 ---
 
 # Secrets And Identity
@@ -76,13 +74,15 @@ requires signatures in addition to enrollment. The unused federated identities
 remain protected until final migration retirement after signed-key acceptance.
 
 The fixed publisher reads sensitive encrypted-state outputs privately, verifies
-the trusted Mac's online homelab profile, signs with file-backed arguments, and
+the trusted Mac's online homelab profile, signs via `file:/dev/stdin`, and
 publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
 repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
 metadata confirmation must be followed by protected CI acceptance. Only after
 all three writes and metadata checks succeed does it delete the corresponding
 three unused client-ID variables. Exact-main and trusted-PR workflow gates still
-matter: these credentials do not encode GitHub OIDC subject claims.
+matter: these credentials do not encode GitHub OIDC subject claims. Raw signing
+keys stay out of arguments and temporary files; stdin avoids the macOS app
+sandbox refusing access to the private config directory.
 
 Wrapped keys contain a delegated private node-signing key, separate from the
 trusted credential authority's private voting key. The publisher requires exactly

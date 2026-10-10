@@ -5,13 +5,13 @@ description: "Ordered CoreDNS handoff from Talos to Argo CD, preserving resolver
 tags: ["homelab", "navigation"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
+    at: 2026-10-10T23:30:33.938Z
 sources:
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e20ef91bfc85ec57d6b2e621
     resource: repo://clusters/homelab/platform/dns/README.md
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 ---
 
 # CoreDNS GitOps Ownership

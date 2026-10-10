@@ -1,38 +1,24 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:05355dcbb3859f9b8827dcefd446b4e4ca831785d69deb61f88b4fe27bb94192",
+  "pageVersion": "sha256:7ac0ac284fa6dee22027714995833ba023cd926a6d76f9f5b8df35930d80b081",
   "claims": [
     {
-      "id": "claim_7ff19d2b3cf94bcda26039f6b8c2abfe",
-      "statement": "Phase2a removes the legacy public DNS writer and restoration workflow but retains the Cloudflare Tunnel, native catalog and credentials until application, callback, CI and Cordium replacement acceptance.",
+      "id": "claim_21b704c6018c45b0ac21239c1241572a",
+      "statement": "Phase2a removes legacy public DNS writers but retains the Tunnel, native catalog and carrier rollback until mesh DNS, authenticated application, callback, CI and Cordium acceptance; Octelium's final retained role is Cordium and required control endpoints.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
+          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
         },
         {
-          "resource": "repo://docs/octelium.md",
-          "version": "repo-file-v1:sha256:9ec11f15d358b2c120806139a1594058bbcece75562cf0cb3a7219768e78c942"
-        }
-      ]
-    },
-    {
-      "id": "claim_9e27187b5b034ff8be90a25b90ed672f",
-      "statement": "Mac migration first resumes only the verified saved Tailscale profile without changing Desktop/carrier state, then preserves existing credentials while retiring owned transports only after canonical API checks; the existing carrier installer remains a reviewed rollback path during cutover.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
-        },
-        {
-          "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
+          "resource": "repo://docs/octelium.md#L3-L20",
+          "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:03:36.138Z"
+    "at": "2026-10-10T23:30:33.938Z"
   }
 }

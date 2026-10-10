@@ -1,24 +1,28 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d74a631e8882a6751e1d59aeff32a9007a404c921fc3634600e576db34bb992a",
+  "pageVersion": "sha256:9204ba321e457d23a06fa41da04a3003affe8b563f9f45773a84321d1a2a411c",
   "claims": [
     {
-      "id": "claim_d33d75f17f1b477abd1ac99dbb66dcc7",
-      "statement": "Phase2a preserves CoreDNS GitOps ownership and public forwarding while rewriting the canonical Octelium API and Harbor names to traefik-private; TLS/SNI is preserved and native API/Harbor acceptance is required separately from DNS resolution.",
+      "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
+      "statement": "Phase2a preserves Argo ownership of CoreDNS while rewriting the canonical Octelium API and Harbor names to Traefik's private Service; acceptance requires native API and Harbor traffic in addition to DNS resolution.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/dns/README.md",
-          "version": "repo-file-v1:sha256:01bf410d0608feebbc2c874b9c852e4b52465482db606963a0910a084eb6d3b0"
+          "resource": "repo://clusters/homelab/platform/dns/README.md#L39-L44",
+          "version": "repo-lines-v1:sha256:8ff387dc9a28f2a186460734dcffe5b86e23ff17a3d11a13ead4fb4ca8abc239:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzZiYTdlNmIxNWNmOGU0ZjlmMzgzNzJkNmRhNGU2NzI1YThiOTEyN2MwMzYxMWRiOGZkNWExOTM1ZjdjMWNmMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjc4NzY4NjcxNTc4ZWYyZWEzNzYzNmEzMDhmMzM5M2ZiNzYwZjlhNWE4Njc1MDFjNDlmMWZlZDRjZTgxZGFjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGEzMjliNzU3NzRmYWViNTY5MjBhODRiNWE0NGI4ZmJiNWYyYTM4YmIyZTA4ZDg1MTgzNmQ4NmQzZjI1YTRiNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA0M2NlODc5YWY2MjY4ZmFkMGM5MTQwNmJmODBjY2NjOTczOWFjMTUzYzhhZmQyZWYyMjI1ZDYyNDBkYjM1YyJ9"
         },
         {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
-          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+          "resource": "repo://clusters/homelab/platform/dns/README.md#L69-L73",
+          "version": "repo-lines-v1:sha256:0459bda4fb1026c20afd033545048606e91b3d17e136f5b7ca60e2a8ba557727:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTdiYTA0ZWNjMDE3NzA4YTZiZmFhY2E1YmVkNTRiYzQxMWYyZDA2NWVlMzQxNDg3NjUzNDMwZGRjNzQ4MGFmMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2M4ZDYxMWM4MDVkZWQzNDQ4MjMzYjUyNzlhM2EwNmQzMTczNWQ4M2IwYzQ1NzdhMTFjZGZlYjNhODM0OTU1OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDEyZTI0OWQ0ZTQ5ZDE1ZGFjOWRiYTAxMTE1Y2QyYjA0NTlhMDliOGMwMjI4YmVjMjk3ZGVmMWM2M2ZiOTM3YiJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
+          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T23:30:33.938Z"
   }
 }

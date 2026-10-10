@@ -273,12 +273,16 @@ scripts/octelium-e2e-check.sh
 
 ## Caller activation
 
-This change stages Langfuse and its credentials first. Existing OpenClaw and
-LiteLLM runtime configuration stays unchanged: an asynchronous protected
+This section records the original staged activation. Current gateway routing,
+credentials, and acceptance checks are documented in the
+[LiteLLM runbook](../litellm/README.md#validation-and-rollout).
+
+The initial rollout staged Langfuse and its credentials first. OpenClaw and
+LiteLLM runtime configuration stayed unchanged: an asynchronous protected
 apply must not race a caller restart requiring credentials that do not exist.
-The old OpenClaw gateway token still aliases the operator master key; the new
-`/homelab/openclaw/litellm-app-token` is provisioned independently. Do not rotate
-the old parameter during staging.
+At that stage, the old OpenClaw gateway token aliased the operator master key;
+`/homelab/openclaw/litellm-app-token` was provisioned independently. The staging
+procedure preserved the old parameter.
 
 Before a follow-up activation PR:
 
@@ -352,7 +356,8 @@ Before a follow-up activation PR:
 5. After activation, verify one real OpenClaw free-model turn and gateway request
    produce correlated traces with expected provider/model, content and available
    usage. Preserve `openrouter/free` for interactive turns, heartbeat and
-   schedules, along with the retained Astra OAuth recovery metadata. Complete
+   schedules; keep retired OpenAI/Codex plugins disabled and private historical
+   credentials intact. Complete
    the separate n8n migration through its managed OpenAI credential and verify
    its own correlated generation.
 6. Activate NOFX separately using its

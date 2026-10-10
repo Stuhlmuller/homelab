@@ -75,14 +75,24 @@ kubectl -n automation get deploy/policy-bot svc/policy-bot virtualservice/policy
 kubectl -n octelium-public get deploy cloudflared
 curl -I https://policy-bot.stinkyboi.com/
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
-curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.stinkyboi.com/api/github/hook
+curl -sS -D - -o /dev/null https://policy-bot-hook.stinkyboi.com/api/github/hook
 ```
 
 Expected workload behavior: the Deployment has one available replica. Expected
 route behavior: the internal host serves the normal Policy Bot UI paths, the
-details URL redirects to `/api/github/auth`, the public hook returns `400` for
-an unsigned empty request, and
-`https://policy-bot-hook.stinkyboi.com/` is not routed.
+details URL redirects to `/api/github/auth`, and an unsigned GET to the public
+hook returns `404` with one `X-Request-ID` from the application. The callback
+root returns `404` without that header. Policy Bot 1.41.2 registers a
+[POST-only webhook route](https://github.com/palantir/policy-bot/blob/v1.41.2/server/server.go#L226-L227);
+its [baseapp middleware](https://github.com/palantir/go-baseapp/blob/v0.7.0/baseapp/middleware.go#L38-L46)
+adds the request ID even when a method has no matching route. GET does not test
+HMAC validation. Require a fresh successful GitHub delivery after callback
+cutover; never trigger a webhook just to test ingress.
+
+On October 10, 2026, strict-TLS GETs through both the private mesh and public
+Funnel reached that backend 404, with request IDs confirmed in Policy Bot logs.
+The Funnel root had no backend header. This establishes read-only routing,
+not successful callback delivery. See the [staged cutover](../traefik/CUTOVER.md).
 
 ## Rollback
 

@@ -82,8 +82,11 @@ nix develop --command python3 -I scripts/tailscale-ci-configure.py
 nix develop --command python3 -I scripts/tailscale-ci-configure.py --execute
 ```
 
-Signing uses `tailscale lock sign file:<private temporary file>`. The helper
-requires exactly one new trusted credential signer with matching auth-key metadata
+Signing uses `tailscale lock sign file:/dev/stdin`, passing the raw key through
+stdin without putting it in arguments or a temporary file. The sandboxed macOS
+Tailscale app cannot read the helper's private config-directory files; stdin keeps
+this path compatible with its sandbox. The helper requires exactly one new trusted
+credential signer with matching auth-key metadata
 and no unrelated trust changes. Wrapped keys and that separate public authority
 identity are saved at `~/.config/homelab/tailscale/ci-signed-keys.json` with mode `0600`
 in an owned `0700` directory before GitHub publication. Keep an encrypted private

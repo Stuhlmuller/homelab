@@ -20,8 +20,6 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
-  - id: openwiki-source-fbaccd01ca51226fa9e5324d
-    resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
@@ -38,10 +36,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:03:36.138Z" }
+generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:03:36.138Z
+    at: 2026-10-10T23:30:33.938Z
 ---
 
 # Workload Inventory

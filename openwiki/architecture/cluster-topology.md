@@ -5,15 +5,13 @@ description: "Talos node roles, API endpoints, scheduling capacity, Octelium rec
 tags: ["architecture", "talos", "kubernetes"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:03:36.138Z
+    at: 2026-10-10T23:30:33.938Z
 sources:
-  - id: openwiki-source-bcf299afd34b5d6fd43aa9a0
-    resource: repo://clusters/homelab/apps/tailscale/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->

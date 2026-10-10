@@ -117,6 +117,10 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    hooks `589400612` and `636944763`. Both helpers preserve secrets and settings,
    preflight without triggering workflows, and save non-secret cutover receipts
    under `~/.local/state/homelab`. Do not delete these receipts before acceptance.
+   Policy Bot's safe GET preflight requires the POST-only hook's `404` plus one
+   valid backend `X-Request-ID`; the unrouted root must return `404` without that
+   header. This proves routing only, not HMAC acceptance. See the
+   [pinned application behavior](../policy-bot/README.md#validation).
    After naturally occurring deliveries, require fresh success:
 
    ```sh
@@ -130,6 +134,27 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    real admission-denial checks pass. Cordium CI additionally needs the canonical
    native API path from the runner. Change the shared native operator transport
    only after the operator's normal DNS/API path passes step 6.
+
+## October 10 ingress preflight evidence
+
+At 23:17–23:19 UTC, all 28 private canonical names passed strict TLS and route
+checks through the verified `100.99.16.74` ingress peer. AFFiNE returned 502
+with declared/live zero replicas; OpenClaw returned 200 and its `ai` Deployment
+was ready. Harbor retained its canonical HTTPS authentication realm, and both
+native API protocols passed. Traefik authorization/network policy specs matched
+reviewed main `e0da1da6`; Argo and the certificate were healthy.
+
+The same peer's IPv6 address refused connections. This is the supported boundary
+of the current single-stack IPv4 Service/kernel proxy, not an IPv6 acceptance.
+The signed operator API proxy's IPv6 remained reachable from the same Mac.
+Publish only Service-derived A records, with AAAA empty; see the
+[IP-family contract and primary sources](../../../../docs/networking-tailnet-ingress.md#dns-model).
+
+Twenty public Funnel root/admin/Host-spoof negatives returned 404; both n8n
+POST-only callback paths answered safe OPTIONS without execution. Policy Bot's
+GET-only backend/root distinction passed after correcting the helper's expected
+status to match its pinned POST-only router. These checks prove transport and
+routing, not authenticated user flows, callback delivery, DNS cutover or CI.
 
 ## Observed node readiness interruption
 

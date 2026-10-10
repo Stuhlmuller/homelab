@@ -204,11 +204,8 @@ def signed_keys(keys, cache):
         stable_id = entry["key"].removeprefix(AUTH_PREFIX).split("-", 1)[0]
         if any(isinstance(meta, dict) and meta.get("authkey_stableid") == stable_id for meta in trusted.values()):
             raise GUARDS.Failure("An uncached authority already signs this auth key; recover its private cache before retrying")
-        with tempfile.NamedTemporaryFile(mode="w", dir=CACHE.parent) as raw:
-            raw.write(entry["key"])
-            raw.flush()
-            wrapped = GUARDS.command([TAILSCALE, "lock", "sign", "file:" + raw.name],
-                                     "CI key signing").strip()
+        wrapped = GUARDS.command([TAILSCALE, "lock", "sign", "file:/dev/stdin"],
+                                 "CI key signing", data=entry["key"]).strip()
         validate_wrapped_key(wrapped)
         after = lock_status()
         added = set(after) - set(trusted)

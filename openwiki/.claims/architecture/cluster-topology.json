@@ -1,38 +1,24 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ef18d5a24520858e6761d5a10e8abe6aec2af2f2e8e092b273d10b22430a92d5",
+  "pageVersion": "sha256:f52aa80d650836e247264544c22220de311c232ea36dffac89f87cd6a162586f",
   "claims": [
     {
-      "id": "claim_6955e53fbb7e432da5bbc402bfcad89e",
-      "statement": "Phase2a declares private application ingress through Tailscale and Traefik while retaining native Cordium Kubernetes access and deferring CI transport cutover until mesh DNS and identity acceptance.",
+      "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
+      "statement": "Phase2a routes the canonical Octelium API and Harbor cluster DNS names to Traefik's private Service while preserving separate registry-only Talos node ingress and staged mesh/CI acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/tailscale/README.md",
-          "version": "repo-file-v1:sha256:7623fb0e8b5d747a580a9b938324fca05d6787af979549c0cdb46908b9277cb4"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L91",
+          "version": "repo-lines-v1:sha256:6e1d552a37f1c788331790aa0a771a006080cdc45193960fc256d36c90bb60d3:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
-        }
-      ]
-    },
-    {
-      "id": "claim_7e36fd35e6d4442ab4a6658b1dca9351",
-      "statement": "CoreDNS rewrites canonical Octelium API and Harbor names to traefik-private; Talos host registry access uses the separate registry-only Service and requires node image-pull acceptance before external Harbor DNS changes.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
-        },
-        {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
-          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
+          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:03:36.138Z"
+    "at": "2026-10-10T23:30:33.938Z"
   }
 }

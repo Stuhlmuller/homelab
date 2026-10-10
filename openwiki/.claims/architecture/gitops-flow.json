@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:62a992b09ab35ffc8f337cef8a77a4fbe097960895c6fae42f4d0dbe10de5441",
+  "pageVersion": "sha256:b369049dc5218c33cedaa61e846827d378eded7c4718e45de7cfaa6f83c25ea6",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:4bbd0eb778739f526292a5975edb7bb21be325ee62786dda822f93dbe485e08e"
+          "version": "repo-file-v1:sha256:b422512b97466de3245c222f8f5e17c9cb251a22ef033a677c33e5e4f0f5e467"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -21,36 +21,22 @@
       ]
     },
     {
-      "id": "claim_f7f2adc55f9340afb7fea4deaee6f8a6",
-      "statement": "Phase2a changes internal CoreDNS and the n8n advertised webhook URL and removes the old public DNS writer/restoration workflow; external DNS, legacy Tunnel retirement and CI migration remain separately gated operations.",
+      "id": "claim_13c1af9e06dd426eac92f015b7032888",
+      "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:a7b211928b41620a08ef094c3f28e2f112c4d2917b3b17f260b03a811f4a952d"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
+          "version": "repo-lines-v1:sha256:04f1f27f9952d23fcf53fce663f7dc1e69f017e745223dac6824960ab98ee39d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
-        {
-          "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
-        }
-      ]
-    },
-    {
-      "id": "claim_7061d88dd0754ea1a2cb05457fb10bf8",
-      "statement": "Fleet's existing hostname moves through the guarded private DNS cutover and has no Funnel route; setup API aliases remain blocked.",
-      "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
           "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
-        },
-        {
-          "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:df06298c6267d82fa16874faee14c98e74927a885b11301a6a926b8280cb0c1a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:03:36.138Z"
+    "at": "2026-10-10T23:30:33.938Z"
   }
 }

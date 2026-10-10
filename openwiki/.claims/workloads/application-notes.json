@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:16aa5e3efe0be0cac071d305de3dd2376ee0f7c6ef9922e540356cb1e160a0a6",
+  "claims": [
+    {
+      "id": "claim_81d091bfd2d74d578b85cb519e8ce854",
+      "statement": "Current OpenClaw 2026.9.5 installs the version-matched external Discord plugin, routes through LiteLLM with a file-backed caller key, disables OpenAI/Codex subscription routes and preserves historical state for rollback.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md#L30-L53",
+          "version": "repo-lines-v1:sha256:63bef918152aa4e6a3afc330640d378ba7bd03e4b814365668e45d4e370273f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUyOGI2OGY3ZWFmODg4ZWI4NmY5ZTdjMjIzOThmZjdiYTEwN2IxMDU1ODZmZThkODA2YzRmNjhkOWY3NjEyZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMDkwMTBlMjFkYmM4NzVlMWRiNmNkNDAwNDBjZDk4NGNjMWY2OTg5YWI4MjdlM2ZmMmM3YzEyNTEzMjhiZjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0NDVkNWQzOGQ5ZDBlYjczZGM3NDJmODExNmNlMmVmMWU0ZjgzZDQ0NDk5ZjE2NzZhMGMxOTA2NDk3NzU5OTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5ZjUxM2Q0ZGY4YTA1YTAyNGM5YzFlMzI2YzQ3ZGVjM2YxMjE3NzIzN2RiMmQ1YWZjMjI5ODgxNGI1ZTk4ODYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ae857b01a1394207bcdfcaa2e3b73145",
+      "statement": "OpenClaw's current startup probe budget is 900 seconds while its interactive execution default is 3600 seconds.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/assistant/config.json#L15-L15",
+          "version": "repo-lines-v1:sha256:6877f4e81c1fccdc7c5190933ab1af38d275a3d9e072c923dcca2b0743109b10:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjg3N2Y0ZTgxYzFmY2NkYzdjNTE5MDkzM2FiMWFmMzhkMjc1YTNkOWUwNzJjOTIzZGNjYTJiMDc0MzEwOWIxMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjg3N2Y0ZTgxYzFmY2NkYzdjNTE5MDkzM2FiMWFmMzhkMjc1YTNkOWUwNzJjOTIzZGNjYTJiMDc0MzEwOWIxMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWM5YzMwMDg0ZmU1MDRjMWUzMTljNTZmOTEwZWNmNGM0N2YxYTg3ZjM4YWFiOTYyNGViZTQzYmU3YzdlMWQ4NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGU3ODdiY2Y3YjkyOGIyZmZhMGE0ZGQ1Y2E3MjFmYWQ5MDk1NTQ0NTlkMzc1NDQ1M2ExNThkM2VjZDRjOGRiMSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L534-L536",
+          "version": "repo-lines-v1:sha256:ae903cdb153a325cfc43da3f30c31e8d15dc49b91494976563edbec16b03aefa:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGRlNzcyNjgyMzU5NDUxZjgyMDYwYjJmZTI1YjM5MmY2Y2RjOTNjMjQ3NTU5MzNmMDFkMzJlYTc5MDY3NGZhNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2YzYmM5ZjcxNDlmNjVlYzE3Mzg0YTRkNzk4YWQ0NTg4MGUzYzhkZWU0NWZlYjVjODVkYjE2NDY3ZTZhMjA0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY0YzZjODc3ZDRlMjBkZGI0MzA4MmUyZDZjMGU5ZTU5ZWQ0YmRiNTJlMDYyN2JkNDFlODcwYmViZTYxYmIzZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzE1NDkzMjgzNjMzNGJiODhjMzI0NmYyMjRkYTU5Y2RlNDMwMGY3YWM1NzgxZjg5YjgzNjM4YWZmM2FkODI3MiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T23:10:58.872Z"
+  }
+}

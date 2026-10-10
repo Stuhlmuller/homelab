@@ -23,6 +23,15 @@ public recursive resolvers cannot resolve tailnet-only peer names. It preserves
 unrelated records and old CI, callback, and carrier hostnames. Application DNS
 can be publicly resolvable while its Tailscale addresses remain mesh-only.
 
+The current `traefik-private` Service is single-stack IPv4. Its controller
+publishes only `100.99.16.74`; the same peer's IPv6 address is not a supported
+application ingress destination. Derive DNS from Service-published addresses,
+never from every peer address. Keep AAAA empty until a separately reviewed
+network change supports it. Tailscale's [IPv6 support contract](https://tailscale.com/docs/kubernetes-operator/reference/ipv6)
+and pinned 1.102.3 [Service publication](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/k8s-operator/svc.go#L350-L373)
+and [matching-family forwarding](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/containerboot/forwarding.go#L158-L188)
+explain this boundary; the API server proxy has different IPv6 requirements.
+
 ```sh
 python3 -I scripts/tailscale-private-dns-check.py --check
 scripts/tailscale-private-dns.sh --dry-run
@@ -95,7 +104,10 @@ and admin requests must fail from outside the mesh.
 After independent Funnel acceptance, use `scripts/policy-bot-webhook.py` to
 preview and migrate the existing GitHub App webhook. Preserve its secret and
 save the cutover receipt; require a fresh naturally occurring successful signed
-delivery. Keep the old callback route until that check passes.
+delivery. Keep the old callback route until that check passes. The helper's
+non-executing GET preflight expects the POST-only hook's `404` with a valid
+backend request ID, and the root's `404` without one. It verifies routing rather
+than HMAC; see [Policy Bot's pinned behavior](../clusters/homelab/apps/policy-bot/README.md#validation).
 
 ## n8n Webhook Callback
 
