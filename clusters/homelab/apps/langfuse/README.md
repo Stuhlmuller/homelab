@@ -78,9 +78,9 @@ ingestion while the queue is unavailable.
 supports separate capture and explicitly approved promotion modes. Capture
 required a read-only inspector; promotion used a writable inspector while web,
 worker and Valkey replicas stayed at zero. The inspector had no credentials,
-API token or network access; its image root was read-only. This revision prunes
-it before restarting writers. PostgreSQL, ClickHouse and all retained claims
-are unchanged. Langfuse UI and ingestion remain unavailable until restoration.
+API token or network access; its image root was read-only. The prior revision
+pruned it before this writer restart. PostgreSQL, ClickHouse and all retained
+claims are unchanged. UI and ingestion need live verification after restoration.
 
 For the completed inspection, build the matching checker from the official
 Valkey 8.0.11 source at commit
@@ -116,8 +116,8 @@ On October 10, the operator approved the verified prefix repair: only
 `appendonlydir/appendonly.aof.4.incr.aof` changes, from 10,328,329 to
 9,987,809 bytes (340,520 bytes discarded). This does not quantify lost events.
 The following command was run from the clean, exact merged promotion revision
-while the writable inspector was present. It cannot be rerun after this
-inspector-removal revision reaches `main`:
+while the writable inspector was present. It cannot be rerun from current
+`main` because the inspector was removed:
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
