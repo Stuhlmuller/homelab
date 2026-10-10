@@ -13,7 +13,7 @@ stop condition, not permission to bypass the check.
 
 | Capability | Free setup |
 | --- | --- |
-| Mac password synchronization | Candidate native Microsoft Platform SSO using Microsoft Authenticator, Company Portal's extension, and `AuthenticationMethod=Password`. Before a fresh probe, `mac-pilot` removes only the repository-owned PSSO profile; do not treat a profile installation as accepted until this tenant completes registration without Intune, Entra premium, a trial, or another paid entitlement. Fleet's own Premium password-sync feature stays disabled. |
+| Mac password synchronization | Candidate native Microsoft Platform SSO using Microsoft Authenticator, Company Portal's extension, and `AuthenticationMethod=Password`. Before a fresh probe, `mac-pilot` removes the repository-owned PSSO profile. Accept only registration without Intune, Entra Premium, a trial, or another paid entitlement. Fleet Premium password sync stays disabled. |
 | Fleet administrator SAML SSO | Supported in Fleet Free. Precreate each authorized console user; leave JIT provisioning and SCIM disabled. Family device users do not automatically become Fleet administrators. |
 | Apple OS settings | The Mac and iPhone/iPad password baselines use explicit, host-scoped Free MDM commands. The PSSO profile is host-scoped; `mac-pilot` removes it before a fresh probe and reinstalls it only for that probe. No global Mac-baseline assignment is desired. |
 | Inventory and policy reporting | Retain Fleet's free inventory and supported policy queries, subject to platform and enrollment limitations. |
@@ -83,7 +83,7 @@ These files are the source of truth:
 | [Host-scoped Mac baseline](profiles/macos-security-baseline-host.mobileconfig) | Password required, at least 8 characters, non-simple; maximum 5 minutes idle before screen lock; password required immediately after lock. No scheduled expiration, history requirement, forced next-login password change, or failed-attempt threshold is configured. |
 | [Host-scoped iPhone/iPad baseline](profiles/ios-passcode-baseline.mobileconfig) | Passcode required, at least 6 characters, non-simple; numeric passcodes allowed; maximum 5 minutes idle before lock; passcode required immediately. No scheduled expiration, passcode history, or failed-attempt erase threshold is configured. |
 | [Retired global Mac baseline](profiles/macos-security-baseline.mobileconfig) | Removal reference only. The operator permits deleting its global catalog assignment, not uploading it again. |
-| [Mac Platform SSO](profiles/macos-entra-platform-sso.mobileconfig) | Microsoft Authenticator, the Company Portal extension, `Password` method, shared device keys, existing accounts only. No account creation, authorization/privilege changes, or `RequireAuthentication`. Initial registration and cloud-password synchronization require Entra connectivity; offline login with the last synchronized password is a separate acceptance test. |
+| [Mac Platform SSO](profiles/macos-entra-platform-sso.mobileconfig) | Microsoft Authenticator and Company Portal's extension; `Password` method, shared device keys, existing accounts only. No account creation, privilege changes, or `RequireAuthentication`. Registration and password sync need Entra connectivity; offline login with the last synchronized password needs a separate acceptance test. |
 
 Both baselines use `com.apple.mobiledevice.passwordpolicy`. Apple applies the
 most restrictive combination when other passcode profiles exist. The Mac
