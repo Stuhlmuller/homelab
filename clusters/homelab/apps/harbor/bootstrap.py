@@ -170,8 +170,10 @@ def reconcile_registry(client, name):
 
 
 def replication_matches(actual, desired):
+    # Harbor omits false policy flags from its JSON readback.
     return all((actual.get(key) or {}).get("id", 0) == value["id"]
-               if key in {"src_registry", "dest_registry"} else actual.get(key) == value
+               if key in {"src_registry", "dest_registry"}
+               else (actual.get(key) == value or (value is False and actual.get(key) is None))
                for key, value in desired.items())
 
 
