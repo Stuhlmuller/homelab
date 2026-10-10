@@ -9,8 +9,11 @@ tags: ["architecture", "storage", "stateful"]
 
 LiteLLM's prepared UI-key migration adds `ai/data-litellm-postgres-0`, a 20 GiB
 NFS claim for its dedicated PostgreSQL database. Preserve logical dumps, volume
-snapshots and SSM role passwords together. Key import and native-auth cutover
-remain separate acceptance gates; see the
+snapshots and SSM role passwords together. The native cutover transaction stores
+four caller key hashes plus the `homelab-native-key-import-v1` marker. Preserve
+that marker during restore: it prevents startup from recreating revoked keys.
+Local native migrations and import tests passed; live UI/revocation and caller
+acceptance remain pending. See the
 [LiteLLM runbook](../../clusters/homelab/apps/litellm/README.md).
 
 The operator-owned `IaC/operator/state-bucket-encryption` unit manages only

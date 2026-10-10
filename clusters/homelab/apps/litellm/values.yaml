@@ -15,7 +15,7 @@ service:
   type: ClusterIP
   port: 4000
 podAnnotations:
-  homelab.stuhlmuller.dev/app-identity-revision: "8"
+  homelab.stuhlmuller.dev/app-identity-revision: "9"
 volumes:
   - name: app-identity
     configMap:
@@ -26,6 +26,9 @@ volumes:
   - name: telemetry
     secret:
       secretName: litellm-telemetry
+  - name: postgres
+    secret:
+      secretName: litellm-postgres-client
 volumeMounts:
   - name: app-identity
     mountPath: /etc/litellm-hooks
@@ -36,12 +39,14 @@ volumeMounts:
   - name: telemetry
     mountPath: /var/run/secrets/litellm-telemetry
     readOnly: true
+  - name: postgres
+    mountPath: /var/run/secrets/litellm-postgres
+    readOnly: true
 masterkeySecretName: litellm-provider-keys
 masterkeySecretKey: LITELLM_MASTER_KEY
 proxy_config:
   general_settings:
     master_key: os.environ/LITELLM_MASTER_KEY
-    custom_auth: /etc/litellm-hooks/app_identity.authenticate
   litellm_settings:
     set_verbose: false
     log_raw_request_response: false

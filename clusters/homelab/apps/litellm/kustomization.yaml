@@ -16,5 +16,6 @@ configMapGenerator:
     files:
       - app_identity.py
       - gateway.py
+      - native_keys.py
 generatorOptions:
   disableNameSuffixHash: true

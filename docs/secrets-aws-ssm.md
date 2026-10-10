@@ -105,10 +105,13 @@ configuration.
 LiteLLM's database-key migration adds generated
 `/homelab/litellm/postgres-{admin,app}-password` parameters.
 `ai/litellm-postgres-auth` supplies both only to PostgreSQL;
-`ai/litellm-postgres-client` exposes only the app password for the future gateway
-cutover. Both use `OnChange`. These credentials prepare database storage;
-they do not import service keys or change authentication. Preserve initialized
-role passwords and the database together during recovery.
+`ai/litellm-postgres-client` exposes only the file-mounted app password to the
+gateway. Both use `OnChange`. The gateway imports existing caller values once
+into native database keys, atomically with `homelab-native-key-import-v1`.
+After import, SSM edits alone do not rotate keys; coordinate the database key
+and caller refresh. Restarts never recreate deleted keys or undo UI blocks.
+Preserve initialized role passwords, the database and import marker together
+during recovery. Live cutover acceptance remains separate from source checks.
 
 ## External Secrets AWS Auth Bootstrap
 

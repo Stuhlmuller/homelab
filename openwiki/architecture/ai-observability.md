@@ -20,17 +20,40 @@ by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/READM
 
 ## Caller inventory
 
-### UI-visible key migration (database deployed, policy reconciliation pending)
+### UI-visible key migration (native cutover awaiting deployment)
 
 The operator requested database-backed keys visible in LiteLLM's UI. The first
-prerequisite adds dedicated PostgreSQL storage and separate generated admin/app
-SSM credentials, reusing existing NFS and PostgreSQL patterns. File-backed
-authentication stays unchanged until database readiness is proven. The cutover
-must import existing caller values, use native database authentication, preserve
-inference-only/free-model restrictions and Langfuse attribution, and prove UI
+prerequisite added dedicated PostgreSQL storage and separate generated admin/app
+SSM credentials, reusing existing NFS and PostgreSQL patterns. The native cutover
+imports existing caller values in one transaction with a durable import marker,
+so restarts do not undo UI revocations. It uses database authentication, preserves
+inference-only/free-model restrictions and Langfuse attribution. Still prove UI
 listing plus revocation enforcement. Copying rows into the UI while retaining
 file-based authentication is not completion. See the
 [gateway runbook](../../clusters/homelab/apps/litellm/README.md).
+
+October 10 security gate: the pinned LiteLLM 1.80.8 is within the affected
+range (`<1.84.0`) of
+[GHSA-4xpc-pv4p-pm3w](https://github.com/BerriAI/litellm/security/advisories/GHSA-4xpc-pv4p-pm3w).
+A crafted Host header can make native authentication evaluate a different
+route from FastAPI. The prepared ASGI guard now rejects malformed and duplicate
+Host headers before native authentication on all HTTP routes. The regression
+pins the live image's FastAPI 0.120.1 and Starlette 0.49.1, reproduces an
+unauthenticated management-route bypass without admission, and rejects it with
+admission. Local auth and attribution tests pass; the mitigation is not yet
+deployed or verified through the live internal service. The local environment
+previously resolved a newer Starlette with a fixed parser, hiding this exposure.
+Keep the guard until a reviewed image upgrade establishes the upstream fix.
+The separately inspected
+[salt-key advisory](https://github.com/BerriAI/litellm/security/advisories/GHSA-7hp6-4w63-5g45)
+does not include 1.80.8 in its affected ranges.
+
+The synthetic streaming failure fixture also exposed native Router logs
+echoing a synthetic provider credential embedded in upstream error text.
+Langfuse redaction does not protect native stdout. No production credential
+was used in this fixture. Add and test credential redaction for native error
+logs, and inspect client error responses, before claiming end-to-end secret
+redaction.
 
 On October 10, PR #1230's SSM credentials and PostgreSQL were provisioned;
 the app role passed local-socket `SELECT 1` and remained a nonsuperuser.
@@ -43,12 +66,26 @@ and automatic reconciliation; no live policy bypass or node changes were made.
 Keep native authentication, UI listing and revocation marked unverified until
 the separate key migration and its live acceptance finish.
 
+Pre-cutover inspection found zero public tables in the live `litellm` database
+and confirmed its owner is not a superuser. A private off-NAS custom-format
+`pg_dump` was captured and its archive table of contents verified before any
+native schema migration. This is a readable logical backup, not a completed
+restore drill. The local PostgreSQL fixture passed the pinned native migrations,
+concurrent atomic import, collision rollback and preservation of revocations.
+
 PR #1238 merged as `cecd243f`; Argo observed that revision and its operation
 succeeded. The database AuthorizationPolicy is now present at wave `-1` with
 the exact LiteLLM principal and port 5432. PostgreSQL remains Ready. Argo still
 reports its StatefulSet OutOfSync although `kubectl diff` is empty; inspect
 Argo's normalized comparison before declaring full convergence. No PVC was
 replaced and no live force-sync was used.
+
+Follow-up read-only inspection found no diff through the controller's native
+`argocd app diff --core`. A Kubernetes server-side dry run using field manager
+`argocd-controller` also found no change after including Argo's generated
+tracking annotation. PostgreSQL's current/update revisions match, its replica
+is Ready, and both database ExternalSecrets are Ready. Argo's OutOfSync status
+remains unexplained; no ignore rule, force-sync or live repair was introduced.
 
 The `litellm-app-keys` revision `v2` refreshes the file-mounted OpenRouter
 credential after protected SSM injection. Merge this refresh only after the
@@ -84,9 +121,34 @@ preserves a verified original and repairs only a private candidate. Its safety
 tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
 The authorized capture stage stops web/worker/Valkey through GitOps and mounts
 the queue read-only in a credential-free inspector. The helper verifies all
-writers exited before capture to private off-NAS storage. Actual discarded
-bytes and candidate validity remain unmeasured until capture. No live
-replacement path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+writers exited before capture to private off-NAS storage. No live replacement
+path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+
+[PR #1240](https://github.com/Stuhlmuller/homelab/pull/1240) merged as verified
+`fe1838c49eaa11897f5d7f375eae94ba439e3f4f`. Argo observed that revision and
+finished Synced/Healthy; all three writer Pods exited, the read-only inspector
+became Ready, and PostgreSQL/ClickHouse remained Ready. Full static validation,
+26,152 rendered policy checks and all required CI gates passed.
+The private off-NAS archive passed SHA-256 verification. Native Valkey 8.0.11
+validated the repaired candidate: only `appendonly.aof.4.incr.aof` changed,
+from 10,328,329 to 9,987,809 bytes, discarding 340,520 bytes. Original source
+and backup hashes stayed unchanged. This measures bytes, not lost events, and
+does not prove runtime loading or fresh ingestion. Langfuse remains intentionally
+offline pending explicit approval and a separate repository-owned replacement
+and restart path. LiteLLM native/UI-visible key migration remains incomplete.
+
+Native-key cutover inspection confirmed all four mounted caller credentials
+already use the `sk-` format required by pinned LiteLLM 1.80.8. Its
+`GenerateKeyRequest.key` accepts an existing value, so import need not rotate
+clients. Its custom-auth branch returns before database key verification;
+adding database rows alone would not enforce UI revocation. The new
+`scripts/ci/litellm-native-auth-test.py` exercises the actual pinned native
+authentication dependency with an in-memory store: existing keys authenticate;
+blocked/deleted keys, disallowed models and management routes are denied.
+Allowed routes must include both versioned and unversioned paths. This does
+not test a live database, UI mutation or cache invalidation. Database connection,
+one-time import and removal of the custom-auth bypass remain required before
+claiming migration; retain pre-auth telemetry admission and provider controls.
 
 An earlier ClickHouse logging change exposed a sync-wave dependency: its
 generated ConfigMap followed the Deployment, so Argo waited for a Pod that
