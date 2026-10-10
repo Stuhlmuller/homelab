@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik) ]] || {
-  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr|mirror-traefik' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard) ]] || {
+  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard' >&2
   exit 2
 }
 mode="$1"
@@ -17,6 +17,9 @@ elif [[ "$mode" == mirror-bazarr ]]; then
 elif [[ "$mode" == mirror-traefik ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-traefik-images.json
+elif [[ "$mode" == mirror-chainguard ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-chainguard-images.json
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
@@ -52,7 +55,7 @@ if [[ "$mode" == mirror ]]; then
       (unique | length) == length) and
     all(.images[];
       keys == ["source"] and
-      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
+      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
   if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.

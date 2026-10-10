@@ -34,6 +34,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.fleet_mirror_manifest = None
         self.bazarr_mirror_manifest = None
         self.traefik_mirror_manifest = None
+        self.chainguard_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -77,6 +78,11 @@ class HarborPublicationGates(unittest.TestCase):
             traefik_manifest_path.unlink(missing_ok=True)
         else:
             traefik_manifest_path.write_text(json.dumps(self.traefik_mirror_manifest))
+        chainguard_path = self.root / "scripts/config/harbor-chainguard-images.json"
+        if self.chainguard_mirror_manifest is None:
+            chainguard_path.unlink(missing_ok=True)
+        else:
+            chainguard_path.write_text(json.dumps(self.chainguard_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -101,7 +107,7 @@ class HarborPublicationGates(unittest.TestCase):
         return result
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
-                        missing_error="manifest unknown"):
+                        missing_error="manifest unknown", registries=("docker.io", "quay.io")):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-nofx-backend", "homelab-nofx-frontend"]
@@ -113,7 +119,7 @@ class HarborPublicationGates(unittest.TestCase):
         if mirror:
             (self.root / "published-images.json").unlink(missing_ok=True)
             self.mirror_manifest = {"images": []}
-            for registry, name in zip(("docker.io", "quay.io"), names):
+            for registry, name in zip(registries, names):
                 digest = self.published_digests[name]
                 source = f"{registry}/library/{name}:stable@{digest}"
                 self.mirror_manifest["images"].append({"source": source})
@@ -571,6 +577,38 @@ class HarborPublicationGates(unittest.TestCase):
                 result = self.run_helper(mode="mirror-traefik")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+
+    def test_chainguard_scope_rejects_unreviewed_content_before_credentials(self):
+        valid = {"source": "cgr.dev/chainguard/python:latest@sha256:" + "a" * 64}
+        self.mirror_manifest = {"images": [valid]}
+        for catalog in (None, {"images": []}, {"images": [valid, valid]},
+                        {"images": [{"source": valid["source"].replace("a" * 64, "b" * 64)}]}):
+            with self.subTest(catalog=catalog):
+                self.chainguard_mirror_manifest = catalog
+                self.rejected(mode="mirror-chainguard")
+        self.chainguard_mirror_manifest = {"images": [valid]}
+        shutil.copyfile(ROOT / "scripts/ci/install-kubeconfig.sh",
+                        self.root / "scripts/ci/install-kubeconfig.sh")
+        result = self.run_helper(mode="mirror-chainguard")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(self.calls.exists(), "Reviewed cgr.dev digest did not reach credential gate")
+
+    def test_chainguard_scope_preserves_complete_pull_and_failure_gates(self):
+        for failure in (None, "digest", "mirror-tag", "pull", "pull-digest"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure, mirror=True, registries=("docker.io", "cgr.dev"))
+                selected = self.mirror_manifest["images"][1]
+                self.chainguard_mirror_manifest = {"images": [selected]}
+                result = self.run_helper(mode="mirror-chainguard")
+                self.assertEqual(result.returncode == 0, failure is None, result.stderr)
+                copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+                if failure is None:
+                    self.assertEqual(len(copies), 3)
+                    self.assertTrue(copies[-1][-1].startswith("dir:"))
+                    for args in copies:
+                        self.assertTrue(all(flag in args for flag in
+                                            ("--all", "--preserve-digests", "--src-no-creds")))
                 self.assert_cleaned()
 
     def test_mirror_copies_public_sources_and_verifies_anonymous_complete_pulls(self):
