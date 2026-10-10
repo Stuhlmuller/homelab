@@ -135,10 +135,13 @@ accepts an exact already-promoted set; drift or unexpected staging files stop
 recovery. Keep writers stopped on failure and inspect retained files before
 retrying. Do not restore the corrupt original and restart it as rollback.
 
-Preserve the archive, original and all PVCs throughout recovery. After final
-live hashes match the candidate, a reviewed follow-up removes the
-inspector and restores global/web/worker and Valkey replicas to one. Merely
-restarting the original corrupt queue does not restore service.
+On October 10, the approved candidate was installed and its live hashes
+verified. This first GitOps follow-up removes only the inspector; all three
+writers remain at zero. Wait for Argo to prune the inspector and verify no Pod
+mounts `langfuse-valkey-data` before a separate reviewed revision restores
+global/web/worker and Valkey replicas to one. Preserve the private original and
+all PVCs throughout recovery. Merely restarting the corrupt original does not
+restore service.
 Require stable Valkey and worker readiness, then fresh correlated Langfuse
 generations from each caller. Safety tests cover offline guards and candidate
 isolation. Run the native checker fixture with
