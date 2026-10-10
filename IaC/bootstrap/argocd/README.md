@@ -23,6 +23,10 @@ issuer are committed here as non-secret desired state; the connector reads its
 client ID and client secret through the Argo CD secret reference syntax from a
 Kubernetes Secret named `argocd-oidc-sso`.
 
+The Helm values keep Argo CD off `zimaboard-2`: its 1.28 GiB allocatable memory
+cannot safely host an application controller that reached 658 MiB during the
+October 2026 kubelet stall. The other three nodes retain controller redundancy.
+
 The Helm values run two application-controller replicas with parallel pod
 management so loss of one worker does not strand GitOps reconciliation. They
 also enable metrics services for the application controller, repo server, and
