@@ -21,6 +21,25 @@ disabled. The Langfuse keys are mounted only in LiteLLM.
 
 ## Validation and rollout
 
+### October 10, 2026 native-key rollout
+
+[PR #1243](https://github.com/Stuhlmuller/homelab/pull/1243) merged as
+`998041ea` after all protected checks passed. Argo observed that revision with
+Synced/Healthy and a successful operation. The new gateway pod became Ready
+without restarts; PostgreSQL contains the native schema, import marker and four
+service-key rows. The native UI key-list API returns `openclaw`, `multica`,
+`nofx` and `n8n`. Each caller's own running pod authenticated to
+`http://litellm.ai.svc.cluster.local:4000/v1/models` with its configured key and
+received only `openrouter/free`.
+
+A disposable ten-minute key passed creation, authentication, block, unblock
+and deletion checks through the native API. Block and delete invalidated its
+warm authentication cache. The test key was deleted; service keys were not
+modified. These checks do not establish browser UI rendering, live restart
+preservation, native caller generation or fresh correlated Langfuse traces.
+Langfuse remains offline pending explicit approval of its backed-up queue
+repair. Retain those acceptance gates; model discovery alone is not completion.
+
 ### Native database-backed service keys
 
 The dedicated `litellm-postgres` StatefulSet stores UI-visible virtual keys.
