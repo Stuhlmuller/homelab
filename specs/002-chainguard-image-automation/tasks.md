@@ -219,7 +219,7 @@ passes its original scrape/function. Story completion additionally requires
   an image unmigrated; remaining implementation work is not an exception.
 - [ ] T025 [US2] Reconcile migration outcomes and exact consumer ownership in
   `clusters/homelab/apps/harbor/image-automation.json` and
-  `docs/knowledge-base/workloads/inventory.md`; record original-function,
+  `openwiki/workloads/inventory.md`; record original-function,
   runtime child digest and current/previous pullability evidence per consumer.
   Require zero unassessed active images and zero compatible accessible images
   left unmigrated before closing US2; keep automation paused until US3/US4
@@ -457,10 +457,10 @@ no new feature work or speculative infrastructure.
   `clusters/homelab/apps/argocd-image-updater/README.md`; document the accepted
   direct/fallback route, precise target/credential ownership, release policy,
   validation and operator recovery controls matching the deployed behavior.
-- [X] T053 Update `docs/knowledge-base/operations/harbor-oci.md`,
-  `docs/knowledge-base/architecture/secrets-and-identity.md`,
-  `docs/knowledge-base/runbooks/secrets-aws-ssm.md` and
-  `docs/knowledge-base/workloads/inventory.md`; resolve the parser finding,
+- [X] T053 Update `openwiki/operations/harbor-oci.md`,
+  `openwiki/architecture/secrets-and-identity.md`,
+  `openwiki/runbooks/secrets-aws-ssm.md` and
+  `openwiki/workloads/inventory.md`; resolve the parser finding,
   separate completed rollout evidence from remaining exceptions, and document
   source access, secret ownership, companion governance and bootstrap limits.
 - [ ] T054 Audit all FR-001–FR-017 and SC-001–SC-007 against evidence in

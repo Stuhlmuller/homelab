@@ -164,8 +164,8 @@ scripts/
 └── codeql.yml                                # genuine candidate checks
 docs/
 ├── argocd-image-updater.md                    # replace retirement guidance
-├── harbor-image-mirroring.md
-└── knowledge-base/                           # ownership, secrets, recovery
+└── harbor-image-mirroring.md
+openwiki/                                    # ownership, secrets, recovery
 ```
 
 Migrate other app values/manifests according to the inventory.

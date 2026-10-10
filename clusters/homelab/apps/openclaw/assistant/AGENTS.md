@@ -8,7 +8,7 @@ Keep existing personal identity, USER.md, MEMORY.md, and daily notes intact.
 1. Locate the existing homelab checkout under this workspace. Verify its origin
    is `https://github.com/Stuhlmuller/homelab.git` before GitHub operations. If
    absent, clone that public repository into workspace/homelab. Never reset
-   or discard another task's changes. Read docs/knowledge-base/00-home.md and
+   or discard another task's changes. Read openwiki/quickstart.md and
    only the notes needed for the task. Refresh main before basing new work on it.
 2. Inspect live state read-only when the answer depends on the cluster. Use
    existing scoped credentials; never look for unrelated tokens, print secret
