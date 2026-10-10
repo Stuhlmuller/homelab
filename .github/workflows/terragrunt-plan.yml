@@ -16,7 +16,6 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
 
 jobs:
   static-policy:
@@ -44,7 +43,7 @@ jobs:
               .github/workflows/terragrunt-plan.yml|IaC/*|flake.nix|flake.lock|policy/kubernetes.rego|policy/terraform.rego)
                 requires_live_plan=true
                 ;;
-              scripts/ci/connect-octelium.sh|scripts/ci/disconnect-octelium.sh|scripts/ci/install-kubeconfig.sh|scripts/ci/install-octelium-client.sh|scripts/ci/terragrunt-*)
+              scripts/ci/install-kubeconfig.sh|scripts/ci/terragrunt-*|scripts/ci/tailscale-*|clusters/homelab/apps/tailscale/*|scripts/config/tailscale-*)
                 requires_live_plan=true
                 ;;
             esac
@@ -54,7 +53,7 @@ jobs:
           if [ "${requires_live_plan}" = "true" ]; then
             echo "Live Terragrunt plan is required for this pull request."
           else
-            echo "No live Terragrunt plan inputs changed; skipping Octelium, Kubernetes, and OpenTofu plan steps."
+            echo "No live Terragrunt plan inputs changed; skipping Tailscale, Kubernetes, and OpenTofu plan steps."
           fi
 
       - name: Install Nix
@@ -113,10 +112,8 @@ jobs:
       - name: Verify Live Plan Inputs
         env:
           AWS_PLAN_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
         run: |
           test -n "${AWS_PLAN_ROLE_ARN}" || { echo "AWS_ROLE_TO_ASSUME_HOMELAB must be set as a repository or homelab-plan environment variable or secret."; exit 1; }
-          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-plan environment secret."; exit 1; }
 
       - name: Configure AWS Credentials
         uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
@@ -127,6 +124,25 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
+      - name: Prepare Tailscale State
+        timeout-minutes: 1
+        run: |
+          umask 077
+          mkdir -- "$RUNNER_TEMP/tailscale-state"
+
+      - name: Connect To Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          statedir: ${{ runner.temp }}/tailscale-state
+          version: 1.102.3
+          log-mode: quiet
+          ping: homelab-tailscale-operator.tail67beb.ts.net
+
+      - name: Verify Tailscale Identity
+        timeout-minutes: 1
+        run: python3 -I scripts/ci/tailscale-identity-check.py plan
+
       - name: Run Live Terragrunt Plan
         env:
           ARM_CLIENT_ID: ${{ secrets.AZUREAD_CLIENT_ID }}
@@ -134,8 +150,6 @@ jobs:
           ARM_USE_CLI: "false"
           ARM_USE_MSI: "false"
           ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
@@ -143,7 +157,8 @@ jobs:
           set -euo pipefail
           umask 077
           echo "::group::Kubeconfig setup"
-          bash scripts/ci/install-kubeconfig.sh
+          bash scripts/ci/install-kubeconfig.sh --tailscale
+          python3 -I scripts/ci/tailscale-access-check.py plan
           echo "::group::Kubernetes API check"
           kubectl --request-timeout=15s version >/dev/null
           echo "::group::Argo CD bootstrap plan"

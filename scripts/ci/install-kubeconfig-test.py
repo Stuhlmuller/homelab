@@ -12,6 +12,16 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class KubeconfigTests(unittest.TestCase):
+    def test_retired_transport_and_operator_execution_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for arguments, runner in (([], "true"), (["--tailscale"], "false")):
+                result = subprocess.run(
+                    ["bash", str(ROOT / "scripts/ci/install-kubeconfig.sh"), *arguments],
+                    env=dict(os.environ, HOME=directory, GITHUB_ACTIONS=runner),
+                    text=True, capture_output=True, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((Path(directory) / ".kube").exists())
+
     def test_tailscale_lane_has_fixed_verified_endpoint_and_no_token(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

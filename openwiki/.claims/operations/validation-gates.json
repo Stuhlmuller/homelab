@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0b6c1ad997298bb497f7bb4bbf28e44a60c363ce44463eb38ddc3f9ff6a51637",
+  "pageVersion": "sha256:e2d045288c177082f69225bce482457bdb433c71e9ed0261bd1842c4ae79c06d",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:c35127d0ce1b5eb33e057bf22a07dd219aee751f051a67e9f3a596f905cd468d"
+          "version": "repo-file-v1:sha256:90b6bc733e8af7462ad6379a797473e6bdf848784afacfc5b27e3b6601363f96"
         }
       ]
     },
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
+          "version": "repo-file-v1:sha256:98d5804c35b4fc50683d8f520b34b243fff0d8b96395323390c57b88cddfeee4"
         }
       ]
     },
@@ -53,8 +53,8 @@
       "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L18",
-          "version": "repo-lines-v1:sha256:f8bbfb2d52c3d6601e9fa25fef879f8a7b2578165a8c3c027b7e590886fb4ac3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L19",
+          "version": "repo-lines-v1:sha256:2edbee3a0903cbca50af4857f32229b376e5cc45e7443deb662b264d9f84d3e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6856a1784820d2d447b3d54a1af42161f8133da407ab2dfce4394fb40e3d9585"
+          "version": "repo-file-v1:sha256:5bdbc4fd736cc6ae0aa106ddca3c670ca327cb92ef1da1c97d40fe09bb355b3d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -165,8 +165,8 @@
           "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
-          "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
+          "resource": "repo://scripts/ci/static-checks.sh#L1-L17",
+          "version": "repo-lines-v1:sha256:dbe801b0e4cabd03cbb0459a5cc8aa698c49b0928d7a4842fd4640e09c7930d7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -205,10 +205,32 @@
           "version": "repo-file-v1:sha256:bddcda1f8d57dfa0580b8f76bdaa34494e7554e5464d53454b7523342b48098d"
         }
       ]
+    },
+    {
+      "id": "claim_5dedf336a4f448baaa5984f443d1b01e",
+      "statement": "Phase2b static and Rego gates require pinned Tailscale joins, fixed key scopes, private state and exact joined identity; focused tests cover wrong-tag/private-output rejection, native mesh/DNS validation, and Cordium readiness, denial and cleanup behavior.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/cordium-ci-transport-test.py",
+          "version": "repo-file-v1:sha256:fd227ee3c571d2e1c7a83469668da65dfa38001dfea24cdb938cc7b27c405eb1"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-nofx-reconcile-test.py",
+          "version": "repo-file-v1:sha256:ff25776cec1f58564cc1c7bfa3d99629554652cbfe94e50385d0d7149b1fc0b6"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L1057-L1104",
+          "version": "repo-lines-v1:sha256:f1cc71e7dbadb9e6ab86864f256fa93c350db60c8d3e8b67bc69ea03604e2f59:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlYTI4ZTVkMzRlMmM1MjdhYWI3MmUxNDkzOGZjNTRiYjdlODA4ODYxNDc2ZTRkYjE5YzNmYjRiYTNiNmVjNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4MmRhNGEzOWNmOGJhYmMzMWMyMGJjMGNiMjE0YzYyNTk1MzkzMDFlOTc2MDc2MmYxYzA1MzEzZjgzMThkNWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRlMDIyZDk4NDQ0MDU5NGQ3YzczZjg5NjZjZDA0ZTQ2NjI4NjlmNjJmMjMwYjNmODZiNmI2MTRjNGJiMjY2NTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU2Nzc2MjliZTg2N2U3OTY2ZWQwOWZiNjYyMWM0MWU1M2MxMzc1NTJjZjdiOTlkYTBjNDFjMTdlMjU1NDRlNjQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
+          "version": "repo-file-v1:sha256:7127b6a5ddf8c5340417cb3ab05af5b2770eddf06c2b0a0c596a289e1c9a7225"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:23:52.052Z"
+    "at": "2026-10-10T22:32:50.214Z"
   }
 }

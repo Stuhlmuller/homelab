@@ -3,6 +3,15 @@ type: runbook
 title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T22:32:50.214Z
+sources:
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
 ---
 
 # CI/CD
@@ -12,7 +21,7 @@ Canonical runbook: [`docs/ci-cd.md`](../../docs/ci-cd.md)
 Pull requests always emit the aggregate `Terragrunt Gate`; only trusted changes
 to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
-Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
+Azure credentials and scoped pre-signed Tailscale keys remain protected GitHub inputs,
 while desired state stays in repository-owned files.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
@@ -52,3 +61,28 @@ the temporary home and transport were removed. No production apply ran.
 Follow the [canonical rotation procedure](../../docs/ci-cd.md); the next 21-day
 rotation is due October 17, 2026. Do not infer rollout completion from
 credential recovery or read-only diagnostics.
+
+## Tailscale CI cutover
+
+Phase 2b moves eight workflows to pre-signed reusable ephemeral Tailscale keys
+while retaining Tailnet Lock. Plan and apply use separate protected environment
+keys; Cordium uses its own repository key and independent native OIDC policy.
+Every joined runner verifies its exact single tag and tailnet before live work.
+The hosted Ubuntu runner owns a private per-job state directory that is never
+cached or uploaded; daemon logout alone does not delete that directory.
+
+Before merging this source, complete canonical DNS/API acceptance, deploy the
+operator API proxy and plan admission/RBAC, and publish keys through the fixed
+reviewed `scripts/tailscale-ci-configure.py` helper. After merge, require protected
+plan with denied real writes, exact-main apply, diagnostics, both publishers,
+and Cordium execution, denial and cleanup checks. Source validation alone does
+not establish these live outcomes.
+
+The operator proxy kubeconfig contains no bearer token. Native catalog calls
+use canonical mesh TLS but retain their short-lived Octelium authorization.
+Legacy catalog, Tunnel and credentials stay until replacement acceptance; any
+legacy CI rollback first restores the prior reviewed workflow transport.
+Rotate provider generations before 60 days, republish signed keys, verify new
+CI runs, then explicitly retire previous cached signing authorities. Preserve
+the corrected separate authority/wrapper cache contract in the
+[provider runbook](../../IaC/modules/tailscale-access/README.md).

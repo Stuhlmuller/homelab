@@ -10,6 +10,7 @@ import os
 import tempfile
 import unittest
 from unittest.mock import patch
+from copy import deepcopy
 
 spec = importlib.util.spec_from_file_location("nofx", pathlib.Path(__file__).resolve().parents[1] / "octelium-nofx-reconcile.py")
 nofx = importlib.util.module_from_spec(spec)
@@ -128,11 +129,65 @@ class Reconciliation(unittest.TestCase):
                           {"OCTELIUM_AUTH_PROXY_SOCKET": "/private/proxy.sock"}):
             with self.subTest(overrides=overrides), \
                     patch.dict(nofx.os.environ, overrides, clear=True), \
-                    patch.object(nofx.importlib.util, "spec_from_file_location",
+                    patch.object(nofx, "run",
                                  side_effect=AssertionError("Transport opened before override rejection")):
                 with self.assertRaisesRegex(RuntimeError, "TLS or authentication"):
                     with nofx.native_transport(pathlib.Path("/unused")):
                         self.fail("Unsafe transport override accepted")
+
+    def test_native_transport_requires_exact_mesh_peer_and_strict_native_tls(self):
+        status = {"BackendState": "Running", "Self": {"Online": True},
+                  "CurrentTailnet": {"MagicDNSSuffix": "tail67beb.ts.net"},
+                  "Peer": {"ingress": {"DNSName": "homelab-ingress.tail67beb.ts.net.", "Online": True,
+                                       "TailscaleIPs": ["100.100.10.20", "fd7a:115c:a1e0::1234"]}}}
+        resolved = [(2, 1, 6, "", ("100.100.10.20", 443)), (10, 1, 6, "", ("fd7a:115c:a1e0::1234", 443, 0, 0))]
+        for failure in (None, "stopped", "wrong-peer", "wrong-dns", "tls", "grpc",
+                        "duplicate-status", "native-proto", "parameters", "browser-body"):
+            current = deepcopy(status)
+            if failure == "stopped":
+                current["BackendState"] = "Stopped"
+            if failure == "wrong-peer":
+                current["Peer"]["ingress"]["DNSName"] = "another.tail67beb.ts.net."
+            calls = []
+            def run(*command, **kwargs):
+                calls.append(command)
+                if command[1:] == ("status", "--json"):
+                    return subprocess.CompletedProcess(command, 0, json.dumps(current), "")
+                self.assertEqual(command[0:2], ("curl", "--disable"))
+                self.assertNotIn("--insecure", command)
+                self.assertNotIn("--connect-to", command)
+                self.assertNotIn("https_proxy", kwargs["env"])
+                self.assertNotIn("HTTPS_PROXY", kwargs["env"])
+                protocol = next(value.removeprefix("content-type: ") for value in command if value.startswith("content-type:"))
+                if failure == "tls":
+                    raise subprocess.CalledProcessError(60, command)
+                body = b""
+                response_status = f"grpc-status: {0 if failure == 'grpc' else 16}\r\n"
+                if failure == "duplicate-status":
+                    response_status += "grpc-status: 0\r\n"
+                if failure == "native-proto" and protocol == "application/grpc":
+                    protocol += "+proto"
+                if failure == "parameters":
+                    protocol += "; charset=utf-8"
+                if failure == "browser-body" and protocol == "application/grpc-web+proto":
+                    trailer = b"grpc-status: 16\r\n"
+                    body = b"\x80" + len(trailer).to_bytes(4, "big") + trailer
+                    response_status = ""
+                pathlib.Path(command[command.index("--output") + 1]).write_bytes(body)
+                return subprocess.CompletedProcess(command, 0, f"HTTP/2 200 \r\ncontent-type: {protocol}\r\n{response_status}\r\n", "")
+            with self.subTest(failure=failure), patch.object(nofx, "run", side_effect=run), \
+                 patch.object(nofx.pathlib.Path, "is_file", return_value=False), \
+                 patch.object(nofx.shutil, "which", return_value="/tailscale"), \
+                 patch.object(nofx.socket, "getaddrinfo", return_value=resolved if failure != "wrong-dns" else [(2, 1, 6, "", ("100.100.10.99", 443))]), \
+                 patch.dict(nofx.os.environ, {"https_proxy": "http://old-carrier", "HTTPS_PROXY": "http://old-carrier", "SAFE": "preserved"}, clear=True):
+                if failure not in (None, "native-proto", "parameters", "browser-body"):
+                    with self.assertRaises((RuntimeError, subprocess.CalledProcessError)):
+                        with nofx.native_transport(pathlib.Path("/unused")):
+                            self.fail("Unverified native transport accepted")
+                else:
+                    with nofx.native_transport(pathlib.Path("/unused")) as environment:
+                        self.assertEqual(environment, {"SAFE": "preserved"})
+                    self.assertEqual(len(calls), 3)
 
     def test_reviewed_commit_is_required(self):
         with self.assertRaises(RuntimeError):

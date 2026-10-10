@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f67c31eb6c9d1d19135a37c58a1aea5f9d8c21bd0e14637dc00b3e90c1bf6a31",
+  "pageVersion": "sha256:5ff72b4f468d995c23d7f97bb3adcd1c1cffe6a394ec07a789e576baaf789f75",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,11 +26,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:69029dba5101f021ffb651fe7ee368c080078bbbeb68513167b582c5bfa29c40"
+          "version": "repo-file-v1:sha256:d711871f83b6f593bb39d11e101801777cd62dde9cf5d09ec3a3519a5e90451c"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b"
+          "version": "repo-file-v1:sha256:fe5251689e0330adcaf705814afef4d8cb33fcbc610afe28f091562fa06d3d0b"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -108,25 +108,25 @@
     },
     {
       "id": "claim_bae52c267bba465cad2c68a8b9d69c7b",
-      "statement": "Phase2a routes in-cluster Harbor DNS through Traefik and removes the legacy public DNS writer/workflow; node host mapping and private external DNS acceptance precede retirement, while hosted CI retains its old transport until phase2b.",
+      "statement": "Phase2a routes in-cluster Harbor DNS through Traefik and removes the old public DNS writer; phase2b hosted CI verifies its scoped pre-signed Tailscale identity and uses a tokenless operator API kubeconfig to port-forward traefik/traefik-private while preserving canonical TLS and registry authentication. Node, DNS and protected publication acceptance remain separate gates.",
       "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-mirror.yml#L113-L145",
+          "version": "repo-lines-v1:sha256:a52d20b39e811a53220cd608667a12641e310618cb656900fc1cefe8eaa7750b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4YzFjMjgxODJkYjE3YjQ2NWFhZjJmZTk2Njg2NGM5MDI4ZmZkMGEwZjE1OWMyNmUxZTZhNWU0ZWE3NGRmN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkYWUxODhlZGY1NDU0MmFjODkyZDE0MTgxYzc4YWQ3NTdiMTQ1NzU3NGRmOWE0YjNkYTVjNjFhMmVhZTc4MGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM3YWYxNDlkZTI5M2I1ZDFiMWZjMzY1ODE5Nzg1MjIxZmM1MjM0MTA4Mzk4NzMwNjRiYThlOGJiZGFmYzBmNTQifQ"
+        },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
           "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
         },
         {
-          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
-          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b"
+          "resource": "repo://scripts/ci/harbor-publish.sh#L129-L157",
+          "version": "repo-lines-v1:sha256:7d06dfe5fbee39ec719d5261c4162fe5194576a5341802920656c7b24df82721:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3NGUwYjhhNWJmNDQ5ZDY0OWQ1MGY1NzA4OTA2MjM5ODYwZTg4YjQxYjE5YjQ1MGFiNWU1MzJiN2ZkNmQ3OWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcxMzk5MDA2MDU2Mzk1NGY5Mzc2NWFkMzc2ZDNkMDc2ZGFlZDA0YTUyYmFhZWRmODZjMWJmM2JiMGZiZmZlMWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlMjFjMmZjMTE1YjI5YTgzODNiYzhlYTY5MmRhOTBjZmEwMTNhMjFjNDYyNTM4NGE1ZWQ2MjNlOTlhNTY5NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ4ODk5ODVmNzU2OGE1YTMxMmY2NmMzMTU0ODQyMjU5MWI5NWUzNTI3YjkzM2NjNmI2MjRhZTg4NjY0NjcxODkifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T22:32:50.214Z"
   }
 }

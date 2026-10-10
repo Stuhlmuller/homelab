@@ -1,18 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d306b80685805e87cc3e5438da9869aa28e1e475a8467e8eabf36b90bf06d29f",
+  "pageVersion": "sha256:0ef0b245037a9acde304d03ecbfb7529c88b57a95af476e262997c3bda332ca4",
   "claims": [
     {
       "id": "claim_6955e53fbb7e432da5bbc402bfcad89e",
-      "statement": "Phase2a declares private application ingress through Tailscale and Traefik while retaining native Cordium Kubernetes access and deferring CI transport cutover until mesh DNS and identity acceptance.",
+      "statement": "Phase2b CI joins with scoped pre-signed ephemeral Tailscale keys, verifies its exact tag and tailnet, and uses the operator API proxy for plan/apply or private ingress for Cordium; legacy native Services, credentials and Mac carrier remain pending live CI/client acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/tailscale/README.md",
-          "version": "repo-file-v1:sha256:7623fb0e8b5d747a580a9b938324fca05d6787af979549c0cdb46908b9277cb4"
+          "resource": "repo://docs/ci-cd.md#L89-L122",
+          "version": "repo-lines-v1:sha256:021d4369d2d84a194642614e869a79a88b13206c98bc2905253289d695ae36a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5NDUxMWY3N2MzYzM3Y2JjOTVhN2Q2MjM3ODI3MjJmZGI1ZmQzMGNlMTBjNzRiNDJiYjE4OGM4ZGZmYjdlZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2MTg2NjM0NTgxMTI5YWY3MTYxNzA0M2E2ZTFiN2Q3MDcyMTVhMGQ0NWZiOGI1NjFmMmE2ZDA0Njc4NzMzM2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxY2RmNjgwMWU4ZjZiZDlkMGQzYWE3NjFiMDhjMzI5MWE4NjJkZDI0ZTk2MWIzNmIzZDYxMDU4MWJkNzZhZjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjNjVhNDI3ZmY1ZDdlNDc2MzRkOGEwZTdjMmQzMjYyNjI4ZjljMmJkMzE2ODRhYmFhOWJiMDE5MmU5MDRkNjkifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c84ce961262c525ce6f3d390182632f8dd6724baae69188784b64ba28bbbcdaa"
+          "resource": "repo://scripts/ci/install-kubeconfig.sh",
+          "version": "repo-file-v1:sha256:ffc78eb12e5f975c1032fbc9e0e10087fdaeb59dc4418c02b59d297272b72a6d"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-identity-check.py#L11-L41",
+          "version": "repo-lines-v1:sha256:5aa0502ad410a6c4b8ccfcb9ddecd6b404419cba5e3eae6cae0aba0f8c3fd420:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZWExYTJmNmMzNzk3ZjI1MjM2YTg2YWFhNGE4M2M0YzcwY2RhMjAxNzRhMDU5YmM3MDczZDY5N2JhNjFkYzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1MDQ2Mjg5NGZhOWVkMzkyMDg1MmE3NDEwM2U2YzQzNDk5ZDJiNDI4YTQwZTRmZjM2ZDM2NzA4OTdlMTJiZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA1NzIyYjhjNGYyODMxYTA4YTZmZjE2OGQxNjUxMTRiNmZkYmFjZjk4NDIxNTM2NjI3NzY5M2JkY2IzYmQwMjAifQ"
         }
       ]
     },
@@ -33,6 +37,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T22:38:39.317Z"
   }
 }

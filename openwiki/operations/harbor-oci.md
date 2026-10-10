@@ -16,8 +16,6 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
-  - id: openwiki-source-c071f0a75793c76e7f880496
-    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -28,10 +26,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
+    at: 2026-10-10T22:32:50.214Z
 ---
 
 # Harbor Private OCI Registry
@@ -56,10 +54,12 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI still establishes a bounded Kubernetes port-forward to Istio with
-the existing Octelium CI credential until phase 2b. Only its disposable runner maps
-the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
-retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
+Phase 2b hosted CI joins with the pre-signed apply Tailscale key and verifies
+its exact node tag and tailnet. A tokenless operator API kubeconfig establishes
+the bounded Kubernetes port-forward to `traefik/traefik-private`. Only the
+disposable runner maps Harbor to loopback, retaining canonical TLS and registry
+authentication. New transport publication still requires a successful protected
+run; prepared source is not that evidence. See `scripts/ci/harbor-publish.sh`.
 
 The shared Octelium-to-Istio hop currently skips upstream certificate validation
 for the Kubernetes Service hostname, as declared in

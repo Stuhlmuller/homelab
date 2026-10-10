@@ -5,15 +5,19 @@ description: "Talos node roles, API endpoints, scheduling capacity, Octelium rec
 tags: ["architecture", "talos", "kubernetes"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
+    at: 2026-10-10T22:38:39.317Z
 sources:
-  - id: openwiki-source-bcf299afd34b5d6fd43aa9a0
-    resource: repo://clusters/homelab/apps/tailscale/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
+generated: { by: "codex", at: "2026-10-10T22:38:39.317Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -268,7 +272,7 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 - Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
   through Traefik; canonical custom hostnames move during staged DNS cutover
 - Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
-  CI switches separately after mesh DNS and identity acceptance
+  phase 2b CI uses a tokenless kubeconfig after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -286,9 +290,13 @@ not retain stale SANs or append duplicates.
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
 resources and subresources stay denied. Tailscale provides remote Talos/LAN
-access and the declared application ingress. Old CI and operator transports
-remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
-Octelium does not provide a Talos-native Service mode.
+access and the declared application ingress. Phase 2b workflows join through
+scoped, pre-signed ephemeral keys and verify their exact node tag and tailnet.
+Plan and apply use the operator API proxy; Cordium reaches private ingress but
+has no Kubernetes grant. Legacy native Services, credentials, and the Mac
+carrier remain until live CI/client acceptance through the
+[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Prepared source
+does not establish that acceptance. Octelium has no Talos-native Service mode.
 
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining

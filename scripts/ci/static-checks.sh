@@ -8,6 +8,7 @@ python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
+python3 -I scripts/ci/tailscale-identity-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/multica-desktop-connect-test.py
@@ -21,6 +22,7 @@ terragrunt_generate_stack
 
 python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-ci-acceptance-test.py
+python3 -I scripts/ci/cordium-ci-transport-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py
 python3 -I scripts/ci/cordium-isolation-check-test.py
@@ -875,8 +877,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
     .jobs["terragrunt-plan"].env == null and
     ($plan_inputs | length) == 1 and
     $plan_inputs[0].env == {
-      "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "AWS_PLAN_ROLE_ARN": "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}"
     } and
     ($aws_credentials | length) == 1 and
     $aws_credentials[0].with["role-to-assume"] == "${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}" and
@@ -886,9 +887,7 @@ yq -o=json '.' .github/workflows/terragrunt-plan.yml |
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
-      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
-      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}"
     } and
     ([.jobs["terragrunt-plan"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
@@ -921,7 +920,7 @@ gate_body_sha256="$(
     shasum -a 256 |
     cut -d' ' -f1
 )"
-[[ "$scope_body_sha256" == "9479ae825c1cb4bc27377c47c14d0c5e4ff18d3ebb74ce5cf504bb500091fee4" ]] || {
+[[ "$scope_body_sha256" == "c6a5d8a230c63b3fab726560ec60422fa1965e4248fb4ff8b5c6ca0e4e7351d3" ]] || {
   echo "Live-plan scope body changed; review it and update its exact security hash." >&2
   exit 1
 }
@@ -1033,21 +1032,62 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml 7cc3d5576e39f314a6d8269b7c6d80ef293685d3aa63a99c7b22c1677cd17d57
-.github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
+.github/workflows/cordium-check.yml f30c08f52074f2297eaf89985513f5695659026356d80457f75d321f03640b5e
+.github/workflows/cordium-login-denial.yml e7c61ae727c8cceee7b63a8e972a51ce0fc36eac5fc629b500af26304fbb504d
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-mirror.yml 684394de02b5aebc8fb04a45caf111c03f1fba666c1e944bd94ddaf866e01b78
-.github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
+.github/workflows/harbor-mirror.yml 1ab65ef217e3e5b1a635a3d8227734b2ded1a624d88e285f9df92d187f899ad4
+.github/workflows/homelab-diagnostics.yml e906d9d2c0fc1c6101da7312365739b6270d8f0a3d78296c9147440ffe39f273
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
-.github/workflows/nofx-images.yml 1e641356d76b777a04b34a0d32c3bbfb0000ef76ca4ad8e2c1c23163b212921a
+.github/workflows/nofx-images.yml dbaa4dc52bb290e5bfe06b83110bac7ac90f4050e0dfbf83545e9f1cf0d082ee
 .github/workflows/nofx-registry-credential.yml 57da09cc6bcecfaf820c85961ef19ad624e62e3a033d4b7aa12cb8eeae35e1e8
 .github/workflows/litellm-provider-credential.yml a6d4fe36ccd7986c9cb35811fd70ec795458cc095758b302f1d9bd25b7d77416
-.github/workflows/octelium-private-kubernetes-apply.yml 76d81812010b3a1546b053a57e8e8d2b67cea86fd36b87d3356dc48575dca065
+.github/workflows/octelium-private-kubernetes-apply.yml 2850f3ab3941344faa1d7cc36157bd63b074d3e1983752042b045d616afa90f0
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml e718b6d33369385553e99b2f84a2c50524eb882dc5020ba1d22436ba59572edb
-.github/workflows/terragrunt-plan.yml 0e990457caf2d33452b2a7e23a7440da4dc4245b78bdc8a03a68c4687921fa32
+.github/workflows/terragrunt-apply.yml cb7af24488375b5023d8311b5b089dd022f52aa85ad2493bbe27f642c0bc4080
+.github/workflows/terragrunt-plan.yml a221bad7153482448e69158f7290472846b688153393d9c5c8c033008c02ef57
+EOF
+echo "::endgroup::"
+
+echo "::group::Scoped Tailscale CI identities"
+while read -r workflow job identity secret_name ping; do
+  yq -o=json '.' "$workflow" |
+    jq -e --arg job "$job" --arg identity "$identity" --arg secret_name "$secret_name" --arg ping "$ping" '
+      [.jobs[$job].steps[] | select(.name == "Connect To Tailscale")] as $joins |
+      ($joins | length) == 1 and
+      $joins[0].uses == "tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd" and
+      $joins[0].if == null and
+      ($joins[0]["continue-on-error"] // false) == false and
+      $joins[0].env == null and
+      $joins[0].with == {
+        "authkey": ("${{ secrets." + $secret_name + " }}"),
+        "statedir": "${{ runner.temp }}/tailscale-state",
+        "version": "1.102.3",
+        "log-mode": "quiet",
+        "ping": $ping
+      } and
+      .jobs[$job]["runs-on"] == "ubuntu-24.04" and
+      [.jobs[$job].steps[] | select(.name == "Prepare Tailscale State")] == [{
+        "name": "Prepare Tailscale State", "timeout-minutes": 1,
+        "run": "umask 077\nmkdir -- \"$RUNNER_TEMP/tailscale-state\"\n"
+      }] and
+      [.jobs[$job].steps[] | select(.name == "Verify Tailscale Identity")] == [{
+        "name": "Verify Tailscale Identity", "timeout-minutes": 1,
+        "run": ("python3 -I scripts/ci/tailscale-identity-check.py " + $identity)
+      }] and
+      (.jobs[$job] | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
+      (.jobs[$job] | tostring | contains("KUBE_API_SERVER_URL") | not)
+    ' >/dev/null
+done <<'EOF'
+.github/workflows/terragrunt-plan.yml terragrunt-plan plan TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/terragrunt-apply.yml terragrunt-apply apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/harbor-mirror.yml mirror apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/nofx-images.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/octelium-private-kubernetes-apply.yml reconcile apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/homelab-diagnostics.yml grafana apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/cordium-check.yml check cordium TAILSCALE_CORDIUM_AUTH_KEY homelab-ingress.tail67beb.ts.net
+.github/workflows/cordium-login-denial.yml deny cordium TAILSCALE_CORDIUM_AUTH_KEY homelab-ingress.tail67beb.ts.net
 EOF
 echo "::endgroup::"
 
@@ -1123,9 +1163,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "ARM_USE_OIDC": "true",
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
-      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
-      "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
-      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+      "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}"
     } and
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
@@ -1241,7 +1279,6 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
     ([.jobs.reconcile.steps[] |
       select(.name != "Reconcile Private Kubernetes Catalog") |
       .env.OCTELIUM_CATALOG_AUTH_TOKEN // empty] | length) == 0 and
-    (.jobs.reconcile | tostring | contains("id-token") | not) and
     (.jobs.reconcile | tostring | contains("OCTELIUM_CI_AUTH_TOKEN") | not) and
     (.jobs.reconcile | tostring | contains("kubectl") | not) and
     (.jobs.reconcile | tostring | contains("terragrunt") | not)

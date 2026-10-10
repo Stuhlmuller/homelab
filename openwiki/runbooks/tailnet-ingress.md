@@ -34,6 +34,10 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
@@ -52,10 +56,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T22:32:50.214Z
 ---
 
 # Tailnet And App Ingress
@@ -71,7 +75,8 @@ Canonical desired state and validation:
 [route inventory](../../clusters/homelab/apps/traefik/routes.yaml), and
 [Tailscale provider runbook](../../IaC/modules/tailscale-access/README.md).
 The [ingress runbook](../../docs/networking-tailnet-ingress.md) describes the
-phase 2a source and the separate external DNS and later CI cutover gates.
+phase 2a source and separate external DNS gates;
+[CI/CD](../../docs/ci-cd.md#tailscale-ci-access-setup) owns phase 2b CI acceptance.
 
 ```mermaid
 flowchart LR
@@ -147,7 +152,12 @@ only cached older-generation signing authorities. Expired auth keys alone do not
 revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
-tradeoff. Each CI job must supply a private `statedir` to the pinned action.
+tradeoff. All eight phase 2b workflows supply a private per-job `statedir` to
+the pinned action and verify the exact single node tag and tailnet before live
+commands. State is never cached or uploaded; hosted Ubuntu VM decommissioning
+removes daemon state after the action logs out. Plan/apply use tokenless
+operator API kubeconfigs, while Cordium retains separate native OIDC. Prepared
+source does not establish successful protected CI runs.
 
 ## Security and rollout gates
 
@@ -191,8 +201,12 @@ The same phase declares internal CoreDNS rewrites for Octelium API and Harbor
 to `traefik-private`, additive Cordium bootstrap network peers, and n8n's
 `https://n8n-webhook.tail67beb.ts.net/` advertised webhook URL. Require Funnel
 readiness before n8n restarts because it can register hooks during startup.
-Check native API and Harbor access after internal DNS convergence; keep CI and
-shared native operator transport unchanged until canonical mesh acceptance.
+Check native API and Harbor access after internal DNS convergence. Phase 2b
+switches CI and shared native operator transport only after canonical mesh
+acceptance. Require protected plan write denial, exact-main apply, diagnostics,
+both publishers and Cordium execution/denial/cleanup before final retirement.
+Legacy catalog, credentials, Tunnel and the Mac rollback installer remain
+through these gates.
 
 Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most

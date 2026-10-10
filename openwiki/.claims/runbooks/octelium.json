@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb00131cbc400a407a1eb493784a22a2509353c250ba2160b79b9ef6cbb2d34f",
+  "pageVersion": "sha256:a6cd2b70fbcefe21bd33b43ee4bd911b59056ac5509919a4c429ffcc6c63054a",
   "claims": [
     {
       "id": "claim_7ff19d2b3cf94bcda26039f6b8c2abfe",
@@ -29,10 +29,28 @@
           "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
         }
       ]
+    },
+    {
+      "id": "claim_41c8dc0a5dbc4ca0814355e2a0717e58",
+      "statement": "Phase2b shared native transport requires the declared online tailnet/ingress peer, canonical DNS limited to that peer's mesh addresses and strict native/gRPC-Web TLS probes with proxy overrides removed; callers retain existing narrow resource/review guards, while Cordium CI uses independent native OIDC after its mesh join.",
+      "evidence": [
+        {
+          "resource": "repo://docs/cordium-ci.md#L27-L43",
+          "version": "repo-lines-v1:sha256:fc35912718664c306d2bf321bec417e14a5a81d5ddbe04165ca9b967c4a64d01:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4YmUxMDFkNzU5OGYzZTAxY2JkZmFhOWI2OTkyYzhjOGYzMTRiZjc1Zjg4NzhhMzY3ZjEzNDZjNTIxMjc5OWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmNTM0YzFiM2MyZTIxNTAzNDdmZWZkZTZkMzA5MzRkY2Q3NDQ5YjY4M2VkN2ZlOWNjMGRkNzc1Zjc1OTA1MzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY0YTYwZWRjM2I4ZmU2MzgyZGVkYzJhMmFlYmU4YmJlYTdmYWM1NjQzZTZmOGU1ZTYzMTU2NTA5MzQyZmQ3YzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkYjYxOTdhNjNkYTE3MmQ2NWIwNWU5NTk0NDk3ODFlNDU4ZDFjZTAwYWQxYmJmZDE1Nzk3YmVlZDRiYTg0ZTgifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/cordium-ci.sh",
+          "version": "repo-file-v1:sha256:da1bbb4f1745e68c1a11fc0938dca2be131b4ddca7c87edfc4457291e4dd04b5"
+        },
+        {
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L69-L115",
+          "version": "repo-lines-v1:sha256:df778d3074f633af9e1ce04052c7fb171cee7bdae8b1d07ea9b954bf15677812:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyYjY1NjljZTYyNWQ4NDU2MzJiMjRjMTBkZDA3ZmNkNWJiNGQ2YTNhMWQyYzkyZjg4MmY5MmY3YmRiNTFiZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5MTA0NWMzNDNhODlmNTM5ZTU1NDIxYWZjOTY5OTgzMWU1Njg2ZDVjN2ZmZDM1YzYwMmEzNGU0Mzk3YWE1ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0NWZjMDEyMjliNmNmMWJjYjA3ODVlYWMwMmQ3NmE1MWYxMTg3NTQ1MDYwMDdhNmRiZTM0MDFmNDVkZGVhYTYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:12:32.276Z"
+    "at": "2026-10-10T22:32:50.214Z"
   }
 }

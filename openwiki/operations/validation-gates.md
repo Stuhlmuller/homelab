@@ -20,6 +20,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-de814b7f881b5c7f3424eff6
+    resource: repo://scripts/ci/cordium-ci-transport-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -32,6 +34,8 @@ sources:
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-41efcaef13a2f84ca5556bc7
+    resource: repo://scripts/ci/octelium-nofx-reconcile-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -42,6 +46,8 @@ sources:
     resource: repo://scripts/ci/tailscale-access-check.py
   - id: openwiki-source-fc269dae2f6a8501f0c0fb75
     resource: repo://scripts/ci/tailscale-ci-configure-test.py
+  - id: openwiki-source-337735e4690d15019ba408c9
+    resource: repo://scripts/ci/tailscale-identity-check-test.py
   - id: openwiki-source-4ac432ebb03e57e6e256a336
     resource: repo://scripts/ci/tailscale-ingress-sign-test.py
   - id: openwiki-source-511191e55632b55651ad4318
@@ -58,10 +64,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T22:32:50.214Z
 ---
 
 # Validation Gates
@@ -221,7 +227,8 @@ CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness befor
 n8n rolls out because it can register hooks on startup. External DNS execution,
 Mac hosts migration, old-TTL expiry and normal canonical DNS/API verification
 remain ordered steps; callback receipts require fresh natural deliveries. Old
-CI and native operator transport stay until their later acceptance stage.
+native catalog and credentials stay until their later acceptance stage. Phase 2b
+switches CI/native transport only after canonical DNS/API acceptance.
 
 The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
@@ -369,10 +376,15 @@ remained secondary, so the pilot rename was not retried. This operator execution
 does not satisfy or bypass the protected CI plan gate; see the
 [dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
-The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
-included in that closed credentialed-workflow inventory. It uses only the
-existing production AWS role and Cloudflare rule-removal secret, with private
-API output withheld. Validate its full definition before updating the hash.
+The legacy Tunnel DNS workflow was removed in phase 2a. Phase 2b security
+hashes and Rego require all eight credentialed mesh jobs to use the pinned
+Tailscale action/version, fixed secret scope, private per-job state directory,
+and exact tag/tailnet verification before consumers. Offline identity tests
+reject wrong/broader tags, foreign or disconnected profiles, and malformed
+status without disclosing raw output. Cordium transport tests verify TLS
+readiness before login, denial-mode isolation, and cleanup on remote or logout
+failure. The shared native helper tests canonical DNS against the exact online
+ingress peer and uses the strict transport-neutral API response parser.
 
 The `NOFX Registry Credential` workflow uses the same reviewed-main and protected
 environment boundaries. Its AWS session can update only the dedicated NOFX

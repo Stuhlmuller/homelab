@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:19f78ae5a3a2530e1dd23c4d2c5f9b2471fb34acb16b1a5f6cf4d5e3cd902676",
+  "claims": [
+    {
+      "id": "claim_0ed784dfb7d14289b136e8f8c8fb2871",
+      "statement": "The phase2b CI cutover requires DNS/API, proxy/RBAC and signed-key publication before merge, followed by protected plan denial, apply, diagnostics, both publishers and Cordium execution/denial/cleanup acceptance before retiring legacy access.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md#L267-L314",
+          "version": "repo-lines-v1:sha256:9ca2979f58cb259ff3d2234febd6778ac6657eceb50934e8063dd1f91442508f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZjlkMDc3NjI2ODNjNDI4YWZiMTJhMzJjZjY3NjMzNWE1ZGRmNWY5ZGRkZDIyNTdlZWMzNDFiMzAzYTBiNzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0ZTY1MjAzNDJkZWI5YmRkOTc1MGIwOWViOWFmY2Q5ZTVmNGRkZDE5MDQ4NWQ5Yzg2ZDVjNWUyM2I1ZGU2NmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4ZmY3YzZiOWExOGFhZTNjMTgyMDZlZjJjN2Q3Y2Q4MGJkMjE1Y2M0ZWMxMDVhYTZkNjcxM2RiZWM2NGQ2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI0ZTdlNzE4NzNhZTRlNzg4Y2JhNDc5NWZjM2IwNWViY2VlZGM1N2FmNjkwNjA5ZGZlNzQyNDMwMjQ5MmNjZjQifQ"
+        },
+        {
+          "resource": "repo://docs/cordium-ci.md#L77-L117",
+          "version": "repo-lines-v1:sha256:bbfa34c63d7f88f2a453dee567e77300683cfc478587d94eff23e071583230dc:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0N2MyYTZkOGE2YWNmMDUxZjAyYzJkNjk5YWQzNjJmMmZlNGQzOGU2NGNjMjcwNWZhMWZiOGRmMzZmZDFmOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNGFkYWUzMDRjMWM0ZjUwNmEyOWY4NmUzNGFmM2ZmMzRiYzViNzhjY2EyNzY3ODQ3ODc3MDc4ZmY1MjIxZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzY2NkMGJhY2YzZjY4NjYzNzI4MGE3YTlhMDg3ODExYzliZTg2NTk5Y2Q2YTdiY2I0ZWRmYzk0Y2VlOWI3YWYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T22:32:50.214Z"
+  }
+}

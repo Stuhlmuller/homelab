@@ -4,6 +4,10 @@ title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
 sources:
+  - id: openwiki-source-29ced481494f3a85c0d7921b
+    resource: repo://.github/workflows/terragrunt-apply.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -16,10 +20,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T22:32:50.214Z
 ---
 
 # GitOps Flow
@@ -59,7 +63,7 @@ requirements.
 Octelium recovery has one transport exception, not a desired-state exception:
 a trusted LAN operator may apply the reviewed `kubernetes-node-labels`
 Terragrunt unit through the canonical private API and shared remote backend when
-GitHub-hosted runners cannot reach that API through Octelium. The repository
+GitHub-hosted runners cannot reach their declared API transport. The repository
 unit, saved plan, policy check, and normal Terragrunt state remain authoritative;
 no ad hoc Kubernetes mutation or GitHub kubeconfig secret is introduced.
 
@@ -130,9 +134,14 @@ Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
 writes still require the guarded operator command after signed proxy, TLS,
 backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
-old native catalog, credentials, and CI transport through their separate
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
-does not claim that traffic has moved or old native Services have been retired.
+old native catalog, and credentials through their separate
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b switches
+eight CI workflows to scoped pre-signed Tailscale keys, verifies the joined tag
+and tailnet, and sends native API calls directly through mesh TLS. Plan and
+apply use the operator API proxy with tokenless runner kubeconfigs; admission
+permits plan dry-runs but denies real Application writes. Production jobs
+retain protected-environment and exact-current-main checks. This prepared
+source does not establish live CI acceptance or retire old native Services.
 
 ## Important Paths
 

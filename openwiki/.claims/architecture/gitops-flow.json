@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cb2cc25b78221d81fd05da173a3c3bd616cb186aa94d3b19e3c66e441b6bf100",
+  "pageVersion": "sha256:00ebdf514136c4225359690a18a7af0f97213ca476cd0d677736931809a129da",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -30,17 +30,35 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
+          "version": "repo-file-v1:sha256:98d5804c35b4fc50683d8f520b34b243fff0d8b96395323390c57b88cddfeee4"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
           "version": "repo-file-v1:sha256:df06298c6267d82fa16874faee14c98e74927a885b11301a6a926b8280cb0c1a"
         }
       ]
+    },
+    {
+      "id": "claim_f791985ea1e943a89da27d745eea60aa",
+      "statement": "Phase2b workflows use scoped pre-signed Tailscale keys with joined-node identity checks, tokenless operator API kubeconfigs, plan admission denial checks, and protected exact-main production gates while retaining legacy native catalog and credentials until acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-apply.yml#L77-L211",
+          "version": "repo-lines-v1:sha256:b22067873c4daaab4cd4463d635c12a7ccc7266d7bad596999c501a109b910bc:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIyMjc0NjMzNGZkYmQ2NTEzMjM5ZjEzMjZkYjhiNjEyNzU3YjViMzJjMDgwOGI1MDgxYTk5MzdmNjUzM2I4ZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0NTc3Mjk2MzM2YTZlODY0NjFjNTE5ZTUzNDk1N2JkNDkwNWQ5NDk1NmU0MjRlOTdkNzhiYjhmYzU0Mzk3Y2I0IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIyZjgwOGZjYzM5N2I5MjZlNmEwMWQyN2M4Y2M2OWNhYzBiYmM3ZTMxNzdmNWE1MDFjMWYwNmZlM2E3MTVmNjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0YjlhZjA1YjU1MDk0NDZiYjM0MWQwNWViMTYzNDQ4OGE1YWM2YjJhNzkxYTAwNjRhYjE4ZGVjNjFiMzk0YzU3In0"
+        },
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml#L134-L183",
+          "version": "repo-lines-v1:sha256:34801d48927f851d8a647534c8be89c3a718d4888bbf8609aa279c2ecae44404:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NDRhZjVhYWQ4MzFkMGI5ZDljOTM5YjYzYzk1ZjQ1ZDZmNDIyNjY1YjIwOTYyNzUwNjE5ZmQ5ZTZlMTNiMGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3NmYzZTE4OGU0ZmRmYzk4ZDE4OGYwZmIwY2I2MjU0YWJiZjM3NjI5Nzc0YWNkYWJlMmQyYmM0ZjA5MGQ5Y2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5NWMwM2NlYmU1Y2RjZGZlMTA2ZDQwOWFjYzkzNzE3ZDk5MDBhYmRmNjA3ZTI3NmJhYTgwNmQyYWVkMDQ3NDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5ODExNDFiNmJjN2ZhYjQ0NmFhNTQwM2MyMDNkYTIzZWRmOGU0NjA3NmNmZjUyZWFjMjljMDJjNjkzMjFhNzQifQ"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md#L89-L122",
+          "version": "repo-lines-v1:sha256:021d4369d2d84a194642614e869a79a88b13206c98bc2905253289d695ae36a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5NDUxMWY3N2MzYzM3Y2JjOTVhN2Q2MjM3ODI3MjJmZGI1ZmQzMGNlMTBjNzRiNDJiYjE4OGM4ZGZmYjdlZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2MTg2NjM0NTgxMTI5YWY3MTYxNzA0M2E2ZTFiN2Q3MDcyMTVhMGQ0NWZiOGI1NjFmMmE2ZDA0Njc4NzMzM2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxY2RmNjgwMWU4ZjZiZDlkMGQzYWE3NjFiMDhjMzI5MWE4NjJkZDI0ZTk2MWIzNmIzZDYxMDU4MWJkNzZhZjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjNjVhNDI3ZmY1ZDdlNDc2MzRkOGEwZTdjMmQzMjYyNjI4ZjljMmJkMzE2ODRhYmFhOWJiMDE5MmU5MDRkNjkifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:23:52.052Z"
+    "at": "2026-10-10T22:32:50.214Z"
   }
 }

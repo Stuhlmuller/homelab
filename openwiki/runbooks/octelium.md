@@ -3,17 +3,23 @@ type: runbook
 title: "Octelium"
 description: "Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence."
 tags: ["runbook", "octelium", "access"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T22:12:32.276Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-fd5257dfdfce75d54d138848
+    resource: repo://scripts/ci/cordium-ci.sh
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
     resource: repo://scripts/multica-desktop-connect.py
-generated: { by: "codex", at: "2026-10-10T22:12:32.276Z" }
+  - id: openwiki-source-ff63d9d82b2370adf56a5f28
+    resource: repo://scripts/octelium-nofx-reconcile.py
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T22:32:50.214Z
 ---
 
 # Octelium
@@ -38,10 +44,23 @@ The retained Cloudflare Tunnel provides old browser and native carrier routes
 until mesh acceptance. Its DNS-restoration workflow and old DNS writer are
 removed in phase 2a. Follow the
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) for guarded
-DNS-only mesh records, Mac migration, callback delivery, and later CI transport.
+DNS-only mesh records, Mac migration, callback delivery, and CI transport.
 Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
 actual Cordium execution/reconnection before removing the old tunnel or catalog.
 The legacy `octelium-tunnel-check.py` is not a mesh acceptance gate.
+
+Phase 2b changes the shared `native_transport` helper to direct canonical TLS.
+It requires the declared online tailnet and unique online ingress peer, verifies
+canonical DNS resolves only to that peer's mesh addresses, removes proxy
+overrides, and probes native gRPC plus gRPC-Web with the strict shared parser.
+Existing catalog/credential callers keep their narrow resource and exact-main
+guards. The Cordium CI wrapper now uses direct TLS after its scoped Tailscale
+join; native OIDC remains an independent authorization boundary. It creates no
+carrier or hosts override and removes private login files on exit.
+
+Prepared source does not prove live CI execution or cleanup. Keep the old
+catalog, native credentials, Tunnel and Mac rollback installer through the
+recorded acceptance gates; final retirement remains a separate source change.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 additional public WEB Service fallbacks on `acer` without Multus, 19

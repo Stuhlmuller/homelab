@@ -10,6 +10,10 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -26,14 +30,18 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T22:23:52.052Z" }
+generated: { by: "codex", at: "2026-10-10T22:32:50.214Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:23:52.052Z
+    at: 2026-10-10T22:32:50.214Z
 ---
 
 # Secrets And Identity
@@ -101,8 +109,11 @@ The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
 read resources, including Helm release Secrets, and submit Argo Application
 dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
 Apply retains cluster administration for existing bootstrap and RBAC ownership;
-Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
-until authenticated plan/apply and denial checks succeed over the new proxy.
+Cordium's mesh identity has no Kubernetes binding. Phase 2b workflows use the
+scoped keys, verify an exact single node tag and tailnet before live commands,
+and create tokenless kubeconfigs for the fixed TLS proxy endpoint. Authenticated
+plan/apply and denial checks remain live acceptance gates; old native catalog
+and credentials are retained until those gates pass.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
@@ -337,7 +348,7 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   the Octelium native Secret `entra-oidc-client-secret` and IdentityProvider
   `entra` by `scripts/octelium-entra-oidc.sh`. HUMAN user Entra identifiers are
   runtime mappings and must not be committed to the public repo.
-  GitHub Actions uses a separate Octelium workload credential for User
+  The retained legacy GitHub Actions rollback path uses an Octelium workload credential for User
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
@@ -348,8 +359,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
   identity. Repository Actions policy rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
-  always-on checks and no force pushes. The CI connector does not pass Octelium
-  `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
+  always-on checks and no force pushes. Migrated workflows no longer consume
+  this credential; restore the prior transport through reviewed code before
+  attempting legacy recovery. Its Session policy requires the exact WORKLOAD User,
   CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every
@@ -360,8 +372,8 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
-  affects CI, operator, and Cordium Kubernetes access, so validate both Services
-  after rotation.
+  affects legacy CI, operator, and Cordium Kubernetes access; Tailscale CI does
+  not consume it. Validate both retained Services after rotation.
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
@@ -374,7 +386,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   `OCTELIUM_CATALOG_AUTH_TOKEN` exists only between provisioning and the
   mandatory revoke step. Octelium v0.35 cannot scope these methods by object
   name; the fixed helper, reviewed hashes, exact `main` SHA, and production
-  approval provide that boundary. See `docs/ci-cd.md`.
+  approval provide that boundary. The workflow uses the scoped apply Tailscale
+  key only for transport; its short-lived Octelium credential remains required.
+  See `docs/ci-cd.md`.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by
@@ -520,7 +534,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
 `homelab-cordium-ci-oidc` accepts GitHub assertions only for the exact repository,
 owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
 separate workload identity with bounded sessions and workspace lifecycle/exec
-permissions; bootstrap management credentials are not shared. A catch-all
+permissions; bootstrap management credentials are not shared. Phase 2b provides
+network access with the separate pre-signed Cordium Tailscale key, then uses
+canonical mesh TLS for the independent native OIDC assertion. That network key
+does not grant Cordium API methods. A catch-all
 post-authentication denial and priority -4 method denial close upstream
 default allowances. The fixed `scripts/cordium-ci-reconcile.py` path previews
 only these three resources by default. Execution requires clean, exact reviewed
