@@ -11,6 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 def check(objects):
     indexed = {(item["kind"], item["metadata"]["name"]): item for item in objects}
     statefulset = indexed["StatefulSet", "litellm-postgres"]
+    wave = "argocd.argoproj.io/sync-wave"
+    database_wave = int(statefulset["metadata"].get("annotations", {}).get(wave, "0"))
+    for kind in ("NetworkPolicy", "AuthorizationPolicy"):
+        policy_wave = int(indexed[kind, "litellm-postgres"]["metadata"].get("annotations", {}).get(wave, "0"))
+        assert policy_wave < database_wave, "Database access policy must precede PostgreSQL"
     pod = statefulset["spec"]["template"]["spec"]
     assert not pod["automountServiceAccountToken"]
     assert pod["securityContext"]["runAsNonRoot"]
@@ -59,4 +64,14 @@ if __name__ == "__main__":
         except AssertionError:
             continue
         raise AssertionError("Unsafe database contract accepted")
+    for kind in ("NetworkPolicy", "AuthorizationPolicy"):
+        changed = copy.deepcopy(objects)
+        policy = next(obj for obj in changed if obj["kind"] == kind
+                      and obj["metadata"]["name"] == "litellm-postgres")
+        policy["metadata"]["annotations"].pop("argocd.argoproj.io/sync-wave")
+        try:
+            check(changed)
+        except AssertionError:
+            continue
+        raise AssertionError("Database policy without an earlier sync wave accepted")
     print("LiteLLM database isolation, persistence, file secrets and negative checks passed")

@@ -36,6 +36,17 @@ claim, `data-litellm-postgres-0`. Generated SSM credentials are
 password; `litellm-postgres-client` contains only the app password. The init
 script creates the nonsuperuser `litellm` role and owned database on an empty
 volume. Network and Istio policies admit port 5432 only from LiteLLM.
+Both policies use sync wave `-1`, before PostgreSQL's wave `0`: unavailable
+Istio admission must block initial database deployment, not leave policy
+installation racing the database startup.
+
+PR #1230 merged as `201e0988`. Its reviewed SSM plan was applied and the
+database reached Ready with a Bound PVC and both ExternalSecrets Ready.
+On October 10, 2026, the Istio webhook outage exhausted Argo's retries before
+the database AuthorizationPolicy was created. The worker and `istiod` later
+recovered; this ordering correction supplies a new reviewed revision for
+normal automatic reconciliation. Require Synced/Healthy, a successful sync,
+and the policy present before native-key migration. Do not bypass admission.
 
 Provision these parameters and exact reader grants through the reviewed shared
 SSM Terragrunt unit before acceptance. Require both ExternalSecrets Ready, the
