@@ -59,6 +59,7 @@ desired state.
 | `docs/secrets-aws-ssm.md` | [AWS SSM Secret References](runbooks/secrets-aws-ssm.md) |
 | `docs/storage-nfs.md` | [NFS Storage](runbooks/storage-nfs.md) |
 | `scripts/langfuse-valkey-recovery.py` | [Valkey offline capture](architecture/storage-and-state.md) |
+| `clusters/homelab/apps/litellm/native_keys.py` | [Native service-key migration](architecture/ai-observability.md) |
 | `docs/talos-control-plane-maintenance.md` | [Talos Control-Plane Maintenance](runbooks/talos-control-plane-maintenance.md) |
 | `docs/validation-runbook.md` | [Validation](runbooks/validation.md) |
 

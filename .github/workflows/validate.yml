@@ -58,8 +58,11 @@ jobs:
         run: |
           python -m venv "${RUNNER_TEMP}/litellm-test"
           source "${RUNNER_TEMP}/litellm-test/bin/activate"
-          python -m pip install 'litellm[proxy]==1.80.8' 'opentelemetry-sdk==1.25.0' 'openai==2.8.0' 'httpx==0.28.1'
+          python -m pip install 'litellm[proxy]==1.80.8' 'litellm-proxy-extras==0.4.11' 'opentelemetry-sdk==1.25.0' 'openai==2.8.0' 'httpx==0.28.1' 'prisma==0.11.0' 'fastapi==0.120.1' 'starlette==0.49.1' 'uvicorn==0.31.1'
+          python -m prisma generate --schema "$(python -c 'from pathlib import Path; import litellm; print(Path(litellm.__file__).parent / "proxy/schema.prisma")')"
           python scripts/ci/litellm-attribution-check.py
+          python scripts/ci/litellm-native-auth-test.py
+          nix develop --command env -u PYTHONPATH "${VIRTUAL_ENV}/bin/python" scripts/ci/litellm-native-database-test.py
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh
