@@ -8,7 +8,6 @@ resources:
   - datastores.yaml
   - virtualservice.yaml
   - recovery-pvc.yaml
-  - valkey-inspection.yaml
 configMapGenerator:
   - name: langfuse-clickhouse-log-quarantine
     namespace: langfuse

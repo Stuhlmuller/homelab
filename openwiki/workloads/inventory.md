@@ -187,15 +187,17 @@ Tunnel workflow owns public DNS.
 | `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 LiteLLM's native-key cutover uses its dedicated PostgreSQL database, imports the
-four existing service keys once, and removes the custom-auth bypass. UI listing,
-revocation and each caller's fresh Langfuse generation remain rollout gates;
+four existing service keys once, and removes the custom-auth bypass. Native API
+listing and revocation passed; each caller's fresh Langfuse generation remains
+a rollout gate;
 see [AI observability](../architecture/ai-observability.md).
 
 Langfuse web allows ten minutes for database migrations before liveness checks
 begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
 Web, worker and Valkey temporarily declare zero replicas for the October 10
-offline AOF capture. A credential-free inspector mounts only the queue PVC,
-read-only; restoring service requires a reviewed follow-up. The separate 1Gi
+offline AOF repair. A credential-free inspector was used for capture and
+approved promotion; this GitOps revision prunes it before a separate reviewed
+writer restart. The separate 1Gi
 `langfuse-migration-recovery` NFS claim preserves private recovery artifacts.
 Pod readiness does not establish UI or telemetry acceptance; see
 [AI observability](../architecture/ai-observability.md).
