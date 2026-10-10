@@ -253,4 +253,11 @@ with tempfile.TemporaryDirectory() as directory:
     check.AUTOMATION = original_automation
     check.AUTOMATION_STATE = original_state
     check.RENOVATE = original_renovate
+
+# Controller-supported image overrides must receive the same catalog checks.
+related = {"name": "RELATED_IMAGE_kiali_default", "value": "quay.io/kiali/kiali:v2.26.0"}
+assert check.declared_images(related)[0] == {related["value"]}
+assert inventory.runtime_references(related) == {related["value"]}
+assert check.declared_images({"image": {"repo": "quay.io/kiali/kiali-operator", "tag": "v2.26.0"}})[0] == {"quay.io/kiali/kiali-operator:v2.26.0"}
+
 print("Harbor image coverage regression check passed")

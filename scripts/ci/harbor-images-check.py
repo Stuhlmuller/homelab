@@ -49,7 +49,10 @@ def declared_images(value):
         image = value.get("image")
         if isinstance(image, str) and image and image != "auto" and not any(c.isspace() for c in image):
             images.add(image)
-        repository = value.get("repository")
+        name = str(value.get("name", ""))
+        if (name.endswith("IMAGE") or name.startswith("RELATED_IMAGE_")) and isinstance(value.get("value"), str):
+            images.add(value["value"])
+        repository = value.get("repository") or value.get("repo")
         if isinstance(repository, str) and (value.get("tag") or value.get("digest")):
             image = repository
             if value.get("registry"):

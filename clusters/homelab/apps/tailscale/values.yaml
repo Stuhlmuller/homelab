@@ -1,8 +1,16 @@
 operatorConfig:
+  image:
+    repository: harbor.stinkyboi.com/mirror/docker.io/tailscale/k8s-operator
+    tag: v1.102.3@sha256:d86a8be7ad9d38714968f5d4e010ba8dad30c8f672736ef94eda9b250febeb12
+    digest: sha256:d86a8be7ad9d38714968f5d4e010ba8dad30c8f672736ef94eda9b250febeb12
   hostname: homelab-tailscale-operator
   defaultTags:
     - tag:k8s-operator
 proxyConfig:
+  image:
+    repository: harbor.stinkyboi.com/mirror/docker.io/tailscale/tailscale
+    tag: v1.102.3@sha256:8c42c4574ab066384fcb72f69e086a2ff1dd3652eb6f56856cee34bcf0d2f680
+    digest: sha256:8c42c4574ab066384fcb72f69e086a2ff1dd3652eb6f56856cee34bcf0d2f680
   defaultTags: tag:k8s
 apiServerProxyConfig:
   mode: "true"
