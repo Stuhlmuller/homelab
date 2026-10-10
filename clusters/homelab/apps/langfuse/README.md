@@ -86,7 +86,11 @@ ingestion remain unavailable until a separately reviewed restoration.
 Build the matching checker from the official Valkey 8.0.11 source at commit
 `4bf1df6441949d70b38e748ffe39daaca9f6f89c`, using
 `make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. From a clean checkout of
-the exact merged current `main`, after Argo finishes this rollout:
+the exact merged current `main`, capture is available only after a separately
+reviewed read-only inspector revision has converged (both PVC and volume-mount
+`readOnly` fields must be `true`, with all three writers still stopped).
+Do not run capture against the current writable promotion stage; use its
+existing verified off-NAS capture instead.
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
