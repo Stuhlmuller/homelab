@@ -150,11 +150,64 @@ are removed on exit. Every digest-named tag and source-tag alias must return the
 catalog's exact manifest bytes after a successful copy workflow for the same
 publication bundle. Rollout still requires a clean checkout of exact current `main`.
 
-Talos host DNS currently reaches the existing public Harbor HTTPS route.
-The registry and artifacts are hosted in the cluster, but node traffic still
-traverses Cloudflare/Octelium. Pod-only CoreDNS split resolution does not change
-host/containerd DNS. A private node-to-registry route is a separate networking
-change; do not claim network isolation or air-gapped operation.
+## Private Talos registry route
+
+Talos nodes do not join the tailnet. Before moving Harbor's public DNS to the
+mesh, apply the separate
+[`harbor-registry-host.yaml`](../.talos/patches/harbor-registry-host.yaml) through
+the existing helper's `--registry-host-only` mode. This maps only
+`harbor.stinkyboi.com` to the dedicated `traefik/traefik-registry` ClusterIP
+`10.96.0.50:443`. That address is explicitly reserved in the `10.96.0.0/12`
+Service CIDR; read-only inventory on 2026-10-10 found it unused. Node
+kube-proxy routes the connection to Traefik's registry entrypoint on port 9443.
+Only `/v2`, `/v2/…`, and `/service/token` for the Harbor hostname are served;
+dashboard and management API paths return 404. No LAN or public listener is added.
+The URL, TLS certificate name, Authorization header and bearer-token realm remain
+`harbor.stinkyboi.com`.
+
+The same inspection found no configured mirrors or extra host entries on any
+of the four Talos nodes. This DNS cutover must preserve that state: it does
+**not** activate the strict mirror patch. The helper preserves unrelated host
+aliases, refuses a conflicting existing Harbor mapping, and validates that
+the complete machine configuration changes only `extraHostEntries`.
+All four live configurations passed the hostname-only strict validation on
+2026-10-10, workers first, without applying. An existing host-network Flannel
+Pod on `zimaboard-0` also reached Harbor's existing ClusterIP and received the
+expected `/v2/` HTTP 401. This proves current node-to-ClusterIP connectivity;
+the new Traefik TLS route and uncached node pull still require live acceptance.
+
+After the Traefik registry Service, TLS certificate and mirrored pause image
+are ready, validate all nodes with the pinned Talos 1.11.3 executable and a
+private client configuration:
+
+```sh
+for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --registry-host-only \
+    --talosctl /path/to/talosctl-1.11.3 \
+    --talosconfig /path/to/private/talosconfig
+done
+```
+
+From clean reviewed current `main`, repeat **one node at a time**, in that
+order, adding `--execute --expected-sha '<reviewed-main-sha>'`. Execution first
+checks the fixed Service and uses a bounded loopback port-forward to verify
+TLS, the registry challenge, token issuance, and rejection of dashboard paths.
+It applies with `--mode no-reboot`, checks configuration readback and node
+identity, then pulls `harbor.stinkyboi.com/mirror/registry.k8s.io/pause:3.10`
+through the node's native image API. Correlate a previously uncached pull with
+Harbor access logs; cached success alone is not transport evidence. Verify
+`talosctl ... read /etc/hosts` contains the exact mapping before moving DNS.
+
+`--registry-host-only --rollback` removes only the owned Harbor alias while
+preserving other aliases and every registry setting; execution still requires
+the reviewed main SHA. Keep the replacement route operational until rollback
+DNS is reachable. The ordinary `--rollback` mode remains the upstream mirror
+recovery path. An empty node cannot start Kubernetes, Traefik and Harbor from
+that same in-cluster registry: bootstrap their upstream images first, then
+enable the private hostname route and any separately reviewed strict mirrors.
+Cached restarts do not prove cold bootstrap. This change has no image-cache
+deletion or workload restart path.
 
 ## Initial secret plan scope
 

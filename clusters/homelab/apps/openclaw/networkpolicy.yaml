@@ -13,6 +13,12 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: traefik
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: istio-system
         - namespaceSelector:
             matchLabels:
@@ -23,3 +29,7 @@ spec:
       ports:
         - protocol: TCP
           port: 8080
+    # HBONE is encrypted; AuthorizationPolicy checks workload identity and ports.
+    - ports:
+        - protocol: TCP
+          port: 15008

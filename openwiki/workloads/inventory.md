@@ -8,10 +8,16 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
-generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
+  - id: openwiki-source-19486243ca5f1efdd808adf2
+    resource: repo://clusters/homelab/apps/tailscale/values.yaml
+  - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
+    resource: repo://clusters/homelab/apps/traefik/values.yaml
+  - id: openwiki-source-da61504fb6ba4ceba279edb0
+    resource: repo://IaC/stacks/traefik/stack.hcl
+generated: { by: "codex", at: "2026-10-10T18:57:48.826Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:29:29.016Z
+    at: 2026-10-10T18:57:48.826Z
 ---
 
 # Workload Inventory
@@ -34,12 +40,13 @@ database readiness and native-auth cutover remain pending. See
 
 ## Import Note
 
-This note reflects the current working tree. Human app access, operator,
-Cordium and GitHub Actions Kubernetes API transport, and public callback
-hostnames use Octelium as the backbone. Tailscale remains only as a temporary
-Talos/LAN/egress fallback, not as an app, Kubernetes, callback, or CI path.
-The primary Istio ingress gateway is `ClusterIP` only, so app routes have no
-direct Tailscale LoadBalancer path around Octelium authentication.
+The staged migration foundation adds private Traefik ingress and the Tailscale
+operator API proxy while retaining existing Octelium/Cloudflare routes until
+live cutover passes. The new route inventory keeps Fleet mesh-only, exposes only
+n8n and Policy Bot callbacks through Funnel, and retains Octelium for Cordium
+and control services. Existing per-app access notes below describe the retained
+source path; they are not proof that cutover has happened. See
+[the staged ingress runbook](../runbooks/tailnet-ingress.md).
 
 ## Platform And Support Applications
 
@@ -90,6 +97,7 @@ and device connection tests.
 
 | App                     | Kind                      | Namespace               | GitOps path                                   | Terragrunt path                              | Depends on                                                  |
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
+| `traefik` | ingress foundation | `traefik` | `clusters/homelab/apps/traefik` | `IaC/live/argocd-apps/traefik` | cert-manager, istio, tailscale; operator policy before proxy registration |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/live/argocd-apps/platform-dns`          | Argo CD bootstrap                                           |
 | `platform-multus`       | support                   | `kube-system`           | `clusters/homelab/platform/multus`            | `IaC/live/argocd-apps/platform-multus`       | Octelium data-plane prerequisites                           |
 | `platform-storage`      | support                   | cluster-scoped          | `clusters/homelab/platform/storage`           | `IaC/live/argocd-apps/platform-storage`      | QNAP NFS export                                             |
@@ -280,6 +288,14 @@ namespaces. The source of truth is `docs/runtime-isolation.md` plus the
   `ambient.istio.io/redirection=enabled`.
 - `media` stays out of ambient while Deluge Gluetun/WireGuard and the media app
   ingress model need a repo-owned waypoint or equivalent policy design.
+
+The Traefik foundation adds `cluster.local/ns/traefik/sa/traefik` to the
+application ingress allows above. Its namespace joins ambient; the private TLS,
+callback and registry listeners remain separate. NetworkPolicy entries declare
+intended peers but Flannel does not enforce them. No application PVC, database
+or enrollment identity changes as part of this ingress foundation. The Tailscale
+operator's authenticated API proxy and scoped CI RBAC are prepared before
+workflow transport changes; see [identity ownership](../architecture/secrets-and-identity.md#tailscale-provider-foundation).
 
 ## Update Checklist
 

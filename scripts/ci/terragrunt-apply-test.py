@@ -16,12 +16,19 @@ OIDC_ENVIRONMENT = {
     "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "fixture",
 }
 APPS = ["external-secrets", "cert-manager", "istio", "platform-storage"]
+TRAEFIK_APPS = ["cert-manager", "istio", "tailscale"]
 CRDS = ["externalsecrets.external-secrets.io", "clustersecretstores.external-secrets.io",
         "authorizationpolicies.security.istio.io", "virtualservices.networking.istio.io"]
 PROJECT = {"spec": {
     "sourceRepos": ["https://github.com/Stuhlmuller/homelab.git",
                     "ghcr.io/langfuse/langfuse-k8s/charts"],
     "destinations": [{"namespace": "langfuse", "server": "https://kubernetes.default.svc"}],
+    "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
+}}
+TRAEFIK_PROJECT = {"spec": {
+    "sourceRepos": ["https://github.com/Stuhlmuller/homelab.git",
+                    "https://bjw-s-labs.github.io/helm-charts"],
+    "destinations": [{"namespace": "traefik", "server": "https://kubernetes.default.svc"}],
     "clusterResourceWhitelist": [{"group": "", "kind": "Namespace"}],
 }}
 
@@ -50,6 +57,7 @@ units = {
     "IaC/live/argocd-apps": "apps",
     "IaC/live/argocd-apps/langfuse": "repair",
     "IaC/live/argocd-apps/fleet": "repair",
+    "IaC/live/argocd-apps/traefik": "repair",
 }
 unit = units.get(cwd, cwd)
 
@@ -105,6 +113,8 @@ elif tool == "kubectl":
         event("preflight.crds")
     elif args == ["wait", "--for=condition=Ready", "--timeout=0s", "clustersecretstore/aws-ssm"]:
         event("preflight.store")
+    elif args == ["wait", "--for=condition=Ready", "--timeout=0s", "clusterissuer/letsencrypt-cloudflare"]:
+        event("preflight.issuer")
     elif args == ["get", "clustersecretstore", "aws-ssm", "-o", "json"]:
         event("preflight.store_scope")
         print(json.dumps(config["store"]))
@@ -134,7 +144,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "nofx"):
+        for name in ("langfuse", "fleet", "traefik", "nofx"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -205,7 +215,12 @@ class TerragruntApplyTest(unittest.TestCase):
         if target in ("fleet",):
             project["spec"]["destinations"][0]["namespace"] = target
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
-            app_names = [*APPS, "octelium-public"]
+            app_names = [*APPS, "traefik"]
+        elif target == "traefik":
+            project = json.loads(json.dumps(TRAEFIK_PROJECT))
+            app_names = TRAEFIK_APPS
+            crds = ["certificates.cert-manager.io", "clusterissuers.cert-manager.io",
+                    "authorizationpolicies.security.istio.io"]
         config = {"target": target, "project": project,
                   "app_names": app_names, "crds": crds,
                   "store": {"spec": {"conditions": [{"namespaces": [target]}]}},
@@ -269,7 +284,8 @@ class TerragruntApplyTest(unittest.TestCase):
 
     def test_missing_target_and_invalid_repair_do_not_write(self):
         for options in ({"missing_target": "langfuse"}, {"repair": "invalid"},
-                        {"target": "fleet", "missing_target": "fleet"}):
+                        {"target": "fleet", "missing_target": "fleet"},
+                        {"target": "traefik", "missing_target": "traefik"}):
             with self.subTest(options=options):
                 result, events = self.run_apply(**options)
                 self.assertNotEqual(result.returncode, 0)
@@ -326,6 +342,40 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(events, ["generate", "apps.plan", "apps.policy", "apps.apply"])
 
+    def test_traefik_checks_only_its_platform_prerequisites_before_saved_plan(self):
+        result, events = self.run_apply(target="traefik", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, [
+            "generate", "preflight.project", "preflight.apps", "preflight.crds",
+            "preflight.issuer", "apps.plan", "apps.policy", "apps.apply",
+        ])
+
+    def test_traefik_prerequisites_fail_before_repair_or_any_apply(self):
+        variants = [{"project": PROJECT}, {"apps": []}]
+        for source in TRAEFIK_PROJECT["spec"]["sourceRepos"]:
+            project = json.loads(json.dumps(TRAEFIK_PROJECT))
+            project["spec"]["sourceRepos"].remove(source)
+            variants.append({"project": project})
+        for field in ("destinations", "clusterResourceWhitelist"):
+            project = json.loads(json.dumps(TRAEFIK_PROJECT))
+            project["spec"][field] = []
+            variants.append({"project": project})
+        for name in TRAEFIK_APPS:
+            for field, status in (("sync", "OutOfSync"), ("health", "Degraded")):
+                apps = [{"metadata": {"name": app}, "status": {
+                    "sync": {"status": "Synced"}, "health": {"status": "Healthy"},
+                }} for app in TRAEFIK_APPS]
+                next(app for app in apps if app["metadata"]["name"] == name)["status"][field]["status"] = status
+                variants.append({"apps": apps})
+        variants.extend({"fail": "preflight." + name}
+                        for name in ("project", "apps", "crds", "issuer"))
+        for options in variants:
+            with self.subTest(options=options):
+                result, events = self.run_apply(target="traefik", repair="true", **options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertTrue(all(event == "generate" or event.startswith("preflight.")
+                                    for event in events), events)
+
     def test_generated_secret_apps_check_ssm_then_only_target_without_azuread(self):
         for target in ("fleet",):
             with self.subTest(target=target):
@@ -340,7 +390,7 @@ class TerragruntApplyTest(unittest.TestCase):
                 ])
 
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
-        for target, access_app in (("fleet", "octelium-public"),):
+        for target, access_app in (("fleet", "traefik"),):
             app_names = [*APPS, access_app]
             variants = [
                 {"project": PROJECT},  # Project permits Langfuse, not this target.

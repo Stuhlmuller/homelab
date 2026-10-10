@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:afc90144e2361746ab781a473cf0ef4bea9bb2aeb7452c524a8461e133b4d995",
+  "claims": [
+    {
+      "id": "claim_2f47141350cc4647a283d38719ccb3b4",
+      "statement": "Traefik uses distinct private TLS, Funnel callback and registry listeners with a fixed Service inventory; Fleet stays private and only n8n and Policy Bot callback hosts use Funnel.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/funnel.yaml",
+          "version": "repo-file-v1:sha256:e017cd5b6d59009f056c9031722d45e14dd6fb97bc9c3b3bed5f14f6c79d3439"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
+          "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
+        }
+      ]
+    },
+    {
+      "id": "claim_54edaaeb7524490ebc026d106b6a8278",
+      "statement": "Traefik's Octelium console route retains the existing Istio HTTPS gateway with verified console SNI to preserve the conditional login redirect.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-cluster/console-redirect.yaml",
+          "version": "repo-file-v1:sha256:61564676684e2a204317962316e1d04eaf44cff29ec79d37535f326426dc6bdb"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+        }
+      ]
+    },
+    {
+      "id": "claim_c259cf35c0ff478ea1a083b2450394ee",
+      "statement": "The additive DNS cutover writes only fixed DNS-only A/AAAA mesh records from reviewed main and preserves legacy CI, callback and carrier names; Mac credential-preserving migration and the prior TTL precede explicit normal-DNS acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+        },
+        {
+          "resource": "repo://scripts/multica-desktop-connect.py",
+          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh",
+          "version": "repo-file-v1:sha256:df06298c6267d82fa16874faee14c98e74927a885b11301a6a926b8280cb0c1a"
+        }
+      ]
+    },
+    {
+      "id": "claim_a187e88d212b4ceda08cdff81fe0f967",
+      "statement": "Fixed callback helpers preserve existing webhook credentials, use non-executing preflights and require both newer delivery IDs and timestamps from saved cutover receipts; the CI helper publishes only three provider-output identity variables behind current-main and environment-protection guards.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/n8n-github-webhooks.py",
+          "version": "repo-file-v1:sha256:306ff8ce24d966f3c233427b37484a2ea6b9989fa1e644328c8976fb1dd6c22f"
+        },
+        {
+          "resource": "repo://scripts/policy-bot-webhook.py",
+          "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:bf1b844976c62ee1ede86ba454170cf0a3720ce209fd5da1600945c4470893a8"
+        }
+      ]
+    },
+    {
+      "id": "claim_4401749129e3443ea1ab04852a131389",
+      "statement": "The Mac helper's --resume-only mode reconnects the verified saved tailnet profile and requires the ingress peer online without migrating Desktop credentials or the local carrier.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:0900d7f08b1445462099c433b12cbb1fca4645ea984694aac3a5a5143c56f3d1"
+        },
+        {
+          "resource": "repo://scripts/multica-desktop-connect.py",
+          "version": "repo-file-v1:sha256:9fafbf105a02e837800e0aaf8dbbb4802644e43ce883ddb49a86f1654bf0fdab"
+        }
+      ]
+    },
+    {
+      "id": "claim_6b8a9a5d752542e9ab502f49303d4377",
+      "statement": "AFFiNE, NOFX frontend, OpenClaw and Policy Bot allow encrypted HBONE port 15008 in separate source-unrestricted NetworkPolicy rules while retaining cleartext source selectors and Istio AuthorizationPolicy checks.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/affine/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:86fa53672d748dadfe8883e08360a824f3e51d23fae9aa367c5063acab7bcca1"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:01eb7a477b2186253e9adb3194174133e7cc6e02eba5c13abf0168afb985e0e5"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:ef4f76f93e6526db16ee5952e04ba4ffc33956b4a52dcd3264b3ff78195e4cbe"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/policy-bot/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:0d04b661ecc6da3263c845aabaaad0607794606e45b02da0f1b814f511913b63"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-routes-test.py",
+          "version": "repo-file-v1:sha256:3d177faa1c828a03f27a5459a6d041526ae0b4419a384991fef9daf0eb62d3e7"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T19:59:10.633Z"
+  }
+}

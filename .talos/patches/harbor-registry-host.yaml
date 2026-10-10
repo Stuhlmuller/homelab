@@ -1,0 +1,8 @@
+# Apply only through scripts/talos-harbor-mirrors.py --registry-host-only.
+# traefik/traefik-registry owns this fixed ClusterIP; upstream mirrors are unchanged.
+machine:
+  network:
+    extraHostEntries:
+      - ip: 10.96.0.50
+        aliases:
+          - harbor.stinkyboi.com

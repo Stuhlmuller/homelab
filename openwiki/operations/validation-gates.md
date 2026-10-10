@@ -8,24 +8,52 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-f7b4195d4d622f91da5cc07b
+    resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-a3ec8939cc4b10401bd16cd8
+    resource: repo://policy/kubernetes.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-9572753e0a38126e57fa7042
+    resource: repo://scripts/ci/multica-desktop-connect-test.py
+  - id: openwiki-source-3b37d159fd7aec286d251f6b
+    resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-f6fba8ad33526ba318c4d722
+    resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-54912e76b9bc176f1d28ff87
+    resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
+  - id: openwiki-source-2ec3653fcc5fbc3a0f24c7a1
+    resource: repo://scripts/ci/tailscale-access-check-test.py
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
+  - id: openwiki-source-511191e55632b55651ad4318
+    resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
-generated: { by: "codex", at: "2026-10-10T19:29:29.016Z" }
+  - id: openwiki-source-c5bae48eacfc2b48af15ad5a
+    resource: repo://scripts/ci/traefik-routes-test.py
+  - id: openwiki-source-c78947a32d84fb4e618c32da
+    resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-b4247f9b4622fc86c02f0ce3
+    resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
+    resource: repo://scripts/tailscale-private-dns-check.py
+generated: { by: "codex", at: "2026-10-10T20:40:01.656Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:29:29.016Z
+    at: 2026-10-10T20:42:52.728Z
 ---
 
 # Validation Gates
@@ -116,6 +144,58 @@ The GitHub workflow role must not plan or apply `IaC/operator`; those units own
 the permissions that protect the workflow from self-administration.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
+
+## Tailscale and Traefik foundation
+
+The static gate runs `traefik-routes-test.py` and `install-kubeconfig-test.py`.
+The first checks the fixed private inventory, callback/registry boundaries and
+Fleet setup denial. The second checks tokenless API-proxy configuration and
+plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
+and run Conftest on all declared routing resources.
+
+Use `traefik-runtime-check.py --binary /absolute/path/to/traefik` with the declared
+version to exercise the actual proxy on loopback. It downloads nothing and
+checks Host/path isolation, encoded path rejection, WebSockets, h2c, console
+upstream TLS/SNI, Harbor Authorization preservation and projected certificate
+reload. Test certificate verification bypasses are confined to this local harness.
+
+Private DNS readiness uses the transport-neutral `octelium-api-response.py`
+parser. It checks only the final HTTP/2 response, retains duplicate fields for
+rejection, accepts native `+proto` and gRPC-Web trailer frames, and requires one
+unambiguous unauthenticated status. Focused tests reject conflicting statuses,
+earlier-response confusion, and malformed bodies before DNS can change.
+
+Validate and test the Tailscale provider module, compare the complete live policy,
+and import the existing ACL before the private authenticated saved plan. Do not
+apply the initial four-create plan: adoption must produce a policy update and
+three new federated identities. Keep state, token and plan material private.
+
+Before traffic cutover, verify observed Argo revision and health, certificate
+readiness, real mesh application access, Fleet device check-in, native Cordium
+execution/reconnection, and an uncached Talos registry pull. Prove callback
+admin/root rejection off mesh and actual signed webhook delivery. Run protected
+CI plan/apply through the operator API proxy, with a denied real plan-identity
+write. Local tests and HTTP health alone do not satisfy these gates.
+
+The current Flannel CNI does not enforce NetworkPolicy. Do not count those
+manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
+listener path boundaries and application authentication through their real paths.
+See [ingress](../runbooks/tailnet-ingress.md) and the
+[provider runbook](../../IaC/modules/tailscale-access/README.md).
+
+The additive cutover utilities have focused static tests for fixed DNS ownership,
+Mac credential/profile preservation and carrier rollback, non-executing webhook
+preflights, and fresh delivery receipts. DNS API readback is separate from normal
+OS resolution: migrate the owned Mac hosts override, wait the previous DNS TTL,
+then run `tailscale-private-dns-check.py --verify-dns`. The
+[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) retains old access
+until replacement acceptance.
+
+The CI boundary helper is
+`scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated
+tag, permits an empty server-side dry-run patch and requires the identical real
+empty patch to receive the specific admission denial. Its `apply` mode verifies
+the protected tag's administration permission without changing resources.
 
 ## Entra owner-mail and Octelium identity checks
 
@@ -496,10 +576,11 @@ Bot webhook probe must use the POST shape GitHub sends and require the app-level
 HTTP 400 webhook validation response, not just any non-404 response.
 
 Rendered Kubernetes policy also enforces the access contract:
-`policy/kubernetes.rego` rejects Tailscale Funnel and classifies every
+`policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Those resources must declare `homelab.rst.io/access-plane: octelium`; only
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
 `homelab.rst.io/public-callback-*` annotations for unauthenticated callback
@@ -1246,13 +1327,11 @@ push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
 
-The fixed Traefik publication scope runs the same digest, alias and complete
-anonymous-pull checks as the full catalog. `harbor-publish-test.py` covers that
-scope and rejects caller-selected inventories. `talos-harbor-mirrors-test.py`
-rejects scoped, untitled or mismatched-revision run receipts as full-catalog
-proof before provenance or registry access. The full-catalog helper requires
-`Mirror all @ <run head SHA>` plus the unchanged publication bundle; scoped
-success alone cannot enable cluster-wide mirrors.
+The fixed Traefik publication scope retains all-platform digest, tag alias and
+fresh complete anonymous-pull checks. The Talos regression rejects scoped,
+untitled and mismatched-revision run receipts as full-catalog evidence before
+provenance or registry access; cluster-wide mirror verification requires
+`Mirror all @ <run head SHA>` and the unchanged publication bundle.
 
 The full Harbor chart is rendered twice to reject randomly generated state,
 then combined with the owned manifests to validate prerequisite references and

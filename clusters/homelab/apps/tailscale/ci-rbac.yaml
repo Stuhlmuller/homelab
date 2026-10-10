@@ -1,0 +1,91 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homelab-ci-plan
+  annotations:
+    checkov.io/skip1: CKV_K8S_49=Trusted plan refresh reads cluster resources and Helm Secrets; writes use a separate namespace Role and fail-closed dry-run admission.
+rules:
+  # Helm refresh reads release Secrets; only dry-run Application patches are added below.
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: [get, list, watch]
+  - nonResourceURLs: ["*"]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homelab-ci-plan
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: homelab-ci-plan
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: tag:homelab-ci-plan
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homelab-ci-apply
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  # The protected apply owns the Argo CD bootstrap CRDs and cluster RBAC.
+  name: cluster-admin
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: tag:homelab-ci-apply
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: homelab-ci-plan-dry-run
+  namespace: argocd
+rules:
+  - apiGroups: [argoproj.io]
+    resources: [applications]
+    verbs: [create, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: homelab-ci-plan-dry-run
+  namespace: argocd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: homelab-ci-plan-dry-run
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: tag:homelab-ci-plan
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: homelab-ci-plan-dry-run
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["*"]
+        apiVersions: ["*"]
+        operations: [CREATE, UPDATE, DELETE, CONNECT]
+        resources: ["*/*"]
+  matchConditions:
+    - name: tailscale-plan-identity
+      expression: "'tag:homelab-ci-plan' in request.userInfo.groups"
+  validations:
+    - expression: request.dryRun == true
+      message: The homelab CI plan identity may only perform dry-run writes.
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: homelab-ci-plan-dry-run
+spec:
+  policyName: homelab-ci-plan-dry-run
+  validationActions: [Deny]
