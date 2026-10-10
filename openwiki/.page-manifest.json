@@ -2,25 +2,32 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/architecture/secrets-and-identity.md": {
-      "pageVersion": "sha256:faa46b329b4f9daf615b02b7222b82853398abf6d8fd95565133a44868213a05",
+      "pageVersion": "sha256:8378591a09761eab9c5762dd080e17c7e3786813cebdd50bb5db733bc2c78eed",
       "completedBy": "codex",
       "completedRunId": "30bb2b14-73c9-4c01-96e6-6061899ae71c",
       "gitHead": "0e5c6ac6e3b2b5a8f0c9120db41781e85093558f",
       "sourceFingerprint": "sha256:b93704eb83bf6839947da14000055f73b1113dd2e2bc36b0fde2c869416cc90c"
     },
     "/openwiki/operations/deluge-cpu-audit-2026-09-05.md": {
-      "pageVersion": "sha256:22463bb122b83fa5bc0d48cda95b65a7a72767d189aa686f0b89d474a383635a",
+      "pageVersion": "sha256:523b626fd5590db49d6668c6acbf43bc9bfc28003c601cfe0ba97a0007011525",
       "completedBy": "codex",
-      "completedRunId": "30bb2b14-73c9-4c01-96e6-6061899ae71c",
-      "gitHead": "0e5c6ac6e3b2b5a8f0c9120db41781e85093558f",
-      "sourceFingerprint": "sha256:b93704eb83bf6839947da14000055f73b1113dd2e2bc36b0fde2c869416cc90c"
+      "completedRunId": "fe6b77f9-ae90-4427-8991-c421bae62441",
+      "gitHead": "fe1838c49eaa11897f5d7f375eae94ba439e3f4f",
+      "sourceFingerprint": "sha256:62889c640574c5eea5c8e56693ac4be0a1c35890c89a4a0cd9e3357517a4dbf4"
+    },
+    "/openwiki/operations/harbor-oci.md": {
+      "pageVersion": "sha256:7041f0daafbac5d67e6e610b38c854b9b5ac565acabfe76c40de01bcaa4e749a",
+      "completedBy": "codex",
+      "completedRunId": "fe6b77f9-ae90-4427-8991-c421bae62441",
+      "gitHead": "fe1838c49eaa11897f5d7f375eae94ba439e3f4f",
+      "sourceFingerprint": "sha256:62889c640574c5eea5c8e56693ac4be0a1c35890c89a4a0cd9e3357517a4dbf4"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:1ff339fde545c6ed10881dca193ed813df7c88d5e84950580e60079ec728390e",
+      "pageVersion": "sha256:14f58dd8e139736e540a72631a4355b143daac330d1bcb6d5f6299448a2cf607",
       "completedBy": "codex",
-      "completedRunId": "30bb2b14-73c9-4c01-96e6-6061899ae71c",
-      "gitHead": "0e5c6ac6e3b2b5a8f0c9120db41781e85093558f",
-      "sourceFingerprint": "sha256:b93704eb83bf6839947da14000055f73b1113dd2e2bc36b0fde2c869416cc90c"
+      "completedRunId": "fe6b77f9-ae90-4427-8991-c421bae62441",
+      "gitHead": "fe1838c49eaa11897f5d7f375eae94ba439e3f4f",
+      "sourceFingerprint": "sha256:62889c640574c5eea5c8e56693ac4be0a1c35890c89a4a0cd9e3357517a4dbf4"
     },
     "/openwiki/quickstart.md": {
       "gitHead": "6ccdde3538461ff540123517e2a3880e8f160611",
@@ -30,18 +37,18 @@
       "completedRunId": "0c4bc290-4b15-4e20-8ac7-ad6b10aa5e98"
     },
     "/openwiki/source-map.md": {
-      "pageVersion": "sha256:6c026fbe9efc49022ef7b8117c563e142854259da68a8942dd3701b209761dc7",
+      "pageVersion": "sha256:d362fbdc2a0e9766faf4a838c2d480b98bdd9ece8d707f44e64554321f6f4088",
       "completedBy": "codex",
-      "completedRunId": "30bb2b14-73c9-4c01-96e6-6061899ae71c",
-      "gitHead": "0e5c6ac6e3b2b5a8f0c9120db41781e85093558f",
-      "sourceFingerprint": "sha256:b93704eb83bf6839947da14000055f73b1113dd2e2bc36b0fde2c869416cc90c"
+      "completedRunId": "fe6b77f9-ae90-4427-8991-c421bae62441",
+      "gitHead": "fe1838c49eaa11897f5d7f375eae94ba439e3f4f",
+      "sourceFingerprint": "sha256:62889c640574c5eea5c8e56693ac4be0a1c35890c89a4a0cd9e3357517a4dbf4"
     },
     "/openwiki/workloads/inventory.md": {
-      "pageVersion": "sha256:78ba61366055a8906034f5ecf1bf9777c7dcdcd2a034f29322d3ddc77b001ade",
+      "pageVersion": "sha256:1fac86c14e77fcab69ef844e44cb6e453954effe6e3edf81e5249b39d63880fd",
       "completedBy": "codex",
-      "completedRunId": "30bb2b14-73c9-4c01-96e6-6061899ae71c",
-      "gitHead": "0e5c6ac6e3b2b5a8f0c9120db41781e85093558f",
-      "sourceFingerprint": "sha256:b93704eb83bf6839947da14000055f73b1113dd2e2bc36b0fde2c869416cc90c"
+      "completedRunId": "fe6b77f9-ae90-4427-8991-c421bae62441",
+      "gitHead": "fe1838c49eaa11897f5d7f375eae94ba439e3f4f",
+      "sourceFingerprint": "sha256:62889c640574c5eea5c8e56693ac4be0a1c35890c89a4a0cd9e3357517a4dbf4"
     }
   }
 }

@@ -14,14 +14,18 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-0e4e3673c8be0ce1ef65beca
+    resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
-generated: { by: "codex", at: "2026-10-09T05:26:38.825Z" }
+  - id: openwiki-source-b5db2a15b5e0f805364647e7
+    resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+generated: { by: "codex", at: "2026-10-10T19:29:29.016Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-09T05:26:38.825Z
+    at: 2026-10-10T19:29:29.016Z
 ---
 
 # Validation Gates
@@ -1241,6 +1245,14 @@ verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+The fixed Traefik publication scope runs the same digest, alias and complete
+anonymous-pull checks as the full catalog. `harbor-publish-test.py` covers that
+scope and rejects caller-selected inventories. `talos-harbor-mirrors-test.py`
+rejects scoped, untitled or mismatched-revision run receipts as full-catalog
+proof before provenance or registry access. The full-catalog helper requires
+`Mirror all @ <run head SHA>` plus the unchanged publication bundle; scoped
+success alone cannot enable cluster-wide mirrors.
 
 The full Harbor chart is rendered twice to reject randomly generated state,
 then combined with the owned manifests to validate prerequisite references and

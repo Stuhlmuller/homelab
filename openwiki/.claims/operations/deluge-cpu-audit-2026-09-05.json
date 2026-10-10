@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:22463bb122b83fa5bc0d48cda95b65a7a72767d189aa686f0b89d474a383635a",
+  "pageVersion": "sha256:523b626fd5590db49d6668c6acbf43bc9bfc28003c601cfe0ba97a0007011525",
   "claims": [
     {
       "id": "claim_5852cb4ec9ee4d05a76611e5bce93231",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
-          "version": "repo-file-v1:sha256:096c18dd7a20c5bf2d633ebb52bfb3b35426d7d3856ae02ee058f7c7b5bad28e"
+          "version": "repo-file-v1:sha256:4e0447410f1c132218fe77d21a0f32b298bbf91461f496c648b369ecf81bc25e"
         },
         {
           "resource": "repo://clusters/homelab/apps/deluge/values.yaml#L230-L268",
@@ -23,6 +23,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-09T05:26:38.825Z"
+    "at": "2026-10-10T19:29:29.016Z"
   }
 }

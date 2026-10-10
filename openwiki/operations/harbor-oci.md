@@ -3,6 +3,21 @@ type: operation
 title: "Harbor Private OCI Registry"
 description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
 tags: ["harbor", "oci", "packages", "gitops"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T19:29:29.016Z
+sources:
+  - id: openwiki-source-bb8a89652a59628537fcc9b2
+    resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-b5db2a15b5e0f805364647e7
+    resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+  - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
+    resource: repo://scripts/config/harbor-traefik-images.json
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-10T19:29:29.016Z" }
 ---
 
 # Harbor Private OCI Registry
@@ -114,8 +129,8 @@ snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
 
-`harbor-mirror.yml` accepts only `image_scope=all` (the default), `fleet`, or
-`bazarr`.
+`harbor-mirror.yml` accepts only `image_scope=all` (the default), `fleet`,
+`bazarr`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -133,6 +148,20 @@ an upstream digest pin cannot make an uncopied image pullable. Scoped publicatio
 preserves digest checks and complete anonymous pulls without coupling Bazarr to
 unrelated historical images. See the
 [Bazarr rollout](../../clusters/homelab/apps/bazarr/README.md).
+
+Traefik uses `image_scope=traefik` with the fixed one-image
+`scripts/config/harbor-traefik-images.json` subset of the reviewed full catalog.
+It preserves all-platform digest copying, the reviewed tag alias and fresh
+complete anonymous pulls. No caller-supplied image, path or destination is
+accepted. Successful publication is required before the consuming ingress
+rollout; it establishes only this subset's availability.
+
+Run titles record the selected scope and full revision. Full-catalog Talos
+mirror verification requires `Mirror all @ <run head SHA>` and the unchanged
+publication bundle. Scoped, untitled and mismatched-revision receipts fail
+before registry checks; dispatch `image_scope=all` when full-catalog evidence
+is absent. See `scripts/talos-harbor-mirrors.py` and the
+[publication runbook](../../docs/harbor-image-mirroring.md).
 
 The full-inventory workflow has no verified successful run as of October 3.
 Run `36511537440` failed after 75 minutes copying an unrelated Python image
