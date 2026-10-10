@@ -26,7 +26,7 @@ def command(*args, input=None):
                           check=True, timeout=30).stdout
 
 
-def preflight(expected_sha, targets=TARGETS):
+def preflight(expected_sha, target):
     if not re.fullmatch(r"[0-9a-f]{40}", expected_sha):
         raise ValueError("Expected SHA must be a full commit ID")
     if command("git", "-C", str(ROOT), "rev-parse", "HEAD").strip() != expected_sha:
@@ -56,39 +56,41 @@ def preflight(expected_sha, targets=TARGETS):
             raise ValueError("Talos API still answers; worker is not fenced")
     except OSError:
         pass
-    for namespace, name, uid, kind, owner, claim in targets:
-        pod = json.loads(command("kubectl", "-n", namespace, "get", "pod", name, "-o", "json"))
-        metadata = pod["metadata"]
-        if (metadata["uid"] != uid or not metadata.get("deletionTimestamp")
-                or pod["spec"]["nodeName"] != NODE
-                or not any(ref["kind"] == kind and ref["name"] == owner
-                           for ref in metadata.get("ownerReferences", []))):
-            raise ValueError(f"Stranded Pod identity changed: {namespace}/{name}")
-        claims = {volume["persistentVolumeClaim"]["claimName"] for volume in pod["spec"].get("volumes", [])
-                  if "persistentVolumeClaim" in volume}
-        if claims != ({claim} if claim else set()):
-            raise ValueError(f"Pod PVC contract changed: {namespace}/{name}")
+    namespace, name, uid, kind, owner, claim = target
+    pod = json.loads(command("kubectl", "-n", namespace, "get", "pod", name, "-o", "json"))
+    metadata = pod["metadata"]
+    if (metadata["uid"] != uid or not metadata.get("deletionTimestamp")
+            or pod["spec"]["nodeName"] != NODE or metadata.get("finalizers")
+            or not any(ref["kind"] == kind and ref["name"] == owner
+                       for ref in metadata.get("ownerReferences", []))):
+        raise ValueError(f"Stranded Pod identity changed: {namespace}/{name}")
+    claims = {volume["persistentVolumeClaim"]["claimName"] for volume in pod["spec"].get("volumes", [])
+              if "persistentVolumeClaim" in volume}
+    if claims != ({claim} if claim else set()):
+        raise ValueError(f"Pod PVC contract changed: {namespace}/{name}")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha", required=True)
+    parser.add_argument("--target", required=True, choices=[f"{ns}/{name}" for ns, name, *_ in TARGETS])
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--fence-confirmation")
     args = parser.parse_args()
     if args.execute and args.fence_confirmation != "zimaboard-2 powered off":
         parser.error("Physical power-off confirmation is required")
-    preflight(args.expected_sha)
+    target = next(item for item in TARGETS if f"{item[0]}/{item[1]}" == args.target)
+    preflight(args.expected_sha, target)
     if not args.execute:
         print("Preflight passed; no Pods deleted")
         return
-    for index, (namespace, name, uid, _, _, _) in enumerate(TARGETS):
-        preflight(args.expected_sha, TARGETS[index:])
-        options = json.dumps({"apiVersion": "v1", "kind": "DeleteOptions", "gracePeriodSeconds": 0,
-                              "preconditions": {"uid": uid}})
-        command("kubectl", "delete", "--raw", f"/api/v1/namespaces/{namespace}/pods/{name}",
-                "-f", "-", input=options)
-        print(f"Released fenced Pod {namespace}/{name}")
+    preflight(args.expected_sha, target)
+    namespace, name, uid, _, _, _ = target
+    options = json.dumps({"apiVersion": "v1", "kind": "DeleteOptions", "gracePeriodSeconds": 0,
+                          "preconditions": {"uid": uid}})
+    command("kubectl", "delete", "--raw", f"/api/v1/namespaces/{namespace}/pods/{name}",
+            "-f", "-", input=options)
+    print(f"Released fenced Pod {namespace}/{name}")
 
 
 if __name__ == "__main__":

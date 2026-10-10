@@ -992,21 +992,31 @@ are healthy. Talos API timeout alone does not prove physical fencing.
 From a clean checkout of the exact reviewed current `main`, use the narrowly
 scoped [recovery helper](../scripts/zimaboard-2-fenced-recovery.py). It verifies
 the canonical cluster, three healthy nodes, the unreachable worker's UID and
-taint, its closed Talos port, and the UIDs, owners, terminating state, node
-binding and PVCs of exactly three Pods. Deletion uses a Kubernetes API UID
+taint, its closed Talos port, and the selected Pod's UID, owner, terminating
+state, node binding and PVC. Each invocation targets only one of
+`argocd/argocd-application-controller-0`, `automation/n8n-postgres-0`, or
+`nofx/nofx-backend-8486bdcf96-xsw9g`. Deletion uses a Kubernetes API UID
 precondition, zero grace period and the operator's physical-fence attestation.
-It never deletes a replacement Pod or changes a PVC. First run preflight:
+It never deletes a replacement Pod or changes a PVC. For each pending target,
+run preflight, then execution:
 
 ```sh
-python3 -I scripts/zimaboard-2-fenced-recovery.py --expected-sha '<reviewed-main-sha>'
+python3 -I scripts/zimaboard-2-fenced-recovery.py --expected-sha '<reviewed-main-sha>' \
+  --target 'argocd/argocd-application-controller-0'
 ```
 
 Only after confirming the worker remains physically off, run:
 
 ```sh
 python3 -I scripts/zimaboard-2-fenced-recovery.py --expected-sha '<reviewed-main-sha>' \
-  --execute --fence-confirmation 'zimaboard-2 powered off'
+  --target 'argocd/argocd-application-controller-0' --execute \
+  --fence-confirmation 'zimaboard-2 powered off'
 ```
+
+Repeat with the automation and NOFX targets, checking live state between
+invocations. If one command completes and the next fails, resume with the next
+unreleased target; the helper never rechecks or deletes a previously released
+Pod. A changed UID on the selected target stops without deleting it.
 
 Require a new Ready Argo controller `0`, a healthy n8n PostgreSQL Pod with the
 retained claim, and only the replacement NOFX backend. Keep the worker off

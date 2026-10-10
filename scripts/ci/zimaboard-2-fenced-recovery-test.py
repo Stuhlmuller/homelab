@@ -50,26 +50,31 @@ class RecoveryTests(unittest.TestCase):
     def test_preflight_requires_exact_pod_and_node(self):
         with patch.object(RECOVERY, "command", side_effect=self.command), patch.object(
                 RECOVERY.socket, "create_connection", side_effect=OSError("fenced")):
-            RECOVERY.preflight(SHA)
+            RECOVERY.preflight(SHA, RECOVERY.TARGETS[1])
             self.pods[("automation", "n8n-postgres-0")]["metadata"]["uid"] = "replacement"
             with self.assertRaisesRegex(ValueError, "identity changed"):
-                RECOVERY.preflight(SHA)
+                RECOVERY.preflight(SHA, RECOVERY.TARGETS[1])
             self.pods[("automation", "n8n-postgres-0")]["metadata"]["uid"] = RECOVERY.TARGETS[1][2]
+            self.pods[("argocd", "argocd-application-controller-0")]["metadata"]["uid"] = "replacement"
+            RECOVERY.preflight(SHA, RECOVERY.TARGETS[1])
             self.nodes[0]["status"]["conditions"][0]["status"] = "True"
             with self.assertRaisesRegex(ValueError, "Fenced node"):
-                RECOVERY.preflight(SHA)
+                RECOVERY.preflight(SHA, RECOVERY.TARGETS[1])
         self.assertEqual(self.deletes, [])
 
     def test_delete_has_uid_precondition_and_requires_confirmation(self):
         with patch.object(RECOVERY, "command", side_effect=self.command), patch.object(
                 RECOVERY.socket, "create_connection", side_effect=OSError("fenced")):
-            with patch.object(sys, "argv", ["recovery", "--expected-sha", SHA, "--execute"]):
+            with patch.object(sys, "argv", ["recovery", "--expected-sha", SHA, "--target",
+                                            "argocd/argocd-application-controller-0", "--execute"]):
                 with self.assertRaises(SystemExit):
                     RECOVERY.main()
             self.assertEqual(self.deletes, [])
-            with patch.object(sys, "argv", ["recovery", "--expected-sha", SHA, "--execute",
-                                            "--fence-confirmation", "zimaboard-2 powered off"]):
-                RECOVERY.main()
+            for namespace, name, _, _, _, _ in RECOVERY.TARGETS:
+                with patch.object(sys, "argv", ["recovery", "--expected-sha", SHA,
+                                                "--target", f"{namespace}/{name}", "--execute",
+                                                "--fence-confirmation", "zimaboard-2 powered off"]):
+                    RECOVERY.main()
         self.assertEqual(len(self.deletes), 3)
         for (path, options), (namespace, name, uid, _, _, _) in zip(self.deletes, RECOVERY.TARGETS):
             self.assertEqual(path, f"/api/v1/namespaces/{namespace}/pods/{name}")
