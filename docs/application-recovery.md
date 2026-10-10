@@ -125,6 +125,10 @@ Partial uploads and failed local scratch are also retained. No automatic local
 pruning is implemented: provision capacity, monitor it, and arrange reviewed
 cleanup of disposable verification copies. The hourly runner refuses to start
 below 20 GiB free. Large datasets need a reviewed streaming/multipart design.
+Metrics use unique temporary files and atomic replacement, so an interrupted
+write cannot block later checks. The offline tests exercise the hourly runner
+for both initial applications; the runner remains a candidate until the
+activation gates below are satisfied.
 
 ## Exact proposed resources and authorization gates
 
