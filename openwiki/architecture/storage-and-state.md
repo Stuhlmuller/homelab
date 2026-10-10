@@ -7,6 +7,14 @@ tags: ["architecture", "storage", "stateful"]
 
 # Storage And State
 
+Langfuse's October 10 Valkey AOF repair retained a SHA-256-verified original
+off-NAS and promoted a native-checker-validated prefix repair, discarding
+340,520 bytes of the incremental log (event count unknown). The GitOps recovery
+first prunes the inspection Pod while all writers remain stopped, then restores
+Valkey and Langfuse in a separate revision. Keep the original archive and all
+PVCs until live ingestion and a restore drill are verified. See the
+[Langfuse recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+
 LiteLLM's prepared UI-key migration adds `ai/data-litellm-postgres-0`, a 20 GiB
 NFS claim for its dedicated PostgreSQL database. Preserve logical dumps, volume
 snapshots and SSM role passwords together. The native cutover transaction stores

@@ -76,21 +76,20 @@ ingestion while the queue is unavailable.
 
 [`scripts/langfuse-valkey-recovery.py`](../../../../scripts/langfuse-valkey-recovery.py)
 supports separate capture and explicitly approved promotion modes. Capture
-requires a read-only inspector. The current approved promotion stage keeps
-web, worker and Valkey replicas at zero and mounts the existing queue PVC
-writable in `langfuse-valkey-inspection`. The inspector has no credentials,
-API token or network access; its image root remains read-only.
-PostgreSQL, ClickHouse and all retained claims are unchanged. Langfuse UI and
-ingestion remain unavailable until a separately reviewed restoration.
+required a read-only inspector; promotion used a writable inspector while web,
+worker and Valkey replicas stayed at zero. The inspector had no credentials,
+API token or network access; its image root was read-only. The prior revision
+pruned it before this writer restart. PostgreSQL, ClickHouse and all retained
+claims are unchanged. UI and ingestion need live verification after restoration.
 
-Build the matching checker from the official Valkey 8.0.11 source at commit
+For the completed inspection, build the matching checker from the official
+Valkey 8.0.11 source at commit
 `4bf1df6441949d70b38e748ffe39daaca9f6f89c`, using
-`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. From a clean checkout of
-the exact merged current `main`, capture is available only after a separately
-reviewed read-only inspector revision has converged (both PVC and volume-mount
-`readOnly` fields must be `true`, with all three writers still stopped).
-Do not run capture against the current writable promotion stage; use its
-existing verified off-NAS capture instead.
+`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. Capture ran from a clean
+checkout of the exact merged read-only-inspector revision after both PVC and
+volume-mount `readOnly` fields were true and all three writers had stopped.
+The following capture command is historical; without that inspected revision
+and Pod it cannot run against current `main`.
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
@@ -116,8 +115,9 @@ separate off-NAS backup: a directory on the same NAS is not disaster recovery.
 On October 10, the operator approved the verified prefix repair: only
 `appendonlydir/appendonly.aof.4.incr.aof` changes, from 10,328,329 to
 9,987,809 bytes (340,520 bytes discarded). This does not quantify lost events.
-After this writable-inspector revision merges and Argo finishes, run from its
-clean, exact current-main checkout:
+The following command was run from the clean, exact merged promotion revision
+while the writable inspector was present. It cannot be rerun from current
+`main` because the inspector was removed:
 
 ```sh
 python3 -I scripts/langfuse-valkey-recovery.py \
@@ -135,10 +135,13 @@ accepts an exact already-promoted set; drift or unexpected staging files stop
 recovery. Keep writers stopped on failure and inspect retained files before
 retrying. Do not restore the corrupt original and restart it as rollback.
 
-Preserve the archive, original and all PVCs throughout recovery. After final
-live hashes match the candidate, a reviewed follow-up removes the
-inspector and restores global/web/worker and Valkey replicas to one. Merely
-restarting the original corrupt queue does not restore service.
+On October 10, the approved candidate was installed and its live hashes
+verified. The first GitOps follow-up removed the inspector while all writers
+remained stopped. Argo observed merged `836e7f0f`, pruned the inspector, and
+reported Synced/Healthy at 22:05 UTC; no Pod mounted
+`langfuse-valkey-data`. This revision restores global/web/worker and Valkey
+replicas to one. Preserve the private original and all PVCs throughout
+recovery. Merely restarting the corrupt original does not restore service.
 Require stable Valkey and worker readiness, then fresh correlated Langfuse
 generations from each caller. Safety tests cover offline guards and candidate
 isolation. Run the native checker fixture with

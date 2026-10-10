@@ -133,17 +133,21 @@ The private off-NAS archive passed SHA-256 verification. Native Valkey 8.0.11
 validated the repaired candidate: only `appendonly.aof.4.incr.aof` changed,
 from 10,328,329 to 9,987,809 bytes, discarding 340,520 bytes. Original source
 and backup hashes stayed unchanged. This measures bytes, not lost events, and
-does not prove runtime loading or fresh ingestion. Langfuse remains intentionally
-offline pending explicit approval and a separate repository-owned replacement
-and restart path. LiteLLM native/UI-visible key migration remains incomplete.
+does not prove runtime loading or fresh ingestion. Langfuse remained
+intentionally offline pending approved replacement and a repository-owned
+restart. LiteLLM native/UI-visible key migration has since completed; live
+trace acceptance remains pending.
 
 Subsequent October 10 approval explicitly permits the 340,520-byte truncation
 and restart while retaining the off-NAS original. The prepared promotion path
 keeps all writers stopped, changes only the inspector's PVC mount to writable,
 verifies archive/original/candidate integrity and exact live hashes, and stages
-then atomically replaces only the approved incremental AOF. A separate reviewed
-GitOps change must remove the inspector and restore writers after replacement
-verification. Approval and local tests are not evidence of completed recovery.
+then atomically replaces only the approved incremental AOF. The approved
+candidate was promoted and exact live hashes verified. A reviewed GitOps change
+removed the inspector first, with writers still stopped. Argo observed merged
+`836e7f0f`, pruned the inspector and reported Synced/Healthy; no Pod mounted
+its PVC. This separate reviewed revision restores writers. Runtime loading
+and fresh ingestion remain unverified until live checks pass.
 LiteLLM's later native-key rollout is now recorded in its
 [owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 

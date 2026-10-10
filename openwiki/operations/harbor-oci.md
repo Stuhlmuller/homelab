@@ -18,10 +18,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T19:43:31.576Z" }
+generated: { by: "codex", at: "2026-10-10T21:46:55.335Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:43:31.576Z
+    at: 2026-10-10T21:46:55.335Z
 ---
 
 # Harbor Private OCI Registry
@@ -161,7 +161,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
 
-`harbor-mirror.yml` accepts only `image_scope=all` (the default), `fleet`,
+`harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
 `bazarr`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects

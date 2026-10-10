@@ -103,6 +103,16 @@ base track the enforcing-dataplane and denied-egress acceptance work.
 
 ## Secrets and reconciliation
 
+Native replication uses Harbor's six-field cron format: `0 0 * * * *` runs
+hourly, with seconds and minutes fixed to zero. Five-field schedules fail with
+HTTP 400. Creation endpoints return an empty HTTP 201 body; bootstrap verifies
+the object identified by the endpoint-scoped `Location` header and compares
+registry references by ID after Harbor expands them in readback responses.
+Omitted false flags are equivalent to false; an enabled deletion flag still
+fails verification.
+See the [Harbor replication API](https://github.com/goharbor/harbor/blob/v2.15.2/src/server/v2.0/handler/replication.go)
+and [schedule validation](https://github.com/goharbor/harbor/blob/v2.15.2/src/controller/replication/model/model.go).
+
 `harbor-secrets` is an `OnChange` ExternalSecret backed by these generated
 `/homelab/harbor/` SSM parameter suffixes:
 

@@ -3,6 +3,13 @@ type: workflow
 title: "OpenWiki Maintenance"
 description: "Repository-scoped OpenWiki installation, focused retrieval, safe updates, validation, and rollback."
 tags: [openwiki, agents, documentation]
+sources:
+  - id: openwiki-source-22e2bb4f70068fd836cc9813
+    resource: repo://scripts/ci/openwiki-check.py
+generated: { by: "codex", at: "2026-10-10T22:24:18.297Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T22:24:18.297Z
 ---
 
 # OpenWiki Maintenance
@@ -60,7 +67,7 @@ Keep the repository policy authoritative and verify root guidance after updates.
 
 Use [INSTRUCTIONS.md](../INSTRUCTIONS.md) as the repository-specific wiki
 contract. `.openwikiignore` excludes local secret material, generated state,
-caches, and compatibility pages from repository research. It does not replace
+caches from repository research. It does not replace
 secret hygiene or grant permission to read ignored/private files.
 
 Keep `type`, `title`, `description`, and `tags` frontmatter on authored pages.
@@ -79,8 +86,16 @@ git diff --check
 
 The static CI gate runs the wiki check. It uses the existing Nix `yq` parser
 to reject malformed YAML and invalid metadata types, then checks local links,
-heading anchors, navigation reachability, and active skill routes. Run focused
-Markdown lint too. The explicit secret scanner covers `openwiki/` and `.codex/`
+heading anchors, navigation reachability, and active skill routes. It also rejects
+old knowledge-base paths in Git-tracked and untracked, non-ignored text files,
+including inline, reference-style, and angle-bracket Markdown links and
+directory-tree listings in specs, IaC, scripts, and workflows.
+Relative links and bare source paths resolve against their containing file.
+This repository's GitHub and `repo://` URLs, root paths, and directory trees
+are also checked; external URLs and unrelated paths remain valid.
+Symlinks, binary files, and the checker's intentional negative fixtures are
+excluded. Run focused Markdown lint
+too. The explicit secret scanner covers `openwiki/` and `.codex/`
 alongside the existing source paths. The source probe test reads the migrated validation page:
 
 ```sh
@@ -103,10 +118,14 @@ that credential-dependent gate; this is not evidence of a cluster change.
 
 ## Compatibility and Rollback
 
-Only three old paths remain as navigation pages: the former `00-home.md`,
-`architecture/cluster-topology.md`, and `operations/pvc-metrics-recovery.md`.
-They preserve deployed agent and Grafana runbook links without changing
-workload configuration. Edit their OpenWiki targets, never duplicate content.
+The three former navigation redirects were removed on 2026-10-10 after moving
+Grafana runbook URLs and OpenClaw instructions to their canonical OpenWiki
+targets. Old bookmarks must use [quickstart](../quickstart.md),
+[cluster topology](../architecture/cluster-topology.md), or
+[PVC metrics recovery](pvc-metrics-recovery.md). The source cleanup also removed
+the redirect fixtures and Obsidian ignore entries. Apply the workload changes
+through normal GitOps delivery; local validation does not prove those updated
+links have reached running workloads.
 
 Revert the migration commit to restore the old vault and skills. Revert an
 OpenWiki upgrade as one change covering the skill, receipt, MCP version pin,
