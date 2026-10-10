@@ -20,7 +20,7 @@ CHECKER = None
 
 
 class ManifestTests(unittest.TestCase):
-    def test_promotion_is_offline_and_explicitly_writable(self):
+    def test_inspector_retirement_keeps_writers_offline(self):
         app = MODULE.ROOT / "clusters/homelab/apps/langfuse"
         values = json.loads(subprocess.check_output(
             ["yq", "-o=json", ".langfuse", str(app / "values.yaml")], text=True))
@@ -29,17 +29,7 @@ class ManifestTests(unittest.TestCase):
             ["yq", "-o=json", 'select(.metadata.name == "langfuse-valkey" and .kind == "Deployment")',
              str(app / "datastores.yaml")], text=True))
         self.assertEqual(valkey["spec"]["replicas"], 0)
-        inspector = json.loads(subprocess.check_output(
-            ["yq", "-o=json", 'select(.kind == "Deployment")', str(app / "valkey-inspection.yaml")], text=True))
-        pod = inspector["spec"]["template"]
-        pod["metadata"].update(name="langfuse-valkey-inspection-test", uid="test")
-        pod["status"] = {"phase": "Running", "containerStatuses": [{"ready": True}]}
-        deployments = [{"metadata": {"name": name, "generation": 1},
-                        "spec": {"replicas": 0}, "status": {"observedGeneration": 1}}
-                       for name in MODULE.WRITERS]
-        MODULE.offline_pod(deployments, [pod], writable=True)
-        with self.assertRaises(AssertionError):
-            MODULE.offline_pod(deployments, [pod])
+        self.assertNotIn("valkey-inspection.yaml", (app / "kustomization.yaml").read_text())
 
 
 class OfflineGuardTests(unittest.TestCase):
