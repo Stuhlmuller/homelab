@@ -57,10 +57,10 @@ namespace-wide deny policy that breaks existing human Workspaces.
 The dormant `.cordium/runner-network-policy.json` template selects one Workspace
 UID. It denies unsolicited ingress and private-address web traffic, while allowing
 CoreDNS, Cordium's configured public DNS resolvers, and public HTTP/HTTPS needed
-for package and Actions downloads. It has no private control-plane exception.
-Do not instantiate it until actual supervisor/control connectivity is mapped;
-add only the exact required peers through reviewed code. Tests prove the template's
-selectors/CIDR intent, not CNI enforcement or supervisor readiness.
+for package and Actions downloads. Its TCP 8080 ingress exception is limited to the native Nocturne and API
+controller Pods described below. Verify actual control connectivity before
+activation. Tests prove the template's selectors/CIDR intent, not CNI enforcement
+or supervisor readiness.
 
 Read-only inspection on 2026-10-10 confirmed `kube-flannel` on all four nodes;
 Flannel does not enforce these policies. Dependency work is staged in
@@ -269,3 +269,21 @@ runner, native Workspace, Deployment, Pod, PVC or owned NetworkPolicy remains.
 A green job alone does not prove cleanup. Keep workflow selectors unchanged
 until these live cases pass; then switch the pool and all jobs to `cordium` in
 the reviewed cutover. Neither canary mode has run live yet.
+
+
+## Native supervisor control traffic
+
+The per-Workspace policy permits TCP 8080 ingress only from Cordium Nocturne and
+`default-cordium.octelium-api` service Pods in `octelium`. Both namespace and Pod
+selectors must match. Nocturne initializes and observes the supervisor; the
+Cordium API forwards `exec` to it. These labels were verified against the live
+controller/service Pods on 2026-10-11. An empty ingress list prevents these
+operations once policy enforcement is active.
+
+The pinned [supervisor address helper](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/common/suputils/utils.go),
+[Nocturne initialization](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/nocturne/nocturne/controllers/workspaces/watcher.go)
+and [API exec forwarding](https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/apiserver/apiserver/wrks/terminal.go)
+are the source for this exception. Browser portal, SSH and UDP tunnel ingress
+are not required by the runner lifecycle and have no exception. Live acceptance
+must prove initialization and exec succeed while unrelated Pods cannot connect;
+source/readback checks alone do not prove enforcement or connectivity.

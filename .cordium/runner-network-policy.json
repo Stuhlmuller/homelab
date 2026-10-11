@@ -11,7 +11,49 @@
       "matchLabels": {"octelium.com/workspace-uid": "RENDERED-WORKSPACE-UID"}
     },
     "policyTypes": ["Ingress", "Egress"],
-    "ingress": [],
+    "ingress": [
+      {
+        "from": [
+          {
+            "namespaceSelector": {
+              "matchLabels": {
+                "kubernetes.io/metadata.name": "octelium"
+              }
+            },
+            "podSelector": {
+              "matchLabels": {
+                "app": "octelium",
+                "octelium.com/app": "cordium",
+                "octelium.com/component": "nocturne",
+                "octelium.com/component-type": "cluster"
+              }
+            }
+          },
+          {
+            "namespaceSelector": {
+              "matchLabels": {
+                "kubernetes.io/metadata.name": "octelium"
+              }
+            },
+            "podSelector": {
+              "matchLabels": {
+                "app": "octelium",
+                "octelium.com/component": "svc",
+                "octelium.com/component-type": "cluster",
+                "octelium.com/namespace": "octelium-api",
+                "octelium.com/svc": "default-cordium.octelium-api"
+              }
+            }
+          }
+        ],
+        "ports": [
+          {
+            "protocol": "TCP",
+            "port": 8080
+          }
+        ]
+      }
+    ],
     "egress": [
       {
         "to": [

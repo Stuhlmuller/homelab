@@ -23,6 +23,24 @@ UID = "11111111-2222-3333-4444-555555555555"
 
 
 class Lifecycle(unittest.TestCase):
+    def test_supervisor_ingress_is_limited_to_native_controllers(self):
+        policy = runner.workspace_policy({"uid": UID})["spec"]
+        self.assertEqual(policy["podSelector"]["matchLabels"], {"octelium.com/workspace-uid": UID})
+        self.assertEqual(len(policy["ingress"]), 1)
+        ingress = policy["ingress"][0]
+        self.assertEqual(ingress["ports"], [{"protocol": "TCP", "port": 8080}])
+        self.assertEqual(len(ingress["from"]), 2)
+        for peer in ingress["from"]:
+            self.assertEqual(set(peer), {"namespaceSelector", "podSelector"})
+            self.assertEqual(peer["namespaceSelector"]["matchLabels"], {"kubernetes.io/metadata.name": "octelium"})
+            labels = peer["podSelector"]["matchLabels"]
+            self.assertEqual(labels["app"], "octelium")
+            self.assertEqual(labels["octelium.com/component-type"], "cluster")
+        self.assertEqual(ingress["from"][0]["podSelector"]["matchLabels"]["octelium.com/app"], "cordium")
+        self.assertEqual(ingress["from"][0]["podSelector"]["matchLabels"]["octelium.com/component"], "nocturne")
+        self.assertEqual(ingress["from"][1]["podSelector"]["matchLabels"]["octelium.com/svc"], "default-cordium.octelium-api")
+        self.assertEqual(ingress["from"][1]["podSelector"]["matchLabels"]["octelium.com/namespace"], "octelium-api")
+
     def exercise(self, *, failure=False, wrong_sha=False, retained=False, cleanup_fails=False, invalid_name=False, invalid_jit=False,
                  invalid_uid=False, policy_mismatch=False, backend_missing=False, pod_retained=False, deployment_retained=False, pvc_retained=False,
                  wrong_context=False, enforcer_unready=False, conflicting_backend=False, wrong_node=False, mounted_token=False, host_namespace=False):
@@ -351,6 +369,7 @@ class Queue(unittest.TestCase):
 
 class Canary(unittest.TestCase):
     def test_dispatch_boundary_and_intentional_failure(self):
+        self.assertTrue((runner.ROOT / ".github/linters/actionlint.yml").samefile(runner.ROOT / ".github/actionlint.yaml"))
         workflow = runner.ROOT / ".github/workflows/cordium-runner-canary.yml"
         job = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(workflow)]))["jobs"]["canary"]
         self.assertEqual(job["runs-on"], ["self-hosted", "Linux", "X64", "cordium-canary"])
