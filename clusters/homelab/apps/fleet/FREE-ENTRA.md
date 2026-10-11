@@ -202,6 +202,11 @@ in the next section.
 
 ### `stuhlmuller.net` Google Workspace pilot
 
+> Historical note: the isolated-cloud-pilot guidance below predates the approved
+> domain-wide Google Workspace federation. The current federation path is owned
+> by `IaC/operator/entra-google-workspace-federation`; it uses Google passwords
+> for every Google Workspace user included in Google auto-provisioning.
+
 `stuhlmuller.net` remains a Google Workspace domain. The Entra operator unit
 reads its existing, non-default managed domain and returns a Microsoft TXT
 ownership record. That record is additional DNS data: preserve Google MX,
