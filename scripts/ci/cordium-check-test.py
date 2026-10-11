@@ -4,9 +4,11 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import signal
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +17,47 @@ spec = importlib.util.spec_from_file_location("cordium_check", Path(__file__).re
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 SHA = "a" * 40
+
+
+class RunnerImage(unittest.TestCase):
+    def test_probe_base_and_mirror_catalog_use_the_same_digest(self):
+        root = Path(__file__).resolve().parents[2]
+        workspace = json.loads((root / ".cordium/runner-workspace.json").read_text())
+        image = workspace["spec"]["image"]["registry"]["url"]
+        self.assertRegex(image, r"^ghcr.io/actions/actions-runner:2\.338\.0@sha256:[0-9a-f]{64}$")
+        self.assertEqual((root / "builds/cordium-runner/Dockerfile").read_text().splitlines()[0], "FROM " + image)
+        catalog = json.loads((root / "scripts/config/harbor-images.json").read_text())
+        self.assertIn(image, [entry["source"] for entry in catalog["images"]])
+        self.assertEqual(workspace["spec"]["runtime"]["capabilities"]["add"], ["SYS_ADMIN", "NET_ADMIN"])
+
+    def test_nested_build_failure_preserves_exit_and_reaps_daemon(self):
+        root = Path(__file__).resolve().parents[2]
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            binaries = directory / "bin"
+            binaries.mkdir()
+            fixtures = {
+                "uname": 'case "$1" in -s) echo Linux;; -m) echo x86_64;; esac',
+                "id": 'echo 0',
+                "dockerd": 'echo $$ > "$PROBE_TEST_DIR/pid"; for arg in "$@"; do printf "%s\\n" "$arg"; done > "$PROBE_TEST_DIR/daemon-args"; trap "exit 0" TERM; while true; do sleep 0.1; done',
+                "docker": 'shift 2; test "$1" != build || exit 17',
+            }
+            for name, body in fixtures.items():
+                executable = binaries / name
+                executable.write_text("#!/bin/sh\n" + body + "\n")
+                executable.chmod(0o755)
+            # Only jq comes from the real development shell; no Docker executes.
+            result = subprocess.run(["bash", str(root / "scripts/ci/cordium-runner-probe.sh")],
+                                    cwd=root, capture_output=True, text=True, timeout=10,
+                                    env={**os.environ, "PATH": str(binaries) + os.pathsep + os.environ["PATH"],
+                                         "PROBE_TEST_DIR": temporary})
+            self.assertEqual(result.returncode, 17, result.stderr)
+            daemon_pid = int((directory / "pid").read_text())
+            with self.assertRaises(ProcessLookupError):
+                os.kill(daemon_pid, 0)
+            arguments = (directory / "daemon-args").read_text().splitlines()
+            scratch = Path(arguments[arguments.index("--data-root") + 1]).parent
+            self.assertFalse(scratch.exists())
 
 
 class Lifecycle(unittest.TestCase):
@@ -91,6 +134,22 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(result, 42)
         self.assertIn(["delete", "workspace", "abc"], commands)
         self.assertEqual(commands[-1], ["get", "workspace", "--out", "json"])
+
+    def test_runner_probe_uses_fixed_image_after_sha_guard_and_cleans_failure(self):
+        for remote_exit in (0, 17):
+            result, commands = self.exercise(mode="runner-probe", remote_exit=remote_exit)
+            self.assertEqual(result, remote_exit)
+            create = next(command for command in commands if command[:2] == ["create", "workspace"])
+            self.assertTrue(create[create.index("--file") + 1].endswith(".cordium/runner-workspace.json"))
+            self.assertTrue(create[create.index("--dockerfile") + 1].endswith("builds/cordium-runner/Dockerfile"))
+            probe = next(i for i, command in enumerate(commands) if "scripts/ci/cordium-runner-probe.sh" in command)
+            verification = next(i for i, command in enumerate(commands) if "rev-parse" in command)
+            self.assertGreater(probe, verification)
+            self.assertIn("--root", commands[probe])
+            self.assertIn(["delete", "workspace", "abc"], commands)
+        result, commands = self.exercise(mode="runner-probe", wrong_sha=True)
+        self.assertNotEqual(result, 0)
+        self.assertFalse(any("scripts/ci/cordium-runner-probe.sh" in command for command in commands))
 
     def test_wrong_checkout_never_runs_checks(self):
         result, commands = self.exercise(wrong_sha=True)
