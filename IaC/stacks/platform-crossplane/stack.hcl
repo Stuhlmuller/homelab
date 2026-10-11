@@ -17,6 +17,12 @@ inputs = {
         targetRevision = "2.3.3"
         helm = {
           releaseName = "crossplane"
+          valuesObject = {
+            image = {
+              repository = "harbor.stinkyboi.com/mirror/xpkg.crossplane.io/crossplane/crossplane"
+              tag        = "v2.3.3@sha256:f1c88a98f113a5cb78d75c7e94e2a7fefdf86ffb3353c63f01697dc5ad855b19"
+            }
+          }
         }
       }
     ]

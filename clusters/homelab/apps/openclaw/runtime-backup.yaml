@@ -39,7 +39,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: backup
-              image: ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
+              image: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
               command: [python3, /etc/openclaw-assistant/runtime-storage.py, backup]
               resources:
                 requests:

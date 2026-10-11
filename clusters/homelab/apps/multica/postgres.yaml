@@ -45,7 +45,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: postgres
-          image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+          image: harbor.stinkyboi.com/mirror/docker.io/pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534

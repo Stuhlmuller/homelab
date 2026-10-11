@@ -34,7 +34,7 @@ config: |
           auto_discover_all: true
 
 image:
-  repository: adinhodovic/compass
+  repository: harbor.stinkyboi.com/mirror/docker.io/adinhodovic/compass
   tag: "0.9.0@sha256:f8f99955b60d3b5d0f2747d5a911d1b03c8ca1aff8f6aa592d1cc7fa2d8020c0"
 
 resources:

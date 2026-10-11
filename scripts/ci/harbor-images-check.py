@@ -37,6 +37,11 @@ def normalize(image):
     return repository + ("@" + digest if separator else ":" + tag)
 
 
+def catalog_reference(image):
+    """Compare an internal mirror ref with its reviewed upstream provenance."""
+    return normalize(image.removeprefix("harbor.stinkyboi.com/mirror/"))
+
+
 def declared_images(value):
     """Walk manifests and chart image maps, including embedded Helm values."""
     images, digests = set(), set()
@@ -44,7 +49,10 @@ def declared_images(value):
         image = value.get("image")
         if isinstance(image, str) and image and image != "auto" and not any(c.isspace() for c in image):
             images.add(image)
-        repository = value.get("repository")
+        name = str(value.get("name", ""))
+        if (name.endswith("IMAGE") or name.startswith("RELATED_IMAGE_")) and isinstance(value.get("value"), str):
+            images.add(value["value"])
+        repository = value.get("repository") or value.get("repo")
         if isinstance(repository, str) and (value.get("tag") or value.get("digest")):
             image = repository
             if value.get("registry"):
@@ -105,7 +113,9 @@ def chart_sources():
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
     bootstrap = ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
-    fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
+    # Nested runtime repositories must not replace the root Helm chart URL.
+    bootstrap_inputs = bootstrap.read_text().split("inputs = {", 1)[1]
+    fields = dict(re.findall(r'(?m)^  (repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap_inputs))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
                    "chart": fields["chart"], "targetRevision": fields["chart_version"]})
     for path in sorted((ROOT / "clusters").rglob("*-application.yaml")):
@@ -177,10 +187,10 @@ def check():
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
     images, digests = declared_images(yaml_documents(paths))
     missing = sorted(normalize(image) for image in images
-                     if not image.startswith("harbor.stinkyboi.com/")
-                     and normalize(image) not in known | known_tags)
+                     if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and catalog_reference(image) not in known | known_tags)
     missing_digests = sorted(digests - known_digests - {
-        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
+        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
     errors.extend(receipt_errors())
@@ -194,7 +204,7 @@ def check():
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
-        required = {normalize(image) for image in required_images}
+        required = {catalog_reference(image) for image in required_images}
         errors.extend(f"{name} mirror scope missing required image: " + image
                       for image in sorted(required - known_scope))
         errors.extend(f"{name} mirror scope has unused image: " + image

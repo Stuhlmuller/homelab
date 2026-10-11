@@ -48,7 +48,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: postgres
-          image: pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+          image: harbor.stinkyboi.com/mirror/docker.io/pgvector/pgvector:pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534
@@ -186,7 +186,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: valkey
-          image: docker.io/valkey/valkey:8.0@sha256:4436c94fc34ce4af0354b9379d433a1f258998fb955f995c89822f98c14a8cab
+          image: harbor.stinkyboi.com/mirror/docker.io/valkey/valkey:8.0@sha256:4436c94fc34ce4af0354b9379d433a1f258998fb955f995c89822f98c14a8cab
           command: ["valkey-server", "/run/secrets/langfuse/valkey.conf"]
           securityContext:
             runAsNonRoot: true
@@ -301,7 +301,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       initContainers:
         - name: quarantine-diagnostic-logs
-          image: clickhouse/clickhouse-server:26.4@sha256:c7796a1335d14385c052f10061cf719f4a368a908432ec25980860b1333e9ccd
+          image: harbor.stinkyboi.com/mirror/docker.io/clickhouse/clickhouse-server:26.4@sha256:c7796a1335d14385c052f10061cf719f4a368a908432ec25980860b1333e9ccd
           command: ["/bin/sh", "/quarantine/quarantine-system-logs.sh"]
           securityContext:
             runAsNonRoot: true
@@ -328,7 +328,7 @@ spec:
               readOnly: true
       containers:
         - name: clickhouse
-          image: clickhouse/clickhouse-server:26.4@sha256:c7796a1335d14385c052f10061cf719f4a368a908432ec25980860b1333e9ccd
+          image: harbor.stinkyboi.com/mirror/docker.io/clickhouse/clickhouse-server:26.4@sha256:c7796a1335d14385c052f10061cf719f4a368a908432ec25980860b1333e9ccd
           securityContext:
             runAsNonRoot: true
             runAsUser: 65534

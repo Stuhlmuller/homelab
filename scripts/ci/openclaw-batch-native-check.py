@@ -166,10 +166,11 @@ def image_reference():
     images = json.loads(result.stdout)
     image = images["app"]
     if (image != images["bootstrap"] or set(image) != {"repository", "tag"}
-            or image["repository"] != "ghcr.io/openclaw/openclaw"
+            or image["repository"] != "harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw"
             or not re.fullmatch(re.escape(VERSION) + r"@sha256:[0-9a-f]{64}", image["tag"])):
         raise RuntimeError("Expected matching digest-pinned OpenClaw 2026.9.5 app/bootstrap images")
-    return image["repository"] + ":" + image["tag"]
+    # CI proves identical pinned bytes; private Harbor transport is a separate live gate.
+    return image["repository"].removeprefix("harbor.stinkyboi.com/mirror/") + ":" + image["tag"]
 
 
 def main():

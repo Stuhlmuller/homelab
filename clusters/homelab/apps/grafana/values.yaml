@@ -1,3 +1,22 @@
+image:
+  registry: harbor.stinkyboi.com/mirror/docker.io
+  repository: grafana/grafana
+  tag: 13.2.0@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b
+  sha: ""
+
+testFramework:
+  image:
+    registry: harbor.stinkyboi.com/mirror/docker.io
+    repository: curlimages/curl
+    tag: 8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13
+    sha: ""
+
+downloadDashboardsImage:
+  registry: harbor.stinkyboi.com/mirror/docker.io
+  repository: curlimages/curl
+  tag: 8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13
+  sha: ""
+
 admin:
   existingSecret: grafana-admin
   userKey: username
@@ -46,7 +65,7 @@ initChownData:
   enabled: false
 extraInitContainers:
   - name: backup-pre-v13-database
-    image: busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+    image: harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
     imagePullPolicy: IfNotPresent
     command:
       - /bin/sh

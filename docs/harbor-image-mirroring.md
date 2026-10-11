@@ -13,12 +13,20 @@ Successful copies retain their immutable `sha256-<hex>` tag and may advance
 alias and are retained for diagnosis. Existing upstream-origin digests remain
 available for cold bootstrap and rollback.
 
-Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
-project. Repository and Pod image names retain upstream provenance; their bytes
-come from `harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>`.
-This covers Helm defaults, init containers, hooks, injected sidecars,
-operator-created Pods, Kubernetes static Pods, pause, kubelet and etcd without
-adding an admission webhook or rewriting controller-generated resources.
+Named workload image declarations use
+`harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>` directly, retaining
+the reviewed tag and digest. The catalog retains upstream provenance; coverage
+checks map each internal mirror path back to its exact reviewed source and reject
+unknown repositories or digests. Private custom images stay in `homelab`.
+
+Talos/containerd strict mirrors additionally cover remaining chart defaults,
+operator-created images and Talos-managed system components. Direct-reference
+migration is incomplete until every rendered and generated application image
+uses Harbor. Require successful full-catalog publication before merging consuming
+references; a Chainguard-only receipt does not prove the other artifacts exist.
+Recovery uses the explicit [Harbor bootstrap overlays](../clusters/homelab/apps/harbor-bootstrap/README.md),
+with reviewed temporary source overrides and Talos mirror rollback. Normal
+operation has no automatic upstream fallback.
 
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed

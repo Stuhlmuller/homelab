@@ -20,13 +20,17 @@ with tempfile.TemporaryDirectory() as directory:
     stack.parent.mkdir()
     bootstrap = check.ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
     bootstrap.parent.mkdir(parents=True)
-    bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
-                         'chart = "argo-cd"\nchart_version = "1.0.0"\n')
+    bootstrap.write_text('inputs = {\n  repository = "https://bootstrap.example.invalid"\n'
+                         '  chart = "argo-cd"\n  chart_version = "1.0.0"\n'
+                         '  values = [yamlencode({ image = {\n'
+                         '    repository = "harbor.example.invalid/mirror/argocd"\n'
+                         '  } })]\n}\n')
     source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
     stack.write_text('locals { defaults = { project = "homelab" } }\n'
                      'unit "app" { values = { defaults = local.defaults, spec = { sources = [' + source + '] } } }')
     expected = {"source": "IaC/terragrunt.stack.hcl", "repoURL": "https://charts.example.invalid",
                 "chart": "example", "targetRevision": "2.0.0"}
+    assert next(item for item in check.chart_sources() if item["chart"] == "argo-cd")["repoURL"] == "https://bootstrap.example.invalid"
     assert expected in check.chart_sources()
     stack.write_text(stack.read_text().replace('"2.0.0"', '"2.1.0"'))
     assert expected not in check.chart_sources()
@@ -49,8 +53,11 @@ with tempfile.TemporaryDirectory() as directory:
     stack.write_text('unit "app" { values = read_terragrunt_config("stacks/app/stack.hcl").inputs }')
     bootstrap = check.ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
     bootstrap.parent.mkdir(parents=True)
-    bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
-                         'chart = "argo-cd"\nchart_version = "1.0.0"\n')
+    bootstrap.write_text('inputs = {\n  repository = "https://bootstrap.example.invalid"\n'
+                         '  chart = "argo-cd"\n  chart_version = "1.0.0"\n'
+                         '  values = [yamlencode({ image = {\n'
+                         '    repository = "harbor.example.invalid/mirror/argocd"\n'
+                         '  } })]\n}\n')
     source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
     for app in ("beta", "alpha"):
         path = check.ROOT / f"IaC/stacks/{app}/stack.hcl"
@@ -127,6 +134,18 @@ with tempfile.TemporaryDirectory() as directory:
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    original_image = documents[0]["initContainers"][0]["image"]
+    documents[0]["initContainers"][0]["image"] = "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@" + digest
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = "harbor.stinkyboi.com/mirror/docker.io/library/unreviewed:1@" + digest
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Internal image with unreviewed source repository passed")
+    documents[0]["initContainers"][0]["image"] = original_image
     check.FLEET_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
     try:
         check.check()
@@ -241,4 +260,11 @@ with tempfile.TemporaryDirectory() as directory:
     check.AUTOMATION = original_automation
     check.AUTOMATION_STATE = original_state
     check.RENOVATE = original_renovate
+
+# Controller-supported image overrides must receive the same catalog checks.
+related = {"name": "RELATED_IMAGE_kiali_default", "value": "quay.io/kiali/kiali:v2.26.0"}
+assert check.declared_images(related)[0] == {related["value"]}
+assert inventory.runtime_references(related) == {related["value"]}
+assert check.declared_images({"image": {"repo": "quay.io/kiali/kiali-operator", "tag": "v2.26.0"}})[0] == {"quay.io/kiali/kiali-operator:v2.26.0"}
+
 print("Harbor image coverage regression check passed")

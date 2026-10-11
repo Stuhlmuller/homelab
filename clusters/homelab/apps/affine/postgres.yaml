@@ -61,7 +61,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: require-real-password
-          image: pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
+          image: harbor.stinkyboi.com/mirror/docker.io/pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -90,7 +90,7 @@ spec:
               readOnly: true
       containers:
         - name: postgres
-          image: pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
+          image: harbor.stinkyboi.com/mirror/docker.io/pgvector/pgvector:0.8.1-pg16-bookworm@sha256:16e62164a405447dca191079a924ee5b8a9dbf04fe53128701ffbea857b37782
           imagePullPolicy: IfNotPresent
           args:
             # Keep synchronous durability, but reduce checkpoint frequency,

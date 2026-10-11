@@ -1,3 +1,12 @@
+image:
+  repo: harbor.stinkyboi.com/mirror/quay.io/kiali/kiali-operator
+  tag: v2.26.0@sha256:ca2e4c356e946849883f42e9c9fe41080145cb442f93200cfca4e55a89a62039
+  digest: ""
+# Override the operator's supported default without permitting ad-hoc CR images.
+env:
+  - name: RELATED_IMAGE_kiali_default
+    value: harbor.stinkyboi.com/mirror/quay.io/kiali/kiali:v2.26.0@sha256:59cce98a9811ce53ff3da771225d1df00f0ca4ae0819311291ae7316349a13e9
+
 metrics:
   enabled: true
 
@@ -29,7 +38,7 @@ cr:
       view_only_mode: true
       additional_pod_init_containers_yaml:
         - name: wait-for-prometheus
-          image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+          image: harbor.stinkyboi.com/mirror/docker.io/curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh", "-ec"]
           args:

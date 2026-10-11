@@ -17,6 +17,10 @@ inputs = {
         helm = {
           releaseName = "metrics-server"
           valuesObject = {
+            image = {
+              repository = "harbor.stinkyboi.com/mirror/registry.k8s.io/metrics-server/metrics-server"
+              tag        = "v0.8.1@sha256:b2d2efaf5ac3b366ed0f839d2412a2c4279d4fc2a2a733f12c52133faed36c41"
+            }
             args = ["--kubelet-insecure-tls"]
           }
         }

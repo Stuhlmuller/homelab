@@ -34,7 +34,7 @@ controllers:
     initContainers:
       00-operator-toolbox:
         image:
-          repository: docker.io/nixos/nix
+          repository: harbor.stinkyboi.com/mirror/docker.io/nixos/nix
           tag: "2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c"
         env:
           NIXPKGS_REF: github:NixOS/nixpkgs/29916453413845e54a65b8a1cf996842300cd299
@@ -108,7 +108,7 @@ controllers:
       01-runtime-storage:
         dependsOn: 00-operator-toolbox
         image:
-          repository: ghcr.io/openclaw/openclaw
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw
           tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         securityContext:
           runAsUser: 1000
@@ -138,7 +138,7 @@ controllers:
             drop: [ALL]
         dependsOn: 01-runtime-storage
         image:
-          repository: ghcr.io/openclaw/openclaw
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw
           tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         resources:
           requests:
@@ -465,7 +465,7 @@ controllers:
           capabilities:
             drop: [ALL]
         image:
-          repository: ghcr.io/openclaw/openclaw
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw
           tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         env:
           OPENCLAW_HOME: /data/openclaw
@@ -563,7 +563,7 @@ controllers:
           capabilities:
             drop: [ALL]
         image:
-          repository: ghcr.io/openclaw/openclaw
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/openclaw/openclaw
           tag: "2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218"
         command:
           - python3
