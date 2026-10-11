@@ -52,9 +52,22 @@ def main():
                 if allowed:
                     assert result.returncode == 0, result.stderr
                 else:
-                    assert result.returncode != 0 and "harbor-only-images" in result.stderr, result.stderr
+                    assert result.returncode != 0 and "harbor-only-images" in result.stderr, (candidate["metadata"], result.returncode, result.stderr)
                 count += 1
 
+            # Type checking is separate from admission informer propagation.
+            probe = copy.deepcopy(pod)
+            probe["spec"]["containers"][0]["image"] = "busybox:latest"
+            deadline = time.monotonic() + 30
+            while True:
+                result = subprocess.run([*kubectl, "create", "--dry-run=server", "-f", "-"],
+                                        input=json.dumps(probe), text=True, capture_output=True)
+                if result.returncode:
+                    assert "harbor-only-images" in result.stderr, result.stderr
+                    break
+                if time.monotonic() >= deadline:
+                    raise AssertionError("Public-image rejection did not become active")
+                time.sleep(0.2)
             check(pod, True)
             for image in ("busybox:latest", "cgr.dev/chainguard/busybox:latest", "harbor.stinkyboi.com.evil.example/proof:latest"):
                 candidate = copy.deepcopy(pod)
