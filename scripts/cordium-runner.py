@@ -19,6 +19,73 @@ github_operator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(github_operator)
 
 
+def kube(*arguments, input=None):
+    return github_operator.command("kubectl", "--request-timeout=15s", *arguments, input=input)
+
+
+def enforcer_config(spec):
+    containers = spec.get("containers", [])
+    if len(containers) != 1 or not containers[0]["image"].endswith("@sha256:c671f98e444825d57c590c92da1b5e66070917c4d3dff1f9279775e6b73254fe"):
+        return False
+    args = containers[0].get("args", [])
+    return all([arg for arg in args if arg == key or arg.startswith(key + "=")] == [key + "=" + value]
+               for key, value in (("--fail-open", "false"), ("--strict-mode", "true"), ("--disable-nri", "false")))
+
+
+def isolation_backend(pool):
+    server = kube("config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}").decode().strip()
+    if server != pool["kubernetes_api_server"]:
+        raise RuntimeError("Kubernetes context differs from the declared homelab API")
+    daemon = json.loads(kube("get", "daemonset", "kube-network-policies", "-n", "kube-system", "-o", "json"))
+    status = daemon["status"]
+    template = daemon["spec"]["template"]["spec"]
+    if (status.get("observedGeneration") != daemon["metadata"]["generation"]
+            or status.get("desiredNumberScheduled", 0) <= 0
+            or status.get("numberReady") != status["desiredNumberScheduled"]
+            or not enforcer_config(template)):
+        raise RuntimeError("The reviewed NRI policy enforcer is not fully ready")
+    pods = json.loads(kube("get", "pods", "-n", "kube-system", "-l", "app=kube-network-policies",
+                          "--field-selector", "spec.nodeName=" + pool["worker_node"], "-o", "json"))["items"]
+    if len(pods) != 1 or not enforcer_config(pods[0]["spec"]) or not any(condition.get("type") == "Ready" and condition.get("status") == "True"
+                                  for condition in pods[0].get("status", {}).get("conditions", [])):
+        raise RuntimeError("Policy enforcement is not ready on the Cordium worker")
+
+
+def workspace_policy(metadata):
+    uid = metadata.get("uid")
+    if not isinstance(uid, str) or not re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", uid):
+        raise RuntimeError("Workspace UID is invalid; refusing a broad network selector")
+    policy = json.loads((ROOT / ".cordium/runner-network-policy.json").read_text())
+    policy["metadata"]["name"] = "cordium-runner-" + uid
+    policy["metadata"]["labels"]["homelab.rst.io/runner-workspace-uid"] = uid
+    policy["spec"]["podSelector"]["matchLabels"]["octelium.com/workspace-uid"] = uid
+    return policy
+
+
+def policy_matches(live, expected):
+    spec = live.get("spec", {})
+    spec.setdefault("ingress", [])  # Kubernetes omits empty ingress lists on readback.
+    return (live.get("metadata", {}).get("labels") == expected["metadata"]["labels"]
+            and spec == expected["spec"])
+
+
+def workspace_pods(uid):
+    return json.loads(kube("get", "pods", "-n", "cordium", "-l", "octelium.com/workspace-uid=" + uid,
+                          "-o", "json"))["items"]
+
+
+def retire_policy(policy):
+    name = policy["metadata"]["name"]
+    data = kube("get", "networkpolicy", name, "-n", "cordium", "--ignore-not-found", "-o", "json")
+    if not data.strip():
+        return
+    if not policy_matches(json.loads(data), policy):
+        raise RuntimeError("Retained policy differs from this runner; refusing to delete it")
+    kube("delete", "networkpolicy", name, "-n", "cordium", "--ignore-not-found", "--wait=true")
+    if kube("get", "networkpolicy", name, "-n", "cordium", "--ignore-not-found", "-o", "json").strip():
+        raise RuntimeError("Runner policy deletion is not yet verified")
+
+
 def runner_present(api, repository, identifier):
     try:
         api("GET", f"/repos/{repository}/actions/runners/{identifier}")
@@ -35,6 +102,7 @@ def provision(api, client, checkout):
     workspace = runner_id = None
     creation_attempted = False
     registration_attempted = False
+    policy = None
 
     def call(*arguments, timeout=45, input=None, capture=True):
         return subprocess.run(client + list(arguments), input=input, timeout=timeout, check=True,
@@ -45,6 +113,7 @@ def provision(api, client, checkout):
         return json.loads(call("get", "workspace", "--out", "json").stdout).get("items", [])
 
     try:
+        isolation_backend(pool)
         if inventory():
             raise RuntimeError("Dedicated runner identity has retained Workspaces; inspect before creating another")
         creation_attempted = True
@@ -55,6 +124,11 @@ def provision(api, client, checkout):
         if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", name):
             raise RuntimeError("Creation returned an invalid Workspace name; inspect the dedicated identity")
         workspace = name
+        policy = workspace_policy(response["metadata"])
+        kube("create", "-f", "-", "-o", "json", input=json.dumps(policy).encode())
+        live = json.loads(kube("get", "networkpolicy", policy["metadata"]["name"], "-n", "cordium", "-o", "json"))
+        if not policy_matches(live, policy):
+            raise RuntimeError("Runner network policy readback differs from its declaration")
         call("start", workspace)
         deadline = time.monotonic() + 300
         while time.monotonic() < deadline:
@@ -66,6 +140,12 @@ def provision(api, client, checkout):
             time.sleep(5)
         else:
             raise RuntimeError("Runner Workspace did not become ready in five minutes")
+        uid = response["metadata"]["uid"]
+        pods = workspace_pods(uid)
+        if (len(pods) != 1 or pods[0]["spec"].get("nodeName") != pool["worker_node"]
+                or pods[0]["spec"].get("automountServiceAccountToken") is not False
+                or any(pods[0]["spec"].get(flag) is True for flag in ("hostNetwork", "hostPID", "hostIPC"))):
+            raise RuntimeError("Runner Pod placement or credential boundary differs from its declaration")
         actual = call("exec", workspace, "--no-stdin", "--workdir", "/workspace/repo", "--",
                       "git", "rev-parse", "HEAD").stdout.decode().strip()
         if actual != checkout:
@@ -98,6 +178,17 @@ def provision(api, client, checkout):
                     if time.monotonic() >= deadline:
                         raise RuntimeError("Runner Workspace deletion is not yet verified")
                     time.sleep(2)
+                if policy:
+                    uid = response["metadata"]["uid"]
+                    deadline = time.monotonic() + 60
+                    while (workspace_pods(uid) or kube("get", "deployment", "ws-" + workspace, "-n", "cordium",
+                                                       "--ignore-not-found", "-o", "json").strip()
+                           or kube("get", "persistentvolumeclaim", "ws-" + uid, "-n", "cordium",
+                                                       "--ignore-not-found", "-o", "json").strip()):
+                        if time.monotonic() >= deadline:
+                            raise RuntimeError("Runner Deployment/Pod/PVC deletion is not yet verified; retaining isolation")
+                        time.sleep(2)
+                    retire_policy(policy)
                 print(f"Verified deletion of runner Workspace {workspace}", flush=True)
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
                 cleanup_failed = True

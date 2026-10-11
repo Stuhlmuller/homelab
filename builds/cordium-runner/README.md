@@ -69,9 +69,15 @@ and [NRI/enforcement prerequisites #1271](https://github.com/Stuhlmuller/homelab
 Neither currently proves production enforcement. Require NRI startup isolation,
 allowed/denied traffic, restart recovery and ambient compatibility before applying
 runner policies. The controller must install and read back the exact UID policy
-before starting its Workspace, and retire the policy only after Workspace/Pod
-deletion is verified. Policy instantiation and that ordered lifecycle are not yet
-implemented; registration remains disabled.
+before starting its Workspace, and retire the policy only after Workspace,
+Deployment, Pod and UID-named PVC deletion is verified. The one-job provisioner
+now implements that ordering, retains isolation on cleanup failure, and attempts
+GitHub unregister independently. It rejects a different Kubernetes API context,
+a stale/unready enforcer, conflicting fail-open/NRI flags, or a runner Pod with
+unexpected placement, host namespaces or service-account token mounting.
+These checks inspect both the desired DaemonSet and actual worker Pod; they do
+not substitute for live allowed/denied traffic acceptance. Registration remains
+disabled until supervisor connectivity and production enforcement are proven.
 
 After the live isolation gate passes, enable the canary in a reviewed commit,
 create a dedicated narrow Cordium runner identity and file-backed credentials,

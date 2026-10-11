@@ -1,5 +1,7 @@
 {
   "enabled": false,
+  "kubernetes_api_server": "https://10.1.0.199:6443",
+  "worker_node": "zimaboard-1",
   "repository": "Stuhlmuller/homelab",
   "app_id": "5270069",
   "installation_id": 170148721,
