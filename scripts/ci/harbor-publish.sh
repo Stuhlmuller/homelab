@@ -2,11 +2,21 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard) ]] || {
-  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == publish-cordium || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard' >&2
   exit 2
 }
 mode="$1"
+publish_names=(homelab-nofx-backend homelab-nofx-frontend)
+publish_outputs=(backend frontend)
+verify_private_download=false
+if [[ "$mode" == publish-cordium ]]; then
+  [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]
+  mode=publish
+  publish_names=(homelab-cordium-runner homelab-cordium-controller)
+  publish_outputs=(runner controller)
+  verify_private_download=true
+fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
   mode=mirror
@@ -249,7 +259,7 @@ if [[ "$mode" == mirror ]]; then
   exit 0
 fi
 
-for name in homelab-nofx-backend homelab-nofx-frontend; do
+for name in "${publish_names[@]}"; do
   tag="homelab-${GITHUB_SHA}"
   destination="harbor.stinkyboi.com/homelab/${name}"
   docker tag "${name}:build" "${destination}:${tag}"
@@ -261,6 +271,14 @@ for name in homelab-nofx-backend homelab-nofx-frontend; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
+  if "$verify_private_download"; then
+    pull_directory="$(mktemp -d "$scratch/private-pull.XXXXXX")"
+    skopeo copy --all --preserve-digests --src-authfile "$scratch/auth.json" \
+      "docker://${destination}@${destination_digest}" "dir:${pull_directory}"
+    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/private-pulled-manifest.json"
+    [[ "sha256:$(sha256sum "$scratch/private-pulled-manifest.json" | cut -d ' ' -f 1)" == "$destination_digest" ]]
+    rm -rf -- "$pull_directory"
+  fi
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
 done
 
@@ -303,8 +321,8 @@ fi
 if [[ "$mode" == publish ]]; then
   mapfile -t published_refs <"$scratch/verified-digests"
   [[ "${#published_refs[@]}" -eq 2 ]]
-  [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-  [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-  printf 'backend=%s\nfrontend=%s\n' "${published_refs[0]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+  [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[0]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+  [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[1]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+  printf '%s=%s\n%s=%s\n' "${publish_outputs[0]}" "${published_refs[0]}" "${publish_outputs[1]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
 fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

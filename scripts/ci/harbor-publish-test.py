@@ -107,10 +107,10 @@ class HarborPublicationGates(unittest.TestCase):
         return result
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
-                        missing_error="manifest unknown", registries=("docker.io", "quay.io")):
+                        missing_error="manifest unknown", registries=("docker.io", "quay.io"), cordium=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
-        names = ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        names = ["homelab-cordium-runner", "homelab-cordium-controller"] if cordium else ["homelab-nofx-backend", "homelab-nofx-frontend"]
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
@@ -174,7 +174,7 @@ class HarborPublicationGates(unittest.TestCase):
                                  "--new-bundle-format=false", "--oidc-disable-ambient-providers"):
                         assert flag in sign["args"]
                     expected = ["harbor.stinkyboi.com/homelab/" + name + "@" + digest
-                                for name, digest in sorted(FIXTURE["published_digests"].items())]
+                                for name, digest in FIXTURE["published_digests"].items()]
                     assert sign["args"][-2:] == expected
                     assert not pod["automountServiceAccountToken"]
                     assert job["spec"]["backoffLimit"] == 0
@@ -249,23 +249,27 @@ class HarborPublicationGates(unittest.TestCase):
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
                         assert json.loads(authfile.read_text()) == {"auths": {}}
-                    if FIXTURE["failure"] in ("digest", "mirror-existing-digest") and name.endswith("frontend"):
+                    if FIXTURE["failure"] in ("digest", "mirror-existing-digest") and name.endswith(("frontend", "controller")):
                         raw += "corruption"
                     if FIXTURE["failure"] == "mirror-tag" and reference.endswith(":stable"):
                         raw += "tag corruption"
                     sys.stdout.write(raw)
                 elif args[0] == "copy" and args[-1].startswith("dir:"):
                     authfile = Path(args[args.index("--src-authfile") + 1])
-                    expected_auth = {"auths": {}}
+                    expected_auth = {"auths": {}} if FIXTURE["mirror"] else {"username": "robot$homelab+publisher"}
                     assert json.loads(authfile.read_text()) == expected_auth
                     if FIXTURE["mirror"]:
                         assert "--src-no-creds" in args
                     reference = args[-2].removeprefix("docker://")
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    raw = FIXTURE["manifests"][reference]
-                    if FIXTURE["failure"] == "pull-digest" and name.endswith("frontend"):
+                    published = json.loads((root / "published-images.json").read_text()) if (root / "published-images.json").exists() else {}
+                    repository = reference.split("@")[0]
+                    tagged = repository + ":homelab-" + os.environ["GITHUB_SHA"]
+                    raw = published.get(tagged) or FIXTURE["manifests"].get(reference)
+                    assert raw is not None
+                    if FIXTURE["failure"] == "pull-digest" and name.endswith(("frontend", "controller")):
                         raw += "corrupted download"
-                    if FIXTURE["failure"] == "pull" and name.endswith("frontend"):
+                    if FIXTURE["failure"] == "pull" and name.endswith(("frontend", "controller")):
                         raise SystemExit(15)
                     directory = Path(args[-1][4:])
                     assert list(directory.iterdir()) == []
@@ -811,6 +815,30 @@ class HarborPublicationGates(unittest.TestCase):
                 else:
                     self.assertEqual(self.calls_for("cosign"), [])
                 self.assert_cleaned()
+
+    def test_cordium_publication_uses_only_fixed_pair_and_signed_outputs(self):
+        self.transport_mocks(cordium=True)
+        result = self.run_helper(mode="publish-cordium")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = (self.root / "outputs").read_text()
+        self.assertIn("runner=harbor.stinkyboi.com/homelab/homelab-cordium-runner:", output)
+        self.assertIn("controller=harbor.stinkyboi.com/homelab/homelab-cordium-controller:", output)
+        self.assertNotIn("homelab-nofx", output)
+        self.assertEqual(len(self.calls_for("cosign")), 2)
+        self.assert_cleaned()
+
+    def test_cordium_push_cannot_reach_credentials_or_publication(self):
+        self.env["GITHUB_EVENT_NAME"] = "push"
+        self.rejected(mode="publish-cordium")
+
+    def test_cordium_digest_or_signing_failure_withholds_success(self):
+        for failure in ("digest", "pull", "pull-digest", "sign", "verify"):
+            self.transport_mocks(cordium=True, failure=failure)
+            result = self.run_helper(mode="publish-cordium")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse((self.root / "outputs").exists())
+            self.assert_cleaned()
+            (self.root / "published-images.json").unlink(missing_ok=True)
 
     def test_signing_failure_withholds_success_and_cleans(self):
         for failure in ("sign", "verify", "signer-owner"):
