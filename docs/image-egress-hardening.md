@@ -181,6 +181,19 @@ existing NetworkPolicies, and prove NRI registration, recovery and allowed/denie
 traffic. No NRI setting, DaemonSet or live NetworkPolicy enforcement is activated
 by this prerequisite.
 
+Talos 1.11.3's [CRI parts controller](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/files/cri_config_parts.go)
+sorts `/etc/cri/conf.d/*.part` and merges them into
+`/etc/cri/conf.d/cri.toml`. Its [merge implementation](https://github.com/siderolabs/talos/blob/v1.11.3/pkg/machinery/config/merge/merge.go)
+explicitly replaces boolean values even when the new value is `false`.
+Standalone fragment validation therefore is only the first gate: before a
+controlled restart, the operator path must wait for the merged file to contain
+`plugins."io.containerd.nri.v1.nri".disable = false` and the declared socket path,
+reject later conflicting fragments, and verify unrelated CRI settings remain
+unchanged. After rollback it must prove the merged `disable = true` value.
+Keep complete machine/CRI configuration captures private; report only gate
+results. After restart, socket existence alone is insufficient: verify plugin
+registration, runtime synchronization and traffic enforcement separately.
+
 Sources: [Talos NRI CRI fragment](https://github.com/siderolabs/talos/discussions/10068)
 and [Talos patch semantics](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/system-configuration/patching).
 
