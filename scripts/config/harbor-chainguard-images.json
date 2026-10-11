@@ -13,6 +13,9 @@
       "source": "cgr.dev/chainguard/go:latest@sha256:2c20827746d752c1f18989847956637a0dc979c42507f4059e1d9559ee7733af"
     },
     {
+      "source": "cgr.dev/chainguard/nginx:latest@sha256:028368a7e271b3e0aed3bdc82195de6b38a2fee2bdd2a0b7ce1c4b944907098c"
+    },
+    {
       "source": "cgr.dev/chainguard/node:latest-dev@sha256:f0944f14c490643d52a065095087ac62094ee5ef50c08b5892bc1a9c6a5c14e1"
     },
     {

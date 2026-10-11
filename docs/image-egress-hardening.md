@@ -101,8 +101,11 @@ and the [existing isolation contract](runtime-isolation.md).
 ## Additional publication prerequisite
 
 Anonymous source inspection resolved public Chainguard Node `latest`, Node
-`latest-dev` and Go `latest`, each with Linux amd64/arm64 indexes. Add them to the
+`latest-dev`, Go `latest` and nginx `latest`, each with Linux amd64/arm64 indexes. Add them to the
 reviewed full catalog and Chainguard scope before custom build/runtime changes.
+The nginx candidate is for generic application frontends such as NOFX, subject
+to command, config, UID, temporary-path and actual HTTP/proxy tests. It does not
+establish compatibility with Harbor's coupled nginx-photon component.
 Node uses `/usr/bin/node` and UID 65532; Go uses `/usr/bin/go` and UID 0 in its
 build image. Existing shell/npm/CGO/linker, filesystem ownership and application
 behavior contracts still require native compatibility tests; a tag lookup does
