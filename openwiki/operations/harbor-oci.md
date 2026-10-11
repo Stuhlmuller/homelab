@@ -4,6 +4,8 @@ title: "Harbor Private OCI Registry"
 description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
 tags: ["harbor", "oci", "packages", "gitops"]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -64,6 +66,8 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-0e4e3673c8be0ce1ef65beca
+    resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
@@ -72,10 +76,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T20:01:55.480Z" }
+generated: { by: "codex", at: "2026-10-11T20:31:04.317Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T20:01:55.480Z
+    at: 2026-10-11T20:31:04.317Z
 ---
 
 # Harbor Private OCI Registry
@@ -438,6 +442,20 @@ mount, new IAM/SSM declaration or credential rotation is added. Active Harbor
 resources exclude this directory. Move its secret and merge the pull reference
 into the existing ServiceAccount only with reviewed publication/scans, recovery
 clearance and ExternalSecret readiness; preserve cold-bootstrap/rollback access.
+
+The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-core-images.yml)
+prepares a protected publication path for one fixed
+`homelab/homelab-harbor-core:homelab-<main-sha>` reference. It checks current
+main before checkout/build and again before credentials, rebuilds/tests/audits
+first, and uses `homelab-production` with the shared Harbor publication lock.
+The helper also requires that dedicated workflow reference. After push, a fresh
+complete private pull and digest comparison precede in-cluster signing and
+destination verification against the enrolled public-key fingerprint.
+Failures withhold the output digest; success produces a pinned-reference artifact.
+Core signing Pods use only the pinned Harbor Cosign mirror, whose publication
+must be verified before dispatch. NOFX's two-subject behavior remains intact.
+This source path does not authorize dispatch, activate the held consumer or
+clear shared recovery/advisory gates.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 

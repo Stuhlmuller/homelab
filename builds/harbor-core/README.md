@@ -44,6 +44,34 @@ audit. Unfixed/unknown matches remain counted and are not CVE clearance or
 publication approval. Raw image metadata and transport output stay private;
 temporary scan inputs are removed on exit.
 
+## Protected publication
+
+The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-core-images.yml)
+publishes only `harbor.stinkyboi.com/homelab/homelab-harbor-core` at
+`homelab-<current-main-sha>`. It verifies the dispatch before build and current
+main again before credentials, rebuilds/tests/audits first, and uses the existing
+`homelab-production` approval and shared Harbor publication lock.
+
+The fixed publisher mode requires that exact workflow, downloads the complete
+private artifact by digest before signing, uses the enrolled in-cluster key,
+and verifies the destination signature. Pull/digest/signature failures withhold
+the output reference. The resulting reference is retained as a workflow artifact.
+No consuming digest or rollout is changed by publication.
+
+After protected review, full scan/advisory acceptance and shared recovery
+clearance, dispatch on the reviewed current main SHA:
+
+```bash
+gh workflow run harbor-core-images.yml --ref main -f expected_sha=<reviewed-current-main-sha>
+```
+
+Require the exact-head successful publication receipt before replacing any
+consumer. Retain older signed tags for rollback; never change signing identity
+or enable public fallback to bypass a failed publication.
+The core signer uses only the digest-pinned Harbor Cosign mirror; require its
+complete publication/availability before dispatch. No signing Pod uses a public
+registry reference in this core mode.
+
 Run `bash builds/harbor-core/build.sh` on a Linux Docker host. Its native build
 first requires the unpatched manager to fail the repeated-child regression,
 then requires the repaired manager suite and complete core compilation to pass

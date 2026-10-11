@@ -1,0 +1,140 @@
+name: Harbor Core Images
+
+# checkov:skip=CKV_GHA_7: expected_sha pins current main; no caller-supplied image or command exists.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed current main commit for core publication
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish Reviewed Private Core
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    concurrency:
+      group: harbor-packages-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      core: ${{ steps.publication.outputs.core }}
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build And Test Core Before Registry Credentials
+        run: bash builds/harbor-core/build.sh
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+
+      - name: Validate Publication Gates
+        run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
+
+      - name: Audit Exact Runtime Before Registry Credentials
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash builds/harbor-core/scan.sh >"$private_log" 2>&1; then
+            echo "::error::Runtime audit failed; private output withheld."
+            exit 1
+          fi
+          grep -F 'Complete private runtime audit passed;' "$private_log"
+          grep -F 'Runtime audit receipt: ' "$private_log"
+
+      - name: Verify Current Main Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-harbor-publish-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Publish And Verify Private Harbor Images
+        id: publication
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/harbor-publish.sh publish-harbor-core
+          EOF
+          then
+            echo "::error::Harbor publication failed; private transport and registry output withheld."
+            exit 1
+          fi
+          echo "Private Harbor core published, completely pulled, signed, and verified; private output withheld."
+
+  published-digest:
+    name: Report Published Core Digest
+    needs: [publish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Validate Published Reference
+        env:
+          CORE_REFERENCE: ${{ needs.publish.outputs.core }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${CORE_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-harbor-core:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          set -o noclobber
+          printf '%s\n' "$CORE_REFERENCE" >"${RUNNER_TEMP:?}/harbor-core-published-image.txt"
+      - name: Upload Published Reference
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-core-published-image-${{ github.sha }}
+          path: ${{ runner.temp }}/harbor-core-published-image.txt
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false

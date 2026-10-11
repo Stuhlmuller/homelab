@@ -4,6 +4,8 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
@@ -48,6 +50,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -60,6 +64,8 @@ sources:
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -88,10 +94,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T19:43:31.163Z" }
+generated: { by: "codex", at: "2026-10-11T20:31:04.317Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T19:43:31.163Z
+    at: 2026-10-11T20:31:04.317Z
 ---
 
 # Validation Gates
@@ -1461,6 +1467,13 @@ identity, platform/distro, stale or invalid databases, filters/exclusions and
 available fixes, while retaining unresolved findings unchanged. A privacy case
 requires sanitized receipts to omit raw image metadata and explicitly deny CVE
 clearance. Full-runtime audit execution still needs fresh Linux CI evidence.
+Core publication regression cases additionally require one fixed subject,
+dedicated workflow/current-main binding, complete private pulls before signing,
+the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
+pull/digest/signature failures. The credentialed job inventory and canonical
+workflow hash enroll both the publisher and pinned-reference reporting job;
+dispatch verification precedes checkout and repeats before credentials.
+No publication workflow has been dispatched as part of these source tests.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
 with exactly one database relation. Offline fixtures also validate the OCI

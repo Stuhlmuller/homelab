@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d1516ff8f6b2fda0452874ab1e0abed699cd7ef511539a2f51cedaaf348a9880",
+  "pageVersion": "sha256:2f4b9faeeb12a38cd0e4126d7c4385ac11d4d98018c1fd4a0abab45aea98fd57",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b"
+          "version": "repo-file-v1:sha256:da0b8ec5e8f77125ed57e0bc85f28f437262d405da052403ab537321caa10d34"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -132,7 +132,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
+          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -168,7 +168,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
+          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
@@ -224,7 +224,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
+          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -317,10 +317,32 @@
           "version": "repo-file-v1:sha256:5a032b0a5d00158f851b147fae5ffbd0b52209c7082db49ee0f08fea1fd97308"
         }
       ]
+    },
+    {
+      "id": "claim_69018d54de594753b1f852c4ee5f8358",
+      "statement": "The dispatch-only protected core publisher accepts only exact current main and the dedicated workflow, builds/tests/audits before credentials, publishes one fixed core reference, completely pulls and verifies its digest before signing, and verifies destination signatures against the enrolled key before emitting a pinned artifact. Core signer Pods use the Harbor Cosign mirror; NOFX behavior stays two-subject and all release/recovery gates remain.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:d994048d21eebd50dc10adb478084eef07f1376d7a36261ea52c00a4d11e3c16"
+        },
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:2ac7c34db937ca3574acdc6a75ba25dc3a24c40b9b4c55813e7e0ea8c801a567"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:da0b8ec5e8f77125ed57e0bc85f28f437262d405da052403ab537321caa10d34"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T20:01:55.480Z"
+    "at": "2026-10-11T20:31:04.317Z"
   }
 }
