@@ -223,6 +223,12 @@ def main():
     version = github_operator.command("cordium", "version").decode()
     if not re.search(r"(?m)^gitCommit:\s*e12b0b16d5fe94716e414fca7cfdc10b21014f2c\s*$", version):
         raise RuntimeError("Install the pinned Cordium v0.12.7 client before runner provisioning")
+    status = json.loads(github_operator.command("octelium", "--homedir", str(args.homedir.resolve()),
+                                               "--domain", "stinkyboi.com", "status", "-o", "json"))
+    if (status.get("domain") != "stinkyboi.com" or status.get("user", {}).get("metadata", {}).get("name") != pool["cordium_user"]
+            or status.get("user", {}).get("spec", {}).get("type") != "WORKLOAD"
+            or status["user"]["spec"].get("authorization", {}).get("policies") != ["homelab-cordium-runner-execution"]):
+        raise RuntimeError("Native login is not the dedicated policy-bound runner identity")
     if args.app_key_file.stat().st_mode & 0o077:
         raise RuntimeError("App key file must not be readable by group or others")
     app = github_operator.github_client(github_operator.app_jwt(pool["app_id"], args.app_key_file.read_bytes()))

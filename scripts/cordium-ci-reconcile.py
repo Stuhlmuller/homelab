@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect or reconcile only the three repository-owned Cordium CI identities."""
+"""Inspect or reconcile the fixed Cordium CI or runner identity declarations."""
 import sys
 if __name__ == "__main__" and not sys.flags.isolated:
     raise SystemExit("Run with python3 -I")
@@ -21,19 +21,24 @@ TARGETS = (
     ("IdentityProvider", "homelab-cordium-ci-oidc"),
     ("User", "homelab-cordium-ci"),
 )
+RUNNER_TARGETS = (
+    ("Policy", "homelab-cordium-runner-execution"),
+    ("User", "homelab-cordium-runners"),
+)
 spec = importlib.util.spec_from_file_location("native", ROOT / "scripts/octelium-nofx-reconcile.py")
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
 
 
-def declared_resources():
+def declared_resources(runners=False):
+    targets = RUNNER_TARGETS if runners else TARGETS
     records = json.loads(native.run("yq", "ea", "-o=json", "-I=0", "[.]", str(CATALOG)).stdout)
     selected = [item for item in records if isinstance(item, dict)
-                and (item.get("kind"), item.get("metadata", {}).get("name")) in TARGETS]
-    if len(selected) != len(TARGETS):
-        raise RuntimeError("Catalog must declare exactly the three Cordium CI resources")
+                and (item.get("kind"), item.get("metadata", {}).get("name")) in targets]
+    if len(selected) != len(targets):
+        raise RuntimeError("Catalog must declare exactly the selected Cordium identity resources")
     result = []
-    for kind, name in TARGETS:
+    for kind, name in targets:
         matches = [item for item in selected if (item["kind"], item["metadata"]["name"]) == (kind, name)]
         if len(matches) != 1 or not isinstance(matches[0].get("spec"), dict):
             raise RuntimeError("Missing, duplicate, or invalid Cordium CI resource")
@@ -84,13 +89,14 @@ def reconcile(client, environment, desired, directory, execute):
         current = inspect(client, environment, item)
         if current is None or current.get("spec") != item["spec"]:
             raise RuntimeError("Native resource does not match its reviewed specification")
-    print("Verified the three Cordium CI resources and repeated-apply convergence")
+    print(f"Verified {len(desired)} Cordium identity resources and repeated-apply convergence")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--homedir", help="Private existing operator login directory")
-    parser.add_argument("--execute", action="store_true", help="Apply and verify only the three fixed resources")
+    parser.add_argument("--execute", action="store_true", help="Apply and verify only the selected fixed resources")
+    parser.add_argument("--runner-identities", action="store_true", help="Select only the fixed runner Policy and User; default selects CI OIDC resources")
     parser.add_argument("--expected-sha", help="Exact reviewed main commit required for execution")
     args = parser.parse_args()
     def interrupted(signum, _frame):
@@ -99,7 +105,7 @@ def main():
     if args.execute:
         native.verify_reviewed_main(args.expected_sha)
         native.run("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/cordium-ci-reconcile.py")
-    desired = declared_resources()
+    desired = declared_resources(args.runner_identities)
     client = [native.verified_client(), "--domain", "stinkyboi.com"]
     if args.homedir:
         client += ["--homedir", str(pathlib.Path(args.homedir).resolve())]

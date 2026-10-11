@@ -80,7 +80,7 @@ not substitute for live allowed/denied traffic acceptance. Registration remains
 disabled until supervisor connectivity and production enforcement are proven.
 
 After the live isolation gate passes, enable the canary in a reviewed commit,
-create a dedicated narrow Cordium runner identity and file-backed credentials,
+reconcile the declared dedicated runner identity and file-backed credentials,
 then invoke from that exact clean main checkout:
 
 ```sh
@@ -94,3 +94,34 @@ in-cluster queue controller. It is not a deployed controller. Provisioner restar
 recovery, cancellation, image publication, protected jobs and complete workflow
 execution remain migration acceptance gates. Retire the unused bootstrap App key
 only after the verified replacement has durable secret-manager custody.
+
+## Dedicated native identity
+
+The service catalog declares `homelab-cordium-runners` as a WORKLOAD User with
+one concurrent session, a 60-minute client duration, and only
+`homelab-cordium-runner-execution`. The policy allows owned Workspace creation,
+start, inspection, deletion and exec; a priority `-4` denial excludes other
+Cordium methods before upstream's broad MainService allowance. It grants no
+management/bootstrap API access. The provisioner checks the actual login's
+domain, User type/name and exact policy attachment before reading the App key.
+Do not reuse an existing human, agent or CI-check login.
+
+Preview only these two resources through the existing fixed reconciler:
+
+```sh
+nix develop --command python3 -I scripts/cordium-ci-reconcile.py --runner-identities
+```
+
+After reviewed merge, full validation and release of the cutover hold, use the
+same exact-main checkout guards documented in `docs/cordium-ci.md`, then:
+
+```sh
+nix develop --command python3 -I scripts/cordium-ci-reconcile.py \
+  --runner-identities --execute --expected-sha FULL_REVIEWED_MAIN_SHA
+```
+
+The Policy applies before the User; a second pass must converge and spec
+readback must match. This scope cannot apply CI OIDC or unrelated credentials.
+Credential creation, durable secret injection and native login renewal still
+need a repository-owned path before controller deployment; the reconciler
+does not generate or expose authentication material.

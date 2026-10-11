@@ -1,5 +1,6 @@
 {
   "enabled": false,
+  "cordium_user": "homelab-cordium-runners",
   "kubernetes_api_server": "https://10.1.0.199:6443",
   "worker_node": "zimaboard-1",
   "repository": "Stuhlmuller/homelab",

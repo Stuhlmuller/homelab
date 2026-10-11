@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Exercise one-job credential handling and independent cleanup without live APIs."""
 import contextlib
+import copy
 import importlib.util
 import io
 import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
@@ -195,6 +197,39 @@ class Lifecycle(unittest.TestCase):
              self.assertRaisesRegex(RuntimeError, "registration is disabled"):
             runner.main()
         signer.assert_not_called()
+
+    def test_human_agent_wrong_domain_or_policy_login_rejected_before_app_key(self):
+        pool = json.loads((runner.ROOT / ".cordium/runner-pool.json").read_text())
+        pool["enabled"] = True
+        good = {"domain": "stinkyboi.com", "user": {"metadata": {"name": "homelab-cordium-runners"},
+                "spec": {"type": "WORKLOAD", "authorization": {"policies": ["homelab-cordium-runner-execution"]}}}}
+        cases = []
+        for name in ("homelab-cordium-user", "homelab-cordium-agent", "homelab-cordium-ci"):
+            status = copy.deepcopy(good)
+            status["user"]["metadata"]["name"] = name
+            cases.append(status)
+        status = copy.deepcopy(good)
+        status["domain"] = "other.invalid"
+        cases.append(status)
+        status = copy.deepcopy(good)
+        status["user"]["spec"]["type"] = "HUMAN"
+        cases.append(status)
+        status = copy.deepcopy(good)
+        status["user"]["spec"]["authorization"]["policies"].append("bootstrap-access")
+        cases.append(status)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".cordium").mkdir()
+            (root / ".cordium/runner-pool.json").write_text(json.dumps(pool))
+            for status in cases:
+                with patch.object(runner, "ROOT", root), \
+                     patch.object(sys, "argv", ["runner", "--expected-sha", SHA, "--app-key-file", "/missing/key", "--homedir", "/missing/login"]), \
+                     patch.object(runner.github_operator, "verify_reviewed_main"), \
+                     patch.object(runner.github_operator, "command", side_effect=[b"", b"gitCommit: e12b0b16d5fe94716e414fca7cfdc10b21014f2c\n", json.dumps(status).encode()]), \
+                     patch.object(runner.github_operator, "app_jwt") as signer, \
+                     self.assertRaisesRegex(RuntimeError, "dedicated policy-bound runner identity"):
+                    runner.main()
+                signer.assert_not_called()
 
 
 if __name__ == "__main__":
