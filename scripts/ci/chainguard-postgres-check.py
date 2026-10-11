@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from uuid import uuid4
 
-TARGET = "cgr.dev/chainguard/postgres@sha256:1a417cf464d938b1b1182411416401215af7fbc88395d9b90f7c805e96d639a7"
+TARGET = "cgr.dev/chainguard/postgres@sha256:0fb984eb4d7fc358563efdea19e59dd3b2dbfdbac86cd45749e4f5603dab651a"
 SOURCES = (
     ("docker.io/library/postgres@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa", 65534),
     ("docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650", 999),

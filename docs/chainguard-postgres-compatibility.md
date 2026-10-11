@@ -6,6 +6,10 @@ before it can replace the maintained PostgreSQL images. Run
 The dedicated CI job uses pinned public source bytes without production
 credentials; production replacements must use the verified Harbor copy.
 
+The fixture and both publication catalogs use the PostgreSQL index verified
+on 2026-10-11. Earlier native results do not cover this refreshed digest;
+require the dedicated Linux job to pass before accepting it.
+
 Wolfi PostgreSQL clients default to `/tmp` sockets; Debian clients default to
 `/var/run/postgresql`. The fixture exposes both and waits for the final
 PostgreSQL process, not the entrypoint's temporary initialization server.
