@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from urllib.parse import parse_qs, urlparse
 from unittest.mock import Mock, patch
 
 spec = importlib.util.spec_from_file_location("runner", Path(__file__).resolve().parents[1] / "cordium-runner.py")
@@ -230,6 +231,89 @@ class Lifecycle(unittest.TestCase):
                      self.assertRaisesRegex(RuntimeError, "dedicated policy-bound runner identity"):
                     runner.main()
                 signer.assert_not_called()
+
+
+class Queue(unittest.TestCase):
+    def setUp(self):
+        self.pool = json.loads((runner.ROOT / ".cordium/runner-pool.json").read_text())
+
+    def test_pending_jobs_in_active_runs_match_all_labels_case_insensitively(self):
+        def api(method, path):
+            if "status=in_progress" in path:
+                return {"workflow_runs": [{"id": 7}]}
+            if "/jobs?" in path:
+                return {"jobs": [{"status": "queued", "labels": ["SELF-HOSTED", "linux", "x64", "cordium-canary"]}]}
+            return {"workflow_runs": []}
+        self.assertTrue(runner.queued_jobs(api, self.pool))
+
+    def test_hosted_wrong_pool_and_finished_jobs_do_not_provision(self):
+        for job in ({"status": "queued", "labels": ["ubuntu-24.04"]},
+                    {"status": "queued", "labels": ["self-hosted", "cordium"]},
+                    {"status": "completed", "labels": self.pool["labels"]}):
+            def api(method, path):
+                if "/jobs?" in path:
+                    return {"jobs": [job]}
+                return {"workflow_runs": [{"id": 7}]} if "status=queued" in path else {"workflow_runs": []}
+            self.assertFalse(runner.queued_jobs(api, self.pool))
+
+    def test_both_run_and_job_pagination_are_complete(self):
+        calls = []
+        def api(method, path):
+            calls.append(path)
+            page = parse_qs(urlparse(path).query)["page"][0]
+            if "/jobs?" in path:
+                if "/101/jobs?" in path:
+                    if page == "1":
+                        return {"jobs": [{"status": "completed", "labels": []}] * 100}
+                    return {"jobs": [{"status": "queued", "labels": self.pool["labels"]}]}
+                return {"jobs": []}
+            if "status=queued" in path:
+                return {"workflow_runs": [{"id": i} for i in range(1, 101)]} if page == "1" else {"workflow_runs": [{"id": 101}]}
+            return {"workflow_runs": []}
+        self.assertTrue(runner.queued_jobs(api, self.pool))
+        self.assertTrue(any("status=queued" in path and "page=2" in path for path in calls))
+        self.assertTrue(any("/101/jobs?" in path and "page=2" in path for path in calls))
+
+    def test_loop_refreshes_client_and_stops_on_lifecycle_or_main_failure(self):
+        with patch.object(runner.github_operator, "verify_reviewed_main") as guard, \
+             patch.object(runner, "native_identity"), \
+             patch.object(runner, "installation_client", return_value="private-api") as client, \
+             patch.object(runner, "queued_jobs", return_value=True), \
+             patch.object(runner, "provision", side_effect=RuntimeError("cleanup incomplete")) as provision, \
+             patch.object(runner.time, "sleep") as sleep:
+            with self.assertRaises(RuntimeError):
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+            guard.assert_called_once_with(SHA)
+            client.assert_called_once()
+            provision.assert_called_once()
+            sleep.assert_not_called()
+        with patch.object(runner.github_operator, "verify_reviewed_main", side_effect=RuntimeError("main changed")), \
+             patch.object(runner, "installation_client") as client:
+            with self.assertRaises(RuntimeError):
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+            client.assert_not_called()
+
+    def test_filtered_search_cap_and_native_failure_do_not_create_runners(self):
+        with self.assertRaises(RuntimeError):
+            runner.queued_jobs(Mock(return_value={"total_count": 1000, "workflow_runs": []}), self.pool)
+        with patch.object(runner.github_operator, "verify_reviewed_main"), \
+             patch.object(runner, "native_identity", side_effect=RuntimeError("session unavailable")), \
+             patch.object(runner, "installation_client") as client:
+            with self.assertRaises(RuntimeError):
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+            client.assert_not_called()
+
+    def test_idle_poll_refreshes_scoped_client_without_provisioning(self):
+        with patch.object(runner.github_operator, "verify_reviewed_main"), \
+             patch.object(runner, "native_identity"), \
+             patch.object(runner, "installation_client", return_value="private-api") as client, \
+             patch.object(runner, "queued_jobs", return_value=False), \
+             patch.object(runner, "provision") as provision, \
+             patch.object(runner.time, "sleep", side_effect=[None, SystemExit(0)]):
+            with self.assertRaises(SystemExit):
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+            self.assertEqual(client.call_count, 2)
+            provision.assert_not_called()
 
 
 if __name__ == "__main__":

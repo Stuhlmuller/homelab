@@ -97,6 +97,31 @@ only after the verified replacement has durable secret-manager custody.
 
 ## Dedicated native identity
 
+The optional serve mode polls active workflow runs and every job page, matching
+all requested labels case-insensitively. It refreshes the scoped App client and
+rechecks current main and the native identity on each cycle, executes one
+Workspace lifecycle at a time, and stops on drift or any lifecycle failure.
+A private nonblocking lock prevents two processes sharing one login directory.
+GitHub caps filtered run searches at 1,000 results; the loop rejects that boundary
+instead of silently omitting jobs. Partition inventory by time before supporting
+that scale.
+
+After activation gates and a verified dedicated login, add the serve flag:
+
+~~~sh
+python3 -I scripts/cordium-runner.py --serve \
+  --expected-sha FULL_REVIEWED_MAIN_SHA \
+  --app-key-file /PRIVATE/RUNNER_APP_KEY.pem \
+  --homedir /PRIVATE/DEDICATED_RUNNER_LOGIN
+~~~
+
+This process is not deployed yet. Use one replica with Recreate rollout when
+packaging it; the filesystem lock is not a distributed leader lease. Native
+session renewal and deployment refresh on new main commits remain required.
+An expired or unobservable native session stops the loop; it does not infer
+expiry from a failed observation or silently reauthenticate. The initial canary
+labels and disabled registration flag remain unchanged.
+
 The service catalog declares `homelab-cordium-runners` as a WORKLOAD User with
 one concurrent session, a 60-minute client duration, and only
 `homelab-cordium-runner-execution`. The policy allows owned Workspace creation,

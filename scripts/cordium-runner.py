@@ -5,8 +5,10 @@ if __name__ == "__main__" and not sys.flags.isolated:
     raise SystemExit("Run with python3 -I")
 
 import argparse
+import fcntl
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import signal
@@ -94,6 +96,76 @@ def runner_present(api, repository, identifier):
         if str(error) == "GitHub request failed with HTTP 404; response withheld":
             return False
         raise
+
+
+def installation_client(pool, key_file):
+    if key_file.stat().st_mode & 0o077:
+        raise RuntimeError("App key file must not be readable by group or others")
+    app = github_operator.github_client(github_operator.app_jwt(pool["app_id"], key_file.read_bytes()))
+    if str(app("GET", "/app")["id"]) != pool["app_id"]:
+        raise RuntimeError("GitHub App identity differs from the declared runner App")
+    token = app("POST", f"/app/installations/{pool['installation_id']}/access_tokens", {
+        "repositories": ["homelab"],
+        "permissions": {"administration": "write", "actions": "read", "metadata": "read"},
+    })["token"]
+    api = github_operator.github_client(token)
+    if [item["full_name"] for item in api("GET", "/installation/repositories")["repositories"]] != [pool["repository"]]:
+        raise RuntimeError("Runner token is not restricted to the homelab repository")
+    return api
+
+
+def native_identity(pool, client):
+    status = json.loads(github_operator.command("octelium", *client[1:], "status", "-o", "json"))
+    if (status.get("domain") != "stinkyboi.com" or status.get("user", {}).get("metadata", {}).get("name") != pool["cordium_user"]
+            or status.get("user", {}).get("spec", {}).get("type") != "WORKLOAD"
+            or status["user"]["spec"].get("authorization", {}).get("policies") != ["homelab-cordium-runner-execution"]):
+        raise RuntimeError("Native login is not the dedicated policy-bound runner identity")
+
+
+def queued_jobs(api, pool):
+    available = {label.casefold() for label in pool["labels"]}
+    seen = set()
+    for status in ("queued", "in_progress", "waiting", "pending", "requested"):
+        page = 1
+        while True:
+            response = api("GET", f"/repos/{pool['repository']}/actions/runs?status={status}&per_page=100&page={page}")
+            if response.get("total_count", 0) >= 1000:
+                raise RuntimeError("Queue reaches GitHub's filtered-search cap; partition the inventory before provisioning")
+            runs = response["workflow_runs"]
+            for run in runs:
+                identifier = run["id"]
+                if type(identifier) is not int or identifier <= 0:
+                    raise RuntimeError("GitHub returned an invalid workflow run ID")
+                if identifier in seen:
+                    continue
+                seen.add(identifier)
+                job_page = 1
+                while True:
+                    jobs = api("GET", f"/repos/{pool['repository']}/actions/runs/{identifier}/jobs?filter=latest&per_page=100&page={job_page}")["jobs"]
+                    for job in jobs:
+                        labels = job.get("labels")
+                        if not isinstance(labels, list) or any(not isinstance(label, str) for label in labels):
+                            raise RuntimeError("GitHub returned invalid runner labels")
+                        if job["status"] == "queued" and labels and {label.casefold() for label in labels} <= available:
+                            return True
+                    if len(jobs) < 100:
+                        break
+                    job_page += 1
+            if len(runs) < 100:
+                break
+            page += 1
+    return False
+
+
+def serve(pool, key_file, client, checkout):
+    while True:
+        # A changed main requires a reviewed deployment refresh, not stale code.
+        github_operator.verify_reviewed_main(checkout)
+        native_identity(pool, client)
+        api = installation_client(pool, key_file)
+        if queued_jobs(api, pool):
+            provision(api, client, checkout)
+        time.sleep(30)
 
 
 def provision(api, client, checkout):
@@ -214,6 +286,7 @@ def main():
     parser.add_argument("--app-key-file", required=True, type=Path)
     parser.add_argument("--homedir", required=True, type=Path, help="Dedicated runner identity login; never a human/agent login")
     parser.add_argument("--expected-sha", required=True, help="Exact current reviewed main commit")
+    parser.add_argument("--serve", action="store_true", help="Poll compatible queued jobs serially; stop on drift or any lifecycle failure")
     args = parser.parse_args()
     github_operator.verify_reviewed_main(args.expected_sha)
     github_operator.command("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/cordium-runner.py")
@@ -223,28 +296,17 @@ def main():
     version = github_operator.command("cordium", "version").decode()
     if not re.search(r"(?m)^gitCommit:\s*e12b0b16d5fe94716e414fca7cfdc10b21014f2c\s*$", version):
         raise RuntimeError("Install the pinned Cordium v0.12.7 client before runner provisioning")
-    status = json.loads(github_operator.command("octelium", "--homedir", str(args.homedir.resolve()),
-                                               "--domain", "stinkyboi.com", "status", "-o", "json"))
-    if (status.get("domain") != "stinkyboi.com" or status.get("user", {}).get("metadata", {}).get("name") != pool["cordium_user"]
-            or status.get("user", {}).get("spec", {}).get("type") != "WORKLOAD"
-            or status["user"]["spec"].get("authorization", {}).get("policies") != ["homelab-cordium-runner-execution"]):
-        raise RuntimeError("Native login is not the dedicated policy-bound runner identity")
-    if args.app_key_file.stat().st_mode & 0o077:
-        raise RuntimeError("App key file must not be readable by group or others")
-    app = github_operator.github_client(github_operator.app_jwt(pool["app_id"], args.app_key_file.read_bytes()))
-    if str(app("GET", "/app")["id"]) != pool["app_id"]:
-        raise RuntimeError("GitHub App identity differs from the declared runner App")
-    token = app("POST", f"/app/installations/{pool['installation_id']}/access_tokens", {
-        "repositories": ["homelab"],
-        "permissions": {"administration": "write", "actions": "read", "metadata": "read"},
-    })["token"]
-    api = github_operator.github_client(token)
-    if [item["full_name"] for item in api("GET", "/installation/repositories")["repositories"]] != [pool["repository"]]:
-        raise RuntimeError("Runner token is not restricted to the homelab repository")
     def interrupted(signum, _frame):
         raise SystemExit(128 + signum)
     signal.signal(signal.SIGTERM, interrupted)
-    provision(api, ["cordium", "--homedir", str(args.homedir.resolve()), "--domain", "stinkyboi.com"], args.expected_sha)
+    client = ["cordium", "--homedir", str(args.homedir.resolve()), "--domain", "stinkyboi.com"]
+    if args.serve:
+        with open(args.homedir / "runner-controller.lock", "a", opener=lambda path, flags: os.open(path, flags, 0o600)) as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            serve(pool, args.app_key_file, client, args.expected_sha)
+    else:
+        native_identity(pool, client)
+        provision(installation_client(pool, args.app_key_file), client, args.expected_sha)
 
 
 if __name__ == "__main__":
