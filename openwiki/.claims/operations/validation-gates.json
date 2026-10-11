@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e5d1c78fa52c1515539b9671141db6feb99179b55385a3fdfa5b5c222bf398ee",
+  "pageVersion": "sha256:3cb6f353fe15871d8099fb7061647f46870c15b8fa829cc5102df3635a4b54c9",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:2ac7c34db937ca3574acdc6a75ba25dc3a24c40b9b4c55813e7e0ea8c801a567"
+          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -384,25 +384,39 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:d994048d21eebd50dc10adb478084eef07f1376d7a36261ea52c00a4d11e3c16"
+          "version": "repo-file-v1:sha256:cc8309960b1ad6c1d9b3235e55328b2144f127b53d6ed51cf56565da8d2c0d1b"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:2ac7c34db937ca3574acdc6a75ba25dc3a24c40b9b4c55813e7e0ea8c801a567"
+          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:da0b8ec5e8f77125ed57e0bc85f28f437262d405da052403ab537321caa10d34"
+          "version": "repo-file-v1:sha256:5bc73e74d3ed01777e7271eb5de5345bcb0cc52836c761f45a8f74e3881326e6"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6fa5a045ea750935eccb6fb571298773fe6e40bfc1b7c1352f4728af35e7ed89"
+          "version": "repo-file-v1:sha256:d4468d656f37f49661ee4b0d4612f1682d1c60c17bb3f6e2e2fe1eefb8c57788"
+        }
+      ]
+    },
+    {
+      "id": "claim_aa50d28e91f34c30a1febb5a92eeb530",
+      "statement": "Harbor publication regressions include a native offline Skopeo test using generated local OCI fixtures with network transports rejected, requiring original root and both platform-child manifest digests and repeated descriptors to survive directory staging and a second copy; this does not prove Harbor publication, signature accessories or live consumers.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T20:31:04.317Z"
+    "at": "2026-10-11T20:54:31.009Z"
   }
 }

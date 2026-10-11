@@ -79,9 +79,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
 
-   The `chainguard` scope selects the seven digest-pinned public candidates in
+   The `chainguard` scope selects the thirteen digest-pinned public candidates in
    `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
-   Redis, Valkey, PostgreSQL and Cosign. It publishes to the same normal
+   Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
+   Wolfi base and static runtime. It publishes to the same normal
    `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
    digest preservation and fresh anonymous downloads. It does not change
    consumers or prove runtime compatibility. Run after the prerequisite merges:
@@ -92,7 +93,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    See [migration gates and current findings](image-egress-hardening.md).
    Keep the public import source distinct from the internal runtime reference.
-   New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:latest@sha256:<verified-index-digest>`
+   New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:<reviewed-tag>@sha256:<verified-index-digest>`
    only after successful publication and compatibility validation.
 
    Require a successful run, including complete anonymous downloads. A completed
@@ -110,8 +111,18 @@ retain registry blobs together with Harbor database/encryption-key backups.
    changes alone therefore do not require another full image copy. New workflow
    dispatches and credential access still require exact current `main`.
    A running Harbor UI or manifest request alone does not prove complete copies.
+   Missing artifacts are staged through an anonymous all-platform source download
+   (`upstream-download`) and exact original-manifest hash check (`upstream-verify`)
+   before authenticated Harbor upload (`destination-copy`). Preserve the original
+   index bytes, including repeated descriptors; do not normalize the index to
+   manufacture a different digest. The temporary source is removed before the
+   independent anonymous Harbor pull, keeping one full image tree on disk at a
+   time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
+   Categories also distinguish bare HTTP 403, payload-size limits, 5xx server
+   responses and quota exhaustion. A category is a diagnostic hint, not source
+   or destination attribution, an absent-artifact proof, or permission to retry.
 3. From that clean checkout, render and strictly validate each existing machine
    configuration. The helper defaults to inspection; use Talos client 1.11.3.
    Restore the private client config at `.talos/talosconfig`, or pass an existing
@@ -326,3 +337,13 @@ requires a separately reviewed repair. The fixed Traefik scope publishes the
 native pause probe independently; its success authorizes only those artifacts.
 Node hostname migration still requires successful native pulls from every node.
 Cluster-wide `skipFallback` mirrors remain gated on successful full publication.
+## Custom-image publication acceptance
+
+The fixed custom-image publisher completely downloads each pushed private
+Harbor digest into a fresh temporary directory using its project-scoped pull
+permission, preserving all manifests and blobs. It verifies the downloaded root
+manifest against the pushed digest before creating the signing Job or emitting
+consumer references. A missing blob, failed download or digest mismatch stops
+publication acceptance and withholds signing/output references. This verifies
+transport completeness; private vulnerability review and original workload
+behavior remain separate release gates.
