@@ -4,7 +4,7 @@ locals {
 
 inputs = {
   defaults     = local.shared.argocd_defaults
-  dependencies = ["cert-manager"]
+  dependencies = ["cert-manager", "platform-gateway-api"]
   spec = {
     destination = {
       namespace = "istio-system"

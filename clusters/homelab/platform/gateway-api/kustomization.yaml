@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Gateway API v1.3.0, vendored from the pinned upstream commit to keep
+# rendering offline.
+resources:
+  - crds/gateway.networking.k8s.io_gatewayclasses.yaml
+  - crds/gateway.networking.k8s.io_gateways.yaml
+  - crds/gateway.networking.k8s.io_grpcroutes.yaml
+  - crds/gateway.networking.k8s.io_httproutes.yaml
+  - crds/gateway.networking.k8s.io_referencegrants.yaml
+commonAnnotations:
+  argocd.argoproj.io/sync-options: ServerSideApply=true,Prune=false,Delete=false
