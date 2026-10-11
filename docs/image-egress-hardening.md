@@ -199,8 +199,10 @@ nix develop --command python3 -I scripts/talos-nri-canary.py \
   --talosconfig /private/path/talosconfig --talosctl /path/to/talosctl-1.11.3
 ```
 
-Execution requires a clean checkout at exact current reviewed main and successful
-full-scope image publication under its existing bundle-equality gate. After the
+Execution requires a clean checkout at exact current reviewed main. Enable and
+enabled-state scheduling release also require successful full-scope image
+publication under its existing bundle-equality gate. Rollback remains available
+without a fresh publication gate. After the
 shared image/node recovery hold is released, add `--execute --expected-sha
 <CURRENT_MAIN_SHA>`. The helper rechecks configuration and boot around drain,
 respects PDBs, refuses unmanaged Pods/emptyDir deletion, applies only its NRI

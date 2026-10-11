@@ -127,7 +127,7 @@ class CanaryTests(unittest.TestCase):
                     patch.object(c.nri, "prepare", prepare), patch.object(c.nri, "documents", side_effect=lambda p: json.loads(p.read_text())), \
                     patch.object(c.effective, "verify", effective), patch.object(c, "merged", side_effect=lambda client: json.loads(command(*client, "read", c.CRI))), \
                     patch.object(c, "wait", wait), contextlib.redirect_stdout(io.StringIO()) as output:
-                if failure and not (rollback and failure == "cri-health"):
+                if failure and not (rollback and failure in ("cri-health", "publication")):
                     with self.assertRaises((ValueError, RuntimeError)):
                         c.reconcile(client, "talosctl", execute, SHA, rollback, release)
                 else:
@@ -150,6 +150,10 @@ class CanaryTests(unittest.TestCase):
 
     def test_rollback_can_recover_unhealthy_cri(self):
         calls = self.exercise("cri-health", rollback=True)
+        self.assertTrue(any("apply-config" in a for a in calls))
+
+    def test_rollback_does_not_depend_on_publication(self):
+        calls = self.exercise("publication", rollback=True)
         self.assertTrue(any("apply-config" in a for a in calls))
 
     def test_preflight_is_read_only(self):

@@ -117,7 +117,8 @@ def reconcile(talosconfig, talosctl, execute=False, expected=None, rollback=Fals
         raise ValueError("Scheduling release requires explicit execution")
     if execute:
         harbor.verify_main(expected)
-        harbor.verify_copies(expected)
+        if not rollback:
+            harbor.verify_copies(expected)
     client = ["talosctl", "--talosconfig", str(talosconfig), "--endpoints", "10.1.0.199", "--nodes", NODE]
     boot = identity(client, rollback)
     engine_absent()
