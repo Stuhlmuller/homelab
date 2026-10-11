@@ -114,6 +114,28 @@ controller/webhook calls, storage mounts and the human/CI recovery route.
 Roll back through the owning GitOps application and reviewed Talos config;
 never repair a deny rule with manual cluster mutation.
 
+## Istio 1.27 external-service routing prerequisite
+
+Use the pinned implementation before selecting an egress feature. Istio 1.27.3
+binds ServiceEntries to waypoints and includes explicit or autoallocated service
+addresses in the ambient service index. Its IP autoallocation flag defaults to
+true, but the source states that TCP routing also requires DNS capture.
+Repository [Istio values](../clusters/homelab/apps/istio/values.yaml) currently
+set `cni.ambient.dnsCapture: false`. A waypoint label alone therefore does not
+establish that application DNS answers route external TCP through that gateway.
+
+Before activation, prove the declared destination receives an allocated address,
+the canary resolves that address through capture, ztunnel routes it through the
+intended waypoint, and the original application request succeeds. Enforced
+network rules must also deny real destination IPs, alternate ports and direct
+routes that bypass the waypoint. Test both IP families, TLS SNI/shared-address
+cases and unauthorized DNS queries; a captured DNS answer is routing evidence,
+not a complete egress security boundary. Keep observations private.
+
+Sources: [1.27.3 service-entry index](https://github.com/istio/istio/blob/1.27.3/pilot/pkg/serviceregistry/kube/controller/ambient/services.go)
+and [1.27.3 autoallocation flag](https://github.com/istio/istio/blob/1.27.3/pilot/pkg/features/pilot.go).
+No CNI setting, waypoint or ServiceEntry is activated by this prerequisite.
+
 ## Offline NRI prerequisite
 
 Audit live policies privately before activation. Policies are additive: Fleet's
