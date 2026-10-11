@@ -217,6 +217,14 @@ inputs = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder
     }
+    "/homelab/cordium-runners/github-app-private-key" = {
+      description   = "Private key of the repository-scoped Cordium runner GitHub App."
+      initial_value = local.placeholder
+    }
+    "/homelab/cordium-runners/auth-token" = {
+      description   = "Policy-bound authentication token of the dedicated Cordium runner manager."
+      initial_value = local.placeholder
+    }
     "/homelab/cordium/agent-auth-token" = {
       description   = "Octelium authentication token used to apply the Cordium ClusterConfig."
       initial_value = local.placeholder

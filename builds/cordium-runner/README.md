@@ -123,5 +123,36 @@ nix develop --command python3 -I scripts/cordium-ci-reconcile.py \
 The Policy applies before the User; a second pass must converge and spec
 readback must match. This scope cannot apply CI OIDC or unrelated credentials.
 Credential creation, durable secret injection and native login renewal still
-need a repository-owned path before controller deployment; the reconciler
-does not generate or expose authentication material.
+require successful execution before controller deployment. The reconciler can
+create only the fixed `homelab-cordium-runner-controller` credential, scoped to
+the runner User/Policy, with a 30-day credential lifetime and client sessions
+bounded by the User's 60-minute limit. It never rotates an existing credential
+or overwrites an output file. Use an existing mode-0700 private directory:
+
+```sh
+nix develop --command python3 -I scripts/cordium-ci-reconcile.py \
+  --runner-identities --execute --expected-sha FULL_REVIEWED_MAIN_SHA \
+  --runner-credential-output /PRIVATE/runner-intake/auth-token
+```
+
+After identity/credential validation, place that file and the verified App key
+in the two `homelab-production` environment secrets using stdin (never argv):
+
+```sh
+gh secret set CORDIUM_RUNNER_AUTH_TOKEN --repo Stuhlmuller/homelab \
+  --env homelab-production < /PRIVATE/runner-intake/auth-token
+gh secret set CORDIUM_RUNNER_APP_PRIVATE_KEY --repo Stuhlmuller/homelab \
+  --env homelab-production < /PRIVATE/runner-intake/app-private-key.pem
+gh workflow run cordium-runner-credentials.yml --repo Stuhlmuller/homelab \
+  --ref main -f expected_sha=FULL_REVIEWED_MAIN_SHA
+```
+
+Require a successful intake and both ExternalSecret keys in the segregated
+restricted namespace. The protected workflow temporarily uses the existing
+hosted bootstrap runner; migrate its selector with the rest of #1276 after the
+pool is proven. It verifies both identities and existing encrypted SSM slots
+before writing, and limits its AWS session to only those two slots. A partial
+write stays failed; inspect both parameter versions privately before retrying.
+The native login/logout acceptance and refresh caveats are recorded in
+`docs/secrets-aws-ssm.md`. No credential, parameter value, environment secret or
+live Kubernetes object has been created by this branch preparation.

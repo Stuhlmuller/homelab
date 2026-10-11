@@ -383,6 +383,7 @@ external_secret_allowed_prefixes := {
 	"monitoring": {"/homelab/grafana/"},
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
+	"cordium-runners": {"/homelab/cordium-runners/"},
 	"octelium-client": {"/homelab/octelium/"},
 	"octelium-public": {"/homelab/octelium/"},
 	"octelium-storage": {"/homelab/octelium/"},

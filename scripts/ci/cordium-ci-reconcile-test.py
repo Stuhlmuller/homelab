@@ -131,6 +131,26 @@ class Reconciliation(unittest.TestCase):
             declared.assert_not_called()
             transport.assert_not_called()
 
+    def test_credential_creation_is_fixed_scope_private_and_never_overwrites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = pathlib.Path(directory) / "auth-token"
+            token = "native-private-fixture"
+            response = subprocess.CompletedProcess([], 0, json.dumps({"authenticationToken": {"authenticationToken": token}}), "")
+            stream = io.StringIO()
+            with patch.object(catalog.native, "run", return_value=response) as command, contextlib.redirect_stdout(stream):
+                catalog.create_runner_credential(["octeliumctl"], {}, output)
+                self.assertEqual(output.read_text(), token)
+                self.assertEqual(output.stat().st_mode & 0o777, 0o600)
+                args = command.call_args.args
+                self.assertIn("homelab-cordium-runners", args)
+                self.assertIn("homelab-cordium-runner-execution", args)
+                self.assertIn("30days", args)
+                self.assertNotIn("--rotate", args)
+                with self.assertRaises(FileExistsError):
+                    catalog.create_runner_credential(["octeliumctl"], {}, output)
+                self.assertEqual(command.call_count, 1)
+            self.assertNotIn(token, stream.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()
