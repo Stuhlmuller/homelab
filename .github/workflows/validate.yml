@@ -93,7 +93,23 @@ jobs:
           print(sources[0])
           PY
           )"
-          docker pull "$image"
+          pull_log="$(mktemp)"
+          trap 'rm -f "$pull_log"' EXIT
+          for attempt in 1 2 3; do
+            if docker pull "$image" >"$pull_log" 2>&1; then
+              cat "$pull_log"
+              break
+            fi
+            cat "$pull_log" >&2
+            if grep -Eqi 'unauthorized|denied|forbidden|manifest unknown|not found|invalid reference' "$pull_log" ||
+               ! grep -Eqi 'context deadline exceeded|TLS handshake timeout|i/o timeout|connection reset|unexpected EOF' "$pull_log" ||
+               [[ "$attempt" == 3 ]]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          rm -f "$pull_log"
+          trap - EXIT
           docker build --pull=false --file "${RUNNER_TEMP}/litellm-ci.Dockerfile" \
             --tag fixture/litellm-remediated:local builds/litellm
           image=fixture/litellm-remediated:local

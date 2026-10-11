@@ -38,6 +38,10 @@ image with network disabled, a read-only filesystem, non-root UID and no
 capabilities. The public source is used only in this disposable CI fixture;
 the application reference remains Harbor. Local Docker is unavailable, so the
 native Linux image job must pass before runtime compatibility is established.
+Its public-source pull retries only recognized transport timeouts/resets, at
+most three times against the same immutable reference. Authorization, missing
+manifest and unknown errors fail immediately; no registry or digest fallback
+exists. Production still consumes only the verified Harbor artifact.
 
 `builds/litellm/Dockerfile` stages a derived runtime with explicit package
 versions from the base image's existing signed package repository. Its default
