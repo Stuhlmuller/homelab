@@ -73,7 +73,8 @@ group; a 10-second grace period precedes KILL of any surviving group members,
 followed by 10 seconds to confirm the group contains no running processes. Local interrupt, timeout, and remote errors invoke
 this path automatically. An independent 30-minute remote deadline limits the
 entire attempt even if the operator connection is lost. A workspace lock excludes
-concurrent attempts; the shell retains its lock during termination. Cancellation releases only
+concurrent attempts; the shell retains its lock during termination and waits for remaining
+process-group members even if the main command exits first. Cancellation releases only
 its matching owner lock after the whole group has stopped. The independent
 deadline can leave a lock and workspace; fail closed pending operator review.
 If node exec is unavailable, cancellation cannot be confirmed; keep builds

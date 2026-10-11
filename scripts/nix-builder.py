@@ -14,18 +14,22 @@ import tarfile
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = ("offline-tests", "manifest-policy")
 
-CANCEL_SCRIPT = r"""
-set -eu
+GROUP_SCRIPT = r"""
 group_alive() {
     for member in /proc/[0-9]*/stat; do
-        fields=$(cat "$member" 2>/dev/null || true)
-        [ -n "$fields" ] || continue
+        IFS= read -r fields 2>/dev/null < "$member" || continue
+        member_pid=${member%/stat}
+        member_pid=${member_pid##*/}
+        case " ${ignored:-} " in *" $member_pid "*) continue ;; esac
         fields=${fields##*) }
         set -- $fields
         [ "$3" = "$pid" ] && [ "$1" != Z ] && return 0
     done
     return 1
 }
+"""
+
+CANCEL_SCRIPT = "set -eu\n" + GROUP_SCRIPT + r"""
 found=0
 for proc in /proc/[0-9]*; do
     [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
@@ -134,13 +138,26 @@ def preflight():
 
 
 def attempt_command(policy):
-    script = """
-set -eu
+    script = "set -eu\n" + GROUP_SCRIPT + """
+# Stay alive through TERM so the deadline can KILL the complete group.
 trap '' TERM INT
+pid=$PPID
+ignored="$$ $PPID"
+cleanup() {
+    remaining=10
+    while group_alive && [ "$remaining" -gt 0 ]; do
+        sleep 1
+        remaining=$((remaining - 1))
+    done
+    if group_alive; then kill -KILL "-$pid"; exit 1; fi
+    if [ -n "${job:-}" ] && [ -d "$job" ]; then rm -rf -- "$job"; fi
+    rm /workspace/offline-check.lock/owner
+    rmdir /workspace/offline-check.lock
+}
 test "$(cat /sys/fs/cgroup/memory.max)" = 1073741824
 mkdir /workspace/offline-check.lock
-printf '%s\n' "$PPID" > /workspace/offline-check.lock/owner
-trap 'rm /workspace/offline-check.lock/owner; rmdir /workspace/offline-check.lock' EXIT
+printf '%s\n' "$pid" > /workspace/offline-check.lock/owner
+trap cleanup EXIT
 for proc in /proc/[0-9]*; do
     [ "${proc##*/}" = "$PPID" ] && continue
     case "$(cat "$proc/comm" 2>/dev/null || true)" in
@@ -149,7 +166,6 @@ for proc in /proc/[0-9]*; do
 done
 test "$(nix eval --impure --raw --expr builtins.currentSystem)" = x86_64-linux
 job="$(mktemp -d /workspace/check.XXXXXX)"
-trap 'if [ -d "$job" ]; then rm -rf -- "$job"; fi; rm /workspace/offline-check.lock/owner; rmdir /workspace/offline-check.lock' EXIT
 mkdir "$job/source"
 tar -x -C "$job/source"
 cd "$job/source"

@@ -101,6 +101,27 @@ class CacheLayoutTests(unittest.TestCase):
             self.assertIn("SIGNAL:-KILL -1234", result.stdout)
             self.assertFalse(lock.exists())
 
+    def test_cleanup_keeps_supervision_when_command_exits_before_descendant(self):
+        policy = {"url": "fixture", "publicKey": "fixture"}
+        for state in ("S", "Z"):
+            with self.subTest(state=state), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                proc = root / "5678"
+                proc.mkdir()
+                (proc / "stat").write_text(f"5678 (TERM ignoring child) {state} 1 1234 0\n")
+                lock = root / "offline-check.lock"
+                lock.mkdir()
+                (lock / "owner").write_text("1234\n")
+                script = builder.attempt_command(policy)[5]
+                script = script[:script.index('test "$(cat /sys/fs/cgroup/memory.max)"')]
+                script = script.replace("pid=$PPID", "pid=1234").replace("/proc/", temporary + "/").replace("/workspace", temporary)
+                script = script.replace("remaining=10", "remaining=1").replace("sleep 1", "true")
+                script = f'kill() {{ echo "SIGNAL:$*"; test -d "{lock}"; }};\n' + script + "trap cleanup EXIT\nfalse\n"
+                result = subprocess.run(["sh", "-ec", script], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual("SIGNAL:-KILL -1234" in result.stdout, state == "S")
+                self.assertEqual(lock.exists(), state == "S")
+
     def test_disconnect_cancels_original_pod(self):
         policy = {"url": "https://example.test", "publicKey": "fixture:key"}
         with patch.object(builder.subprocess, "run"), patch.object(builder.subprocess, "check_output", side_effect=[
