@@ -1,6 +1,8 @@
 """Validate a private complete scan of the exact derived runtime; print no findings."""
 
 from datetime import datetime, timedelta, timezone
+import base64
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -11,8 +13,14 @@ def verify(report, image_id):
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id), "identity"
     assert report["source"]["type"] == "image", "identity"
     target = report["source"]["target"]
-    assert target["imageID"] == image_id and target["os"] == "linux", "identity"
-    assert target["architecture"] == "amd64" and target["layers"] and target["imageSize"] > 0, "identity"
+    assert target["imageID"] == image_id and target["layers"] and target["imageSize"] > 0, "identity"
+    raw_config = base64.b64decode(target["config"], validate=True)
+    assert "sha256:" + hashlib.sha256(raw_config).hexdigest() == image_id, "identity"
+    config_identity = json.loads(raw_config)
+    assert config_identity["os"] == "linux" and config_identity["architecture"] == "amd64", "identity"
+    # Docker archives omit these summary fields; the hashed config remains authoritative.
+    assert target["os"] in ("", config_identity["os"]), "identity"
+    assert target["architecture"] in ("", config_identity["architecture"]), "identity"
     assert report["distro"]["name"] == "wolfi", "identity"
     descriptor = report["descriptor"]
     assert descriptor["name"] == "grype" and descriptor["version"] == "0.112.0", "scanner"

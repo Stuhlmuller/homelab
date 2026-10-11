@@ -66,7 +66,11 @@ not authorize deployment of the unremediated build source or prove zero CVEs.
 CI saves the exact derived image and scans it with the repository-pinned Grype
 package. The complete unsuppressed report remains private in runner temporary
 storage; no report or inventory artifact is uploaded. The gate checks image
-identity, scanner version, valid recent database/report timestamps and absence
+identity by hashing the scanner's complete configuration bytes against the
+expected Docker image ID and requiring Linux/amd64 in that configuration.
+Docker archives leave the scanner's summary platform fields empty; populated
+summary fields must agree with the hashed configuration. The gate also checks
+scanner version, valid recent database/report timestamps and absence
 of filtering before rejecting fixable findings. Unknown or upstream-unfixed
 findings remain in the private report and require separate review; passing this
 gate does not establish zero vulnerabilities or authorize release. Public output

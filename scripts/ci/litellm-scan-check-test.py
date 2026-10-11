@@ -1,4 +1,6 @@
 import copy
+import base64
+import hashlib
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
 import importlib.util
@@ -11,14 +13,16 @@ import tempfile
 spec = importlib.util.spec_from_file_location("scan", Path(__file__).with_name("litellm-scan-check.py"))
 scan = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scan)
-IMAGE = "sha256:" + "0" * 64
+CONFIG = json.dumps({"os": "linux", "architecture": "amd64"}).encode()
+IMAGE = "sha256:" + hashlib.sha256(CONFIG).hexdigest()
 
 
 class ScanGate(unittest.TestCase):
     def report(self):
         now = datetime.now(timezone.utc).isoformat()
         return {"source": {"type": "image", "target": {"imageID": IMAGE, "os": "linux",
-                "architecture": "amd64", "layers": ["fixture"], "imageSize": 1}},
+                "architecture": "amd64", "layers": ["fixture"], "imageSize": 1,
+                "config": base64.b64encode(CONFIG).decode()}},
                 "distro": {"name": "wolfi"}, "matches": [], "descriptor": {
                     "name": "grype", "version": "0.112.0", "timestamp": now,
                     "db": {"status": {"valid": True, "built": now}}, "configuration": {
@@ -31,6 +35,19 @@ class ScanGate(unittest.TestCase):
         report["matches"] = [{"vulnerability": {"fix": {"state": "not-fixed"}}}]
         scan.verify(report, IMAGE)
         self.assertEqual(len(report["matches"]), 1)
+
+    def test_docker_archive_identity(self):
+        report = self.report()
+        report["source"]["target"].update(os="", architecture="")
+        scan.verify(report, IMAGE)
+        report["source"]["target"]["config"] = base64.b64encode(json.dumps({"os": "linux", "architecture": "arm64"}).encode()).decode()
+        with self.assertRaisesRegex(AssertionError, "identity"):
+            scan.verify(report, IMAGE)
+        wrong_config = json.dumps({"os": "linux", "architecture": "arm64"}).encode()
+        wrong_image = "sha256:" + hashlib.sha256(wrong_config).hexdigest()
+        report["source"]["target"]["imageID"] = wrong_image
+        with self.assertRaisesRegex(AssertionError, "identity"):
+            scan.verify(report, wrong_image)
 
     def test_refusals(self):
         base = self.report()
