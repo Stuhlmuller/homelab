@@ -80,6 +80,28 @@ component paths were not anonymously readable. Denial does not prove an image
 is absent from Chainguard's production catalog. No production organization
 credentials are assumed; approved exceptions remain Harbor-hosted.
 
+## BusyBox consumer compatibility
+
+The consumer draft replaces 13 BusyBox references across 12 workload files
+with the published Chainguard index. Its default UID is 65532, so Radarr,
+Sonarr and Deluge init containers explicitly retain their existing root identity.
+Backups remain UID 1000, NAS directory helpers UID 65534, Grafana uses the
+chart's UID 472, and Cordium retains its explicit init/status identities.
+No data format, backup retention window or production shell command changes.
+
+`scripts/ci/chainguard-busybox-check.py` runs the declared commands on disposable
+volumes in the exact public-source image bytes. Linux CI checks archive contents,
+mode 0600, stale-backup/partial cleanup, unrelated-file retention, directory
+permissions, ownership preparation, Grafana's retained database copy and
+Cordium's file-write/readiness/liveness commands. Containers have no network,
+a read-only root filesystem and only the tested capabilities. The CI setup
+uses root only to seed its disposable fixture ownership.
+
+Local Docker is unavailable; native Linux CI is required before merge. These
+fixtures do not prove NFS root-squash behavior, a live kernel sysctl write or
+the long-running Cordium status container. Verify the original operations
+through the declared rollout after private Harbor node pulls are accepted.
+
 ## Egress enforcement contract
 
 The cluster uses Istio ambient and Flannel. Flannel does not enforce the
