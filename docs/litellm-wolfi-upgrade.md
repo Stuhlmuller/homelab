@@ -63,6 +63,16 @@ change, replace that reference with the fully published, privately scanned and
 verified Harbor digest of the derived image. Passing build/runtime fixtures does
 not authorize deployment of the unremediated build source or prove zero CVEs.
 
+CI saves the exact derived image and scans it with the repository-pinned Grype
+package. The complete unsuppressed report remains private in runner temporary
+storage; no report or inventory artifact is uploaded. The gate checks image
+identity, scanner version, valid recent database/report timestamps and absence
+of filtering before rejecting fixable findings. Unknown or upstream-unfixed
+findings remain in the private report and require separate review; passing this
+gate does not establish zero vulnerabilities or authorize release. Public output
+contains only fixed pass/fail messages. Fresh Harbor scans of the published
+digest remain required.
+
 Keep the PR draft until the original all-platform image is completely pulled
 from Harbor and scanned privately. Before deployment, verify its actual runtime
 behavior and perform the declared database backup, restore and
