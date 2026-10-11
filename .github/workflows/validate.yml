@@ -80,16 +80,23 @@ jobs:
       - name: Check pinned gateway image runtime
         run: |
           image="$(python - <<'PY'
-          import json, re
+          import json, os, re
           from pathlib import Path
           images = json.loads(Path('scripts/config/harbor-images.json').read_text())['images']
           sources = [image['source'] for image in images if image['source'].startswith('ghcr.io/berriai/litellm-database:')]
           assert len(sources) == 1
           assert re.fullmatch(r'ghcr.io/berriai/litellm-database:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}', sources[0])
+          dockerfile = Path('builds/litellm/Dockerfile').read_text()
+          base = 'FROM harbor.stinkyboi.com/mirror/' + sources[0]
+          assert dockerfile.splitlines()[0] == base, 'Build base must match the reviewed catalog digest'
+          Path(os.environ['RUNNER_TEMP'], 'litellm-ci.Dockerfile').write_text(dockerfile.replace(base, 'FROM ' + sources[0], 1))
           print(sources[0])
           PY
           )"
           docker pull "$image"
+          docker build --pull=false --file "${RUNNER_TEMP}/litellm-ci.Dockerfile" \
+            --tag fixture/litellm-remediated:local builds/litellm
+          image=fixture/litellm-remediated:local
           for fixture in litellm-native-auth-test.py litellm-attribution-check.py; do
             docker run --rm --network none --user 65532:65532 --read-only \
               --cap-drop ALL --security-opt no-new-privileges \

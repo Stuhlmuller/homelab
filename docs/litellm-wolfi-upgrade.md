@@ -39,6 +39,21 @@ capabilities. The public source is used only in this disposable CI fixture;
 the application reference remains Harbor. Local Docker is unavailable, so the
 native Linux image job must pass before runtime compatibility is established.
 
+`builds/litellm/Dockerfile` stages a derived runtime with explicit package
+versions from the base image's existing signed package repository. Its default
+base is the verified Harbor mirror; the disposable CI build substitutes the
+same catalog-pinned public source, builds locally and runs the native fixtures
+with network disabled. No package repository, signature requirement or SDK
+version is changed. The derived image defaults to UID 65532; its declared GitOps
+gateway command, actual database startup and migration behavior must also pass
+before rollout. The upstream entrypoint is not the GitOps launcher.
+
+The current workload reference is the imported build-source image, not a
+published derived runtime. Keep this PR draft: before merging any consumer
+change, replace that reference with the fully published, privately scanned and
+verified Harbor digest of the derived image. Passing build/runtime fixtures does
+not authorize deployment of the unremediated build source or prove zero CVEs.
+
 Keep the PR draft until the original all-platform image is completely pulled
 from Harbor and scanned privately. Before deployment, verify its actual runtime
 behavior and perform the declared database backup, restore and
