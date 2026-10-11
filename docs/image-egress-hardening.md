@@ -37,21 +37,13 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
-## Read-only findings, 2026-10-10
+## Public source availability
 
-Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
-The 211 running Pods reference 122 distinct container/init images; image strings
-alone do not establish their transport. Every active public-origin reference
-is covered by the existing full mirror catalog; publication and actual node
-mirror enforcement still need verification. `zimaboard-2` is NotReady, and Flannel,
-Istio CNI and ztunnel each have only three ready instances out of four.
-A later read-only check during preparation found all four nodes Ready. Require
-fresh node/dataplane readiness before any cluster-wide networking rollout;
-transient recovery is not an egress acceptance test.
-
-The Harbor vulnerability exporter returned 147 critical findings for `homelab`
-and 345 for `mirror`. These are completed-scan artifact aggregates, including
-retained images, not unique CVEs or an active-workload-only assessment.
+Keep live image inventories, digest/namespace joins, vulnerability counts and
+scan timestamps outside git in private operator evidence. Public documentation
+records source compatibility and acceptance requirements only. Require fresh
+node/dataplane readiness, full catalog publication and actual private pulls
+before changing consumers or cluster-wide networking.
 
 Anonymous source probes confirmed Python, curl, BusyBox, Redis, Valkey,
 PostgreSQL, Cosign, kubectl and nginx indexes. kubectl is not included in the
@@ -88,11 +80,10 @@ from policy names, an individual policy, or an allowed destination's port.
 Image pulls require node-to-Harbor access, not application-pod registry egress.
 
 The frontend prerequisite now allows only CoreDNS TCP/UDP 53 and same-namespace
-NOFX backend TCP 8080/15008. Read-only inspection of the running frontend's
-`/etc/nginx/conf.d/default.conf` confirmed `/api/` proxies to `http://nofx:8080`;
-the static assets and `/health` response have no external server dependency.
-Its DNS selector matches both live CoreDNS Pods. This source restriction is not
-live enforcement: require allowed API proxying, ambient readiness, denied
+NOFX backend TCP 8080/15008. The pinned source's `nginx/nginx.conf` routes
+`/api/` to `http://nofx:8080/api/`; static assets and `/health` have no external server dependency. Verify the
+DNS selector against current CoreDNS labels privately. This source restriction
+is not live enforcement: require allowed API proxying, ambient readiness, denied
 public/registry destinations and denied alternate ports after the enforcer
 canary. Revert the policy through GitOps if the original API path fails.
 
@@ -125,9 +116,8 @@ never repair a deny rule with manual cluster mutation.
 
 ## Offline NRI prerequisite
 
-The activation audit found 60 live NetworkPolicies, including 16 that select
-egress, on 2026-10-10. Policies are additive: Fleet's namespace-wide
-`fleet-ambient` allowance already permits HBONE, and an ingress rule without
+Audit live policies privately before activation. Policies are additive: Fleet's
+namespace-wide `fleet-ambient` allowance already permits HBONE, and an ingress rule without
 `ports` already permits all ports. Do not classify each individual policy as a
 standalone deny rule.
 
