@@ -194,6 +194,10 @@ def main():
             runpy.run_path(str(ROOT / "scripts/ci/istio-egress-routing-check.py"))["check"](kubectl, root, PYTHON)
         except Exception:
             for args in (("get", "pods", "-A", "-o", "wide"),
+                         ("-n", "egress-clients", "describe", "pods"),
+                         ("get", "events", "-A", "--sort-by=.lastTimestamp"),
+                         ("-n", "istio-system", "logs", "-l", "k8s-app=istio-cni-node", "--prefix=true", "--tail=120"),
+                         ("-n", "istio-system", "logs", "-l", "app=ztunnel", "--prefix=true", "--tail=80"),
                          ("-n", "kube-system", "logs", "-l", "app=kube-network-policies", "--prefix=true", "--tail=100"),
                          ("-n", "istio-system", "logs", "-l", "app=istiod", "--prefix=true", "--tail=80"),
                          ("-n", "egress-gateway", "logs", "-l", "gateway.networking.k8s.io/gateway-name=required-egress", "--prefix=true", "--tail=80")):
