@@ -1,0 +1,141 @@
+# Isolated Kind fixture; not a homelab deployment.
+# Adapted from kubernetes-sigs/kube-network-policies v1.1.2 install.yaml.
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kube-network-policies
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - namespaces
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+     - "networking.k8s.io"
+    resources:
+      - networkpolicies
+    verbs:
+      - list
+      - watch
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kube-network-policies
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-network-policies
+subjects:
+- kind: ServiceAccount
+  name: kube-network-policies
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-network-policies
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-network-policies
+  namespace: kube-system
+  annotations:
+    checkov.io/skip1: CKV_K8S_19=The isolated node policy engine must operate in the node network namespace.
+    checkov.io/skip2: CKV_K8S_23=Root is required to open runtime-owned NRI sockets and network namespace handles.
+    checkov.io/skip3: CKV_K8S_40=Root is required to open runtime-owned NRI sockets and network namespace handles.
+    checkov.io/skip4: CKV_K8S_25=Only NET_ADMIN for netfilter and SYS_ADMIN for setns are added to this isolated node agent.
+    checkov.io/skip5: CKV_K8S_37=Only NET_ADMIN for netfilter and SYS_ADMIN for setns are added to this isolated node agent.
+    checkov.io/skip6: CKV_K8S_38=The node agent needs its scoped service account to watch Pods namespaces and NetworkPolicies.
+    checkov.io/skip7: CKV2_K8S_6=Standard Pod NetworkPolicy does not isolate the host-network policy engine itself.
+    checkov.io/skip8: CKV_K8S_39=NRI must enter sandbox network namespaces with setns before Pod IP status reaches the API.
+  labels:
+    tier: node
+    app: kube-network-policies
+    k8s-app: kube-network-policies
+spec:
+  selector:
+    matchLabels:
+      app: kube-network-policies
+  template:
+    metadata:
+      labels:
+        tier: node
+        app: kube-network-policies
+        k8s-app: kube-network-policies
+    spec:
+      hostNetwork: true
+      securityContext:
+        runAsUser: 0
+        runAsNonRoot: false
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      serviceAccountName: kube-network-policies
+      containers:
+      - name: kube-network-policies
+        image: registry.k8s.io/networking/kube-network-policies:v1.1.2@sha256:c671f98e444825d57c590c92da1b5e66070917c4d3dff1f9279775e6b73254fe
+        args:
+        - /bin/netpol
+        - --hostname-override=$(MY_NODE_NAME)
+        - --v=2
+        - --nfqueue-id=98
+        - --fail-open=false
+        - --strict-mode=true
+        - --disable-nri=false
+        - --metrics-bind-address=127.0.0.1:9081
+        readinessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /metrics
+            port: 9081
+          initialDelaySeconds: 2
+        livenessProbe:
+          httpGet:
+            host: 127.0.0.1
+            path: /metrics
+            port: 9081
+          initialDelaySeconds: 10
+        volumeMounts:
+        - name: nri-plugin
+          mountPath: /var/run/nri
+        - name: netns
+          mountPath: /var/run/netns
+          mountPropagation: HostToContainer
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "50Mi"
+          limits:
+            cpu: "1"
+            memory: "256Mi"
+        securityContext:
+          privileged: false
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+            add: ["NET_ADMIN", "SYS_ADMIN"]
+        env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      volumes:
+      - name: nri-plugin
+        hostPath:
+          path: /var/run/nri
+      - name: netns
+        hostPath:
+          path: /var/run/netns
+---

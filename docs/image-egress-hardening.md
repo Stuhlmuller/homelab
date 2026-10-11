@@ -154,6 +154,33 @@ by this prerequisite.
 Sources: [Talos NRI CRI fragment](https://github.com/siderolabs/talos/discussions/10068)
 and [Talos patch semantics](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/system-configuration/patching).
 
+## Isolated enforcement acceptance
+
+`scripts/ci/network-policy-enforcement-check.py` creates a disposable dual-stack
+Kind cluster with NRI enabled and a private temporary kubeconfig. Every kubectl
+call names that file; the helper refuses an existing cluster of the same name
+and deletes only its own fixture cluster. No production credentials are loaded.
+
+The fixture first uses the upstream test suite's pinned transport-only Kindnet
+image and verifies that policies alone leave traffic unrestricted. It then
+installs the pinned enforcer with `--fail-open=false`, `--strict-mode=true` and
+NRI enabled, requiring runtime synchronization on both nodes. TCP/UDP probes
+cross node boundaries and test allowed destinations, denied destinations,
+alternate ports and both IP families. Separate checks cover Service DNAT,
+cluster DNS, allowed/denied init-container requests on a fresh sandbox and
+revocation of an established TCP connection.
+
+The enforcer manifest under `scripts/ci/fixtures/` is CI-only. Its public source
+image and the legacy transport are not production application references.
+Production keeps Flannel and needs a Harbor-hosted enforcer, the reviewed Talos
+canary path and a complete policy audit before activation. This fixture cannot
+prove Talos integration, ambient HBONE behavior, public-domain/SNI controls or
+the live application's original behavior. Local Docker is unavailable; the
+dedicated Linux CI job must pass before this prerequisite is ready.
+
+Sources: [pinned enforcer](https://github.com/kubernetes-sigs/kube-network-policies/tree/v1.1.2)
+and [upstream transport-only fixture](https://github.com/kubernetes-sigs/kube-network-policies/blob/v1.1.2/tests/setup_suite.bash).
+
 Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practices/security/),
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
