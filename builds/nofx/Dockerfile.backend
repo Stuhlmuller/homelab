@@ -5,7 +5,7 @@ FROM cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299
 RUN apk add --no-cache git binutils
 # Reuse the existing modernc SQLite driver so no C library enters the runtime.
 COPY --from=toolchain /usr/lib/go /usr/lib/go
-RUN ln -s /usr/lib/go/bin/go /usr/local/bin/go && go version
+RUN mkdir -p /usr/local/bin && ln -s /usr/lib/go/bin/go /usr/local/bin/go && go version
 WORKDIR /src
 COPY upstream/go.mod upstream/go.sum ./
 RUN go mod download
