@@ -59,6 +59,9 @@ jobs:
         # Exercise the identical public-source bytes without production credentials.
         run: nix develop --command python3 -I scripts/ci/chainguard-busybox-check.py
 
+      - name: Check Chainguard ephemeral Redis compatibility
+        run: nix develop --command python3 -I scripts/ci/chainguard-redis-check.py
+
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 

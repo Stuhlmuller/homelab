@@ -24,7 +24,6 @@ metadata:
   namespace: affine
   annotations:
     argocd.argoproj.io/sync-wave: "0"
-    checkov.io/skip1: CKV_K8S_22=Redis needs writable runtime paths; durable AFFiNE state stays in PostgreSQL and blob storage.
     checkov.io/skip2: CKV_K8S_43=The image is pinned to an immutable linux-amd64 digest.
     checkov.io/skip3: CKV2_K8S_6=affine-redis is covered by networkpolicy.yaml; diff-only scans do not include sibling manifests.
   labels:
@@ -59,7 +58,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redis
-          image: redis:8.2.1-bookworm@sha256:be12e65091d989f16a072bf985e42438d513fb2c20fb1e24366d89fa7a0193ff
+          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/redis:latest@sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
@@ -115,6 +114,7 @@ spec:
               memory: 512Mi
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -124,6 +124,8 @@ spec:
               readOnly: true
             - name: runtime-data
               mountPath: /data
+            - name: runtime-config
+              mountPath: /tmp
       volumes:
         - name: auth
           secret:
@@ -133,6 +135,9 @@ spec:
         - name: runtime-data
           emptyDir:
             sizeLimit: 256Mi
+        - name: runtime-config
+          emptyDir:
+            sizeLimit: 16Mi
   volumeClaimTemplates:
     # Retain the former AOF claim unmounted for rollback. Keeping the template
     # avoids an immutable StatefulSet replacement and preserves its data.

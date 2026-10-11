@@ -38,11 +38,17 @@ reconciles. Recheck memory capacity before resuming.
   enabled; the tuning does not trade committed database durability for speed.
   Startup and liveness failures tolerate a 30-minute QNAP recovery window, and
   shutdown receives 120 seconds to finish.
-- Cache and jobs: dedicated authenticated Redis 8.2 with AOF and RDB
+- Cache and jobs: dedicated authenticated Redis with AOF and RDB
   persistence disabled, matching AFFiNE's official deployment model. Redis
   runtime files use a 256 Mi node-local `emptyDir`, so cache and queue churn
   cannot issue NFS writes. The former 5 Gi NFS claim remains retained but
   unmounted for manual rollback and is not active Redis storage.
+  The candidate uses a pinned Harbor-hosted Chainguard image with a read-only
+  root; credential-bearing config is mode 0600 on a separate 16 Mi `emptyDir`.
+  `scripts/ci/chainguard-redis-check.py` runs the declared startup and probes on
+  disposable Linux containers, rejecting missing/placeholder/wrong credentials
+  and checking cache commands with persistence disabled. Suspension remains;
+  actual AFFiNE client/background-job acceptance is required before resuming.
 - Application state: uploaded blobs use a 50 Gi retained PVC; the AFFiNE config
   directory uses a 1 Gi retained PVC. The committed `config.json` is mounted
   read-only so security, storage, and URL behavior remain declarative.
