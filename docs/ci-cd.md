@@ -57,6 +57,10 @@ contract for Grafana.
 
 ## Security Model
 
+Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache.md).
+Static jobs verify cache signatures or build on a miss; live plans and cluster
+checks remain fresh.
+
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
 - The lint workflow is a lightweight changed-file gate that preserves the
@@ -79,11 +83,9 @@ contract for Grafana.
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
   `Analyze (python)`, `analyze-actions`, `release-dry-run`, and
   `Terragrunt Gate`, confirmed in active ruleset `14700233` on 2026-08-30.
-- The Terragrunt plan and apply workflows restore and save a GitHub Actions
-  cache for the Nix store after Nix is installed and before the first
-  `nix develop --command ...` step. The cache key is derived from the runner OS,
-  `flake.nix`, and `flake.lock`, with an OS-scoped fallback so dependency
-  updates can still reuse the nearest previous dev shell closure.
+- Live Terragrunt plan and apply jobs retain their Actions development-shell
+  cache. Static jobs use the signed binary cache instead of restoring an
+  arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
 - GitHub token permissions default to none. Jobs opt in to `contents: read`,
   and live Terragrunt jobs request `id-token: write`. No credentialed plan job
   can write to pull requests or another public GitHub surface.

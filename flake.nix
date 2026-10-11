@@ -6,7 +6,7 @@
   };
 
   outputs =
-    { nixpkgs, ... }:
+    { self, nixpkgs, ... }:
     let
       systems = [
         "aarch64-darwin"
@@ -18,6 +18,46 @@
       forEachSystem = nixpkgs.lib.genAttrs systems;
     in
     {
+      checks = forEachSystem (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          # A complete tracked tree keeps fixtures and configuration in the key.
+          source = builtins.path {
+            path = ./.;
+            name = "homelab-source";
+            filter = path: _type: builtins.baseNameOf path != ".git";
+          };
+          tools = self.devShells.${system}.default.nativeBuildInputs;
+          check =
+            name: command:
+            pkgs.runCommand name
+              {
+                nativeBuildInputs = tools;
+                __darwinAllowLocalNetworking = true;
+              }
+              ''
+                export HOME="$TMPDIR/home"
+                mkdir -p "$HOME"
+                cp -R ${source} source
+                chmod -R u+w source
+                cd source
+                # Clone-based fixtures need Git objects, never the operator's history.
+                git init -q -b main
+                git add --all --force
+                git -c user.name=Fixture -c user.email=fixture@example.invalid \
+                  -c commit.gpgsign=false commit -qm fixture
+                ${command}
+                mkdir "$out"
+                printf 'passed\n' > "$out/result"
+              '';
+        in
+        {
+          offline-tests = check "homelab-offline-tests" "bash scripts/ci/offline-checks.sh";
+          manifest-policy = check "homelab-manifest-policy" "bash scripts/ci/conftest-policies.sh";
+        }
+      );
+
       devShells = forEachSystem (
         system:
         let
@@ -52,6 +92,7 @@
             lua5_1
             miniupnpc
             nixVersions.latest
+            nodejs
             opentofu
             openssh
             openssl

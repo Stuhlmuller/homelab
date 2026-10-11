@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nix-builder
+  namespace: nix-builder
+  annotations:
+    checkov.io/skip1: CKV_K8S_20=Nix's SYS_ADMIN sandbox setup implies privilege escalation; no host mounts or Kubernetes token are present.
+    checkov.io/skip2: CKV_K8S_23=Nix needs a root supervisor to create mount namespaces and then drop to its nixbld users.
+    checkov.io/skip3: CKV_K8S_40=The supervisor requires UID 0; build commands execute as isolated nixbld users.
+    checkov.io/skip4: CKV_K8S_39=SYS_ADMIN is required for Nix mount and network namespaces inside the dedicated executor.
+    checkov.io/skip5: CKV_K8S_25=Only capabilities needed for sandbox mounts, chroot and nixbld credential changes are added.
+    checkov.io/skip6: CKV_K8S_22=The disposable container filesystem holds the Nix store and SQLite database; no persistent host filesystem is mounted.
+  labels:
+    app.kubernetes.io/name: nix-builder
+    app.kubernetes.io/part-of: homelab
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nix-builder
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nix-builder
+        app.kubernetes.io/part-of: homelab
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [zimaboard-0, zimaboard-1]
+      containers:
+        - name: nix
+          image: docker.io/nixos/nix:2.35.2@sha256:7a007c766426c1877758ddc5cb87a965ac131fc78c582ce0083d922d51ae945c
+          command: [/bin/sh, -ec]
+          args:
+            - exec tail -f /dev/null
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, DAC_OVERRIDE, FOWNER, KILL, SETGID, SETUID, SYS_ADMIN, SYS_CHROOT]
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+              ephemeral-storage: 8Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+              ephemeral-storage: 16Gi
+          readinessProbe:
+            exec:
+              command: [nix, store, info]
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          livenessProbe:
+            exec:
+              command: [/bin/sh, -ec, test -d /nix/store]
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nix/nix.conf
+              subPath: nix.conf
+              readOnly: true
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: config
+          configMap:
+            name: nix-builder-config
+        - name: workspace
+          emptyDir:
+            sizeLimit: 4Gi
