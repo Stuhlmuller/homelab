@@ -1,14 +1,6 @@
 ---
 name: OpenClaw native config
 on:
-  pull_request:
-    paths:
-      - clusters/homelab/apps/openclaw/values.yaml
-      - scripts/ci/openclaw-config-check.py
-      - scripts/ci/openclaw-batch-native-check.py
-      - .github/workflows/openclaw-config.yml
-      - flake.nix
-      - flake.lock
   push:
     branches: [main]
     paths:
@@ -18,6 +10,7 @@ on:
       - .github/workflows/openclaw-config.yml
       - flake.nix
       - flake.lock
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
