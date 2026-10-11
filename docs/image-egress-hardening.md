@@ -299,12 +299,14 @@ than suppressing the CNI failure. It requires the
 client to resolve the exact allocated ServiceEntry address. Both callers must
 succeed before authorization; the waypoint must subsequently deny the
 unauthorized service account while preserving the required caller. A direct-IP
-baseline precedes enforced egress isolation, which must retain the required
-route while denying the real destination IP and alternate port.
+baseline in both IPv4 and IPv6 precedes enforced egress isolation, which must
+retain the required route while denying both real destination addresses and the
+alternate service port. The target listens on both families; an IPv6 denial is
+accepted only after that same address/port succeeded before isolation.
 
 This proves an isolated IPv4 TCP routing boundary, not the production domain
 allowlist. TLS origination/certificate checks, SNI/shared-IP behavior, DNS-query
-leakage, ambient IPv6, host-network/privileged bypass and original application
+leakage, required ambient IPv6 routing, host-network/privileged bypass and original application
 actions remain required. Production DNS capture stays disabled. Local Docker is
 unavailable; fresh Linux CI must pass this added stage before trusting it.
 

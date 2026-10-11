@@ -25,12 +25,17 @@ IMAGES = {
 PROXY = "1.27.3-distroless@sha256:0ff2299890e3e5b9fe0e38391b048c0788900f69af27306a7aef3036a59220e1"
 API = "https://raw.githubusercontent.com/kubernetes-sigs/gateway-api/40be951cebe5cb3f0365fe6951403de4ff8b9f33/config/crd/standard/"
 HOST = "required.fixture.test"
-SERVER = """import socketserver
+SERVER = """import socket,socketserver
 class Handler(socketserver.StreamRequestHandler):
  def handle(self):
   while self.rfile.readline(): self.wfile.write(b'fixture\\n'); self.wfile.flush()
-class Server(socketserver.ThreadingTCPServer): allow_reuse_address=True
-Server(('0.0.0.0',8080),Handler).serve_forever()
+class Server(socketserver.ThreadingTCPServer):
+ address_family=socket.AF_INET6
+ allow_reuse_address=True
+ def server_bind(self):
+  self.socket.setsockopt(socket.IPPROTO_IPV6,socket.IPV6_V6ONLY,0)
+  super().server_bind()
+Server(('::',8080),Handler).serve_forever()
 """
 PROBE = """import socket,sys
 try:
@@ -118,6 +123,9 @@ def check(kubectl, root, python):
         return json.loads(run(*kubectl, "-n", namespace, "get", "pod", name, "-o", "json"))["status"]["podIP"]
 
     target = pod("egress-target", "server", server=True)
+    target_addresses = json.loads(run(*kubectl, "-n", "egress-target", "get", "pod", "server", "-o", "json"))["status"]["podIPs"]
+    target_v6 = [a["ip"] for a in target_addresses if ipaddress.ip_address(a["ip"]).version == 6]
+    assert len(target_v6) == 1, "Dual-stack target must have one IPv6 address"
     pod("egress-clients", "required", "required-client")
     pod("egress-clients", "unauthorized", "unauthorized-client")
     gateway = {"apiVersion": "gateway.networking.k8s.io/v1", "kind": "Gateway", "metadata": {"name": "required-egress", "namespace": "egress-gateway", "labels": {"istio.io/waypoint-for": "service"}}, "spec": {"gatewayClassName": "istio-waypoint", "listeners": [{"name": "mesh", "port": 15008, "protocol": "HBONE"}]}}
@@ -149,13 +157,14 @@ def check(kubectl, root, python):
     wait(lambda: probe("required", HOST, 80) == 0 and probe("unauthorized", HOST, 80) == 7)
     print("Captured service DNS traverses a waypoint enforcing the caller principal", flush=True)
     assert probe("required", target, 8080) == 0, "Direct-IP baseline must succeed before network isolation"
+    assert probe("required", target_v6[0], 8080) == 0, "IPv6 direct-IP baseline must succeed before network isolation"
     policy = {"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": {"name": "required-only", "namespace": "egress-clients"}, "spec": {"podSelector": {}, "policyTypes": ["Egress"], "egress": [
         {"to": [{"ipBlock": {"cidr": vip + "/32"}}], "ports": [{"protocol": "TCP", "port": 80}]},
         {"to": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "egress-gateway"}}, "podSelector": {"matchLabels": {"gateway.networking.k8s.io/gateway-name": "required-egress"}}}], "ports": [{"protocol": "TCP", "port": 15008}]},
         {"to": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}}, "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}}], "ports": [{"protocol": "UDP", "port": 53}, {"protocol": "TCP", "port": 53}]},
     ]}}
     apply(policy)
-    wait(lambda: probe("required", HOST, 80) == 0 and probe("required", target, 8080) == 7)
+    wait(lambda: probe("required", HOST, 80) == 0 and probe("required", target, 8080) == 7 and probe("required", target_v6[0], 8080) == 7)
     assert probe("required", vip, 81) == 7, "Alternate service port bypassed egress restriction"
     assert probe("unauthorized", HOST, 80) == 7, "Network policy bypassed waypoint caller authorization"
-    print("Pinned ambient routing plus enforced policy permits required TCP and denies real-IP/alternate-port bypass; TLS/SNI/DNS leakage and IPv6 ambient acceptance remain separate", flush=True)
+    print("Pinned ambient routing plus enforced policy permits required TCP and denies IPv4/IPv6 real-IP and alternate-port bypass; TLS/SNI/DNS leakage and required IPv6 routing remain separate", flush=True)
