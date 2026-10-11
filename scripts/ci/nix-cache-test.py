@@ -7,7 +7,11 @@ from pathlib import Path
 import tarfile
 import tempfile
 import subprocess
+import shutil
+import time
 import unittest
+from unittest.mock import patch
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("cache", ROOT / "scripts/nix-cache.py")
@@ -19,11 +23,21 @@ spec.loader.exec_module(builder)
 
 
 class CacheLayoutTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("timeout"), "GNU timeout is supplied by the Nix shell")
+    def test_remote_deadline_stops_children(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            marker = Path(temporary) / "surviving-child"
+            result = subprocess.run(["timeout", "--kill-after=1s", "1s", "sh", "-c",
+                                     '(sleep 3; touch "$1") & wait', "fixture", str(marker)])
+            self.assertEqual(result.returncode, 124)
+            time.sleep(3)
+            self.assertFalse(marker.exists())
+
     def test_cancellation_only_signals_exact_build_in_owned_workspace(self):
         for comm, cwd, command, expected in (
-            ("nix", "/workspace/check.ABCDEF/source", "nix build fixture", True),
-            ("nix", "/workspace/check.ABCDEF/source", "nix build unrelated", False),
-            ("nix", "/other/source", "nix build fixture", False),
+            ("timeout", "/workspace/check.ABCDEF/source", "nix build fixture", True),
+            ("timeout", "/workspace/check.ABCDEF/source", "nix build unrelated", False),
+            ("timeout", "/other/source", "nix build fixture", False),
             ("sh", "/workspace/check.ABCDEF/source", "nix build fixture", False),
         ):
             with self.subTest(comm=comm, cwd=cwd, command=command), tempfile.TemporaryDirectory() as temporary:
@@ -33,8 +47,48 @@ class CacheLayoutTests(unittest.TestCase):
                 (proc / "cmdline").write_bytes(command.replace(" ", "\0").encode() + b"\0")
                 (proc / "cwd").symlink_to(cwd)
                 script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", "'nix build fixture '")
-                result = subprocess.run(["sh", "-c", 'kill() { echo "SIGNAL:$*"; };\n' + script], capture_output=True, text=True, check=True)
+                result = subprocess.run(["sh", "-c", f'kill() {{ echo "SIGNAL:$*"; rm "{proc}/comm"; }};\n' + script], capture_output=True, text=True, check=True)
                 self.assertEqual("SIGNAL:-TERM 1234" in result.stdout, expected)
+
+    def test_disconnect_cancels_original_pod(self):
+        policy = {"url": "https://example.test", "publicKey": "fixture:key"}
+        with patch.object(builder.subprocess, "run"), patch.object(builder.subprocess, "check_output", side_effect=[
+                "tree", b"source", "/nix/store/a", "/nix/store/b", KeyboardInterrupt]), \
+                patch.object(builder, "preflight", return_value=("nix-builder-original", "original-uid")), \
+                patch.object(builder, "cancel") as cancel:
+            with self.assertRaises(KeyboardInterrupt):
+                builder.export(Path("unused"), policy)
+            cancel.assert_called_once_with(policy, "nix-builder-original", "original-uid")
+
+    def test_cancellation_refuses_replacement_pod(self):
+        with patch.object(builder.subprocess, "check_output", return_value='{"metadata":{"uid":"replacement"}}'), \
+                patch.object(builder.subprocess, "run") as signal:
+            with self.assertRaises(ValueError):
+                builder.cancel({"url": "fixture", "publicKey": "fixture"}, "nix-builder-original", "original")
+            signal.assert_not_called()
+
+    def test_resource_preflight_rejects_pressure_stale_metrics_and_low_headroom(self):
+        now = datetime(2026, 10, 11, tzinfo=timezone.utc)
+        timestamp = "2026-10-11T00:00:00Z"
+        conditions = [{"type": "Ready", "status": "True"}] + [
+            {"type": name, "status": "False"} for name in ("MemoryPressure", "DiskPressure", "PIDPressure")]
+        nodes = {"items": [{"metadata": {"name": "worker"}, "status": {
+            "conditions": conditions, "allocatable": {"memory": "8Gi"}}}]}
+        leases = {"items": [{"metadata": {"name": "worker"}, "spec": {"renewTime": timestamp}}]}
+        metric = {"metadata": {"name": "worker"}, "timestamp": timestamp, "usage": {"memory": "6Gi"}}
+        pod = {"metadata": {"name": "nix-builder-fixture"}, "spec": {"nodeName": "worker", "containers": [
+            {"name": "nix", "resources": {"requests": {"memory": "1Gi"}, "limits": {"memory": "1Gi"}}}]},
+            "status": {"conditions": [{"type": "Ready", "status": "True"}]}}
+        builder.verify_preflight(nodes, leases, {"items": [metric]}, pod, now)
+        for field, bad in (("timestamp", "2026-10-10T23:55:00Z"), ("usage", {"memory": "7Gi"})):
+            original = metric[field]
+            metric[field] = bad
+            with self.assertRaises(ValueError):
+                builder.verify_preflight(nodes, leases, {"items": [metric]}, pod, now)
+            metric[field] = original
+        conditions[1]["status"] = "True"
+        with self.assertRaises(ValueError):
+            builder.verify_preflight(nodes, leases, {"items": [metric]}, pod, now)
 
     def test_builder_archive_rejects_escape_and_symlinks(self):
         for name, kind in (("../escape", tarfile.REGTYPE), ("/escape", tarfile.REGTYPE), ("link", tarfile.SYMTYPE)):

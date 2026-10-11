@@ -62,14 +62,30 @@ Stopping the local publisher does not guarantee that Kubernetes exec stops the
 remote build. To cancel an interrupted attempt, run:
 
 ```sh
-python3 -I scripts/nix-builder.py --cancel
+python3 -I scripts/nix-builder.py --cancel \
+  --pod <original-pod-name> --pod-uid <original-pod-uid>
 ```
 
-This signals only Nix processes with the complete declared offline-check
-command in a helper-owned `/workspace/check.XXXXXX/source` directory. It
-does not restart or alter the Pod. Confirm the process has exited before
-retrying. If node exec is unavailable, cancellation cannot be confirmed;
-keep builds held and diagnose the node through the declared recovery path.
+The helper prints the original Pod name and UID before execution. Cancellation
+rejects a replacement Pod and matches the complete timeout-supervised check
+command and helper-owned workspace. TERM reaches the supervisor's process
+group; a 10-second grace period precedes forced termination. Cancellation must
+confirm supervisor exit. Local interrupt, timeout, and remote errors invoke
+this path automatically. An independent 30-minute remote deadline limits the
+build even if the operator connection is lost. A workspace lock excludes
+concurrent attempts; the owning shell cleans the lock and workspace on exit.
+If node exec is unavailable, cancellation cannot be confirmed; keep builds
+held and diagnose the node through the declared recovery path.
+
+Immediately before execution, preflight requires every node Ready without
+memory, disk, or PID pressure, node leases at most 75 seconds old, a single
+Ready builder with its declared 1 GiB reservation and limit, and node memory
+metrics at most 120 seconds old. The builder node needs at least 1.5 GiB
+allocatable memory minus measured working-set usage: 1 GiB for the build and
+512 MiB operating margin. This is an admission floor, not proof of runtime
+capacity; monitor node health, actual peak memory, and OOM counters throughout
+the first full check. Dependency substitutions run one at a time to reduce
+cold-start pressure. Missing or stale evidence rejects execution.
 
 The first Linux attempt on 2026-10-11 stopped during dependency substitution.
 All four nodes were Ready before it started. `zimaboard-0` last renewed its
