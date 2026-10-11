@@ -224,3 +224,5 @@ write stays failed; inspect both parameter versions privately before retrying.
 The native login/logout acceptance and refresh caveats are recorded in
 `docs/secrets-aws-ssm.md`. No credential, parameter value, environment secret or
 live Kubernetes object has been created by this branch preparation.
+
+On 2026-10-11, hosted build run [38120324201](https://github.com/Stuhlmuller/homelab/actions/runs/38120324201) passed both image builds and the non-root/read-only/network-disabled controller smoke at head ebe67f7. Images were local to that job and were not published. Cordium execution, actual credential refresh, policy enforcement, publication/cold pulls and complete workflow acceptance remain unproven.
