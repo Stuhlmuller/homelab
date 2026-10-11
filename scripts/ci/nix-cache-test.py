@@ -30,18 +30,19 @@ class CacheLayoutTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             marker = Path(temporary) / "surviving-child"
             result = subprocess.run(["timeout", "--kill-after=1s", "1s", "sh", "-c",
-                                     '(sleep 3; touch "$1") & wait', "fixture", str(marker)])
-            self.assertEqual(result.returncode, 124)
+                                     'trap "" TERM; (sleep 3; touch "$1") & wait', "fixture", str(marker)])
+            self.assertEqual(result.returncode, -signal.SIGKILL)
             time.sleep(3)
             self.assertFalse(marker.exists())
 
     @unittest.skipUnless(shutil.which("timeout"), "GNU timeout is supplied by the Nix shell")
-    def test_cancellation_cleans_before_during_and_after_build(self):
+    def test_deadline_retains_lock_before_during_and_after_build(self):
         policy = {"url": "fixture", "publicKey": "fixture"}
         for stage in ("import", "build", "export"):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 command = builder.attempt_command(policy)
+                command[1] = "--kill-after=1s"
                 script = command[5]
                 beginning = script.index('test "$(cat /sys/fs/cgroup/memory.max)"')
                 ending = script.index('job="$(mktemp')
@@ -60,8 +61,7 @@ class CacheLayoutTests(unittest.TestCase):
                     self.assertTrue((root / "started").exists())
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=5)
-                    self.assertFalse((root / "offline-check.lock").exists())
-                    self.assertFalse(list(root.glob("check.*")))
+                    self.assertTrue((root / "offline-check.lock").exists())
                 finally:
                     if process.poll() is None:
                         process.kill()
@@ -74,11 +74,32 @@ class CacheLayoutTests(unittest.TestCase):
                 proc = Path(temporary) / "1234"
                 proc.mkdir()
                 (proc / "comm").write_text(comm + "\n")
+                (proc / "stat").write_text("1234 (timeout) S 1 1234 0\n")
                 (proc / "cmdline").write_bytes(b"\0".join(arg.encode() for arg in args) + b"\0")
                 script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", shlex.quote(" ".join(command) + " "))
-                result = subprocess.run(["sh", "-c", f'kill() {{ echo "SIGNAL:$*"; rm "{proc}/comm"; }};\n' + script], capture_output=True, text=True, check=True)
-                self.assertEqual("SIGNAL:-TERM 1234" in result.stdout, expected)
-        self.assertIn("remaining=20", builder.CANCEL_SCRIPT)
+                result = subprocess.run(["sh", "-c", f'kill() {{ echo "SIGNAL:$*"; rm "{proc}/comm" "{proc}/stat"; }};\n' + script], capture_output=True, text=True, check=True)
+                self.assertEqual("SIGNAL:-TERM -1234" in result.stdout, expected)
+        self.assertIn('kill -KILL "-$pid"', builder.CANCEL_SCRIPT)
+
+    def test_cancellation_kills_child_after_supervisor_exit_before_unlock(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            supervisor, child = root / "1234", root / "5678"
+            supervisor.mkdir()
+            child.mkdir()
+            (supervisor / "comm").write_text("timeout\n")
+            (supervisor / "cmdline").write_bytes(b"fixture\0")
+            (supervisor / "stat").write_text("1234 (timeout) S 1 1234 0\n")
+            (child / "stat").write_text("5678 (TERM ignoring child) S 1 1234 0\n")
+            lock = root / "offline-check.lock"
+            lock.mkdir()
+            (lock / "owner").write_text("1234\n")
+            script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("/workspace", temporary)
+            script = script.replace("EXPECTED", "'fixture '").replace("remaining=10", "remaining=1").replace("sleep 1", "true")
+            signal_fixture = f'kill() {{ echo "SIGNAL:$*"; if [ "$1" = -TERM ]; then rm "{supervisor}/comm" "{supervisor}/stat"; else test -d "{lock}"; rm "{child}/stat"; fi; }};\n'
+            result = subprocess.run(["sh", "-c", signal_fixture + script], capture_output=True, text=True, check=True)
+            self.assertIn("SIGNAL:-KILL -1234", result.stdout)
+            self.assertFalse(lock.exists())
 
     def test_disconnect_cancels_original_pod(self):
         policy = {"url": "https://example.test", "publicKey": "fixture:key"}

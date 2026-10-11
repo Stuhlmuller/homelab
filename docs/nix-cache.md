@@ -69,12 +69,13 @@ python3 -I scripts/nix-builder.py --cancel \
 The helper prints the original Pod name and UID before execution. Cancellation
 rejects a replacement Pod and matches the complete timeout-supervised remote-attempt
 command. TERM reaches the supervisor's process
-group; a 10-second grace period precedes forced termination. Cancellation must
-confirm supervisor exit. Local interrupt, timeout, and remote errors invoke
+group; a 10-second grace period precedes KILL of any surviving group members,
+followed by 10 seconds to confirm the group contains no running processes. Local interrupt, timeout, and remote errors invoke
 this path automatically. An independent 30-minute remote deadline limits the
 entire attempt even if the operator connection is lost. A workspace lock excludes
-concurrent attempts; normal TERM cancellation cleans the lock and workspace. Forced KILL can
-leave the exclusive lock; fail closed pending operator review.
+concurrent attempts; the shell retains its lock during termination. Cancellation releases only
+its matching owner lock after the whole group has stopped. The independent
+deadline can leave a lock and workspace; fail closed pending operator review.
 If node exec is unavailable, cancellation cannot be confirmed; keep builds
 held and diagnose the node through the declared recovery path.
 

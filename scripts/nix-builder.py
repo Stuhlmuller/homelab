@@ -16,23 +16,47 @@ CHECKS = ("offline-tests", "manifest-policy")
 
 CANCEL_SCRIPT = r"""
 set -eu
+group_alive() {
+    for member in /proc/[0-9]*/stat; do
+        fields=$(cat "$member" 2>/dev/null || true)
+        [ -n "$fields" ] || continue
+        fields=${fields##*) }
+        set -- $fields
+        [ "$3" = "$pid" ] && [ "$1" != Z ] && return 0
+    done
+    return 1
+}
 found=0
 for proc in /proc/[0-9]*; do
     [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
     command=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' ' ')
     [ "$command" = EXPECTED ] || continue
     pid=${proc##*/}
-    kill -TERM "$pid"
-    remaining=20
-    while [ -e "$proc/comm" ] && [ "$remaining" -gt 0 ]; do
+    fields=$(cat "$proc/stat")
+    fields=${fields##*) }
+    set -- $fields
+    [ "$3" = "$pid" ] || { echo 'Refusing non-isolated process group' >&2; exit 1; }
+    kill -TERM "-$pid"
+    remaining=10
+    while group_alive && [ "$remaining" -gt 0 ]; do
         sleep 1
         remaining=$((remaining - 1))
     done
-    [ ! -e "$proc/comm" ] || { echo "Cancellation unconfirmed for PID $pid" >&2; exit 1; }
-    echo "Cancellation requested for offline checks PID $pid"
+    if group_alive; then kill -KILL "-$pid"; fi
+    remaining=10
+    while group_alive && [ "$remaining" -gt 0 ]; do
+        sleep 1
+        remaining=$((remaining - 1))
+    done
+    if group_alive; then echo "Cancellation unconfirmed for group $pid" >&2; exit 1; fi
+    if [ "$(cat /workspace/offline-check.lock/owner 2>/dev/null || true)" = "$pid" ]; then
+        rm /workspace/offline-check.lock/owner
+        rmdir /workspace/offline-check.lock
+    fi
+    echo "Cancelled offline check process group $pid"
     found=1
 done
-[ "$found" = 1 ] || echo 'No matching offline check process remains'
+[ "$found" = 1 ] || echo 'No matching offline check supervisor remains; retained locks require review'
 """
 
 
@@ -47,7 +71,7 @@ def build_command(policy):
 
 
 def cancel(policy, pod, uid):
-    # A timeout supervisor forwards TERM to its process group, including children.
+    # Confirm group termination even when the supervisor exits before a child.
     current = json.loads(subprocess.check_output([
         "kubectl", "--request-timeout=15s", "get", "pod", pod, "--namespace", "nix-builder", "-o", "json"],
         text=True, timeout=20))
@@ -112,10 +136,11 @@ def preflight():
 def attempt_command(policy):
     script = """
 set -eu
-trap 'exit 143' TERM INT
+trap '' TERM INT
 test "$(cat /sys/fs/cgroup/memory.max)" = 1073741824
 mkdir /workspace/offline-check.lock
-trap 'rmdir /workspace/offline-check.lock' EXIT
+printf '%s\n' "$PPID" > /workspace/offline-check.lock/owner
+trap 'rm /workspace/offline-check.lock/owner; rmdir /workspace/offline-check.lock' EXIT
 for proc in /proc/[0-9]*; do
     [ "${proc##*/}" = "$PPID" ] && continue
     case "$(cat "$proc/comm" 2>/dev/null || true)" in
@@ -124,7 +149,7 @@ for proc in /proc/[0-9]*; do
 done
 test "$(nix eval --impure --raw --expr builtins.currentSystem)" = x86_64-linux
 job="$(mktemp -d /workspace/check.XXXXXX)"
-trap 'if [ -d "$job" ]; then rm -rf -- "$job"; fi; rmdir /workspace/offline-check.lock' EXIT
+trap 'if [ -d "$job" ]; then rm -rf -- "$job"; fi; rm /workspace/offline-check.lock/owner; rmdir /workspace/offline-check.lock' EXIT
 mkdir "$job/source"
 tar -x -C "$job/source"
 cd "$job/source"
