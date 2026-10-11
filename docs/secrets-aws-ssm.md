@@ -521,3 +521,11 @@ The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
 alias of the pull robot credential, into its Docker-config Secret. CI reads
 only the publisher credential during protected image publication. See the
 [Harbor contract](../openwiki/operations/harbor-oci.md).
+
+The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
+`/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
+supplies kubelet pulls only; the credential is not mounted in app containers.
+No new SSM parameter, IAM permission or rotation is included. Activation waits
+for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
+`OnChange` refresh requires a declared annotation revision after rotation.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c5fe069ad0f2617f6d014fa2c7e9cee38bffcfb91988ed0f42eb61a741bffe4d",
+  "pageVersion": "sha256:d1516ff8f6b2fda0452874ab1e0abed699cd7ef511539a2f51cedaaf348a9880",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -160,7 +160,7 @@
     },
     {
       "id": "claim_2f510861461e44f79cec94649f5ca448",
-      "statement": "The source-only core candidate changes no consuming references or secret contracts and requires Linux image build, real disposable Harbor/PostgreSQL push/pull, unchanged index digests, private scan acceptance and protected publication before a coupled chart/component rollout with verified backups.",
+      "statement": "The held core candidate changes no active consuming references, credential producers or live database. It also stages an excluded namespace pull contract; activation still requires Linux/registry/scan acceptance, protected publication, reviewed component/chart compatibility and verified backups.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -169,6 +169,10 @@
         {
           "resource": "repo://builds/harbor-core/README.md",
           "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
+          "version": "repo-file-v1:sha256:b5625bc137fac9e35c719e7750efa833cec33b52a6f2c2750cd68e66224338ca"
         }
       ]
     },
@@ -277,10 +281,46 @@
           "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
         }
       ]
+    },
+    {
+      "id": "claim_f601e1fc02454c98bb3a4d113e0eab72",
+      "statement": "The full-container receipt records successful candidate Linux audit at279092e6 with exact image config identity and five unfiltered unresolved matches (two high, two medium, one unknown), passing the available-fix refusal gate while explicitly denying CVE clearance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json",
+          "version": "repo-file-v1:sha256:5ea008ccab8ebe6e27062b3e8df6fbb24db1703a68e9014d1ef4026e7177c037"
+        }
+      ]
+    },
+    {
+      "id": "claim_a6434f50ff3543fdb91030087a459c4f",
+      "statement": "The excluded Harbor private-core directory stages a namespace-local Docker-config ExternalSecret and kubelet-only ServiceAccount pull reference using the existing read-only robot parameter, without new IAM/SSM declarations or rotation. Active Harbor Kustomization excludes it and activation retains publication/scan/recovery/readiness and cold-bootstrap safeguards.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/kustomization.yaml",
+          "version": "repo-file-v1:sha256:6656afa97408bd0c8eb4a3ae4fbc08d7193731e46d4fcf00c63835c065cef1ed"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
+          "version": "repo-file-v1:sha256:b5625bc137fac9e35c719e7750efa833cec33b52a6f2c2750cd68e66224338ca"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml",
+          "version": "repo-file-v1:sha256:b8f1f26e96e3b59a15b693270fa7d156fda4ca1c79d9dbec9b10dc61db3ca438"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml",
+          "version": "repo-file-v1:sha256:e8efc8d40b9652c1bd3ac81b90fa1d1e1c27ae16250c90d1492b168c05e9c5de"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5a032b0a5d00158f851b147fae5ffbd0b52209c7082db49ee0f08fea1fd97308"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T19:43:31.163Z"
+    "at": "2026-10-11T20:01:55.480Z"
   }
 }

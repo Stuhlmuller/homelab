@@ -32,6 +32,16 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-9749edd762a130f624e47007
+    resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-1635b3ffa6091ee664a713ee
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
+  - id: openwiki-source-4284f84c777b5f9b078e069d
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml
+  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-bc26cfab2973077898d9ec21
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -46,6 +56,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-base-scan-2026-10-11.json
   - id: openwiki-source-648b2cb9046d6972d8b44428
     resource: repo://docs/evidence/harbor-core-binary-scan-2026-10-11.json
+  - id: openwiki-source-ef838396d59512933660fb9b
+    resource: repo://docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json
   - id: openwiki-source-291f8c32edb318126465429b
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -60,10 +72,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T19:43:31.163Z" }
+generated: { by: "codex", at: "2026-10-11T20:01:55.480Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T19:43:31.163Z
+    at: 2026-10-11T20:01:55.480Z
 ---
 
 # Harbor Private OCI Registry
@@ -348,7 +360,7 @@ flowchart TD
 The candidate's build gate checks original failure and repaired behavior before
 creating an image; it does not authorize rollout.
 
-No consuming image, secret contract or live database changes are included.
+No active consuming image, credential producer or live database changes are included.
 Linux image build, disposable Harbor/PostgreSQL index push/pull with unchanged
 digests, complete private scans and protected publication remain gates. Couple
 any v2.15.4 rollout with matching chart/components and verified database/blob/key
@@ -412,6 +424,20 @@ Available fixes fail this audit. Unfixed/unknown matches remain counted;
 successful collection does not mean CVE clearance or authorize publication.
 CI emits only an identity/report-hash/database/severity-count receipt while
 raw metadata and transport logs stay private and temporary inputs are removed.
+
+The [full-container receipt](../../docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json)
+records successful Linux audit CI at `279092e6`, with exact image/config identity
+`06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
+The available-fix gate passed; CVE clearance remains explicitly false.
+
+The [excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+renders a namespace-local Docker-config ExternalSecret and ServiceAccount pull
+reference from the already-declared `/homelab/harbor/robot-pull-password`.
+Harbor is already permitted by the store and exact reader policy. No app-container
+mount, new IAM/SSM declaration or credential rotation is added. Active Harbor
+resources exclude this directory. Move its secret and merge the pull reference
+into the existing ServiceAccount only with reviewed publication/scans, recovery
+clearance and ExternalSecret readiness; preserve cold-bootstrap/rollback access.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 

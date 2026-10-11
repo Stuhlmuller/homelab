@@ -6,6 +6,14 @@ tags: ["architecture", "secrets", "identity"]
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-9749edd762a130f624e47007
+    resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-1635b3ffa6091ee664a713ee
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
+  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-bc26cfab2973077898d9ec21
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
@@ -28,10 +36,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
+generated: { by: "codex", at: "2026-10-11T20:01:55.480Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-11T20:01:55.480Z
 ---
 
 # Secrets And Identity
@@ -690,6 +698,17 @@ separate public-read `mirror` project; `robot$mirror+publisher` uses its own gen
 `/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
 Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
 see [the image mirror runbook](../../docs/harbor-image-mirroring.md).
+
+The excluded
+[private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages `harbor/harbor-pull` from the existing
+`/homelab/harbor/robot-pull-password`. Its only consumer reference is the
+ServiceAccount's kubelet image-pull list; no app-container mount, producer,
+reader grant or namespace allowlist expansion is added. The active Harbor
+Kustomization excludes this directory. Activation requires publication/scans,
+recovery clearance and ExternalSecret readiness; an `OnChange` annotation
+advance is required after a future credential rotation. The existing bootstrap
+Secret needs its own declared refresh, and upstream cold recovery remains.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during
