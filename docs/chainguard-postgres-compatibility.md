@@ -6,6 +6,11 @@ before it can replace the maintained PostgreSQL images. Run
 The dedicated CI job uses pinned public source bytes without production
 credentials; production replacements must use the verified Harbor copy.
 
+Wolfi PostgreSQL clients default to `/tmp` sockets; Debian clients default to
+`/var/run/postgresql`. The fixture exposes both and waits for the final
+PostgreSQL process, not the entrypoint's temporary initialization server.
+Production socket/probe contracts need the same explicit review.
+
 The fixture starts PostgreSQL 14 and 18 with the existing 65534/999 UID
 contracts, file-backed user/database/password inputs, a read-only image and no
 network. It logically exports synthetic JSONB data and restores it into the

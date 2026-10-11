@@ -34,11 +34,12 @@ def database(image, uid, secrets, names):
         "--volume", f"{secrets}:/fixture:ro",
         "--env", "PGDATA=/data/pgdata", "--env", "POSTGRES_USER_FILE=/fixture/user",
         "--env", "POSTGRES_DB_FILE=/fixture/database", "--env", "POSTGRES_PASSWORD_FILE=/fixture/password",
-        image, "-c", "unix_socket_directories=/var/run/postgresql")
+        # Wolfi clients default to /tmp; Debian clients default to /var/run/postgresql.
+        image, "-c", "unix_socket_directories=/tmp,/var/run/postgresql")
     for _ in range(60):
         ready = subprocess.run(["docker", "exec", name, "pg_isready", "-U", "fixture", "-d", "fixture"],
                                capture_output=True, text=True, timeout=10)
-        if ready.returncode == 0:
+        if ready.returncode == 0 and run("docker", "exec", name, "cat", "/proc/1/comm").strip() == "postgres":
             version = run("docker", "exec", name, "psql", "-U", "fixture", "-d", "fixture",
                           "-Atqc", "SHOW server_version")
             print(f"Started {image} UID {uid}: PostgreSQL {version.strip()}", flush=True)
