@@ -77,11 +77,10 @@ def main():
             candidate["spec"]["containers"][0]["image"] = "ghcr.io/siderolabs/flannel:v0.27.4"
             check(candidate, False)
             candidate["metadata"]["namespace"] = "kube-system"
-            candidate["spec"]["serviceAccountName"] = "default"
+            candidate["spec"].pop("serviceAccountName")
             candidate["metadata"]["annotations"] = {"kubernetes.io/config.mirror": "proof"}
             check(candidate, False)
             node = json.loads(run(*kubectl, "get", "nodes", "-o", "json"))["items"][0]
-            candidate["spec"]["serviceAccountName"] = "default"
             candidate["spec"]["nodeName"] = node["metadata"]["name"]
             candidate["metadata"]["ownerReferences"] = [{"apiVersion": "v1", "kind": "Node", "name": node["metadata"]["name"], "uid": node["metadata"]["uid"], "controller": True}]
             check(candidate, True, "--as=system:node:" + node["metadata"]["name"], "--as-group=system:nodes", "--as-group=system:authenticated")
