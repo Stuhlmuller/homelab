@@ -12,9 +12,10 @@ import time
 import signal
 import shlex
 import unittest
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 from datetime import datetime, timezone
 
+ATTEMPT_ID = "d68b1eb0-2a1b-45a8-9b88-a662be678ebb"
 ROOT = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("cache", ROOT / "scripts/nix-cache.py")
 cache = importlib.util.module_from_spec(spec)
@@ -41,7 +42,7 @@ class CacheLayoutTests(unittest.TestCase):
         for stage in ("import", "build", "export"):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
-                command = builder.attempt_command(policy)
+                command = builder.attempt_command(policy, ATTEMPT_ID)
                 command[1] = "--kill-after=1s"
                 script = command[5]
                 beginning = script.index('test "$(cat /sys/fs/cgroup/memory.max)"')
@@ -68,15 +69,16 @@ class CacheLayoutTests(unittest.TestCase):
                         process.wait()
 
     def test_cancellation_only_signals_entire_owned_attempt(self):
-        command = builder.attempt_command({"url": "fixture", "publicKey": "fixture"})
-        for comm, args, expected in (("timeout", command, True), ("timeout", ["unrelated"], False), ("sh", command, False)):
+        command = builder.attempt_command({"url": "fixture", "publicKey": "fixture"}, ATTEMPT_ID)
+        for comm, args, expected in (("timeout", command, True), ("timeout", ["timeout", "old policy and source", command[-1]], True),
+                                     ("timeout", ["timeout", "homelab-offline-attempt:wrong-id"], False), ("sh", command, False)):
             with self.subTest(comm=comm, args=args), tempfile.TemporaryDirectory() as temporary:
                 proc = Path(temporary) / "1234"
                 proc.mkdir()
                 (proc / "comm").write_text(comm + "\n")
                 (proc / "stat").write_text("1234 (timeout) S 1 1234 0\n")
                 (proc / "cmdline").write_bytes(b"\0".join(arg.encode() for arg in args) + b"\0")
-                script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", shlex.quote(" ".join(command) + " "))
+                script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", shlex.quote("homelab-offline-attempt:" + ATTEMPT_ID))
                 result = subprocess.run(["sh", "-c", f'kill() {{ echo "SIGNAL:$*"; rm "{proc}/comm" "{proc}/stat"; }};\n' + script], capture_output=True, text=True, check=True)
                 self.assertEqual("SIGNAL:-TERM -1234" in result.stdout, expected)
         self.assertIn('kill -KILL "-$pid"', builder.CANCEL_SCRIPT)
@@ -88,14 +90,14 @@ class CacheLayoutTests(unittest.TestCase):
             supervisor.mkdir()
             child.mkdir()
             (supervisor / "comm").write_text("timeout\n")
-            (supervisor / "cmdline").write_bytes(b"fixture\0")
+            (supervisor / "cmdline").write_bytes(b"homelab-offline-attempt:" + ATTEMPT_ID.encode() + b"\0")
             (supervisor / "stat").write_text("1234 (timeout) S 1 1234 0\n")
             (child / "stat").write_text("5678 (TERM ignoring child) S 1 1234 0\n")
             lock = root / "offline-check.lock"
             lock.mkdir()
             (lock / "owner").write_text("1234\n")
             script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("/workspace", temporary)
-            script = script.replace("EXPECTED", "'fixture '").replace("remaining=10", "remaining=1").replace("sleep 1", "true")
+            script = script.replace("EXPECTED", shlex.quote("homelab-offline-attempt:" + ATTEMPT_ID)).replace("remaining=10", "remaining=1").replace("sleep 1", "true")
             signal_fixture = f'kill() {{ echo "SIGNAL:$*"; if [ "$1" = -TERM ]; then rm "{supervisor}/comm" "{supervisor}/stat"; else test -d "{lock}"; rm "{child}/stat"; fi; }};\n'
             result = subprocess.run(["sh", "-c", signal_fixture + script], capture_output=True, text=True, check=True)
             self.assertIn("SIGNAL:-KILL -1234", result.stdout)
@@ -112,7 +114,7 @@ class CacheLayoutTests(unittest.TestCase):
                 lock = root / "offline-check.lock"
                 lock.mkdir()
                 (lock / "owner").write_text("1234\n")
-                script = builder.attempt_command(policy)[5]
+                script = builder.attempt_command(policy, ATTEMPT_ID)[5]
                 script = script[:script.index('test "$(cat /sys/fs/cgroup/memory.max)"')]
                 script = script.replace("pid=$PPID", "pid=1234").replace("/proc/", temporary + "/").replace("/workspace", temporary)
                 script = script.replace("remaining=10", "remaining=1").replace("sleep 1", "true")
@@ -130,13 +132,13 @@ class CacheLayoutTests(unittest.TestCase):
                 patch.object(builder, "cancel") as cancel:
             with self.assertRaises(KeyboardInterrupt):
                 builder.export(Path("unused"), policy)
-            cancel.assert_called_once_with(policy, "nix-builder-original", "original-uid")
+            cancel.assert_called_once_with("nix-builder-original", "original-uid", ANY)
 
     def test_cancellation_refuses_replacement_pod(self):
         with patch.object(builder.subprocess, "check_output", return_value='{"metadata":{"uid":"replacement"}}'), \
                 patch.object(builder.subprocess, "run") as signal:
             with self.assertRaises(ValueError):
-                builder.cancel({"url": "fixture", "publicKey": "fixture"}, "nix-builder-original", "original")
+                builder.cancel("nix-builder-original", "original", ATTEMPT_ID)
             signal.assert_not_called()
 
     def test_resource_preflight_rejects_pressure_stale_metrics_and_low_headroom(self):

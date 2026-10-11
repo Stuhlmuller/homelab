@@ -63,12 +63,14 @@ remote build. To cancel an interrupted attempt, run:
 
 ```sh
 python3 -I scripts/nix-builder.py --cancel \
-  --pod <original-pod-name> --pod-uid <original-pod-uid>
+  --pod <original-pod-name> --pod-uid <original-pod-uid> \
+  --attempt-id <original-attempt-id>
 ```
 
-The helper prints the original Pod name and UID before execution. Cancellation
-rejects a replacement Pod and matches the complete timeout-supervised remote-attempt
-command. TERM reaches the supervisor's process
+The helper prints the original Pod name, UID, and immutable attempt ID before execution. Cancellation
+rejects a replacement Pod and matches the immutable ID in the timeout supervisor’s final argument.
+Later cancellation works even if source or cache policy has changed; retain the
+printed ID from the publication log. TERM reaches the supervisor's process
 group; a 10-second grace period precedes KILL of any surviving group members,
 followed by 10 seconds to confirm the group contains no running processes. Local interrupt, timeout, and remote errors invoke
 this path automatically. An independent 30-minute remote deadline limits the

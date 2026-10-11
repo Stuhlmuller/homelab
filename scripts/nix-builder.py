@@ -10,6 +10,7 @@ import shlex
 import subprocess
 import sys
 import tarfile
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = ("offline-tests", "manifest-policy")
@@ -33,7 +34,7 @@ CANCEL_SCRIPT = "set -eu\n" + GROUP_SCRIPT + r"""
 found=0
 for proc in /proc/[0-9]*; do
     [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
-    command=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' ' ')
+    command=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' '\n' | tail -n 1)
     [ "$command" = EXPECTED ] || continue
     pid=${proc##*/}
     fields=$(cat "$proc/stat")
@@ -74,14 +75,15 @@ def build_command(policy):
             ".#checks.x86_64-linux.offline-tests", ".#checks.x86_64-linux.manifest-policy"]
 
 
-def cancel(policy, pod, uid):
+def cancel(pod, uid, attempt_id):
+    attempt_id = str(uuid.UUID(attempt_id))
     # Confirm group termination even when the supervisor exits before a child.
     current = json.loads(subprocess.check_output([
         "kubectl", "--request-timeout=15s", "get", "pod", pod, "--namespace", "nix-builder", "-o", "json"],
         text=True, timeout=20))
     if current["metadata"]["uid"] != uid:
         raise ValueError("Refusing cancellation against a replacement pod")
-    command = " ".join(attempt_command(policy)) + " "
+    command = "homelab-offline-attempt:" + attempt_id
     subprocess.run([
         "kubectl", "--request-timeout=15s", "exec", "-i", "--namespace", "nix-builder",
         pod, "--container", "nix", "--", "sh", "-s"],
@@ -137,7 +139,7 @@ def preflight():
     return pod["metadata"]["name"], pod["metadata"]["uid"]
 
 
-def attempt_command(policy):
+def attempt_command(policy, attempt_id):
     script = "set -eu\n" + GROUP_SCRIPT + """
 # Stay alive through TERM so the deadline can KILL the complete group.
 trap '' TERM INT
@@ -173,7 +175,7 @@ COMMAND > "$job/outputs"
 nix copy --to "file://$job/cache" $(cat "$job/outputs")
 tar -c -C "$job/cache" .
 """.replace("COMMAND", shlex.join(build_command(policy)))
-    return ["timeout", "--kill-after=10s", "1800s", "sh", "-ec", script, "homelab-offline-attempt"]
+    return ["timeout", "--kill-after=10s", "1800s", "sh", "-ec", script, "homelab-offline-attempt:" + attempt_id]
 
 
 def export(destination, policy):
@@ -186,14 +188,15 @@ def export(destination, policy):
         for check in CHECKS
     }
     pod, uid = preflight()
-    print(f"Builder attempt uses pod {pod} UID {uid}", file=sys.stderr)
+    attempt_id = str(uuid.uuid4())
+    print(f"Builder attempt uses pod {pod} UID {uid} attempt ID {attempt_id}", file=sys.stderr)
     try:
         archive = subprocess.check_output([
             "kubectl", "exec", "-i", "--namespace", "nix-builder",
-            pod, "--container", "nix", "--", *attempt_command(policy)],
+            pod, "--container", "nix", "--", *attempt_command(policy, attempt_id)],
             input=source, cwd=ROOT, timeout=1860)
     except BaseException:
-        cancel(policy, pod, uid)
+        cancel(pod, uid, attempt_id)
         raise
     unpack(archive, destination)
     actual = set()
@@ -228,14 +231,15 @@ if __name__ == "__main__":
     action.add_argument("--cancel", action="store_true", help="Stop only matching offline checks on the declared builder")
     parser.add_argument("--pod", help="Original pod name, required for cancellation")
     parser.add_argument("--pod-uid", help="Original pod UID printed when the attempt started")
+    parser.add_argument("--attempt-id", help="Immutable attempt ID printed before execution")
     args = parser.parse_args()
-    policy = json.loads((ROOT / "scripts/config/nix-cache.json").read_text())
     if args.cancel:
-        if not args.pod or not args.pod.startswith("nix-builder-") or not args.pod_uid:
-            parser.error("Cancellation requires the original --pod nix-builder-... and --pod-uid")
-        cancel(policy, args.pod, args.pod_uid)
+        if not args.pod or not args.pod.startswith("nix-builder-") or not args.pod_uid or not args.attempt_id:
+            parser.error("Cancellation requires the original --pod nix-builder-..., --pod-uid and --attempt-id")
+        cancel(args.pod, args.pod_uid, args.attempt_id)
         raise SystemExit(0)
     if args.output_directory.exists():
         parser.error("Output directory must be new")
     args.output_directory.mkdir(mode=0o700, parents=True)
+    policy = json.loads((ROOT / "scripts/config/nix-cache.json").read_text())
     print("\n".join(export(args.output_directory, policy)))
