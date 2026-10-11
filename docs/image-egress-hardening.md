@@ -76,7 +76,7 @@ same Pod's egress.
 
 | Source | Gap requiring dependency review |
 | --- | --- |
-| [NOFX](../clusters/homelab/apps/nofx/networkpolicy.yaml) | Backend `egress: [{}]` permits every destination and port; frontend has only ingress rules. Inventory configured model/exchange endpoints and the historical-data feed before replacing this allowance. |
+| [NOFX](../clusters/homelab/apps/nofx/networkpolicy.yaml) | Backend `egress: [{}]` permits every destination and port. Inventory configured model/exchange endpoints and the historical-data feed before replacing this allowance. |
 | [Cordium](../clusters/homelab/apps/cordium/networkpolicy.yaml) | Genesis permits `10.0.0.0/8` on 443/8080/6443; cluster-config permits all IPv4 destinations on 443. Resolve API, controller and external bootstrap dependencies separately. |
 | [Cloudflared](../clusters/homelab/apps/octelium-public/networkpolicy.yaml) | Public IPv4 TCP 443 and TCP/UDP 7844 remain broadly allowed despite private-range exclusions. Tunnel edge traffic needs its documented destination contract; HTTPS alone is not a domain allowlist. |
 | Affine, Bazarr, Dispatcharr PostgreSQL, Fleet, Harbor, Langfuse, LiteLLM PostgreSQL, media PostgreSQL, Multica, n8n PostgreSQL, Octelium demo/storage/backups, OpenClaw, policy-bot, Traefik | Authored policies contain ingress-only objects. Inventory effective selectors, chart policies, controller/API access, DNS, storage, backups, callbacks and external services before adding egress isolation. |
@@ -86,6 +86,15 @@ service accounts, including Jobs, init containers and operator-created Pods.
 Review both IP families, Service DNAT and ambient HBONE. Do not infer isolation
 from policy names, an individual policy, or an allowed destination's port.
 Image pulls require node-to-Harbor access, not application-pod registry egress.
+
+The frontend prerequisite now allows only CoreDNS TCP/UDP 53 and same-namespace
+NOFX backend TCP 8080/15008. Read-only inspection of the running frontend's
+`/etc/nginx/conf.d/default.conf` confirmed `/api/` proxies to `http://nofx:8080`;
+the static assets and `/health` response have no external server dependency.
+Its DNS selector matches both live CoreDNS Pods. This source restriction is not
+live enforcement: require allowed API proxying, ambient readiness, denied
+public/registry destinations and denied alternate ports after the enforcer
+canary. Revert the policy through GitOps if the original API path fails.
 
 The cluster uses Istio ambient and Flannel. Flannel does not enforce the
 existing Kubernetes NetworkPolicy objects. Istio AuthorizationPolicy currently

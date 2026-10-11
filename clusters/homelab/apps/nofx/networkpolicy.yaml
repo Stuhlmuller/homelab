@@ -10,6 +10,27 @@ spec:
       app.kubernetes.io/component: frontend
   policyTypes:
     - Ingress
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: nofx
+              app.kubernetes.io/component: backend
+      ports:
+        - {protocol: TCP, port: 8080}
+        # Ambient encrypts the same backend connection over HBONE.
+        - {protocol: TCP, port: 15008}
   ingress:
     - from:
         - namespaceSelector:
