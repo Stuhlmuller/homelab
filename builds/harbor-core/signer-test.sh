@@ -19,8 +19,15 @@ docker run --rm --network none --user "$(id -u):$(id -g)" \
   public-key --key /work/cosign.key --outfile /work/public.key >/dev/null
 openssl pkey -in "$scratch/source.key" -pubout >"$scratch/expected.key"
 cmp "$scratch/expected.key" "$scratch/public.key"
-docker run --rm --network none "$signer" sign --help >"$scratch/sign-help"
-for flag in tlog-upload use-signing-config new-bundle-format oidc-disable-ambient-providers; do
-  grep -F -- "--$flag" "$scratch/sign-help" >/dev/null
-done
+# Deprecated flags are hidden from help; exercise the parser without a registry subject.
+if docker run --rm --network none "$signer" sign --yes \
+  --tlog-upload=false --use-signing-config=false --new-bundle-format=false \
+  --oidc-disable-ambient-providers >"$scratch/sign-parser" 2>&1; then
+  echo 'Signer unexpectedly accepted an empty subject list.' >&2
+  exit 1
+fi
+grep -F 'requires at least 1 arg(s), only received 0' "$scratch/sign-parser" >/dev/null || {
+  cat "$scratch/sign-parser" >&2
+  exit 1
+}
 echo 'Pinned public Chainguard signer key/API compatibility passed.'
