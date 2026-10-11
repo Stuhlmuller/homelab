@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7ad8c78c7fcfce2511cd48ab0014c39dd68ba52264c4435c705363b1776277c0",
+  "pageVersion": "sha256:0b10784b12762ef48b1d934abfe9581920c5355ca2111c0b981fb93023e1820f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -15,8 +15,12 @@
           "version": "repo-file-v1:sha256:d8ba5cb80354e9eb48327c6bd694820d9f3ff5ff0a0e31d0d09c822262341a3b"
         },
         {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+        },
+        {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:c35127d0ce1b5eb33e057bf22a07dd219aee751f051a67e9f3a596f905cd468d"
+          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
         }
       ]
     },
@@ -26,11 +30,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:f1ef36e0167be6795c6f630e1deabc1a6de490342c2e596f4cc90fd346fe119e"
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f04c0b924b786d7e5836241c391f7939cd671de7f7998803e3112deb38e0a20d"
+          "version": "repo-file-v1:sha256:93e4579341c1814a3c60d3210f890f1c0bc22898e4e1e8e1bbd5f9c148e70450"
         }
       ]
     },
@@ -53,8 +57,8 @@
       "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge/overlay /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L18",
-          "version": "repo-lines-v1:sha256:f8bbfb2d52c3d6601e9fa25fef879f8a7b2578165a8c3c027b7e590886fb4ac3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -126,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6856a1784820d2d447b3d54a1af42161f8133da407ab2dfce4394fb40e3d9585"
+          "version": "repo-file-v1:sha256:fc83261744f73ba27c5a09e5cc50248dd91bc815b070ff389e9160eabe040b96"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -161,16 +165,12 @@
       "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L16",
-          "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L123-L233",
-          "version": "repo-lines-v1:sha256:3504e4fee89fd73c98828a05a8993ef1ea1e0d5dad15556deba614ec13575897:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NjE4ZjAwNDNlZmQwNjg1ZWVkMmQ4NGM1NDFhYWFhN2Q1YWE4MzhhMjBjOWU3ODU2OWU5NjlkMmVlMWNiYzkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NmI0NTEyYzFmMDY3ZTBiYjAxZDBjYmExMmQxZTBmZTE3ZWVlMDQwYjAwMmFmOGFiYzk1YmEyNGYzNWUwMTFlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNjI3MTUzNWY4Y2RkOTEyOGRjYzQ2ZjQ3NjZlY2MwNzY1YTQ0YTY2ZjlkMWJjY2I0MzI5MmZiNjZkNjdjYTU4In0"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L423-L516",
-          "version": "repo-lines-v1:sha256:b51b1e052886f853e991a601479a9dfb535969e612b420ef90ba9961e3c33052:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ODU4YTAwMDc5N2MwMmNkYTdkYjBjNTFkMmZiZGY2ZjdhYzBkMjgwNmNjZmE5M2IxMjQyZTg0NDQ4YmQzMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NjE0ZmIxMTE4OWI5ZjIzZWE4MTU1YTE2ZjhjZmFhNTE4NWY3NDM2MmZlNmJiYmE4Y2NhMmJhNjE3ZmE5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhODI2OGE5NTFiMjhhYzdlM2NmYmIyYjQzMTY3OTIzZjFhMjJjOTk5OTVmMjJjZjRiZTZiNmY4ZTM5NjNiZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOGQxMjcxMzI2MTllNzU5Y2JmNzkxYTQwMjMyOGM0MDFhMjIzOTRhMGJkNzIyZmYyMGQyZGRiOTU2MzBhMDkifQ"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
+          "version": "repo-file-v1:sha256:67bd6e2675f60c6a0d565636ad5bfa7871252ce538e32da1bbadca79ee581395"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -257,14 +257,32 @@
           "version": "repo-lines-v1:sha256:2d4b1d14269f6e596147700cfefd3c4035bdcf1f08f20d2fdd256e57c34901b9:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NWZmNzQ4ZDkzZTIyMjRmNmRjYTExMDU0Njg3MzY3Y2IxZmI0OTM2ODIyMmRiODE1NjJhOGQ0OTBlOTllMWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5NTMzZTYxNDVlMzJmOGYwZDIyZTMxNzA4ODRiODQwNzIyYjk0ODY1MWE1OGRjYzliMzdmZGIwMWI2MmMzYTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxZTk1ZDA2MzBhMzY0ZDczMTkzYmI0ZWI5OWNmZmFjZTZiMTkyMjU3Y2Q0MGE4NTJlZWRlM2NkMjgzZjc0NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkNDVjNzZhNTE2MGIwOWYzMzdmMzIxMzIyY2VmMjgwMDIyNmVjZTc3MzU3YjBlOTBiZmIzNTRlNTJhYTk5NGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L519-L620",
-          "version": "repo-lines-v1:sha256:35c9b50bc16bfb4c17030ac944877b42721d03a5f1fcdb6fbe17c9d7b95237f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNzNhZWFiMzY1NDlhZGJmZTcxYTlhYzAxZDlhNDk2MDExNWY2MWQxYzYzYjdjOTRlMjdlMWYxNTAzNDJiODkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkNjRhZTc0ODJlMmJmOWQ0OTA5MjMxNWNlYWI1MmY3YjJiMmNmYzk0ZDNiMjc5Mzc5MDA5YjMyNGVjOGE1NTFkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmRlNjU2ZGZkNjQ4MTg2MTFlMWVjOTc5ZTAwMDk4NTZkNjgzMGQwOGIxNzQ1YWFmODAwZWVkZGYxN2JhYjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzNmZmRkYmViMjI5MzhjNTgwMzc0MDIxNWVhMjM5ZjRiMGVmMGEyNDQ4N2YwNjM3NGYwYWMxYzRhYWE2NWY4In0"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L519-L673",
+          "version": "repo-lines-v1:sha256:8c127fc07a1f480a8590c5149333cac0112dfa1c6d30b927a02e002b38f8598a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNzNhZWFiMzY1NDlhZGJmZTcxYTlhYzAxZDlhNDk2MDExNWY2MWQxYzYzYjdjOTRlMjdlMWYxNTAzNDJiODkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkNjRhZTc0ODJlMmJmOWQ0OTA5MjMxNWNlYWI1MmY3YjJiMmNmYzk0ZDNiMjc5Mzc5MDA5YjMyNGVjOGE1NTFkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmRlNjU2ZGZkNjQ4MTg2MTFlMWVjOTc5ZTAwMDk4NTZkNjgzMGQwOGIxNzQ1YWFmODAwZWVkZGYxN2JhYjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzNmZmRkYmViMjI5MzhjNTgwMzc0MDIxNWVhMjM5ZjRiMGVmMGEyNDQ4N2YwNjM3NGYwYWMxYzRhYWE2NWY4In0"
+        }
+      ]
+    },
+    {
+      "id": "claim_c3895c712e9a4d029589c85a4d43570f",
+      "statement": "The static wrapper verifies source-bound offline fixture and manifest-policy Nix outputs with protected-main cache trust, signatures and sandboxing before fresh remaining provider, network and security checks; cache reuse does not establish live plan or runtime acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-11T09:10:40.150Z"
   }
 }

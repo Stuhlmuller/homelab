@@ -63,7 +63,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha"
    ```
 
-   For the Traefik ingress prerequisite, use the fixed one-image scope already
+   For the Traefik ingress prerequisite, use the fixed two-image scope already
    selected from the full reviewed catalog:
 
    ```sh
@@ -73,7 +73,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
-   image. Its publication uses the same all-platform digest copy, reviewed tag
+   image and the pinned `pause:3.10` image used by native Talos pull acceptance.
+   Their publication uses the same all-platform digest copy, reviewed tag
    alias, and fresh complete anonymous download checks. A scoped success proves
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
@@ -319,3 +320,20 @@ rollback changes image transport, not workload versions or stored data.
 
 Sources: [Talos 1.11 Harbor mirror configuration](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/images-container-runtime/pull-through-cache),
 [Harbor proxy-cache behavior and retention](https://goharbor.io/docs/2.14.0/administration/configure-proxy-cache/).
+
+## Duplicate-index publication failure
+
+On October 11, 2026 UTC, full-catalog runs `38108370598` and `38117127796`
+failed on the pinned LiteLLM database index
+`sha256:3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8`.
+Its eight descriptors reference four child digests twice. The second failure
+correlates with Harbor PostgreSQL's `unique_reference` violation at
+`08:53:38.389Z`; registry child writes succeeded but the parent was unavailable.
+This matches [upstream Harbor issue #16718](https://github.com/goharbor/harbor/issues/16718).
+
+Keep the source index, attestations and pinned digest intact. Do not alter the
+live database schema to bypass this failure. Compatible full-catalog publication
+requires a separately reviewed repair. The fixed Traefik scope publishes the
+native pause probe independently; its success authorizes only those artifacts.
+Node hostname migration still requires successful native pulls from every node.
+Cluster-wide `skipFallback` mirrors remain gated on successful full publication.

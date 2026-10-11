@@ -524,15 +524,16 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
 
-    def test_traefik_scope_declares_only_its_reviewed_public_image(self):
+    def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
         self.assertEqual(set(selected), {"images"})
-        self.assertEqual(len(selected["images"]), 1)
-        image = selected["images"][0]
-        self.assertEqual(set(image), {"source"})
-        self.assertTrue(image["source"].startswith("docker.io/library/traefik:"))
-        self.assertIn(image, catalog["images"])
+        self.assertEqual(len(selected["images"]), 2)
+        self.assertTrue(selected["images"][0]["source"].startswith("docker.io/library/traefik:"))
+        self.assertTrue(selected["images"][1]["source"].startswith("registry.k8s.io/pause:3.10@"))
+        for image in selected["images"]:
+            self.assertEqual(set(image), {"source"})
+            self.assertIn(image, catalog["images"])
 
     def test_traefik_scope_rejects_missing_or_unreviewed_catalog_before_credentials(self):
         valid = self.mirror_manifest["images"][0]
