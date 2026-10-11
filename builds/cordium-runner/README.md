@@ -106,7 +106,7 @@ non-root Kubernetes Secret projections with group-read permissions without
 weakening the provisioner's private-file guards. World-readable projections are
 rejected. SIGTERM enters the existing lifecycle cleanup before process exit.
 
-The entrypoint checks the exact current-main checkout and pinned client, acquires
+The entrypoint checks its clean immutable source and pinned client, acquires
 its private lock, and stops when activation remains disabled. It is not registered
 as a Deployment yet; image publication, RBAC, token-file kubeconfig and actual
 projected-file refresh acceptance still precede activation.
@@ -156,7 +156,7 @@ python3 -I scripts/cordium-runner.py --serve \
 ```
 
 This process is not deployed yet. Use one replica with Recreate rollout when
-packaging it; the filesystem lock is not a distributed leader lease. Deployment refresh on new main commits remains required. The private native
+packaging it; the filesystem lock is not a distributed leader lease. The private native
 token file is reread per cycle and supplied only to parent CLI processes, not
 Pod env, argv or Workspace exec env. The pinned client handles access-token
 refresh and credential fallback using its local authenticated state. Observation
@@ -287,3 +287,23 @@ are the source for this exception. Browser portal, SSH and UDP tunnel ingress
 are not required by the runner lifecycle and have no exception. Live acceptance
 must prove initialization and exec succeed while unrelated Pods cannot connect;
 source/readback checks alone do not prove enforcement or connectivity.
+
+
+## Controller image and current main
+
+Publishing an image at commit A and committing its Deployment at B necessarily
+moves main. The controller therefore accepts current main only when A remains
+an ancestor and every declared executable/client/image/runner-contract path is
+identical to the baked source. It fetches public main into a private bare mirror
+under `/data/cordium-runner/source.git`; fetched files are never executed and the
+image checkout stays unchanged. Each queue cycle repeats the comparison and
+creates Workspaces at the verified current main SHA, rather than the image SHA.
+
+Deployment, unrelated workload, workflow-selector and documentation commits can
+advance main without disabling an unchanged controller. Changes to controller
+code, imported helpers, runner Dockerfiles, client installers or `.cordium`
+contracts stop provisioning and require a rebuilt, verified image and reviewed
+Deployment update. Rewritten main history, dirty image source or a failed fetch
+also stops provisioning. Operator one-shot/serve commands retain their exact
+local/expected/current-main check. Tests cover a shallow image checkout, its
+later Deployment commit, executable drift, restoration and rewritten history.

@@ -325,6 +325,20 @@ class Queue(unittest.TestCase):
                 runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"))
             client.assert_not_called()
 
+    def test_controller_revision_provider_supplies_current_job_checkout(self):
+        current = "b" * 40
+        with patch.object(runner.github_operator, "verify_reviewed_main") as strict, \
+             patch.object(runner, "native_identity"), patch.object(runner, "native_environment", return_value={}), \
+             patch.object(runner, "installation_client", return_value="private-api"), \
+             patch.object(runner, "queued_jobs", return_value=True), \
+             patch.object(runner, "provision") as provision, \
+             patch.object(runner.time, "sleep", side_effect=SystemExit(0)):
+            with self.assertRaises(SystemExit):
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"),
+                             reviewed_main=lambda: current)
+            strict.assert_not_called()
+            provision.assert_called_once_with("private-api", ["cordium"], current, {})
+
     def test_filtered_search_cap_and_native_failure_do_not_create_runners(self):
         with self.assertRaises(RuntimeError):
             runner.queued_jobs(Mock(return_value={"total_count": 1000, "workflow_runs": []}), self.pool)

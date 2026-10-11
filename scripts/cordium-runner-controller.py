@@ -20,6 +20,34 @@ spec.loader.exec_module(runner)
 SOURCE = Path("/var/run/cordium-runner-credentials")
 STATE = Path("/data/cordium-runner")
 KEYS = ("github-app-private-key", "auth-token")
+REPOSITORY = "https://github.com/Stuhlmuller/homelab.git"
+SOURCE_PATHS = (
+    ".cordium", "builds/cordium-runner/Dockerfile", "builds/cordium-runner/Dockerfile.controller", "scripts/cordium-runner-controller.py",
+    "scripts/cordium-runner.py", "scripts/policy-bot-webhook.py", "scripts/cordium-ci-acceptance.py",
+    "scripts/ci/cordium-runner-probe.sh", "scripts/ci/install-cordium-client.sh", "scripts/ci/install-octelium-client.sh",
+)
+
+
+def reviewed_controller_main(source, repository):
+    command = runner.github_operator.command
+    if not re.fullmatch(r"[0-9a-f]{40}", source):
+        raise RuntimeError("Controller source requires an exact image revision")
+    if command("git", "-C", str(ROOT), "status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=none"):
+        raise RuntimeError("Controller image source is dirty")
+    if command("git", "-C", str(ROOT), "rev-parse", "HEAD").decode().strip() != source:
+        raise RuntimeError("Controller source differs from its image revision")
+    # Fetch only into private state; never execute fetched code or modify the image.
+    if not repository.exists():
+        command("git", "clone", "--bare", "--no-hardlinks", str(ROOT), str(repository))
+    shallow = command("git", "-C", str(repository), "rev-parse", "--is-shallow-repository").decode().strip() == "true"
+    command("git", "-C", str(repository), "fetch", "--no-tags", *(["--unshallow"] if shallow else []),
+            REPOSITORY, "refs/heads/main")
+    current = command("git", "-C", str(repository), "rev-parse", "FETCH_HEAD").decode().strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", current):
+        raise RuntimeError("Current main revision is invalid")
+    command("git", "-C", str(repository), "merge-base", "--is-ancestor", source, current)
+    command("git", "-C", str(repository), "diff", "--exit-code", source, current, "--", *SOURCE_PATHS)
+    return current
 
 
 def private_copies(source, destination):
@@ -58,7 +86,6 @@ def main():
     if pool["enabled"] is not True:
         raise RuntimeError("Controller activation remains disabled")
     checkout = runner.github_operator.command("git", "-C", str(ROOT), "rev-parse", "HEAD").decode().strip()
-    runner.github_operator.verify_reviewed_main(checkout)
     version = runner.github_operator.command("cordium", "version").decode()
     if not re.search(r"(?m)^gitCommit:\s*e12b0b16d5fe94716e414fca7cfdc10b21014f2c\s*$", version):
         raise RuntimeError("Controller requires the pinned Cordium client")
@@ -75,7 +102,8 @@ def main():
     with open(STATE / "controller.lock", "a", opener=lambda path, flags: os.open(path, flags, 0o600)) as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         runner.serve(pool, credentials / KEYS[0], client, checkout, credentials / KEYS[1],
-                     refresh_credentials=lambda: private_copies(SOURCE, credentials))
+                     refresh_credentials=lambda: private_copies(SOURCE, credentials),
+                     reviewed_main=lambda: reviewed_controller_main(checkout, STATE / "source.git"))
 
 
 if __name__ == "__main__":
