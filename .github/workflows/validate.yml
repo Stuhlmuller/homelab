@@ -110,7 +110,7 @@ jobs:
         run: |
           nix develop --command env -u PYTHONPATH "${RUNNER_TEMP}/litellm-test/bin/python" scripts/ci/litellm-native-database-test.py "${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl" fixture/litellm-remediated:local
 
-      - name: Check private runtime vulnerability report
+      - name: Prepare private runtime scan inputs
         run: |
           set -euo pipefail
           python scripts/ci/litellm-scan-check-test.py
@@ -119,18 +119,49 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
-          image_id="$(docker image inspect --format '{{.Id}}' fixture/litellm-remediated:local)"
+          docker image inspect --format '{{.Id}}' fixture/litellm-remediated:local >"${RUNNER_TEMP}/litellm-scan-image-id"
           docker save --output "${RUNNER_TEMP}/litellm-scan.tar" fixture/litellm-remediated:local
           nix build --out-link "${RUNNER_TEMP}/litellm-grype" --impure --expr '(builtins.getFlake (toString ./.)).inputs.nixpkgs.legacyPackages.x86_64-linux.grype'
           printf 'check-for-app-update: false\nmatch-upstream-kernel-headers: true\ndb:\n  cache-dir: %s/grype-db\n  auto-update: true\n' "$RUNNER_TEMP" >"${RUNNER_TEMP}/litellm-grype.yaml"
+          EOF
+          then
+            echo "::error::Scan input preparation failed; private output withheld."
+            exit 1
+          fi
+          echo "Scan input preparation passed; private output withheld."
+
+      - name: Generate private runtime vulnerability report
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
           "${RUNNER_TEMP}/litellm-grype/bin/grype" --config "${RUNNER_TEMP}/litellm-grype.yaml" --by-cve --platform linux/amd64 -o json --file "${RUNNER_TEMP}/litellm-scan.json" "docker-archive:${RUNNER_TEMP}/litellm-scan.tar"
+          EOF
+          then
+            echo "::error::Private scanner execution failed; private output withheld."
+            exit 1
+          fi
+          echo "Private scanner execution passed; private output withheld."
+
+      - name: Check private runtime vulnerability report
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          image_id="$(cat "${RUNNER_TEMP}/litellm-scan-image-id")"
           python3 scripts/ci/litellm-scan-check.py "${RUNNER_TEMP}/litellm-scan.json" "$image_id"
           EOF
           then
-            echo "::error::Runtime vulnerability review failed; private output withheld."
+            echo "::error::Private report validation failed; private output withheld."
             exit 1
           fi
-          echo "Runtime fixable-finding gate passed; complete private output withheld."
+          echo "Private report validation passed; private output withheld."
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh
