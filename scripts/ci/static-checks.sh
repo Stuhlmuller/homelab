@@ -20,6 +20,7 @@ source "${script_dir}/terragrunt-filter-base.sh"
 terragrunt_generate_stack
 
 python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-runner-test.py
 python3 -I scripts/ci/cordium-ci-acceptance-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py

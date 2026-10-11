@@ -34,3 +34,38 @@ measure storage and memory before running image builds as production jobs.
 
 Rollback by removing the new mode and its fixed image/probe files through a
 reviewed commit. No persistent Docker storage or runner registration exists.
+
+## One-job provisioner
+
+`scripts/cordium-runner.py` reuses the repository's App JWT and HTTPS client.
+It scopes installation tokens to `homelab`, creates a Workspace with reviewed
+main, and issues a repository JIT configuration only after checkout verification.
+The App key never enters Cordium; only the one-job JIT configuration enters
+native exec stdin. Runner output is discarded locally; job logs remain in
+GitHub. Execution is capped at 30 minutes. Cleanup attempts Workspace and runner
+deletion independently, checks their absence, and fails if either is incomplete.
+Ambiguous creation/registration requires operator inspection before retrying.
+
+Registration is disabled in `.cordium/runner-pool.json`. Its initial label is
+`cordium-canary`, so this stage does not switch the existing workflows. Labels
+are routing hints, not an authorization boundary for a public repository.
+Before enabling registration, add runner-only network isolation and verify
+denied access to the LAN, Kubernetes, controller credentials and other Workspaces.
+Observed Cordium Pods have only a dynamic Workspace UID label; do not impose a
+namespace-wide deny policy that breaks existing human Workspaces.
+
+After the live isolation gate passes, enable the canary in a reviewed commit,
+create a dedicated narrow Cordium runner identity and file-backed credentials,
+then invoke from that exact clean main checkout:
+
+```sh
+python3 -I scripts/cordium-runner.py --expected-sha FULL_REVIEWED_MAIN_SHA \
+  --app-key-file /PRIVATE/RUNNER_APP_KEY.pem \
+  --homedir /PRIVATE/DEDICATED_RUNNER_LOGIN
+```
+
+This is the single-job lifecycle used to prove registration before adding the
+in-cluster queue controller. It is not a deployed controller. Provisioner restart
+recovery, cancellation, image publication, protected jobs and complete workflow
+execution remain migration acceptance gates. Retire the unused bootstrap App key
+only after the verified replacement has durable secret-manager custody.

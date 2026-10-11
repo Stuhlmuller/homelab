@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Fixed reviewed-main probe; no GitHub App credentials or runner registration.
+# Fixed reviewed-main runtime; the runner mode receives only one-job JIT input.
+mode="${1:-probe}"
+[[ $# -le 1 && ("$mode" == probe || "$mode" == runner) ]]
 [[ "$(uname -s)/$(uname -m)" == Linux/x86_64 ]]
 [[ "$(id -u)" == 0 ]]
 image="$(jq -er '.spec.image.registry.url' .cordium/runner-workspace.json)"
@@ -20,11 +22,13 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-dockerd --host "unix://$scratch/docker.sock" --data-root "$scratch/data" \
+socket="$scratch/docker.sock"
+if [[ "$mode" == runner ]]; then socket=/var/run/docker.sock; fi
+dockerd --host "unix://$socket" --data-root "$scratch/data" \
   --exec-root "$scratch/exec" --pidfile "$scratch/docker.pid" \
   --storage-driver vfs >"$scratch/daemon.log" 2>&1 &
 daemon_pid=$!
-docker_command() { docker --host "unix://$scratch/docker.sock" "$@"; }
+docker_command() { docker --host "unix://$socket" "$@"; }
 ready=false
 for _ in {1..30}; do
   kill -0 "$daemon_pid" || break
@@ -38,6 +42,16 @@ done
   echo 'Nested Docker daemon did not become ready.' >&2
   exit 1
 }
+
+if [[ "$mode" == runner ]]; then
+  umask 077
+  cat >"$scratch/jitconfig"
+  [[ -s "$scratch/jitconfig" ]]
+  chown runner:docker "$scratch" "$scratch/jitconfig"
+  # Only the transient runner configuration reaches runner argv; no App key.
+  sudo -u runner /home/runner/run.sh --jitconfig "$(cat "$scratch/jitconfig")"
+  exit
+fi
 
 mkdir "$scratch/context"
 printf 'cordium-runner-probe\n' >"$scratch/context/sentinel"
