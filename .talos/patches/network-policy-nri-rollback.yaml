@@ -1,0 +1,10 @@
+# Disable NRI only after the policy-enforcing dataplane has been withdrawn.
+machine:
+  files:
+    - path: /etc/cri/conf.d/20-network-policy-nri.part
+      op: overwrite
+      permissions: 0o644
+      content: |
+        [plugins."io.containerd.nri.v1.nri"]
+          disable = true
+          socket_path = "/var/run/nri/nri.sock"

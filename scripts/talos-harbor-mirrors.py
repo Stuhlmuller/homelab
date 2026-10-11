@@ -225,6 +225,39 @@ def talos_boot(client):
     return boot
 
 
+def capture(client, path):
+    # STATE-only boot publishes v1alpha1 but no persistent resource.
+    # Read the full document stream; never silently discard staged/try state.
+    stream = run(*client, "get", "machineconfig", "-o", "json").strip()
+    resources = {}
+    decoder = json.JSONDecoder()
+    while stream:
+        resource, end = decoder.raw_decode(stream)
+        metadata = resource["metadata"]
+        identity = metadata["id"]
+        if (identity not in ("v1alpha1", "persistent") or identity in resources
+                or metadata.get("namespace") != "config"
+                or metadata.get("type") != "MachineConfigs.config.talos.dev"
+                or metadata.get("phase") != "running"
+                or not isinstance(resource.get("spec"), str)):
+            raise RuntimeError("Unexpected machine configuration resource")
+        resources[identity] = resource
+        stream = stream[end:].strip()
+    active = resources.get("v1alpha1")
+    if active is None:
+        raise RuntimeError("Active machine configuration is unavailable")
+    if "persistent" not in resources and active["metadata"].get("version") != 1:
+        raise RuntimeError("Active configuration changed since boot without a persistent counterpart")
+    path.write_text(active["spec"])
+    path.chmod(0o600)
+    if "persistent" in resources:
+        persisted = path.with_suffix(".persistent.yaml")
+        persisted.write_text(resources["persistent"]["spec"])
+        persisted.chmod(0o600)
+        if documents(path) != documents(persisted):
+            raise RuntimeError("Active and persistent configurations differ; resolve staged or try changes first")
+
+
 def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host_only=False):
     talosconfig = Path(talosconfig or ROOT / ".talos/talosconfig").expanduser().resolve()
     if not talosconfig.is_file():
@@ -253,39 +286,7 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         directory.chmod(0o700)
         original, normalized, candidate = (directory / name for name in ("original.yaml", "normalized.yaml", "candidate.yaml"))
 
-        def capture(path):
-            # STATE-only boot publishes v1alpha1 but no persistent resource.
-            # Read the full document stream; never silently discard staged/try state.
-            stream = run(*client, "get", "machineconfig", "-o", "json").strip()
-            resources = {}
-            decoder = json.JSONDecoder()
-            while stream:
-                resource, end = decoder.raw_decode(stream)
-                metadata = resource["metadata"]
-                identity = metadata["id"]
-                if (identity not in ("v1alpha1", "persistent") or identity in resources
-                        or metadata.get("namespace") != "config"
-                        or metadata.get("type") != "MachineConfigs.config.talos.dev"
-                        or metadata.get("phase") != "running"
-                        or not isinstance(resource.get("spec"), str)):
-                    raise RuntimeError("Unexpected machine configuration resource")
-                resources[identity] = resource
-                stream = stream[end:].strip()
-            active = resources.get("v1alpha1")
-            if active is None:
-                raise RuntimeError("Active machine configuration is unavailable")
-            if "persistent" not in resources and active["metadata"].get("version") != 1:
-                raise RuntimeError("Active configuration changed since boot without a persistent counterpart")
-            path.write_text(active["spec"])
-            path.chmod(0o600)
-            if "persistent" in resources:
-                persisted = path.with_suffix(".persistent.yaml")
-                persisted.write_text(resources["persistent"]["spec"])
-                persisted.chmod(0o600)
-                if documents(path) != documents(persisted):
-                    raise RuntimeError("Active and persistent configurations differ; resolve staged or try changes first")
-
-        capture(original)
+        capture(client, original)
         # Normalize defaults with the same local parser, preserving every document.
         run("talosctl", "machineconfig", "patch", str(original), "--patch", "[]", "--output", str(normalized))
         before = documents(normalized)
@@ -308,14 +309,14 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
             verify_main(expected)
             if check_boot() != boot:
                 raise RuntimeError("Node rebooted during preflight")
-            capture(original)
+            capture(client, original)
             run("talosctl", "machineconfig", "patch", str(original), "--patch", "[]", "--output", str(normalized))
             if documents(normalized) != before:
                 raise RuntimeError("Machine configuration changed during preflight")
             run(*client, "apply-config", "--mode", "no-reboot", "--file", str(candidate))
             if not rollback:
                 run("kubectl", "wait", "--for=condition=Ready", "node/" + NODES[node], "--timeout=120s")
-            capture(original)
+            capture(client, original)
             run("talosctl", "machineconfig", "patch", str(original), "--patch", "[]", "--output", str(normalized))
             if documents(normalized) != after or check_boot() != boot:
                 raise RuntimeError("Post-apply configuration or no-reboot verification failed")

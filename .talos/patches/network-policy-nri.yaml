@@ -1,0 +1,10 @@
+# Inactive prerequisite for the reviewed policy-enforcement canary.
+machine:
+  files:
+    - path: /etc/cri/conf.d/20-network-policy-nri.part
+      op: create
+      permissions: 0o644
+      content: |
+        [plugins."io.containerd.nri.v1.nri"]
+          disable = false
+          socket_path = "/var/run/nri/nri.sock"
