@@ -31,6 +31,15 @@ OAuth are disabled. Capture the generated private key outside the checkout,
 then inject it through the declared secret path; never place it in Terraform
 inputs or public git. The loopback redirect is only for one-time bootstrap.
 
+On 2026-10-10, App `5270069` (`stuhlmuller-cordium-runners`) was created and
+installation `170148721` was limited to `homelab`. An authenticated App-token
+probe verified that exact repository selection and found zero runners.
+Key authentication succeeded. The initial manifest credential capture failed
+while writing the response; a replacement key was captured and verified.
+The first unused key remains registered and needs explicit retirement after
+replacement-key custody is established. Bootstrap files and keys stay outside
+the checkout. Runner deployment and workflow cutover remain pending.
+
 ## Required provisioning contract
 
 - A repository-owned controller creates disposable Cordium Workspaces and
