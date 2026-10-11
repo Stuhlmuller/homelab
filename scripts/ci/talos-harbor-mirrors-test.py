@@ -28,6 +28,19 @@ ORIGINAL = [{"version": "v1alpha1", "machine": {"type": "worker"},
             {"apiVersion": "v1alpha1", "kind": "UserVolumeConfig", "name": "keep-this-volume"}]
 
 
+def resource_stream(current, *, persistent=True, version=1, mismatch=False):
+    resources = []
+    for identity in ("v1alpha1", "persistent") if persistent else ("v1alpha1",):
+        value = copy.deepcopy(current)
+        if identity == "persistent" and mismatch:
+            value[1]["name"] = "pending-volume-change"
+        resources.append(json.dumps({"metadata": {
+            "id": identity, "namespace": "config", "phase": "running",
+            "type": "MachineConfigs.config.talos.dev", "version": version,
+        }, "spec": json.dumps(value)}))
+    return "\n".join(resources)
+
+
 class RolloutTest(unittest.TestCase):
     def test_private_registry_preflight_rejects_tls_redirects_and_dashboard_exposure(self):
         for failure in (None, "tls", "dashboard", "service"):
@@ -102,8 +115,8 @@ class RolloutTest(unittest.TestCase):
                     calls.append(command)
                     if command == ("talosctl", "version", "--client", "--short"):
                         return "Client:\nTalos v1.11.3\n"
-                    if "persistent" in command:
-                        return json.dumps({"metadata": {"id": "persistent"}, "spec": json.dumps(current)})
+                    if command[-4:] == ("get", "machineconfig", "-o", "json"):
+                        return resource_stream(current)
                     if command[:3] == ("talosctl", "machineconfig", "patch"):
                         value = json.loads(Path(command[3]).read_text())
                         for operation in json.loads(command[5]):
@@ -143,7 +156,9 @@ class RolloutTest(unittest.TestCase):
                          "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection",
                          "prior-success", "later-page-success", "bundle-changed", "non-ancestor", "missing-history", "missing-blob",
                          "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha",
-                         "fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha"):
+                         "fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha",
+                         "fresh-boot", "pending-config", "try-without-persistent", "config-read-error",
+                         "duplicate-config", "missing-active"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary)
                 (root / "scripts/config").mkdir(parents=True)
@@ -246,11 +261,21 @@ class RolloutTest(unittest.TestCase):
                         return "Client:\nTalos v1.13.0\n" if scenario == "wrong-client" else "Client:\nTalos v1.11.3\n"
                     if "read" in command:
                         return "87654321-0000-0000-0000-000000000000" if applied and scenario == "rollback-reboot" else "12345678-0000-0000-0000-000000000000"
-                    if "persistent" in command:
+                    if command[-4:] == ("get", "machineconfig", "-o", "json"):
                         captures.append(command)
                         if scenario == "race" and len(captures) == 2:
                             current[0]["machine"]["unrelated"] = True
-                        return json.dumps({"metadata": {"id": "persistent"}, "spec": json.dumps(current)})
+                        if scenario == "config-read-error":
+                            raise RuntimeError("Configuration read failed")
+                        result = resource_stream(
+                            current, persistent=applied or scenario not in ("fresh-boot", "try-without-persistent"),
+                            version=2 if scenario == "try-without-persistent" or applied else 1,
+                            mismatch=scenario == "pending-config")
+                        if scenario == "duplicate-config":
+                            result += "\n" + result
+                        if scenario == "missing-active":
+                            result = result.splitlines()[1]
+                        return result
                     if command[:3] == ("talosctl", "machineconfig", "patch"):
                         path = Path(command[3])
                         self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
@@ -271,7 +296,7 @@ class RolloutTest(unittest.TestCase):
                     if "image" in command:
                         self.assertEqual(command[-5:], ("image", "pull", "--namespace", "system", "registry.k8s.io/pause:3.10"))
                         self.assertTrue(applied)
-                        self.assertEqual(len(captures), 3, "Pull follows persistent configuration readback")
+                        self.assertEqual(len(captures), 3, "Pull follows active/persistent configuration readback")
                         self.assertEqual(calls[-2][:2], ("kubectl", "get"), "Pull follows node health check")
                         if scenario == "pull-failure":
                             raise RuntimeError("Native image pull failed")
@@ -287,7 +312,7 @@ class RolloutTest(unittest.TestCase):
                 output = io.StringIO()
                 with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
                         contextlib.redirect_stdout(output):
-                    if scenario in ("dry", "apply", "rollback", "custom-config", "prior-success", "later-page-success"):
+                    if scenario in ("dry", "apply", "rollback", "custom-config", "prior-success", "later-page-success", "fresh-boot"):
                         rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"), config_argument)
                     else:
                         with self.assertRaises(RuntimeError):
@@ -305,8 +330,8 @@ class RolloutTest(unittest.TestCase):
                     self.assertFalse(any(call[:2] == ("git", "merge-base") for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
-                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success"))
-                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success"))
+                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot"))
+                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot"))
                 if scenario in ("dry", "rollback", "rollback-reboot"):
                     self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
                 if scenario.startswith("rollback"):

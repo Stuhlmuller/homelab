@@ -3,17 +3,21 @@ type: architecture
 title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T22:48:00.170Z
 sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:43:46.551Z
 ---
 
 # GitOps Flow
@@ -92,13 +96,14 @@ The Cordium Application prunes removed repository-owned Kubernetes manifests;
 Cordium and Octelium resources generated through their native APIs remain
 outside Argo CD's tracking and are unaffected by that setting.
 
-Bazarr's public, human-authenticated native Octelium Service follows the existing single-Service
-operator pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
+Bazarr's retained legacy Octelium Service uses the single-Service recovery
+pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
 default and requires a clean checkout matching reviewed current `main` for
 `--execute`. It applies only `bazarr.default`, verifies unchanged human-only
 authorization and public routing, and requires a second apply with no changes.
-The Kubernetes application itself follows the protected Terragrunt registration
-and Argo CD sync path.
+The Kubernetes application follows protected Terragrunt registration and Argo CD.
+Current ingress uses the guarded private DNS/Traefik cutover; the recovery helper
+does not authorize restoring public DNS or the deleted restoration workflow.
 
 ## Tailscale ingress foundation
 
@@ -120,10 +125,13 @@ Funnel, or application readiness. The fixed ingress signer verifies the three
 operator-owned proxy identities before signing them; ordinary node approval
 does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
-Existing DNS, Cloudflare transport, and CI access remain during this foundation.
-Switch each only after its replacement passes the
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). This addition does not
-claim that traffic has moved or old native Octelium Services have been retired.
+Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
+removes the legacy public DNS helper and restoration workflow. External DNS
+writes still require the guarded operator command after signed proxy, TLS,
+backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
+old native catalog, credentials, and CI transport through their separate
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
+does not claim that traffic has moved or old native Services have been retired.
 
 ## Important Paths
 
@@ -207,10 +215,11 @@ changes during a deliberately scoped rollout. The earlier Azure credential gap
 is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
 advanced the current checkpoint. Mirror the reviewed Fleet/MySQL/Redis/bootstrap
 digests to Harbor with the fixed `image_scope=fleet` dispatch before registering
-the new app; reconcile the declared public DNS through
-`octelium-public-tunnel.yml`. The app's internal
-PostSync bootstrap creates its first administrator, followed by a verified
-database backup; both public setup API aliases remain blocked. See the
+the new app. The old public-DNS restoration workflow is removed; move Fleet's
+existing hostname to private mesh addresses through the guarded
+[DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Fleet has no Funnel
+route. The app's internal PostSync bootstrap creates its first administrator,
+followed by a verified database backup; both setup API aliases remain blocked. See the
 [Fleet rollout](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not

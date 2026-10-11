@@ -4,8 +4,8 @@ This overlay adopts the six bootstrap CoreDNS resources: ServiceAccount,
 ClusterRole, ClusterRoleBinding, ConfigMap, Deployment, and Service. It preserves
 the running CoreDNS `v1.12.4` image content, two replicas, scheduling, resource
 settings, and DNS Service address `10.96.0.10`.
-The existing Corefile remains unchanged. Argo CD pruning is disabled, and each
-resource also retains `Prune=false,Delete=false` protection.
+Argo CD pruning is disabled, and each resource also retains
+`Prune=false,Delete=false` protection.
 
 The manifests follow the
 [pinned Talos templates](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/k8s/internal/k8stemplates/coredns.go),
@@ -36,10 +36,12 @@ category filtering. On 2026-07-19, the Family resolvers returned `0.0.0.0` and
 the authoritative public addresses. The sinkhole response surfaced as a
 misleading HTTPS connection-refused error in Prowlarr.
 
-Inside Kubernetes, `octelium-api.stinkyboi.com` resolves to the dedicated
-`octelium-api-ingressgateway` Service. This split-horizon route keeps Cordium
-and other in-cluster Octelium clients independent of the router's WAN mapping;
-external clients continue to use public DNS.
+Inside Kubernetes, `octelium-api.stinkyboi.com` and `harbor.stinkyboi.com`
+resolve to `traefik-private.traefik.svc.cluster.local`. Traefik preserves their
+canonical TLS names and routes directly to the declared backends. Converge this
+Corefile only after Traefik, certificates, and upstream routes pass the
+[staged cutover gates](../../apps/traefik/CUTOVER.md). Internal callers then
+keep working when external DNS moves to private mesh addresses.
 
 Explicit public resolvers remain necessary because CoreDNS was observed on
 2026-05-25 forwarding through `169.254.116.108:53`, which timed out for AWS
@@ -60,12 +62,16 @@ kubectl get clusterissuer letsencrypt-cloudflare
 kubectl get certificate stinkyboi-wildcard -n istio-system
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 iptorrents.com
 kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 octelium-api.stinkyboi.com
+kubectl -n media exec deployment/prowlarr -c app -- getent ahostsv4 harbor.stinkyboi.com
+kubectl -n traefik get service traefik-private
 ```
 
 The Prowlarr lookup should return public addresses rather than `0.0.0.0`. The
-Octelium API lookup should return the gateway Service's ClusterIP.
+API and Harbor lookups should return the Traefik private Service's ClusterIP.
+Require working native Cordium API calls and Harbor pulls after the rewrite;
+DNS resolution alone does not prove upstream TLS or authorization.
 
 After the handoff, keep all six resources declared and retain the Application.
 Roll back resolver-policy changes by reverting the Corefile through GitOps.
 Returning ownership to Talos requires a separately reviewed handoff: its default
-Corefile omits the custom resolver and Octelium routing policy.
+Corefile omits the custom resolver and internal routing policy.

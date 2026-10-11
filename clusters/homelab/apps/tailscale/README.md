@@ -6,8 +6,9 @@ applied alongside the upstream `tailscale-operator` Helm chart.
 `namespace.yaml` owns the Pod Security labels for the `tailscale` namespace.
 The operator-managed exit-node Connector proxy requires privileged mode for
 kernel networking, so this namespace intentionally uses privileged Pod Security
-enforcement. Tailscale does not expose application Services; Octelium owns human
-app access.
+enforcement. The operator also exposes the private Traefik LoadBalancer, two
+path-limited Funnel proxies, and an authenticated Kubernetes API proxy. See the
+[ordered ingress cutover](../traefik/CUTOVER.md) before moving DNS or CI.
 
 ## Runtime Secret
 
@@ -39,35 +40,15 @@ revert the chart to `1.98.3` and sync the Argo CD Application.
 `homelab-exit-node`, tags it as `tag:k8s`, advertises it as an exit node, and
 advertises the homelab LAN route `10.1.0.0/24`.
 
-Keep this Connector during the Octelium cutover because it is the current
-remote Talos/LAN fallback. Normal app access and `kubectl` use Octelium; remove
-Tailscale only after those paths and a replacement Talos transport have been
-validated from outside the homelab.
+Keep this Connector for remote Talos/LAN access. Application traffic moves to
+private Traefik and CI moves to the operator API proxy in separate cutover
+phases. Cordium retains its restricted native Octelium Kubernetes Service.
 
-Tailnet policy must allow the operator tag to own `tag:k8s`:
-
-```json
-"tagOwners": {
-  "tag:k8s-operator": [],
-  "tag:k8s": ["tag:k8s-operator"]
-}
-```
-
-To avoid manual approval after every recreation, auto-approve exit-node and
-subnet-route advertisement for `tag:k8s` in the Tailscale policy:
-
-```json
-"autoApprovers": {
-  "exitNode": ["tag:k8s"],
-  "routes": {
-    "10.1.0.0/24": ["tag:k8s"]
-  }
-}
-```
-
-If auto-approval is not configured, approve `homelab-exit-node` as an exit node
-and approve the `10.1.0.0/24` route from the Machines page in the Tailscale
-admin console after Argo CD syncs this app.
+The complete reviewed policy and pre-signed CI auth keys are managed through
+the [Tailscale provider unit](../../../../IaC/modules/tailscale-access/README.md).
+That unit owns operator tag permissions and automatic exit-node/subnet-route
+approvals. Apply reviewed source through its saved-plan workflow; do not edit
+policy or approve devices manually to bypass a failed deployment.
 
 ## Validation
 

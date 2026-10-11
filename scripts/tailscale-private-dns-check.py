@@ -145,7 +145,7 @@ def routes(value, address=None):
             path = "/v2/" if hostname == "harbor.stinkyboi.com" else "/"
             status, headers = probe(test_host, address, path)
             accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and status == 404)
-            if hostname == "affine.stinkyboi.com" and status == 503:
+            if hostname == "affine.stinkyboi.com" and status in (502, 503):
                 accepted = affine_suspended()
             if not accepted:
                 raise RuntimeError(f"Traefik TLS/upstream readiness failed for {hostname}: HTTP {status}")

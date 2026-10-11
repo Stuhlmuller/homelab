@@ -254,11 +254,36 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         original, normalized, candidate = (directory / name for name in ("original.yaml", "normalized.yaml", "candidate.yaml"))
 
         def capture(path):
-            resource = json.loads(run(*client, "get", "machineconfig", "persistent", "-o", "json"))
-            if resource["metadata"]["id"] != "persistent" or not isinstance(resource["spec"], str):
-                raise RuntimeError("Expected the full persistent machine configuration")
-            path.write_text(resource["spec"])
+            # STATE-only boot publishes v1alpha1 but no persistent resource.
+            # Read the full document stream; never silently discard staged/try state.
+            stream = run(*client, "get", "machineconfig", "-o", "json").strip()
+            resources = {}
+            decoder = json.JSONDecoder()
+            while stream:
+                resource, end = decoder.raw_decode(stream)
+                metadata = resource["metadata"]
+                identity = metadata["id"]
+                if (identity not in ("v1alpha1", "persistent") or identity in resources
+                        or metadata.get("namespace") != "config"
+                        or metadata.get("type") != "MachineConfigs.config.talos.dev"
+                        or metadata.get("phase") != "running"
+                        or not isinstance(resource.get("spec"), str)):
+                    raise RuntimeError("Unexpected machine configuration resource")
+                resources[identity] = resource
+                stream = stream[end:].strip()
+            active = resources.get("v1alpha1")
+            if active is None:
+                raise RuntimeError("Active machine configuration is unavailable")
+            if "persistent" not in resources and active["metadata"].get("version") != 1:
+                raise RuntimeError("Active configuration changed since boot without a persistent counterpart")
+            path.write_text(active["spec"])
             path.chmod(0o600)
+            if "persistent" in resources:
+                persisted = path.with_suffix(".persistent.yaml")
+                persisted.write_text(resources["persistent"]["spec"])
+                persisted.chmod(0o600)
+                if documents(path) != documents(persisted):
+                    raise RuntimeError("Active and persistent configurations differ; resolve staged or try changes first")
 
         capture(original)
         # Normalize defaults with the same local parser, preserving every document.

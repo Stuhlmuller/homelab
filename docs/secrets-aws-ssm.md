@@ -372,32 +372,24 @@ claim supplies identity. Do not commit personal Entra identifiers into this
 public repo. Follow the [migration preflight](octelium.md#entra-identity-migration)
 before refreshing an older email-based mapping.
 
-The public Octelium control plane uses a Cloudflare Tunnel connector in
-`octelium-public`. Store the credentials JSON created by
-`cloudflared tunnel create homelab-octelium-public` in
-`/homelab/octelium/cloudflare-tunnel-credentials-json` and the tunnel UUID in
-`/homelab/octelium/cloudflare-tunnel-id`, then run
-`scripts/octelium-public-dns.sh` to route `stinkyboi.com`,
-`octelium.stinkyboi.com`, `portal.stinkyboi.com`,
-`octelium-api.stinkyboi.com`, `octelium-transport.stinkyboi.com`,
-`console.stinkyboi.com`, and the committed app
-hostnames
-through proxied CNAME records to the tunnel target
-`<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
-API token outside git. Cloudflare edge TLS uses the apex plus first-level
-`*.stinkyboi.com` shape; making `octelium.stinkyboi.com` the cluster domain
-would force the client onto the unsupported nested
-`octelium-api.octelium.stinkyboi.com` hostname.
+The legacy `octelium-public` Cloudflare Tunnel Deployment and its existing
+`/homelab/octelium/cloudflare-tunnel-credentials-json` and
+`/homelab/octelium/cloudflare-tunnel-id` contracts remain during staged cutover.
+Do not recreate public Tunnel DNS: the old DNS helper and restoration workflow
+are removed before changing application records. Credential retirement follows
+successful application, callback, CI, and Cordium acceptance in a separate change.
 
-Octelium's browser API uses HTTPS/gRPC-Web through the Tunnel. Native CLI
-and VPN sessions retain `octelium-api.stinkyboi.com` inside a TLS stream carried
-by `octelium-transport.stinkyboi.com`; configure the scoped local carrier
-before login as documented in the Octelium public app README.
-The protected `octelium-public-tunnel.yml` workflow requires an exact reviewed
-main SHA. Its existing production AWS role reads the cert-manager Cloudflare
-DNS token and Tunnel UUID from SSM to reconcile both API records as CNAMEs.
-DNS reconciliation needs only zone read and DNS edit. No token value enters
-git or workflow output.
+The canonical DNS helper reads the existing scoped cert-manager Cloudflare
+DNS token from SSM. It previews by default and writes only fixed DNS-only A/AAAA
+records to the verified Traefik Tailscale peer. It preserves legacy callback,
+CI, and carrier names during preparation. API responses and token values stay
+out of public logs. Follow the [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md)
+from a clean reviewed `main` checkout:
+
+```sh
+scripts/tailscale-private-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
+```
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

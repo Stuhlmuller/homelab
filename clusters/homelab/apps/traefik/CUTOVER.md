@@ -48,13 +48,14 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    LAN-only allowances rejected the first mapped node before Traefik. Wait for
    Argo convergence, then use the reviewed Talos host-only helper, workers first,
    and prove uncached image pulls from every node. Do not advance the remaining
-   nodes while the first pull fails. Converge any required internal CoreDNS,
-   application access, and n8n `WEBHOOK_URL` changes through their separate
-   GitOps change.
-2. Disable the legacy `octelium-public-tunnel.yml` DNS-restoration workflow
-   through a reviewed repository change and wait for in-flight runs to finish.
-   Keep its tunnel Deployment running. Do not dispatch the old DNS helper after
-   cutover: it can restore the public CNAMEs.
+   nodes while the first pull fails. Converge internal CoreDNS, additive
+   application access, and n8n `WEBHOOK_URL` changes through this reviewed
+   phase 2a GitOps change. Confirm n8n uses
+   `https://n8n-webhook.tail67beb.ts.net/` after its rollout.
+2. Phase 2a removes the legacy `octelium-public-tunnel.yml` DNS-restoration
+   workflow and `octelium-public-dns.sh`. Wait for any in-flight run to finish
+   before writing private DNS. Keep the tunnel Deployment running for remaining
+   legacy callers and rollback; neither deleted writer may restore public CNAMEs.
 3. Verify private TLS and upstream readiness at each published mesh address,
    then preview the fixed DNS changes:
 
@@ -62,6 +63,11 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    python3 -I scripts/tailscale-private-dns-check.py --check
    scripts/tailscale-private-dns.sh --dry-run
    ```
+
+   AFFiNE may return 502 or 503 while suspended because Traefik uses its static
+   ClusterIP backend. The check accepts either status only when the repository
+   and live Deployment both explicitly declare zero replicas and no live replicas
+   remain. Other application 5xx responses still fail readiness.
 
 4. Apply DNS from the reviewed clean checkout:
 
@@ -111,6 +117,10 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    hooks `589400612` and `636944763`. Both helpers preserve secrets and settings,
    preflight without triggering workflows, and save non-secret cutover receipts
    under `~/.local/state/homelab`. Do not delete these receipts before acceptance.
+   Policy Bot's safe GET preflight requires the POST-only hook's `404` plus one
+   valid backend `X-Request-ID`; the unrouted root must return `404` without that
+   header. This proves routing only, not HMAC acceptance. See the
+   [pinned application behavior](../policy-bot/README.md#validation).
    After naturally occurring deliveries, require fresh success:
 
    ```sh
@@ -124,6 +134,27 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    real admission-denial checks pass. Cordium CI additionally needs the canonical
    native API path from the runner. Change the shared native operator transport
    only after the operator's normal DNS/API path passes step 6.
+
+## October 10 ingress preflight evidence
+
+At 23:17–23:19 UTC, all 28 private canonical names passed strict TLS and route
+checks through the verified `100.99.16.74` ingress peer. AFFiNE returned 502
+with declared/live zero replicas; OpenClaw returned 200 and its `ai` Deployment
+was ready. Harbor retained its canonical HTTPS authentication realm, and both
+native API protocols passed. Traefik authorization/network policy specs matched
+reviewed main `e0da1da6`; Argo and the certificate were healthy.
+
+The same peer's IPv6 address refused connections. This is the supported boundary
+of the current single-stack IPv4 Service/kernel proxy, not an IPv6 acceptance.
+The signed operator API proxy's IPv6 remained reachable from the same Mac.
+Publish only Service-derived A records, with AAAA empty; see the
+[IP-family contract and primary sources](../../../../docs/networking-tailnet-ingress.md#dns-model).
+
+Twenty public Funnel root/admin/Host-spoof negatives returned 404; both n8n
+POST-only callback paths answered safe OPTIONS without execution. Policy Bot's
+GET-only backend/root distinction passed after correcting the helper's expected
+status to match its pinned POST-only router. These checks prove transport and
+routing, not authenticated user flows, callback delivery, DNS cutover or CI.
 
 ## Observed node readiness interruption
 

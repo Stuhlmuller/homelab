@@ -10,6 +10,8 @@ sources:
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -26,10 +28,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
+generated: { by: "codex", at: "2026-10-10T23:50:03.392Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:48:00.170Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Secrets And Identity
@@ -72,17 +74,19 @@ requires signatures in addition to enrollment. The unused federated identities
 remain protected until final migration retirement after signed-key acceptance.
 
 The fixed publisher reads sensitive encrypted-state outputs privately, verifies
-the trusted Mac's online homelab profile, signs with file-backed arguments, and
+the trusted Mac's online homelab profile, signs via `file:/dev/stdin`, and
 publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
 repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
 metadata confirmation must be followed by protected CI acceptance. Only after
 all three writes and metadata checks succeed does it delete the corresponding
 three unused client-ID variables. Exact-main and trusted-PR workflow gates still
-matter: these credentials do not encode GitHub OIDC subject claims.
+matter: these credentials do not encode GitHub OIDC subject claims. Raw signing
+keys stay out of arguments and temporary files; stdin avoids the macOS app
+sandbox refusing access to the private config directory.
 
-Wrapped keys contain a delegated private node-signing key, not the trusted
-credential authority's private voting key. The publisher requires exactly one
-new authority with matching auth-key metadata after signing, with every prior
+Wrapped keys contain a delegated private node-signing key, separate from the
+trusted credential authority's private voting key. The publisher requires exactly
+one new authority with matching auth-key metadata after signing, with every prior
 trust mapping unchanged. Its private `0600` cache records that separate public
 authority identity with the wrapper; reuse and retirement require a unique
 metadata match. Delegated node-signing capability exceeds normal tag enrollment
@@ -102,6 +106,13 @@ dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
 Apply retains cluster administration for existing bootstrap and RBAC ownership;
 Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
 until authenticated plan/apply and denial checks succeed over the new proxy.
+
+Phase 2a removes the old public DNS writer and restoration workflow while
+retaining Tunnel credentials, existing Octelium identities, and native carrier
+recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
+token to write only its fixed mesh A/AAAA inventory from reviewed current main.
+Credential retirement follows application, callback, CI, and Cordium acceptance;
+changing DNS alone does not authorize deleting those credentials.
 
 ## AWS SSM Pattern
 
@@ -314,15 +325,13 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-homelab-octelium-public`. The same tunnel is the external callback backbone
-  for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
-  routes remain unauthenticated at Octelium but path-limited in Istio and
-  validated by the receiving application credentials or signatures.
-  The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
-  production AWS role for SSM reads and the SSM-backed DNS token. Native TLS
-  gRPC uses the separate Tunnel TCP carrier. Token values never enter git or
-  workflow output.
+homelab-octelium-public`. This retained tunnel supports legacy callers only
+  until the staged replacement gates pass. Its public DNS writer and restoration
+  workflow are removed. The canonical mesh DNS helper reuses the scoped
+  cert-manager token; n8n and Policy Bot external registrations move to Funnel
+  through their fixed helpers, preserving credentials and requiring fresh signed
+  delivery receipts. Native carrier and CI secrets remain until separate
+  acceptance. Token values never enter git or workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -492,8 +501,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure
   the GitHub App webhook URL to
-  `https://policy-bot-hook.stinkyboi.com/api/github/hook` after the
-  `octelium-public` DNS/tunnel route is live; keep the webhook secret in
+  `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through the guarded
+  callback helper after Funnel routing and negative-path preflights pass;
+  require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
 - OctoBot currently has no repository-owned SSM contract. Its first-run setup,
   exchange credentials, tentacles, and strategy state live on the finance
