@@ -158,6 +158,14 @@ unit "argocd_apps_multica" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/multica/stack.hcl").inputs
 }
 
+unit "argocd_apps_nix_builder" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/nix-builder"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/nix-builder/stack.hcl").inputs
+}
+
 unit "argocd_apps_nofx" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/nofx"
