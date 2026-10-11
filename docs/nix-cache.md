@@ -71,6 +71,23 @@ does not restart or alter the Pod. Confirm the process has exited before
 retrying. If node exec is unavailable, cancellation cannot be confirmed;
 keep builds held and diagnose the node through the declared recovery path.
 
+The first Linux attempt on 2026-10-11 stopped during dependency substitution.
+All four nodes were Ready before it started. `zimaboard-0` last renewed its
+kubelet lease at 15:42:14 UTC, then became NotReady while runtime service
+health changed. Last observed builder cgroup peak was 620,990,464 bytes with
+zero OOM events; subsequent host inspection showed only 543 MiB available.
+These observations do not establish the cause. ClickHouse OOM messages in
+kernel history were from October 9 at 06:37 UTC, not this incident.
+
+Stopping the local publisher left its remote Nix build alive. The controller
+later replaced the Pod; cancellation reached the replacement and found no
+matching process. Independent Talos process inspection subsequently confirmed
+that the old process and every `nix build` command were gone, and all four
+nodes plus kubelet, CRI, and containerd were healthy again. No manual node or
+service recovery mutation was performed, and no signed outputs were published.
+Keep retries held until cancellation lifecycle and resource preflight are
+reviewed; preserve raw incident diagnostics in private operator storage.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input
