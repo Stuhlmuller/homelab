@@ -98,6 +98,14 @@ cleanup() {
       mirror_category="rate-limited"
     elif grep -Fqi 'no space left on device' "$scratch/mirror-error"; then
       mirror_category="storage-full"
+    elif grep -Eiq 'quota exceeded|exceed[^[:cntrl:]]*quota' "$scratch/mirror-error"; then
+      mirror_category="quota-exceeded"
+    elif grep -Eiq '403 Forbidden|HTTP status(:| code:?)?[[:space:]]*403|status code:?[[:space:]]*403' "$scratch/mirror-error"; then
+      mirror_category="http-forbidden"
+    elif grep -Eiq '413 Request Entity Too Large|HTTP status(:| code:?)?[[:space:]]*413|status code:?[[:space:]]*413' "$scratch/mirror-error"; then
+      mirror_category="request-too-large"
+    elif grep -Eiq 'HTTP status(:| code:?)?[[:space:]]*5[0-9]{2}|status code:?[[:space:]]*5[0-9]{2}|50[234] (Bad Gateway|Service Unavailable|Gateway Timeout)' "$scratch/mirror-error"; then
+      mirror_category="server-error"
     elif grep -Eiq 'unauthorized|authentication required|access denied|denied:' "$scratch/mirror-error"; then
       mirror_category="authentication-denied"
     elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then
@@ -204,10 +212,21 @@ if [[ "$mode" == mirror ]]; then
           ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
         exit "$lookup_status"
       fi
-      mirror_phase="upstream-copy"
+      mirror_phase="upstream-download"
+      upstream_directory="$(mktemp -d "$scratch/upstream.XXXXXX")"
+      skopeo copy --all --preserve-digests --src-no-creds \
+        --src-authfile "$scratch/anonymous-auth.json" \
+        "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"
+      mirror_phase="upstream-verify"
+      skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
+      mirror_category="digest-mismatch"
+      [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+      mirror_category="command-failed"
+      mirror_phase="destination-copy"
       skopeo copy --all --preserve-digests --src-no-creds \
         --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
-        "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+        "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
       skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
         "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"
@@ -261,6 +280,12 @@ for name in homelab-nofx-backend homelab-nofx-frontend; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
+  pull_directory="$(mktemp -d "$scratch/published-pull.XXXXXX")"
+  skopeo copy --all --preserve-digests --src-authfile "$scratch/auth.json" \
+    "docker://${destination}@${destination_digest}" "dir:${pull_directory}"
+  skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
+  [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$destination_digest" ]]
+  rm -rf -- "$pull_directory"
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
 done
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0b10784b12762ef48b1d934abfe9581920c5355ca2111c0b981fb93023e1820f",
+  "pageVersion": "sha256:bc8d4648fdccd42e67a10e6f7ef31f183e579ba5076f498fa88606592ac1edd3",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:93e4579341c1814a3c60d3210f890f1c0bc22898e4e1e8e1bbd5f9c148e70450"
+          "version": "repo-file-v1:sha256:f686cb19d2c9e0a69d07676e370f4e7642138f1d65206b6a5ad00de7cd545a7d"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:fc83261744f73ba27c5a09e5cc50248dd91bc815b070ff389e9160eabe040b96"
+          "version": "repo-file-v1:sha256:14cfbca3624f8eb0bea7607f18763b4779a9ce9f8587e5b8b66502885354cc6d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -279,10 +279,24 @@
           "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
         }
       ]
+    },
+    {
+      "id": "claim_c8d1d8145a2b4e69a53f7cdb9c5c583a",
+      "statement": "Harbor publication regressions include a native offline Skopeo test using generated local OCI fixtures with network transports rejected, requiring original root and both platform-child manifest digests and repeated descriptors to survive directory staging and a second copy; this does not prove Harbor publication, signature accessories or live consumers.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:14cfbca3624f8eb0bea7607f18763b4779a9ce9f8587e5b8b66502885354cc6d"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh#L46-L46",
+          "version": "repo-lines-v1:sha256:30e180a54130f6b895a1a8fa3bf5a3f9290c84635080c82788d00b2bde9c3b8b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzBlMTgwYTU0MTMwZjZiODk1YTFhOGZhM2JmNWEzZjkyOTBjODQ2MzUwODBjODI3ODhkMDBiMmJkZTljM2I4YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzBlMTgwYTU0MTMwZjZiODk1YTFhOGZhM2JmNWEzZjkyOTBjODQ2MzUwODBjODI3ODhkMDBiMmJkZTljM2I4YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWQxMDg4MWQ4ZDkxOWJlMjJkZDMxMzQ3MjcyOWMyYTFlMTdjMjM4ZDAzY2QxNzc0Y2UxMTNmNzQwYzA5MmY4NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQ0OGMyODgyNjY3MWQ2NjQ3YjAxNTFhMDFkMjc2MmM1NjI2N2I0MGZhMzk1ZTlkZTc0NGVmZGU0MzE4ZDM2NSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-11T16:45:39.177Z"
   }
 }
