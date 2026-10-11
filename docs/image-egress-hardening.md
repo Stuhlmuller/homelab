@@ -66,6 +66,27 @@ credentials are assumed; approved exceptions remain Harbor-hosted.
 
 ## Egress enforcement contract
 
+### Source policy audit, 2026-10-10
+
+Parsing every YAML document under `clusters/` found 44 authored
+`NetworkPolicy` objects. This excludes chart-generated policies and is not a
+live effective-policy audit. Kubernetes combines matching policies additively;
+an ingress-only object does not establish whether another policy isolates the
+same Pod's egress.
+
+| Source | Gap requiring dependency review |
+| --- | --- |
+| [NOFX](../clusters/homelab/apps/nofx/networkpolicy.yaml) | Backend `egress: [{}]` permits every destination and port; frontend has only ingress rules. Inventory configured model/exchange endpoints and the historical-data feed before replacing this allowance. |
+| [Cordium](../clusters/homelab/apps/cordium/networkpolicy.yaml) | Genesis permits `10.0.0.0/8` on 443/8080/6443; cluster-config permits all IPv4 destinations on 443. Resolve API, controller and external bootstrap dependencies separately. |
+| [Cloudflared](../clusters/homelab/apps/octelium-public/networkpolicy.yaml) | Public IPv4 TCP 443 and TCP/UDP 7844 remain broadly allowed despite private-range exclusions. Tunnel edge traffic needs its documented destination contract; HTTPS alone is not a domain allowlist. |
+| Affine, Bazarr, Dispatcharr PostgreSQL, Fleet, Harbor, Langfuse, LiteLLM PostgreSQL, media PostgreSQL, Multica, n8n PostgreSQL, Octelium demo/storage/backups, OpenClaw, policy-bot, Traefik | Authored policies contain ingress-only objects. Inventory effective selectors, chart policies, controller/API access, DNS, storage, backups, callbacks and external services before adding egress isolation. |
+
+Before activation, join rendered and live policies to actual Pod labels and
+service accounts, including Jobs, init containers and operator-created Pods.
+Review both IP families, Service DNAT and ambient HBONE. Do not infer isolation
+from policy names, an individual policy, or an allowed destination's port.
+Image pulls require node-to-Harbor access, not application-pod registry egress.
+
 The cluster uses Istio ambient and Flannel. Flannel does not enforce the
 existing Kubernetes NetworkPolicy objects. Istio AuthorizationPolicy currently
 restricts inbound traffic for selected meshed workloads; it does not deny all
