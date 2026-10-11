@@ -35,8 +35,8 @@ def prepare(destination):
     shutil.copyfile(destination / "upstream/src/pkg/artifact/manager.go",
                     destination / "homelab-build/original-manager.go")
     patches = sorted((recipe / "patches").glob("*.patch"))
-    if len(patches) != 2:
-        raise ValueError("expected both committed regression and repair patches")
+    if len(patches) != 3:
+        raise ValueError("expected committed regression, repair and dependency patches")
     for patch in patches:
         subprocess.run(["git", "apply", "--check", str(patch)], cwd=destination / "upstream", check=True)
         subprocess.run(["git", "apply", str(patch)], cwd=destination / "upstream", check=True)

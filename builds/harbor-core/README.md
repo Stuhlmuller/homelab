@@ -16,6 +16,19 @@ API bindings use upstream's pinned Swagger v0.33.1 and committed templates.
 It replaces only `/harbor/harbor_core`. All four current nodes are amd64;
 other architectures require a separately tested build.
 
+The dependency patch requires Go 1.27.2 and updates affected NTLM, networking,
+crypto, Helm, telemetry and compression libraries to the resolved current
+versions. The advisory-recommended `filippo.io/csrf/gorilla` compatibility
+package replaces gorilla/csrf. It preserves the response token header while
+enforcing browser origin/Fetch metadata; tokens are no longer the check, and
+nonbrowser requests remain allowed. Native tests cover UI/session-origin
+denials, valid same-origin requests and the existing non-session API exemption.
+Harbor's declared CSRF key contract and invalid-key refusal remain intact.
+
+A local Linux binary scan after these changes still reports four Distribution
+v2 findings and one x/crypto finding as unfixed/unknown. Do not suppress these
+or treat the binary-only scan as final container or deployed-digest acceptance.
+
 Run `bash builds/harbor-core/build.sh` on a Linux Docker host. Its native build
 first requires the unpatched manager to fail the repeated-child regression,
 then requires the repaired manager suite and complete core compilation to pass

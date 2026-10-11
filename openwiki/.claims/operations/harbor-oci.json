@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7c50a4e38baaad0568f6271caeedf5aa9f2edcd4aa7cddbef83bb186c3a04837",
+  "pageVersion": "sha256:b148b87b6244eec2bbf70d733f3473a6ddce676b19bc7b3d339fab9e78149c2e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -132,7 +132,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:9b4bf96d2aa07e94880e8ae1890e5206097910b1ecc10b787e7dcac4e049cc6e"
+          "version": "repo-file-v1:sha256:309c0de4e9e3690cb0a2d7ef39afa82eaf89c5b8b92e78f75ccb4b84514bded4"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -150,11 +150,11 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:e6d6ba15fce958011371547b1537a0a32e52d3f31f683a797d8dee57b33905e5"
+          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
         },
         {
           "resource": "repo://builds/harbor-core/prepare-source.py",
-          "version": "repo-file-v1:sha256:38e4c0728b418dc43d33d40c23043af35a0e1c0b6962452bb4876549e8164459"
+          "version": "repo-file-v1:sha256:994031d060b602448a062deb2750799935eb48a3c30ba336ec1a36c8a879853c"
         }
       ]
     },
@@ -168,7 +168,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:9b4bf96d2aa07e94880e8ae1890e5206097910b1ecc10b787e7dcac4e049cc6e"
+          "version": "repo-file-v1:sha256:309c0de4e9e3690cb0a2d7ef39afa82eaf89c5b8b92e78f75ccb4b84514bded4"
         }
       ]
     },
@@ -192,7 +192,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:e6d6ba15fce958011371547b1537a0a32e52d3f31f683a797d8dee57b33905e5"
+          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
@@ -213,10 +213,38 @@
           "version": "repo-file-v1:sha256:daeece3b13ba60ece6b36a273344357717594ee585fd0f49f3ef91cd9668d7fc"
         }
       ]
+    },
+    {
+      "id": "claim_69e9dd8b8009438fa6927a189eccf406",
+      "statement": "The third Harbor source patch requires Go 1.27.2, upgrades the reported NTLM/networking/crypto/Helm/telemetry/compression dependencies, and replaces gorilla/csrf with filippo.io/csrf/gorilla. Browser origin/Fetch metadata enforce CSRF while legacy response token headers, the declared key contract, invalid-key refusal and non-session API exemption remain; tokens no longer provide the check and nonbrowser requests are allowed.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:309c0de4e9e3690cb0a2d7ef39afa82eaf89c5b8b92e78f75ccb4b84514bded4"
+        },
+        {
+          "resource": "repo://builds/harbor-core/csrf-compat_test.go",
+          "version": "repo-file-v1:sha256:e1db3ea7a3470aa44476a8b6a96d6fb41699733de7fa2487445f321882a68a2b"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
+          "version": "repo-file-v1:sha256:7363e957cac7bd7f0974f4c0aeb2e6b07d679a79f5c8efad7a866695d3eadd72"
+        }
+      ]
+    },
+    {
+      "id": "claim_9bd558899cbf498e8c35ff6533161c16",
+      "statement": "The dated rebuilt Linux binary scan receipt records five remaining matches with no finding exclusions: four Distribution v2 advisories and one x/crypto advisory, all unfixed/unknown, with two high, two medium and one unknown severity. It explicitly denies final-container or deployed-digest CVE clearance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/harbor-core-binary-scan-2026-10-11.json",
+          "version": "repo-file-v1:sha256:525d3a6620439a6305dd746dee26107de4a7cef6f4117f2ff778947dc4954aa0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T18:47:24.043Z"
+    "at": "2026-10-11T19:03:26.465Z"
   }
 }

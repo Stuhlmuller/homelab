@@ -12,10 +12,14 @@ sources:
     resource: repo://.talos/patches/harbor-registry-host.yaml
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
+  - id: openwiki-source-5a4bc495baa769b6a5e9cae2
+    resource: repo://builds/harbor-core/csrf-compat_test.go
   - id: openwiki-source-8ab7fab142e4f564e8f17f97
     resource: repo://builds/harbor-core/Dockerfile
   - id: openwiki-source-8867139a733ec283c1c15d63
     resource: repo://builds/harbor-core/patches/0002-identical-reference-relations.patch
+  - id: openwiki-source-06f6e19e20cbeda12ce6f3b0
+    resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
   - id: openwiki-source-e63f21a2fc45e0b39144df0d
     resource: repo://builds/harbor-core/prepare-source.py
   - id: openwiki-source-d8462ae63760d7635fda38ef
@@ -34,6 +38,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-48227484d35c61f86c7d08ff
     resource: repo://docs/evidence/harbor-core-base-scan-2026-10-11.json
+  - id: openwiki-source-648b2cb9046d6972d8b44428
+    resource: repo://docs/evidence/harbor-core-binary-scan-2026-10-11.json
   - id: openwiki-source-291f8c32edb318126465429b
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -46,10 +52,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T18:47:24.043Z" }
+generated: { by: "codex", at: "2026-10-11T19:03:26.465Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T18:47:24.043Z
+    at: 2026-10-11T19:03:26.465Z
 ---
 
 # Harbor Private OCI Registry
@@ -303,7 +309,7 @@ annotation metadata fails before any DAO write. The artifact digest and
 descriptor list remain intact; this repair changes no registry index bytes or
 database schema.
 
-The recipe verifies the archive before safe extraction and checks both committed
+The recipe verifies the archive before safe extraction and checks all three committed
 patches. Native tests reproduce the unpatched unique-reference failure, then
 require the repaired manager suite and complete core compilation. API bindings
 use upstream's pinned Swagger v0.33.1 and templates. Image build tests run
@@ -358,6 +364,24 @@ four report no fix and two have unknown fix state. These are scanner matches,
 not proven exploitability or results for the rebuilt candidate. Remediate the
 compiler/dependency findings, inspect unresolved advisories against source and
 reachability, then scan the exact rebuilt Linux image before publication.
+
+The [dependency patch](../../builds/harbor-core/patches/0003-security-dependencies.patch)
+requires Go 1.27.2 and pins resolved updates for NTLM, networking, crypto, Helm,
+telemetry and compression. It replaces gorilla/csrf with the advisory-recommended
+`filippo.io/csrf/gorilla` compatibility package. Browser protection now checks
+origin/Fetch metadata; response token headers remain, but tokens are ignored and
+nonbrowser requests remain allowed. The declared key contract and invalid-key
+refusal stay intact. The complete middleware suite and ten
+[browser/session compatibility cases](../../builds/harbor-core/csrf-compat_test.go)
+passed locally against Harbor's actual middleware.
+
+The [rebuilt Linux binary receipt](../../docs/evidence/harbor-core-binary-scan-2026-10-11.json)
+still records five matches: four Distribution v2 advisories and one x/crypto
+advisory, all unfixed/unknown (two high, two medium, one unknown severity).
+This binary-only audit is separate from the upstream base audit and final
+container acceptance. Inspect and remediate these remaining findings; rerun
+the Linux image/registry fixture after the dependency change and scan the exact
+final container before protected publication. Do not filter away unresolved findings.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 

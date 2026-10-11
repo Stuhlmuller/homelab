@@ -8,8 +8,12 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
+  - id: openwiki-source-5a4bc495baa769b6a5e9cae2
+    resource: repo://builds/harbor-core/csrf-compat_test.go
   - id: openwiki-source-8ab7fab142e4f564e8f17f97
     resource: repo://builds/harbor-core/Dockerfile
+  - id: openwiki-source-06f6e19e20cbeda12ce6f3b0
+    resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
   - id: openwiki-source-4809fcf6b821691d424ca089
     resource: repo://builds/harbor-core/registry-test.py
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -76,10 +80,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T18:27:07.104Z" }
+generated: { by: "codex", at: "2026-10-11T19:03:26.465Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T18:27:07.104Z
+    at: 2026-10-11T19:03:26.465Z
 ---
 
 # Validation Gates
@@ -1433,6 +1437,11 @@ The credential-free Linux `harbor-core-compatibility` job builds the pinned
 candidate: original repeated-child failure must precede repaired manager tests,
 upstream API generation and complete core compilation. Networking is disabled
 for tests/build after dependency download. No production inputs are mounted.
+The candidate also runs the complete CSRF middleware suite and ten browser/session
+compatibility cases against the replacement library. They require valid same-origin
+requests and legacy response headers, reject cross-site/same-site browser requests,
+and retain the non-session API exemption. The middleware unit tests use in-memory
+configuration; their unused PostgreSQL bootstrap is removed.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
 with exactly one database relation. Offline fixtures also validate the OCI

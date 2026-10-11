@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d525651f6621307be75d0943510b4661a4a193b7ce2c22105325b65f767c20b6",
+  "pageVersion": "sha256:0448e66001c660d84b885ecdd60cbbef3d8bb1a1a3bc170d99d7ef4a9109835f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -290,11 +290,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:e6d6ba15fce958011371547b1537a0a32e52d3f31f683a797d8dee57b33905e5"
+          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:73c9713832099feaa57b71681733302758721143077100587a755a318dea4628"
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -316,13 +316,31 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:73c9713832099feaa57b71681733302758721143077100587a755a318dea4628"
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+        }
+      ]
+    },
+    {
+      "id": "claim_d646b4dc1e7f451ab5dfec678e40706d",
+      "statement": "The candidate build runs the complete CSRF middleware tests and ten browser/session compatibility cases against the replacement dependency with networking disabled; cases require valid same-origin requests and legacy headers, deny cross-site/same-site browser requests and preserve the non-session API exemption. The middleware unit tests use in-memory configuration without their former unused PostgreSQL bootstrap.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
+        },
+        {
+          "resource": "repo://builds/harbor-core/csrf-compat_test.go",
+          "version": "repo-file-v1:sha256:e1db3ea7a3470aa44476a8b6a96d6fb41699733de7fa2487445f321882a68a2b"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
+          "version": "repo-file-v1:sha256:7363e957cac7bd7f0974f4c0aeb2e6b07d679a79f5c8efad7a866695d3eadd72"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T18:27:07.104Z"
+    "at": "2026-10-11T19:03:26.465Z"
   }
 }
