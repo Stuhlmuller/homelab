@@ -10,6 +10,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-d776ebf3a4d179a97fb3c239
+    resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-8ab7fab142e4f564e8f17f97
     resource: repo://builds/harbor-core/Dockerfile
   - id: openwiki-source-8867139a733ec283c1c15d63
@@ -18,6 +20,8 @@ sources:
     resource: repo://builds/harbor-core/prepare-source.py
   - id: openwiki-source-d8462ae63760d7635fda38ef
     resource: repo://builds/harbor-core/README.md
+  - id: openwiki-source-4809fcf6b821691d424ca089
+    resource: repo://builds/harbor-core/registry-test.py
   - id: openwiki-source-8747f81e985430015cf21baf
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -38,10 +42,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T17:50:33.676Z" }
+generated: { by: "codex", at: "2026-10-11T18:06:48.667Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T17:50:33.676Z
+    at: 2026-10-11T18:06:48.667Z
 ---
 
 # Harbor Private OCI Registry
@@ -302,12 +306,23 @@ use upstream's pinned Swagger v0.33.1 and templates. Image build tests run
 without networking after dependency download; the runtime preserves the
 upstream payload, user and entrypoint and declares its loopback health probe.
 
+The [disposable registry fixture](../../builds/harbor-core/registry-test.py)
+then prepares pinned v2.15.4 services with this candidate core. Its only published
+port is `127.0.0.1:18085`; the service network denies external traffic. Eight
+identical OCI child descriptors must survive a push and complete pull unchanged,
+including the child manifest and both blobs. The PostgreSQL query requires one
+parent/child relation. Temporary credentials, containers, network and data are
+fixture-owned and removed on exit. This gate uses no production inputs; passing
+it remains separate from original full-catalog and live publication acceptance.
+
 ```mermaid
 flowchart TD
     Source["Verify pinned source archive"] --> Baseline["Require original duplicate-reference failure"]
     Baseline --> Repair["Reject conflicts and deduplicate identical relations"]
     Repair --> Compile["Pass manager tests and compile core"]
     Compile --> Candidate["Build held runtime candidate"]
+    Candidate --> Registry["Push and pull unchanged repeated index in disposable Harbor"]
+    Registry --> Database["Require one PostgreSQL child relation"]
 ```
 
 The candidate's build gate checks original failure and repaired behavior before

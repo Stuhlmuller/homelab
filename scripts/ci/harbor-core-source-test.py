@@ -2,6 +2,7 @@
 """Check the core source trust boundary without network or production inputs."""
 
 import hashlib
+import gzip
 import importlib.util
 import io
 import json
@@ -13,6 +14,30 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+class RegistryFixtureTests(unittest.TestCase):
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location("registry_fixture", ROOT / "builds/harbor-core/registry-test.py")
+        self.fixture = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.fixture)
+
+    def test_repeated_index_and_every_blob_are_self_consistent(self):
+        config, layer, child, index = self.fixture.fixture_payloads()
+        descriptors = json.loads(index)["manifests"]
+        self.assertEqual(len(descriptors), 8)
+        self.assertTrue(all(item == descriptors[0] for item in descriptors))
+        self.assertEqual(descriptors[0]["digest"], self.fixture.digest(child))
+        manifest = json.loads(child)
+        self.assertEqual(manifest["config"]["digest"], self.fixture.digest(config))
+        self.assertEqual(manifest["layers"][0]["digest"], self.fixture.digest(layer))
+        self.assertEqual(json.loads(config)["rootfs"]["diff_ids"], [self.fixture.digest(gzip.decompress(layer))])
+
+    def test_upload_location_cannot_escape_disposable_endpoint(self):
+        with patch.object(self.fixture.urllib.request, "urlopen") as network:
+            with self.assertRaises(AssertionError):
+                self.fixture.request("PUT", "https://registry.invalid/upload", b"fixture")
+        network.assert_not_called()
 
 
 class SourceTests(unittest.TestCase):

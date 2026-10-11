@@ -21,10 +21,17 @@ first requires the unpatched manager to fail the repeated-child regression,
 then requires the repaired manager suite and complete core compilation to pass
 with networking disabled after dependency download.
 
+The same command then prepares an isolated upstream Harbor stack with pinned
+v2.15.4 component images and the candidate core. Its registry endpoint binds
+only `127.0.0.1:18085`; its service network denies external access. A tiny OCI
+image with eight identical child descriptors must push and pull unchanged,
+including every blob, while PostgreSQL stores exactly one child relation.
+The fixture owns temporary credentials/data and removes its containers,
+network and files on exit. No cluster or production registry credentials apply.
+
 This is a build prerequisite, not a rollout or CVE-free acceptance claim.
-Docker is unavailable on the current macOS operator host. Require Linux image
-build, real disposable Harbor/PostgreSQL index push/pull, unchanged raw index
-digests, complete private scans and protected publication before changing
+Docker is unavailable on the current macOS operator host. Require the Linux
+build and registry fixture to pass, complete private scans and protected publication before changing
 consumers. Couple any v2.15.4 rollout with the matching chart/components and
 verified database/blob/key backups. Keep the upstream cold-bootstrap and
 rollback images; do not alter the live uniqueness constraint as a workaround.

@@ -6,8 +6,12 @@ tags: ["operations", "validation"]
 sources:
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
+  - id: openwiki-source-d776ebf3a4d179a97fb3c239
+    resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-8ab7fab142e4f564e8f17f97
     resource: repo://builds/harbor-core/Dockerfile
+  - id: openwiki-source-4809fcf6b821691d424ca089
+    resource: repo://builds/harbor-core/registry-test.py
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -72,10 +76,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T17:50:33.676Z" }
+generated: { by: "codex", at: "2026-10-11T18:06:48.667Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T17:50:33.676Z
+    at: 2026-10-11T18:06:48.667Z
 ---
 
 # Validation Gates
@@ -1429,7 +1433,11 @@ The credential-free Linux `harbor-core-compatibility` job builds the pinned
 candidate: original repeated-child failure must precede repaired manager tests,
 upstream API generation and complete core compilation. Networking is disabled
 for tests/build after dependency download. No production inputs are mounted.
-These checks do not prove real Harbor/PostgreSQL pushes or CVE-free publication;
+The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
+unchanged registry push/pull of eight repeated child descriptors and all blobs,
+with exactly one database relation. Offline fixtures also validate the OCI
+payload hashes and reject upload locations outside the disposable endpoint.
+Passing this fixture does not prove full-catalog or CVE-free publication;
 see the [candidate gates](../../builds/harbor-core/README.md).
 
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression

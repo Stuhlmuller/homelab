@@ -8,3 +8,4 @@ python3 -I "$recipe_dir/prepare-source.py" "$context"
 docker build --platform=linux/amd64 --file "$context/Dockerfile" \
   --tag homelab-harbor-core:build "$context"
 test "$(docker image inspect --format '{{.Os}}/{{.Architecture}}' homelab-harbor-core:build)" = linux/amd64
+python3 -I "$recipe_dir/registry-test.py" "$context"
