@@ -73,7 +73,9 @@ jobs:
           python -m prisma generate --schema "$(python -c 'from pathlib import Path; import litellm; print(Path(litellm.__file__).parent / "proxy/schema.prisma")')"
           python scripts/ci/litellm-attribution-check.py
           python scripts/ci/litellm-native-auth-test.py
-          nix develop --command env -u PYTHONPATH "${VIRTUAL_ENV}/bin/python" scripts/ci/litellm-native-database-test.py
+          python -m pip download --no-deps --only-binary=:all: 'litellm-proxy-extras==0.4.11' --dest "${RUNNER_TEMP}/litellm-legacy"
+          legacy_wheel="${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl"
+          nix develop --command env -u PYTHONPATH "${VIRTUAL_ENV}/bin/python" scripts/ci/litellm-native-database-test.py "$legacy_wheel"
 
       - name: Check pinned gateway image runtime
         run: |
@@ -93,8 +95,7 @@ jobs:
               --cap-drop ALL --security-opt no-new-privileges \
               --tmpfs /tmp:rw,noexec,nosuid,nodev,size=256m \
               --mount "type=bind,source=$PWD,target=/workspace,readonly" \
-              --workdir /workspace --entrypoint /app/.venv/bin/python \
-              "$image" "scripts/ci/$fixture"
+              --workdir /workspace --entrypoint /app/.venv/bin/python "$image" "scripts/ci/$fixture"
           done
 
       - name: Secret scan

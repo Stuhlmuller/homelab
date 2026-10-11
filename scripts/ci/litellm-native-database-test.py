@@ -3,11 +3,13 @@
 import asyncio
 import importlib
 import json
+import hashlib
 from pathlib import Path
 import subprocess
 import shutil
 import sys
 import tempfile
+import zipfile
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 from urllib.parse import quote
@@ -186,7 +188,57 @@ def check_config(directory):
             pass
 
 
+def check_upgrade(directory, socket, wheel):
+    assert hashlib.sha256(wheel.read_bytes()).hexdigest() == "ef63f497e46b2ed856c6e94802357b34ffcf29bef77c9993081fb355bba2f1e4", "Use the reviewed 0.4.11 migration wheel"
+    legacy = directory / "legacy"
+    with zipfile.ZipFile(wheel) as archive:
+        for name in archive.namelist():
+            if name.startswith("litellm_proxy_extras/") and (name.endswith("schema.prisma") or "/migrations/" in name) and not name.endswith("/"):
+                relative = Path(name).relative_to("litellm_proxy_extras")
+                assert ".." not in relative.parts and not relative.is_absolute()
+                target = legacy / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(archive.read(name))
+    run("createdb", "-h", socket, "-U", "fixture", "-O", "litellm", "litellm-upgrade")
+    url = "postgresql://litellm@localhost/litellm-upgrade?host=" + quote(str(socket), safe="")
+    candidate = directory / "candidate"
+    shutil.copytree(ProxyExtrasDBManager._get_prisma_dir(), candidate)
+    history_command = ("psql", "-X", "-h", socket, "-U", "litellm", "-d", "litellm-upgrade", "-tA", "-c",
+                       'SELECT migration_name || \':\' || checksum FROM "_prisma_migrations" ORDER BY migration_name')
+    legacy_token = hashlib.sha256(b"synthetic legacy fixture").hexdigest()
+    for source in (legacy, candidate):
+        schema = source / "schema.prisma"
+        schema.write_text(schema.read_text().replace('env("DATABASE_URL")', json.dumps(url)))
+        run(sys.executable, "-m", "prisma", "migrate", "deploy", "--schema", schema)
+        if source == legacy:
+            legacy_history = set(run(*history_command).stdout.splitlines())
+            assert legacy_history, "Previous migration history must exist before upgrading"
+            run("psql", "-X", "-h", socket, "-U", "litellm", "-d", "litellm-upgrade", "-v", "ON_ERROR_STOP=1", "-c", f'''
+                INSERT INTO "LiteLLM_UserTable" (user_id,user_role,models)
+                VALUES ('legacy-app','internal_user',ARRAY['openrouter/free']);
+                INSERT INTO "LiteLLM_VerificationToken" (token,key_alias,user_id,models,allowed_routes,blocked,metadata)
+                VALUES ('{legacy_token}','legacy-fixture','legacy-app',ARRAY['openrouter/free'],
+                        ARRAY['/v1/chat/completions'],true,'{{"fixture":"Unicode λ"}}'::jsonb);
+            ''')
+    assert legacy_history <= set(run(*history_command).stdout.splitlines()), "Upgrade must preserve the previous migration ledger"
+
+    async def verify():
+        client = Prisma(datasource={"url": url})
+        await client.connect()
+        try:
+            key = await client.litellm_verificationtoken.find_unique(where={"token": legacy_token})
+            user = await client.litellm_usertable.find_unique(where={"user_id": "legacy-app"})
+            assert key.key_alias == "legacy-fixture" and key.blocked
+            assert key.models == ["openrouter/free"] and key.allowed_routes == ["/v1/chat/completions"]
+            assert key.metadata == {"fixture": "Unicode λ"} and user.user_role == "internal_user"
+        finally:
+            await client.disconnect()
+
+    asyncio.run(verify())
+
+
 def main():
+    assert len(sys.argv) == 2, "Pass the pinned previous migration wheel"
     with tempfile.TemporaryDirectory(prefix="litellm-db-", dir="/tmp") as temporary:
         directory = Path(temporary)
         data, socket = directory / "data", directory / "socket"
@@ -207,9 +259,11 @@ def main():
             fixture_schema.write_text(fixture_schema.read_text().replace('env("DATABASE_URL")', json.dumps(url)))
             run(sys.executable, "-m", "prisma", "migrate", "deploy", "--schema", fixture_schema)
             asyncio.run(check_database(url, directory))
+            check_upgrade(directory, socket, Path(sys.argv[1]))
         finally:
             run("pg_ctl", "-D", data, "-w", "-t", "30", "-m", "immediate", "stop")
     print("Native PostgreSQL keys: atomic import, concurrency, UI revocation/rotation, provider encryption and fail-closed reads passed")
+    print("Previous migrations to candidate: persisted key identity, restrictions, blocking and Unicode metadata preserved")
 
 
 if __name__ == "__main__":

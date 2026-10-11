@@ -20,7 +20,15 @@ schema. They require revocation and route/model limits, rejection of the former
 Host bypass, early credential redaction, one deduplicated failure span, safe
 streaming telemetry and unchanged exception identity. Disposable PostgreSQL
 checks cover atomic key import, concurrency, UI rotation/revocation, encrypted
-provider storage and fail-closed reads. These checks use fixture data only.
+provider storage and fail-closed reads. A separate database applies the previous
+0.4.11 package's migrations, seeds key identity/restrictions/blocking and Unicode
+metadata, then applies candidate migrations and reads that state with the new
+client. The previous wheel is checksum-pinned before any SQL is used. These
+packages change some historical SQL and migration paths; the rehearsal requires
+the previous migration ledger/checksums to remain intact. Do not resolve or
+rewrite migration history to hide a failure. These checks use fixture data only;
+they do not prove a production-data migration or
+backup restoration.
 
 Both Linux platforms' package metadata is inspected without extracting or
 executing files; each manifest, configuration and compressed layer must match
