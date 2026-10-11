@@ -1,5 +1,5 @@
 # checkov:skip=CKV_DOCKER_2: Kubernetes HTTP readiness/liveness probes own runtime health; shell-free nginx is tested over HTTP before publication.
-FROM cgr.dev/chainguard/node:latest-dev@sha256:c392408d537d860a4da73ea6d7f1226b02ab3d9e870e4c710b2403d6c9144f44 AS dependencies
+FROM cgr.dev/chainguard/node:latest-dev@sha256:79f532b9d82481edcaad65bb76c0cc234ff836e40ce46a1a12fed78d89977cf3 AS dependencies
 USER 0
 WORKDIR /src
 COPY upstream/web/package.json upstream/web/package-lock.json ./

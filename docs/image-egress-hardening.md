@@ -39,6 +39,11 @@ retain rollback images and backups.
 
 ## Public source availability
 
+The NOFX Node dev build base matches the index rechecked anonymously on
+2026-10-11 and staged in the publication prerequisite. Fresh native build,
+frontend/runtime and artifact-security checks must pass for this digest;
+earlier results do not cover it. No deployed runtime reference changes.
+
 Keep live image inventories, digest/namespace joins, vulnerability counts and
 scan timestamps outside git in private operator evidence. Public documentation
 records source compatibility and acceptance requirements only. Require fresh
