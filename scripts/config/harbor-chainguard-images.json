@@ -16,16 +16,16 @@
       "source": "cgr.dev/chainguard/nginx:latest@sha256:028368a7e271b3e0aed3bdc82195de6b38a2fee2bdd2a0b7ce1c4b944907098c"
     },
     {
-      "source": "cgr.dev/chainguard/node:latest-dev@sha256:c392408d537d860a4da73ea6d7f1226b02ab3d9e870e4c710b2403d6c9144f44"
+      "source": "cgr.dev/chainguard/node:latest-dev@sha256:79f532b9d82481edcaad65bb76c0cc234ff836e40ce46a1a12fed78d89977cf3"
     },
     {
       "source": "cgr.dev/chainguard/node:latest@sha256:4e771308d07813bf9a1aa25299a45e5664533c47fe4c541c14498752f2dbc2dd"
     },
     {
-      "source": "cgr.dev/chainguard/postgres:latest@sha256:1a417cf464d938b1b1182411416401215af7fbc88395d9b90f7c805e96d639a7"
+      "source": "cgr.dev/chainguard/postgres:latest@sha256:0fb984eb4d7fc358563efdea19e59dd3b2dbfdbac86cd45749e4f5603dab651a"
     },
     {
-      "source": "cgr.dev/chainguard/python:latest@sha256:197cf542e9f4dc373864faecd4fd1a4f642622e654e9196881ca852e8fdf26bd"
+      "source": "cgr.dev/chainguard/python:latest@sha256:5d7edd76101b0b8112b723072125f428dbfd291d7cc56a6418a5f619023e2542"
     },
     {
       "source": "cgr.dev/chainguard/redis:latest@sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29"

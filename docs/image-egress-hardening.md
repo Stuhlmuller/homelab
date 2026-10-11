@@ -100,6 +100,13 @@ and the [existing isolation contract](runtime-isolation.md).
 
 ## Additional publication prerequisite
 
+On 2026-10-11, anonymous index checks refreshed Python, PostgreSQL and Node
+`latest-dev` in both publication catalogs; all thirteen staged Chainguard
+indexes retain Linux amd64/arm64 manifests. Re-run consumer compatibility
+against these exact digests. Earlier publication and compatibility receipts
+do not cover changed artifacts. This source refresh changes no consumers,
+node configuration or egress enforcement.
+
 Anonymous source inspection resolved public Chainguard Node `latest`, Node
 `latest-dev`, Go `latest` and nginx `latest`, each with Linux amd64/arm64 indexes. Add them to the
 reviewed full catalog and Chainguard scope before custom build/runtime changes.
