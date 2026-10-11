@@ -2,6 +2,7 @@
 """Exercise the built frontend against an isolated synthetic API backend."""
 
 import json
+import ipaddress
 import re
 import subprocess
 import time
@@ -48,13 +49,15 @@ def main():
         run("docker", "run", *common, "--name", backend, "--network-alias", "nofx",
             "--user", "65532:65532", "--entrypoint", "/usr/bin/python3", PYTHON, "-I", "-B", "-c", BACKEND)
         run("docker", "run", *common, "--name", frontend, "--user", "10000:10000",
-            "--sysctl", "net.ipv4.ip_unprivileged_port_start=0", "--publish", "127.0.0.1::80",
+            "--sysctl", "net.ipv4.ip_unprivileged_port_start=0",
             "--tmpfs", "/var/cache/nginx:rw,nosuid,nodev,size=32m,uid=10000,gid=10000",
             "--tmpfs", "/var/run:rw,nosuid,nodev,size=16m,uid=10000,gid=10000",
             "--tmpfs", "/tmp:rw,nosuid,nodev,size=16m,uid=10000,gid=10000",
             "homelab-nofx-frontend:build")
-        address = run("docker", "port", frontend, "80/tcp")
-        assert re.fullmatch(r"127\.0\.0\.1:[0-9]+", address), address
+        # Internal networks do not publish host ports; the Linux host can reach its bridge.
+        inspect = json.loads(run("docker", "inspect", frontend))[0]
+        address = inspect["NetworkSettings"]["Networks"][prefix]["IPAddress"]
+        assert ipaddress.IPv4Address(address).is_private, address
         base = "http://" + address
         for attempt in range(30):
             try:
@@ -82,7 +85,7 @@ def main():
                 value = json.load(response)
             assert value == {"path": "/api/synthetic?keep=query", "method": method,
                              "body": body.decode() if body else "", "authorization": "Bearer fixture-only",
-                             "cookie": "fixture=session", "host": "127.0.0.1"}, value
+                             "cookie": "fixture=session", "host": address}, value
         print("Frontend UID 10000, health, static assets/cache, SPA and authenticated GET/POST proxy passed")
     except Exception:
         for name in (backend, frontend):
