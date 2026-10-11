@@ -58,6 +58,19 @@ cache and sandbox policy. The client refuses to publish when Nix ignores
 those settings. Alternatively, run on another trusted **x86_64 Linux** Nix machine. The platform must match;
 macOS or ARM Linux results cannot satisfy x86_64 Linux checks. If copying a key to another builder, protect that machine as carefully as CI. A Linux cache miss builds the checks normally.
 
+Stopping the local publisher does not guarantee that Kubernetes exec stops the
+remote build. To cancel an interrupted attempt, run:
+
+```sh
+python3 -I scripts/nix-builder.py --cancel
+```
+
+This signals only Nix processes with the complete declared offline-check
+command in a helper-owned `/workspace/check.XXXXXX/source` directory. It
+does not restart or alter the Pod. Confirm the process has exited before
+retrying. If node exec is unavailable, cancellation cannot be confirmed;
+keep builds held and diagnose the node through the declared recovery path.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input

@@ -6,6 +6,7 @@ import io
 from pathlib import Path
 import tarfile
 import tempfile
+import subprocess
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +19,23 @@ spec.loader.exec_module(builder)
 
 
 class CacheLayoutTests(unittest.TestCase):
+    def test_cancellation_only_signals_exact_build_in_owned_workspace(self):
+        for comm, cwd, command, expected in (
+            ("nix", "/workspace/check.ABCDEF/source", "nix build fixture", True),
+            ("nix", "/workspace/check.ABCDEF/source", "nix build unrelated", False),
+            ("nix", "/other/source", "nix build fixture", False),
+            ("sh", "/workspace/check.ABCDEF/source", "nix build fixture", False),
+        ):
+            with self.subTest(comm=comm, cwd=cwd, command=command), tempfile.TemporaryDirectory() as temporary:
+                proc = Path(temporary) / "1234"
+                proc.mkdir()
+                (proc / "comm").write_text(comm + "\n")
+                (proc / "cmdline").write_bytes(command.replace(" ", "\0").encode() + b"\0")
+                (proc / "cwd").symlink_to(cwd)
+                script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", "'nix build fixture '")
+                result = subprocess.run(["sh", "-c", 'kill() { echo "SIGNAL:$*"; };\n' + script], capture_output=True, text=True, check=True)
+                self.assertEqual("SIGNAL:-TERM 1234" in result.stdout, expected)
+
     def test_builder_archive_rejects_escape_and_symlinks(self):
         for name, kind in (("../escape", tarfile.REGTYPE), ("/escape", tarfile.REGTYPE), ("link", tarfile.SYMTYPE)):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
