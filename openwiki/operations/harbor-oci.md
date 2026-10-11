@@ -6,8 +6,20 @@ tags: ["harbor", "oci", "packages", "gitops"]
 sources:
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-8ab7fab142e4f564e8f17f97
+    resource: repo://builds/harbor-core/Dockerfile
+  - id: openwiki-source-8867139a733ec283c1c15d63
+    resource: repo://builds/harbor-core/patches/0002-identical-reference-relations.patch
+  - id: openwiki-source-e63f21a2fc45e0b39144df0d
+    resource: repo://builds/harbor-core/prepare-source.py
+  - id: openwiki-source-d8462ae63760d7635fda38ef
+    resource: repo://builds/harbor-core/README.md
+  - id: openwiki-source-8747f81e985430015cf21baf
+    resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -26,10 +38,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
+generated: { by: "codex", at: "2026-10-11T17:50:33.676Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-11T17:50:33.676Z
 ---
 
 # Harbor Private OCI Registry
@@ -272,6 +284,41 @@ availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
 
+
+### Identical-reference core repair candidate
+
+The [maintained core recipe](../../builds/harbor-core/README.md) pins upstream
+Harbor v2.15.4 source and its archive hash, the official amd64 runtime image and
+a public Chainguard Go builder. Its source patch deduplicates only identical
+database relations for the same child. Differing digest, platform, URL or
+annotation metadata fails before any DAO write. The artifact digest and
+descriptor list remain intact; this repair changes no registry index bytes or
+database schema.
+
+The recipe verifies the archive before safe extraction and checks both committed
+patches. Native tests reproduce the unpatched unique-reference failure, then
+require the repaired manager suite and complete core compilation. API bindings
+use upstream's pinned Swagger v0.33.1 and templates. Image build tests run
+without networking after dependency download; the runtime preserves the
+upstream payload, user and entrypoint and declares its loopback health probe.
+
+```mermaid
+flowchart TD
+    Source["Verify pinned source archive"] --> Baseline["Require original duplicate-reference failure"]
+    Baseline --> Repair["Reject conflicts and deduplicate identical relations"]
+    Repair --> Compile["Pass manager tests and compile core"]
+    Compile --> Candidate["Build held runtime candidate"]
+```
+
+The candidate's build gate checks original failure and repaired behavior before
+creating an image; it does not authorize rollout.
+
+No consuming image, secret contract or live database changes are included.
+Linux image build, disposable Harbor/PostgreSQL index push/pull with unchanged
+digests, complete private scans and protected publication remain gates. Couple
+any v2.15.4 rollout with matching chart/components and verified database/blob/key
+backups. Keep the upstream cold-bootstrap and rollback paths. Source-manager
+tests alone do not establish real database, registry, CVE or workload acceptance.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 

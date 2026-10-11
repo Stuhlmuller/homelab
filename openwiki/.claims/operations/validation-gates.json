@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0b10784b12762ef48b1d934abfe9581920c5355ca2111c0b981fb93023e1820f",
+  "pageVersion": "sha256:91a7d09ef71aa7849a3fb6d10f3385fe29a665625586968c478cc3421c9e182a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:93e4579341c1814a3c60d3210f890f1c0bc22898e4e1e8e1bbd5f9c148e70450"
+          "version": "repo-file-v1:sha256:f686cb19d2c9e0a69d07676e370f4e7642138f1d65206b6a5ad00de7cd545a7d"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:fc83261744f73ba27c5a09e5cc50248dd91bc815b070ff389e9160eabe040b96"
+          "version": "repo-file-v1:sha256:c1cb556606271f09aae45c41c8e2cae536b6126a297f0643cf7a7f3f8a56e025"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -279,10 +279,32 @@
           "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
         }
       ]
+    },
+    {
+      "id": "claim_79921f1a97d243a9a583eabfcdc7d7cf",
+      "statement": "Offline fixtures run the Harbor core source trust test covering pinned archive verification and preparation, baseline retention, patch validation, wrong hashes/roots, escaping symlinks and nonempty contexts without network access; the credential-free Linux candidate job requires original failure, repaired manager tests, upstream API generation and complete core compilation without production inputs.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:3003f856e2fa3d59458d0a6afe9dc8ba784bec580cc85a6c9d7df835a29f490f"
+        },
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:e6d6ba15fce958011371547b1537a0a32e52d3f31f683a797d8dee57b33905e5"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-source-test.py",
+          "version": "repo-file-v1:sha256:68b2d6849561a6a413a1645cd5747b9573817d121425aaacc3b7a22e0b938e08"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-11T17:50:33.676Z"
   }
 }

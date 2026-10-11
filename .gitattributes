@@ -1,2 +1,3 @@
 # Unified diff context intentionally contains a marker before tabs/empty lines.
 builds/nofx/patches/*.patch whitespace=-blank-at-eol,-space-before-tab
+builds/harbor-core/patches/*.patch whitespace=-blank-at-eol,-space-before-tab

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6c726f5cd52aa3e198bcdc61fc72c8fb12064310b647ca3260a34a32fdf13f8e",
+  "pageVersion": "sha256:02af9dc1ff91588ad7dfc05359826a06be5c1e39ef9870d2d724cf414c54d5d2",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -125,10 +125,56 @@
           "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
         }
       ]
+    },
+    {
+      "id": "claim_1b0d791a497a4adbb97f2f95e691b3ee",
+      "statement": "The maintained Harbor v2.15.4 core candidate verifies a pinned source archive and patches the manager to persist identical child relations once while rejecting differing digest/platform/URL/annotation metadata before any DAO write; its repair preserves the artifact digest and descriptors and changes no registry bytes or database schema.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:e8a1245b6d1e7fac53f2cd62650a958b91a53b6f8f0b3ba1336c2bcd06309deb"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
+          "version": "repo-file-v1:sha256:203df86d0136580050036bed7e7642a25e8759023fb16d98dce09f81bd5a595a"
+        },
+        {
+          "resource": "repo://builds/harbor-core/source.json",
+          "version": "repo-file-v1:sha256:296be270358beb5b2d6776091e65780cc90bea3406424a298637dfbc1c7b40c8"
+        }
+      ]
+    },
+    {
+      "id": "claim_a117542d930b46119afdd3dc03e214ad",
+      "statement": "The core candidate uses a pinned Chainguard Go builder, upstream-pinned Swagger generation and an upstream runtime payload; its build must reproduce the original duplicate-reference failure before passing repaired manager tests and complete core compilation, with networking disabled for tests/build after dependency download.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:e6d6ba15fce958011371547b1537a0a32e52d3f31f683a797d8dee57b33905e5"
+        },
+        {
+          "resource": "repo://builds/harbor-core/prepare-source.py",
+          "version": "repo-file-v1:sha256:38e4c0728b418dc43d33d40c23043af35a0e1c0b6962452bb4876549e8164459"
+        }
+      ]
+    },
+    {
+      "id": "claim_2f510861461e44f79cec94649f5ca448",
+      "statement": "The source-only core candidate changes no consuming references or secret contracts and requires Linux image build, real disposable Harbor/PostgreSQL push/pull, unchanged index digests, private scan acceptance and protected publication before a coupled chart/component rollout with verified backups.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:3003f856e2fa3d59458d0a6afe9dc8ba784bec580cc85a6c9d7df835a29f490f"
+        },
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:e8a1245b6d1e7fac53f2cd62650a958b91a53b6f8f0b3ba1336c2bcd06309deb"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-11T17:50:33.676Z"
   }
 }

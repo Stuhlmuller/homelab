@@ -4,6 +4,10 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
 sources:
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
+  - id: openwiki-source-8ab7fab142e4f564e8f17f97
+    resource: repo://builds/harbor-core/Dockerfile
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -24,6 +28,8 @@ sources:
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-faf0c71b216725764a045c19
+    resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-9572753e0a38126e57fa7042
@@ -66,10 +72,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
+generated: { by: "codex", at: "2026-10-11T17:50:33.676Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-11T17:50:33.676Z
 ---
 
 # Validation Gates
@@ -1414,6 +1420,17 @@ needed exception in desired state; this probe does not establish device
 enrollment compatibility.
 
 ## Harbor OCI rollout
+
+The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
+to offline fixtures. It checks verified source preparation, patch validation,
+retained original-manager baseline, hash mismatch refusal, unexpected archive
+roots, escaping symlinks and nonempty-context refusal without network access.
+The credential-free Linux `harbor-core-compatibility` job builds the pinned
+candidate: original repeated-child failure must precede repaired manager tests,
+upstream API generation and complete core compilation. Networking is disabled
+for tests/build after dependency download. No production inputs are mounted.
+These checks do not prove real Harbor/PostgreSQL pushes or CVE-free publication;
+see the [candidate gates](../../builds/harbor-core/README.md).
 
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression
 tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
