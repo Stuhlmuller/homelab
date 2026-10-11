@@ -29,15 +29,23 @@ cr:
       view_only_mode: true
       additional_pod_init_containers_yaml:
         - name: wait-for-prometheus
-          image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-ec"]
+          command: ["/usr/bin/curl"]
           args:
-            - |
-              until curl --fail --silent --show-error --max-time 10 \
-                http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready; do
-                sleep 5
-              done
+            - --fail
+            - --silent
+            - --show-error
+            - --retry
+            - "60"
+            - --retry-all-errors
+            - --retry-delay
+            - "5"
+            - --retry-max-time
+            - "600"
+            - --max-time
+            - "10"
+            - http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready
           resources:
             requests:
               cpu: 5m
@@ -46,8 +54,8 @@ cr:
               cpu: 100m
               memory: 32Mi
           securityContext:
-            runAsUser: 100
-            runAsGroup: 101
+            runAsUser: 65532
+            runAsGroup: 65532
             runAsNonRoot: true
             allowPrivilegeEscalation: false
             privileged: false

@@ -26,6 +26,28 @@ jobs:
       - name: Check flake
         run: nix flake check --no-build --all-systems
 
+      - name: Check published Chainguard Python compatibility
+        # CI uses the identical public-source digest; live Harbor access is verified separately.
+        run: |
+          image="$(nix develop --command yq -r 'select(.kind == "Deployment") | .spec.template.spec.containers[] | select(.name == "exporter") | .image' clusters/homelab/apps/harbor/vulnerability-exporter.yaml)"
+          for job in harbor fleet; do
+            test "$image" = "$(nix develop --command yq -r 'select(.kind == "Job") | .spec.template.spec.containers[] | select(.name == "bootstrap") | .image' "clusters/homelab/apps/${job}/bootstrap-job.yaml")"
+          done
+          image="${image#harbor.stinkyboi.com/mirror/}"
+          for test in harbor-bootstrap-test.py harbor-vulnerability-exporter-test.py fleet-bootstrap-test.py; do
+            args=()
+            if [[ "$test" == fleet-bootstrap-test.py ]]; then args=(BootstrapTest); fi
+            docker run --rm --network none --read-only --user 65532:65532 \
+              --tmpfs /tmp:rw,nosuid,nodev,size=64m \
+              --volume "${GITHUB_WORKSPACE}:/repo:ro" --workdir /repo \
+              --entrypoint /usr/bin/python3 "$image" \
+              -I -B "scripts/ci/${test}" "${args[@]}"
+          done
+
+      - name: Check published Chainguard BusyBox compatibility
+        # Exercise the identical public-source bytes without production credentials.
+        run: nix develop --command python3 -I scripts/ci/chainguard-busybox-check.py
+
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 

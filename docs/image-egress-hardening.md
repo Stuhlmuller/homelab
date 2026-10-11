@@ -37,6 +37,22 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
+## Publication acceptance, 2026-10-10
+
+The seven-image [publication run](https://github.com/Stuhlmuller/homelab/actions/runs/38092077585)
+completed successfully. Read-only Harbor API inspection found completed scans
+with zero reported vulnerabilities for all seven indexes and their fourteen
+Linux amd64/arm64 manifests. The [scan receipt](chainguard-publication-scans.json)
+records exact digests and scan times; child digests match the public source indexes.
+This is a scanner snapshot of published artifacts. Active workload migration
+and scan coverage for retained exceptions remain unverified.
+
+[Linux compatibility CI](https://github.com/Stuhlmuller/homelab/actions/runs/38094665951)
+passed 42 behavior tests inside the exact published Chainguard Python digest:
+29 Harbor bootstrap, two exporter and eleven Fleet bootstrap tests, using UID
+65532, no network and read-only roots. The Python/curl consumer change remains
+staged until private node-to-Harbor transport and original app acceptance pass.
+
 ## Read-only findings, 2026-10-10
 
 Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
@@ -63,6 +79,28 @@ Tailscale, metrics-server, descheduler, Crossplane, NFS provisioner and Harbor
 component paths were not anonymously readable. Denial does not prove an image
 is absent from Chainguard's production catalog. No production organization
 credentials are assumed; approved exceptions remain Harbor-hosted.
+
+## BusyBox consumer compatibility
+
+The consumer draft replaces 13 BusyBox references across 12 workload files
+with the published Chainguard index. Its default UID is 65532, so Radarr,
+Sonarr and Deluge init containers explicitly retain their existing root identity.
+Backups remain UID 1000, NAS directory helpers UID 65534, Grafana uses the
+chart's UID 472, and Cordium retains its explicit init/status identities.
+No data format, backup retention window or production shell command changes.
+
+`scripts/ci/chainguard-busybox-check.py` runs the declared commands on disposable
+volumes in the exact public-source image bytes. Linux CI checks archive contents,
+mode 0600, stale-backup/partial cleanup, unrelated-file retention, directory
+permissions, ownership preparation, Grafana's retained database copy and
+Cordium's file-write/readiness/liveness commands. Containers have no network,
+a read-only root filesystem and only the tested capabilities. The CI setup
+uses root only to seed its disposable fixture ownership.
+
+Local Docker is unavailable; native Linux CI is required before merge. These
+fixtures do not prove NFS root-squash behavior, a live kernel sysctl write or
+the long-running Cordium status container. Verify the original operations
+through the declared rollout after private Harbor node pulls are accepted.
 
 ## Egress enforcement contract
 
