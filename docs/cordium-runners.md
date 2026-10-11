@@ -1,10 +1,18 @@
 # Cordium GitHub Actions runners
 
-The migration routes every job in this repository to
+The migration routes every repository-owned workflow job to
 `[self-hosted, Linux, X64, cordium]`. There is no hosted-runner fallback.
 The static workflow gate rejects a local job with any other selector,
 including newly added workflows. Reusable workflow callers delegate their
 runner choice to the called workflow.
+
+GitHub-managed workflows are also in scope. Live inspection on 2026-10-11 found
+`dynamic/github-code-quality/codeql` configured with standard hosted runners.
+Its selection must become `runner_type: labeled`, `runner_label: cordium` through
+the fixed reconciler in [bootstrap PR #1278](https://github.com/Stuhlmuller/homelab/pull/1278).
+Preserve its languages, configured state and AI findings setting. The legacy
+dynamic code-scanning registry entry remains listed, but default setup is
+`not-configured`; keep the repository-owned advanced scan.
 
 ## Activation hold
 
@@ -24,7 +32,7 @@ Use repository-scoped runners for this migration.
 The GitHub Terraform provider has no App creation resource. Bootstrap the
 private organization App from the committed
 [manifest](examples/github/cordium-runner-app.json), then manage its installed
-repository association with `github_app_installation_repository` in
+repository association with `github_app_installation_repositories` in
 `github-iac`. Limit installation to `homelab`. Administration write permits
 runner registration; Actions read permits queue inspection. Webhooks and user
 OAuth are disabled. Capture the generated private key outside the checkout,
@@ -83,6 +91,8 @@ the checkout. Runner deployment and workflow cutover remain pending.
 5. Merge the selector change only after the pool is online and the required
    checks pass on its exact head. Inspect job metadata after merge to prove
    all workflows execute in Cordium; YAML selectors alone do not prove this.
+   Include generated Code Quality jobs and its configuration readback, plus all
+   bootstrap workflows added by #1278, beyond the original 33-job inventory.
 
 Rollback through a reviewed commit restoring the prior hosted selectors and
 the workflow security hashes and gate. Wait for active jobs and verify
