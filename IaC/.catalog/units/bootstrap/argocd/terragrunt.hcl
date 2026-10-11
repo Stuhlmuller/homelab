@@ -14,6 +14,10 @@ locals {
   # Entra object ID for the existing rodman@stinkyboi.com administrator.
   # Argo CD v3 authorizes this immutable Dex federated user ID, not an email.
   oidc_sso_admin_entra_object_id = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
+  argocd_image = {
+    repository = "harbor.stinkyboi.com/mirror/quay.io/argoproj/argocd"
+    tag        = "v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
+  }
   argocd_metrics = {
     enabled = true
   }
@@ -70,6 +74,15 @@ inputs = {
 
   values = [
     yamlencode({
+      global = {
+        image = {
+          repository = local.argocd_image.repository
+        }
+      }
+      applicationSet  = { image = local.argocd_image }
+      notifications   = { image = local.argocd_image }
+      redisSecretInit = { image = local.argocd_image }
+      commitServer    = { image = local.argocd_image }
       configs = {
         cm = {
           url          = "https://argocd.stinkyboi.com"
@@ -104,10 +117,22 @@ inputs = {
       }
 
       dex = {
-        enabled = true
+        enabled   = true
+        initImage = local.argocd_image
+        image = {
+          repository = "harbor.stinkyboi.com/mirror/ghcr.io/dexidp/dex"
+          tag        = "v2.45.1@sha256:8499afd690c437f52301efd2b05b2455da5bd2dfc20332cd697dc9937f808462"
+        }
       }
 
+      redis = {
+        image = {
+          repository = "harbor.stinkyboi.com/mirror/ecr-public.aws.com/docker/library/redis"
+          tag        = "8.2.3-alpine@sha256:08ad0b1d280850169a790dba1393ff7a90aef951fc19632cf4d3ce4f78e679ba"
+        }
+      }
       controller = {
+        image               = local.argocd_image
         replicas            = 2
         podManagementPolicy = "Parallel"
         metrics             = local.argocd_metrics
@@ -117,10 +142,12 @@ inputs = {
       }
 
       repoServer = {
+        image   = local.argocd_image
         metrics = local.argocd_metrics
       }
 
       server = {
+        image = local.argocd_image
         service = {
           type = "ClusterIP"
         }

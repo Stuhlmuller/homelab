@@ -47,8 +47,7 @@ values in the same reviewed temporary recovery change, after normal values:
 
 Use `$values/clusters/homelab/apps/harbor-bootstrap/<file>` in the owning
 Application's `helm.valueFiles`. Preserve every normal value file and its order;
-append the recovery override last. The root bootstrap Argo CD release currently
-uses upstream chart defaults and does not yet require an internal-image override.
+append the recovery override last. The root bootstrap Argo CD release requires the recovery override below.
 Flannel and Talos bootstrap images require the reviewed node mirror rollback.
 No recovery file is registered in the normal stack.
 
@@ -63,3 +62,10 @@ The Kustomize recovery overlay handles both the retained Python repository and
 the staged Chainguard Python replacement. CI rejects any remaining Harbor image
 in recovery workloads, so a later self-hosted image change must update this
 profile before rollout. The full catalog coverage gate checks the preserved pins.
+
+For the bootstrap Argo CD Helm release, append
+`file("${get_repo_root()}/clusters/homelab/apps/harbor-bootstrap/argocd-values.yaml")`
+after its normal `values` entry in a reviewed temporary change to
+`IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl`. This also restores Dex, Redis
+and init/hook repositories while retaining normal digests and version labels.
+The profile must be removed after Harbor availability is verified.

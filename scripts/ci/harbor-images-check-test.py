@@ -20,13 +20,17 @@ with tempfile.TemporaryDirectory() as directory:
     stack.parent.mkdir()
     bootstrap = check.ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
     bootstrap.parent.mkdir(parents=True)
-    bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
-                         'chart = "argo-cd"\nchart_version = "1.0.0"\n')
+    bootstrap.write_text('inputs = {\n  repository = "https://bootstrap.example.invalid"\n'
+                         '  chart = "argo-cd"\n  chart_version = "1.0.0"\n'
+                         '  values = [yamlencode({ image = {\n'
+                         '    repository = "harbor.example.invalid/mirror/argocd"\n'
+                         '  } })]\n}\n')
     source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
     stack.write_text('locals { defaults = { project = "homelab" } }\n'
                      'unit "app" { values = { defaults = local.defaults, spec = { sources = [' + source + '] } } }')
     expected = {"source": "IaC/terragrunt.stack.hcl", "repoURL": "https://charts.example.invalid",
                 "chart": "example", "targetRevision": "2.0.0"}
+    assert next(item for item in check.chart_sources() if item["chart"] == "argo-cd")["repoURL"] == "https://bootstrap.example.invalid"
     assert expected in check.chart_sources()
     stack.write_text(stack.read_text().replace('"2.0.0"', '"2.1.0"'))
     assert expected not in check.chart_sources()
@@ -49,8 +53,11 @@ with tempfile.TemporaryDirectory() as directory:
     stack.write_text('unit "app" { values = read_terragrunt_config("stacks/app/stack.hcl").inputs }')
     bootstrap = check.ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
     bootstrap.parent.mkdir(parents=True)
-    bootstrap.write_text('repository = "https://bootstrap.example.invalid"\n'
-                         'chart = "argo-cd"\nchart_version = "1.0.0"\n')
+    bootstrap.write_text('inputs = {\n  repository = "https://bootstrap.example.invalid"\n'
+                         '  chart = "argo-cd"\n  chart_version = "1.0.0"\n'
+                         '  values = [yamlencode({ image = {\n'
+                         '    repository = "harbor.example.invalid/mirror/argocd"\n'
+                         '  } })]\n}\n')
     source = '{ repoURL = "https://charts.example.invalid", chart = "example", targetRevision = "2.0.0" }'
     for app in ("beta", "alpha"):
         path = check.ROOT / f"IaC/stacks/{app}/stack.hcl"

@@ -166,3 +166,25 @@ and External Secrets' `external-secrets-webhook` scaffold. Compare baseline and
 updated renders before interpreting these as migration failures; no raw Secret
 manifest is added to git. Review scaffold/controller ownership separately from
 image replacement, without relaxing the public-repository Secret rule.
+
+Argo CD's root bootstrap Helm values now select Harbor for Argo/Dex/Redis,
+including init and hook containers. Component-specific Argo tags preserve the
+chart's existing version labels. NFS and local-path controllers and generated
+local-path helpers also use the existing cataloged Harbor digests. The inactive
+Argo recovery profile preserves the same settings/pins with upstream sources;
+its temporary root `values` override is separate from Application value files.
+
+Additional anonymous probes found public Chainguard Node and Go latest indexes.
+They remain unpublished candidates for custom build/runtime base migration;
+the seven-image publication receipt does not cover them. Image Updater's paused
+chart defaults to `quay.io/argoprojlabs/argocd-image-updater:v1.3.0`, whose index
+is `sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b`.
+It needs a publication prerequisite before an internal consuming override;
+keep its zero replicas and proposal gates unchanged.
+
+The generic render policy rejects Argo's unchanged `argocd-secret` and
+`argocd-notifications-secret` scaffolds in both baseline and updated renders.
+No raw Secret is added to the source change. Keep the repository Secret rule;
+review Helm/controller scaffold ownership separately. Chart inventory extraction
+now reads only root bootstrap Helm inputs, so nested runtime image repositories
+do not masquerade as changed chart URLs.
