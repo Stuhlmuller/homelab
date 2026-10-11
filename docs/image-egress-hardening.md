@@ -97,3 +97,48 @@ Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practic
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
 and the [existing isolation contract](runtime-isolation.md).
+
+## Additional publication prerequisite
+
+Anonymous source inspection resolved public Chainguard Node `latest`, Node
+`latest-dev` and Go `latest`, each with Linux amd64/arm64 indexes. Add them to the
+reviewed full catalog and Chainguard scope before custom build/runtime changes.
+Node uses `/usr/bin/node` and UID 65532; Go uses `/usr/bin/go` and UID 0 in its
+build image. Existing shell/npm/CGO/linker, filesystem ownership and application
+behavior contracts still require native compatibility tests; a tag lookup does
+not prove a replacement works. No consumer changes in this prerequisite.
+
+The full catalog also includes the paused Image Updater chart's actual v1.3.0
+image, with Linux amd64/arm64/ppc64le/s390x manifests and source attestations.
+Copy the complete index, preserving digests. Keep its zero replicas and promotion
+gates unchanged until publication and its internal reference are accepted.
+The prior seven-image publication receipt covers only those seven entries,
+not these four additions. Any publication of the expanded scope requires a new
+protected production approval and complete anonymous download acceptance.
+
+## Policy-enforcing dataplane prerequisite
+
+The current Kubernetes SIG Network userspace enforcer release is v1.1.2
+(2026-09-28). Its reviewed index is cataloged for Harbor publication, including
+Linux amd64/arm64/s390x and source attestations; no DaemonSet is activated here.
+Flannel continues to supply networking. The enforcer supplies L3/L4 boundaries
+needed to prevent bypass of Istio egress waypoints/gateways.
+
+Read-only inspection of worker 10.1.0.200 on 2026-10-11 found no
+`/var/run/nri` socket directory and no explicit NRI stanza in its effective CRI
+configuration. Verify all nodes and add the supported repository-owned Talos
+NRI configuration before relying on runtime-synchronous Pod IP discovery.
+The enforcer can fall back to API discovery if NRI initialization fails; that
+fallback is not proof that startup traffic is isolated. Require a live socket,
+plugin registration and negative startup/bypass tests.
+
+Use explicit `--fail-open=false`, `--strict-mode=true` and a non-conflicting
+NFQUEUE ID. Review every existing NetworkPolicy before activation: placeholders
+become enforced together. Start with a reviewed worker canary, preserve host/API,
+DNS, mesh HBONE, webhook and storage paths, then verify allowed traffic and denied
+direct IP/alternate-port/IPv6/gateway bypass before expanding. Runtime and Istio
+policy acceptance remain unproved; publication alone does not enforce egress.
+
+Sources: [v1.1.2 release](https://github.com/kubernetes-sigs/kube-network-policies/releases/tag/v1.1.2),
+[enforcer](https://kube-network-policies.sigs.k8s.io/) and
+[Istio ambient egress](https://istio.io/latest/docs/ambient/usage/egress-gateway/).
