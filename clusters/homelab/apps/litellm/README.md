@@ -36,10 +36,13 @@ received only `openrouter/free`.
 A disposable ten-minute key passed creation, authentication, block, unblock
 and deletion checks through the native API. Block and delete invalidated its
 warm authentication cache. The test key was deleted; service keys were not
-modified. These checks do not establish browser UI rendering, live restart
-preservation, native caller generation or fresh correlated Langfuse traces.
-Langfuse remains offline pending explicit approval of its backed-up queue
-repair. Retain those acceptance gates; model discovery alone is not completion.
+modified. Langfuse's repaired Valkey AOF loaded after the reviewed restart on
+October 10. Fresh bounded requests using each of the four mounted service keys
+produced attributed Langfuse `GENERATION`s through `openrouter/free`, with
+input/output and nonzero usage. The n8n key's first free-model response had no
+assistant text; a second returned `READY` and was traced. Browser UI rendering,
+native post-recovery caller actions, and a database restore drill remain
+unverified. Model discovery alone is not completion.
 
 ### Native database-backed service keys
 
