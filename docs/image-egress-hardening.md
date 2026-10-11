@@ -187,11 +187,45 @@ private output path. Withdraw the policy enforcer before disabling NRI.
 configs, enable/rollback/re-enable, preserved fields and private output guards.
 These checks passed with Talos 1.11.3 and 1.13.2.
 
-This change provides preparation only. Before activation, add the repository
-operator path for a drained worker canary and controlled CRI restart, review all
-existing NetworkPolicies, and prove NRI registration, recovery and allowed/denied
-traffic. No NRI setting, DaemonSet or live NetworkPolicy enforcement is activated
-by this prerequisite.
+The repository-owned `scripts/talos-nri-canary.py` now supplies the fixed-worker
+operator path. Its default is read-only: verify context, all declared nodes,
+worker/boot identity, CRI health, absence of the declared policy engine, active
+and persistent configuration equality, and strict candidate validation. It
+reuses the Harbor operator's configuration capture, including staged/try-state
+refusal, while preserving all machine-config documents.
+
+```sh
+nix develop --command python3 -I scripts/talos-nri-canary.py \
+  --talosconfig /private/path/talosconfig --talosctl /path/to/talosctl-1.11.3
+```
+
+Execution requires a clean checkout at exact current reviewed main and successful
+full-scope image publication under its existing bundle-equality gate. After the
+shared image/node recovery hold is released, add `--execute --expected-sha
+<CURRENT_MAIN_SHA>`. The helper rechecks configuration and boot around drain,
+respects PDBs, refuses unmanaged Pods/emptyDir deletion, applies only its NRI
+candidate in `no-reboot` mode, waits for active/persistent and merged CRI readback,
+then explicitly restarts CRI. Drain precedes configuration application so any
+runtime interruption is confined to the drained canary. Post-restart gates require
+healthy CRI, unchanged boot, Ready node and the Flannel/CNI/ztunnel DaemonSet Pods.
+The worker remains cordoned on success or failure after drain.
+
+Rollback uses the same helper with `--rollback --execute --expected-sha
+<CURRENT_MAIN_SHA>` after withdrawing the declared policy engine through GitOps.
+It permits an unhealthy CRI/NotReady canary while requiring the other nodes and
+fixed target identity, then enforces the disabled fragment and restart/readback
+gates. Successful plumbing acceptance permits a separate `--release-scheduling
+--execute --expected-sha <CURRENT_MAIN_SHA>` action; include `--rollback` when
+releasing a disabled candidate. Release rechecks declared machine/CRI state,
+identity, main, CRI health, dataplane readiness and absence of the policy engine;
+it does not change configuration or restart CRI.
+
+Offline canary tests cover sequencing, rollback recovery, context/node/config/
+publication refusals, PDB drain failure, failed readback/restart and refusal to
+release scheduling with unhealthy dataplane. No helper is executed against live
+state by CI. Before deploying the enforcer, review all effective NetworkPolicies
+and independently prove NRI registration, synchronization, recovery and allowed/
+denied traffic. This path verifies NRI plumbing, not policy enforcement.
 
 Talos 1.11.3's [CRI parts controller](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/files/cri_config_parts.go)
 sorts `/etc/cri/conf.d/*.part` and merges them into
