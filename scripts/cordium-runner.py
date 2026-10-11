@@ -180,10 +180,12 @@ def queued_jobs(api, pool):
     return False
 
 
-def serve(pool, key_file, client, checkout, auth_file):
+def serve(pool, key_file, client, checkout, auth_file, refresh_credentials=None):
     while True:
         # A changed main requires a reviewed deployment refresh, not stale code.
         github_operator.verify_reviewed_main(checkout)
+        if refresh_credentials:
+            refresh_credentials()
         environment = native_environment(auth_file)
         native_identity(pool, client, environment)
         api = installation_client(pool, key_file)

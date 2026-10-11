@@ -97,6 +97,27 @@ only after the verified replacement has durable secret-manager custody.
 
 ## Dedicated native identity
 
+The controller entrypoint is scripts/cordium-runner-controller.py. It keeps its
+login and state outside the clean repository, copies the two projected Secret
+keys into a mode-0700 directory as mode-0400 files, and refreshes those copies
+before each queue cycle. Both source files are checked before either replacement;
+temporary files are atomically renamed and removed on failure. This supports
+non-root Kubernetes Secret projections with group-read permissions without
+weakening the provisioner's private-file guards. World-readable projections are
+rejected. SIGTERM enters the existing lifecycle cleanup before process exit.
+
+The entrypoint checks the exact current-main checkout and pinned client, acquires
+its private lock, and stops when activation remains disabled. It is not registered
+as a Deployment yet; image publication, RBAC, token-file kubeconfig and actual
+projected-file refresh acceptance still precede activation.
+
+Dockerfile.controller packages the non-root entrypoint and pinned native clients,
+with kubectl 1.34.1 verified against its official SHA-256. It fetches only the
+exact public source revision supplied by the reviewed build, so local ignored
+credentials never enter the build context. Its source/revision labels identify
+that checkout. This image has not been built or published yet; do not add a
+consuming Deployment reference until publication and cold-pull acceptance pass.
+
 The optional serve mode polls active workflow runs and every job page, matching
 all requested labels case-insensitively. It refreshes the scoped App client and
 rechecks current main and the native identity on each cycle, executes one

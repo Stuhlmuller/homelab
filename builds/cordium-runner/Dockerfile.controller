@@ -1,0 +1,28 @@
+FROM ghcr.io/actions/actions-runner:2.338.0@sha256:4ffadc0002b2581327e06101fc8c06cd189232baf79fe561fac9caeb76f5e807
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 openssl curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN curl --fail --silent --show-error --location --max-time 120 \
+      https://dl.k8s.io/release/v1.34.1/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+    && printf '%s  %s\n' 7721f265e18709862655affba5343e85e1980639395d5754473dafaadcaa69e3 /usr/local/bin/kubectl | sha256sum --check - \
+    && chmod 0755 /usr/local/bin/kubectl
+
+# CI supplies only an exact reviewed public source revision, never credentials.
+ARG SOURCE_SHA
+RUN test "$(printf '%s' "$SOURCE_SHA" | grep -Ec '^[0-9a-f]{40}$')" = 1 \
+    && git init /opt/homelab \
+    && git -C /opt/homelab remote add origin https://github.com/Stuhlmuller/homelab.git \
+    && git -C /opt/homelab fetch --depth 1 origin "$SOURCE_SHA" \
+    && git -C /opt/homelab checkout --detach FETCH_HEAD \
+    && test "$(git -C /opt/homelab rev-parse HEAD)" = "$SOURCE_SHA"
+RUN bash /opt/homelab/scripts/ci/install-octelium-client.sh \
+    && install -m 0755 /root/.local/bin/octelium /usr/local/bin/octelium \
+    && bash /opt/homelab/scripts/ci/install-cordium-client.sh --install-dir /usr/local/bin \
+    && chown -R runner:docker /opt/homelab
+LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
+      org.opencontainers.image.revision="$SOURCE_SHA"
+WORKDIR /opt/homelab
+USER runner
+ENTRYPOINT ["python3", "-I", "/opt/homelab/scripts/cordium-runner-controller.py"]
