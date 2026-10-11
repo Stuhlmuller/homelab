@@ -31,7 +31,7 @@ sources:
 generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:23:56.319Z
+    at: 2026-10-11T09:10:40.150Z
 ---
 
 # Secrets And Identity
@@ -617,6 +617,15 @@ email address alone is not an Entra password identity. Its guarded module is
 separate from the legacy AzureAD user module, and the AzureAD workflow selects
 that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
+
+## Google Workspace federation boundary
+
+`operator/entra-google-workspace-federation` owns the Entra Graph federation
+configuration for `stuhlmuller.net`. Its Google SAML metadata is an
+operator-only SSM SecureString and never appears in Git. Google Workspace
+auto-provisioning creates the matching Entra users; the Entra federation only
+authenticates those users. CI provider identities do not receive domain-write
+permissions, so the unit remains an independently reviewed operator apply.
 
 The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device

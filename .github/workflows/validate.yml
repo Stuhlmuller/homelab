@@ -36,6 +36,17 @@ jobs:
       - name: Check flake
         run: nix flake check --no-build --all-systems
 
+      - name: Verify Offline Nix Checks
+        run: |
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          if git cat-file -e origin/main:scripts/config/nix-cache.json 2>/dev/null; then
+            git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          else
+            printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
+          fi
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 
