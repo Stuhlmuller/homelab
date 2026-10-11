@@ -78,9 +78,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
 
-   The `chainguard` scope selects the eleven digest-pinned public candidates in
+   The `chainguard` scope selects the thirteen digest-pinned public candidates in
    `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
-   Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development) and Go. It publishes to the same normal
+   Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
+   Wolfi base and static runtime. It publishes to the same normal
    `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
    digest preservation and fresh anonymous downloads. It does not change
    consumers or prove runtime compatibility. Run after the prerequisite merges:

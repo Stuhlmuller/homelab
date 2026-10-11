@@ -106,6 +106,11 @@ reviewed full catalog and Chainguard scope before custom build/runtime changes.
 The nginx candidate is for generic application frontends such as NOFX, subject
 to command, config, UID, temporary-path and actual HTTP/proxy tests. It does not
 establish compatibility with Harbor's coupled nginx-photon component.
+Public Wolfi base and static indexes are also staged for a NOFX backend rebuild.
+Pinned source inspection found no TA-Lib linkage, but GORM's SQLite driver
+still requires CGO. Native static-link, database and runtime tests must pass
+before removing the existing Alpine exception; do not disable CGO to make a
+smaller image compile.
 Node uses `/usr/bin/node` and UID 65532; Go uses `/usr/bin/go` and UID 0 in its
 build image. Existing shell/npm/CGO/linker, filesystem ownership and application
 behavior contracts still require native compatibility tests; a tag lookup does

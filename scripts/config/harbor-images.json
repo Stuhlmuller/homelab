@@ -31,7 +31,13 @@
       "source": "cgr.dev/chainguard/redis:latest@sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29"
     },
     {
+      "source": "cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327"
+    },
+    {
       "source": "cgr.dev/chainguard/valkey:latest@sha256:f61f933bd00446d2a28ca0c7ea4dc1f5c73a323191f173c40e2e86749a1db76b"
+    },
+    {
+      "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e"
     },
     {
       "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
