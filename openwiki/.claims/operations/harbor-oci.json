@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e7abd042356e9b0bcb73e6aef32dc952e678de4f5a39591601a0ed59ecd88fae",
+  "pageVersion": "sha256:aca66e950c743e7d37dee6088a41a022763e7425276dfed48feef80793472454",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:ac99e4d3e7139b62101def707c97ce8dbeedbc271f80c6cc0dc0e3e09175d051"
+          "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -22,11 +22,11 @@
     },
     {
       "id": "claim_6e195784924949f099a02a853c474ea4",
-      "statement": "Harbor publication supports a fixed Traefik-only subset of the reviewed full image catalog and preserves all-platform digest copying, tag alias verification and fresh complete anonymous pulls without caller-selected images or destinations.",
+      "statement": "Harbor's fixed Traefik scope selects the ingress image and exact pause:3.10 native pull probe from the full reviewed catalog, preserving all-platform digests, aliases and fresh complete anonymous pulls without caller-selected images or destinations; scoped success cannot establish global mirror coverage.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:5033cb06315131a379fc8cfda7c960f58ad8abc19e84dafde6983a7039bd07b7"
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
-          "version": "repo-file-v1:sha256:a9486da7fd94d173ca7fa9888e507236c24b43f201967618edd0db2271dbd5f1"
+          "version": "repo-file-v1:sha256:88d4b559558061d3de16e38f73b3b82a2f665899ffd7356ac302435b8dda7c82"
         }
       ]
     },
@@ -93,7 +93,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L189-L200",
+          "resource": "repo://docs/harbor-image-mirroring.md#L190-L201",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -129,10 +129,20 @@
           "version": "repo-file-v1:sha256:ffc78eb12e5f975c1032fbc9e0e10087fdaeb59dc4418c02b59d297272b72a6d"
         }
       ]
+    },
+    {
+      "id": "claim_ac2d91ecf5a44a52a70f08535ed05374",
+      "statement": "The publication runbook records the October 11 duplicate-child LiteLLM index failure and correlated Harbor unique_reference error, preserving immutable source bytes and requiring a separately reviewed compatibility repair while the native ingress probe can publish independently.",
+      "evidence": [
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T04:35:18.448Z"
+    "at": "2026-10-11T09:50:39.941Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c0f1d287896e73b77cbcf5e98d468a0f793a843577690c04eedb0b30a7063722",
+  "pageVersion": "sha256:a8083ff78e6f3cb0404f21b9d31ed5033d0c0d027fbaccc9e7fc13b9a575db40",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:5bdbc4fd736cc6ae0aa106ddca3c670ca327cb92ef1da1c97d40fe09bb355b3d"
+          "version": "repo-file-v1:sha256:dd41d2b4f253d86d1df4231ed21a189a56bb7039d28f42088321340bcace931a"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -313,6 +313,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T06:23:22.000Z"
+    "at": "2026-10-11T09:50:39.941Z"
   }
 }
