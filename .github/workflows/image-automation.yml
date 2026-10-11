@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     steps:
       - uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
@@ -46,7 +46,7 @@ jobs:
   observe:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.operation == 'verify' || inputs.operation == 'promote'))
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: read
     steps:
@@ -63,7 +63,7 @@ jobs:
   image-update-gate:
     if: vars.IMAGE_AUTOMATION_PROMOTION_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main'
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: read
     steps:
@@ -91,7 +91,7 @@ jobs:
   promote:
     if: vars.IMAGE_AUTOMATION_PROMOTION_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main'
     needs: [verify, image-update-gate]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 10
     concurrency:
       group: image-automation-promote
@@ -138,7 +138,7 @@ jobs:
   fallback-pr:
     if: vars.IMAGE_AUTOMATION_PROMOTION_ENABLED == 'true' && github.event_name == 'workflow_dispatch' && inputs.operation == 'promote' && github.ref == 'refs/heads/main' && needs.promote.result == 'failure'
     needs: [verify, image-update-gate, promote]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: write
       pull-requests: write

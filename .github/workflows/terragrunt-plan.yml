@@ -21,7 +21,7 @@ env:
 jobs:
   static-policy:
     name: Static Policy And Security Checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: read
     outputs:
@@ -83,7 +83,7 @@ jobs:
       needs.static-policy.outputs.requires-live-plan == 'true'
     needs:
       - static-policy
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     environment:
       name: homelab-plan
     permissions:
@@ -165,7 +165,7 @@ jobs:
       needs.static-policy.outputs.requires-live-plan != 'true'
     needs:
       - static-policy
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions: {}
     steps:
       - name: Record Live Plan Skip
@@ -178,7 +178,7 @@ jobs:
       - static-policy
       - terragrunt-plan
       - terragrunt-plan-skipped
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions: {}
     steps:
       - name: Require Applicable Checks

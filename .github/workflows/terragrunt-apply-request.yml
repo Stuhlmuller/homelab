@@ -14,7 +14,7 @@ concurrency:
 jobs:
   request:
     name: Request Latest Main Apply
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       actions: read
     steps:
