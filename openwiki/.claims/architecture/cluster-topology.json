@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eb65643227575acfb31c01a6b94af183a8dde3299374cdbef782025fe6052329",
+  "pageVersion": "sha256:a90212efa0a589fc76aeab771dd0753de2003ca99a78d550534ca24a290fd0c2",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -39,7 +39,7 @@
           "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L85-L93",
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L87-L95",
           "version": "repo-lines-v1:sha256:a20e2045e85d2aa5f782703adfe064fabcfd098317c7e75b4315deaa675382b4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1YjE4NWE5MWU2NjU1MzhjMzJlM2I0Zjk3Y2U2ZDkyZGQ2NzRhMzE4NjI3ZmZjMzg0YzdjYzllZWMzZGVlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMWYxYjBmZjllMzU3OTQzYTIzOGNkZDA5MmNjZjMyY2YxN2RjZDA3ZTcxNWQyMjFjNTlkZmMzYmJlZmVmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjlkZDA2NDYwNzk4YmYzMWY0NTZiYTJmODM4ZjQ4MmNmNjJiNDU0YmMyODczZDJiZDE3NDdlZmQ5ZDYwN2UxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk5NzEwOGJlNjAxZGY0ZTU0MmRlOWNiMjhjNGJjMTNlYzVmMGRmMGY3MDUzZjcxNzFhZTdlMTQyNmVjYjc5ZCJ9"
         }
       ]
@@ -55,7 +55,7 @@
       ]
     },
     {
-      "id": "claim_b987947eb3ad4671a2ecd55f60c09e83",
+      "id": "claim_ecac76995cb148e291cb552da428ae2f",
       "statement": "Phase 2b CI uses scoped pre-signed ephemeral Tailscale keys, verifies exact node tag and tailnet, and uses tokenless operator API proxy kubeconfigs; retained native Services and Mac rollback remain through live acceptance.",
       "evidence": [
         {
@@ -75,6 +75,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:48:42.400Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e5acc4441be1ea11e4b9425b54f9a75ca78593b601fade30f99a27572d4bf66a",
+  "pageVersion": "sha256:b2ac81517a16fc2476e732c4cf1eb6a24e4ae30d4efedeb5faad0e3fa36e40f7",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "id": "claim_837d00d69b5e4dc2b4986cda56b1cf35",
+      "id": "claim_1e76027c22f74ebd8abc4362f0879415",
       "statement": "Phase 2b switches eight CI workflows to scoped pre-signed Tailscale keys, exact tag/tailnet verification and direct native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
       "evidence": [
         {
@@ -59,6 +59,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:48:42.400Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a16c36a510c29070df70da9716d07d880271611a8c27b89a920bca6bf8d0870d",
+  "pageVersion": "sha256:d0daa67dab0d3ceab4ca5a0926e98c278a11fe624f638622691b44b928335b44",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:92cb75fff6e935086427aafcf1c884356e459fa868a10ec58588e5379e808230"
+          "version": "repo-file-v1:sha256:0a277a4679653e6bf472506e7da1991fb51b9d15db6d9c7f9f6adabc73d774ea"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -57,7 +57,7 @@
       ]
     },
     {
-      "id": "claim_28c99aedf50a4d04964680245c180120",
+      "id": "claim_11f6712f77254d26a8bbe6d5ed6ba442",
       "statement": "CI joined-identity and tokenless API setup live in dedicated helpers; shared native mesh transport remains in octelium-nofx-reconcile.py for retained catalog and credential callers, while old CI connector helpers are removed.",
       "evidence": [
         {
@@ -81,6 +81,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:32:06.826Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }

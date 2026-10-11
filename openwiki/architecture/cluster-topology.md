@@ -3,9 +3,6 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-11T00:48:42.400Z
 sources:
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
@@ -28,6 +25,9 @@ sources:
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
 generated: { by: "codex", at: "2026-10-11T00:43:33.251Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-11T03:41:04.271Z
 ---
 
 <!-- markdownlint-disable MD013 -->

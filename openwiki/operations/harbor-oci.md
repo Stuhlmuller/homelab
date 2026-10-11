@@ -28,10 +28,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-11T03:41:04.271Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:32:06.826Z
+    at: 2026-10-11T03:41:04.271Z
 ---
 
 # Harbor Private OCI Registry
@@ -124,6 +124,19 @@ The exact overlay addresses are now declared for port 9443 only. This source
 repair is not successful pull acceptance: converge it before retrying and require
 successful manifest/blob requests from the corresponding node, alongside the
 native pull result. See the [dated incident](../../clusters/homelab/apps/traefik/CUTOVER.md#observed-cross-node-registry-rejection).
+
+After the twelve-address policy converged on October 11, two guarded
+`zimaboard-2` attempts reached Harbor: the registry challenge returned 401,
+token exchange returned 200, and the pinned pause manifest returned 404.
+The friendly `3.10` alias, immutable alias, and digest were absent through both
+registry routes. Both attempts rolled back the host entry; the other nodes and
+external DNS remained unchanged. This was missing publication, not a source
+policy denial. The owner approved the existing full-catalog
+[Mirror all run 38108370598](https://github.com/Stuhlmuller/homelab/actions/runs/38108370598)
+at `df04e4792d6cef38cdf23f103c4b80dc22b324b0`; it was running when this note
+was written. Require successful publication and correlated native pulls before
+retrying the rollout. Do not weaken the pinned pull or replace the expected tag
+to conceal an absent alias.
 
 Separately, `zimaboard-2` rebooted and returned Ready at 21:29:52 UTC after a
 21:13:45 NotReady event. At 21:31–21:32, authenticated Talos reads and all eight

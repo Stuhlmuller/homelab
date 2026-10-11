@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5b556ae9abd9027cc1dd3412e3b2510fa6354dc9fbfcadb6c41ae579f7297ce5",
+  "pageVersion": "sha256:ba50f7d8ab500b14f42b02874d6bba9360d06818d93c7ab2787c6dfce3384ccf",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -113,7 +113,7 @@
       ]
     },
     {
-      "id": "claim_2dc4edc1dfd8448f8e7b526dcaad3708",
+      "id": "claim_fb55ad0483d4450c8be1371e58293d8a",
       "statement": "Phase 2b Harbor publication uses the scoped signed apply mesh key, exact identity verification and a tokenless operator API kubeconfig to port-forward traefik-private while retaining canonical TLS and registry authentication.",
       "evidence": [
         {
@@ -133,6 +133,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:32:06.826Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }

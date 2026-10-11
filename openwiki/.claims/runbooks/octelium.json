@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:571ed398f47a44dec38e22480e2595d510409ba9aead36f9645ff5971c807cbe",
+  "pageVersion": "sha256:9b8506b45f1a77925db6640cf01c374fe69ab44bde4b08af2bcee24e360cc38e",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -31,7 +31,7 @@
       ]
     },
     {
-      "id": "claim_fd8098ab79a547af896eb39c27456f93",
+      "id": "claim_d9684f84d30046e582a416afe3695547",
       "statement": "The shared native helper requires the online declared mesh and unique ingress peer, validates canonical DNS, native gRPC and gRPC-Web over TLS with the shared parser and removes proxy overrides; callers retain resource and reviewed-main guards while old catalog and Mac rollback stay until acceptance.",
       "evidence": [
         {
@@ -51,6 +51,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:32:06.826Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }

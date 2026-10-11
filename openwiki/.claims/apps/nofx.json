@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2359c485f33d7b9577c4d61be02f7e21dc67da0ca3279392f5861f1e3697bf9e",
+  "pageVersion": "sha256:cf0c71b70f16dd7824b175ab65a4c840c3aa23fc86cb71fc65d71427f7818169",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -17,7 +17,7 @@
       ]
     },
     {
-      "id": "claim_9dc2d4dbe7ca47af88a460121fcba7b1",
+      "id": "claim_db137e03d17e47d0a36191e342e89bfd",
       "statement": "The fixed NOFX reconciliation helper verifies the native client and canonical mesh peer, DNS, TLS and protocols, strips inherited proxy settings and defaults to read-only inspection.",
       "evidence": [
         {
@@ -33,6 +33,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:32:06.826Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }
