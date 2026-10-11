@@ -18,6 +18,8 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-0ea5376c0684f2dd735ec9d4
+    resource: repo://IaC/modules/entra-google-workspace-federation/README.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
@@ -42,10 +44,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-11T06:23:22.000Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T04:35:18.448Z
+    at: 2026-10-11T06:23:22.000Z
 ---
 
 # Source Map
@@ -85,6 +87,7 @@ desired state.
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/modules/entra-owner-mail/README.md` | [Owner-mail migration boundary](architecture/secrets-and-identity.md) |
+| `IaC/modules/entra-google-workspace-federation/README.md` | [Operator federation boundary](architecture/secrets-and-identity.md#google-workspace-federation-boundary) |
 | `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Mac SSO recovery and acceptance](operations/validation-gates.md#entra-owner-mail-and-octelium-identity-checks) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
 | `docs/runtime-isolation.md` | [Runtime Isolation](runbooks/runtime-isolation.md) |

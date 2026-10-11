@@ -29,7 +29,8 @@ for parameter in \
   '/homelab/octelium/cloudflare-zone-settings-token' \
   '/homelab/argocd-image-updater/github-app/id' \
   '/homelab/argocd-image-updater/github-app/installation-id' \
-  '/homelab/argocd-image-updater/github-app/private-key'; do
+  '/homelab/argocd-image-updater/github-app/private-key' \
+  '/homelab/entra/google-workspace-federation-metadata'; do
   parameter_block="$(
     awk -v target="\"${parameter}\" = {" '
       index($0, target) { found = 1 }
@@ -61,7 +62,7 @@ fi
 rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
 rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
 rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-owner-mail; do
+for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-owner-mail entra-google-workspace-federation; do
   (
     cd "IaC/operator/${operator_unit}"
     terragrunt --log-disable init -backend=false -no-color
@@ -71,6 +72,7 @@ for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra
     fi
   )
 done
+python3 -I scripts/ci/entra-google-workspace-federation-metadata-test.py
 echo "::endgroup::"
 
 echo "::group::Etcd offsite bucket offline guards"

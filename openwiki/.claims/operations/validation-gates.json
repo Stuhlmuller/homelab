@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6086245f4b406f9088956ac0886d2da4c48ac70fa2c21e894d1d901f4d648c31",
+  "pageVersion": "sha256:c0f1d287896e73b77cbcf5e98d468a0f793a843577690c04eedb0b30a7063722",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:452a5cbfae9cc936e197adb9f47bfb08d177e4ef4d87c2b46cc210f1ce376b0f"
+          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:f1ef36e0167be6795c6f630e1deabc1a6de490342c2e596f4cc90fd346fe119e"
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
         },
         {
           "resource": "repo://docs/ci-cd.md",
@@ -306,13 +306,13 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:452a5cbfae9cc936e197adb9f47bfb08d177e4ef4d87c2b46cc210f1ce376b0f"
+          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T04:35:18.448Z"
+    "at": "2026-10-11T06:23:22.000Z"
   }
 }

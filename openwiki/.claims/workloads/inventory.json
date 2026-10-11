@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b8161257a5d84e59f77b9f81d316ff4750938ac65dab76721b62abc9beedd7a6",
+  "pageVersion": "sha256:e4e64a062a0202f117d5d5a12fd34c32b3adba2756e27c4df1414bcf9630813c",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:54ca77570e46124a38e2c86ec47b7e8cee41854c2f4cb78f3cf774db745f39b0"
+          "version": "repo-file-v1:sha256:a5f911b047b4836372ca44bce017b666bfab0119f16d2aa09bc181d89a77ddb7"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -157,6 +157,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T05:03:05.268Z"
+    "at": "2026-10-11T06:23:22.000Z"
   }
 }

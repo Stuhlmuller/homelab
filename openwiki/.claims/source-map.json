@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a8989a5a8e599c416b7ddfff05a408b4f2db18f9ab86f6a629378d178dee1482",
+  "pageVersion": "sha256:0e0e640e6deba6777e28cf3bee2b4478aacc164f219cf4b899ed8e4f2fed38c8",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:f1ef36e0167be6795c6f630e1deabc1a6de490342c2e596f4cc90fd346fe119e"
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -107,10 +107,28 @@
           "version": "repo-file-v1:sha256:3f8c33cf8c3959c27906618e85e77638083479f8ce28ec2d46fb312e50206961"
         }
       ]
+    },
+    {
+      "id": "claim_4fdc25d5799544a69025a0aaf3d128e8",
+      "statement": "The Google Workspace federation module runbook owns protected metadata ingestion and a separate private saved-plan operator apply; it does not replace the existing owner-mail migration or Mac acceptance runbooks.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/entra-google-workspace-federation/README.md",
+          "version": "repo-file-v1:sha256:aa81f07eafb0f50a5c66c319492124076be297f6fe2af40631371c7f8fdb31a3"
+        },
+        {
+          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T04:35:18.448Z"
+    "at": "2026-10-11T06:23:22.000Z"
   }
 }

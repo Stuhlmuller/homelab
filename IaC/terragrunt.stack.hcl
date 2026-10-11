@@ -421,6 +421,12 @@ unit "operator_entra_stuhlmuller_pilot_user" {
   no_dot_terragrunt_stack = true
 }
 
+unit "operator_entra_google_workspace_federation" {
+  source                  = "./.catalog/units/operator/entra-google-workspace-federation"
+  path                    = "operator/entra-google-workspace-federation"
+  no_dot_terragrunt_stack = true
+}
+
 unit "operator_entra_owner_mail" {
   source                  = "./.catalog/units/operator/entra-owner-mail"
   path                    = "operator/entra-owner-mail"

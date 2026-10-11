@@ -22,6 +22,10 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-326a085bf1ea3cb64a10924e
+    resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
+  - id: openwiki-source-0ea5376c0684f2dd735ec9d4
+    resource: repo://IaC/modules/entra-google-workspace-federation/README.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
@@ -44,10 +48,10 @@ sources:
     resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-11T06:23:22.000Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T04:35:18.448Z
+    at: 2026-10-11T06:23:22.000Z
 ---
 
 # Secrets And Identity
@@ -663,6 +667,18 @@ email address alone is not an Entra password identity. Its guarded module is
 separate from the legacy AzureAD user module, and the AzureAD workflow selects
 that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
+
+## Google Workspace federation boundary
+
+`operator/entra-google-workspace-federation` owns the Entra Graph federation
+configuration for `stuhlmuller.net`. Its Google SAML metadata is an
+operator-only SSM SecureString and never appears in Git. Google Workspace
+auto-provisioning creates the matching Entra users; the Entra federation only
+authenticates those users. CI provider identities do not receive domain-write
+permissions, so the unit remains an independently reviewed operator apply.
+The module requires a verified, managed, non-default, non-initial domain and
+protects federation from destruction. These are declared guards; source alone
+does not establish an applied federation or a successful user sign-in.
 
 The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device
