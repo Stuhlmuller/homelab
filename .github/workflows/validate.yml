@@ -44,6 +44,10 @@ jobs:
               -I -B "scripts/ci/${test}" "${args[@]}"
           done
 
+      - name: Check published Chainguard BusyBox compatibility
+        # Exercise the identical public-source bytes without production credentials.
+        run: nix develop --command python3 -I scripts/ci/chainguard-busybox-check.py
+
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 

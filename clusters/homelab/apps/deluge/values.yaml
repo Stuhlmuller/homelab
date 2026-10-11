@@ -28,8 +28,8 @@ controllers:
     initContainers:
       download-dirs:
         image:
-          repository: busybox
-          tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+          repository: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/busybox
+          tag: latest@sha256:f7d9063f22547e726221275158930e5033be3c6d8340c6867afb7d0d779fad8d
         command:
           - /bin/sh
           - -ec
@@ -39,6 +39,9 @@ controllers:
               /downloads/complete/radarr \
               /downloads/complete/sonarr \
               /downloads/complete/manual
+        securityContext:
+          runAsUser: 0
+          runAsGroup: 0
       gluetun:
         image:
           repository: ghcr.io/qdm12/gluetun
