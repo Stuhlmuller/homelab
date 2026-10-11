@@ -125,7 +125,9 @@ same built image. The gate rejects affected compiled packages, incomplete
 scanner/advisory evidence, or module findings whose affected imports cannot be
 classified. A module-only advisory is accepted only when its reported package
 set is disjoint from that exact import inventory. Reports are private temporary
-files, never public workflow output or uploaded artifacts. Scanner failure
+files. The binary `SBOM` Go version must match the same image's compiler
+provenance; missing/empty/mismatched inventories fail the gate. Reports are
+never public workflow output or uploaded artifacts. Scanner failure
 fails the build. This Go gate does not cover embedded libc or other C code;
 those components still require component-aware artifact assessment.
 The scanner's isolated `/tmp` explicitly permits executing the tool built by
