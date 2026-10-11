@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f31c6ce33ee4a6fb8cd8e8a11dd40604d83791d83c7c8090b9e86664993c039c",
+  "pageVersion": "sha256:2359c485f33d7b9577c4d61be02f7e21dc67da0ca3279392f5861f1e3697bf9e",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
-          "version": "repo-lines-v1:sha256:04f1f27f9952d23fcf53fce663f7dc1e69f017e745223dac6824960ab98ee39d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -17,22 +17,22 @@
       ]
     },
     {
-      "id": "claim_2880e3bafa84422c80779c39c86738aa",
-      "statement": "The retained NOFX reconciliation helper defaults to read-only native inspection over verified direct mesh TLS; it validates the declared online peer and canonical DNS and removes inherited proxy settings.",
+      "id": "claim_9dc2d4dbe7ca47af88a460121fcba7b1",
+      "statement": "The fixed NOFX reconciliation helper verifies the native client and canonical mesh peer, DNS, TLS and protocols, strips inherited proxy settings and defaults to read-only inspection.",
       "evidence": [
         {
-          "resource": "repo://docs/octelium-nofx-reconciliation.md#L24-L44",
-          "version": "repo-lines-v1:sha256:9c8267b8d74b4124863c14cef5fd12fac45daffcc48005bda7b1c5636887cd37:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwOGM4MmU2NGIxZWZhNDYwZjFhMjNjZmM2Y2ZlNDhhOGRjNmM3MDhhNjNlZDMzNWRjOWNmZjI2NWRiMDIyNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY4ODRkYjRiNzI4NTk3Y2I2MWY4ZmRiNTU5Y2E5NGM5ZWIzOTdkY2Y0MWFiN2ZiNDhkNDM4YTlmYmU4OWE2MjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI3OWRkNTRjMGM4YTY1ODk2MzgwNTNmOTBlOGRjMjU4Mjk1MDc2YmM2ZjVjMTBhODIxY2ZjM2U4M2I5NWUwYTYifQ"
+          "resource": "repo://docs/octelium-nofx-reconciliation.md#L30-L45",
+          "version": "repo-lines-v1:sha256:bcae0509d8d89838604c0c2756a258f393aa2947805521b4e4483158b68e6466:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkNmViNGNiOGZiYjhiODNiOTRiZjhkNTkwMTViYzFkMGU3ZTgwMTAzMjllYzI1YTdjMGZhNDVmNmYzODgzZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyOTU1ZDA5YzMzZjM1YzM4ZWI4OWJmY2Q2MDFhYjA4NjhkMzFhZWVjMzY4ODVlMTA5MjNlNmMxZWUyYWM4M2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwOWI4MTQ1MTgwOWQwMmE4NjMwOWFlNmM3YmZiNGI1MDMwMzhiNzVlMDNiOGZkNDMyOTkyN2ZiYzc1MjljZjUifQ"
         },
         {
-          "resource": "repo://scripts/octelium-nofx-reconcile.py#L71-L110",
-          "version": "repo-lines-v1:sha256:c58ff8efc0f881ecf96f62386af4fcdde963616ac60d1826966009f5470c821c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmNzI5ZWU3MjczMDVjMTI1NjAzOWZkNWRlYjc4Zjc3ZTE5N2FiNGE0ODA2MTVmMWYwNmI3YjM3ZTVhNTQ1OWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjRiNTM3ZmEwYjYzYTI3Y2YyMDM0NGExZDVlYjg1MTY1ZTQ4MzVkNzJhYzgzYTM2NmMzZjg2YzczMDgxNTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZmNiMDA3NzExMWM5MWI0M2U5ZDA4NTUwNGRmODMzYTFlYzIyYmRiZGU4ZmNlN2NjNDMzNjk5MTE5ZDIwYTcifQ"
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L72-L113",
+          "version": "repo-lines-v1:sha256:7d89079aca67c36e3dee2ff2b43b9715b87a0747eeb44c5fbc45a35ac30f0eed:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZTA3MDVmMmIwZDI1NjkyZjM2NjliM2U0NzQ5Njg0N2VmMzZjM2IzNjk0MWQwMmFkMjNhODdlNWZiYTk3YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjllOTM3OTI4ODI0ZTc5NWRlNDA3MjhjNmIwNDIyMTFmNTFlYWVjMDFhMTMxNTMwMTJkY2MwYTgwNTU4YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjOWZmNmMyMDBkMTFmN2FhMzUxNzBkNzZiOGQzZGMwMmMxNTMxNjk2OThlOGU4ZWMwYjY5ZTA0ZmNlMTg0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViOWIwM2NjMDI4MDc0YzNjZWQ1ZDE3ODNhMjU1MTA3ZjYwZTQ1M2MzODJmMzIwMDFjYTNhMTEwZjQ3YjUxNGEifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:38:06.057Z"
+    "at": "2026-10-11T00:32:06.826Z"
   }
 }

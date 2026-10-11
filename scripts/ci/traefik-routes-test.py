@@ -37,6 +37,7 @@ APPS = {
 NODE_REGISTRY_SOURCES = [
     "10.1.0.199/32", "10.1.0.200/32", "10.1.0.201/32", "10.1.0.202/32",
     "10.244.1.1/32", "10.244.2.1/32", "10.244.3.1/32", "10.244.4.1/32",
+    "10.244.1.0/32", "10.244.2.0/32", "10.244.3.0/32", "10.244.4.0/32",
 ]
 
 
@@ -211,7 +212,7 @@ class RouteTests(unittest.TestCase):
                     "podSelector": {"matchLabels": {"app.kubernetes.io/name": "traefik"}},
                 }, cleartext["from"])
 
-    def test_node_registry_sources_are_exact_hosts_and_bridges(self):
+    def test_node_registry_sources_are_exact_hosts_bridges_and_overlays(self):
         policy = read_yaml("clusters/homelab/apps/traefik/networkpolicy.yaml")["spec"]
         registry, = [rule for rule in policy["ingress"]
                      if {"protocol": "TCP", "port": 9443} in rule["ports"]]
@@ -222,6 +223,8 @@ class RouteTests(unittest.TestCase):
         # A nearby LAN host or ordinary Pod must not match this source boundary.
         networks = [ipaddress.ip_network(source["ipBlock"]["cidr"])
                     for source in registry["from"]]
+        for address in ("10.244.1.0", "10.244.2.0", "10.244.3.0", "10.244.4.0"):
+            self.assertTrue(any(ipaddress.ip_address(address) in net for net in networks))
         for address in ("10.1.0.198", "10.1.0.203", "10.244.1.2", "10.244.2.2",
                         "10.244.3.2", "10.244.4.2"):
             self.assertFalse(any(ipaddress.ip_address(address) in net for net in networks))

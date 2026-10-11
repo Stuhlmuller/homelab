@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f2342741daa2241ba432f05afd30145f6491a407e1f4239bb16421cf2dfc6e98",
+  "pageVersion": "sha256:571ed398f47a44dec38e22480e2595d510409ba9aead36f9645ff5971c807cbe",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://docs/octelium.md#L3-L20",
@@ -31,8 +31,8 @@
       ]
     },
     {
-      "id": "claim_5b8c338ef5144c6a994694c952bbc403",
-      "statement": "Phase2b shared native transport verifies the online declared tailnet/unique ingress peer and canonical DNS, strips proxy overrides, and validates native gRPC and gRPC-Web using the strict parser before direct TLS calls; Cordium CI creates no carrier or hosts override and keeps native OIDC authorization separate.",
+      "id": "claim_fd8098ab79a547af896eb39c27456f93",
+      "statement": "The shared native helper requires the online declared mesh and unique ingress peer, validates canonical DNS, native gRPC and gRPC-Web over TLS with the shared parser and removes proxy overrides; callers retain resource and reviewed-main guards while old catalog and Mac rollback stay until acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -43,14 +43,14 @@
           "version": "repo-file-v1:sha256:da1bbb4f1745e68c1a11fc0938dca2be131b4ddca7c87edfc4457291e4dd04b5"
         },
         {
-          "resource": "repo://scripts/octelium-nofx-reconcile.py#L71-L114",
-          "version": "repo-lines-v1:sha256:e82d8b4027a72700773eb2d33113060f00bd9eb438e374b50eb6d3b690fa01c1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjRiNTM3ZmEwYjYzYTI3Y2YyMDM0NGExZDVlYjg1MTY1ZTQ4MzVkNzJhYzgzYTM2NmMzZjg2YzczMDgxNTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlMGM0YjAzYzYxNzUwYmM4NjU4NDg3ZjQzYmNlODA4NmRmYjNkNzU0YzIyZDhlZmViMzZkYWMzZTM5NDAzNjIifQ"
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L72-L113",
+          "version": "repo-lines-v1:sha256:7d89079aca67c36e3dee2ff2b43b9715b87a0747eeb44c5fbc45a35ac30f0eed:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZTA3MDVmMmIwZDI1NjkyZjM2NjliM2U0NzQ5Njg0N2VmMzZjM2IzNjk0MWQwMmFkMjNhODdlNWZiYTk3YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjllOTM3OTI4ODI0ZTc5NWRlNDA3MjhjNmIwNDIyMTFmNTFlYWVjMDFhMTMxNTMwMTJkY2MwYTgwNTU4YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjOWZmNmMyMDBkMTFmN2FhMzUxNzBkNzZiOGQzZGMwMmMxNTMxNjk2OThlOGU4ZWMwYjY5ZTA0ZmNlMTg0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViOWIwM2NjMDI4MDc0YzNjZWQ1ZDE3ODNhMjU1MTA3ZjYwZTQ1M2MzODJmMzIwMDFjYTNhMTEwZjQ3YjUxNGEifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:38:06.057Z"
+    "at": "2026-10-11T00:32:06.826Z"
   }
 }

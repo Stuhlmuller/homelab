@@ -22,10 +22,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
+generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:38:06.057Z
+    at: 2026-10-11T00:32:06.826Z
 ---
 
 # GitOps Flow

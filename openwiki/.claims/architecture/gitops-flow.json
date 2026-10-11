@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d75a3166102aee69a0ff6dbfe827e33b24fac18ecd48f825c98ad515e2ea06c2",
+  "pageVersion": "sha256:5e881a984711f6c4907d3c537cacbb85093f14db2322834d5aa18a987576c88c",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:b422512b97466de3245c222f8f5e17c9cb251a22ef033a677c33e5e4f0f5e467"
+          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
-          "version": "repo-lines-v1:sha256:04f1f27f9952d23fcf53fce663f7dc1e69f017e745223dac6824960ab98ee39d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -35,8 +35,8 @@
       ]
     },
     {
-      "id": "claim_f4f31c7bebf8454aa911c17d272ad5ef",
-      "statement": "Phase2b moves eight CI workflows onto scoped pre-signed Tailscale keys with exact joined-node checks; plan and apply use tokenless API-proxy kubeconfigs, with real plan writes denied and production exact-main/environment guards retained.",
+      "id": "claim_837d00d69b5e4dc2b4986cda56b1cf35",
+      "statement": "Phase 2b switches eight CI workflows to scoped pre-signed Tailscale keys, exact tag/tailnet verification and direct native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-apply.yml",
@@ -59,6 +59,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:38:06.057Z"
+    "at": "2026-10-11T00:32:06.826Z"
   }
 }

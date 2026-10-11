@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3c2a690cbfa55eccb70a5f3983e6cce8d5e8fa75fec62b558ff39e36cac6b4bc",
+  "pageVersion": "sha256:043489898001afa75dec181e32e948bc118eabfa32589eedae3954a676da4c97",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L91",
-          "version": "repo-lines-v1:sha256:6e1d552a37f1c788331790aa0a771a006080cdc45193960fc256d36c90bb60d3:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
+          "version": "repo-lines-v1:sha256:0a1bbce0ecf0decdd82b5deeac06b1f1fd964f9de3f419f6b7e3fa8d9f88a051:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
@@ -17,8 +17,8 @@
       ]
     },
     {
-      "id": "claim_53dc5cee50c8463090271bbae83b5cf9",
-      "statement": "Prepared phase 2b CI workflows use scoped pre-signed ephemeral Tailscale keys and exact tag/tailnet verification; plan and apply use a tokenless operator API-proxy kubeconfig while legacy native Services, credentials, and the Mac carrier remain until live CI/client acceptance.",
+      "id": "claim_eb573afdc53046da83500bf046b4f4a9",
+      "statement": "Phase 2b CI uses scoped pre-signed ephemeral Tailscale keys, verifies the exact tag and tailnet, and uses the operator API proxy with tokenless kubeconfig; legacy native Services and Mac rollback remain until live acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
@@ -37,6 +37,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:38:06.057Z"
+    "at": "2026-10-11T00:32:06.826Z"
   }
 }

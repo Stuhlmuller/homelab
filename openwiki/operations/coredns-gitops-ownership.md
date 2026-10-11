@@ -14,7 +14,7 @@ sources:
     resource: repo://clusters/homelab/platform/dns/README.md
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
-generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 verified:
   - by: openwiki/0.7.0
     at: 2026-10-10T23:43:46.551Z

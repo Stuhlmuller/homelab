@@ -62,6 +62,11 @@ spec:
         - ipBlock: {cidr: 10.244.2.1/32}
         - ipBlock: {cidr: 10.244.3.1/32}
         - ipBlock: {cidr: 10.244.4.1/32}
+        # Cross-node Service routing can select the node's flannel.1 address.
+        - ipBlock: {cidr: 10.244.1.0/32}
+        - ipBlock: {cidr: 10.244.2.0/32}
+        - ipBlock: {cidr: 10.244.3.0/32}
+        - ipBlock: {cidr: 10.244.4.0/32}
       ports:
         - {protocol: TCP, port: 9443}
     - from:

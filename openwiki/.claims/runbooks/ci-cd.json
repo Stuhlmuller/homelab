@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a17e655b3ec703c8008a6268cb63a314f266d8cd54cd9bae9b1a4e31d05460f",
+  "pageVersion": "sha256:6003956baadd2ef9d708ef1fe0e9a39a5773c05c7c4f0c2471cac1e9fcfc6f2d",
   "claims": [
     {
-      "id": "claim_4438539b2b0342eaab951a9d3596188a",
-      "statement": "The CI cutover uses separate protected plan/apply signed keys and a repository Cordium key with exact node identity checks, private uncached runner state, tokenless Kubernetes proxy access and independent native Cordium OIDC authorization; live plan denial, publication and Cordium cleanup remain separate acceptance gates.",
+      "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
+      "statement": "Eight prepared CI workflows use separate scoped pre-signed ephemeral mesh keys with exact identity verification and private runner state; canonical DNS and key publication precede merge, while plan denial, publishers and Cordium execution/denial/cleanup require fresh live acceptance afterward.",
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
@@ -19,6 +19,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:38:06.057Z"
+    "at": "2026-10-11T00:32:06.826Z"
   }
 }
