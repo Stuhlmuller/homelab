@@ -194,6 +194,20 @@ Keep complete machine/CRI configuration captures private; report only gate
 results. After restart, socket existence alone is insufficient: verify plugin
 registration, runtime synchronization and traffic enforcement separately.
 
+Validate private before/after merged-file snapshots with:
+
+```sh
+nix develop --command python3 -I scripts/talos-nri-effective-check.py \
+  --before /private/path/cri-before.toml --after /private/path/cri-after.toml
+```
+
+Use `--rollback` for the disabled declaration. The checker takes its owned
+values from the committed fragment, requires a boolean NRI state, and rejects
+any other semantic CRI change. It withholds private values on failure. Its
+regressions cover incorrect state/type, a missing socket and unrelated-setting
+drift. It verifies supplied snapshots, not their live freshness or the restart;
+the guarded operator path must capture and bind those to the same node/boot.
+
 Sources: [Talos NRI CRI fragment](https://github.com/siderolabs/talos/discussions/10068)
 and [Talos patch semantics](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/system-configuration/patching).
 

@@ -14,6 +14,9 @@ NRI_FILE = "/etc/cri/conf.d/20-network-policy-nri.part"
 spec = importlib.util.spec_from_file_location("nri", ROOT / "scripts/talos-nri-config.py")
 nri_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(nri_module)
+effective_spec = importlib.util.spec_from_file_location("effective", ROOT / "scripts/talos-nri-effective-check.py")
+effective = importlib.util.module_from_spec(effective_spec)
+effective_spec.loader.exec_module(effective)
 
 
 def run(*args):
@@ -28,6 +31,32 @@ def load(path):
 
 
 def check():
+    before = {"version": 3, "plugins": {
+        "io.containerd.cri.v1.images": {"stats_collect_period": 10},
+        "io.containerd.nri.v1.nri": {"disable": True, "plugin_registration_timeout": "5s"}}}
+    enabled = copy.deepcopy(before)
+    enabled["plugins"]["io.containerd.nri.v1.nri"].update(disable=False, socket_path="/var/run/nri/nri.sock")
+    effective.verify(before, enabled)
+    rollback = copy.deepcopy(enabled)
+    rollback["plugins"]["io.containerd.nri.v1.nri"]["disable"] = True
+    effective.verify(enabled, rollback, rollback=True)
+    for case in ("wrong-state", "numeric-bool", "missing-socket", "unrelated-setting"):
+        changed = copy.deepcopy(enabled)
+        plugin = changed["plugins"]["io.containerd.nri.v1.nri"]
+        if case == "wrong-state":
+            plugin["disable"] = True
+        elif case == "numeric-bool":
+            plugin["disable"] = 0
+        elif case == "missing-socket":
+            plugin.pop("socket_path")
+        else:
+            changed["plugins"]["io.containerd.cri.v1.images"]["stats_collect_period"] = 20
+        try:
+            effective.verify(before, changed)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"Unsafe merged CRI configuration accepted: {case}")
     with tempfile.TemporaryDirectory(prefix="talos-nri-check-") as directory:
         root = Path(directory)
         run("talosctl", "gen", "config", "nri-validation", "https://192.0.2.1:6443",
