@@ -95,6 +95,29 @@ never repair a deny rule with manual cluster mutation.
 
 ## Offline NRI prerequisite
 
+The activation audit found 60 live NetworkPolicies, including 16 that select
+egress, on 2026-10-10. Policies are additive: Fleet's namespace-wide
+`fleet-ambient` allowance already permits HBONE, and an ingress rule without
+`ports` already permits all ports. Do not classify each individual policy as a
+standalone deny rule.
+
+LiteLLM, Multica and n8n database policies and the NOFX backend now permit TCP
+15008 from their existing client selectors. Matching Istio AuthorizationPolicy
+rules restrict decrypted traffic to database port 5432 or backend port 8080;
+n8n uses its declared `n8n` service account. These database health probes use
+local exec, so no network probe exception is needed. The signer uses Harbor's
+application route on Traefik 8443; node pulls use the distinct registry listener
+9443. Keep those paths separate.
+
+Remaining activation checks include chart-generated Kiali rules, health-probe
+SNAT addresses, backup clients and dynamically generated Cordium policies.
+NOFX still has unrestricted egress, Cordium workspace/upstream rules permit
+public networks, and several controller/bootstrap policies allow broad CIDRs.
+These need destination-specific Istio routing plus enforced bypass prevention;
+HBONE compatibility alone does not constrain outbound traffic.
+
+See [ambient NetworkPolicy behavior](https://istio.io/latest/docs/ambient/usage/networkpolicy/).
+
 The candidate policy enforcer needs containerd's Node Resource Interface (NRI).
 The committed `.talos/patches/network-policy-nri.yaml` declares its CRI fragment;
 it is inactive. Talos strategic merge appends `machine.files`, so blindly applying
