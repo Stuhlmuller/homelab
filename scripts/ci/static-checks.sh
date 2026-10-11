@@ -31,6 +31,7 @@ python3 -I scripts/ci/langfuse-valkey-recovery-test.py
 python3 -I scripts/ci/entra-ci-configure-test.py
 python3 -I scripts/ci/entra-owner-conversion-test.py
 python3 -I scripts/ci/entra-oidc-verify-test.py
+python3 -I scripts/ci/azuread-saml-uuid-validation-test.py
 python3 -I scripts/ci/octelium-entra-oidc-test.py
 python3 scripts/ci/octelium-nofx-reconcile-test.py
 python3 -I scripts/ci/octelium-harbor-reconcile-test.py

@@ -52,7 +52,7 @@ variable "allowed_user_object_ids" {
 
   validation {
     condition = length(var.allowed_user_object_ids) > 0 && alltrue([
-      for object_id in values(var.allowed_user_object_ids) : can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", object_id))
+      for object_id in values(var.allowed_user_object_ids) : can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", object_id))
     ])
     error_message = "At least one explicit Entra user object ID is required."
   }
