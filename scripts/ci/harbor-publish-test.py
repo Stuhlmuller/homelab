@@ -261,7 +261,7 @@ class HarborPublicationGates(unittest.TestCase):
                     sys.stdout.write(raw)
                 elif args[0] == "copy" and args[-1].startswith("dir:"):
                     authfile = Path(args[args.index("--src-authfile") + 1])
-                    expected_auth = {"auths": {}}
+                    expected_auth = {"auths": {}} if FIXTURE["mirror"] else {"username": "robot$homelab+publisher"}
                     assert json.loads(authfile.read_text()) == expected_auth
                     if FIXTURE["mirror"]:
                         assert "--src-no-creds" in args
@@ -271,7 +271,7 @@ class HarborPublicationGates(unittest.TestCase):
                     if upstream and FIXTURE["failure"] == "mirror-source":
                         print(FIXTURE["source_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(17)
-                    raw = FIXTURE["manifests"][reference]
+                    raw = FIXTURE["manifests"][reference] if FIXTURE["mirror"] else FIXTURE["published_manifests"][name]
                     if upstream and FIXTURE["failure"] == "upstream-digest":
                         raw += "corrupted upstream index"
                     if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith("frontend"):
@@ -831,6 +831,13 @@ class HarborPublicationGates(unittest.TestCase):
             f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}"
             for name in sorted(self.published_digests)
         ])
+        pulls = [args for args in self.calls_for("skopeo") if args[0] == "copy" and args[-1].startswith("dir:")]
+        self.assertEqual(len(pulls), 2)
+        self.assertTrue(all("--all" in args and "--preserve-digests" in args and "--src-authfile" in args for args in pulls))
+        self.assertEqual([args[-2] for args in pulls], [
+            f"docker://harbor.stinkyboi.com/homelab/{name}@{digest}"
+            for name, digest in sorted(self.published_digests.items())
+        ])
         self.assertEqual((self.root / "summary").read_text().splitlines(), [
             f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@{digest}"
             for name, digest in sorted(self.published_digests.items())
@@ -848,6 +855,19 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse((self.root / "outputs").exists())
         self.assertFalse((self.root / "summary").exists())
         self.assert_cleaned()
+
+    def test_publisher_incomplete_pull_withholds_signing_and_outputs(self):
+        for failure in ("pull", "pull-digest"):
+            with self.subTest(failure=failure):
+                self.calls.unlink(missing_ok=True)
+                self.transport_mocks(failure=failure)
+                result = self.run_helper(mode="publish")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "outputs").exists())
+                self.assertFalse((self.root / "summary").exists())
+                self.assertFalse(self.calls_for("cosign"))
+                self.assertFalse(any("create" in args for args in self.calls_for("kubectl")))
+                self.assert_cleaned()
 
     def test_publisher_signs_and_verifies_each_digest_privately(self):
         self.transport_mocks()

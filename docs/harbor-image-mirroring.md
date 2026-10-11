@@ -337,3 +337,13 @@ requires a separately reviewed repair. The fixed Traefik scope publishes the
 native pause probe independently; its success authorizes only those artifacts.
 Node hostname migration still requires successful native pulls from every node.
 Cluster-wide `skipFallback` mirrors remain gated on successful full publication.
+## Custom-image publication acceptance
+
+The fixed custom-image publisher completely downloads each pushed private
+Harbor digest into a fresh temporary directory using its project-scoped pull
+permission, preserving all manifests and blobs. It verifies the downloaded root
+manifest against the pushed digest before creating the signing Job or emitting
+consumer references. A missing blob, failed download or digest mismatch stops
+publication acceptance and withholds signing/output references. This verifies
+transport completeness; private vulnerability review and original workload
+behavior remain separate release gates.

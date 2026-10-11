@@ -280,6 +280,12 @@ for name in homelab-nofx-backend homelab-nofx-frontend; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
+  pull_directory="$(mktemp -d "$scratch/published-pull.XXXXXX")"
+  skopeo copy --all --preserve-digests --src-authfile "$scratch/auth.json" \
+    "docker://${destination}@${destination_digest}" "dir:${pull_directory}"
+  skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
+  [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$destination_digest" ]]
+  rm -rf -- "$pull_directory"
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
 done
 
