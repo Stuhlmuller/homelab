@@ -53,6 +53,11 @@ The web container applies database schema upgrades before starting HTTP. Chart
 withholds traffic until the app is ready. The pinned-chart regression verifies
 this allowance and rendered replica counts.
 
+The worker chart has no startup or readiness probe. On `zimaboard-0`, its
+default 20-second liveness delay killed the process before port 3030 opened.
+Allow 180 seconds before liveness checks; verify `/api/health` and stable restart
+count after rollout because Pod readiness alone does not prove worker startup.
+
 `recovery-pvc.yaml` retains the `langfuse-migration-recovery` claim with
 `Prune=false,Delete=false`. Its private artifacts contain database DDL and
 schema history; do not remove this claim during workload cleanup. It is on the
