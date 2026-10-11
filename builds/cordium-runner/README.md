@@ -42,7 +42,9 @@ It scopes installation tokens to `homelab`, creates a Workspace with reviewed
 main, and issues a repository JIT configuration only after checkout verification.
 The App key never enters Cordium; only the one-job JIT configuration enters
 native exec stdin. Runner output is discarded locally; job logs remain in
-GitHub. Execution is capped at 30 minutes. Cleanup attempts Workspace and runner
+GitHub. The factory permits GitHub's six-hour default job budget plus five
+minutes for runner pickup/shutdown; existing job deadlines remain unchanged.
+Cleanup attempts Workspace and runner
 deletion independently, checks their absence, and fails if either is incomplete.
 Ambiguous creation/registration requires operator inspection before retrying.
 
@@ -263,7 +265,9 @@ gh workflow run cordium-runner-canary.yml --repo Stuhlmuller/homelab \
 
 The canary uses only `cordium-canary` runners. It checks the actual runner name,
 Linux/x64 platform, reviewed source, Nix, Python toolcache and a Docker action.
-The second mode must fail with exit 42. Cancel an active canary separately and
+The second mode must fail with exit 42. Also dispatch `mode=session-renewal`;
+its fixed 65-minute heartbeat crosses the initial one-hour credential boundary,
+checks Docker afterward, and allows 120 minutes including compatibility setup. Cancel an active canary separately and
 verify controller cleanup after success, failure and cancellation: no registered
 runner, native Workspace, Deployment, Pod, PVC or owned NetworkPolicy remains.
 A green job alone does not prove cleanup. Keep workflow selectors unchanged
@@ -348,3 +352,22 @@ successful generated Code Quality jobs with Cordium runner names before counting
 this part of migration complete. Rollback changes the helper's desired runner
 contract in a reviewed commit and reconciles it before retiring the pool. The
 live preview was exercised; no managed runner selection was changed.
+
+
+## Runner lifetime and credential expiry
+
+The factory now covers the [default 360-minute GitHub job deadline](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idtimeout-minutes)
+plus five minutes of runner pickup/shutdown grace. The regression suite checks
+every declared local job, using the default when no timeout is specified. A
+larger future job budget requires increasing the factory bound in reviewed code.
+Existing workflow timeouts are unchanged.
+
+GitHub cleanup creates a fresh repository-scoped installation client after the
+job, rather than reusing its potentially expired registration client. The
+controller refreshes projected private copies first; the one-shot path rereads
+its private App key file. Refresh failure remains a cleanup failure and stops
+the controller, while Workspace/Pod/PVC/policy cleanup still runs independently.
+Tests simulate an expired registration token and a failed cleanup refresh.
+
+Long-job native session renewal, credential rotation and cleanup still require
+live acceptance before cutover. Short canaries do not prove this path.

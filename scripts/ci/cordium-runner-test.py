@@ -6,13 +6,14 @@ import importlib.util
 import io
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
 from urllib.parse import parse_qs, urlparse
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 spec = importlib.util.spec_from_file_location("runner", Path(__file__).resolve().parents[1] / "cordium-runner.py")
 runner = importlib.util.module_from_spec(spec)
@@ -25,7 +26,7 @@ UID = "11111111-2222-3333-4444-555555555555"
 class Lifecycle(unittest.TestCase):
     def exercise(self, *, failure=False, wrong_sha=False, retained=False, cleanup_fails=False, invalid_name=False, invalid_jit=False,
                  invalid_uid=False, policy_mismatch=False, backend_missing=False, pod_retained=False, deployment_retained=False, pvc_retained=False,
-                 wrong_context=False, enforcer_unready=False, conflicting_backend=False, wrong_node=False, mounted_token=False, host_namespace=False):
+                 wrong_context=False, enforcer_unready=False, conflicting_backend=False, wrong_node=False, mounted_token=False, host_namespace=False, expired_api=False, refresh_fails=False):
         calls = []
         api_calls = []
         present = [True]
@@ -33,6 +34,7 @@ class Lifecycle(unittest.TestCase):
         events = []
         policy = [None]
         deleted = [False]
+        expired = [False]
         clock = [0]
 
         def command(arguments, **kwargs):
@@ -50,6 +52,8 @@ class Lifecycle(unittest.TestCase):
             elif "rev-parse" in args:
                 output = ("b" * 40 if wrong_sha else SHA).encode()
             elif args[0] == "exec":
+                self.assertEqual(kwargs["timeout"], runner.RUNNER_EXEC_TIMEOUT)
+                expired[0] = expired_api
                 self.assertEqual(kwargs["input"], JIT.encode())
                 self.assertNotIn(JIT, args)
                 self.assertEqual(kwargs["stdout"], subprocess.DEVNULL)
@@ -104,6 +108,8 @@ class Lifecycle(unittest.TestCase):
 
         def api(method, path, body=None):
             api_calls.append((method, path, body))
+            if expired[0]:
+                raise RuntimeError("GitHub fixture installation token expired")
             if method == "POST":
                 self.assertEqual(body["labels"], ["self-hosted", "Linux", "X64", "cordium-canary"])
                 return {"runner": {"id": 23, "name": "cordium-abc"}, "encoded_jit_config": "invalid secret!" if invalid_jit else JIT}
@@ -114,13 +120,21 @@ class Lifecycle(unittest.TestCase):
                 return {"id": 23}
             raise RuntimeError("GitHub request failed with HTTP 404; response withheld")
 
+        def refresh_api():
+            events.append("github-refresh")
+            if refresh_fails:
+                raise RuntimeError("GitHub fixture refresh failed")
+            expired[0] = False
+            return api
+
         output = io.StringIO()
         error = None
         with patch.object(runner.subprocess, "run", side_effect=command), patch.object(runner, "kube", side_effect=kube), \
              patch.object(runner.time, "monotonic", side_effect=monotonic), patch.object(runner.time, "sleep"), \
              contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             try:
-                runner.provision(api, ["cordium", "--homedir", "/private/fixture", "--domain", "stinkyboi.com"], SHA)
+                runner.provision(api, ["cordium", "--homedir", "/private/fixture", "--domain", "stinkyboi.com"], SHA,
+                                 refresh_api=refresh_api)
             except (RuntimeError, subprocess.CalledProcessError) as caught:
                 error = caught
         self.assertNotIn(JIT, output.getvalue())
@@ -136,6 +150,28 @@ class Lifecycle(unittest.TestCase):
         self.assertLess(self.events.index("kube-create"), self.events.index("start"))
         self.assertGreater(self.events.index("kube-delete"), self.events.index("delete"))
         self.assertFalse(self.policy_retained)
+
+    def test_expired_registration_client_is_refreshed_without_blocking_workspace_cleanup(self):
+        error, _, api_calls = self.exercise(expired_api=True)
+        self.assertIsNone(error)
+        self.assertIn(("DELETE", "/repos/Stuhlmuller/homelab/actions/runners/23", None), api_calls)
+        self.assertGreater(self.events.index("github-refresh"), self.events.index("delete"))
+        error, calls, _ = self.exercise(expired_api=True, refresh_fails=True)
+        self.assertIsNotNone(error)
+        self.assertIn(["delete", "workspace", "abc"], [args for args, _ in calls])
+        self.assertFalse(self.policy_retained)
+
+    def test_factory_deadline_covers_all_declared_and_default_workflow_budgets(self):
+        for path in sorted((runner.ROOT / ".github/workflows").glob("*.y*ml")):
+            workflow = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(path)]))
+            for name, job in workflow["jobs"].items():
+                if "uses" in job:
+                    continue
+                with self.subTest(workflow=path.name, job=name):
+                    minutes = job.get("timeout-minutes", 360)
+                    self.assertIs(type(minutes), int)
+                    self.assertGreater(minutes, 0)
+                    self.assertLessEqual(minutes * 60 + 300, runner.RUNNER_EXEC_TIMEOUT)
 
     def test_missing_backend_invalid_uid_or_mismatched_policy_never_starts_runner(self):
         for options in ({"backend_missing": True}, {"wrong_context": True}, {"enforcer_unready": True}, {"conflicting_backend": True},
@@ -327,17 +363,22 @@ class Queue(unittest.TestCase):
 
     def test_controller_revision_provider_supplies_current_job_checkout(self):
         current = "b" * 40
+        refresh = Mock()
         with patch.object(runner.github_operator, "verify_reviewed_main") as strict, \
              patch.object(runner, "native_identity"), patch.object(runner, "native_environment", return_value={}), \
-             patch.object(runner, "installation_client", return_value="private-api"), \
+             patch.object(runner, "installation_client", return_value="private-api") as client, \
              patch.object(runner, "queued_jobs", return_value=True), \
              patch.object(runner, "provision") as provision, \
              patch.object(runner.time, "sleep", side_effect=SystemExit(0)):
             with self.assertRaises(SystemExit):
                 runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"),
-                             reviewed_main=lambda: current)
+                             reviewed_main=lambda: current, refresh_credentials=refresh)
             strict.assert_not_called()
-            provision.assert_called_once_with("private-api", ["cordium"], current, {})
+            provision.assert_called_once_with("private-api", ["cordium"], current, {}, refresh_api=ANY)
+            refresh.assert_called_once()
+            self.assertEqual(provision.call_args.kwargs["refresh_api"](), "private-api")
+            self.assertEqual(refresh.call_count, 2)
+            self.assertEqual(client.call_count, 2)
 
     def test_filtered_search_cap_and_native_failure_do_not_create_runners(self):
         with self.assertRaises(RuntimeError):
@@ -389,7 +430,19 @@ class Canary(unittest.TestCase):
                     self.assertNotEqual(execute(guard, changes), 0)
             self.assertEqual(execute(failure), 0)
             self.assertEqual(execute(guard, {"CHECK_MODE": "force-failure"}), 0)
+            self.assertEqual(execute(guard, {"CHECK_MODE": "session-renewal"}), 0)
             self.assertEqual(execute(failure, {"CHECK_MODE": "force-failure"}), 42)
+            renewal = next(step for step in job["steps"] if step["name"] == "Cross Session And Installation Token Expiry")
+            self.assertEqual(renewal["if"], "inputs.mode == 'session-renewal'")
+            waits = Path(directory) / "waits"
+            sleep = Path(directory) / "sleep"
+            sleep.write_text('#!/bin/sh\necho "$1" >> ' + shlex.quote(str(waits)) + '\n')
+            sleep.chmod(0o700)
+            docker = Path(directory) / "docker"
+            docker.write_text('#!/bin/sh\ntest "$*" = info\n')
+            docker.chmod(0o700)
+            self.assertEqual(execute(renewal["run"], {"CHECK_MODE": "session-renewal"}), 0)
+            self.assertEqual(waits.read_text().splitlines(), ["300"] * 13)
 
 
 if __name__ == "__main__":

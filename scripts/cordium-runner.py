@@ -16,6 +16,8 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+# Preserve GitHub's default job deadline plus runner pickup/shutdown grace.
+RUNNER_EXEC_TIMEOUT = (360 + 5) * 60
 spec = importlib.util.spec_from_file_location("github_operator", ROOT / "scripts/policy-bot-webhook.py")
 github_operator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(github_operator)
@@ -192,11 +194,15 @@ def serve(pool, key_file, client, checkout, auth_file, refresh_credentials=None,
         native_identity(pool, client, environment)
         api = installation_client(pool, key_file)
         if queued_jobs(api, pool):
-            provision(api, client, checkout, environment)
+            def cleanup_api():
+                if refresh_credentials:
+                    refresh_credentials()
+                return installation_client(pool, key_file)
+            provision(api, client, checkout, environment, refresh_api=cleanup_api)
         time.sleep(30)
 
 
-def provision(api, client, checkout, environment=None):
+def provision(api, client, checkout, environment=None, refresh_api=None):
     pool = json.loads((ROOT / ".cordium/runner-pool.json").read_text())
     repository = pool["repository"]
     workspace = runner_id = None
@@ -266,7 +272,7 @@ def provision(api, client, checkout, environment=None):
         print(f"Canary runner {runner_id} in Cordium Workspace {workspace}", flush=True)
         # Only the one-job configuration enters stdin; App credentials stay outside.
         call("exec", workspace, "--root", "--workdir", "/workspace/repo", "--",
-             "bash", "scripts/ci/cordium-runner-probe.sh", "runner", timeout=1800,
+             "bash", "scripts/ci/cordium-runner-probe.sh", "runner", timeout=RUNNER_EXEC_TIMEOUT,
              input=encoded.encode(), capture=False)
     finally:
         cleanup_failed = False
@@ -297,6 +303,9 @@ def provision(api, client, checkout, environment=None):
         if runner_id is not None:
             # One-job runners normally unregister themselves. Delete only our ID.
             try:
+                # The registration token may have expired during a long job.
+                if refresh_api:
+                    api = refresh_api()
                 if runner_present(api, repository, runner_id):
                     api("DELETE", f"/repos/{repository}/actions/runners/{runner_id}")
                 if runner_present(api, repository, runner_id):
@@ -338,7 +347,8 @@ def main():
     else:
         environment = native_environment(args.auth_token_file) if args.auth_token_file else None
         native_identity(pool, client, environment)
-        provision(installation_client(pool, args.app_key_file), client, args.expected_sha, environment)
+        provision(installation_client(pool, args.app_key_file), client, args.expected_sha, environment,
+                  refresh_api=lambda: installation_client(pool, args.app_key_file))
 
 
 if __name__ == "__main__":

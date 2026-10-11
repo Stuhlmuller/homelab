@@ -1,6 +1,6 @@
 name: Cordium Runner Canary
 
-# checkov:skip=CKV_GHA_7: expected_sha fixes current main; mode selects only the fixed failure case.
+# checkov:skip=CKV_GHA_7: expected_sha fixes current main; mode selects fixed acceptance cases.
 on:
   workflow_dispatch:
     inputs:
@@ -9,11 +9,11 @@ on:
         required: true
         type: string
       mode:
-        description: Fixed compatibility check or intentional job failure
+        description: Fixed compatibility, failure or long-session check
         required: true
         default: checks
         type: choice
-        options: [checks, force-failure]
+        options: [checks, force-failure, session-renewal]
 
 permissions:
   contents: read
@@ -26,7 +26,7 @@ jobs:
   canary:
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, cordium-canary]
-    timeout-minutes: 25
+    timeout-minutes: 120
     steps:
       - name: Verify Dispatch Commit
         env:
@@ -40,7 +40,7 @@ jobs:
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           test "$RUNNER_ENVIRONMENT" = self-hosted
           [[ "$RUNNER_NAME" =~ ^cordium-[a-z0-9][a-z0-9-]*$ ]]
-          [[ "$CHECK_MODE" == checks || "$CHECK_MODE" == force-failure ]]
+          [[ "$CHECK_MODE" == checks || "$CHECK_MODE" == force-failure || "$CHECK_MODE" == session-renewal ]]
           test "$(uname -s)/$(uname -m)" = Linux/x86_64
 
       - name: Checkout Reviewed Source
@@ -78,6 +78,17 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_BASH: true
           ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
+
+      - name: Cross Session And Installation Token Expiry
+        if: inputs.mode == 'session-renewal'
+        run: |
+          set -euo pipefail
+          for minute in {1..13}; do
+            sleep 300
+            echo "Runner still executing after $((minute * 5)) minutes."
+          done
+          docker info >/dev/null
+          echo 'Runner survived the one-hour boundary; verify controller cleanup independently.'
 
       - name: Fixed Failure Case
         env:
