@@ -70,6 +70,19 @@ inputs = {
 
   values = [
     yamlencode({
+      global = {
+        affinity = {
+          nodeAffinity = {
+            type = "hard"
+            matchExpressions = [{
+              key      = "kubernetes.io/hostname"
+              operator = "NotIn"
+              values   = ["zimaboard-2"]
+            }]
+          }
+        }
+      }
+
       configs = {
         cm = {
           url          = "https://argocd.stinkyboi.com"

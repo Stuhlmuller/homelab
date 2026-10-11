@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:ae2df04bb9128343cd9127749694fe7b45173528a2db4074200a33494e7465ec",
+  "claims": [
+    {
+      "id": "claim_37e303c005aa47029b7599d0ff5542e9",
+      "statement": "The first 2026-10-10 zimaboard-2 stall involved NFS-backed n8n PostgreSQL and NOFX Pods, so the no-PVC remote-reboot exception did not apply; a physical power-cycle recovered the worker.",
+      "evidence": [
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L902-L910",
+          "version": "repo-lines-v1:sha256:8ddb89afc2ddedf13089ad08ca1770687ec67bab1e008749c64164b3b00e4586:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzkzYzAxM2JhNjI0MzY4OTBmNWY2ZGJlNjg4MzY0NDk5MGZhZGMyODgwMjU2OGI0YTBlODkxNjVjYThjMTc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBmNDEzY2Y1MTJiNzZmYTUxMjI3MzkyZTc1ZDcxMTFjZTQwODBiNTFjMjcwOGZlNTViNzFmNzU3MTZjNjE5YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2I1NTdmMDY3YzhkNWY5Y2Y1MjExNWJiMjI4OGE2NTY5MDA0YjA3ZTc4YTg4MWFlNzcyYmY1MzRkY2JjNmJmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDhjMjNkOWFkOGNlYjhlYmMwNjYwY2RiMDg4OTc0MTU1ZjM5YzdlM2U2NWI5Y2Y3YzdlZTJiMjZhNjA1YzM1NiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_8511bbbd8fd8433eaab510ad9ad6baee",
+      "statement": "The second 2026-10-10 zimaboard-2 stall involved a Langfuse worker beside an Argo CD controller and recovered after Kubernetes moved the heavy Pods; repository Helm values exclude that node for both workload groups.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl#L73-L84",
+          "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L85-L93",
+          "version": "repo-lines-v1:sha256:a20e2045e85d2aa5f782703adfe064fabcfd098317c7e75b4315deaa675382b4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1YjE4NWE5MWU2NjU1MzhjMzJlM2I0Zjk3Y2U2ZDkyZGQ2NzRhMzE4NjI3ZmZjMzg0YzdjYzllZWMzZGVlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMWYxYjBmZjllMzU3OTQzYTIzOGNkZDA5MmNjZjMyY2YxN2RjZDA3ZTcxNWQyMjFjNTlkZmMzYmJlZmVmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjlkZDA2NDYwNzk4YmYzMWY0NTZiYTJmODM4ZjQ4MmNmNjJiNDU0YmMyODczZDJiZDE3NDdlZmQ5ZDYwN2UxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk5NzEwOGJlNjAxZGY0ZTU0MmRlOWNiMjhjNGJjMTNlYzVmMGRmMGY3MDUzZjcxNzFhZTdlMTQyNmVjYjc5ZCJ9"
+        },
+        {
+          "resource": "repo://docs/argocd-node-pressure-2026-10-10.md#L15-L29",
+          "version": "repo-lines-v1:sha256:ae9b60e40aac1039466761279e2049d285dc168fbf80d53c09c7714f6373184c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNThmYmFkNmJlYmI0YjdjYTUyYjA3MzhjNTEwMTBhNzU3Mzk4NGZjMjk4M2ViOTMzZmNhNTNjMGJjOTAzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTFhOWVhNWJmN2UwYTFiNzcyZjA1YmMxMjkwODhiYzFiYWI3MmZiMzkxZmFhMjM5NGVmZjUzM2EyOTZmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
+        },
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L911-L913",
+          "version": "repo-lines-v1:sha256:08c23d9ad8ceb8ebc0660cdb088974155f39c7e3e65b9cf7c7ee2b26a605c356:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDNjNmM2OTEzZjc4MTQ4YzcyMzI5ODc4N2Q0NmMzMmNlMmRjODJkMDczOGE5YTM1ODlhMjI1MzA3ZTQwODYyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZkOTgwY2ExODE3YjA0NGQ4MTM2NDdhZDBkZjI4ZjRkMDczZjFhZjU5MzU1OTRjMDNmYmI2M2E1NTc1ZjE4MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE3MjVmNTBhMjQ1NzVkMmU1YzYxY2E5MTgzMzAyZTkxYThjZDhkMWM0YzhhNzU4ZWIwNDFlMzczODI0N2I5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NjNhNDkxZGNmNDY5ZTMwZWQ2MzdmZmZiNWQ1MDAwZmM1Y2M5NmNhNDRmN2UyZWUxOTVhMTNiNTMyYjgzOSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_81893117cfa1404682005e900f669ae1",
+      "statement": "The n8n controller lacks node affinity, requests 512 MiB and permits 2 GiB while using Recreate; a rollout may register active webhook integrations on startup, so placement or budget changes need callback verification.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/README.md#L61-L66",
+          "version": "repo-lines-v1:sha256:465b5bf560dadbb17e5b5f124eed3e909b58ea696341ae6d12787ce23beeaecd:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZGI2MzFjMzIxNWVlY2Q2MWExYWU0MTI4ZDNhNTIyNWE4YzIxYTBhNjkwMDEyOGQ5OWZlZmE3MGUyNTBlMjViYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTFhYTFjOGZlMzkzMTY4ZWFjNjViNmQ0ZWMzOWEzNmIyZDMzZjNlYjI4N2E5YTRlMTJlZDQ0Y2YzOTQ0YzQzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjJjYmU5YzhmMjgzZmM1YWYyOTA3MGQwMGU1ZDliN2ExMmU5OGFiZDg1ODJjMDZmMjg1Njc1ZmI0NjY0ZDI1MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjZhMmQwMDI3NjBkYmYwYmJmMjcwYTczODE1MGRlODc0ODhmZWIxZThkNThlY2NhNjc3OGQwMDY0MzkyMDZkMCJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L219-L224",
+          "version": "repo-lines-v1:sha256:7f7abada4b576fd071ffd0286660e82ad33e1a855740c92f1f62d4b80a9f5f4a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTMwZWU2ZjA0MWFkOGI2YjgzYTI0ZjVlZGJhYjEwZDFkOTNlNTBjMWFiYjlkZTc3NmIwMmQzOTgzYTIwM2RkYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2FmMjE2ZjBlNTc1N2YyYzYxNmY2MDgwYzU4Mzk4Njc1Zjc3OGNmNmEzNmUwM2Q0NDNiZTkxMzFhZDZlNDc4ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTc4ZDg2MzI3MmRjMjljMzIzMzNmYWY1MDJlYWVmOGY0MGRiOTJlNjhlMzlkYTg1YzNmYWM5MjZhODRhN2UzZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2FjYzI5NDA3ZWYzNGI1NWMxN2FiNmI1YjIwOTA5N2Y5NDI2NDYxMDkxZjA0OWI5Y2ZjZDIxOWVjNGYxMWI2NyJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L3-L15",
+          "version": "repo-lines-v1:sha256:25d4468bfe61c9b65e4302def838de4c66f2a58be905915e447723d074da5a24:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkNDBmMzNmMjQ3MjkzM2RjMzY1ZmJjZGVjZDc5M2Q4NWUzYzBlNGFlZTAwNzkyMDZiYTYyMDEzZTNlY2M5OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2Y3MmJlMzRiYmYwNzU2M2U3YjYzYmM0NGM0YjU3MmI5MTE3MjdmMzQzMjczZjE3ZGZjYTdhZDA2OGJjZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4NDRhMjRjNDhjZTY2YTBhYmU3OTFhOTIzYWEyZTcwNTAwYjI4Njk2ZTQzZjgzMWJmYzI4NDY3NjQxMDhhMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzMjFlZmZkYmI2ZGFiMTc1ZWQ5ZWUyMGQxZGM4MDZkNjY4NmY4Mzg5NjU3NDY5ZWYxMmQ4ZTBmY2RlMWJhNGYifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-11T00:16:41.141Z"
+  }
+}
