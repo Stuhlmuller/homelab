@@ -98,6 +98,14 @@ cleanup() {
       mirror_category="rate-limited"
     elif grep -Fqi 'no space left on device' "$scratch/mirror-error"; then
       mirror_category="storage-full"
+    elif grep -Eiq 'quota exceeded|exceed[^[:cntrl:]]*quota' "$scratch/mirror-error"; then
+      mirror_category="quota-exceeded"
+    elif grep -Eiq '403 Forbidden|HTTP status(:| code:?)?[[:space:]]*403|status code:?[[:space:]]*403' "$scratch/mirror-error"; then
+      mirror_category="http-forbidden"
+    elif grep -Eiq '413 Request Entity Too Large|HTTP status(:| code:?)?[[:space:]]*413|status code:?[[:space:]]*413' "$scratch/mirror-error"; then
+      mirror_category="request-too-large"
+    elif grep -Eiq 'HTTP status(:| code:?)?[[:space:]]*5[0-9]{2}|status code:?[[:space:]]*5[0-9]{2}|50[234] (Bad Gateway|Service Unavailable|Gateway Timeout)' "$scratch/mirror-error"; then
+      mirror_category="server-error"
     elif grep -Eiq 'unauthorized|authentication required|access denied|denied:' "$scratch/mirror-error"; then
       mirror_category="authentication-denied"
     elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then

@@ -107,7 +107,8 @@ class HarborPublicationGates(unittest.TestCase):
         return result
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
-                        missing_error="manifest unknown", registries=("docker.io", "quay.io")):
+                        missing_error="manifest unknown", registries=("docker.io", "quay.io"),
+                        source_error="toomanyrequests"):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-nofx-backend", "homelab-nofx-frontend"]
@@ -136,6 +137,7 @@ class HarborPublicationGates(unittest.TestCase):
             "mirror": mirror,
             "resume": resume,
             "missing_error": missing_error,
+            "source_error": source_error,
         }
         mock = "#!/usr/bin/env python3\nFIXTURE = " + repr(fixture) + "\n" + textwrap.dedent('''\
             import json
@@ -281,7 +283,7 @@ class HarborPublicationGates(unittest.TestCase):
                     authfile = Path(args[args.index("--dest-authfile") + 1])
                     assert json.loads(authfile.read_text()) == {"username": "robot$mirror+publisher"}
                     if FIXTURE["failure"] == "mirror-source" and not args[-2].startswith("docker://harbor.stinkyboi.com/"):
-                        print("toomanyrequests private-test-credential-must-never-appear", file=sys.stderr)
+                        print(FIXTURE["source_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(17)
                     if FIXTURE["failure"] == "mirror-alias" and args[-1].endswith(":stable"):
                         print("connection reset private-test-credential-must-never-appear", file=sys.stderr)
@@ -688,6 +690,28 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertEqual(status["category"], categories.get(failure, "command-failed"))
                 self.assertEqual(status["exit_status"], str(result.returncode))
                 self.assertEqual(set(status), {"source", "phase", "category", "exit_status"})
+                self.assert_cleaned()
+
+    def test_mirror_http_failure_categories_are_private_and_fail_closed(self):
+        for message, category in (
+            ("403 Forbidden", "http-forbidden"),
+            ("received unexpected HTTP status: 403", "http-forbidden"),
+            ("received unexpected HTTP status: 413", "request-too-large"),
+            ("received unexpected HTTP status: 500", "server-error"),
+            ("502 Bad Gateway", "server-error"),
+            ("project quota exceeded", "quota-exceeded"),
+            ("status code: 429", "rate-limited"),
+            ("unrecognized private failure", "command-failed"),
+        ):
+            with self.subTest(message=message):
+                self.transport_mocks(failure="mirror-source", mirror=True, source_error=message)
+                result = self.run_helper(mode="mirror")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                status = dict(line.split("=", 1) for line in self.public_status.splitlines())
+                self.assertEqual(status["category"], category)
+                self.assertEqual(status["phase"], "upstream-copy")
+                self.assertNotIn(message, self.public_status)
                 self.assert_cleaned()
 
     def test_mirror_resume_avoids_upstream_but_rechecks_aliases_and_complete_pulls(self):

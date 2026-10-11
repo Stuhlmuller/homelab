@@ -112,6 +112,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    A running Harbor UI or manifest request alone does not prove complete copies.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
+   Categories also distinguish bare HTTP 403, payload-size limits, 5xx server
+   responses and quota exhaustion. A category is a diagnostic hint, not source
+   or destination attribution, an absent-artifact proof, or permission to retry.
 3. From that clean checkout, render and strictly validate each existing machine
    configuration. The helper defaults to inspection; use Talos client 1.11.3.
    Restore the private client config at `.talos/talosconfig`, or pass an existing
