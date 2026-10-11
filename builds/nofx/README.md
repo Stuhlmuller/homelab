@@ -113,6 +113,11 @@ compatibility gate. Source patches, financial behavior and data format are
 unchanged. After publication, verify application actions and active-image scan
 results before claiming CVE remediation; base/compiler replacement alone cannot
 prove the resulting application and embedded dependencies are CVE-free.
+Patch `0021` updates fixed Go dependency versions and their checksums, including
+coherent transitive versions selected by Go's module graph. Private module and
+package scans guide this change; raw reports stay outside git. Integrity,
+native regressions, the resulting binary and embedded C components still need
+separate verification before publication or a CVE-remediation claim.
 
 ## OKX US cash-spot competition
 
