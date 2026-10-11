@@ -23,11 +23,27 @@ def internet_allowed(address, port):
 
 
 class Boundary(unittest.TestCase):
-    def test_one_workspace_only_and_no_unsolicited_ingress(self):
+    def test_one_workspace_only(self):
         self.assertEqual(POLICY["metadata"]["namespace"], "cordium")
         self.assertEqual(POLICY["spec"]["podSelector"]["matchLabels"], {"octelium.com/workspace-uid": "RENDERED-WORKSPACE-UID"})
-        self.assertEqual(POLICY["spec"]["ingress"], [])
         self.assertEqual(POLICY["spec"]["policyTypes"], ["Ingress", "Egress"])
+
+    def test_supervisor_ingress_is_limited_to_native_controllers(self):
+        policy = POLICY["spec"]
+        self.assertEqual(len(policy["ingress"]), 1)
+        ingress = policy["ingress"][0]
+        self.assertEqual(ingress["ports"], [{"protocol": "TCP", "port": 8080}])
+        self.assertEqual(len(ingress["from"]), 2)
+        for peer in ingress["from"]:
+            self.assertEqual(set(peer), {"namespaceSelector", "podSelector"})
+            self.assertEqual(peer["namespaceSelector"]["matchLabels"], {"kubernetes.io/metadata.name": "octelium"})
+            labels = peer["podSelector"]["matchLabels"]
+            self.assertEqual(labels["app"], "octelium")
+            self.assertEqual(labels["octelium.com/component-type"], "cluster")
+        self.assertEqual(ingress["from"][0]["podSelector"]["matchLabels"]["octelium.com/app"], "cordium")
+        self.assertEqual(ingress["from"][0]["podSelector"]["matchLabels"]["octelium.com/component"], "nocturne")
+        self.assertEqual(ingress["from"][1]["podSelector"]["matchLabels"]["octelium.com/svc"], "default-cordium.octelium-api")
+        self.assertEqual(ingress["from"][1]["podSelector"]["matchLabels"]["octelium.com/namespace"], "octelium-api")
 
     def test_public_web_ports_and_required_dns_only(self):
         for address in ("1.1.1.1", "2606:4700:4700::1111"):
