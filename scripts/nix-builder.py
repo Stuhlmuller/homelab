@@ -142,7 +142,7 @@ def preflight():
 def attempt_command(policy, attempt_id):
     script = "set -eu\n" + GROUP_SCRIPT + r"""
 # Stay alive through TERM so the deadline can KILL the complete group.
-trap '' TERM INT
+trap ':' TERM INT
 pid=$PPID
 ignored="$$ $PPID"
 cleanup() {

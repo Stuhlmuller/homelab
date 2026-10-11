@@ -37,7 +37,7 @@ class CacheLayoutTests(unittest.TestCase):
             self.assertFalse(marker.exists())
 
     @unittest.skipUnless(shutil.which("timeout"), "GNU timeout is supplied by the Nix shell")
-    def test_deadline_retains_lock_before_during_and_after_build(self):
+    def test_cancellation_preserves_graceful_term_before_during_and_after_build(self):
         policy = {"url": "fixture", "publicKey": "fixture"}
         for stage in ("import", "build", "export"):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory() as temporary:
@@ -47,8 +47,8 @@ class CacheLayoutTests(unittest.TestCase):
                 script = command[5]
                 beginning = script.index('test "$(cat /sys/fs/cgroup/memory.max)"')
                 ending = script.index('job="$(mktemp')
-                script = script[:beginning] + "mkdir /workspace/offline-check.lock\n" + script[ending:]
-                blocked = 'touch /workspace/started; sleep 30'
+                script = script[:beginning] + 'mkdir /workspace/offline-check.lock\nprintf "%s\\n" "$pid" > /workspace/offline-check.lock/owner\ntrap cleanup EXIT\n' + script[ending:]
+                blocked = "sh -c " + shlex.quote("trap 'touch /workspace/graceful; exit 143' TERM; touch /workspace/started; sleep 30")
                 script = script.replace('tar -x -C "$job/source"', blocked if stage == "import" else "true")
                 script = script.replace(shlex.join(builder.build_command(policy)), blocked if stage == "build" else "true")
                 script = script.replace('nix copy --to "file://$job/cache" $(cat "$job/outputs")', blocked if stage == "export" else "true")
@@ -62,7 +62,9 @@ class CacheLayoutTests(unittest.TestCase):
                     self.assertTrue((root / "started").exists())
                     process.send_signal(signal.SIGTERM)
                     process.wait(timeout=5)
-                    self.assertTrue((root / "offline-check.lock").exists())
+                    self.assertTrue((root / "graceful").exists())
+                    self.assertFalse((root / "offline-check.lock").exists())
+                    self.assertFalse(list(root.glob("check.*")))
                 finally:
                     if process.poll() is None:
                         process.kill()
