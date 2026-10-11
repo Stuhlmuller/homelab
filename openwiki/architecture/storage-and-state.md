@@ -260,11 +260,12 @@ acceptance and the separate repair required before reattachment.
 The retained 1Gi `langfuse-migration-recovery` claim holds private recovery
 artifacts. Keep it independently of application rollout; it is not an automatic
 backup or an independently verified restore.
-The October 10 Valkey capture stage stops Langfuse web/worker/Valkey, mounts
-the queue PVC read-only, and captures its complete files to private off-NAS
-storage. Hash-verified originals remain separate from candidate AOF repair.
-No live queue replacement or general backup coverage is enabled; measured loss
-and explicit approval are required before restoration. See the
+The October 10 Valkey capture stage stopped Langfuse web/worker/Valkey, mounted
+the queue PVC read-only, and captured its complete files to private off-NAS
+storage. Hash-verified originals remain separate from the repaired AOF. At
+that stage no live replacement was enabled; the later approved promotion and
+restart are recorded above. General backup and independent restore coverage
+remain unverified. See the
 [capture runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 The Octelium Enterprise package stores are DuckDB-backed single-writer stores,
 so their Deployments must use `Recreate` rather than rolling updates.
