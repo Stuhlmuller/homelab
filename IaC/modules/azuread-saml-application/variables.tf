@@ -3,15 +3,13 @@ variable "display_name" {
   type        = string
 }
 
-variable "owner_user_object_ids" {
-  description = "Human application owners keyed by stable state addresses and resolved by immutable object ID."
-  type        = map(string)
+variable "owner_user_principal_names" {
+  description = "Stable human application owners, independent of the Terraform login."
+  type        = set(string)
 
   validation {
-    condition = length(var.owner_user_object_ids) > 0 && alltrue([
-      for object_id in values(var.owner_user_object_ids) : can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", object_id))
-    ])
-    error_message = "Retain at least one explicitly keyed human application owner object ID."
+    condition     = length(var.owner_user_principal_names) > 0
+    error_message = "Retain at least one explicitly named human application owner."
   }
 }
 
@@ -46,15 +44,15 @@ variable "login_url" {
   type        = string
 }
 
-variable "allowed_user_object_ids" {
-  description = "Individually assigned Entra users keyed by stable state addresses and resolved by immutable object ID."
-  type        = map(string)
+variable "allowed_user_principal_names" {
+  description = "Individually assigned Entra users; group assignment requires a paid Entra license."
+  type        = set(string)
 
   validation {
-    condition = length(var.allowed_user_object_ids) > 0 && alltrue([
-      for object_id in values(var.allowed_user_object_ids) : can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", object_id))
+    condition = length(var.allowed_user_principal_names) > 0 && alltrue([
+      for upn in var.allowed_user_principal_names : can(regex("^[^@[:space:]]+@[^@[:space:]]+$", upn))
     ])
-    error_message = "At least one explicit Entra user object ID is required."
+    error_message = "At least one explicit Entra user principal name is required."
   }
 }
 

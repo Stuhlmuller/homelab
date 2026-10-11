@@ -155,7 +155,12 @@ def execute():
     api = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(api)
     api.MAX_RESPONSE = 16 * 1024 * 1024
-    token = api.password_login()
+    login = api.request("POST", "/api/v1/fleet/login", {
+        "email": api.ADMIN_EMAIL, "password": api.initial_password(),
+    })
+    token = login.get("token")
+    if not isinstance(token, str) or not token:
+        raise VerificationError("Fleet login did not return a session")
     try:
         verify(api, token, local_host(api, token))
     finally:
