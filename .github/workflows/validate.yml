@@ -53,7 +53,6 @@ jobs:
             echo "rendering $overlay"
             nix develop --command kubectl kustomize "$overlay" >/dev/null
           done
-          nix develop --command env -u PYTHONPATH "${RUNNER_TEMP}/litellm-test/bin/python" scripts/ci/litellm-native-database-test.py "${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl" fixture/litellm-remediated:local
 
       - name: Check whitespace
         run: git diff --check
@@ -106,6 +105,10 @@ jobs:
               --mount "type=bind,source=$PWD/clusters/homelab/apps/litellm,target=/workspace/clusters/homelab/apps/litellm,readonly" \
               --workdir /workspace --entrypoint /app/.venv/bin/python "$image" "scripts/ci/$fixture"
           done
+
+      - name: Check packaged gateway database
+        run: |
+          nix develop --command env -u PYTHONPATH "${RUNNER_TEMP}/litellm-test/bin/python" scripts/ci/litellm-native-database-test.py "${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl" fixture/litellm-remediated:local
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh
