@@ -378,7 +378,7 @@ receive neither key. Existing values are adopted before placeholder apply.
 
 The protected exact-main `cordium-runner-credentials.yml` intake validates the
 App private key against App `5270069`, validates the native token against the
-dedicated WORKLOAD User and exact policy, and verifies both slots' encryption
+dedicated WORKLOAD User and exact forbidden-method denial, and verifies both slots' encryption
 metadata before writing. It accepts no parameter-name or command input. Only
 fixed slot names and version receipts reach public logs. Writes are not atomic:
 a partial failure is a failed intake and requires private inspection/retry.

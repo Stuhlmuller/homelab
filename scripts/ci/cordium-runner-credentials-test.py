@@ -114,6 +114,7 @@ class Intake(unittest.TestCase):
             environment = {"AWS_SECRET_ACCESS_KEY": "private-fixture", "GH_TOKEN": "private-fixture"}
             with tempfile.TemporaryDirectory() as directory, \
                  patch.object(credentials, "command", side_effect=command), \
+                 patch.object(credentials.runner, "method_boundary"), \
                  patch.object(credentials.native, "native_transport", return_value=contextlib.nullcontext(environment)):
                 if wrong_user or failed_login:
                     with self.assertRaises(RuntimeError):

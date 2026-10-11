@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -215,9 +216,6 @@ class Lifecycle(unittest.TestCase):
         status = copy.deepcopy(good)
         status["user"]["spec"]["type"] = "HUMAN"
         cases.append(status)
-        status = copy.deepcopy(good)
-        status["user"]["spec"]["authorization"]["policies"].append("bootstrap-access")
-        cases.append(status)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / ".cordium").mkdir()
@@ -236,6 +234,40 @@ class Lifecycle(unittest.TestCase):
 class Queue(unittest.TestCase):
     def setUp(self):
         self.pool = json.loads((runner.ROOT / ".cordium/runner-pool.json").read_text())
+
+    def test_reduced_status_schema_is_valid_and_requires_exact_denial(self):
+        status = {"domain": "stinkyboi.com", "user": {"metadata": {"name": "homelab-cordium-runners"}, "spec": {"type": "WORKLOAD"}}}
+        with patch.object(runner.github_operator, "command", return_value=json.dumps(status).encode()), \
+             patch.object(runner, "method_boundary") as boundary:
+            runner.native_identity(self.pool, ["cordium"])
+            boundary.assert_called_once()
+        usage = "Usage:\n  cordium get space\n"
+        raw = "rpc error: code = PermissionDenied desc = Octelium: Unauthorized"
+        for result, allowed in ((subprocess.CompletedProcess([], 1, raw + "\n", "Error: " + raw + "\n" + usage), True),
+                                (subprocess.CompletedProcess([], 0, "{}", ""), False),
+                                (subprocess.CompletedProcess([], 1, "transport unavailable", ""), False)):
+            with patch.object(runner.subprocess, "run", side_effect=[subprocess.CompletedProcess([], 0, usage, ""), result]):
+                if allowed:
+                    runner.method_boundary(["cordium"])
+                else:
+                    with self.assertRaises(RuntimeError):
+                        runner.method_boundary(["cordium"])
+
+    def test_native_file_is_private_reread_and_unrelated_credentials_not_forwarded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "native-token"
+            path.write_text("native-fixture")
+            path.chmod(0o600)
+            with patch.dict(os.environ, {"AWS_SECRET_ACCESS_KEY": "fixture", "GH_TOKEN": "fixture"}):
+                env = runner.native_environment(path)
+                self.assertEqual(env["OCTELIUM_AUTH_TOKEN"], "native-fixture")
+                self.assertNotIn("AWS_SECRET_ACCESS_KEY", env)
+                self.assertNotIn("GH_TOKEN", env)
+            path.write_text("rotated-fixture")
+            self.assertEqual(runner.native_environment(path)["OCTELIUM_AUTH_TOKEN"], "rotated-fixture")
+            path.chmod(0o644)
+            with self.assertRaises(RuntimeError):
+                runner.native_environment(path)
 
     def test_pending_jobs_in_active_runs_match_all_labels_case_insensitively(self):
         def api(method, path):
@@ -276,13 +308,13 @@ class Queue(unittest.TestCase):
 
     def test_loop_refreshes_client_and_stops_on_lifecycle_or_main_failure(self):
         with patch.object(runner.github_operator, "verify_reviewed_main") as guard, \
-             patch.object(runner, "native_identity"), \
+             patch.object(runner, "native_identity"), patch.object(runner, "native_environment", return_value={}), \
              patch.object(runner, "installation_client", return_value="private-api") as client, \
              patch.object(runner, "queued_jobs", return_value=True), \
              patch.object(runner, "provision", side_effect=RuntimeError("cleanup incomplete")) as provision, \
              patch.object(runner.time, "sleep") as sleep:
             with self.assertRaises(RuntimeError):
-                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"))
             guard.assert_called_once_with(SHA)
             client.assert_called_once()
             provision.assert_called_once()
@@ -290,28 +322,28 @@ class Queue(unittest.TestCase):
         with patch.object(runner.github_operator, "verify_reviewed_main", side_effect=RuntimeError("main changed")), \
              patch.object(runner, "installation_client") as client:
             with self.assertRaises(RuntimeError):
-                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"))
             client.assert_not_called()
 
     def test_filtered_search_cap_and_native_failure_do_not_create_runners(self):
         with self.assertRaises(RuntimeError):
             runner.queued_jobs(Mock(return_value={"total_count": 1000, "workflow_runs": []}), self.pool)
         with patch.object(runner.github_operator, "verify_reviewed_main"), \
-             patch.object(runner, "native_identity", side_effect=RuntimeError("session unavailable")), \
+             patch.object(runner, "native_identity", side_effect=RuntimeError("session unavailable")), patch.object(runner, "native_environment", return_value={}), \
              patch.object(runner, "installation_client") as client:
             with self.assertRaises(RuntimeError):
-                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"))
             client.assert_not_called()
 
     def test_idle_poll_refreshes_scoped_client_without_provisioning(self):
         with patch.object(runner.github_operator, "verify_reviewed_main"), \
-             patch.object(runner, "native_identity"), \
+             patch.object(runner, "native_identity"), patch.object(runner, "native_environment", return_value={}), \
              patch.object(runner, "installation_client", return_value="private-api") as client, \
              patch.object(runner, "queued_jobs", return_value=False), \
              patch.object(runner, "provision") as provision, \
              patch.object(runner.time, "sleep", side_effect=[None, SystemExit(0)]):
             with self.assertRaises(SystemExit):
-                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA)
+                runner.serve(self.pool, Path("/private/key"), ["cordium"], SHA, Path("/private/native-token"))
             self.assertEqual(client.call_count, 2)
             provision.assert_not_called()
 

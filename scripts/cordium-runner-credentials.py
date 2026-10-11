@@ -30,6 +30,7 @@ def module(name, filename):
 
 github = module("github_operator", "policy-bot-webhook.py")
 native = module("native_operator", "octelium-nofx-reconcile.py")
+runner = module("runner_operator", "cordium-runner.py")
 
 
 def command(*args, env=None):
@@ -62,9 +63,9 @@ def validate_native(token, directory):
             status = json.loads(command(*client, "status", "-o", "json", env=environment))
             user = status.get("user", {})
             if (status.get("domain") != "stinkyboi.com" or user.get("metadata", {}).get("name") != "homelab-cordium-runners"
-                    or user.get("spec", {}).get("type") != "WORKLOAD"
-                    or user["spec"].get("authorization", {}).get("policies") != ["homelab-cordium-runner-execution"]):
+                    or user.get("spec", {}).get("type") != "WORKLOAD"):
                 raise RuntimeError("Native credential is not the dedicated runner identity")
+            runner.method_boundary(client, environment)
         finally:
             environment.pop("OCTELIUM_AUTH_TOKEN", None)
             command(*client, "logout", env=environment)

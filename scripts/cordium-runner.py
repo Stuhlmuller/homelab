@@ -19,6 +19,9 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("github_operator", ROOT / "scripts/policy-bot-webhook.py")
 github_operator = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(github_operator)
+spec = importlib.util.spec_from_file_location("cordium_denial", ROOT / "scripts/cordium-ci-acceptance.py")
+cordium_denial = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cordium_denial)
 
 
 def kube(*arguments, input=None):
@@ -114,12 +117,32 @@ def installation_client(pool, key_file):
     return api
 
 
-def native_identity(pool, client):
-    status = json.loads(github_operator.command("octelium", *client[1:], "status", "-o", "json"))
+def method_boundary(client, environment=None):
+    command = ["cordium", *client[1:], "get", "space", "--out", "json"]
+    usage = subprocess.run(command[:-2] + ["--help"], env=environment, capture_output=True, text=True, check=True, timeout=20).stdout
+    result = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=45)
+    if not cordium_denial.is_expected_denial(result, "forbidden-method", usage):
+        raise RuntimeError("Native runner identity did not prove the required method denial")
+
+
+def native_identity(pool, client, environment=None):
+    status = json.loads(github_operator.command("octelium", *client[1:], "status", "-o", "json", env=environment))
     if (status.get("domain") != "stinkyboi.com" or status.get("user", {}).get("metadata", {}).get("name") != pool["cordium_user"]
-            or status.get("user", {}).get("spec", {}).get("type") != "WORKLOAD"
-            or status["user"]["spec"].get("authorization", {}).get("policies") != ["homelab-cordium-runner-execution"]):
+            or status.get("user", {}).get("spec", {}).get("type") != "WORKLOAD"):
         raise RuntimeError("Native login is not the dedicated policy-bound runner identity")
+    method_boundary(client, environment)
+
+
+def native_environment(path):
+    if path.stat().st_mode & 0o077:
+        raise RuntimeError("Native credential file must not be readable by group or others")
+    token = path.read_text()
+    if not token or len(token.encode()) > 4096 or any(character.isspace() for character in token):
+        raise RuntimeError("Native credential file contains an invalid authentication token")
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith("AWS_") and key not in {"GH_TOKEN", "GITHUB_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "OCTELIUM_AUTH_TOKEN"}}
+    environment["OCTELIUM_AUTH_TOKEN"] = token
+    return environment
 
 
 def queued_jobs(api, pool):
@@ -157,18 +180,19 @@ def queued_jobs(api, pool):
     return False
 
 
-def serve(pool, key_file, client, checkout):
+def serve(pool, key_file, client, checkout, auth_file):
     while True:
         # A changed main requires a reviewed deployment refresh, not stale code.
         github_operator.verify_reviewed_main(checkout)
-        native_identity(pool, client)
+        environment = native_environment(auth_file)
+        native_identity(pool, client, environment)
         api = installation_client(pool, key_file)
         if queued_jobs(api, pool):
-            provision(api, client, checkout)
+            provision(api, client, checkout, environment)
         time.sleep(30)
 
 
-def provision(api, client, checkout):
+def provision(api, client, checkout, environment=None):
     pool = json.loads((ROOT / ".cordium/runner-pool.json").read_text())
     repository = pool["repository"]
     workspace = runner_id = None
@@ -177,7 +201,7 @@ def provision(api, client, checkout):
     policy = None
 
     def call(*arguments, timeout=45, input=None, capture=True):
-        return subprocess.run(client + list(arguments), input=input, timeout=timeout, check=True,
+        return subprocess.run(client + list(arguments), input=input, timeout=timeout, check=True, env=environment,
                               stdout=subprocess.PIPE if capture else subprocess.DEVNULL,
                               stderr=subprocess.PIPE if capture else subprocess.DEVNULL)
 
@@ -287,7 +311,10 @@ def main():
     parser.add_argument("--homedir", required=True, type=Path, help="Dedicated runner identity login; never a human/agent login")
     parser.add_argument("--expected-sha", required=True, help="Exact current reviewed main commit")
     parser.add_argument("--serve", action="store_true", help="Poll compatible queued jobs serially; stop on drift or any lifecycle failure")
+    parser.add_argument("--auth-token-file", type=Path, help="File-backed native credential required for unattended client refresh in serve mode")
     args = parser.parse_args()
+    if args.serve and args.auth_token_file is None:
+        parser.error("--serve requires --auth-token-file")
     github_operator.verify_reviewed_main(args.expected_sha)
     github_operator.command("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/cordium-runner.py")
     pool = json.loads((ROOT / ".cordium/runner-pool.json").read_text())
@@ -303,10 +330,11 @@ def main():
     if args.serve:
         with open(args.homedir / "runner-controller.lock", "a", opener=lambda path, flags: os.open(path, flags, 0o600)) as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            serve(pool, args.app_key_file, client, args.expected_sha)
+            serve(pool, args.app_key_file, client, args.expected_sha, args.auth_token_file)
     else:
-        native_identity(pool, client)
-        provision(installation_client(pool, args.app_key_file), client, args.expected_sha)
+        environment = native_environment(args.auth_token_file) if args.auth_token_file else None
+        native_identity(pool, client, environment)
+        provision(installation_client(pool, args.app_key_file), client, args.expected_sha, environment)
 
 
 if __name__ == "__main__":
