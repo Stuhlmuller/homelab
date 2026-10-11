@@ -10,6 +10,15 @@
       "source": "cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4"
     },
     {
+      "source": "cgr.dev/chainguard/go:latest@sha256:2c20827746d752c1f18989847956637a0dc979c42507f4059e1d9559ee7733af"
+    },
+    {
+      "source": "cgr.dev/chainguard/node:latest-dev@sha256:f0944f14c490643d52a065095087ac62094ee5ef50c08b5892bc1a9c6a5c14e1"
+    },
+    {
+      "source": "cgr.dev/chainguard/node:latest@sha256:4e771308d07813bf9a1aa25299a45e5664533c47fe4c541c14498752f2dbc2dd"
+    },
+    {
       "source": "cgr.dev/chainguard/postgres:latest@sha256:b409d66dd4c3e7138a7e06ebdfe46966843e9e1a9322cb3b20a13928011ad398"
     },
     {
@@ -407,6 +416,9 @@
     },
     {
       "source": "quay.io/argoproj/argocd:v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
+    },
+    {
+      "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"
     },
     {
       "source": "quay.io/jetstack/cert-manager-acmesolver@sha256:d8d948a9fa0fb9eeb9fd2432dee4945cc202c840ee25a733f0b238fd89fe5cbb"

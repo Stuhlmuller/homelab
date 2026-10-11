@@ -97,3 +97,21 @@ Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practic
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
 and the [existing isolation contract](runtime-isolation.md).
+
+## Additional publication prerequisite
+
+Anonymous source inspection resolved public Chainguard Node `latest`, Node
+`latest-dev` and Go `latest`, each with Linux amd64/arm64 indexes. Add them to the
+reviewed full catalog and Chainguard scope before custom build/runtime changes.
+Node uses `/usr/bin/node` and UID 65532; Go uses `/usr/bin/go` and UID 0 in its
+build image. Existing shell/npm/CGO/linker, filesystem ownership and application
+behavior contracts still require native compatibility tests; a tag lookup does
+not prove a replacement works. No consumer changes in this prerequisite.
+
+The full catalog also includes the paused Image Updater chart's actual v1.3.0
+image, with Linux amd64/arm64/ppc64le/s390x manifests and source attestations.
+Copy the complete index, preserving digests. Keep its zero replicas and promotion
+gates unchanged until publication and its internal reference are accepted.
+The prior seven-image publication receipt covers only those seven entries,
+not these four additions. Any publication of the expanded scope requires a new
+protected production approval and complete anonymous download acceptance.
