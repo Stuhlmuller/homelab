@@ -53,6 +53,7 @@ jobs:
             echo "rendering $overlay"
             nix develop --command kubectl kustomize "$overlay" >/dev/null
           done
+          nix develop --command env -u PYTHONPATH "${RUNNER_TEMP}/litellm-test/bin/python" scripts/ci/litellm-native-database-test.py "${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl" fixture/litellm-remediated:local
 
       - name: Check whitespace
         run: git diff --check
@@ -101,7 +102,8 @@ jobs:
             docker run --rm --network none --user 65532:65532 --read-only \
               --cap-drop ALL --security-opt no-new-privileges \
               --tmpfs /tmp:rw,noexec,nosuid,nodev,size=256m \
-              --mount "type=bind,source=$PWD,target=/workspace,readonly" \
+              --mount "type=bind,source=$PWD/scripts/ci,target=/workspace/scripts/ci,readonly" \
+              --mount "type=bind,source=$PWD/clusters/homelab/apps/litellm,target=/workspace/clusters/homelab/apps/litellm,readonly" \
               --workdir /workspace --entrypoint /app/.venv/bin/python "$image" "scripts/ci/$fixture"
           done
 

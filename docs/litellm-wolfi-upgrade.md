@@ -48,6 +48,15 @@ version is changed. The derived image defaults to UID 65532; its declared GitOps
 gateway command, actual database startup and migration behavior must also pass
 before rollout. The upstream entrypoint is not the GitOps launcher.
 
+The Linux fixture also connects the derived image to a separate disposable
+PostgreSQL database through a read-only Unix-socket bind mount. Networking stays
+disabled. The database accepts no TCP connections; its private parent directory
+stays owner-only. UID 65532 must apply the image's packaged migrations with its
+bundled offline Prisma CLI, execute the packaged query engine and pass native
+key/provider persistence checks. This verifies the packaged database path rather
+than only a host-installed SDK; real GitOps startup and production-data restore
+remain separate gates.
+
 The current workload reference is the imported build-source image, not a
 published derived runtime. Keep this PR draft: before merging any consumer
 change, replace that reference with the fully published, privately scanned and

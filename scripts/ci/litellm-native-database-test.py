@@ -237,8 +237,34 @@ def check_upgrade(directory, socket, wheel):
     asyncio.run(verify())
 
 
+def check_runtime_database(directory, socket, image):
+    assert image == "fixture/litellm-remediated:local", "Only the disposable CI runtime image is allowed"
+    run("createdb", "-h", socket, "-U", "fixture", "-O", "litellm", "litellm-runtime")
+    # The private parent remains 0700; expose only this socket to the non-root container.
+    socket.chmod(0o755)
+    code = '''import asyncio,json,runpy,shutil,tempfile
+from pathlib import Path
+fixture=runpy.run_path('scripts/ci/litellm-native-database-test.py')
+url='postgresql://litellm@localhost/litellm-runtime?host=%2Ffixture-postgres'
+with tempfile.TemporaryDirectory(dir='/tmp') as temporary:
+ directory=Path(temporary);migrations=directory/'migrations'
+ shutil.copytree(fixture['ProxyExtrasDBManager']._get_prisma_dir(),migrations)
+ schema=migrations/'schema.prisma';schema.write_text(schema.read_text().replace('env("DATABASE_URL")',json.dumps(url)))
+ fixture['run']('/opt/prisma/binaries/node_modules/.bin/prisma','migrate','deploy','--schema',schema)
+ asyncio.run(fixture['check_database'](url,directory))
+print('Non-root remediated runtime: packaged migrations, query engine, native key/provider persistence passed')
+'''
+    run("docker", "run", "--rm", "--network", "none", "--user", "65532:65532", "--read-only",
+        "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+        "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=256m",
+        "--mount", f"type=bind,source={ROOT / 'scripts/ci'},target=/workspace/scripts/ci,readonly",
+        "--mount", f"type=bind,source={ROOT / 'clusters/homelab/apps/litellm'},target=/workspace/clusters/homelab/apps/litellm,readonly",
+        "--mount", f"type=bind,source={socket},target=/fixture-postgres,readonly",
+        "--workdir", "/workspace", "--entrypoint", "/app/.venv/bin/python", image, "-c", code)
+
+
 def main():
-    assert len(sys.argv) == 2, "Pass the pinned previous migration wheel"
+    assert len(sys.argv) in (2, 3), "Pass the pinned previous migration wheel and optional disposable runtime image"
     with tempfile.TemporaryDirectory(prefix="litellm-db-", dir="/tmp") as temporary:
         directory = Path(temporary)
         data, socket = directory / "data", directory / "socket"
@@ -260,6 +286,8 @@ def main():
             run(sys.executable, "-m", "prisma", "migrate", "deploy", "--schema", fixture_schema)
             asyncio.run(check_database(url, directory))
             check_upgrade(directory, socket, Path(sys.argv[1]))
+            if len(sys.argv) == 3:
+                check_runtime_database(directory, socket, sys.argv[2])
         finally:
             run("pg_ctl", "-D", data, "-w", "-t", "30", "-m", "immediate", "stop")
     print("Native PostgreSQL keys: atomic import, concurrency, UI revocation/rotation, provider encryption and fail-closed reads passed")
