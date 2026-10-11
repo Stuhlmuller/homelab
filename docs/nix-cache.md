@@ -58,6 +58,57 @@ cache and sandbox policy. The client refuses to publish when Nix ignores
 those settings. Alternatively, run on another trusted **x86_64 Linux** Nix machine. The platform must match;
 macOS or ARM Linux results cannot satisfy x86_64 Linux checks. If copying a key to another builder, protect that machine as carefully as CI. A Linux cache miss builds the checks normally.
 
+Stopping the local publisher does not guarantee that Kubernetes exec stops the
+remote build. To cancel an interrupted attempt, run:
+
+```sh
+python3 -I scripts/nix-builder.py --cancel \
+  --pod <original-pod-name> --pod-uid <original-pod-uid> \
+  --attempt-id <original-attempt-id>
+```
+
+The helper prints the original Pod name, UID, and immutable attempt ID before execution. Cancellation
+rejects a replacement Pod and matches the immutable ID in the timeout supervisor’s final argument.
+Later cancellation works even if source or cache policy has changed; retain the
+printed ID from the publication log. TERM reaches the supervisor's process
+group; a 10-second grace period precedes KILL of any surviving group members,
+followed by 10 seconds to confirm the group contains no running processes. Local interrupt, timeout, and remote errors invoke
+this path automatically. An independent 30-minute remote deadline limits the
+entire attempt even if the operator connection is lost. A workspace lock excludes
+concurrent attempts; the shell retains its lock during termination and waits for remaining
+process-group members even if the main command exits first. Cancellation releases only
+its matching owner lock after the whole group has stopped. The independent
+deadline can leave a lock and workspace; fail closed pending operator review.
+If node exec is unavailable, cancellation cannot be confirmed; keep builds
+held and diagnose the node through the declared recovery path.
+
+Immediately before execution, preflight requires every node Ready without
+memory, disk, or PID pressure, node leases at most 75 seconds old, a single
+Ready builder with its declared 1 GiB reservation and limit, and node memory
+metrics at most 120 seconds old. The builder node needs at least 1.5 GiB
+allocatable memory minus measured working-set usage: 1 GiB for the build and
+512 MiB operating margin. This is an admission floor, not proof of runtime
+capacity; monitor node health, actual peak memory, and OOM counters throughout
+the first full check. Dependency substitutions run one at a time to reduce
+cold-start pressure. Missing or stale evidence rejects execution.
+
+The first Linux attempt on 2026-10-11 stopped during dependency substitution.
+All four nodes were Ready before it started. `zimaboard-0` last renewed its
+kubelet lease at 15:42:14 UTC, then became NotReady while runtime service
+health changed. Last observed builder cgroup peak was 620,990,464 bytes with
+zero OOM events; subsequent host inspection showed only 543 MiB available.
+These observations do not establish the cause. ClickHouse OOM messages in
+kernel history were from October 9 at 06:37 UTC, not this incident.
+
+Stopping the local publisher left its remote Nix build alive. The controller
+later replaced the Pod; cancellation reached the replacement and found no
+matching process. Independent Talos process inspection subsequently confirmed
+that the old process and every `nix build` command were gone, and all four
+nodes plus kubelet, CRI, and containerd were healthy again. No manual node or
+service recovery mutation was performed, and no signed outputs were published.
+Keep retries held until cancellation lifecycle and resource preflight are
+reviewed; preserve raw incident diagnostics in private operator storage.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input
