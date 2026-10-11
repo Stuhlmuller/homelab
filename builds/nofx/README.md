@@ -73,11 +73,13 @@ deployed NOFX artifacts remain private `harbor.stinkyboi.com/homelab` images.
 Do not merge deployment digest updates before protected publication and fresh
 scan/pull acceptance of the resulting artifacts.
 
-The backend copies the static Go SDK into the retained Alpine build environment
-and uses its musl compiler with the existing TA-Lib headers/libraries. Directly
-changing that stage to a glibc builder would change the produced binary's libc
-contract. The final runtime remains an explicit exception until a complete
-Chainguard runtime rebuild passes native dependency and data acceptance.
+The backend builds on pinned Chainguard Wolfi with the Chainguard Go SDK and
+retains CGO for GORM SQLite. Pinned source has no TA-Lib linkage. The candidate
+uses static linking, Go DNS/user lookups, and disables unused SQLite extension
+loading. Existing Go regressions run with the same flags. ELF checks reject an
+interpreter or shared-library dependency before the binary enters Chainguard
+static. This replaces the proposed Alpine runtime exception only after native
+build, database and runtime acceptance pass.
 The frontend uses the Node dev candidate with an explicit builder UID 0,
 preserving the old build identity; final artifacts still run as UID 10000.
 Its runtime now uses the pinned Chainguard nginx candidate. The upstream
@@ -92,6 +94,13 @@ capabilities, health, compiled static assets/cache, SPA fallback, and GET/POST
 proxy path/query/body plus synthetic Authorization and Cookie headers. No
 production API, credential or trading action is used. Live login, WebSocket,
 backtest and browser behavior still need acceptance after publication.
+
+`backend-check.py` starts the built backend as UID 10000 with a read-only root,
+synthetic file-backed crypto credentials and a disposable data volume on an
+internal Docker network. It verifies HTTP health, SQLite integrity and retained
+installation identity across a graceful restart. No production data, credentials
+or account/trading requests are involved. Production backup/restore, original
+application actions and fresh artifact scans remain separate rollout gates.
 
 The existing `test.sh` and `build.sh` must pass on Linux with the exact image
 digests. Local Docker is unavailable; the draft's native NOFX CI job is the

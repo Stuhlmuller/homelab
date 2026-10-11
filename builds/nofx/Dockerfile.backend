@@ -1,11 +1,9 @@
-# Preserve the pinned release's runtime and already-built TA-Lib ABI.
-FROM ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7 AS runtime
-
+# checkov:skip=CKV_DOCKER_2: Kubernetes HTTP probes own runtime health; static runtime has no shell/wget and must pass native startup acceptance.
 FROM cgr.dev/chainguard/go:latest@sha256:2c20827746d752c1f18989847956637a0dc979c42507f4059e1d9559ee7733af AS toolchain
 
-FROM runtime AS dependencies
-RUN apk add --no-cache git build-base
-# The static Chainguard SDK runs with the retained musl compiler and TA-Lib.
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e AS dependencies
+RUN apk add --no-cache git build-base glibc-dev
+# Preserve CGO SQLite, without an unused TA-Lib or Alpine runtime dependency.
 COPY --from=toolchain /usr/lib/go /usr/lib/go
 RUN ln -s /usr/lib/go/bin/go /usr/local/bin/go && go version
 WORKDIR /src
@@ -15,19 +13,21 @@ COPY upstream/ ./
 
 FROM dependencies AS tests
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./api ./backtest ./market/okxhistory -count=1 && \
+    go test -tags="netgo,osusergo,sqlite_omit_load_extension" -ldflags="-linkmode external -extldflags -static" ./api ./backtest ./market/okxhistory -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage|Spot)' -count=1 && \
+    go test -tags="netgo,osusergo,sqlite_omit_load_extension" -ldflags="-linkmode external -extldflags -static" ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage|Spot)' -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./store -run '^Test(TraderCreatePreservesVisibility|Spot)' -count=1 && \
+    go test -tags="netgo,osusergo,sqlite_omit_load_extension" -ldflags="-linkmode external -extldflags -static" ./store -run '^Test(TraderCreatePreservesVisibility|Spot)' -count=1 && \
     CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./trader ./manager -run '^Test(OKX(Initialization|Leverage|RequestsUseUSRegion|Spot)|AutoTrader|Competition|Spot)' -count=1
+    go test -tags="netgo,osusergo,sqlite_omit_load_extension" -ldflags="-linkmode external -extldflags -static" ./trader ./manager -run '^Test(OKX(Initialization|Leverage|RequestsUseUSRegion|Spot)|AutoTrader|Competition|Spot)' -count=1
 
 FROM tests AS build
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go build -trimpath -ldflags="-s -w" -o /out/nofx .
+    go build -tags="netgo,osusergo,sqlite_omit_load_extension" -trimpath -ldflags="-s -w -linkmode external -extldflags -static" -o /out/nofx . && \
+    readelf -l /out/nofx > /out/program-headers && ! grep -q INTERP /out/program-headers
+RUN readelf -d /out/nofx > /out/dynamic-headers && ! grep -q NEEDED /out/dynamic-headers
 
-FROM runtime AS final
+FROM cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327 AS final
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="AGPL-3.0" \
       org.opencontainers.image.description="NOFX pinned release with owned OKX US cash-spot trading and historical simulation fixes"
@@ -35,6 +35,4 @@ COPY --from=build /out/nofx /app/nofx
 COPY upstream/LICENSE /usr/share/licenses/nofx/LICENSE
 USER 10000:10000
 WORKDIR /app/data
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
 CMD ["/app/nofx"]
