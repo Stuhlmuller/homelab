@@ -11,3 +11,4 @@ docker build --label "org.opencontainers.image.revision=${source_sha}" \
   --file "${build_context}/Dockerfile.backend" --tag homelab-nofx-backend:build "${build_context}"
 docker build --label "org.opencontainers.image.revision=${source_sha}" \
   --file "${build_context}/Dockerfile.frontend" --tag homelab-nofx-frontend:build "${build_context}"
+python3 -I "${recipe_dir}/frontend-check.py"

@@ -80,6 +80,18 @@ contract. The final runtime remains an explicit exception until a complete
 Chainguard runtime rebuild passes native dependency and data acceptance.
 The frontend uses the Node dev candidate with an explicit builder UID 0,
 preserving the old build identity; final artifacts still run as UID 10000.
+Its runtime now uses the pinned Chainguard nginx candidate. The upstream
+`nginx/nginx.conf` retains SPA fallback, cache behavior, `/health` and API
+proxying. The recipe-owned top-level config places PID/cache/temp writes on
+the existing writable mounts. Kubernetes retains its HTTP health probes;
+the runtime no longer assumes a shell or wget.
+
+`build.sh` runs `frontend-check.py` against the built image on a disposable
+internal Docker network. It checks UID 10000 with a read-only root and dropped
+capabilities, health, compiled static assets/cache, SPA fallback, and GET/POST
+proxy path/query/body plus synthetic Authorization and Cookie headers. No
+production API, credential or trading action is used. Live login, WebSocket,
+backtest and browser behavior still need acceptance after publication.
 
 The existing `test.sh` and `build.sh` must pass on Linux with the exact image
 digests. Local Docker is unavailable; the draft's native NOFX CI job is the
