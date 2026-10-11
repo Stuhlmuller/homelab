@@ -39,8 +39,8 @@ class RunnerImage(unittest.TestCase):
             fixtures = {
                 "uname": 'case "$1" in -s) echo Linux;; -m) echo x86_64;; esac',
                 "id": 'echo 0',
-                "dockerd": 'echo $$ > "$PROBE_TEST_DIR/pid"; for arg in "$@"; do printf "%s\\n" "$arg"; done > "$PROBE_TEST_DIR/daemon-args"; trap "exit 0" TERM; while true; do sleep 0.1; done',
-                "docker": 'shift 2; test "$1" != build || exit 17',
+                "dockerd": 'for arg in "$@"; do printf "%s\\n" "$arg"; done > "$PROBE_TEST_DIR/daemon-args"; trap "exit 0" TERM; echo $$ > "$PROBE_TEST_DIR/pid"; while true; do sleep 0.1; done',
+                "docker": 'shift 2; if test "$1" = info; then test -s "$PROBE_TEST_DIR/pid"; else test "$1" != build || exit 17; fi',
             }
             for name, body in fixtures.items():
                 executable = binaries / name

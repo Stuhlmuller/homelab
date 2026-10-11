@@ -147,13 +147,13 @@ that scale.
 
 After activation gates and a verified dedicated login, add the serve flag:
 
-~~~sh
+```sh
 python3 -I scripts/cordium-runner.py --serve \
   --expected-sha FULL_REVIEWED_MAIN_SHA \
   --app-key-file /PRIVATE/RUNNER_APP_KEY.pem \
   --auth-token-file /PRIVATE/RUNNER_AUTH_TOKEN \
   --homedir /PRIVATE/DEDICATED_RUNNER_LOGIN
-~~~
+```
 
 This process is not deployed yet. Use one replica with Recreate rollout when
 packaging it; the filesystem lock is not a distributed leader lease. Deployment refresh on new main commits remains required. The private native
