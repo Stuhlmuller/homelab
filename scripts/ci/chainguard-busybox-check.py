@@ -2,6 +2,7 @@
 """Run declared BusyBox commands in the exact candidate image on disposable volumes."""
 
 import json
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -43,22 +44,29 @@ def run_case(name, container, uid, verify, *, caps=(), readonly_config=False, pr
         setup = 'chown -R "$1:$1" /config /backup /downloads /target /var/lib/grafana /host-sysctl; chmod -R u+rwX,go+rX /config /backup /downloads /target /var/lib/grafana; touch -t 202001010000 /backup/local-backups/20200101T000000Z.tar.gz /backup/local-backups/.old.partial'
         subprocess.run(common + ["--cap-add", "CHOWN", "--cap-add", "FOWNER", "--user", "0:0"] + mounts
                        + ["--entrypoint", "/bin/sh", source, "-ec", setup, "fixture", str(uid)], check=True)
-        if readonly_config:
-            mounts[mounts.index(f"{root / 'config'}:/config")] += ":ro"
-        security = ["--user", f"{uid}:{uid}"]
-        for capability in caps:
-            security += ["--cap-add", capability]
-        command = container.get("command", []) + container.get("args", [])
-        assert command[:2] == ["/bin/sh", "-ec"], f"Unexpected shell contract for {name}"
-        subprocess.run(common + security + mounts + ["--entrypoint", command[0], source] + command[1:], check=True, timeout=30)
-        subprocess.run(common + security + mounts + ["--entrypoint", "/bin/sh", source, "-ec", verify], check=True, timeout=30)
-        if probe:
-            assert image(probe) == IMAGE and probe["securityContext"]["runAsUser"] == 65534
-            for name in ("readinessProbe", "livenessProbe"):
-                command = probe[name]["exec"]["command"]
-                subprocess.run(common + ["--user", "65534:65534"] + mounts
-                               + ["--entrypoint", command[0], source] + command[1:], check=True, timeout=30)
-        print(f"Passed {name} at UID {uid}", flush=True)
+        writable_mounts = mounts.copy()
+        try:
+            if readonly_config:
+                mounts[mounts.index(f"{root / 'config'}:/config")] += ":ro"
+            security = ["--user", f"{uid}:{uid}"]
+            for capability in caps:
+                security += ["--cap-add", capability]
+            command = container.get("command", []) + container.get("args", [])
+            assert command[:2] == ["/bin/sh", "-ec"], f"Unexpected shell contract for {name}"
+            subprocess.run(common + security + mounts + ["--entrypoint", command[0], source] + command[1:], check=True, timeout=30)
+            subprocess.run(common + security + mounts + ["--entrypoint", "/bin/sh", source, "-ec", verify], check=True, timeout=30)
+            if probe:
+                assert image(probe) == IMAGE and probe["securityContext"]["runAsUser"] == 65534
+                for probe_name in ("readinessProbe", "livenessProbe"):
+                    command = probe[probe_name]["exec"]["command"]
+                    subprocess.run(common + ["--user", "65534:65534"] + mounts
+                                   + ["--entrypoint", command[0], source] + command[1:], check=True, timeout=30)
+            print(f"Passed {name} at UID {uid}", flush=True)
+        finally:
+            # Restore only disposable fixture ownership so the runner can clean up.
+            cleanup = 'chown -R "$1:$2" /config /backup /downloads /target /var/lib/grafana /host-sysctl; chmod -R u+rwX /config /backup /downloads /target /var/lib/grafana /host-sysctl'
+            subprocess.run(common + ["--user", "0:0", "--cap-add", "CHOWN", "--cap-add", "FOWNER", "--cap-add", "DAC_OVERRIDE"]
+                           + writable_mounts + ["--entrypoint", "/bin/sh", source, "-ec", cleanup, "fixture", str(os.getuid()), str(os.getgid())], check=True, timeout=30)
 
 
 def main():
