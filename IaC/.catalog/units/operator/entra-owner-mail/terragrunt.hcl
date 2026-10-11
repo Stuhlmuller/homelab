@@ -14,5 +14,5 @@ provider "msgraph" {}
 EOF
 }
 
-# Owner identity and replacement mail come from a private, explicitly supplied
-# -var-file, never Terragrunt inputs, environment variables, or public source.
+# This temporary unit removes the retired mail-only Graph resource from state
+# without calling Graph. It accepts no private owner-mail inputs.

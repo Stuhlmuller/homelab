@@ -60,7 +60,7 @@ generate "azuread_provider" {
 provider "azuread" {}
 
 data "azuread_user" "application_owner" {
-  user_principal_name = "rodman@stinkyboi.com"
+  object_id = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
 }
 
 data "azuread_service_principal" "terraform_apply" {

@@ -59,6 +59,7 @@ class FleetState:
         self.password = PASSWORD
         self.api = SimpleNamespace(ADMIN_EMAIL="recovery@example.test", initial_password=Mock(return_value=PASSWORD),
                                    request=Mock(side_effect=self.request))
+        self.api.password_login = Mock(side_effect=self.password_login)
         self.mdm = SimpleNamespace(local_host=Mock(return_value=MAC_UUID),
                                    device_identifier=mdm_helper.device_identifier,
                                    profile_identifiers=mdm_helper.profile_identifiers,
@@ -74,6 +75,12 @@ class FleetState:
         self.apps = [{"Identifier": "com.wireguard.macos"}, {"Identifier": "com.wireguard.ios"}]
         self.policies, self.installed = [], [copy.deepcopy(UNRELATED)]
         self.keep_policy, self.write_error = True, None
+
+    def password_login(self, password=None):
+        password = self.api.initial_password() if password is None else password
+        return self.api.request("POST", "/api/v1/fleet/login", {
+            "email": self.api.ADMIN_EMAIL, "password": password,
+        }).get("token")
 
     def request(self, method, path, body=None, token=None, **_kwargs):
         if path == "/api/v1/fleet/login" and method == "POST":
