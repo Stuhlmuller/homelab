@@ -110,6 +110,13 @@ retain registry blobs together with Harbor database/encryption-key backups.
    changes alone therefore do not require another full image copy. New workflow
    dispatches and credential access still require exact current `main`.
    A running Harbor UI or manifest request alone does not prove complete copies.
+   Missing artifacts are staged through an anonymous all-platform source download
+   (`upstream-download`) and exact original-manifest hash check (`upstream-verify`)
+   before authenticated Harbor upload (`destination-copy`). Preserve the original
+   index bytes, including repeated descriptors; do not normalize the index to
+   manufacture a different digest. The temporary source is removed before the
+   independent anonymous Harbor pull, keeping one full image tree on disk at a
+   time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
    Categories also distinguish bare HTTP 403, payload-size limits, 5xx server

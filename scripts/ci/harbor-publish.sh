@@ -212,10 +212,21 @@ if [[ "$mode" == mirror ]]; then
           ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
         exit "$lookup_status"
       fi
-      mirror_phase="upstream-copy"
+      mirror_phase="upstream-download"
+      upstream_directory="$(mktemp -d "$scratch/upstream.XXXXXX")"
+      skopeo copy --all --preserve-digests --src-no-creds \
+        --src-authfile "$scratch/anonymous-auth.json" \
+        "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"
+      mirror_phase="upstream-verify"
+      skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
+      mirror_category="digest-mismatch"
+      [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+      mirror_category="command-failed"
+      mirror_phase="destination-copy"
       skopeo copy --all --preserve-digests --src-no-creds \
         --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
-        "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+        "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
       skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
         "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"
