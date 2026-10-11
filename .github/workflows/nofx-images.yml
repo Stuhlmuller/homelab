@@ -2,17 +2,6 @@ name: NOFX Images
 
 # checkov:skip=CKV_GHA_7: expected_sha pins current main; dispatch cannot change build or publish commands.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - builds/nofx/**
-      - .github/workflows/nofx-images.yml
-      - scripts/ci/harbor-publish.sh
-      - clusters/homelab/apps/harbor/signing-job.yaml
-      - scripts/ci/harbor-publish-test.py
-      - scripts/config/harbor-signing.json
-      - scripts/ci/static-checks.sh
-      - policy/workflows*.rego
   push:
     branches: [main]
     paths:
