@@ -194,7 +194,9 @@ class HarborPublicationGates(unittest.TestCase):
                         "status": {"containerStatuses": [{"name": "public-key", "state": {"terminated": {
                             "exitCode": 0, "message": "test public key\\n"}}}]}}]}))
                 elif "port-forward" in args:
-                    (root / "forward-pid").write_text(str(os.getpid()))
+                    # Cleanup can interrupt startup; never expose a partial PID file.
+                    (root / "forward-pid.tmp").write_text(str(os.getpid()))
+                    (root / "forward-pid.tmp").replace(root / "forward-pid")
                     if FIXTURE["failure"] == "forward":
                         raise SystemExit(13)
                     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
