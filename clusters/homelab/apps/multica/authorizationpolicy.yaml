@@ -54,3 +54,6 @@ spec:
         - source:
             principals:
               - cluster.local/ns/ai/sa/default
+      to:
+        - operation:
+            ports: ["5432"]

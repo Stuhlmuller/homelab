@@ -33,3 +33,6 @@ spec:
         - source:
             principals:
               - cluster.local/ns/nofx/sa/default
+      to:
+        - operation:
+            ports: ["8080"]
