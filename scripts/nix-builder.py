@@ -32,7 +32,7 @@ trap 'if [ -d "$job" ]; then rm -rf -- "$job"; fi' EXIT
 mkdir "$job/source"
 tar -x -C "$job/source"
 cd "$job/source"
-nix build --no-link --print-out-paths --no-update-lock-file \
+nix build --print-build-logs --no-link --print-out-paths --no-update-lock-file \
   --option sandbox true --option require-sigs true FLAGS \
   .#checks.x86_64-linux.offline-tests .#checks.x86_64-linux.manifest-policy > "$job/outputs"
 nix copy --to "file://$job/cache" $(cat "$job/outputs")

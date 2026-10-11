@@ -15,7 +15,7 @@ system="$(nix eval --impure --raw --expr builtins.currentSystem)"
 log="$(mktemp)"
 trap 'rm -f "$log"' EXIT
 status=0
-nix build --no-link --print-out-paths --no-update-lock-file \
+nix build --print-build-logs --no-link --print-out-paths --no-update-lock-file \
   --option sandbox true --option require-sigs true \
   --option extra-substituters "$cache" --option extra-trusted-public-keys "$key" \
   --option narinfo-cache-negative-ttl 0 \
