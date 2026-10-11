@@ -57,21 +57,29 @@ def main():
 
             check(pod, True)
             for image in ("busybox:latest", "cgr.dev/chainguard/busybox:latest", "harbor.stinkyboi.com.evil.example/proof:latest"):
-                candidate = copy.deepcopy(pod); candidate["spec"]["containers"][0]["image"] = image
+                candidate = copy.deepcopy(pod)
+                candidate["spec"]["containers"][0]["image"] = image
                 check(candidate, False)
             for image, allowed in (("harbor.stinkyboi.com/mirror/init:latest", True), ("busybox:latest", False)):
-                candidate = copy.deepcopy(pod); candidate["spec"]["initContainers"] = [{"name": "init", "image": image}]
+                candidate = copy.deepcopy(pod)
+                candidate["spec"]["initContainers"] = [{"name": "init", "image": image}]
                 check(candidate, allowed)
             for account, image in (("flannel", "ghcr.io/siderolabs/flannel:v0.27.4"), ("kube-proxy", "registry.k8s.io/kube-proxy:v1.34.11")):
-                candidate = copy.deepcopy(pod); candidate["metadata"]["namespace"] = "kube-system"
-                candidate["spec"]["serviceAccountName"] = account; candidate["spec"]["containers"][0]["image"] = image
+                candidate = copy.deepcopy(pod)
+                candidate["metadata"]["namespace"] = "kube-system"
+                candidate["spec"]["serviceAccountName"] = account
+                candidate["spec"]["containers"][0]["image"] = image
                 check(candidate, True)
-                candidate["spec"]["serviceAccountName"] = "default"; check(candidate, False)
-            candidate = copy.deepcopy(pod); candidate["spec"]["serviceAccountName"] = "flannel"
-            candidate["spec"]["containers"][0]["image"] = "ghcr.io/siderolabs/flannel:v0.27.4"; check(candidate, False)
+                candidate["spec"]["serviceAccountName"] = "default"
+                check(candidate, False)
+            candidate = copy.deepcopy(pod)
+            candidate["spec"]["serviceAccountName"] = "flannel"
+            candidate["spec"]["containers"][0]["image"] = "ghcr.io/siderolabs/flannel:v0.27.4"
+            check(candidate, False)
             candidate["metadata"]["namespace"] = "kube-system"
             candidate["spec"]["serviceAccountName"] = "default"
-            candidate["metadata"]["annotations"] = {"kubernetes.io/config.mirror": "proof"}; check(candidate, False)
+            candidate["metadata"]["annotations"] = {"kubernetes.io/config.mirror": "proof"}
+            check(candidate, False)
             node = json.loads(run(*kubectl, "get", "nodes", "-o", "json"))["items"][0]
             candidate["spec"]["serviceAccountName"] = "default"
             candidate["spec"]["nodeName"] = node["metadata"]["name"]
