@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7252c3f295a2cb9781b1485b94ab79d1809e7cf1918ff79b341182ae796768f7",
+  "pageVersion": "sha256:1b4e2db0f80f9f5fbde76c5048d64b3e7f9decb68df779cc63b6eba1adb0f981",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:f1ef36e0167be6795c6f630e1deabc1a6de490342c2e596f4cc90fd346fe119e"
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:92cb75fff6e935086427aafcf1c884356e459fa868a10ec58588e5379e808230"
+          "version": "repo-file-v1:sha256:0a277a4679653e6bf472506e7da1991fb51b9d15db6d9c7f9f6adabc73d774ea"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -59,6 +59,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-11T09:10:40.150Z"
   }
 }

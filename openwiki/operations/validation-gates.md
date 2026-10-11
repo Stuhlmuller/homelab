@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -28,10 +30,14 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -60,10 +66,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
+generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:23:56.319Z
+    at: 2026-10-11T09:10:40.150Z
 ---
 
 # Validation Gates
@@ -72,6 +78,13 @@ verified:
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
+
+The static wrapper verifies source-bound offline fixture and manifest-policy
+Nix outputs, then runs remaining provider, network and security checks fresh.
+Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
+`offline-static-checks.sh`. CI uses protected-main cache trust with signatures
+and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+See [signed offline validation](../../docs/nix-cache.md).
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
