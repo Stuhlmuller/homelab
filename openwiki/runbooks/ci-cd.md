@@ -3,15 +3,21 @@ type: runbook
 title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-11T00:32:06.826Z
 sources:
+  - id: openwiki-source-29ced481494f3a85c0d7921b
+    resource: repo://.github/workflows/terragrunt-apply.yml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+  - id: openwiki-source-de7fdd1af72d2845e129e766
+    resource: repo://scripts/entra-ci-configure.py
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
+generated: { by: "codex", at: "2026-10-11T00:48:42.400Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-11T00:48:42.400Z
 ---
 
 # CI/CD
@@ -31,12 +37,18 @@ still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
 
 Read-only GitHub inspection on 2026-10-06 UTC confirmed that `main` ruleset
-`14700233` already requires zero approving reviews. The `homelab-plan` and
-`homelab-production` environments separately require `rstuhlmuller` approval,
-despite the canonical runbook describing production as having no reviewer.
-Policy changes do not remove those environment gates. Reconcile the environment
-configuration and runbook through the repository workflow before treating
-Terragrunt plans or applies as unattended.
+`14700233` required zero approving reviews while both CI environments separately
+required owner approval. The canonical guide's contrary production guidance was
+stale; it was corrected on 2026-10-11 UTC after verifying both live environments
+and the upstream `github-iac` declarations.
+
+The [environment guard](../../scripts/entra-ci-configure.py) requires exactly the
+configured owner reviewer, disables administrator bypass and allows self-review.
+Production restricts deployment to protected branches; the workflow additionally
+requires the exact current `main` revision before using credentials. The
+[Tailscale publisher](../../scripts/tailscale-ci-configure.py) reuses the guard
+and refuses publication if protection differs. Policy Bot approval does not
+remove these environment gates; plans and applies still require owner approval.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 

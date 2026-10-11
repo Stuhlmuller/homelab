@@ -24,8 +24,8 @@ This repository uses GitHub Actions for the review and rollout path:
   or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
-  main-only `homelab-production` environment without reviewer approval, then
-  verifies `main` again before referencing
+  owner-approved `homelab-production` environment, then verifies the exact
+  current `main` revision again before referencing
   environment credentials or running live commands. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
@@ -224,13 +224,19 @@ Create two GitHub environments:
   reviewer and approve only after reviewing the exact pull request diff; the
   job checks out pull request code before using live write-capable identities.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
-  No required reviewers; allow only the exact `main` branch (no tags).
-  Other branches use `homelab-plan` and retain required reviewer approval.
+  Require the configured owner reviewer and allow protected branches only.
+  The workflow additionally requires the exact current `main` revision (no
+  tags) before using credentials. Other branches use `homelab-plan`.
 
-The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
-in [github-iac](https://github.com/Stuhlmuller/github-iac). Its
-`reconcile-homelab-production.sh` checks the existing main-only branch policy
-and PR-plan reviewers before removing the production reviewer requirement.
+Both environments require the exact owner-review policy checked by
+[`verify_protection`](../scripts/entra-ci-configure.py): one configured owner
+reviewer, administrator bypass disabled, and self-review allowed. The Tailscale
+key publisher reuses this guard and fails closed if protection differs.
+Environment declarations live in
+[`Stuhlmuller/repositories/terragrunt.hcl` in github-iac](https://github.com/Stuhlmuller/github-iac/blob/main/Stuhlmuller/repositories/terragrunt.hcl).
+Read-only verification on 2026-10-11 UTC confirmed that upstream declarations
+and both live environments match the guard. The previous guidance to remove
+production reviewers was stale; retain owner approval for plans and applies.
 
 Publish the scoped, pre-signed Tailscale auth keys through
 `scripts/tailscale-ci-configure.py` after applying the
@@ -238,7 +244,8 @@ Publish the scoped, pre-signed Tailscale auth keys through
 Entra uses separate operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
-only after approval and production credentials only to `main`; do not keep
+only after approval and production credentials only after approval on the
+workflow-verified current `main`; do not keep
 duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |

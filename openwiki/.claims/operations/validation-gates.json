@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1634d3a456a1d4b8da79a23db23661e21eae4b9cfa3e08c88fd88cfb5b548563",
+  "pageVersion": "sha256:17ac239223001b84f7b48a9e07eca7e511d8dbaf0fa10fd443ed192517318218",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:1be6914b9c492c35931a96b4a1ec1ec7a04c57267b2848b2e238f5d13528fa58"
+          "version": "repo-file-v1:sha256:a7ac059987efcb86c4f7f4dbf97d3d6ca8beed360e6cb56c508582a6650cbea7"
         }
       ]
     },
@@ -287,6 +287,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:32:06.826Z"
+    "at": "2026-10-11T00:48:42.400Z"
   }
 }
