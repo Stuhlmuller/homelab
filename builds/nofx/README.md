@@ -128,6 +128,9 @@ set is disjoint from that exact import inventory. Reports are private temporary
 files, never public workflow output or uploaded artifacts. Scanner failure
 fails the build. This Go gate does not cover embedded libc or other C code;
 those components still require component-aware artifact assessment.
+The scanner's isolated `/tmp` explicitly permits executing the tool built by
+`go run`; the image and binary/import inputs remain read-only, with all
+capabilities dropped and privilege escalation disabled.
 
 ## OKX US cash-spot competition
 
