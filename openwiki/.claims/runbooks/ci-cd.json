@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b560f4d5806e4bfbcacc54c01fa971ca3c0cb9f3435de2bf0aab726922282e9b",
+  "pageVersion": "sha256:166abd743abfac3530e9a076efcb972d492416ff48b6e608d1e22670c7252322",
   "claims": [
     {
       "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:3a143b6fc5dae1799af3dc32e946491914a8a9e56a488b6ae11fccd6752149e5"
+          "version": "repo-file-v1:sha256:869d08e3ba3cdc4bb806ebb1a8e5c263a0e8161e64aed0d875e53057498f227c"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -25,7 +25,7 @@
           "version": "repo-lines-v1:sha256:ce3ef3733f1e105a13bf5774d7a8f88052cb8d8adfe802a3ee96ae444a9b2127:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxMzllNDZjYmZkNDI0Yzk2MTBjZTYwZDhmODdiM2E0Nzc0MjNjNmFjN2Y2OWE0MjkzZmMwODc1MmRiYWM0MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxOWQ4Zjg2Njc0OWZhZGRjMzczNDU3ZDc1YzI3MGEzN2IzOGJjZjQ4NmE4Y2VmMmViYzI2ZDU2YTZhM2M4OWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViNWQxZWRlMzQ3OWM0NGE4NTc4ZTQ4NzFjZDRmODVkMDViMDY3YmQ4OGUxYzNiMWY3ZWY3MGRmZjE1MTRhYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1MTRlMDMyY2M4NDhjNjgxZTY0M2VkYzcyMzJkNjNlZGY5Y2EzNDE1YTQ4ODIyYzBiYjA2N2Q4NDgzOGRmNTYifQ"
         },
         {
-          "resource": "repo://docs/ci-cd.md#L223-L241",
+          "resource": "repo://docs/ci-cd.md#L230-L248",
           "version": "repo-lines-v1:sha256:28f2fbbb398644b1c06fffddd52d069da72f77f7358c78c2a4b9f26b0a9f834b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNzJkM2U5ZDI4YjJmZTU5YWRiMWY4YmZhZWQ0NjUyNTk1MmVhOWI1ODFiMDE4Yzk5M2FlM2EyYzMzNzNlMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI2MTAxODBhODg5ZWFkNzRmYjkzZmJkM2ZjODk1OWVkNWU0NTFlYTNmNmNkNDc5ZWMwYWM2NmQ1MWIxZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwM2M4ZDRhNjQ5MGIwMzBlMGRkNmVmYjI1YWIyMDFkMzdiMGZiZTk1YWQwZGIzODExYzYwNzZiNjE3NWRkMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhMmJkYWNhYmViZDhjNWMyYjcxOWIyZWQzODNhNGM0ZWE0MjhiNGUwYTNlZjc2MTFkOTBlMWQ4ZTZkNmM5ZmQifQ"
         },
         {
@@ -44,7 +44,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-plan.yml",
-          "version": "repo-file-v1:sha256:9547b7f155d7a713d34ab561caa63a3e611345799d4293623883a88537987513"
+          "version": "repo-file-v1:sha256:788f378893ba9b6a8d719dd8e429e1dcb0688c01921798e280ba8fb2bd2e934a"
         },
         {
           "resource": "repo://docs/nix-cache.md",
@@ -63,6 +63,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T06:23:22.000Z"
+    "at": "2026-10-11T17:00:06.830Z"
   }
 }

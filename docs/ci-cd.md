@@ -131,11 +131,18 @@ checks remain fresh.
   rejects direct live CLI output or reading the private log after the wrapper.
   On a protected apply failure, a reviewed classifier may print one fixed
   phase label after verifying its SHA-256; raw output remains withheld.
+  The live plan classifier distinguishes kubeconfig verification, proxy identity,
+  Application reads, dry-run admission, and the real no-op write-denial probe.
+  A failed phase is a diagnostic hint; it does not establish the cause.
   Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
   pre-commit scan rejects plan/state filenames plus binary plans or JSON
   plan/state exports hidden behind arbitrary names.
+  Renovate action upgrades also need their exact test pins and normalized
+  workflow security hashes updated in the same PR after review. PR #1233's
+  artifact-action update failed the Terragrunt static gate because those
+  companion updates were missing; rerunning an unchanged PR cannot fix it.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`

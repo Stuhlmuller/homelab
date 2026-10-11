@@ -29,21 +29,26 @@ def checked(args):
 
 
 def verify(identity):
+    print("::group::CI kubeconfig verification", flush=True)
     config = json.loads(checked(["config", "view", "--minify", "-o", "json"]))
     if (len(config["clusters"]) != 1 or config["clusters"][0]["cluster"] != {"server": SERVER}
             or len(config["users"]) != 1 or config["users"][0].get("user", {}) != {}):
         raise Failure("CI kubeconfig must use the fixed verified mesh endpoint without bearer credentials")
+    print("::group::API proxy identity", flush=True)
     who = json.loads(checked(["auth", "whoami", "-o", "json"]))
     groups = who["status"]["userInfo"]["groups"]
     if (not isinstance(groups, list) or "system:masters" in groups
             or [group for group in groups if group.startswith("tag:")] != [f"tag:homelab-ci-{identity}"]):
         raise Failure("The API proxy did not impersonate the expected scoped CI identity")
+    print("::group::CI application read", flush=True)
     checked(["-n", "argocd", "get", "application", "tailscale", "-o", "name"])
     # Empty JSON Patch deliberately carries no mutation, even if the denial guard
     # is missing. A dry-run-only result is insufficient proof of write isolation.
     patch = ["-n", "argocd", "patch", "application", "tailscale", "--type=json", "--patch=[]", "-o", "name"]
+    print("::group::CI dry-run admission", flush=True)
     checked([*patch, "--dry-run=server"])
     if identity == "plan":
+        print("::group::CI write denial", flush=True)
         result = command(patch)
         if (result.returncode == 0 or DENIAL not in result.stderr
                 or "homelab-ci-plan-dry-run" not in result.stderr):

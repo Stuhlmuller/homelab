@@ -4,6 +4,8 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -62,6 +64,10 @@ sources:
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-290074bbdb2bf72571824d98
+    resource: repo://scripts/ci/terragrunt-plan-stage.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
@@ -74,10 +80,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-11T17:00:06.830Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:50:39.941Z
+    at: 2026-10-11T17:05:44.146Z
 ---
 
 # Validation Gates
@@ -403,6 +409,12 @@ recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
 label. These are not verified causes: misleading private text can change a
 label but cannot expose its text. Raw output, plans, and credentials remain
 withheld and deleted.
+
+The CI access checker emits fixed markers before kubeconfig verification, proxy
+identity, Application reads, dry-run admission, and the real no-op write-denial
+probe. The hashed classifier publishes only the last fixed stage; an unknown
+hint still leaves the cause unconfirmed. Regression tests reject forged markers
+and ensure private strings never enter public diagnostics.
 
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;

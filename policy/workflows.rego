@@ -438,7 +438,7 @@ private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
 	count(lines) == 8
 	lines[0] == "then"
-	lines[1] == `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+	lines[1] == `if sha256sum --check --status <<<'2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 	lines[2] == `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])

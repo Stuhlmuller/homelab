@@ -302,7 +302,7 @@ test_rejects_unverified_apply_stage_classifier if {
 
 test_rejects_modified_plan_stage_guard if {
 	every replacement in [
-		replace(plan_stage_guard, "aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(plan_stage_guard, "2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(plan_stage_guard, "sha256sum --check --status", "true"),
 		replace(plan_stage_guard, "sha256sum", "shasum"),
 		replace(plan_stage_guard, "if sha256sum", "if ! sha256sum"),
@@ -485,7 +485,7 @@ echo "success details withheld"`
 
 plan_stage_call := `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 
-plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+plan_stage_guard := `if sha256sum --check --status <<<'2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
 

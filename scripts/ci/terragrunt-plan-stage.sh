@@ -6,6 +6,11 @@ reason=unknown
 while IFS= read -r line || [[ -n "$line" ]]; do
   case "$line" in
   '::group::Kubeconfig setup') stage=kubeconfig ;;
+  '::group::CI kubeconfig verification') stage=ci-config ;;
+  '::group::API proxy identity') stage=ci-identity ;;
+  '::group::CI application read') stage=ci-read ;;
+  '::group::CI dry-run admission') stage=ci-dry-run ;;
+  '::group::CI write denial') stage=ci-denial ;;
   '::group::Kubernetes API check') stage=api ;;
   '::group::Argo CD bootstrap plan') stage=bootstrap ;;
   '::group::Argo CD Application registration plan') stage=app ;;
