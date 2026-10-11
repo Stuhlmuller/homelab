@@ -170,6 +170,12 @@ alternate ports and both IP families. Separate checks cover Service DNAT,
 cluster DNS, allowed/denied init-container requests on a fresh sandbox and
 revocation of an established TCP connection.
 
+Strict-mode revocation is asynchronous: the pinned implementation's conntrack
+runner has a 30-second minimum interval. The held connection must stop within
+45 seconds after new requests are denied; continued access beyond that bound
+fails CI. Production acceptance must wait for established-flow revocation,
+not merely observe denial of a new connection.
+
 The enforcer manifest under `scripts/ci/fixtures/` is CI-only. Its public source
 image and the legacy transport are not production application references.
 Production keeps Flannel and needs a Harbor-hosted enforcer, the reviewed Talos

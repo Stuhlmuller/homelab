@@ -38,15 +38,20 @@ try:
 except OSError: sys.exit(7)
 print('ALLOWED')
 """
-HELD = """import socket,sys
+HELD = """import socket,sys,time
 with socket.create_connection((sys.argv[1],8080),timeout=2) as s:
  s.sendall(b'fixture\\n'); assert s.recv(128)==b'fixture\\n'
  print('READY',flush=True); sys.stdin.readline()
- try:
-  s.sendall(b'fixture\\n'); response=s.recv(128)
- except OSError: response=b''
- assert response!=b'fixture\\n', 'Established connection bypassed revocation'
- print('BLOCKED',flush=True)
+ start=time.monotonic()
+ while True:
+  try:
+   s.sendall(b'fixture\\n'); response=s.recv(128)
+  except OSError: response=b''
+  if response!=b'fixture\\n':
+   assert time.monotonic()-start<45, 'Revocation exceeded its acceptance deadline'
+   print('BLOCKED after %.1fs' % (time.monotonic()-start),flush=True); break
+  assert time.monotonic()-start<45, 'Established connection bypassed revocation deadline'
+  time.sleep(1)
 """
 FIRST_PACKET = """import socket,sys
 for address,allowed in zip(sys.argv[1:],(True,False)):
@@ -176,13 +181,21 @@ def main():
                     if time.monotonic() >= deadline:
                         raise AssertionError("Revoked allow rule did not converge")
                     time.sleep(1)
-                stdout, stderr = held.communicate("\n", timeout=10)
-                assert held.returncode == 0 and stdout.strip() == "BLOCKED", (stdout, stderr)
+                # Upstream's strict-mode conntrack runner has a 30-second minimum interval.
+                stdout, stderr = held.communicate("\n", timeout=55)
+                assert held.returncode == 0 and stdout.strip().startswith("BLOCKED after "), (stdout, stderr)
+                print(stdout.strip(), flush=True)
             finally:
                 if held.poll() is None:
                     held.kill()
                     held.communicate(timeout=10)
             print(f"Passed {count} dual-stack destination/port/protocol checks, Service/DNS access, first-packet isolation and established-connection revocation", flush=True)
+        except Exception:
+            for args in (("get", "pods", "-A", "-o", "wide"),
+                         ("-n", "kube-system", "logs", "-l", "app=kube-network-policies", "--prefix=true", "--tail=100")):
+                result = subprocess.run([*kubectl, *args], capture_output=True, text=True, timeout=30)
+                print(result.stdout or result.stderr, flush=True)
+            raise
         finally:
             run("kind", "delete", "cluster", "--name", CLUSTER)
 
