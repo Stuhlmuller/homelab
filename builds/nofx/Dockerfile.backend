@@ -23,9 +23,10 @@ RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
 
 FROM tests AS build
 RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go build -tags="netgo,osusergo,sqlite_omit_load_extension" -trimpath -ldflags="-s -w -linkmode external -extldflags -static" -o /out/nofx . && \
+    go build -tags="netgo,osusergo,sqlite_omit_load_extension" -trimpath -ldflags="-linkmode external -extldflags -static" -o /out/nofx . && \
     readelf -l /out/nofx > /out/program-headers && ! grep -q INTERP /out/program-headers
 RUN readelf -d /out/nofx > /out/dynamic-headers && ! grep -q NEEDED /out/dynamic-headers
+RUN readelf -s --wide /out/nofx > /out/symbols && grep -q 'main\.main' /out/symbols
 RUN go version > /out/runtime-build.txt && \
     go version -m /out/nofx >> /out/runtime-build.txt && \
     apk info -W /usr/lib/libc.a >> /out/runtime-build.txt

@@ -133,6 +133,11 @@ those components still require component-aware artifact assessment.
 The scanner's isolated `/tmp` explicitly permits executing the tool built by
 `go run`; the image and binary/import inputs remain read-only, with all
 capabilities dropped and privilege escalation disabled.
+The backend preserves symbol metadata and checks for `main.main`. Stripped
+binaries make govulncheck fall back to module-wide package assumptions; this
+recipe retains precise binary evidence instead of waiving those findings.
+`-trimpath` still removes local build paths. The binary is larger; production
+package/function findings continue to block publication.
 
 ## OKX US cash-spot competition
 
