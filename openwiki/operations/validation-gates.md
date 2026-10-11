@@ -66,10 +66,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
+generated: { by: "codex", at: "2026-10-11T16:45:39.177Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-11T16:45:39.177Z
 ---
 
 # Validation Gates
@@ -1421,6 +1421,16 @@ verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
+publication gates. Its native staging test uses generated local OCI fixtures
+and actual Skopeo, rejecting network transports and requiring exact root and
+both architecture-child manifest digests through `dir:` staging and a second
+copy. The fixture retains repeated child descriptors; omitting all-platform
+copying fails the original-index digest assertion. This gate requires Skopeo,
+not Docker or production credentials. It proves local staging behavior;
+complete Harbor pulls, destination signatures, scans and live consumers still
+require separate acceptance.
 
 The fixed Traefik publication scope retains all-platform digest, tag alias and
 fresh complete anonymous-pull checks. The Talos regression rejects scoped,

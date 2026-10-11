@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6c726f5cd52aa3e198bcdc61fc72c8fb12064310b647ca3260a34a32fdf13f8e",
+  "pageVersion": "sha256:ef26dd9e4cff14e9b850ed5f44d3f3da9fb8a203f8653824f7536c0694298c42",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
+          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -26,15 +26,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:c2c9f733531010ce0cd661820975bb809b790ebe3891ae90c3b82156e0e03f66"
+          "version": "repo-file-v1:sha256:6df6b6499432ef310b6d1cd4e55a9c4ebbbb2ea9324271230913cadb8149e98e"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
+          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b"
+          "version": "repo-file-v1:sha256:b0af70f38c2ebdbafc90c552a66bf49f32c18b0fc744fa8967df253bbd0669a3"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -97,7 +97,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L190-L201",
+          "resource": "repo://docs/harbor-image-mirroring.md#L201-L212",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -122,13 +122,55 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f229eec5afb222af418fb6820510bd00c7d80b4af64b2967e6dec1d05dfe1740"
+          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+        }
+      ]
+    },
+    {
+      "id": "claim_11fd02c874044c27b9fb540a878c557d",
+      "statement": "The fixed Chainguard publication scope contains thirteen digest-pinned public candidates; Go, nginx, Node runtime, Node dev, static and Wolfi base are six additions to the original seven-image scope, and prior receipts cannot cover the expanded scope or changed digests.",
+      "evidence": [
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L102-L140",
+          "version": "repo-lines-v1:sha256:f4b3fb79122286ef5fafa3dc8d99d8a73c76a4388517f75376ab8d8a3d2fa6e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2MmM4MGUzZjgyMzRkMGVjMWYxZGM2ZmE5ZmRiYzE5MjY0M2FhMmI4MjNmMjJiMTk0MWQxOGFjYzcyZDI1MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhZTI2Y2Q0NGUzODZmMTdjMmNlMDIwYjI0YjhhY2QyNWZjY2UxMWIzMWYyNzI2ZWE2NThjOGJiYjlhNDEwNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExZjNkOTg4OGEzMmI4YzY4ZjE5MTY3OTZiNzJjZTk4YjQ0MGRhZmJjZDcwZTE3OTBhNDkwNTNkNzAwNjBhMjQifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-chainguard-images.json",
+          "version": "repo-file-v1:sha256:036493a69c2343e6ac9eea79feeb88ff28b9b17c32a4f070f452cdb010238836"
+        }
+      ]
+    },
+    {
+      "id": "claim_e9e0f125de114bc8a13e185120255c07",
+      "statement": "Missing mirror artifacts are anonymously downloaded with all platforms into local directory staging and their original root manifest digest is verified before authenticated upload; fresh complete destination pulls and alias checks remain required, while the native offline fixture verifies multiple architectures and repeated descriptors without network transports.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:14cfbca3624f8eb0bea7607f18763b4779a9ce9f8587e5b8b66502885354cc6d"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh#L194-L267",
+          "version": "repo-lines-v1:sha256:9ce75d03869ee42da6334c45ed75ad12997d15ef76710a10ad9ecce2a47cb6a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4Mzg3NzY0NDYyNWYxZWIyNGRlOTVkNWJjNjlmMzE4ODZkYjExY2IzNjc1ZWRhOWUwYzU5MDNhODU2ZWMxMGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNDIwZmIwNTFmYTRmY2JkYWFhYzMyZmE2ZmE5ZjcwYTY2YTRhNjA2NGUxOTdjZjU2YjdiN2I0ZWVlYTAxMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0YmVhMzVkYjQ4MjE0MTMyNDhlOThmNjQ2NGRhZTBkODZiMmYzMDcxMDhmNjBkZjZmMWY0NmMzNjA4YWRiYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkMmQxYjIwZDNjYjJiODMxMjViOWJjN2MyM2NkM2QzZWVjODk0ZWRiMGI2MWY2NjkyNDMxMGY4MDY0YjU0NTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_20c5ee5304424e0b899932b967e467d8",
+      "statement": "The full publication catalog stages kube-network-policies v1.1.2 and paused Image Updater v1.3.0; enforcer activation requires Talos NRI/runtime synchronization and a complete policy audit with Istio egress bypass acceptance, and cataloging alone activates no enforcement.",
+      "evidence": [
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L147-L165",
+          "version": "repo-lines-v1:sha256:c8520b9aa7f137a777ae08475c1c9a8f352df8a62872d46f0945f099e1c68e6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwYmFhMTY2Y2JhZmQxYTMwYWQ1NjZiNTY1MzFkZjBjMGY4NDUwZmEyZDJiMzg5YWZkNTJmZmQ1ZWEyZDhkMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3N2E3NzM5YjhjMmM1OGQ5YjNiMzk4OTg4YWJlODdlZjlhNzVlZmMzZTY5MTJkNjkyZjVlNDdlNDRhNDg5ZTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzOTY1ZTZjNDlhYzEwNjJlMDhjMzdlYzJkMzhjZmFlZDljMTRjYTYwMmIxMGQ5Y2M2YTQ4YmE2YzRhYjgwNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjliZGE3N2RiNGU2MjNhNTVmMTQ5OGJiNTE3YjM4ZGU2OTE3ODYzMjQxYjA3MDFhZTkwNDA2NDQzMWRlMzQ0OGIifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:23b98b8ec5034ad5c717d54691bb2e7fb9a2f435ac391790cee63cce1d1d11bf"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-11T16:45:39.177Z"
   }
 }

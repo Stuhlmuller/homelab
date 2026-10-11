@@ -18,18 +18,26 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-e6fd9160ab2341143a5d45c8
+    resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-0e4e3673c8be0ce1ef65beca
+    resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+  - id: openwiki-source-8e156e6fb45ba3afd9795cd3
+    resource: repo://scripts/config/harbor-chainguard-images.json
+  - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
+    resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
+generated: { by: "codex", at: "2026-10-11T16:45:39.177Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-11T16:45:39.177Z
 ---
 
 # Harbor Private OCI Registry
@@ -409,6 +417,60 @@ Two rollout failures refined validation: ESO 2.0.1 requires an explicit
 `retries.attempts: 0` to prevent replaying writes. See the
 [Istio HTTPRoute reference](https://istio.io/latest/docs/reference/config/networking/virtual-service/#HTTPRoute).
 Static rendering did not catch either runtime validation issue.
+
+## Expanded publication and egress prerequisites
+
+The fixed [Chainguard publication scope](../../scripts/config/harbor-chainguard-images.json)
+contains thirteen public, digest-pinned candidates. Go, nginx, Node runtime,
+Node dev, static and Wolfi base are the six additions to the original Python,
+curl, BusyBox, Redis, Valkey, PostgreSQL and Cosign scope. Earlier seven-image
+receipts cannot establish availability of the expanded scope or refreshed
+digests. Require protected publication approval, complete destination pulls and
+exact-artifact compatibility before consuming changes. Public sources belong
+in the catalog; application runtime references must use Harbor.
+
+For a missing destination digest tag, the
+[publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
+anonymously into a local directory image tree and checks the original manifest
+digest before authenticated Harbor upload. Existing destination tags resume
+only after exact hash verification. Aliases come from the verified Harbor digest;
+every selected artifact still needs a fresh complete anonymous destination pull.
+The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
+both architecture children and repeated index descriptors through directory
+staging and a second copy. Its generated local OCI fixtures reject network
+transports; this proves local transport behavior, not Harbor acceptance or
+publisher signatures.
+
+```mermaid
+flowchart TD
+    Missing["Missing Harbor digest tag"] --> Source["Anonymous all-platform download"]
+    Source --> Staging["Local directory image tree"]
+    Staging --> Identity{"Original digest matches"}
+    Identity -->|yes|Upload["Authenticated Harbor upload"]
+    Identity -->|no|Stopped["Stop publication"]
+    Upload --> Verify["Verify digest and tag alias"]
+    Verify --> Pull["Fresh anonymous complete pull"]
+    Pull --> Receipt["Verify digest before receipt"]
+```
+
+Missing-artifact publication verifies source bytes before upload and independently
+checks the complete destination download.
+
+The [full catalog](../../scripts/config/harbor-images.json) additionally stages
+Image Updater v1.3.0 and Kubernetes SIG Network `kube-network-policies` v1.1.2.
+Neither cataloging the enforcer nor publishing its image activates a DaemonSet.
+Flannel remains the transport and does not enforce existing NetworkPolicies.
+The enforcer is the proposed L3/L4 boundary behind Istio egress waypoints;
+activation requires repository-owned Talos NRI configuration, plugin/runtime
+synchronization proof and review of every existing placeholder policy. Preserve
+DNS, API, HBONE, webhook, storage and recovery paths and prove direct-IP,
+alternate-port, IPv6 and gateway bypass denial before expansion. See
+[image and egress gates](../../docs/image-egress-hardening.md) and
+[runtime isolation](../runbooks/runtime-isolation.md).
+
+No consumer migration, full-catalog publication, zero-CVE result or live egress
+enforcement is established by these prerequisites. Image pulls remain
+node/containerd traffic, outside Istio pod interception.
 
 ## Proposed Chainguard automation
 

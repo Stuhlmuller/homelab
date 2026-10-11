@@ -1001,5 +1001,56 @@ class PublishedDigestReport(unittest.TestCase):
         self.assertEqual(self.output.read_text(), "existing file")
 
 
+class NativeStagingTests(unittest.TestCase):
+    def test_directory_staging_preserves_all_platforms_and_repeated_descriptors(self):
+        with tempfile.TemporaryDirectory(prefix="harbor-native-staging-") as temporary:
+            root = Path(temporary)
+            layout = root / "source"
+            blobs = layout / "blobs/sha256"
+            blobs.mkdir(parents=True)
+            (layout / "oci-layout").write_text('{"imageLayoutVersion":"1.0.0"}')
+
+            def blob(value, kind):
+                data = json.dumps(value, separators=(",", ":")).encode()
+                digest = hashlib.sha256(data).hexdigest()
+                (blobs / digest).write_bytes(data)
+                return {"mediaType": "application/vnd.oci.image." + kind + ".v1+json",
+                        "digest": "sha256:" + digest, "size": len(data)}
+
+            children = []
+            for architecture in ("amd64", "arm64"):
+                config = blob({"architecture": architecture, "os": "linux",
+                               "rootfs": {"type": "layers", "diff_ids": []}}, "config")
+                child = blob({"schemaVersion": 2,
+                              "mediaType": "application/vnd.oci.image.manifest.v1+json",
+                              "config": config, "layers": []}, "manifest")
+                child["platform"] = {"architecture": architecture, "os": "linux"}
+                children.append(child)
+            descriptor = blob({"schemaVersion": 2,
+                               "mediaType": "application/vnd.oci.image.index.v1+json",
+                               "manifests": [children[0], children[0], children[1]]}, "index")
+            descriptor["annotations"] = {"org.opencontainers.image.ref.name": "fixture"}
+            (layout / "index.json").write_text(json.dumps({"schemaVersion": 2, "manifests": [descriptor]}))
+            policy = root / "policy.json"
+            # Trust only generated local fixtures; reject every network transport.
+            policy.write_text(json.dumps({"default": [{"type": "reject"}], "transports": {
+                "oci": {"": [{"type": "insecureAcceptAnything"}]},
+                "dir": {"": [{"type": "insecureAcceptAnything"}]}}}))
+            source = "oci:" + str(layout) + ":fixture"
+            for name in ("stage", "pulled"):
+                destination = root / name
+                destination.mkdir()
+                result = subprocess.run(["skopeo", "--policy", str(policy), "copy", "--all",
+                                         "--preserve-digests", source, "dir:" + str(destination)],
+                                        capture_output=True, text=True, timeout=20)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                raw = (destination / "manifest.json").read_bytes()
+                self.assertEqual("sha256:" + hashlib.sha256(raw).hexdigest(), descriptor["digest"])
+                for child in children:
+                    raw = (destination / (child["digest"].split(":")[1] + ".manifest.json")).read_bytes()
+                    self.assertEqual("sha256:" + hashlib.sha256(raw).hexdigest(), child["digest"])
+                source = "dir:" + str(destination)
+
+
 if __name__ == "__main__":
     unittest.main()

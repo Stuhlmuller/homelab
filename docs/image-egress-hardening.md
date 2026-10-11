@@ -128,8 +128,16 @@ image, with Linux amd64/arm64/ppc64le/s390x manifests and source attestations.
 Copy the complete index, preserving digests. Keep its zero replicas and promotion
 gates unchanged until publication and its internal reference are accepted.
 The prior seven-image publication receipt covers only those seven entries,
-not these four additions. Any publication of the expanded scope requires a new
+not the six additions: Go, nginx, Node runtime, Node dev, static and Wolfi base.
+Any publication of the expanded scope requires a new
 protected production approval and complete anonymous download acceptance.
+
+The publisher stages original multi-platform indexes using Skopeo's `dir:`
+transport. The native offline regression in `harbor-publish-test.py` verifies
+both architecture children and repeated index descriptors survive staging and
+a second complete copy without changing manifest digests. It uses generated
+local OCI fixtures with network transports rejected; it proves local transport
+behavior, not Harbor publication or a signature accessory.
 
 ## Policy-enforcing dataplane prerequisite
 
