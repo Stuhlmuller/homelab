@@ -3,6 +3,23 @@ type: runbook
 title: "Talos Control-Plane Maintenance"
 description: "Authenticated Talos maintenance, etcd snapshot integrity, macOS backup scheduling, retention, offsite publication, and recovery limits."
 tags: ["runbook", "talos", "maintenance"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-11T00:16:41.141Z
+sources:
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-2d8396976c82220440798f1a
+    resource: repo://clusters/homelab/apps/n8n/README.md
+  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
+    resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-e84e79af70aa76ff1e5928ad
+    resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
+  - id: openwiki-source-f585f8850806deb1619ec0c5
+    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
+generated: { by: "codex", at: "2026-10-11T00:16:41.141Z" }
 ---
 
 # Talos Control-Plane Maintenance
@@ -100,17 +117,37 @@ no Pod replacement, container-set change, restart or OOM growth, and no active
 Cordium workspace on `zimaboard-1`. This duration covers the incident's
 observed 18–30 minute failure lag.
 
-Capacity follow-up is required after recovery. `zimaboard-1` scheduled requests
+On 2026-10-10, `zimaboard-2` twice lost kubelet heartbeats under memory and
+I/O pressure. During the first stall an Argo CD application controller used
+about 658 MiB and NFS-backed n8n PostgreSQL and NOFX Pods were still bound to
+the node, so the no-PVC remote-reboot exception below did not apply. Talos
+became unreachable; a physical power-cycle of that exact worker restored it.
+The second stall followed a Langfuse worker of about 495 MiB landing beside a
+634 MiB Argo controller. Kubernetes later moved the heavy Pods and kubelet
+recovered without another manual mutation. The repository excludes this
+undersized worker from Argo CD components and the Langfuse worker through
+required node affinity. Verify the deployed Helm release, Argo Application,
+Pod nodes and node pressure before treating that mitigation as live. The
+[Argo reconciliation incident](../../docs/argocd-node-pressure-2026-10-10.md)
+records the second stall's exact timeline.
+
+One capacity risk remains outside this placement change: the
+[`n8n` controller](../../clusters/homelab/apps/n8n/values.yaml) has no node
+affinity, requests 512 MiB, and permits 2 GiB on a worker with 1.28 GiB
+allocatable. After the webhook migration, measure its steady and peak use and
+review placement or its memory budget through GitOps. Its `Recreate` rollout
+can register active hooks at startup, so verify the
+[callback route](../../clusters/homelab/apps/n8n/README.md) before restarting it.
+
+Other capacity follow-up remains after recovery. `zimaboard-1` scheduled requests
 were 82% of allocatable memory but limits were 627%; OpenClaw and the active
 Cordium workspace alone could exceed node capacity, while Octelium Enterprise
-used several 5 MiB or empty requests. `zimaboard-2` ran BestEffort Prometheus
-and Argo CD components on 1.28 GiB allocatable memory. Measure recovered usage,
-then correct requests, limits, or capacity in
+used several 5 MiB or empty requests. Historically, `zimaboard-2` ran
+BestEffort Prometheus and Argo CD components on 1.28 GiB allocatable memory.
+Measure recovered usage, then correct requests, limits, or capacity in
 [`openclaw/values.yaml`](../../clusters/homelab/apps/openclaw/values.yaml),
 [`octelium-enterprise/resources.yaml`](../../clusters/homelab/apps/octelium-enterprise/resources.yaml),
-[`prometheus/values.yaml`](../../clusters/homelab/apps/prometheus/values.yaml),
-and the
-[`bootstrap-argocd` unit](../../IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl).
+and [`prometheus/values.yaml`](../../clusters/homelab/apps/prometheus/values.yaml).
 Do not invent limits while metrics are unavailable.
 
 The canonical runbook also owns the dated 2026-08-25 corrupt-object recovery.

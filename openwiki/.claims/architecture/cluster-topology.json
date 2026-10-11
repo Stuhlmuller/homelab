@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fadde804e3737ca3357b38848c8b6beca5450c701242ef4504ac848a6e09ff2b",
+  "pageVersion": "sha256:1efb073d4c7585a1b19e30a78ee0db1d92e24caff756e2cf835e69e45415b2ea",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -15,10 +15,48 @@
           "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
         }
       ]
+    },
+    {
+      "id": "claim_e994b7f0a828449a83ccc3cb2778b405",
+      "statement": "On 2026-10-10, zimaboard-2 twice lost kubelet heartbeats under memory and I/O pressure; the first stall required a physical power-cycle, while the second recovered after Kubernetes replaced the stalled Argo CD controller.",
+      "evidence": [
+        {
+          "resource": "repo://docs/argocd-node-pressure-2026-10-10.md#L3-L29",
+          "version": "repo-lines-v1:sha256:52bace20ae4062be2619cd7d635e092aa90dfe8f2e260565d06bf29af5a0ff98:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MTNjYzVmNTBjNDljYWVkMWYwNzM2YmFkOGEwMWJjZjcxMDE1NzllNGU2NzBjOTI2ZTQwMjkyNmZmODg1ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwZjI4YzVmNTE3Nzk2ZDhiNTNkMjJlOGU5NjFkNGVmYmFjMTYzNWVhNGE4NmQxY2YxNDk5MTRkZTI5NzAyZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
+        },
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L902-L913",
+          "version": "repo-lines-v1:sha256:9e729255c797cca582a8be66d5c4b722eb9feda3d60be5501d17810f4d5beb38:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5M2MwMTNiYTYyNDM2ODkwZjVmNmRiZTY4ODM2NDQ5OTBmYWRjMjg4MDI1NjhiNGEwZTg5MTY1Y2E4YzE3ODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmZDk4MGNhMTgxN2IwNDRkODEzNjQ3YWQwZGYyOGY0ZDA3M2YxYWY1OTM1NTk0YzAzZmJiNjNhNTU3NWYxODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNTU3ZjA2N2M4ZDVmOWNmNTIxMTViYjIyODhhNjU2OTAwNGIwN2U3OGE4ODFhZTc3MmJmNTM0ZGNiYzZiZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwOTYzYTQ5MWRjZjQ2OWUzMGVkNjM3ZmZmYjVkNTAwMGZjNWNjOTZjYTQ0ZjdlMmVlMTk1YTEzYjUzMmI4MzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_48939ab708644a44b866fc7bda1dc824",
+      "statement": "Repository Helm values use required node affinity to exclude zimaboard-2 from Argo CD components and the Langfuse worker.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl#L73-L84",
+          "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L85-L93",
+          "version": "repo-lines-v1:sha256:a20e2045e85d2aa5f782703adfe064fabcfd098317c7e75b4315deaa675382b4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1YjE4NWE5MWU2NjU1MzhjMzJlM2I0Zjk3Y2U2ZDkyZGQ2NzRhMzE4NjI3ZmZjMzg0YzdjYzllZWMzZGVlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMWYxYjBmZjllMzU3OTQzYTIzOGNkZDA5MmNjZjMyY2YxN2RjZDA3ZTcxNWQyMjFjNTlkZmMzYmJlZmVmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjlkZDA2NDYwNzk4YmYzMWY0NTZiYTJmODM4ZjQ4MmNmNjJiNDU0YmMyODczZDJiZDE3NDdlZmQ5ZDYwN2UxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk5NzEwOGJlNjAxZGY0ZTU0MmRlOWNiMjhjNGJjMTNlYzVmMGRmMGY3MDUzZjcxNzFhZTdlMTQyNmVjYjc5ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_2ec60f313ec74e2f80fc97304a4f6912",
+      "statement": "The other three nodes remain eligible for Argo CD, but soft controller pod anti-affinity makes node-level redundancy best effort.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/bootstrap/argocd/README.md#L26-L33",
+          "version": "repo-lines-v1:sha256:6302fb4e506f78ec3e73afb4c16ba8d7e4f2ed72388945114ea2205f42882ecb:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjAwYWE3ZTExNjIyZGZiZmFkYTcyYTZiYjg5YTdiNjc4NmNiYTQ5ZDg2NTE3MDI2NTZmY2JhY2NmNDBjMGQzNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY3ZTViZTkwNGJkM2VkNWMzYzIwZmYwYWU2YjFlYzgwZDY5Njc5NGU2N2U3NzIyYjA5NTI4OTJlZWNiNjJjNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzk4MjIzZDgzZDljNDgxNDNkNGZjYTU2ZWQ4MWI5MmViZjFkMWUwYWNlMjBjZTVlNjhkNzg1YmMzYmY3MWRlMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODRkMGFhMTdhNjFhZjMyMGQyNjdkZjdlMzBhNzI5N2Q4ZDM1ODAwNGI5YmZlNmYzOGMzMTFlZWZmMWIxMjBlNyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-11T00:37:53.413Z"
   }
 }

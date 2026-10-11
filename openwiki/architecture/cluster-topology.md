@@ -3,15 +3,25 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-11T00:37:53.413Z
 sources:
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-11T00:23:56.319Z
+  - id: openwiki-source-e84e79af70aa76ff1e5928ad
+    resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-b1ffa4114052aa5dfacab93d
+    resource: repo://docs/talos-control-plane-maintenance.md
+  - id: openwiki-source-f585f8850806deb1619ec0c5
+    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
+  - id: openwiki-source-aa5e60e5d7c743b6b7b18220
+    resource: repo://IaC/bootstrap/argocd/README.md
+generated: { by: "codex", at: "2026-10-11T00:37:53.413Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -110,6 +120,15 @@ forward: current affinity excludes `acer` and the dataplane worker, while
 `zimaboard-2` cannot meet the 2 GiB init request. Any later drain or reboot is
 separate healthy maintenance.
 
+On 2026-10-10, `zimaboard-2` twice lost kubelet heartbeats under memory and
+I/O pressure. An Argo CD application controller used about 658 MiB during the
+first stall; Talos later became unreachable and a physical power-cycle restored
+the worker. After boot, a controller and Langfuse worker landed together there,
+using about 634 MiB and 495 MiB. During that second stall, Kubernetes evicted
+the controller and the node returned Ready without another manual mutation.
+The [Argo reconciliation incident](../../docs/argocd-node-pressure-2026-10-10.md)
+records its timeline; neither observation proves an OOM kill.
+
 ## Monitoring Contract
 
 Grafana alerting treats this four-node set as the expected hardware inventory
@@ -134,6 +153,12 @@ Terragrunt manages `octelium.com/node-mode-cordium=` on `zimaboard-1` because
 Cordium-generated Workspace Pods require that selector. Of the worker nodes,
 `zimaboard-1` has enough memory for the default Workspace limit and lower
 reserved load than `zimaboard-0`; `zimaboard-2` is too small.
+The Argo CD bootstrap Helm values exclude `zimaboard-2` for all Argo CD
+components, and the Langfuse worker chart values exclude it as well. Both use
+required node affinity; the other three nodes remain eligible. Argo CD's
+controller pod anti-affinity is soft, so two replicas provide only best-effort
+node-level redundancy. These are repository desired-state constraints, not
+evidence of a completed production rollout.
 Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
