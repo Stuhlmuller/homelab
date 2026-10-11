@@ -113,7 +113,9 @@ def chart_sources():
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
     bootstrap = ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
-    fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
+    # Nested runtime repositories must not replace the root Helm chart URL.
+    bootstrap_inputs = bootstrap.read_text().split("inputs = {", 1)[1]
+    fields = dict(re.findall(r'(?m)^  (repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap_inputs))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
                    "chart": fields["chart"], "targetRevision": fields["chart_version"]})
     for path in sorted((ROOT / "clusters").rglob("*-application.yaml")):
