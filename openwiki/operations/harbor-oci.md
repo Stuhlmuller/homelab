@@ -42,10 +42,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T18:06:48.667Z" }
+generated: { by: "codex", at: "2026-10-11T18:27:07.104Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T18:06:48.667Z
+    at: 2026-10-11T18:27:07.104Z
 ---
 
 # Harbor Private OCI Registry
@@ -307,8 +307,10 @@ without networking after dependency download; the runtime preserves the
 upstream payload, user and entrypoint and declares its loopback health probe.
 
 The [disposable registry fixture](../../builds/harbor-core/registry-test.py)
-then prepares pinned v2.15.4 services with this candidate core. Its only published
-port is `127.0.0.1:18085`; the service network denies external traffic. Eight
+then prepares pinned v2.15.4 services with this candidate core. It publishes no
+host ports; the service network denies external traffic. The test client shares
+the proxy's network namespace and uses `127.0.0.1:8080`. Proxy and jobservice
+startup waits for the candidate core's health check. Eight
 identical OCI child descriptors must survive a push and complete pull unchanged,
 including the child manifest and both blobs. The PostgreSQL query requires one
 parent/child relation. Temporary credentials, containers, network and data are

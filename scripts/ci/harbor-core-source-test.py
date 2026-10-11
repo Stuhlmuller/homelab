@@ -43,9 +43,24 @@ class RegistryFixtureTests(unittest.TestCase):
         template = ("hostname: reg.mydomain.com\nhttp:\n  port: 80\nhttps:\n  port: 443\n"
                     "harbor_admin_password: Harbor12345\ndata_volume: /data\nlog:\n    location: /var/log/harbor\n")
         config = self.fixture.fixture_config(template, Path("/owned-fixture"), "fixture-password")
-        self.assertIn("hostname: harbor-fixture.invalid\nexternal_url: http://127.0.0.1:18085\n", config)
+        self.assertIn("hostname: harbor-fixture.invalid\nexternal_url: http://127.0.0.1:8080\n", config)
         self.assertNotIn("https:\n", config)
         self.assertIn("data_volume: /owned-fixture/data\n", config)
+
+    def test_services_publish_no_ports_and_wait_for_candidate_health(self):
+        generated = {"services": {}, "networks": {"harbor": {"internal": False}}}
+        for name, component in (("log", "harbor-log"), ("core", "harbor-core"),
+                                ("proxy", "nginx-photon"), ("jobservice", "harbor-jobservice")):
+            generated["services"][name] = {"image": "goharbor/" + component + ":v2.15.4",
+                "ports": [{"target": 8080, "published": "8080"}], "container_name": name,
+                "depends_on": {"log": {"condition": "service_started"}, "core": {"condition": "service_started"}}}
+        self.fixture.isolate_services(generated)
+        self.assertNotIn("log", generated["services"])
+        self.assertTrue(generated["networks"]["harbor"]["internal"])
+        self.assertTrue(all("ports" not in service for service in generated["services"].values()))
+        self.assertEqual(generated["services"]["core"]["image"], "homelab-harbor-core:build")
+        for name in ("proxy", "jobservice"):
+            self.assertEqual(generated["services"][name]["depends_on"]["core"]["condition"], "service_healthy")
 
 
 class SourceTests(unittest.TestCase):

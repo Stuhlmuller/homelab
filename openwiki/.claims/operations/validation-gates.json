@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8b6078ac5b7125822ea10371609230605eeae05ff5885576592c1a3296946dde",
+  "pageVersion": "sha256:d525651f6621307be75d0943510b4661a4a193b7ce2c22105325b65f767c20b6",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -294,7 +294,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:960281557a5b2a551011c3962cbccc85d71fb2f2ec5fd255b5c2ee366d07177b"
+          "version": "repo-file-v1:sha256:73c9713832099feaa57b71681733302758721143077100587a755a318dea4628"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -304,7 +304,7 @@
     },
     {
       "id": "claim_c41196c353124e3791747938c5a2c0a5",
-      "statement": "The Harbor candidate build also runs isolated pinned Harbor/PostgreSQL services to verify unchanged repeated-index and complete blob push/pull with exactly one database relation; offline fixtures validate payload hash consistency and refuse upload locations outside the disposable endpoint.",
+      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly one database relation. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/build.sh",
@@ -312,17 +312,17 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:ccdab8f1e775253668d88fa8860d217131bed3dc2de9a2d48bf26fb278d851a5"
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:960281557a5b2a551011c3962cbccc85d71fb2f2ec5fd255b5c2ee366d07177b"
+          "version": "repo-file-v1:sha256:73c9713832099feaa57b71681733302758721143077100587a755a318dea4628"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T18:06:48.667Z"
+    "at": "2026-10-11T18:27:07.104Z"
   }
 }

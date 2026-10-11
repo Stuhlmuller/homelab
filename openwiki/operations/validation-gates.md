@@ -76,10 +76,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T18:06:48.667Z" }
+generated: { by: "codex", at: "2026-10-11T18:27:07.104Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T18:06:48.667Z
+    at: 2026-10-11T18:27:07.104Z
 ---
 
 # Validation Gates
@@ -1436,7 +1436,10 @@ for tests/build after dependency download. No production inputs are mounted.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
 with exactly one database relation. Offline fixtures also validate the OCI
-payload hashes and reject upload locations outside the disposable endpoint.
+payload hashes, reject upload locations outside the disposable endpoint, and
+require no published host ports, internal networking and core health ordering.
+The registry client shares the proxy's network namespace and uses its loopback
+listener; this avoids publishing a port from an internal-only Docker bridge.
 Passing this fixture does not prove full-catalog or CVE-free publication;
 see the [candidate gates](../../builds/harbor-core/README.md).
 

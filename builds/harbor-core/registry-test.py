@@ -29,7 +29,7 @@ IMAGES = {
     "valkey-photon": "sha256:bb022e8f236f56f53cee7bb1f609595e497da67d829048e0af2284f97e6eb54f",
     "nginx-photon": "sha256:7eff0287d5ad0f35754e162c8481ced04bbde107153ce586cefb15ee74fa1311",
 }
-BASE = "http://127.0.0.1:18085"
+BASE = "http://127.0.0.1:8080"
 OCI = "application/vnd.oci.image."
 
 
@@ -52,7 +52,7 @@ def digest(data):
 def request(method, path, data=None, **headers):
     url = urllib.parse.urljoin(BASE, path)
     # Registry upload locations must remain on the disposable loopback endpoint.
-    assert urllib.parse.urlsplit(url).netloc == "127.0.0.1:18085", url
+    assert urllib.parse.urlsplit(url).netloc == "127.0.0.1:8080", url
     with urllib.request.urlopen(urllib.request.Request(
             url, data=data, headers=headers, method=method), timeout=15) as response:
         return response.read(), response.headers
@@ -79,7 +79,7 @@ def fixture_config(template, work, password):
     config, count = re.subn(r"^https:\n(?:[ \t].*\n|\n)*", "", template, flags=re.MULTILINE)
     assert count == 1
     for old, new in (("hostname: reg.mydomain.com", "hostname: harbor-fixture.invalid\nexternal_url: " + BASE),
-                     ("  port: 80", "  port: 18085"),
+                     ("  port: 80", "  port: 8080"),
                      ("harbor_admin_password: Harbor12345", "harbor_admin_password: " + password),
                      ("data_volume: /data", "data_volume: " + str(work / "data")),
                      ("    location: /var/log/harbor", "    location: " + str(work / "logs"))):
@@ -88,15 +88,37 @@ def fixture_config(template, work, password):
     return config
 
 
-def acceptance(compose, password):
+def isolate_services(generated):
+    del generated["services"]["log"]
+    for name, service in generated["services"].items():
+        service.pop("container_name", None)
+        service.pop("logging", None)
+        service["restart"] = "no"
+        service.pop("ports", None)
+        service.get("depends_on", {}).pop("log", None)
+        if name == "core":
+            service["image"] = "homelab-harbor-core:build"
+            service["pull_policy"] = "never"
+        else:
+            component = service["image"].split("/")[-1].split(":")[0]
+            service["image"] = image(component)
+    for name in ("proxy", "jobservice"):
+        generated["services"][name]["depends_on"]["core"] = {"condition": "service_healthy", "required": True}
+    for network in generated["networks"].values():
+        network["internal"] = True
+
+
+def acceptance(password):
+    last_error = None
     for _ in range(120):
         try:
             request("GET", "/api/v2.0/ping")
             break
-        except (OSError, urllib.error.URLError):
+        except (OSError, urllib.error.URLError) as error:
+            last_error = error
             time.sleep(2)
     else:
-        raise RuntimeError("disposable Harbor did not become ready")
+        raise RuntimeError("disposable Harbor did not become ready") from last_error
     basic = "Basic " + base64.b64encode(f"admin:{password}".encode()).decode()
     token, _ = request("GET", "/service/token?service=harbor-registry&scope=repository:library/repeated:pull,push",
                        Authorization=basic)
@@ -118,11 +140,7 @@ def acceptance(compose, password):
     for blob in (config, layer):
         pulled, _ = request("GET", "/v2/library/repeated/blobs/" + digest(blob), **auth)
         assert pulled == blob
-    sql = ("SELECT count(*) FROM artifact_reference r JOIN artifact a ON a.id=r.parent_id "
-           f"WHERE a.digest='{digest(index)}';")
-    count = command(*compose, "exec", "-T", "postgresql", "psql", "-U", "postgres", "-d", "registry", "-Atc", sql)
-    assert count.strip() == "1", count
-    print(f"Registry acceptance passed: eight unchanged descriptors, one PostgreSQL relation, {digest(index)}")
+    return digest(index)
 
 
 def main():
@@ -152,26 +170,24 @@ def main():
                 str(os.getuid()), str(os.getgid()))
         generated = json.loads(command("docker", "compose", "--project-directory", str(work),
                                        "--file", str(work / "docker-compose.yml"), "config", "--format", "json"))
-        del generated["services"]["log"]
-        for name, service in generated["services"].items():
-            service.pop("container_name", None)
-            service.pop("logging", None)
-            service["restart"] = "no"
-            service.pop("ports", None)
-            service.get("depends_on", {}).pop("log", None)
-            if name == "core":
-                service["image"] = "homelab-harbor-core:build"
-                service["pull_policy"] = "never"
-            else:
-                component = service["image"].split("/")[-1].split(":")[0]
-                service["image"] = image(component)
-        generated["services"]["proxy"]["ports"] = [{"target": 8080, "published": "18085", "host_ip": "127.0.0.1"}]
-        for network in generated["networks"].values():
-            network["internal"] = True
+        isolate_services(generated)
         (work / "fixture.json").write_text(json.dumps(generated))
         command(*compose, "pull")
         command(*compose, "up", "--detach")
-        acceptance(compose, password)
+        proxy = command(*compose, "ps", "--quiet", "proxy").strip()
+        assert re.fullmatch(r"[0-9a-f]{64}", proxy), proxy
+        # An internal-only bridge has no host port forwarding; test inside the proxy namespace.
+        reference = subprocess.check_output([
+            "docker", "run", "--rm", "--interactive", "--network", "container:" + proxy,
+            "--entrypoint", "python3", "--mount",
+            f"type=bind,src={Path(__file__).resolve()},dst=/registry-test.py,readonly",
+            prepare, "-I", "/registry-test.py", "--registry-client"], input=password, text=True).strip()
+        assert re.fullmatch(r"sha256:[0-9a-f]{64}", reference), reference
+        sql = ("SELECT count(*) FROM artifact_reference r JOIN artifact a ON a.id=r.parent_id "
+               f"WHERE a.digest='{reference}';")
+        count = command(*compose, "exec", "-T", "postgresql", "psql", "-U", "postgres", "-d", "registry", "-Atc", sql)
+        assert count.strip() == "1", count
+        print(f"Registry acceptance passed: eight unchanged descriptors, one PostgreSQL relation, {reference}")
     except Exception:
         if (work / "fixture.json").exists():
             print(command(*compose, "logs", "--no-color", "--tail", "100"), file=sys.stderr)
@@ -187,4 +203,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["--registry-client"]:
+        print(acceptance(sys.stdin.read()))
+    else:
+        main()

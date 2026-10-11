@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8966fdd98f766801e8c47535cb56690957447059baf4433b4ec2246524c54567",
+  "pageVersion": "sha256:e7554d7a0cd63141f015483cd4237f4ee0704983829e39fa4a538cf24f261e18",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -132,7 +132,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:95a320426e2730eac9f72d13f6f6a0fa5ac5b79f767d6cfde19fb84326c8a135"
+          "version": "repo-file-v1:sha256:9b4bf96d2aa07e94880e8ae1890e5206097910b1ecc10b787e7dcac4e049cc6e"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -168,13 +168,13 @@
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:95a320426e2730eac9f72d13f6f6a0fa5ac5b79f767d6cfde19fb84326c8a135"
+          "version": "repo-file-v1:sha256:9b4bf96d2aa07e94880e8ae1890e5206097910b1ecc10b787e7dcac4e049cc6e"
         }
       ]
     },
     {
       "id": "claim_33f0785e94cc44d1b38d2bcc1a07ca0a",
-      "statement": "The candidate build invokes a disposable pinned Harbor v2.15.4 stack with a loopback-only endpoint and internal service network, requires unchanged push/pull of an eight-descriptor repeated OCI index and all child content plus exactly one PostgreSQL relation, and cleans fixture-owned credentials and resources without production inputs.",
+      "statement": "The candidate build invokes a disposable pinned Harbor v2.15.4 stack without host ports on an internal service network. Its test client shares the proxy network namespace and uses loopback, while proxy and jobservice await core health. It requires unchanged push/pull of an eight-descriptor repeated OCI index and all child content plus exactly one PostgreSQL relation, then cleans fixture-owned credentials and resources without production inputs.",
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/build.sh",
@@ -182,13 +182,13 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:ccdab8f1e775253668d88fa8860d217131bed3dc2de9a2d48bf26fb278d851a5"
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T18:06:48.667Z"
+    "at": "2026-10-11T18:27:07.104Z"
   }
 }
