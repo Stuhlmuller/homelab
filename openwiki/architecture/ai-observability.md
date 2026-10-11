@@ -27,10 +27,7 @@ by callers. See the [gateway contract](../../clusters/homelab/apps/litellm/READM
 
 ## Caller inventory
 
-### UI-visible key migration (historical pre-cutover plan)
-
-This section records the preparation and its then-open gates. For the deployed
-native-key state, use the [current gateway runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
+### UI-visible key migration (native cutover awaiting deployment)
 
 The operator requested database-backed keys visible in LiteLLM's UI. The first
 prerequisite added dedicated PostgreSQL storage and separate generated admin/app
@@ -116,25 +113,23 @@ may host user workloads and remains outside this cluster-owned routing contract.
 
 ## Current rollout dependency
 
-### October 10, 2026: Langfuse queue recovery
-
-#### Pre-repair state (historical)
+### October 10, 2026: Langfuse queue recovery pending
 
 Read-only follow-up found `langfuse-valkey` in CrashLoopBackOff and its worker
 restarting. Valkey 8.0.11 loaded its base RDB, then rejected
 `appendonly.aof.4.incr.aof` as malformed. The PVC `langfuse-valkey-data` is
-retained; at this stage no files had been removed or repaired. Trace acceptance
-was blocked even though the web Pod was Ready. The repair required a private
-backup, a reviewed repository-owned recovery path, and approval for possible
-loss of queued events after the corruption point. Acceptance also required
+retained; no files were removed or repaired. Trace acceptance is blocked even
+though the web Pod is Ready. Queue repair requires a private backup and reviewed
+repository-owned recovery path; truncation can discard queued events after the
+corruption point. Obtain approval for that risk before any repair, then require
 stable Valkey/worker readiness and a fresh correlated generation per caller.
 The [copy-only inspection helper](../../scripts/langfuse-valkey-recovery.py)
 preserves a verified original and repairs only a private candidate. Its safety
 tests include a synthetic corrupt tail checked with native Valkey 8.0.11.
-The authorized capture stage stopped web/worker/Valkey through GitOps and mounted
-the queue read-only in a credential-free inspector. The helper verified all
+The authorized capture stage stops web/worker/Valkey through GitOps and mounts
+the queue read-only in a credential-free inspector. The helper verifies all
 writers exited before capture to private off-NAS storage. No live replacement
-path was activated at this stage; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
+path is activated; see the [recovery runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection).
 
 [PR #1240](https://github.com/Stuhlmuller/homelab/pull/1240) merged as verified
 `fe1838c49eaa11897f5d7f375eae94ba439e3f4f`. Argo observed that revision and
@@ -147,10 +142,8 @@ from 10,328,329 to 9,987,809 bytes, discarding 340,520 bytes. Original source
 and backup hashes stayed unchanged. This measures bytes, not lost events, and
 does not prove runtime loading or fresh ingestion. Langfuse remained
 intentionally offline pending approved replacement and a repository-owned
-restart. LiteLLM native/UI-visible key migration had completed, but live
-trace acceptance was still pending at this stage.
-
-#### Queue recovery and direct gateway verification
+restart. LiteLLM native/UI-visible key migration has since completed; live
+trace acceptance remains pending.
 
 Subsequent October 10 approval explicitly permits the 340,520-byte truncation
 and restart while retaining the off-NAS original. The prepared promotion path
@@ -160,41 +153,8 @@ then atomically replaces only the approved incremental AOF. The approved
 candidate was promoted and exact live hashes verified. A reviewed GitOps change
 removed the inspector first, with writers still stopped. Argo observed merged
 `836e7f0f`, pruned the inspector and reported Synced/Healthy; no Pod mounted
-its PVC. PR #1261 merged as verified `ee807517` and restored all three
-writers. Valkey loaded its base RDB and repaired incremental AOF without a
-corruption error or restart; web and worker reached 1/1 Ready, and Langfuse
-reported Synced/Healthy at that revision.
-
-Fresh bounded gateway requests authenticated with each dedicated mounted key.
-Langfuse v2 observations recorded `GENERATION`s with the matching input marker,
-`openrouter/free` route, caller identity, output and nonzero usage:
-
-| Caller | Observation | Tokens |
-| --- | --- | ---: |
-| OpenClaw | `e8eff862d6c4b2e7` | 86 |
-| Multica | `41fc201db4cdb962` | 83 |
-| n8n | `8c3a6a7fa7c8cff7` | 173 |
-| NOFX | `1bb76f16d66e0f38` | 75 |
-
-The first n8n request resolved to a free content-safety model and returned no
-assistant text; the second returned `READY` and is the observation above. These
-are direct gateway requests with each service key, not native app actions. They
-verify the repaired telemetry path but do not close the per-caller native-app
-generation gate in the [workload inventory](../workloads/inventory.md).
-Live n8n database inspection found all three inventoried model nodes targeting
-`openrouter/free` and `litellm-managed`; its two inactive workflows stayed
-inactive. OpenClaw's live default and allowed model are `openrouter/free`, with
-no active auth profiles and both Codex/OpenAI plugins disabled. Native
-post-recovery app actions and their correlated generations, visual UI key
-listing, and an independent datastore restore drill remain unverified. The
-native NOFX action is intentionally skipped at the operator's request.
-
-During the final rollout check, `zimaboard-2` became unreachable and its
-terminating `n8n-postgres-0` left n8n at 0/1 Ready even though both Argo
-Applications reported Synced/Healthy. Kubernetes recreated PostgreSQL on
-`zimaboard-0` after the node returned; PostgreSQL and n8n then reached 1/1
-without manual mutation. Keep workload readiness in release checks rather than
-using Argo health alone for this dependency chain.
+its PVC. This separate reviewed revision restores writers. Runtime loading
+and fresh ingestion remain unverified until live checks pass.
 LiteLLM's later native-key rollout is now recorded in its
 [owning runbook](../../clusters/homelab/apps/litellm/README.md#october-10-2026-native-key-rollout).
 
@@ -385,7 +345,6 @@ files are retained, not revoked or erased. Offline regression covers legacy
 defaults, non-main overrides, unrelated settings and idempotence. The October 6
 follow-up above records deployed configuration and a real agent turn. Inspect
 session overrides and actual-agent traces before making broader routing claims.
-A post-recovery native agent action remains unverified.
 The offline CLI displays 16 old Codex model/runtime associations among 37
 stored sessions, but these are not proof of current routing overrides. Native
 read-only store projection found no explicit model/provider/runtime overrides;
@@ -406,13 +365,9 @@ were not relabeled. See the dated follow-up above for subsequent acceptance.
 
 ### Operational finding: Langfuse worker instability
 
-The earlier read-only check found 67 worker restarts and a non-retryable
+The same read-only check found 67 worker restarts and a non-retryable
 ClickHouse `system.query_log` read error (3400 bytes read, 3456 expected),
 reported by `v4-legacy-api-usage-job`. Ingestion eventually completed, so this
 does not establish the cause of its delay. Diagnose the worker termination and
 ClickHouse part integrity before proposing repository-owned recovery; do not
-delete data or restart workloads manually. No repair was performed. After the
-October 10 Valkey recovery, the restarted worker is Ready but that legacy job
-now reports `system.query_log` missing under the declared diagnostic quarantine.
-Fresh generation ingestion succeeded, so this error does not block current
-telemetry; the periodic job still needs a separate compatibility fix.
+delete data or restart workloads manually. No repair was performed.

@@ -26,6 +26,13 @@ passed; browser UI rendering, native caller actions and database restore
 remain pending. See the
 [LiteLLM runbook](../../clusters/homelab/apps/litellm/README.md).
 
+During the final October 10 check, `zimaboard-2` became unreachable and its
+terminating `n8n-postgres-0` left n8n at 0/1 Ready while both Argo Applications
+still reported Synced/Healthy. Kubernetes recreated PostgreSQL on
+`zimaboard-0` after the node returned; PostgreSQL and n8n recovered to 1/1
+without manual mutation. Check database and dependent workload readiness, not
+Argo status alone, during release acceptance.
+
 The operator-owned `IaC/operator/state-bucket-encryption` unit manages only
 the existing S3 state bucket's encryption configuration, enabling S3 Bucket
 Keys while preserving both SSE-KMS and OpenTofu client-side encryption. See

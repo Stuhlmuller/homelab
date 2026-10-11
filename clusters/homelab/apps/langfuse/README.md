@@ -152,6 +152,11 @@ isolation. Run the native checker fixture with
 `python3 -I scripts/ci/langfuse-valkey-recovery-test.py --checker <checker-path>`;
 synthetic corruption tests do not establish production recovery.
 
+The recovered worker still logs a periodic `V4LegacyApiUsageJob` error because
+its `system.query_log` query targets a table detached by the diagnostic
+quarantine below. Fresh generation ingestion succeeded; repair that job's
+compatibility separately before treating worker logs as clean.
+
 Source: [Valkey persistence and AOF corruption](https://valkey.io/topics/persistence/).
 
 ## ClickHouse diagnostic quarantine
