@@ -19,7 +19,7 @@ auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "clusters/homelab/apps/litellm"))
 TelemetryAdmission = importlib.import_module("gateway").TelemetryAdmission
 
-assert version("starlette") == "1.7.0", "Match the reviewed candidate Host parser"
+assert version("starlette") == "1.3.1", "Match the reviewed candidate Host parser"
 
 
 async def check():

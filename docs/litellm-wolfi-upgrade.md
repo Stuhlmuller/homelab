@@ -22,9 +22,18 @@ streaming telemetry and unchanged exception identity. Disposable PostgreSQL
 checks cover atomic key import, concurrency, UI rotation/revocation, encrypted
 provider storage and fail-closed reads. These checks use fixture data only.
 
+Both Linux platforms' package metadata is inspected without extracting or
+executing files; each manifest, configuration and compressed layer must match
+its original digest and size. CI's SDK versions match those packaged versions.
+CI also runs native authentication and telemetry checks inside the exact catalog
+image with network disabled, a read-only filesystem, non-root UID and no
+capabilities. The public source is used only in this disposable CI fixture;
+the application reference remains Harbor. Local Docker is unavailable, so the
+native Linux image job must pass before runtime compatibility is established.
+
 Keep the PR draft until the original all-platform image is completely pulled
-from Harbor and scanned privately. Before deployment, verify its installed
-package/runtime contents and perform the declared database backup, restore and
+from Harbor and scanned privately. Before deployment, verify its actual runtime
+behavior and perform the declared database backup, restore and
 schema-migration rehearsal against a private production-data copy. Fresh-schema
 fixtures do not prove an upgrade of existing data. Deploy only through the
 protected GitOps path after shared image/node recovery holds are released.

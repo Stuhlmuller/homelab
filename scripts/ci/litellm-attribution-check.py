@@ -1,4 +1,4 @@
-"""Run on Python 3.13 with litellm[proxy]==1.104.2, openai==2.54.0,
+"""Run on Python 3.13 with litellm[proxy]==1.104.2, openai==2.33.0,
 httpx==0.28.1 and opentelemetry-sdk==1.33.1.
 """
 
