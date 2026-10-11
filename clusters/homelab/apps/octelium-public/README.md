@@ -1,8 +1,11 @@
 # Octelium Public Control Plane
 
-This app runs the outbound Cloudflare Tunnel connector that makes the Octelium
-browser control-plane and public app hostnames reachable from outside the
-tailnet:
+This retained Cloudflare Tunnel connector supports legacy callers during the
+[staged Tailscale/Traefik cutover](../traefik/CUTOVER.md). Its DNS writer and
+restoration workflow are removed; do not restore public app records. Keep the
+Deployment and credentials until application, callback, CI and Cordium acceptance,
+then retire them through a separate reviewed change. The route list below records
+the legacy source, not the target access contract:
 
 - `stinkyboi.com`
 - `octelium.stinkyboi.com`
@@ -14,9 +17,9 @@ tailnet:
   reviewed external callbacks that cannot complete an Octelium browser login
 - `kubernetes-api-ci.stinkyboi.com` for the policy-bound clientless CI
   Kubernetes Service
-- `fleet.stinkyboi.com` for Fleet's native user and device authentication,
-  directly through Istio with public first-admin setup permanently blocked;
-  see the [Fleet exception](../fleet/README.md#public-access-and-authentication).
+- `fleet.stinkyboi.com`, retained only during migration. Fleet's canonical target
+  is private mesh ingress with native user/device authentication; it has no Funnel
+  route. See the [Fleet access contract](../fleet/README.md#public-access-and-authentication).
 
 `octelium-api.stinkyboi.com` serves the browser API;
 `octelium-transport.stinkyboi.com` carries native clients over TCP.
@@ -72,20 +75,15 @@ directly to the Istio gateway with its original Host header, and
 `console.octelium.stinkyboi.com` name is a nested hostname and is not part of
 the public certificate/DNS shape.
 
-After Argo CD loads the new `octelium-public` pod revision, run the protected
-workflow to reconcile Tunnel DNS:
+Public DNS reconciliation now follows the [staged cutover](../traefik/CUTOVER.md)
+from clean reviewed main. It writes fixed DNS-only mesh records after signed
+proxy, canonical TLS, backend and node-registry checks. Public n8n and Policy Bot
+registrations move through their fixed callback helpers only after Funnel
+preflight; fresh signed deliveries precede legacy-route retirement.
 
-```sh
-gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-nix develop --command python3 scripts/octelium-tunnel-check.py
-```
-
-The workflow uses the existing production AWS role to read the DNS token and
-Tunnel UUID from SSM. It previews and reconciles the declared Tunnel records;
-responses remain in a temporary private log. Retry after correcting declared
-inputs if any stage fails; partial DNS changes are possible and reconciliation
-is idempotent. The dedicated gateway and cluster split DNS serve in-cluster
-clients; public transport uses the outbound Tunnel.
+The remaining routing/carrier details document legacy recovery. They do not
+establish mesh or callback acceptance and must not be used to republish public
+app CNAMEs.
 
 For rollback, revert the Tunnel configuration and pod revision through a
 reviewed PR. Do not restore WAN DNS or port forwarding without a separately
@@ -116,12 +114,17 @@ the Octelium client calls `octelium-api.stinkyboi.com`; the
 
 ## Validation
 
+Inspect this retained deployment read-only. Its legacy carrier probe is useful
+only before that carrier is retired; use the staged cutover for normal-DNS mesh,
+native API, callback and CI acceptance.
+
+
 ```sh
 kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl kustomize clusters/homelab/apps/istio
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
-scripts/octelium-public-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --dry-run
 python3 scripts/octelium-tunnel-check.py
 dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/

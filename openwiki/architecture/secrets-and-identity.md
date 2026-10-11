@@ -8,12 +8,8 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
-  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
-    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
-  - id: openwiki-source-e0d1dba87aa9213350b1234a
-    resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
@@ -32,16 +28,18 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 ---
 
 # Secrets And Identity
@@ -84,13 +82,15 @@ requires signatures in addition to enrollment. The unused federated identities
 remain protected until final migration retirement after signed-key acceptance.
 
 The fixed publisher reads sensitive encrypted-state outputs privately, verifies
-the trusted Mac's online homelab profile, signs with file-backed arguments, and
+the trusted Mac's online homelab profile, signs via `file:/dev/stdin`, and
 publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
 repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
 metadata confirmation must be followed by protected CI acceptance. Only after
 all three writes and metadata checks succeed does it delete the corresponding
 three unused client-ID variables. Exact-main and trusted-PR workflow gates still
-matter: these credentials do not encode GitHub OIDC subject claims.
+matter: these credentials do not encode GitHub OIDC subject claims. Raw signing
+keys stay out of arguments and temporary files; stdin avoids the macOS app
+sandbox refusing access to the private config directory.
 
 Wrapped keys contain a delegated private node-signing key, separate from the
 trusted credential authority's private voting key. The publisher requires exactly
@@ -342,14 +342,13 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-homelab-octelium-public`. The same tunnel is the external callback backbone
-  for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
-  routes remain unauthenticated at Octelium but path-limited in Istio and
-  validated by the receiving application credentials or signatures.
-  The current private DNS reconciler reuses the cert-manager Cloudflare DNS
-  token. Phase 2a removes the former `octelium-public-tunnel.yml` writer;
-  retained Tunnel routes are rollback infrastructure. Migrated native clients
-  use verified mesh TLS. Token values never enter git or workflow output.
+homelab-octelium-public`. This retained tunnel supports legacy callers only
+  until the staged replacement gates pass. Its public DNS writer and restoration
+  workflow are removed. The canonical mesh DNS helper reuses the scoped
+  cert-manager token; n8n and Policy Bot external registrations move to Funnel
+  through their fixed helpers, preserving credentials and requiring fresh signed
+  delivery receipts. Native carrier and CI secrets remain until separate
+  acceptance. Token values never enter git or workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -522,8 +521,9 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure
   the GitHub App webhook URL to
-  `https://policy-bot-hook.stinkyboi.com/api/github/hook` after the
-  `octelium-public` DNS/tunnel route is live; keep the webhook secret in
+  `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through the guarded
+  callback helper after Funnel routing and negative-path preflights pass;
+  require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
 - OctoBot currently has no repository-owned SSM contract. Its first-run setup,
   exchange credentials, tentacles, and strategy state live on the finance

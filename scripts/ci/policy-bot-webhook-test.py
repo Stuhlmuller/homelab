@@ -2,6 +2,7 @@
 """Verify webhook changes preserve secrets, require reviewed main, and never emit events."""
 import base64
 import contextlib
+from email.message import Message
 import importlib.util
 import io
 import json
@@ -114,20 +115,36 @@ class WebhookTests(unittest.TestCase):
     def test_funnel_preflight_uses_normal_tls_dns_without_redirects_and_gates_patch(self):
         self.preflight.stop()
         opener = Mock()
-        for statuses, success in (((400, 404), True), ((200, 404), False), ((400, 200), False), ((301, 404), False)):
-            errors = [webhook.urllib.error.HTTPError(url, status, '', {}, io.BytesIO())
-                                      for url, status in zip((webhook.URL, webhook.URL.removesuffix('/api/github/hook') + '/'), statuses)]
+        valid = ['db5cg1a1268s73dkrt6g']
+        cases = [((404, 404), valid, [], True)]
+        cases += [((status, 404), valid, [], False) for status in (200, 301, 400, 500)]
+        cases += [((404, status), valid, [], False) for status in (200, 301, 400, 500)]
+        cases += [((404, 404), ids, [], False) for ids in (
+            [], [''], ['short'], ['z' * 20], ['a' * 21], ['a' * 1000], valid * 2)]
+        cases += [((404, 404), valid, ids, False) for ids in (valid, [''])]
+        for statuses, hook_ids, root_ids, success in cases:
+            errors = []
+            for url, status, ids in zip((webhook.URL, webhook.URL.removesuffix('/api/github/hook') + '/'),
+                                       statuses, (hook_ids, root_ids)):
+                headers = Message()
+                for request_id in ids:
+                    headers['X-Request-ID'] = request_id
+                errors.append(webhook.urllib.error.HTTPError(url, status, '', headers, io.BytesIO()))
+            opener.reset_mock()
             opener.open.side_effect = errors
-            with patch.object(webhook.urllib.request, 'build_opener', return_value=opener) as factory:
+            with self.subTest(statuses=statuses, hook_ids=hook_ids, root_ids=root_ids), \
+                    patch.object(webhook.urllib.request, 'build_opener', return_value=opener) as factory:
                 if success:
                     webhook.preflight_target()
                     self.assertEqual(factory.call_args.args[0].proxies, {})
                     self.assertIsInstance(factory.call_args.args[1], webhook.NoRedirect)
-                    self.assertEqual(opener.open.call_args.args[0].method, 'GET')
-                    self.assertFalse(opener.open.call_args.args[0].headers)
+                    self.assertEqual(opener.open.call_count, 2)
                 else:
                     with self.assertRaises(RuntimeError):
                         webhook.preflight_target()
+                for call in opener.open.call_args_list:
+                    self.assertEqual(call.args[0].method, 'GET')
+                    self.assertFalse(call.args[0].headers)
             for error in errors:
                 error.close()
         api, calls = self.api()

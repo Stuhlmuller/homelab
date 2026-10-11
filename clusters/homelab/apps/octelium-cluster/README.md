@@ -47,12 +47,12 @@ domain, such as `_gw-*.stinkyboi.com`, not the Istio front-proxy route. After
 advertised gateway IPv6 addresses instead of falling through to the tailnet
 wildcard DNS record.
 
-Application hostnames stay on the existing `*.stinkyboi.com` names. After the
-Octelium service catalog is applied, run `scripts/octelium-public-dns.sh
---dry-run` and then `scripts/octelium-public-dns.sh` so exact app names such as
-`grafana.stinkyboi.com` and callback names such as
-`n8n-webhook.stinkyboi.com` resolve as proxied Cloudflare Tunnel CNAMEs to the
-repo-owned `octelium-public` connector.
+Application hostnames retain their existing `*.stinkyboi.com` names and move
+to private Tailscale/Traefik through the [ordered cutover](../traefik/CUTOVER.md).
+The former public DNS writer and restoration workflow are removed. Verify
+Traefik, native API, node-registry and callback readiness before the guarded
+DNS-only mesh change; retain legacy routes until client acceptance. Only the
+reviewed n8n and Policy Bot callback paths use public Funnel.
 
 ## Validation
 
@@ -61,7 +61,7 @@ kubectl -n istio-system get destinationrule octelium-cluster-dataplane
 kubectl -n octelium get svc octelium-ingress-dataplane
 kubectl -n istio-system get virtualservice octelium-cluster
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-public-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --dry-run
 curl -I https://octelium.stinkyboi.com
 curl -I https://portal.stinkyboi.com
 curl -I https://octelium-api.stinkyboi.com

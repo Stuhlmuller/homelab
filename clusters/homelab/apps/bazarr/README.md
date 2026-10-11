@@ -82,8 +82,8 @@ to loopback; keep that default.
    verify their runtime health and bound claims.
 4. Require the Bazarr Application to become `Synced`/`Healthy`, the pod to be
    ready, and the profile/default configuration hook to succeed.
-5. From a clean checkout at the reviewed current `main` SHA, reconcile the
-   public, human-authenticated native Octelium Service. Preview first:
+5. Follow the [private ingress cutover](../traefik/CUTOVER.md). If separately
+   recovering the retained legacy Octelium Service, preview from reviewed main:
 
    ```sh
    python3 -I scripts/octelium-bazarr-reconcile.py
@@ -94,12 +94,11 @@ to loopback; keep that default.
    The helper uses the existing operator login and pinned native transport,
    applies only `bazarr.default`, checks its public human-access contract, and
    requires a second apply with no changes. It never prunes the catalog.
-   Require `octelium-public` to finish syncing the matching tunnel route and
-   config revision, then dispatch `octelium-public-tunnel.yml` on `main` with
-   the same `expected_sha`. This existing workflow reconciles all declared
-   public tunnel DNS records, including Bazarr. Verify unauthenticated `/` and
-   `/api/system/ping` return HTTP 401 with `x-octelium-unauthorized: true`,
-   then verify the UI after Octelium login.
+   This helper is retained legacy recovery only. The old public DNS writer
+   and restoration workflow are removed. Move `bazarr.stinkyboi.com` through
+   the [staged private DNS cutover](../traefik/CUTOVER.md), then verify the UI
+   from a mesh client through Traefik with Bazarr authentication. The old
+   Octelium HTTP 401 marker is not a requirement for the replacement route.
 6. Complete application setup outside Argo's sync timeout:
 
    ```sh

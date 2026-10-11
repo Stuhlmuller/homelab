@@ -93,10 +93,12 @@ argocd app get platform-dns
 argocd app get platform-storage
 ```
 
-`argocd app get tailscale` checks only the temporary Talos/LAN fallback and
-must not gate Octelium app or Kubernetes readiness.
+Private ingress also requires healthy `tailscale` and `traefik` Applications,
+signed mesh peers and valid canonical TLS. Follow the
+[staged ingress acceptance](../clusters/homelab/apps/traefik/CUTOVER.md); existing
+Octelium routes remain only until replacement acceptance.
 
-For Kiali, verify the operator-created custom resource and Octelium-backed UI:
+For Kiali, verify the operator-created custom resource and private mesh UI:
 
 ```sh
 kubectl -n monitoring get kiali kiali
@@ -106,10 +108,10 @@ curl -I https://kiali.stinkyboi.com
 
 Expected result: the Kiali Application is synced and healthy, the Kiali custom
 resource is successfully reconciled, and the `kiali.stinkyboi.com` hostname
-reaches the read-only UI through Octelium.
+reaches the read-only UI through Tailscale and Traefik.
 
-For Octelium app-access readiness, run the e2e gate before declaring app UI
-access healthy:
+For retained legacy Octelium routing only, the old e2e gate remains available:
+This is not a mesh acceptance gate and may fail intentionally after DNS cutover.
 
 ```sh
 scripts/octelium-e2e-check.sh
@@ -142,15 +144,18 @@ webhook URL:
 ```sh
 argocd app get policy-bot
 kubectl -n automation get deploy/policy-bot svc/policy-bot virtualservice/policy-bot-octelium virtualservice/policy-bot-webhook-octelium externalsecret/policy-bot-config
-kubectl -n octelium-public get deploy cloudflared
+kubectl -n traefik get deployment/traefik service/traefik-private
+kubectl -n traefik get ingress
 curl -I https://policy-bot.stinkyboi.com/
 curl -I https://policy-bot.stinkyboi.com/details/example/example/1
-curl -sS -o /dev/null -w '%{http_code}\n' https://policy-bot-hook.stinkyboi.com/api/github/hook
+curl -sS -D - -o /dev/null https://policy-bot-hook.tail67beb.ts.net/api/github/hook
+curl -sS -D - -o /dev/null https://policy-bot-hook.tail67beb.ts.net/
 ```
 
 Expected result: the internal host serves normal Policy Bot UI routes, details
-redirect to `/api/github/auth`, the public hook returns `400` for an unsigned
-empty request, and the callback root is not routed.
+redirect to `/api/github/auth`, and a safe public hook GET returns `404` with
+one valid backend `X-Request-ID`; root returns `404` without it. This checks
+routing only. Require the [guarded App URL change and fresh signed delivery](../clusters/homelab/apps/policy-bot/README.md#routes).
 
 Stateful apps auto-sync by default, but they must not be considered ready until
 `platform-storage` is synced, the `nfs-default` StorageClass is verified, and
@@ -219,21 +224,25 @@ finish during startup but replaces an n8n process whose PostgreSQL connection
 pool stays closed after a database interruption. A pod that is Ready while
 `/healthz/readiness` returns HTTP 503 is running stale probe configuration.
 
-n8n webhooks use the reviewed Octelium-public callback route at
-`https://n8n-webhook.stinkyboi.com`. After sync, verify the callback
-VirtualService and `octelium-public` tunnel exist, then check that the
-Octelium-backed editor host works and the public host only reaches n8n under
-webhook path prefixes:
+n8n advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel
+and Traefik; its editor keeps the canonical private mesh URL. Converge Funnel
+before n8n restarts. Existing GitHub registrations move separately through the
+[fixed two-hook helper](../clusters/homelab/apps/n8n/README.md#access-contract),
+which uses safe OPTIONS probes and requires fresh delivery receipts.
 
 ```sh
-kubectl -n automation get virtualservice n8n-webhook-octelium
-kubectl -n octelium-public get deploy cloudflared
+kubectl -n traefik get deployment/traefik service/traefik-private
+kubectl -n traefik get ingress
 kubectl -n automation exec deploy/n8n -c app -- \
   node -e 'fetch("http://127.0.0.1:5678/healthz/readiness").then((response) => console.log(response.status))'
 curl -I https://n8n.stinkyboi.com/
-curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.stinkyboi.com/webhook/__missing__
+curl -sS -D /tmp/n8n-webhook-headers.txt -o /tmp/n8n-webhook-body.txt -w '%{http_code}\n' https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
 grep -i webhook /tmp/n8n-webhook-body.txt
 ```
+
+Require backend-specific missing-webhook 404, public root/admin denial and fresh
+successful signed GitHub delivery after cutover. Do not POST known webhooks or
+trigger redelivery merely to validate ingress.
 
 ## Current Validation Record
 

@@ -39,6 +39,17 @@ spec:
                 values: [genesis, cluster-config]
       ports:
         - {protocol: TCP, port: 8443}
+    # Temporary: retain the exact connector peer until its final retirement.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: octelium-client
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: octelium
+              app.kubernetes.io/instance: octelium-client
+      ports:
+        - {protocol: TCP, port: 8443}
     - ports:
         - {protocol: TCP, port: 15008}
     - from:

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2a10010d8d39eb2eb24b1650970eaea071d9e9d63bd50314af058ae7a2f4f799",
+  "pageVersion": "sha256:9a17e655b3ec703c8008a6268cb63a314f266d8cd54cd9bae9b1a4e31d05460f",
   "claims": [
     {
-      "id": "claim_0491ea8234774c4eb72cc016fae7411a",
-      "statement": "Prepared CI uses separate pre-signed plan/apply/Cordium keys with exact joined-identity checks and private per-job state; guarded publication and live plan, apply, publisher, Cordium denial and cleanup evidence are required before retiring legacy access.",
+      "id": "claim_4438539b2b0342eaab951a9d3596188a",
+      "statement": "The CI cutover uses separate protected plan/apply signed keys and a repository Cordium key with exact node identity checks, private uncached runner state, tokenless Kubernetes proxy access and independent native Cordium OIDC authorization; live plan denial, publication and Cordium cleanup remain separate acceptance gates.",
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
@@ -19,6 +19,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:09:14.896Z"
+    "at": "2026-10-10T23:38:06.057Z"
   }
 }

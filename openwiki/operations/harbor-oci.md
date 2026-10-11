@@ -16,22 +16,22 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
-  - id: openwiki-source-c071f0a75793c76e7f880496
-    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 ---
 
 # Harbor Private OCI Registry

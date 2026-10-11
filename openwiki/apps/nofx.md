@@ -7,13 +7,17 @@ workload_status: active
 updated: 2026-09-29
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-b11e34f0c0d38354842445ae
     resource: repo://docs/octelium-nofx-reconciliation.md
   - id: openwiki-source-ff63d9d82b2370adf56a5f28
     resource: repo://scripts/octelium-nofx-reconcile.py
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 ---
 
 # NOFX
@@ -160,19 +164,19 @@ contract from AWS SSM:
   The separate `nofx-registry-auth` ExternalSecret refreshes every five minutes
   into a retained recovery Docker config Secret, without mounting it in NOFX.
 
-The staged access migration preserves `https://nofx.stinkyboi.com` through
-private Traefik on Tailscale. Its native Octelium Service and legacy Tunnel
-remain declared for rollback until application, client, and CI acceptance;
-preparing this source does not establish live cutover. NOFX is not a Funnel route.
+The retained Cloudflare/Octelium route supports legacy callers during the
+[staged private ingress cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
+NOFX keeps its canonical hostname through private Tailscale and Traefik after
+DNS acceptance; it has no public Funnel route. The old Istio `VirtualService`
+remains migration state until final retirement.
 
 Live validation on 2026-08-22 found the Argo CD Application synced and healthy,
 both deployments ready with zero restarts, the 10 GiB claim bound, and the
 ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
-gate were then owned by `clusters/homelab/apps/octelium-public`,
-`scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
-That historical public Tunnel workflow reconciled browser and native carrier
-CNAMEs. The staged DNS cutover removes that writer; use the
-[current private DNS and acceptance runbook](../runbooks/tailnet-ingress.md).
+gate then used `octelium-public` and the former public DNS writer. That writer
+and its restoration workflow are now removed. Use the guarded private DNS path;
+the retained `octelium-e2e-check.sh` covers only the legacy transport and can
+fail intentionally after cutover.
 
 On 2026-09-04, the public root and `/api/health` returned HTTP 200 without
 Octelium denial headers. A read-only projection from `octelium_resources`

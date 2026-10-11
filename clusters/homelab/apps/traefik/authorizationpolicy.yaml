@@ -17,6 +17,13 @@ spec:
       to:
         - operation:
             ports: ["8000", "8080", "8443"]
+    # Temporary: retain connector authentication until its final retirement.
+    - from:
+        - source:
+            principals: ["cluster.local/ns/octelium-client/sa/octelium-client"]
+      to:
+        - operation:
+            ports: ["8443"]
     - from:
         - source:
             notPrincipals: ["*"]

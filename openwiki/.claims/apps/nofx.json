@@ -1,10 +1,24 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:38bc5487a5d7cc3b9b045ec04483916bf0dc15bc69cf90da3de60ad2911d4818",
+  "pageVersion": "sha256:f31c6ce33ee4a6fb8cd8e8a11dd40604d83791d83c7c8090b9e86664993c039c",
   "claims": [
     {
-      "id": "claim_9c9c0df7095645148d641e214099b6fb",
-      "statement": "The retained NOFX reconciliation helper defaults to read-only inspection over verified direct mesh TLS, requires canonical DNS to the declared online ingress peer, and removes inherited proxy settings.",
+      "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
+      "statement": "NOFX moves its canonical hostname to private Tailscale and Traefik through guarded DNS cutover; the former public DNS writer is removed while legacy runtime routes remain until acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
+          "version": "repo-lines-v1:sha256:04f1f27f9952d23fcf53fce663f7dc1e69f017e745223dac6824960ab98ee39d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+        }
+      ]
+    },
+    {
+      "id": "claim_2880e3bafa84422c80779c39c86738aa",
+      "statement": "The retained NOFX reconciliation helper defaults to read-only native inspection over verified direct mesh TLS; it validates the declared online peer and canonical DNS and removes inherited proxy settings.",
       "evidence": [
         {
           "resource": "repo://docs/octelium-nofx-reconciliation.md#L24-L44",
@@ -19,6 +33,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:09:14.896Z"
+    "at": "2026-10-10T23:38:06.057Z"
   }
 }

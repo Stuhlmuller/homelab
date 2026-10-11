@@ -14,10 +14,10 @@ sources:
     resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 ---
 
 <!-- markdownlint-disable MD013 -->

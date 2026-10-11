@@ -61,10 +61,9 @@ class FakeCommands(BASE.FakeCommands):
                                    "PublicKey": SIGNER, "TrustedKeys": [{"Public": key, **({"Meta": meta} if meta is not None else {})}
                                                                        for key, meta in self.trusted.items()]})
             if args[1:3] == ["lock", "sign"]:
-                assert args[3].startswith("file:")
-                path = Path(args[3][5:])
-                assert path.stat().st_mode & 0o777 == 0o600
-                raw = path.read_text()
+                assert args == [MODULE.TAILSCALE, "lock", "sign", "file:/dev/stdin"]
+                assert isinstance(data, str)
+                raw = data
                 stable_id = raw.removeprefix(MODULE.AUTH_PREFIX).split("-", 1)[0]
                 public = hashlib.sha256((stable_id + "delegate").encode()).digest()
                 authority = "tlpub:" + hashlib.sha256((stable_id + "authority").encode()).hexdigest()
@@ -129,6 +128,9 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         status, output = self.run_script(fake, ["--execute"])
         self.assertEqual(status, 0, output)
         self.assertEqual(len(fake.writes), 6)
+        signing = [(args, data) for args, operation, data in fake.calls if operation == "CI key signing"]
+        self.assertEqual(signing, [([MODULE.TAILSCALE, "lock", "sign", "file:/dev/stdin"], entry["key"])
+                                   for entry in fake.outputs["github_auth_keys"]["value"].values()])
         for index, (identity, (environment, name, old_name)) in enumerate(MODULE.BINDINGS.items()):
             scope = ["--env", environment] if environment else []
             args, data = fake.writes[index]
@@ -138,7 +140,7 @@ class TailscaleCIConfigureTest(unittest.TestCase):
                                                      "--repo", MODULE.GUARDS.HOST_REPO, *scope], None))
         self.assertEqual(self.cache.stat().st_mode & 0o777, 0o600)
         self.assertEqual(self.cache.parent.stat().st_mode & 0o777, 0o700)
-        self.assertEqual(len(list(self.cache.parent.iterdir())), 2)  # cache and mutex; raw keys removed
+        self.assertEqual(len(list(self.cache.parent.iterdir())), 2)  # cache and mutex; no raw-key files
         for record in json.loads(self.cache.read_text()):
             delegate = base64.b64decode(record["wrapped"].split("--TL", 1)[1].split("-", 1)[1] + "==")[32:]
             self.assertNotEqual(record["authority"], "tlpub:" + delegate.hex())

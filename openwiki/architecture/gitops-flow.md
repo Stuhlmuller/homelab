@@ -20,12 +20,12 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
-    resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 ---
 
 # GitOps Flow
@@ -104,13 +104,14 @@ The Cordium Application prunes removed repository-owned Kubernetes manifests;
 Cordium and Octelium resources generated through their native APIs remain
 outside Argo CD's tracking and are unaffected by that setting.
 
-Bazarr's public, human-authenticated native Octelium Service follows the existing single-Service
-operator pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
+Bazarr's retained legacy Octelium Service uses the single-Service recovery
+pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
 default and requires a clean checkout matching reviewed current `main` for
 `--execute`. It applies only `bazarr.default`, verifies unchanged human-only
 authorization and public routing, and requires a second apply with no changes.
-The Kubernetes application itself follows the protected Terragrunt registration
-and Argo CD sync path.
+The Kubernetes application follows protected Terragrunt registration and Argo CD.
+Current ingress uses the guarded private DNS/Traefik cutover; the recovery helper
+does not authorize restoring public DNS or the deleted restoration workflow.
 
 ## Tailscale ingress foundation
 

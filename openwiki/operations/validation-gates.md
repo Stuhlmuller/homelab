@@ -8,6 +8,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-a11878298975bc4bd3bbaf7d
+    resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -18,6 +20,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-de814b7f881b5c7f3424eff6
     resource: repo://scripts/ci/cordium-ci-transport-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -58,14 +62,16 @@ sources:
     resource: repo://scripts/ci/traefik-runtime-check.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
     resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-3a59e2e385041c09f8b021a1
+    resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 ---
 
 # Validation Gates
@@ -218,6 +224,13 @@ admin/root rejection off mesh and actual signed webhook delivery. Run protected
 CI plan/apply through the operator API proxy, with a denied real plan-identity
 write. Local tests and HTTP health alone do not satisfy these gates.
 
+The retained ambient `octelium-client` is an authenticated principal, so the
+private TLS listener temporarily permits its exact service account on 8443.
+The focused regression rejects wrong namespace/account identities and callback
+or registry ports, and requires the matching exact Pod/namespace NetworkPolicy
+selector. Require connector readiness and authenticated native API access after
+CoreDNS reconciliation; offline assertions do not prove live authorization.
+
 The Talos helper regression covers full active/persistent resource capture,
 additional-document divergence, a normal STATE-only boot with active version 1,
 missing persistent after a later active change, duplicate resources, read failure,
@@ -229,6 +242,17 @@ the repository and live Deployment explicitly declare zero replicas and no
 live replicas remain. This accounts for Traefik's static ClusterIP backend
 while AFFiNE is suspended. All other application 5xx responses fail; this
 exception does not establish AFFiNE runtime health.
+
+The DNS regression includes a dual-address peer whose LoadBalancer Service
+publishes only IPv4: it must produce A records and no AAAA. Probe each published
+address, never synthesize application endpoints from the peer's other family.
+PolicyBot's safe GET probe requires hook HTTP 404 with one valid 20-character
+backend `X-Request-ID`, and root HTTP 404 without that header. Tests reject wrong
+statuses, missing/malformed/duplicate IDs and a root forwarded to the backend.
+This proves routing only; fresh successful signed GitHub delivery proves the
+callback path after cutover. No webhook POST or redelivery is part of preflight.
+The CI publisher test separately requires all three raw signing keys on stdin,
+never arguments or temporary files, with private captured command failures.
 
 Phase 2a removes the public DNS restoration workflow and helper, changes internal
 CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness before
@@ -511,7 +535,7 @@ kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
 bash -n \
   scripts/octelium-gateway-dns.sh \
-  scripts/octelium-public-dns.sh \
+  scripts/tailscale-private-dns.sh \
   scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```

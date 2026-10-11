@@ -148,11 +148,48 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(policy["rules"], [
             {"from": [{"source": {"notPrincipals": ["*"]}}],
              "to": [{"operation": {"ports": ["8000", "8080", "8443"]}}]},
+            {"from": [{"source": {"principals": [
+                "cluster.local/ns/octelium-client/sa/octelium-client"]}}],
+             "to": [{"operation": {"ports": ["8443"]}}]},
             {"from": [{"source": {"notPrincipals": ["*"],
                                     "ipBlocks": NODE_REGISTRY_SOURCES}}],
              "to": [{"operation": {"ports": ["9443"]}}]},
             {"to": [{"operation": {"ports": ["9000"]}}]},
         ])
+
+    def test_retained_connector_is_scoped_to_its_identity_and_private_tls(self):
+        policy = read_yaml("clusters/homelab/apps/traefik/authorizationpolicy.yaml")["spec"]
+        authenticated = {
+            (principal, port)
+            for rule in policy["rules"]
+            for peer in rule.get("from", [])
+            for principal in peer["source"].get("principals", [])
+            for target in rule["to"]
+            for port in target["operation"]["ports"]
+        }
+        principal = "cluster.local/ns/octelium-client/sa/octelium-client"
+        self.assertEqual(authenticated, {(principal, "8443")})
+        for identity, port in (
+            ("cluster.local/ns/octelium-client/sa/default", "8443"),
+            ("cluster.local/ns/default/sa/octelium-client", "8443"),
+            (principal, "8000"), (principal, "8080"), (principal, "9443"),
+        ):
+            self.assertNotIn((identity, port), authenticated)
+        network = read_yaml("clusters/homelab/apps/traefik/networkpolicy.yaml")["spec"]
+        connector, = [rule for rule in network["ingress"] if any(
+            peer.get("namespaceSelector", {}).get("matchLabels", {}).get(
+                "kubernetes.io/metadata.name") == "octelium-client"
+            for peer in rule.get("from", []))]
+        self.assertEqual(connector, {
+            "from": [{
+                "namespaceSelector": {"matchLabels": {
+                    "kubernetes.io/metadata.name": "octelium-client"}},
+                "podSelector": {"matchLabels": {
+                    "app.kubernetes.io/name": "octelium",
+                    "app.kubernetes.io/instance": "octelium-client"}},
+            }],
+            "ports": [{"protocol": "TCP", "port": 8443}],
+        })
 
     def test_ambient_app_policies_separate_hbone_from_cleartext_sources(self):
         for app, name, port in (("affine", "affine-server", 3010),

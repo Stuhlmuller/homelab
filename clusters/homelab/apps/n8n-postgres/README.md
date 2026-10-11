@@ -60,12 +60,13 @@ kubectl -n automation exec statefulset/n8n-postgres -- \
   psql -U postgres -d n8n -Atqc 'select 1'
 kubectl -n automation rollout status deployment/n8n --timeout=10m
 curl -sS -o /dev/null -w '%{http_code}\n' \
-  https://n8n-webhook.stinkyboi.com/webhook/__missing__
+  https://n8n-webhook.tail67beb.ts.net/webhook/__missing__
 ```
 
 Require a Ready PostgreSQL Pod, bound PVC, successful SQL query, and n8n
-readiness. The missing callback should return HTTP 404 rather than a gateway
-503 once the app is available.
+readiness. The missing callback should return an n8n HTTP 404 rather than a
+gateway response. Follow the [n8n callback gates](../n8n/README.md#access-contract)
+for fixed-hook migration and fresh signed-delivery acceptance.
 
 ## Backup And Restore
 

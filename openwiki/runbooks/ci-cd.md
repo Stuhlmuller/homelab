@@ -5,13 +5,13 @@ description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot 
 tags: ["runbook", "ci", "github-actions"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:09:14.896Z
+    at: 2026-10-10T23:38:06.057Z
 sources:
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
-generated: { by: "codex", at: "2026-10-10T23:09:14.896Z" }
+generated: { by: "codex", at: "2026-10-10T23:38:06.057Z" }
 ---
 
 # CI/CD

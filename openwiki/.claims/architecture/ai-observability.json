@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:7eb7342d4b7fdc0cafb3619cd7a3d59862b1d9e2b33dacbfa9003c58298516cd",
+  "claims": [
+    {
+      "id": "claim_387c6dac73fc4932ade43a20ef912aef",
+      "statement": "Current OpenClaw bootstrap replaces provider/model maps, limits configured agents to the gateway model, disables OpenAI/Codex plugins and removes their active auth-profile references while preserving private credentials and original backups; the older additive retirement gap is historical.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py#L63-L83",
+          "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T23:10:58.872Z"
+  }
+}
