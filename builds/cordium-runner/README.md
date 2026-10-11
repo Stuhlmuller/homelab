@@ -54,6 +54,25 @@ denied access to the LAN, Kubernetes, controller credentials and other Workspace
 Observed Cordium Pods have only a dynamic Workspace UID label; do not impose a
 namespace-wide deny policy that breaks existing human Workspaces.
 
+The dormant `.cordium/runner-network-policy.json` template selects one Workspace
+UID. It denies unsolicited ingress and private-address web traffic, while allowing
+CoreDNS, Cordium's configured public DNS resolvers, and public HTTP/HTTPS needed
+for package and Actions downloads. It has no private control-plane exception.
+Do not instantiate it until actual supervisor/control connectivity is mapped;
+add only the exact required peers through reviewed code. Tests prove the template's
+selectors/CIDR intent, not CNI enforcement or supervisor readiness.
+
+Read-only inspection on 2026-10-10 confirmed `kube-flannel` on all four nodes;
+Flannel does not enforce these policies. Dependency work is staged in
+[policy-enforcer publication #1270](https://github.com/Stuhlmuller/homelab/pull/1270)
+and [NRI/enforcement prerequisites #1271](https://github.com/Stuhlmuller/homelab/pull/1271).
+Neither currently proves production enforcement. Require NRI startup isolation,
+allowed/denied traffic, restart recovery and ambient compatibility before applying
+runner policies. The controller must install and read back the exact UID policy
+before starting its Workspace, and retire the policy only after Workspace/Pod
+deletion is verified. Policy instantiation and that ordered lifecycle are not yet
+implemented; registration remains disabled.
+
 After the live isolation gate passes, enable the canary in a reviewed commit,
 create a dedicated narrow Cordium runner identity and file-backed credentials,
 then invoke from that exact clean main checkout:
