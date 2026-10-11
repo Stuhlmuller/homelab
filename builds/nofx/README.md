@@ -65,6 +65,29 @@ run IDs include a safe strategy slug. Keep rounds uninterrupted: cold resume
 still does not reliably restore the selected strategy snapshot, so start fresh
 matched runs after a backend restart.
 
+## Chainguard toolchain compatibility
+
+The recipe pins the public Chainguard Go SDK and Node dev image selected by
+the Harbor publication prerequisite. Public imports are build sources;
+deployed NOFX artifacts remain private `harbor.stinkyboi.com/homelab` images.
+Do not merge deployment digest updates before protected publication and fresh
+scan/pull acceptance of the resulting artifacts.
+
+The backend copies the static Go SDK into the retained Alpine build environment
+and uses its musl compiler with the existing TA-Lib headers/libraries. Directly
+changing that stage to a glibc builder would change the produced binary's libc
+contract. The final runtime remains an explicit exception until a complete
+Chainguard runtime rebuild passes native dependency and data acceptance.
+The frontend uses the Node dev candidate with an explicit builder UID 0,
+preserving the old build identity; final artifacts still run as UID 10000.
+
+The existing `test.sh` and `build.sh` must pass on Linux with the exact image
+digests. Local Docker is unavailable; the draft's native NOFX CI job is the
+compatibility gate. Source patches, financial behavior and data format are
+unchanged. After publication, verify application actions and active-image scan
+results before claiming CVE remediation; compiler replacement alone cannot
+prove the retained operating-system image is CVE-free.
+
 ## OKX US cash-spot competition
 
 Patch `0012` replaces this installation's OKX runtime construction with the
