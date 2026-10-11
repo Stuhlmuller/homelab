@@ -26,10 +26,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
+generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:23:56.319Z
+    at: 2026-10-11T09:10:40.150Z
 ---
 
 # Harbor Private OCI Registry
@@ -231,8 +231,9 @@ preserves digest checks and complete anonymous pulls without coupling Bazarr to
 unrelated historical images. See the
 [Bazarr rollout](../../clusters/homelab/apps/bazarr/README.md).
 
-Traefik uses `image_scope=traefik` with the fixed one-image
+Traefik uses `image_scope=traefik` with the fixed two-image
 `scripts/config/harbor-traefik-images.json` subset of the reviewed full catalog.
+It includes the ingress image and exact `pause:3.10` native node pull probe.
 It preserves all-platform digest copying, the reviewed tag alias and fresh
 complete anonymous pulls. No caller-supplied image, path or destination is
 accepted. Successful publication is required before the consuming ingress
@@ -253,6 +254,24 @@ avoid coupling deployment to the full historical mirror audit. This does not
 establish full-inventory mirror completion.
 
 ## Image Publication
+
+### October 11 duplicate-index failure
+
+Full-catalog runs `38108370598` and `38117127796` failed at the pinned LiteLLM
+database index. Its eight descriptors repeat four child digests twice. The
+second run's parent-index write correlates with PostgreSQL `unique_reference`
+failure at `08:53:38.389Z`, matching
+[Harbor issue #16718](https://github.com/goharbor/harbor/issues/16718).
+Child writes succeeded, but the parent was unavailable by digest and either tag.
+Keep immutable source bytes and attestations intact; no live schema repair or
+index normalization is part of the ingress cutover.
+
+The two-image Traefik scope can publish the native probe independently of this
+full-catalog incompatibility. A scoped receipt still proves only selected image
+availability. Native pulls on every node remain required before Harbor DNS
+changes; global `skipFallback` mirrors still require full publication. See the
+[recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
+
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
