@@ -9,6 +9,8 @@ import tempfile
 import subprocess
 import shutil
 import time
+import signal
+import shlex
 import unittest
 from unittest.mock import patch
 from datetime import datetime, timezone
@@ -33,22 +35,50 @@ class CacheLayoutTests(unittest.TestCase):
             time.sleep(3)
             self.assertFalse(marker.exists())
 
-    def test_cancellation_only_signals_exact_build_in_owned_workspace(self):
-        for comm, cwd, command, expected in (
-            ("timeout", "/workspace/check.ABCDEF/source", "nix build fixture", True),
-            ("timeout", "/workspace/check.ABCDEF/source", "nix build unrelated", False),
-            ("timeout", "/other/source", "nix build fixture", False),
-            ("sh", "/workspace/check.ABCDEF/source", "nix build fixture", False),
-        ):
-            with self.subTest(comm=comm, cwd=cwd, command=command), tempfile.TemporaryDirectory() as temporary:
+    @unittest.skipUnless(shutil.which("timeout"), "GNU timeout is supplied by the Nix shell")
+    def test_cancellation_cleans_before_during_and_after_build(self):
+        policy = {"url": "fixture", "publicKey": "fixture"}
+        for stage in ("import", "build", "export"):
+            with self.subTest(stage=stage), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                command = builder.attempt_command(policy)
+                script = command[5]
+                beginning = script.index('test "$(cat /sys/fs/cgroup/memory.max)"')
+                ending = script.index('job="$(mktemp')
+                script = script[:beginning] + "mkdir /workspace/offline-check.lock\n" + script[ending:]
+                blocked = 'touch /workspace/started; sleep 30'
+                script = script.replace('tar -x -C "$job/source"', blocked if stage == "import" else "true")
+                script = script.replace(shlex.join(builder.build_command(policy)), blocked if stage == "build" else "true")
+                script = script.replace('nix copy --to "file://$job/cache" $(cat "$job/outputs")', blocked if stage == "export" else "true")
+                script = script.replace('tar -c -C "$job/cache" .', "true").replace("/workspace", str(root))
+                command[5] = script
+                process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                try:
+                    deadline = time.monotonic() + 5
+                    while not (root / "started").exists() and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertTrue((root / "started").exists())
+                    process.send_signal(signal.SIGTERM)
+                    process.wait(timeout=5)
+                    self.assertFalse((root / "offline-check.lock").exists())
+                    self.assertFalse(list(root.glob("check.*")))
+                finally:
+                    if process.poll() is None:
+                        process.kill()
+                        process.wait()
+
+    def test_cancellation_only_signals_entire_owned_attempt(self):
+        command = builder.attempt_command({"url": "fixture", "publicKey": "fixture"})
+        for comm, args, expected in (("timeout", command, True), ("timeout", ["unrelated"], False), ("sh", command, False)):
+            with self.subTest(comm=comm, args=args), tempfile.TemporaryDirectory() as temporary:
                 proc = Path(temporary) / "1234"
                 proc.mkdir()
                 (proc / "comm").write_text(comm + "\n")
-                (proc / "cmdline").write_bytes(command.replace(" ", "\0").encode() + b"\0")
-                (proc / "cwd").symlink_to(cwd)
-                script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", "'nix build fixture '")
+                (proc / "cmdline").write_bytes(b"\0".join(arg.encode() for arg in args) + b"\0")
+                script = builder.CANCEL_SCRIPT.replace("/proc/", temporary + "/").replace("EXPECTED", shlex.quote(" ".join(command) + " "))
                 result = subprocess.run(["sh", "-c", f'kill() {{ echo "SIGNAL:$*"; rm "{proc}/comm"; }};\n' + script], capture_output=True, text=True, check=True)
                 self.assertEqual("SIGNAL:-TERM 1234" in result.stdout, expected)
+        self.assertIn("remaining=20", builder.CANCEL_SCRIPT)
 
     def test_disconnect_cancels_original_pod(self):
         policy = {"url": "https://example.test", "publicKey": "fixture:key"}

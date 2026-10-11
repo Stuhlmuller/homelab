@@ -19,15 +19,11 @@ set -eu
 found=0
 for proc in /proc/[0-9]*; do
     [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
-    case "$(readlink "$proc/cwd" 2>/dev/null || true)" in
-        /workspace/check.??????/source) ;;
-        *) continue ;;
-    esac
     command=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' ' ')
     [ "$command" = EXPECTED ] || continue
     pid=${proc##*/}
     kill -TERM "$pid"
-    remaining=10
+    remaining=20
     while [ -e "$proc/comm" ] && [ "$remaining" -gt 0 ]; do
         sleep 1
         remaining=$((remaining - 1))
@@ -41,7 +37,7 @@ done
 
 
 def build_command(policy):
-    return ["timeout", "--kill-after=10s", "1800s", "nix", "build",
+    return ["nix", "build",
             "--print-build-logs", "--no-link", "--print-out-paths", "--no-update-lock-file",
             "--option", "sandbox", "true", "--option", "require-sigs", "true",
             "--option", "max-substitution-jobs", "1",
@@ -57,12 +53,12 @@ def cancel(policy, pod, uid):
         text=True, timeout=20))
     if current["metadata"]["uid"] != uid:
         raise ValueError("Refusing cancellation against a replacement pod")
-    command = " ".join(build_command(policy)) + " "
+    command = " ".join(attempt_command(policy)) + " "
     subprocess.run([
         "kubectl", "--request-timeout=15s", "exec", "-i", "--namespace", "nix-builder",
         pod, "--container", "nix", "--", "sh", "-s"],
         input=CANCEL_SCRIPT.replace("EXPECTED", shlex.quote(command)), text=True,
-        cwd=ROOT, check=True, timeout=30)
+        cwd=ROOT, check=True, timeout=40)
 
 
 def memory_bytes(value):
@@ -113,24 +109,15 @@ def preflight():
     return pod["metadata"]["name"], pod["metadata"]["uid"]
 
 
-def export(destination, policy):
-    subprocess.run(["git", "diff", "--quiet"], cwd=ROOT, check=True)
-    tree = subprocess.check_output(["git", "write-tree"], cwd=ROOT, text=True).strip()
-    source = subprocess.check_output(["git", "archive", tree], cwd=ROOT)
-    expected = {
-        subprocess.check_output(["nix", "eval", "--raw", "--no-update-lock-file",
-                                 f".#checks.x86_64-linux.{check}.outPath"], cwd=ROOT, text=True).strip()
-        for check in CHECKS
-    }
-    command = shlex.join(build_command(policy))
-    pod, uid = preflight()
-    print(f"Builder attempt uses pod {pod} UID {uid}", file=sys.stderr)
+def attempt_command(policy):
     script = """
 set -eu
+trap 'exit 143' TERM INT
 test "$(cat /sys/fs/cgroup/memory.max)" = 1073741824
 mkdir /workspace/offline-check.lock
 trap 'rmdir /workspace/offline-check.lock' EXIT
 for proc in /proc/[0-9]*; do
+    [ "${proc##*/}" = "$PPID" ] && continue
     case "$(cat "$proc/comm" 2>/dev/null || true)" in
         nix|timeout) echo 'Builder already has an active check process' >&2; exit 1 ;;
     esac
@@ -144,11 +131,25 @@ cd "$job/source"
 COMMAND > "$job/outputs"
 nix copy --to "file://$job/cache" $(cat "$job/outputs")
 tar -c -C "$job/cache" .
-""".replace("COMMAND", command)
+""".replace("COMMAND", shlex.join(build_command(policy)))
+    return ["timeout", "--kill-after=10s", "1800s", "sh", "-ec", script, "homelab-offline-attempt"]
+
+
+def export(destination, policy):
+    subprocess.run(["git", "diff", "--quiet"], cwd=ROOT, check=True)
+    tree = subprocess.check_output(["git", "write-tree"], cwd=ROOT, text=True).strip()
+    source = subprocess.check_output(["git", "archive", tree], cwd=ROOT)
+    expected = {
+        subprocess.check_output(["nix", "eval", "--raw", "--no-update-lock-file",
+                                 f".#checks.x86_64-linux.{check}.outPath"], cwd=ROOT, text=True).strip()
+        for check in CHECKS
+    }
+    pod, uid = preflight()
+    print(f"Builder attempt uses pod {pod} UID {uid}", file=sys.stderr)
     try:
         archive = subprocess.check_output([
             "kubectl", "exec", "-i", "--namespace", "nix-builder",
-            pod, "--container", "nix", "--", "sh", "-ec", script],
+            pod, "--container", "nix", "--", *attempt_command(policy)],
             input=source, cwd=ROOT, timeout=1860)
     except BaseException:
         cancel(policy, pod, uid)
