@@ -248,3 +248,24 @@ this Cordium publication path has not been executed live.
 
 Use the returned immutable references in a reviewed Deployment change only after
 cold-pull acceptance. Do not treat the build-only workflow as registry publication.
+
+
+## Runner canary before workflow cutover
+
+After the controller and isolation gates pass, dispatch the exact current main:
+
+```sh
+gh workflow run cordium-runner-canary.yml --repo Stuhlmuller/homelab \
+  --ref main -f expected_sha=FULL_REVIEWED_MAIN_SHA -f mode=checks
+gh workflow run cordium-runner-canary.yml --repo Stuhlmuller/homelab \
+  --ref main -f expected_sha=FULL_REVIEWED_MAIN_SHA -f mode=force-failure
+```
+
+The canary uses only `cordium-canary` runners. It checks the actual runner name,
+Linux/x64 platform, reviewed source, Nix, Python toolcache and a Docker action.
+The second mode must fail with exit 42. Cancel an active canary separately and
+verify controller cleanup after success, failure and cancellation: no registered
+runner, native Workspace, Deployment, Pod, PVC or owned NetworkPolicy remains.
+A green job alone does not prove cleanup. Keep workflow selectors unchanged
+until these live cases pass; then switch the pool and all jobs to `cordium` in
+the reviewed cutover. Neither canary mode has run live yet.

@@ -348,5 +348,34 @@ class Queue(unittest.TestCase):
             provision.assert_not_called()
 
 
+
+class Canary(unittest.TestCase):
+    def test_dispatch_boundary_and_intentional_failure(self):
+        workflow = runner.ROOT / ".github/workflows/cordium-runner-canary.yml"
+        job = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(workflow)]))["jobs"]["canary"]
+        self.assertEqual(job["runs-on"], ["self-hosted", "Linux", "X64", "cordium-canary"])
+        guard = job["steps"][0]["run"]
+        failure = job["steps"][-1]["run"]
+        with tempfile.TemporaryDirectory() as directory:
+            uname = Path(directory) / "uname"
+            uname.write_text('#!/bin/sh\ncase "$1" in -s) echo Linux;; -m) echo x86_64;; esac\n')
+            uname.chmod(0o700)
+            environment = {**os.environ, "PATH": directory + os.pathsep + os.environ["PATH"],
+                           "ACTUAL_REF": "refs/heads/main", "ACTUAL_SHA": SHA, "EXPECTED_SHA": SHA,
+                           "RUNNER_ENVIRONMENT": "self-hosted", "RUNNER_NAME": "cordium-abc", "CHECK_MODE": "checks"}
+            def execute(script, changes=None):
+                return subprocess.run(["bash", "-c", script], env={**environment, **(changes or {})},
+                                      capture_output=True, text=True).returncode
+            self.assertEqual(execute(guard), 0)
+            for changes in ({"ACTUAL_REF": "refs/heads/unreviewed"}, {"EXPECTED_SHA": "b" * 40},
+                            {"RUNNER_ENVIRONMENT": "github-hosted"}, {"RUNNER_NAME": "unowned"},
+                            {"CHECK_MODE": "arbitrary"}):
+                with self.subTest(changes=changes):
+                    self.assertNotEqual(execute(guard, changes), 0)
+            self.assertEqual(execute(failure), 0)
+            self.assertEqual(execute(guard, {"CHECK_MODE": "force-failure"}), 0)
+            self.assertEqual(execute(failure, {"CHECK_MODE": "force-failure"}), 42)
+
+
 if __name__ == "__main__":
     unittest.main()
