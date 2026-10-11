@@ -292,7 +292,10 @@ dedicated Linux CI job must pass before this prerequisite is ready.
 The same owned Kind fixture also runs `istio-egress-routing-check.py` with
 checksum-pinned Istio 1.27.3 charts and catalog-pinned component images. It
 installs Gateway API from the same immutable source as the registration
-prerequisite, enables DNS capture inside the fixture only, and requires the
+prerequisite and enables DNS capture/IPv6 inside the dual-stack fixture only.
+Disabling IPv6 with dual-stack sandbox addresses makes Istio 1.27.3 reject the
+Pod before traffic tests, so the fixture retains both address families rather
+than suppressing the CNI failure. It requires the
 client to resolve the exact allocated ServiceEntry address. Both callers must
 succeed before authorization; the waypoint must subsequently deny the
 unauthorized service account while preserving the required caller. A direct-IP

@@ -79,9 +79,9 @@ def check(kubectl, root, python):
         if chart == "istiod":
             values["global"] = {"hub": "docker.io/istio", "tag": PROXY, "variant": ""}
         if chart == "cni":
-            values["cni"] = {"ambient": {"enabled": True, "dnsCapture": True, "ipv6": False}}
+            values["cni"] = {"ambient": {"enabled": True, "dnsCapture": True, "ipv6": True}}
         if chart == "ztunnel":
-            values["env"] = {"IPV6_ENABLED": "false"}
+            values["env"] = {"IPV6_ENABLED": "true"}
         file = root / (chart + "-values.json")
         file.write_text(json.dumps(values))
         release = {"base": "istio-base", "istiod": "istiod", "cni": "istio-cni", "ztunnel": "ztunnel"}[chart]
