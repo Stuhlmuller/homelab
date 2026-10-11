@@ -3,6 +3,13 @@ type: architecture
 title: "AI observability"
 description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attribution, and per-caller telemetry acceptance gates."
 tags: ["homelab", "navigation"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:10:58.872Z
+sources:
+  - id: openwiki-source-cce2f8f33e3b3639655d2b33
+    resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
+generated: { by: "codex", at: "2026-10-10T23:00:00.726Z" }
 ---
 
 # AI observability
@@ -363,21 +370,22 @@ This closes deployment verification, not inference acceptance. The browser
 remained at Octelium login; an authenticated NOFX session is still needed for
 the native nontrading AI test and matching Langfuse generation.
 
-### Pre-cutover retirement gap: retained OpenClaw configuration
+### Earlier retirement gap: retained OpenClaw configuration
 
-Before the migration, live inspection found an enabled `codex` plugin, the OpenAI provider
+The pre-migration inspection found an enabled `codex` plugin, the OpenAI provider
 pointing at the ChatGPT Codex backend, subscription auth-profile references,
 and `openai/gpt-5.5` / `openai/gpt-6-astra` model and allowlist entries.
-The default used LiteLLM, but full subscription retirement was not established then.
-`assistant/bootstrap.py` recursively merges providers/models and appends to
-existing allowlists, so omitting old entries from the managed patch does not
-remove them. The prepared migration replaces provider/model maps, restricts each
+The default used LiteLLM, but full subscription retirement was not established.
+The former bootstrap merged providers/models and appended to existing
+allowlists, so omitting old entries from the managed patch did not remove them.
+Current `assistant/bootstrap.py` replaces provider/model maps, restricts each
 configured agent to the gateway model, disables OpenAI/Codex plugins, and removes
 subscription auth-profile references. Original config and private credential
-files were retained, not revoked or erased. Offline regression covered legacy
-defaults, non-main overrides, unrelated settings and idempotence. The later
-live config check above confirms only `openrouter/free` is allowed and both
-plugins are disabled; a post-recovery native agent action remains unverified.
+files are retained, not revoked or erased. Offline regression covers legacy
+defaults, non-main overrides, unrelated settings and idempotence. The October 6
+follow-up above records deployed configuration and a real agent turn. Inspect
+session overrides and actual-agent traces before making broader routing claims.
+A post-recovery native agent action remains unverified.
 The offline CLI displays 16 old Codex model/runtime associations among 37
 stored sessions, but these are not proof of current routing overrides. Native
 read-only store projection found no explicit model/provider/runtime overrides;
@@ -386,14 +394,15 @@ to `openrouter/free` and native `openclaw`, with none active or runtime-locked.
 Do not rewrite historical usage to look migrated. Both focused OpenClaw checks
 and the full static gate passed for the prepared config migration.
 
-### Prepared tracing correction
+### Earlier prepared tracing correction
 
 The exporter now declares chat completions as `generation`, including streamed
 responses, and sends `x-langfuse-ingestion-version=4`. The
 [current OTEL contract](https://langfuse.com/integrations/native/opentelemetry)
 documents that explicit observation types win and that omitting this header can
-delay v4 visibility by up to ten minutes. These changes await deployment and a
-new streamed agent trace; the earlier observations are not relabeled.
+delay v4 visibility by up to ten minutes. At that checkpoint, these changes
+awaited deployment and a new streamed agent trace; the earlier observations
+were not relabeled. See the dated follow-up above for subsequent acceptance.
 
 ### Operational finding: Langfuse worker instability
 

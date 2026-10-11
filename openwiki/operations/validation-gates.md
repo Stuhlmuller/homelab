@@ -8,6 +8,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-a11878298975bc4bd3bbaf7d
+    resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -52,12 +54,16 @@ sources:
     resource: repo://scripts/ci/traefik-runtime-check.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
     resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-3a59e2e385041c09f8b021a1
+    resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
-generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:48:00.170Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Validation Gates
@@ -209,6 +215,43 @@ Prove callback
 admin/root rejection off mesh and actual signed webhook delivery. Run protected
 CI plan/apply through the operator API proxy, with a denied real plan-identity
 write. Local tests and HTTP health alone do not satisfy these gates.
+
+The retained ambient `octelium-client` is an authenticated principal, so the
+private TLS listener temporarily permits its exact service account on 8443.
+The focused regression rejects wrong namespace/account identities and callback
+or registry ports, and requires the matching exact Pod/namespace NetworkPolicy
+selector. Require connector readiness and authenticated native API access after
+CoreDNS reconciliation; offline assertions do not prove live authorization.
+
+The Talos helper regression covers full active/persistent resource capture,
+additional-document divergence, a normal STATE-only boot with active version 1,
+missing persistent after a later active change, duplicate resources, read failure,
+and missing active config. Those checks repeat before and after apply while
+preserving the node identity, configuration-scope and no-reboot gates.
+
+The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
+the repository and live Deployment explicitly declare zero replicas and no
+live replicas remain. This accounts for Traefik's static ClusterIP backend
+while AFFiNE is suspended. All other application 5xx responses fail; this
+exception does not establish AFFiNE runtime health.
+
+The DNS regression includes a dual-address peer whose LoadBalancer Service
+publishes only IPv4: it must produce A records and no AAAA. Probe each published
+address, never synthesize application endpoints from the peer's other family.
+PolicyBot's safe GET probe requires hook HTTP 404 with one valid 20-character
+backend `X-Request-ID`, and root HTTP 404 without that header. Tests reject wrong
+statuses, missing/malformed/duplicate IDs and a root forwarded to the backend.
+This proves routing only; fresh successful signed GitHub delivery proves the
+callback path after cutover. No webhook POST or redelivery is part of preflight.
+The CI publisher test separately requires all three raw signing keys on stdin,
+never arguments or temporary files, with private captured command failures.
+
+Phase 2a removes the public DNS restoration workflow and helper, changes internal
+CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness before
+n8n rolls out because it can register hooks on startup. External DNS execution,
+Mac hosts migration, old-TTL expiry and normal canonical DNS/API verification
+remain ordered steps; callback receipts require fresh natural deliveries. Old
+CI and native operator transport stay until their later acceptance stage.
 
 The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
@@ -478,7 +521,7 @@ kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
 bash -n \
   scripts/octelium-gateway-dns.sh \
-  scripts/octelium-public-dns.sh \
+  scripts/tailscale-private-dns.sh \
   scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
@@ -542,16 +585,16 @@ still require authenticated `octeliumctl` with a configured native transport
 or the existing private route. Also verify authenticated console rendering,
 audit queries, and real Cordium execution/reconnects before declaring recovery.
 
-Before treating Tailscale as unnecessary for Kubernetes access, validate both
-human paths from outside the homelab. On the operator workstation, run
+For retained native Cordium access, validate the existing human and Workspace
+paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
 and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
 config, mode, and `kubectl` check inside a Cordium Workspace, whose client
 session is created automatically. Also require Secret reads and a server-side
 dry-run create to be denied there; Cordium has restricted read-only access.
-Keep the Tailscale fallback until both pass; Talos transport is a separate
-retirement gate.
+Keep Tailscale for private applications and remote Talos/LAN access. These legacy
+checks do not replace the staged Traefik DNS and CI acceptance gates above.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.

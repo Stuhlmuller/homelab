@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eade463bab73c13096cd29789338cfefcfba3726df1910938cc71f2386f69455",
+  "pageVersion": "sha256:4199cfc0a7cb6e7b35761e215068d21a345962f2d03effe6b75b995e2d202044",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -69,10 +69,68 @@
           "version": "repo-lines-v1:sha256:de8c2d79a1add616514d8c7ea0d41a6ce55ae0968df1bf17b9f4de9ff97a39f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTM2ZjczMWVkYTgyZDY0OGZiZTFjNjJlMThmMTI1OGE1OGQ0YTIyYTYyOWUwNTg3YWQ5MDRmNjQ2MjNjYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNGRhNTllMzcxNzJjYmRmNjAzNzVkOTI3N2I0ZDA1MDM5MWE4N2YyNDc4YjE4ZWQwNDc2YjgxNjQ1OGZlMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZGM0MGViNDVkMjhiOWEyYjJhMzZmZjVhZDQ4ZWUxZTUzMzMyZjkwM2MwZGQyYWI0ODhlMmU3MTg1NzY5MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzE2OWFhMmQ2ZmY2YjZlYTVkYzI3NTJkNzVhODRkYjhlM2JiMDc1MjhkYTE5ZTkyNWQxNGMyYTgwOGEyMDkifQ"
         }
       ]
+    },
+    {
+      "id": "claim_3ccf5c866bd8436cb9145831f0469cde",
+      "statement": "Phase2a routes internal Octelium API and Harbor DNS through Traefik, advertises n8n's Funnel webhook URL and declares Cordium bootstrap peers, while retaining runtime legacy routes and credentials until staged acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L182-L182",
+          "version": "repo-lines-v1:sha256:99318850c1f543624298c240bb03499865d6a3a220bd65878919258c3373b9fe:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTkzMTg4NTBjMWY1NDM2MjQyOThjMjQwYmIwMzQ5OTg2NWQ2YTNhMjIwYmQ2NTg3ODkxOTI1OGMzMzczYjlmZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTkzMTg4NTBjMWY1NDM2MjQyOThjMjQwYmIwMzQ5OTg2NWQ2YTNhMjIwYmQ2NTg3ODkxOTI1OGMzMzczYjlmZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2U0ODU5NDlkMzIwZmZhOTgzYjc3OTZlOTY2ZTc5MTM3ZTY0ZDhmYTM4MzJmYWE3ZjA3OTQ3YjA3ZmU4ZjU0NiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmJhZTgzZWJlNWFiYmExYzRlZWVhZGNmZWI0N2VkNWYxMWE2N2RkMmE0YTRmZDZkNjI5Y2Q2YjMyMDM2N2U5ZSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:ff416a6ea053612e2694602952cfee18e744c3c4404284072ebdb0c955de8122"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
+          "version": "repo-lines-v1:sha256:d04a7040333e7ddbd3e2f83c852fcf3547fc3834b9865a5eb12299edf1699480:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg5MWE2OTBjM2Q5Nzg1YWU4YTM1YjkyNWIwOTUzMGRhZDk0NmJkMTdmNjg5MjdlNjE3MDViMTc3NzQ0OTA3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTZiMDQ0OTE0Njk3MjJlODM2M2E5NGU0MDQ0NTM4ZTAxM2EyYTIxN2UzNmIxZTU2OGJhNjBhY2I3YjRjOGYyZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzc5MTA4MjZlYTQwMzU1MjdjYTI0ZjQ3Mjc5OTgwMGZhNTc1M2JlNjlkOGEyMmNlODUyMWM4YTUxYzI3ZjVhYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmM2NTgxY2I4OTRlNWNlYTVlZDJkMmEzNjUwMjJjYjA3YjEzZTZkNmFjODJhZWQ0MjJlMGY4OGFiYjE2OTBlNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ae53698aa9c64b9ebf0ff2796e4da4ea",
+      "statement": "Fleet's declared route stays private through Tailscale and Traefik with setup denied, while PolicyBot's fixed GitHub App callback migration requires Funnel preflight and a fresh signed delivery before legacy route retirement.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/README.md",
+          "version": "repo-file-v1:sha256:866753bb834344cfd36430efe79c72d6978b6e15bcf60e2aad94aceac4bfb359"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
+          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+        }
+      ]
+    },
+    {
+      "id": "claim_d3ad6e00d31c4b56b2f6eefded8ee99e",
+      "statement": "The retained connector has temporary access only to Traefik port8443 by exact ambient principal and intended namespace-plus-pod selector, until connector retirement after acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L20-L27",
+          "version": "repo-lines-v1:sha256:896ef74b88bba93ad867e8df53e66e831d2a5c9b4f9ed656e8735644c102d86e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNhNTk2MjdhN2NjNzQ4ZTQ5ZGMwZjhkODUyYjFiZjU3OGU4ZjFiMmIzZjU5NDJhNDgxMjMyYWQ2ZDg2M2QzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU5OWQwYTMzYjJiNGY1MmI4ZTk5NmMwNzAxNTY0NGVmMTVhNmJiNmFkMGMxZTM5YzZhYmM0N2MxYjU3YjBjMSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L42-L52",
+          "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:36:11.265Z"
+    "at": "2026-10-10T23:50:03.392Z"
   }
 }

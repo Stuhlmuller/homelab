@@ -1,313 +1,152 @@
-# Octelium Access And Tailnet Fallback
+# Tailscale And Traefik Ingress
 
-Octelium is the primary access plane for homelab apps, human and CI Kubernetes
-API reachability, private Service sessions, Cordium Workspaces, and external
-callback paths. Existing
-`*.stinkyboi.com` app hostnames resolve through the repo-owned
-`octelium-public` Cloudflare Tunnel connector, including the browser API and native TCP carrier. Octelium `WEB` Services normally
-enforce clientless browser login before proxying to the existing private Istio
-routes. AFFiNE is anonymous at Octelium so its stock native client can use
-application authentication. NOFX requires Octelium login before its own login.
-Tailscale Funnel is not an approved external-service backbone in steady state.
+Application URLs keep their `*.stinkyboi.com` hostnames and move to private
+Traefik ingress on Tailscale. Fleet devices must join the mesh. Only n8n
+webhooks and Policy Bot's GitHub callback use Funnel. Cordium retains its
+Octelium control plane behind private Traefik routes.
+
+The [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md) separates
+prerequisites before DNS from CI/native transport afterward. Foundation proxies,
+TLS, and the provider-owned tailnet policy must pass live acceptance first.
+Phase 2a switches internal CoreDNS, additive access policies, and n8n's advertised
+Funnel URL, then removes the old public DNS writer and restoration workflow.
+Phase 2b switches CI and shared native operator transport only after canonical
+DNS/API acceptance. Old native catalog resources, credentials, callback names,
+and the Tunnel Deployment remain until the final retirement gate.
 
 ## DNS Model
 
-Exact app, callback, and browser control-plane records such as
-`grafana.stinkyboi.com`, `n8n-webhook.stinkyboi.com`,
-`policy-bot-hook.stinkyboi.com`, and `portal.stinkyboi.com` must be proxied
-CNAMEs to the `homelab-octelium-public` Cloudflare Tunnel target,
-`<tunnel-uuid>.cfargotunnel.com`. Public DNS answers should be Cloudflare
-anycast addresses, not Octelium private service IPs or the old tailnet
-LoadBalancer IP.
+`scripts/tailscale-private-dns.sh` owns a fixed inventory of DNS-only A/AAAA
+records derived from the verified `traefik-private` Service and unique online
+`homelab-ingress.tail67beb.ts.net` peer. It never creates CNAMEs to MagicDNS:
+public recursive resolvers cannot resolve tailnet-only peer names. It preserves
+unrelated records and old CI, callback, and carrier hostnames. Application DNS
+can be publicly resolvable while its Tailscale addresses remain mesh-only.
 
-The API uses two outbound Cloudflare Tunnel routes. Browser gRPC-Web uses
-`octelium-api.stinkyboi.com` over HTTPS. Native Octelium and Cordium clients
-use `octelium-transport.stinkyboi.com`, a TCP-over-WebSocket carrier to the
-existing API-only Istio TLS gateway. Both DNS records are proxied CNAMEs to
-`<tunnel-uuid>.cfargotunnel.com`. No router forward or WAN address is required.
-The inner connection retains `octelium-api.stinkyboi.com` for certificate
-verification, HTTP/2, and Octelium authentication.
+The current `traefik-private` Service is single-stack IPv4. Its controller
+publishes only `100.99.16.74`; the same peer's IPv6 address is not a supported
+application ingress destination. Derive DNS from Service-published addresses,
+never from every peer address. Keep AAAA empty until a separately reviewed
+network change supports it. Tailscale's [IPv6 support contract](https://tailscale.com/docs/kubernetes-operator/reference/ipv6)
+and pinned 1.102.3 [Service publication](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/k8s-operator/svc.go#L350-L373)
+and [matching-family forwarding](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/containerboot/forwarding.go#L158-L188)
+explain this boundary; the API server proxy has different IPv6 requirements.
 
-Cloudflare does not support native gRPC on public HTTP Tunnel routes. Its
-[supported TCP carrier](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/non-http/cloudflared-authentication/arbitrary-tcp/)
-transports the TLS stream instead. Cloudflare warns that long-lived carrier
-connections can disconnect; require real Cordium execution, terminal streaming,
-and reconnect tests before treating this as a proven execution transport.
-An account policy requiring Cloudflare Access may add a separate login gate;
-the carrier does not grant Octelium authorization.
+```sh
+python3 -I scripts/tailscale-private-dns-check.py --check
+scripts/tailscale-private-dns.sh --dry-run
+```
 
-Inside Kubernetes, `platform-dns` rewrites the same API hostname to the
-dedicated `octelium-api-ingressgateway` Service. Clients keep the original
-hostname for TLS and SNI while bypassing the public Tunnel carrier. This
-split-horizon route is cluster-only; public DNS remains unchanged.
+The exact-main execute command, old-TTL wait, Mac migration, and normal OS DNS
+verification are separate steps in the cutover guide. An API readback alone does
+not prove client access. Never run the removed public DNS writer or historical
+restoration workflow after this migration.
 
-The public tunnel forwards app UI hostnames to the Octelium public ingress
-dataplane so Octelium can select the matching `WEB` Service and apply its
-declared clientless or anonymous access mode.
-The tunnel forwards the Octelium Cluster and portal browser hostnames,
-Enterprise console, and unauthenticated callback hostnames to the in-cluster
-Istio gateway, where explicit `VirtualService` objects keep backend routing
-narrow.
-
-The Istio origin certificate covers the apex plus first-level
-`*.stinkyboi.com` names. Cloudflare edge TLS must additionally cover Cordium's
-`*.cordium.stinkyboi.com` workspace hosts. Universal SSL does not cover that
-second level; provision an advanced edge certificate with the nested wildcard.
-Total TLS does not issue certificates for Cloudflare Tunnel hostnames.
+Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
+`harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients
+retain their original TLS hostname and SNI. Talos node image pulls use the
+separate host-only `10.96.0.50` registry Service; verify pulls on every node
+before changing Harbor's global DNS.
 
 ## Route Inventory
 
 | Surface | HTTPS host | Backbone |
 | --- | --- | --- |
-| Octelium browser control plane | `https://stinkyboi.com`, `https://octelium.stinkyboi.com`, `https://portal.stinkyboi.com` | `octelium-public` Cloudflare Tunnel to Istio/Octelium |
-| Octelium CLI API | `https://octelium-api.stinkyboi.com` | Browser gRPC-Web over HTTPS Tunnel; native TLS gRPC over the `octelium-transport.stinkyboi.com` TCP Tunnel carrier |
-| Kubernetes API for humans and Cordium | private Service `kubernetes-api.homelab` | `octelium connect`, then `octelium config kubernetes-api.homelab`; Cordium Workspaces already have a restricted read-only client session |
-| app UIs | existing `https://*.stinkyboi.com` app hostnames | `octelium-public` Cloudflare Tunnel to Octelium `WEB` Services; clientless except AFFiNE |
-| n8n webhooks | `https://n8n-webhook.stinkyboi.com/webhook...` | `octelium-public` Cloudflare Tunnel to Istio, limited to webhook prefixes |
-| Policy Bot GitHub webhook | `https://policy-bot-hook.stinkyboi.com/api/github/hook` | `octelium-public` Cloudflare Tunnel to Istio, limited to `/api/github/hook` |
+| Application UIs, including Fleet | Existing `*.stinkyboi.com` application names | Tailscale private Traefik listener to Kubernetes Services |
+| Octelium control plane for Cordium | Apex, `octelium`, `portal`, `console`, and `octelium-api` names | Private Traefik routes; native API uses HTTP/2 gRPC |
+| Cordium workspaces | `*.cordium.stinkyboi.com` | Private Traefik to retained Cordium/Octelium Services |
+| Kubernetes for Cordium | Private `kubernetes-api.homelab` Service | Existing restricted Octelium client session |
+| CI Kubernetes after phase 2b | `homelab-tailscale-operator.tail67beb.ts.net` | Authenticated operator API proxy with scoped CI tags and Kubernetes RBAC |
+| n8n webhooks | `n8n-webhook.tail67beb.ts.net` | Funnel to Traefik's separate callback listener |
+| Policy Bot webhook | `policy-bot-hook.tail67beb.ts.net` | Funnel to Traefik's separate callback listener |
 
-Istio terminates HTTPS with the `stinkyboi-com-tls` certificate in
-`istio-system`. cert-manager requests this wildcard certificate through the
-`letsencrypt-cloudflare` ClusterIssuer, which uses DNS-01 challenges for
-`stinkyboi.com` and reads its Cloudflare token from the External Secrets-managed
-`cloudflare-api-token` Secret in the `cert-manager` namespace. The certificate
-includes `stinkyboi.com` and `*.stinkyboi.com` so Istio origin TLS covers the
-Octelium domain, API, portal, alias, and app backend routes. The
-`homelab-selfsigned` issuer
-remains available only as a local fallback and is not referenced by the ingress
-wildcard certificate.
+[`routes.yaml`](../clusters/homelab/apps/traefik/routes.yaml) is the explicit
+host/backend source. The file provider does not discover arbitrary Services.
+Traefik's certificate covers the apex, `*.stinkyboi.com`, and the Cordium
+workspace wildcard. Application authentication remains at each backend;
+Tailscale limits network access. AFFiNE native login and Harbor OCI credentials
+continue to reach the application unchanged. Prometheus has no ingress.
 
-The rendered Conftest policy rejects Tailscale Funnel and treats every Istio
-`VirtualService` attached to a gateway other than `mesh`, every `Gateway`, and
-every `Ingress` except the explicit `compass-discovery` class as externally
-reachable by default. Those resources must declare
-`homelab.rst.io/access-plane: octelium`; only gatewayless or mesh-only
-`VirtualService` resources and Compass discovery entries are exempt.
-Unauthenticated callback routes must also carry
-`homelab.rst.io/public-callback: "true"`,
-`homelab.rst.io/public-callback-reviewed: "true"`, and a non-empty
-`homelab.rst.io/public-callback-purpose`.
+The shared Istio gateway and old app VirtualServices remain during cutover.
+Traefik uses application Services directly, except for the retained console
+redirect compatibility route. See the [Traefik route boundaries](../clusters/homelab/apps/traefik/README.md).
+Compass keeps its existing launch hostnames and discovery-only Ingress entries;
+those names resolve to private Traefik after DNS cutover. Changing its catalog
+is separate from this transport change.
 
-The primary `istio-ingressgateway` Service is `ClusterIP` only and has no
-Tailscale LoadBalancer. Octelium service proxies and `octelium-public` reach it
-through cluster DNS, so app routes cannot bypass Octelium through a tailnet
-device. The existing `tailnet-gateway` object keeps its legacy name but is only
-an internal Istio TLS-routing resource. A separate gateway-chart release and
-`octelium-api-gateway` TLS configuration expose fixed NodePort `30443`. Its
-workload selector and API-only `VirtualService` are separate from
-`tailnet-gateway`, preventing another app hostname from using the WAN listener.
-After Argo CD loads the new `octelium-public` pod revision, run the protected
-workflow to reconcile Tunnel DNS:
+## Tailnet Exit Node And LAN Route
 
-```sh
-gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-nix develop --command python3 scripts/octelium-tunnel-check.py
-```
-
-The workflow uses the production AWS role to read the scoped DNS token and
-Tunnel UUID from SSM. API responses stay in a temporary private log. Retry after
-correcting declared inputs if a stage fails; DNS reconciliation is idempotent.
-The dedicated gateway and cluster split DNS serve in-cluster clients.
-
-For rollback, revert the Tunnel configuration and pod revision through a
-reviewed PR. Do not restore WAN DNS or port forwarding without a separately
-reviewed transport change. Preserve private cluster access during rollout.
-
-The workflow succeeds with an `already absent` message when no owned rule
-remains. Reapply it with the default command above.
-
-Prometheus is intentionally absent from the tailnet route inventory. Grafana is
-the reviewed metrics UI, and Kiali is the reviewed read-only mesh UI. Direct
-Prometheus ingress must not be restored without a documented authentication plan
-and rollback path.
-
-Octelium serves the app UI set through
-`docs/examples/octelium/homelab-services.yaml` with service names in the
-`homelab` Octelium namespace. External SaaS callbacks that cannot perform an
-Octelium browser login use explicit first-level callback hostnames through the
-same `octelium-public` tunnel, not Tailscale Funnel.
-
-AFFiNE uses `https://affine.stinkyboi.com` through the public, anonymous
-Octelium `affine` WEB Service. The Cloudflare Tunnel forwards that hostname to
-the Octelium ingress dataplane and then the Istio route. AFFiNE authenticates
-users itself, registration is disabled after bootstrap, and the anonymous
-transport lets AFFiNE Desktop use its native-origin CORS flow.
-
-NOFX uses `https://nofx.stinkyboi.com` through the public Octelium `nofx` WEB
-Service, which requires `homelab-human-web-access` before NOFX's own login. Its
-Istio route remains private and does not expose a direct public or Tailscale
-Funnel path.
-
-Use `https://octobot.stinkyboi.com` through Octelium for private setup, paper
-trading, and operator-reviewed live trading; exchange credentials and strategy
-state are configured through OctoBot and persist on its NFS-backed volumes, not
-in public repository files.
-
-Compass launch links and discovery-only entries point at the public
-Octelium-fronted `*.stinkyboi.com` app URLs. It discovers Kubernetes ingress
-and Gateway API routes with read-only RBAC, disables operator debug routes, and
-does not persist application state.
-
-Because the homelab's reviewed ingress path is still Istio `VirtualService`,
-Compass also owns discovery-only `Ingress` resources in the `monitoring`
-namespace. Those resources use the inert `compass-discovery` IngressClass and
-carry the same hostnames and Compass metadata for catalog discovery, but they
-do not route traffic. They are annotated with
-`argocd.argoproj.io/ignore-healthcheck: "true"` because no ingress controller
-is expected to populate `status.loadBalancer` for the inert class; the Compass
-Deployment remains the operational health signal.
-
-## Secondary Tailnet Exit Node And LAN Route
-
-Octelium is the primary private Service and access system for users, Cordium,
-and CI.
-Tailscale remains deployed as a temporary Talos/LAN/egress fallback rather
-than the app, Kubernetes, callback, or GitHub Actions backbone. The `tailscale`
-Argo CD Application installs the upstream
-Tailscale Kubernetes Operator and applies the repo-owned `homelab-exit-node`
-`Connector` from `clusters/homelab/apps/tailscale/exit-node-connector.yaml`.
-
-The connector is cluster-scoped, creates one operator-managed proxy device, and
-advertises that device as a Tailscale exit node with hostname
-`homelab-exit-node` and tag `tag:k8s`. Tailnet clients can select that device as
-their exit node to route internet-bound traffic through the homelab cluster
-egress path. It also advertises the `10.1.0.0/24` homelab LAN route so tailnet
-clients can reach local network services through the same operator-managed
-device when Octelium is unavailable or when a local-LAN workflow has not yet
-moved. GitHub Actions uses Octelium Service `kubernetes-api-ci` instead of this
-tailnet route.
-
-The Terragrunt node unit sets `octelium.com/override-gw-ip=10.1.0.200` on the
-active Octelium dataplane node. This makes authenticated CLIENT sessions use the
-LAN address carried by the same `10.1.0.0/24` subnet route instead of the
-unreachable ISP-facing IPv6 address discovered by the gateway agent.
-
-Do not remove the Tailscale Application while the operator is remote. Retire it
-only after direct `octelium connect` plus `kubernetes-api.homelab`, the same
-Service from a Cordium Workspace, and a replacement Talos transport have all
-been validated from outside the homelab.
-
-After the desired state syncs, verify Istio no longer owns a Tailscale device
-while the fallback Connector remains:
-
-```sh
-kubectl -n istio-system get service istio-ingressgateway -o yaml
-kubectl -n tailscale get statefulset,pod \
-  -l tailscale.com/parent-resource=istio-ingressgateway
-kubectl -n tailscale get connector homelab-exit-node
-```
-
-Expect a `ClusterIP` Istio Service with no Tailscale class or annotations, no
-matching ingress proxy objects, and a ready `homelab-exit-node` Connector.
-
-This repository cannot approve tailnet routes by itself. The tailnet policy must
-allow `tag:k8s-operator` to own `tag:k8s`, and either auto-approve exit-node
-and `10.1.0.0/24` route advertisement for `tag:k8s`, or rely on an admin
-manually approving `homelab-exit-node` and the advertised route in the Tailscale
-Machines page after sync.
-
-Validate the exit node after Argo CD syncs Tailscale:
+The `tailscale` Argo CD Application owns the operator and
+`homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing
+with `tag:k8s`. Keep it for remote Talos/LAN access. The provider-owned complete
+policy in `scripts/config/tailscale-policy.json` owns approvals and tag grants;
+use the [Tailscale operator unit](../IaC/modules/tailscale-access/README.md) for
+reviewed policy changes instead of editing the admin console.
 
 ```sh
 kubectl get connector homelab-exit-node
 kubectl wait connector homelab-exit-node --for=condition=ConnectorReady=true --timeout=5m
 kubectl -n tailscale get deployment,statefulset,pod
-kubectl -n istio-system get service istio-ingressgateway
 ```
 
-Expected result: the operator and exit-node proxy use the chart's `v1.102.3`
-image, the proxy StatefulSet has matching current and update revisions, the
-connector reports exit-node status and the `10.1.0.0/24` route, and the Istio
-Service remains `ClusterIP` with no Tailscale address. The singleton proxy can
-briefly interrupt fallback access during upgrades. Then select
-`homelab-exit-node` on a client and verify DNS, HTTPS egress, and LAN access.
-Keep local-network access enabled on clients that still need their nearby LAN
-while using the exit node.
+The Connector must be ready and advertise the declared subnet. Verify LAN
+reachability and HTTPS egress from a connected client. The Istio gateway remains
+ClusterIP; Traefik owns the private application Tailscale LoadBalancer.
 
 ## Policy Bot Webhook Callback
 
-Policy Bot must receive GitHub App webhook deliveries from outside the tailnet.
-The reviewed public route is:
+The public Funnel route permits exactly `/api/github/hook` on
+`policy-bot-hook.tail67beb.ts.net`. Policy Bot verifies GitHub's webhook HMAC
+using its existing secret contract. Its UI, OAuth callback, details, and assets
+stay at the private `policy-bot.stinkyboi.com` application host. Callback root
+and admin requests must fail from outside the mesh.
 
-```text
-Owning application: policy-bot
-Public path: /api/github/hook
-Purpose: GitHub App webhook deliveries for pull request policy evaluation.
-Source system: GitHub App webhooks.
-Authentication or signature check: policy-bot validates the GitHub webhook HMAC
-secret from /homelab/policy-bot/github-app/webhook-secret.
-Public callback hostname: policy-bot-hook.stinkyboi.com
-Backbone: octelium-public Cloudflare Tunnel to the shared Istio gateway.
-Rollback command: revert clusters/homelab/apps/policy-bot/virtualservice-webhook.yaml
-or remove it from kustomization.yaml, remove the hostname from
-octelium-public, then sync the policy-bot and octelium-public Applications.
-Data exposed: webhook request body and headers sent by GitHub.
-```
-
-The Policy Bot UI, details routes, static assets, OAuth callback, and root path
-target `https://policy-bot.stinkyboi.com` through Octelium. Only
-`/api/github/hook` is exposed through the public callback host.
-After rollout, update the GitHub App webhook URL to this hostname.
+After independent Funnel acceptance, use `scripts/policy-bot-webhook.py` to
+preview and migrate the existing GitHub App webhook. Preserve its secret and
+save the cutover receipt; require a fresh naturally occurring successful signed
+delivery. Keep the old callback route until that check passes. The helper's
+non-executing GET preflight expects the POST-only hook's `404` with a valid
+backend request ID, and the root's `404` without one. It verifies routing rather
+than HMAC; see [Policy Bot's pinned behavior](../clusters/homelab/apps/policy-bot/README.md#validation).
 
 ## n8n Webhook Callback
 
-n8n must advertise webhook URLs that external SaaS systems can call. The
-reviewed public route is:
+The public Funnel route permits `/webhook`, `/webhook-test`, `/webhook-waiting`,
+and their slash-separated descendants on `n8n-webhook.tail67beb.ts.net`.
+Authentication or signing remains workflow-specific. The editor, REST API,
+assets, and root stay at private `n8n.stinkyboi.com`.
 
-```text
-Owning application: n8n
-Public paths: /webhook, /webhook-test, /webhook-waiting
-Purpose: n8n workflow webhook deliveries from external systems.
-Source system: workflow-specific SaaS integrations and HTTP clients configured in n8n.
-Authentication or signature check: workflow-specific n8n webhook credentials, node-level signing, or path entropy where configured.
-Public callback hostname: n8n-webhook.stinkyboi.com
-Backbone: octelium-public Cloudflare Tunnel to the shared Istio gateway.
-Rollback command: revert clusters/homelab/apps/n8n/virtualservice.yaml and the WEBHOOK_URL change, remove the hostname from octelium-public, then sync the n8n and octelium-public Applications.
-Data exposed: request bodies and headers sent to active n8n webhook workflows.
-```
+Phase 2a sets `WEBHOOK_URL` to `https://n8n-webhook.tail67beb.ts.net/` only after
+Funnel readiness; n8n can re-register hooks during startup. Then migrate the two
+fixed repository hooks with `scripts/n8n-github-webhooks.py`. Follow its receipt
+and fresh-delivery checks; retain the old callback routes until acceptance.
 
-The n8n editor, REST API, static assets, and root path target
-`https://n8n.stinkyboi.com` through Octelium. The callback VirtualService only
-routes webhook path prefixes on `n8n-webhook.stinkyboi.com`.
-After rollout, update external callers that still use the retired Funnel URL to
-the new callback hostname.
+## Fleet And Future Public Routes
 
-## Future Callback Template
+Fleet is private, including device enrollment and MDM. Devices need Tailscale
+connectivity. Fleet still authenticates users and devices; Traefik denies the
+first-admin setup endpoints, and the existing internal bootstrap Job owns the
+first account. Validate device check-in after DNS convergence.
 
-Fleet is a deliberate native-device exception: `fleet.stinkyboi.com` serves the
-UI and management protocols directly through `octelium-public` and the Istio TLS
-gateway. Fleet authenticates users, agent enrollment and MDM traffic; those
-clients cannot complete Octelium browser login. Public first-admin setup is
-permanently denied on both API aliases and the setup UI. The internal PostSync
-Job creates the first account from a generated, mounted secret. The public edge
-can see device-management request content. Roll back by reverting the Fleet
-VirtualService, tunnel route and declared DNS through the reviewed workflow;
-retain its database and enrolled-device keys. See the
-[Fleet ingress contract](../clusters/homelab/apps/fleet/README.md#public-access-and-authentication).
-
-Future public exposure must be limited to callback paths, reviewed separately,
-and routed through the Octelium public connector unless a later policy change
-explicitly approves another backbone.
-
-```text
-Owning application:
-Public path:
-Purpose:
-Source system:
-Authentication or signature check:
-Public callback hostname:
-Backbone:
-Rollback command:
-Data exposed:
-```
+Future public routes require a reviewed callback purpose, exact paths,
+authentication/signature contract, exposed-data assessment, and rollback path.
+They must use the isolated Funnel listener; application Host headers cannot
+select private routers there. No Fleet route binds to Funnel.
 
 ## Harbor OCI clients
 
-`https://harbor.stinkyboi.com` routes through the public Tunnel and anonymous
-Octelium `harbor` WEB transport to Istio. Its Authorization header is passed
-unchanged and Harbor enforces private-project authentication; browser login
-interception is incompatible with Docker, Helm and containerd. Self-registration
-is disabled. Internal Pod DNS rewrites this hostname directly to Istio while
-retaining the public TLS certificate. Hosted publication uses a reviewed
-Kubernetes TLS port-forward to bypass Cloudflare request-size limits.
-See the [rollout and transport contract](../openwiki/operations/harbor-oci.md).
+Private `harbor.stinkyboi.com` routes directly through Traefik to Harbor.
+Authorization headers pass unchanged; Harbor enforces registry credentials and
+keeps self-registration disabled. Internal Pod DNS reaches `traefik-private`;
+Talos pulls use the restricted registry listener. Phase 2b moves hosted image
+publication to the Tailscale operator API proxy and a reviewed TLS port-forward
+to `traefik-private`. Publish and verify required images before routing changes.
+
+## Acceptance And Rollback
+
+Require all private app checks, Fleet check-in, per-node Harbor pulls, native
+Cordium execution/reconnection, CI admission-denial checks, and fresh callback
+deliveries before final retirement. Retain Octelium/Cordium persistent state,
+legacy catalog credentials, the Tunnel Deployment, and owned local carrier
+backups until then. Roll back only through reviewed repository desired state
+and the retained carrier installer. Do not restore stale desktop credentials.

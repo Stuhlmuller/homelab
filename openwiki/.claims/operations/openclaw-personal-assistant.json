@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:26323be4550ca8f3281b31e3c836c27af145bbd6b370409c422fe1faad1ee886",
+  "claims": [
+    {
+      "id": "claim_0fbeb92fdcbf49c1b760a2ad62165d41",
+      "statement": "OpenClaw routes interactive turns, heartbeat and managed jobs through LiteLLM at http://litellm.ai.svc.cluster.local:4000/v1 using openrouter/free, no fallback and a file-backed caller key.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/assistant/config.json",
+          "version": "repo-file-v1:sha256:919a7ef6b404c66666740a7409b40da24c882646386282218bdff8222f3a0855"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L269-L273",
+          "version": "repo-lines-v1:sha256:caf6a2d1577ee99e322eb11a2f0c89cfaa2e138ccdb0adcf759fa0770bcdd00f:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjY1OGMzN2IyOWZiNjFjYzdiYmY1ZDI2MjRmMjNhNTE4YWYwMGM4Y2MzNjhhMjNlODg2MzVlYzgxNTZlODFiNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzIxOWU0ZWY5OGM1YjRhYTg2N2I5ODEzOTgwNjUxNGNkNTk2MDdiZDQ0NGViZWEzYmIxY2ExNGNhMzFlNDJkZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTMwMmUwNTZlOTMzMDZjYWY0ZTExMjIxNjU3MzA5YTVkMDEwMjA5NTBhOWI4ZjdkYzBjNjBkNmNhOWEyNWFlNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWE3ZjllNTdjN2NjMWU4MTRlNWExMzExMGQ1OTg1ZDk3YzAyYzBlNzExOTI5NDBhYjcxMWFmNTk0MjExZWJjZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e6bc806bdfcd414b8ab72ef81b550061",
+      "statement": "OpenClaw bootstrap replaces provider/model maps and disables active OpenAI/Codex plugin and auth references while preserving private historical credentials; current values install the Discord plugin and no Codex CLI or code-mode host.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py#L63-L83",
+          "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L321-L366",
+          "version": "repo-lines-v1:sha256:17c317834760affc6a18de1e17eab1a232727c87ddde251a6c128f1ed298023a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyYmI5Yzc4Nzk4ZjQ3NGY0MWY4YTcxZmM1MTY2MDhkNTAwNjRiMDIyNjI4NjhjNTBmOGYwYzg4ZTZjOWFhMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhZTdmZTQyZGI3ZWU4YmQ5ZmQ2MTUyZDE5ZmFlNmM2NGYzMzQ3N2RjZjllN2RiOTQyYzkwZjhjOTc4OGFkZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4Y2E0OWQwOTIyY2JkNWJiNTNhN2IwMmMxZjUzZGI0NTMxNjI5NTU2YWQ1OTJiOWY2ZjM1M2MzYTNlYmZkNDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2YmFmZTBkOTg1YmQ5ZTkyMGZkNjQ3YzZlNGQ2NWE5NzU4NWEyMmU5NGYwM2JkZWEyNTNmYzVlY2UzMTllNWIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/values.yaml#L41-L107",
+          "version": "repo-lines-v1:sha256:6f6cb97b0d669236c38bdad5b11f2f2cfc883a1599554c5cc57ad3b28fd967c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwMDBkN2M5NTQ0NWE2NDUwMjhjYjJjYmViODM5Zjc2OWQwMTU5M2E5MDk1Y2FjNTk2N2RlODhjY2QwYWJkZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzZTZlZTYyYzAzMDM0NjQxYTAwY2Q4YjlmYjdmZWM2N2Q4YmRkMzljZjkzN2MzZmI2Yzk2ZDQ5ZDA1NDZjYTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJmODMzMmMyYjVkNjJiODUyMTUzNWNhYTg1NDJkZmQ3YzZhNzA0NjEyY2QyYmJhZDRkNjY1ZTUwYmI0ZmU1Y2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhmMzY1ZWQ0ZjBjNGRkZjg3NWI1ZWQ0MjMyMjI0NDg2ODNhNGFkOTYyNTk3NGUxMjA3MGM2MGUyYWFlMDI1YmIifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T23:10:58.872Z"
+  }
+}

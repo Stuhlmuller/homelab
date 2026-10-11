@@ -186,6 +186,19 @@ of the four Talos nodes. This DNS cutover must preserve that state: it does
 **not** activate the strict mirror patch. The helper preserves unrelated host
 aliases, refuses a conflicting existing Harbor mapping, and validates that
 the complete machine configuration changes only `extraHostEntries`.
+
+Talos 1.11.3 can expose only the active `v1alpha1` machine-config resource after
+loading configuration from STATE at boot; `persistent` is populated by later
+configuration submissions. The helper reads the complete active document stream.
+When `persistent` exists, both streams must agree, including additional documents;
+staged or try-mode differences fail closed. An absent persistent resource is
+accepted only for initial active resource version 1. Changed active state without
+that counterpart requires investigation, not a forced apply. Read errors, unknown
+or duplicate resources, and missing active configuration remain fatal. Every
+pre-apply and post-apply capture repeats these checks; unrelated configuration,
+node identity, no-reboot and image-pull gates remain intact.
+[Upstream boot acquisition](https://github.com/siderolabs/talos/blob/v1.11.3/internal/app/machined/pkg/controllers/config/acquire.go#L195-L205),
+[resource lifecycle](https://github.com/siderolabs/talos/blob/v1.11.3/pkg/machinery/resources/config/machine_config.go#L21-L31).
 All four live configurations passed the hostname-only strict validation on
 2026-10-10, workers first, without applying. An existing host-network Flannel
 Pod on `zimaboard-0` also reached Harbor's existing ClusterIP and received the

@@ -3,6 +3,15 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:30:33.938Z
+sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -252,8 +261,12 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 
 - Talos endpoint: `10.1.0.199`
 - Kubernetes API endpoint: `https://10.1.0.199:6443`
-- Remote Kubernetes Service: `kubernetes-api.homelab` through
+- Retained native Kubernetes Service: `kubernetes-api.homelab` through
   `octelium connect` and an Octelium-generated kubeconfig
+- Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
+  through Traefik; canonical custom hostnames move during staged DNS cutover
+- Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
+  CI switches separately after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -270,9 +283,16 @@ not retain stale SANs or append duplicates.
 
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
-resources and subresources stay denied. Tailscale remains only as the temporary
-remote Talos/LAN fallback; Octelium does not provide a Talos-native Service
-mode.
+resources and subresources stay denied. Tailscale provides remote Talos/LAN
+access and the declared application ingress. Old CI and operator transports
+remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
+Octelium does not provide a Talos-native Service mode.
+
+Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
+`harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining
+canonical TLS names. Talos host pulls use the separate registry-only Service
+`10.96.0.50`; require the exact node/bridge policy and uncached pulls before
+external Harbor DNS changes. Source preparation does not prove live cutover.
 
 ## Source Files
 

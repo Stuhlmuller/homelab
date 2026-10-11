@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f365b32f52fecf2a63eaa533da830286f2f7f33818bf04c70ff471f2435acb13",
+  "pageVersion": "sha256:2a786c5ccd705ed7a67be8936a1d79cbd033ca821d5c77280d985fa10cd75ed8",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
+          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -57,8 +57,8 @@
       "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts. The CI publisher signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards; it caches the separate credential authority identity alongside the wrapped delegated node-signing key, and retires old variables only after all secret writes and metadata checks.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L161",
-          "version": "repo-lines-v1:sha256:ac9718d5c69bf763dcf45a1779f1cab09b81a1ec04da62df5a2d93aeaff37b77:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L164",
+          "version": "repo-lines-v1:sha256:e1f0154ff96f1d3ac1d08ea0db07547d466d974d4de0b93a41868c5c29906460:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
         },
         {
           "resource": "repo://scripts/n8n-github-webhooks.py",
@@ -66,11 +66,11 @@
         },
         {
           "resource": "repo://scripts/policy-bot-webhook.py",
-          "version": "repo-file-v1:sha256:ed4bce2a39217e1737f95c4ab01d6a2bbea3073943d3b0f053f0a6fa92051ccb"
+          "version": "repo-file-v1:sha256:d856eb227a25f4d4d8b43491805778d4562cd9c479f580c0f9767d08eb2b4a0e"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L324",
-          "version": "repo-lines-v1:sha256:54cf2770458ad4dab2a698f385dc5eca42201c4906f5b4586d68b947292f4316:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQ1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L321",
+          "version": "repo-lines-v1:sha256:bd806ef07e5fa6559326a037787a15348e5b2e1349db3180af592af14735a310:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
         }
       ]
     },
@@ -80,7 +80,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
+          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:dc793b4994e877b3ff26230c763a07df543f215e83f8f297021fe660572d68c2"
+          "version": "repo-file-v1:sha256:e8c4f279160c32d83b429ad875931074bd399bfa1f6cbcac345cbcd9214c7ab1"
         }
       ]
     },
@@ -134,15 +134,15 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:b849d46240d60778fd9465c7ebb857e5c402cf2c25a27b0a9222e47ddfba02ff"
+          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:5822456261be6dbdd1c6e6a435927111761b33f4b2f70d8fafde8d9222cb8d27"
+          "version": "repo-file-v1:sha256:5064fa74df0e516848ce5a0ddc7677f2789ff0e68670591f03c997645cf49bad"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:9ecd7ae83e632b874acb5437c8301edacc5761b8da29457eaab0d1a479586c03"
+          "version": "repo-file-v1:sha256:ff416a6ea053612e2694602952cfee18e744c3c4404284072ebdb0c955de8122"
         }
       ]
     },
@@ -151,18 +151,120 @@
       "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L126-L155",
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L129-L158",
           "version": "repo-lines-v1:sha256:a6b451b4ea561729e49731ddcff0d38bb542df71d21bc376cdf3007c6f4101be:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYzEzMTA4MWJjZjk2ZTdlMzJlM2FlYWIzYWFmZTI3NGJiY2VmNGUxMzg2YzFmMzNkMGRmMGE0ZmM5NjYxZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MjY0NDYyYzNiOWM5OWYzMjgyNGY5MmFjYmZjZmNkNDI3MzliNzA2MGRjMjhhNTdlMjI4ODBmNGNiOWZhNjcifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L254-L311",
+          "resource": "repo://scripts/tailscale-ci-configure.py#L251-L308",
           "version": "repo-lines-v1:sha256:0060cbd98b372f78c13341a3b1c6050d18093086e6082c90a389d14e6d55f4e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1NzJkYTlmMGM5ZTFkZGRhYzZkOWY1MWE2YjVjMjM2MjY0N2NiOWNjMDQyMGNhNGJhNWM5OTMzZWJlMjhiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMmQ2YjgwZTRlNjEwMjg2YzA3ZjdmNThiODU1YWFhM2YyZWRkOGYzMjhiNzI4MWNjYWEwMWY5OTA2Yzg0MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMmVjODA5OTE5ZWEyYzZlNTg3ODQ1OTViZGJiNmQwYzM4MTczNzhhOTkyNGQ5N2Q2ZDFmYTZkMjdlM2NjNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjAxMTdmMTBiY2VjZDlhZWI4OWIzYzhlMmFlYmYyNDJjODk4NTZlMDQxNzRkYjBlZjUwZjI1MWY4ZjQ4YTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9a3bd45e810d43b3abe5f9383275d13b",
+      "statement": "The current IPv4-only ingress publishes Service-derived A records and no AAAA despite its peer having IPv6; the DNS regression rejects using unsupported peer address families as application endpoints.",
+      "evidence": [
+        {
+          "resource": "repo://docs/networking-tailnet-ingress.md#L18-L33",
+          "version": "repo-lines-v1:sha256:e8f18f8a408f737aad7dfbfb499c0a9b032c9b47653adb33ba44bfe78be3939d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyYWI2OTRhMzE5NmQ3NmMwNWRkNWFmYmNiYzgwZTQ4YWE4ZTZiNTEyOTBjZDdlNDk0MWJiMGU5Y2EyYzE0ZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNTA1MDRmM2YwOGQ3NzE0MWIxOWQ3ZjljZTMxMGRjY2Y1NWNmYTVhNTI1NDVlM2UyNTNiYWIwODYxZmUwYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYWFiOTE2MjhiZWE5MmViNjk1Mjg4OGM3MWIyMzVjMTdkNzBkNTA0MjUwNWViOGQ4Y2NhYzQ3Mzg1MTYyNjAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
+          "version": "repo-lines-v1:sha256:16a93c99e3e95828f7fd40fd0149ccf5476135d95cc0826c9209cded0cbd9da4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_6ff6830d270c4885be994f760e7374a2",
+      "statement": "PolicyBot safe GET preflight distinguishes the backend's404 with one valid request ID from an unmatched root404 without that header; it proves routing rather than HMAC, and fresh signed delivery remains required.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
+          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+        },
+        {
+          "resource": "repo://scripts/policy-bot-webhook.py#L105-L123",
+          "version": "repo-lines-v1:sha256:b0023f2c20f8cd3e1d3ae6782f0cf9810d66496ef2f68ac506c77e8ed97a6622:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMzdmNTVhMDBlNmNlZGE0MTQ1ZjdkN2IwN2ZhY2Q0NTA3MmY5N2Q2YmJhYzk5NTEwYjQ0YzY5OTU3ODZmYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0MGFmYTYxNmY1OGI3NjBmMmYzYzgzN2Q3MWIwMWMxNjgxNGQ2MTZjY2M5M2Q2MjQ2YmM1YzhhM2FmOTk0ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OGQ4MmViYzU1MmJlYzk5ZTg3NjNkNmI3MTA3M2ZmMTIwNjQ2N2MwODhmYzcxZjVjNzQxYjdiNDJhNTUyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1YzJhM2U1YjViMzhlZWFhMWJjZTM3ZmRlMDgwMzFjNjIyYWNkNDYyZjA4NGU1NGM1YjY4MmY0MjBkYjg4ZWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c1d70af3992e4db3993442066b65f605",
+      "statement": "The trusted Mac CI publisher passes raw signing keys through stdin rather than command arguments or temporary files to avoid the sandboxed application's private-file restriction.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L85-L98",
+          "version": "repo-lines-v1:sha256:92f1e3a1a5e6d062c581f3b1543954ca99683677ac52d08d49b912638e3a7951:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhYzUzMWY5YmQ3NDQxMjcxNjM2YTZkYTYzMzViMzUzMTk3ZmE1MGM2ZDcyZWNjZTRlMzQ3ZThkMThjMGFmMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiYTZlOWEwYTdmYWIwMzQ5N2U2NjIxNjBiNmRkZGNhZjg2ZDNlZjA1N2E2ODllNjYyOWMwNWI5MjM1Nzg3M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxYjFkZDk5YTYxZDRmNDMxNDFkYWJkNWI3OGI0YmZiYjM3ZDVkMTc2NzhkOGM2ZmEwYTFiYjk3MzEyODZiMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2NzkyY2YwYjc3MzJlN2U3ZTU3YmRkYWYyNDBkMDViMjk4OTVhNmY4ZjZiMmEyN2JhMTg4ZjcwM2I4ODA4YTcifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L191-L225",
+          "version": "repo-lines-v1:sha256:aeb56c875eb488e6c5ca74948962a23429336490a8b3bb2018b437d8d2800648:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NDc0MjhiOTViZGE4M2JkMDQ1NzAwMDQ4MjhlYjhmYzJhNzdhZmZjMzVkMzQ5ZTQ1OWZlODhhZThmYzU5ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmY2EzM2ZlNDlkMjQxMjVjMjFlYzA5ODQ1MzIyNDZjOGIwNDcwZTZmM2Y5N2ZlNDMwNjkyZTI4YzY0MWMyYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwNTczNzY5YTQ4YmYzMjE0OTBiZjBjN2IzNzVkOTAwZmRmYWY3MTI5OWEzNDhkYWE0MzExYzU2YmQ2OTdhMzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a0b1d8a82d174a20ba40c8c52f27e3f6",
+      "statement": "The October10 read-only preflight recorded28 canonical IPv4 strict-TLS route successes,20 public negative denials, two non-executing n8n OPTIONS responses and corrected PolicyBot GET success; normal DNS, authenticated flows and signed delivery acceptance remained pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L138-L157",
+          "version": "repo-lines-v1:sha256:96185bb86350960a9bf1282c8886723910220df993f03c18589771dfbec81141:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4NDgxMTMxYTFlYzI3MjA1ODA4MjYzYzM1YjNhZjQwNTQ3OTYwMzNjZDIxMWE1YjI2M2JiYTc4YWM3ZWE3MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ODA2N2ZkZWRiNjFiMDhjOGQxY2ZmMzVhNzNhOTFhYTVkZmE3NTQ5YmZiZjYyZmY0ZThhZjJhOGM4MDA5ZWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNDFhM2RiZjkzYmVmNjJjOTFkZTkwY2EwODVjYmI0NmE5M2Y0ZDYyMTMxNDc3ODZjYWVjNTllNDNiOWViZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8979fbf3db7e4b0d8ddf9bbd0ffcb8ee",
+      "statement": "Phase2a declares internal Octelium API and Harbor CoreDNS rewrites and n8n's Funnel URL, while legacy DNS restoration writers are removed and runtime legacy transports remain until separate acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
+          "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
+          "version": "repo-lines-v1:sha256:04f1f27f9952d23fcf53fce663f7dc1e69f017e745223dac6824960ab98ee39d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
+          "version": "repo-file-v1:sha256:2e45cc731505f30598d39c8ed15e86e61f46be16eb9bc73e74b10bd55fbcfbe4"
+        }
+      ]
+    },
+    {
+      "id": "claim_c80762a9eeaf4f7aba82ea07caabdde9",
+      "statement": "The private DNS checker accepts AFFiNE502/503 only with explicit source and live zero replicas; other app5xx responses still fail and the exception does not establish AFFiNE runtime health.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:b3e8a0edd06b5411e88ca62e113bf7046008b473801ad7d2af6be1aaa337d87c"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py",
+          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
+        }
+      ]
+    },
+    {
+      "id": "claim_26a8bc73127648f49d5cb0417bf3d39e",
+      "statement": "During the staged CoreDNS switch, the retained Octelium connector is explicitly permitted only on Traefik private TLS port8443 by its exact ambient principal and intended namespace-plus-pod-label NetworkPolicy peer; this allowance is removed with the connector after acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L20-L27",
+          "version": "repo-lines-v1:sha256:896ef74b88bba93ad867e8df53e66e831d2a5c9b4f9ed656e8735644c102d86e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNhNTk2MjdhN2NjNzQ4ZTQ5ZGMwZjhkODUyYjFiZjU3OGU4ZjFiMmIzZjU5NDJhNDgxMjMyYWQ2ZDg2M2QzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU5OWQwYTMzYjJiNGY1MmI4ZTk5NmMwNzAxNTY0NGVmMTVhNmJiNmFkMGMxZTM5YzZhYmM0N2MxYjU3YjBjMSJ9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L42-L52",
+          "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T22:48:00.170Z"
+    "at": "2026-10-10T23:50:03.392Z"
   }
 }

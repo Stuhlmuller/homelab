@@ -29,7 +29,7 @@ class Readiness(unittest.TestCase):
         self.assertEqual(set(value['retired_hostnames']), {f'{name}.stinkyboi.com' for name in (
             'octelium-transport', 'kubernetes-api-ci', 'n8n-webhook', 'policy-bot-hook')})
 
-    def exercise(self, failure=None):
+    def exercise(self, failure=None, dualstack_peer=False):
         service = {'metadata': {'annotations': {'tailscale.com/hostname': 'homelab-ingress'}},
                    'spec': {'type': 'LoadBalancer', 'loadBalancerClass': 'tailscale',
                             'ports': [{'port': 443, 'targetPort': 8443}]},
@@ -54,7 +54,8 @@ class Readiness(unittest.TestCase):
                 return json.dumps({'BackendState':'Running', 'Self':{'Online':True},
                     'CurrentTailnet':{'MagicDNSSuffix':'tail67beb.ts.net'},
                     'Peer':{'ingress':{'DNSName':check.TARGET+'.', 'Online':True,
-                        'TailscaleIPs':['100.100.100.1' if failure != 'peer' else '100.100.100.2']}}})
+                        'TailscaleIPs':['100.100.100.1' if failure != 'peer' else '100.100.100.2']
+                                       + (['fd7a:115c:a1e0::1'] if dualstack_peer else [])}}})
             host = command[-1].split('/')[2]
             if host == 'octelium-api.stinkyboi.com':
                 protocol = next(value.split(': ', 1)[1] for value in command if value.startswith('content-type: '))
@@ -79,6 +80,8 @@ class Readiness(unittest.TestCase):
 
         with patch.object(check, 'run', side_effect=run), contextlib.redirect_stderr(io.StringIO()):
             addresses = check.mesh_addresses()
+            if dualstack_peer:
+                self.assertEqual(addresses, {'A':['100.100.100.1'], 'AAAA':[]})
             check.declared_routes()
             for address in addresses['A'] + addresses['AAAA']:
                 check.routes(check.inventory(), address)
@@ -94,6 +97,13 @@ class Readiness(unittest.TestCase):
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
             with self.subTest(failure=failure), self.assertRaises(RuntimeError):
                 self.exercise(failure)
+
+    def test_ipv4_service_does_not_publish_dualstack_peers_unsupported_ipv6(self):
+        commands = self.exercise(dualstack_peer=True)
+        probes = [command for command in commands if command[0] == 'curl']
+        self.assertEqual(len(probes), 29)
+        self.assertTrue(all(command[command.index('--connect-to') + 1].endswith(':100.100.100.1:443')
+                            for command in probes))
 
     def test_api_parser_accepts_protocol_variants_and_rejects_conflicting_status(self):
         for response in ('native-proto', 'browser-body', 'parameters'):
@@ -111,24 +121,45 @@ class Readiness(unittest.TestCase):
             verify.assert_called_once_with('a'*40)
             readiness.assert_not_called()
 
-    def test_affine_503_requires_explicit_source_and_live_suspension(self):
+    def test_affine_502_and_503_require_explicit_source_and_live_suspension(self):
         source = {'kind':'Deployment', 'metadata':{'name':'affine'}, 'spec':{'replicas':0}}
         live = {'metadata':{'name':'affine','namespace':'affine'},'spec':{'replicas':0},'status':{'replicas':0}}
-        for desired, actual, accepted in ((0,0,True),(1,0,False),(0,1,False),(None,0,False),('0',0,False)):
-            source['spec']['replicas'] = desired
-            live['spec']['replicas'] = actual
-            with self.subTest(desired=desired, actual=actual), patch.object(check, 'run',
-                    side_effect=[json.dumps(source), json.dumps(live)]), patch.object(check, 'probe', return_value=(503, [])), \
-                    contextlib.redirect_stderr(io.StringIO()):
-                if accepted:
-                    check.routes({'hostnames':['affine.stinkyboi.com']}, '100.100.100.1')
-                else:
-                    with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+        cases = [(source, live, True), (source, {key:value for key,value in live.items() if key != 'status'}, True)]
+        for target, fields in ((source, {'kind':['StatefulSet',None], 'metadata':[{'name':'other'},{}],
+                                        'spec':[{'replicas':value} for value in (1,None,'0',False)]}),
+                               (live, {'metadata':[{'name':'other','namespace':'affine'}, {'name':'affine','namespace':'other'},{}],
+                                       'spec':[{'replicas':value} for value in (1,None,'0',False)],
+                                       'status':[{'replicas':1}, {'replicas':'0'}]})):
+            for field, values in fields.items():
+                for value in values:
+                    changed = dict(target, **{field:value})
+                    cases.append((changed if target is source else source, changed if target is live else live, False))
+        for status in (502, 503):
+            for desired, actual, accepted in cases:
+                with self.subTest(status=status, desired=desired, actual=actual), patch.object(check, 'run',
+                        side_effect=[json.dumps(desired), json.dumps(actual)]), patch.object(check, 'probe', return_value=(status, [])), \
+                        contextlib.redirect_stderr(io.StringIO()):
+                    if accepted:
                         check.routes({'hostnames':['affine.stinkyboi.com']}, '100.100.100.1')
-        with patch.object(check, 'probe', return_value=(502, [])), patch.object(check, 'affine_suspended') as suspended:
-            with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
-                check.routes({'hostnames':['affine.stinkyboi.com']})
-            suspended.assert_not_called()
+                    else:
+                        with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                            check.routes({'hostnames':['affine.stinkyboi.com']}, '100.100.100.1')
+            for responses in ([RuntimeError('source read failed')], [json.dumps(source), RuntimeError('live read failed')]):
+                with self.subTest(status=status, failure=responses), patch.object(check, 'run', side_effect=responses), \
+                        patch.object(check, 'probe', return_value=(status, [])):
+                    with self.assertRaisesRegex(RuntimeError, 'read failed'):
+                        check.routes({'hostnames':['affine.stinkyboi.com']})
+
+    def test_suspension_exception_does_not_allow_other_apps_or_other_5xx(self):
+        for host in ('affine', 'n8n', 'fleet', 'harbor'):
+            for status in (500, 502, 503, 504):
+                if host == 'affine' and status in (502, 503):
+                    continue
+                with self.subTest(host=host, status=status), patch.object(check, 'probe', return_value=(status, [])), \
+                        patch.object(check, 'affine_suspended') as suspended:
+                    with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                        check.routes({'hostnames':[f'{host}.stinkyboi.com']})
+                    suspended.assert_not_called()
 
     def test_postcheck_requires_authoritative_and_client_dns_without_connection_override(self):
         commands = []

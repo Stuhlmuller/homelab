@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:9860de44f0b76726273a19b4d8a75d29c788d0baaefbe98d2e3a471f6623d716",
+  "claims": [
+    {
+      "id": "claim_90504df127484cc1967cce8cc178ca30",
+      "statement": "On 2026-10-10, zimaboard-2 lost kubelet health and its Argo controller stalled reconciliation; automatic eviction and replacement restored reconciliation by 22:38:34 UTC without manual mutation. Memory and I/O pressure suggested a resource stall without proving its cause. Capacity, controller placement and alerting require reviewed follow-up; stale application status requires revision checks, and the PostgreSQL PVC writer requires fencing.",
+      "evidence": [
+        {
+          "resource": "repo://docs/argocd-node-pressure-2026-10-10.md",
+          "version": "repo-file-v1:sha256:9ebb6675879889446c5281d2f3cd7613f697216ca087b6d1a8cf34fc0a07c162"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T23:10:58.872Z"
+  }
+}

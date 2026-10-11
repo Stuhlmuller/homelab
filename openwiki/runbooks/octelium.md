@@ -3,18 +3,31 @@ type: runbook
 title: "Octelium"
 description: "Octelium access ownership, browser gRPC-Web versus native TLS transport, macOS API carrier, and reconnect failure evidence."
 tags: ["runbook", "octelium", "access"]
+sources:
+  - id: openwiki-source-1ab63006818d653aed251f6d
+    resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-ac4e5166b14da067a9c57d03
+    resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
+  - id: openwiki-source-785c903805cb6f5a9ea9ae91
+    resource: repo://docs/octelium.md
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:43:46.551Z
 ---
 
 # Octelium
 
 Canonical runbook: [`docs/octelium.md`](../../docs/octelium.md)
 
-Octelium is the primary human-app, private Kubernetes, callback, and CI access
-backbone. Operator machines run `octelium connect` and generate a kubeconfig
-with `octelium config kubernetes-api.homelab`; Cordium Workspaces already have
-their own client session and use the same private Service. Keep Cluster
-bootstrap, Enterprise adoption, public Cloudflare routing, Entra OIDC, and the
-end-to-end gate on their repository-owned scripts and manifests. The catalog
+Octelium application, callback, and CI routes remain during staged Traefik
+cutover; final ownership is Cordium and its required control endpoints. Preserve
+existing operator sessions and `kubernetes-api.homelab` access until replacement
+acceptance. Cordium retains its restricted native Kubernetes Service. Cluster
+bootstrap, Enterprise adoption, and Entra OIDC stay on their repository-owned
+scripts and manifests. The catalog
 also owns the core human session ceiling; apply its `ClusterConfig` include
 separately before the normal catalog apply.
 
@@ -23,13 +36,21 @@ control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.
 The bootstrap script refuses to mutate the cluster if these selectors fail,
 including a missing node or failed API lookup.
 
-The public API uses outbound Cloudflare Tunnel: HTTPS for browser gRPC-Web
-and `octelium-transport.stinkyboi.com` TCP-over-WebSocket for native TLS gRPC.
-Reconcile DNS with `octelium-public-tunnel.yml` after Argo sync.
-Run `scripts/octelium-tunnel-check.py`; then prove authenticated console,
-audit queries, Cordium execution, and reconnect behavior separately. Native
-clients need a scoped canonical API resolver mapping and local carrier;
-workstation-wide hosts overrides would also redirect browser API requests.
+The retained Cloudflare Tunnel provides old browser and native carrier routes
+until mesh acceptance. Its DNS-restoration workflow and old DNS writer are
+removed in phase 2a. Follow the
+[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) for guarded
+DNS-only mesh records, Mac migration, callback delivery, and later CI transport.
+Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
+actual Cordium execution/reconnection before removing the old tunnel or catalog.
+The legacy `octelium-tunnel-check.py` is not a mesh acceptance gate.
+
+During the CoreDNS rewrite, Traefik's private listener explicitly admits the
+retained `cluster.local/ns/octelium-client/sa/octelium-client` principal only on
+8443. Confirm its authenticated API requests after reconciliation. The allowance
+and matching intended NetworkPolicy selector retire with the connector, not
+before it. New application routes belong in Traefik; the retained Octelium
+catalog is not a recipe to restore public app DNS or delete Cordium resources.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 additional public WEB Service fallbacks on `acer` without Multus, 19
@@ -43,8 +64,13 @@ See [Secrets And Identity](../architecture/secrets-and-identity.md), [Tailnet An
 
 ## macOS API carrier
 
-`scripts/octelium-macos-api-carrier.py` installs a loopback-only native API
-carrier as a system LaunchDaemon. macOS requires administrator permission for
+Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects the
+verified saved Tailscale profile without changing Desktop or its carrier. After
+private DNS is written, the full migration preserves Desktop credentials and
+removes only owned transports after authenticated canonical API checks.
+
+The retained `scripts/octelium-macos-api-carrier.py install` supports reviewed
+rollback to the loopback API carrier. macOS requires administrator permission for
 its port 443 listener. The installer checks TLS, native gRPC, and browser
 gRPC-Web before adding one marked canonical API hostname entry to `/etc/hosts`;
 public DNS remains unchanged. It rejects conflicting local hostname entries or
@@ -55,8 +81,9 @@ check in `scripts/ci/octelium-macos-api-carrier-test.py`.
 On 2026-10-01 both protocol probes, privileged installation, authenticated
 native status, private Multica HTTP 200, and desktop runtime refresh passed on
 the home LAN. `scripts/multica-desktop-connect.py` owns the user LaunchAgent and
-backed-up desktop HTTP/WebSocket endpoint configuration. It starts at login and
-restarts failed clients. Off-LAN and new chat-send acceptance remain separate
+backed-up desktop HTTP/WebSocket endpoint configuration. At that time it installed
+login startup and client restart behavior; the current helper migrates that owned
+state. Off-LAN and new chat-send acceptance remain separate
 checks. This carrier grants no Octelium permissions and does not
 bypass session expiry. See [the macOS setup procedure](../../docs/octelium.md).
 
