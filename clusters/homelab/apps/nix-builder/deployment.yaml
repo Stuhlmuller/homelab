@@ -64,7 +64,7 @@ spec:
               ephemeral-storage: 8Gi
             limits:
               cpu: "2"
-              memory: 4Gi
+              memory: 1Gi
               ephemeral-storage: 16Gi
           readinessProbe:
             exec:

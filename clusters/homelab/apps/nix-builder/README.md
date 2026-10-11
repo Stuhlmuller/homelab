@@ -43,3 +43,7 @@ zimaboard-0 and 7244 MiB on zimaboard-1 (about 7.1 GiB allocatable each).
 The 1 GiB builder request fits only the first worker at that snapshot. Verify
 current scheduling and actual memory headroom before accepting its rollout;
 a Pending Pod is a capacity blocker, not a reason to reduce requests blindly.
+Live working-set metrics also showed 84–86% worker memory usage. The builder's
+memory limit equals its 1 GiB reservation; an over-budget build fails rather
+than borrowing several additional GiB from existing workloads. Measure its
+first full build before treating this resource budget as sufficient.
