@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Containment checks for the Google Workspace federation metadata transfer."""
 import importlib.util
-import json
 from pathlib import Path
 import tempfile
 from unittest.mock import patch
