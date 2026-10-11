@@ -125,7 +125,7 @@ The script reads `/homelab/octelium/entra/*` from SSM, stores the generated
 client secret in an Octelium native Secret, and applies IdentityProvider
 `entra`. It binds login to immutable Entra `oid`; email is contact metadata.
 Use `--dry-run` to preflight changes and follow the
-[legacy mapping migration](../../../../docs/octelium.md#entra-identity-migration)
+[owner-conversion mapping checks](../../../../docs/octelium.md#entra-owner-conversion)
 before upgrading an existing email-based mapping.
 
 Create an authentication token credential for the workload user:

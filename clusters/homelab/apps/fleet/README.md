@@ -26,12 +26,14 @@ app deployment, remote lock/wipe, update enforcement and automated Apple
 Business Manager enrollment. Verify the matrix before promising a device
 control: self-hosting does not unlock Premium features.
 
-The initial administrator is `rodman@stuhlmuller.net`. The password is generated
-in `/homelab/fleet/admin-password` in AWS SSM (`us-west-2`), never in git or
-Job logs. Retrieve it privately through the approved secret access path and
-change it in Fleet after first login. Repeated bootstrap Jobs preserve existing
-users and passwords. SMTP is not configured; password-reset email is therefore
-not an available recovery path yet.
+`/homelab/fleet/admin-password` in AWS SSM (`us-west-2`) is never in Git or Job
+logs. Fresh bootstrap creates local recovery administrator
+`rodman@stinkyboi.com` with it. The historical deployed database has only the
+target-local `rodman@stuhlmuller.net` administrator, so run its legacy console
+migration before any recovery-authentication tooling; it creates and verifies
+the recovery account without assuming both passwords match. The exact target is
+then an SSO-only administrator. SMTP is not configured, so password-reset email
+is not a recovery path. See [Fleet Free and Entra](FREE-ENTRA.md).
 
 - Apple: follow Fleet's [Apple MDM setup](https://fleetdm.com/guides/apple-mdm-setup).
   An Apple account must sign in to Apple's Push Certificates Portal to obtain
@@ -77,10 +79,10 @@ python3 -I scripts/fleet-download-apple-csr.py \
   --output /tmp/fleet-mdm-apple.csr
 ```
 
-It authenticates using the initial administrator Secret, keeps credentials in
-memory and revokes its session. It refuses to overwrite an existing output.
-After changing the initial password, use Fleet's **Settings > Integrations >
-MDM > Turn on > Download CSR** flow instead.
+It uses the current local administrator secret, keeps credentials in memory and
+revokes its session. It refuses to overwrite an existing output. After changing
+that password, use Fleet's **Settings > Integrations > MDM > Turn on > Download
+CSR** flow instead.
 
 Generating the CSR creates encrypted SCEP/APNs keys in Fleet's database on the
 first request; subsequent requests reuse the keys. Fleet sends the public CSR,
@@ -143,10 +145,10 @@ profile and API session revocation. If cleanup fails or is unconfirmed, inspect
 this Mac's **Fleet temporary MDM verification** profile; do not claim success or
 blindly rerun the test.
 
-The verifier shares the CSR helper's initial administrator Secret contract.
-After that password changes, a reviewed authentication path is required before
-using this verifier again; it does not reset credentials. Adding or previewing
-the helper does not complete the live acceptance gate recorded below.
+The verifier shares the CSR helper's local-administrator Secret contract. After
+that password changes, a reviewed authentication path is required before using
+this verifier again; it does not reset credentials. Adding or previewing the
+helper does not complete the live acceptance gate recorded below.
 
 ## Public access and authentication
 
@@ -184,7 +186,7 @@ OpenTofu generates these SSM SecureStrings through the shared
 | `mysql-root-password` | MySQL initialization; not mounted in Fleet |
 | `redis-password` | Dedicated cache authentication |
 | `server-private-key` | Stable 32-byte Fleet encryption key |
-| `admin-password` | Initial human administrator only |
+| `admin-password` | Local Fleet recovery administrator (`rodman@stinkyboi.com`) |
 
 External Secrets templates a mounted Fleet YAML configuration and separate
 database, cache, backup and bootstrap secrets. Fleet's MySQL password uses
@@ -306,8 +308,10 @@ authenticated host listing passed; the verification session was revoked.
 The browser rendered the login form. All public setup aliases returned 404.
 The initial backup Job completed and published the checksum-verified set
 `fleet-20261003T224520Z`. That initial server check found one administrator and
-zero devices; the later device evidence follows below. Nightly recurrence,
-offsite recovery and restore testing remain separate acceptance gates.
+zero devices; it was the target-local administrator described above. The legacy
+console migration must create and verify local recovery before any SSO flip. The
+later device evidence follows below. Nightly recurrence, offsite recovery and
+restore testing remain separate acceptance gates.
 
 External Secrets defaults are explicit because omitted remote-reference,
 refresh-interval and template-merge defaults caused Argo to repeat self-healing

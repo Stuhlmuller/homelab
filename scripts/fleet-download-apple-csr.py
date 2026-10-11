@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 FLEET_URL = "https://fleet.stinkyboi.com"
-ADMIN_EMAIL = "rodman@stuhlmuller.net"
+ADMIN_EMAIL = "rodman@stinkyboi.com"
 MAX_RESPONSE = 1024 * 1024
 MAX_CERTIFICATE = 64 * 1024
 CERTIFICATE_BEGIN = b"-----BEGIN " + b"CERTIFICATE-----"
@@ -27,6 +27,10 @@ CERTIFICATE_END = b"-----END " + b"CERTIFICATE-----"
 
 class DownloadError(Exception):
     """Fixed diagnostics only; API responses and credentials remain private."""
+
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -51,7 +55,7 @@ def request(method, path, body=None, token=None, content_type="application/json"
     except urllib.error.HTTPError as error:
         status = error.code
         error.close()
-        raise DownloadError(f"Fleet API request failed (HTTP {status})") from None
+        raise DownloadError(f"Fleet API request failed (HTTP {status})", status) from None
     if accepted_status == 204:
         if raw:
             raise DownloadError("Fleet API returned an unexpected response body")
@@ -74,6 +78,16 @@ def initial_password():
     return password
 
 
+def password_login(password=None):
+    """Authenticate only the bootstrap local-recovery administrator."""
+    password = initial_password() if password is None else password
+    result = request("POST", "/api/v1/fleet/login", {"email": ADMIN_EMAIL, "password": password})
+    token = result.get("token")
+    if not isinstance(token, str) or not token:
+        raise DownloadError("Fleet login did not return a session")
+    return token
+
+
 def download(output):
     # Reserve the destination before login or the stateful CSR request. O_EXCL
     # also rejects existing symlinks without following them.
@@ -87,12 +101,7 @@ def download(output):
     complete = False
     try:
         with os.fdopen(descriptor, "wb") as destination:
-            result = request("POST", "/api/v1/fleet/login", {
-                "email": ADMIN_EMAIL, "password": initial_password(),
-            })
-            token = result.get("token")
-            if not isinstance(token, str) or not token:
-                raise DownloadError("Fleet login did not return a session")
+            token = password_login()
             try:
                 result = request("GET", "/api/v1/fleet/mdm/apple/request_csr", token=token)
                 csr = base64.b64decode(result["csr"], validate=True)
@@ -119,12 +128,7 @@ def upload(certificate):
         raise DownloadError("A single PEM certificate without private keys is required")
     # Parse certificate syntax locally. Fleet verifies its match to the CSR key.
     ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT).load_verify_locations(cadata=pem.decode("ascii"))
-    result = request("POST", "/api/v1/fleet/login", {
-        "email": ADMIN_EMAIL, "password": initial_password(),
-    })
-    token = result.get("token")
-    if not isinstance(token, str) or not token:
-        raise DownloadError("Fleet login did not return a session")
+    token = password_login()
     try:
         config = request("GET", "/api/v1/fleet/config", token=token)
         enabled = config.get("mdm", {}).get("enabled_and_configured")

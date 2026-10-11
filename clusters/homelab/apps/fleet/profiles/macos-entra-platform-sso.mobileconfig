@@ -10,7 +10,7 @@
 			<key>ExtensionIdentifier</key>
 			<string>com.microsoft.CompanyPortalMac.ssoextension</string>
 			<key>PayloadDescription</key>
-			<string>Use the Company Portal extension to synchronize the Microsoft Entra password with the existing local account. Register from that account; its username and privileges are preserved.</string>
+			<string>Microsoft Authenticator and Company Portal are required. If registration succeeds, use the Company Portal extension to synchronize the Microsoft Entra password with the existing local account. Register from that account; its username and privileges are preserved.</string>
 			<key>PayloadDisplayName</key>
 			<string>Microsoft Entra Platform SSO</string>
 			<key>PayloadIdentifier</key>
@@ -53,7 +53,7 @@
 		</dict>
 	</array>
 	<key>PayloadDescription</key>
-	<string>Native Microsoft Password Platform SSO for existing local accounts. Requires Company Portal and interactive registration. Does not enroll into Intune, create accounts, change account privileges, or require online authentication.</string>
+	<string>Candidate native Microsoft Password Platform SSO for existing local accounts. Requires Microsoft Authenticator, Company Portal, and interactive registration. Does not enroll into Intune, create accounts, change account privileges, or set RequireAuthentication. Registration and cloud-password synchronization require Entra connectivity.</string>
 	<key>PayloadDisplayName</key>
 	<string>Family Mac Microsoft Entra Platform SSO</string>
 	<key>PayloadIdentifier</key>

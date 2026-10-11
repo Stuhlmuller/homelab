@@ -65,10 +65,12 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 Fleet's five generated `/homelab/fleet/` parameters supply MySQL user/root
 passwords, a Redis password, the stable 32-byte server encryption key and the
-initial administrator password. Separate ExternalSecrets keep the root and
-administrator credentials out of Fleet server Pods. Preserve the encryption key
-with MySQL backups. Platform APNs/WSTEP identities are additional enrollment
-prerequisites; see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+local Fleet recovery-administrator password. It signs in
+`rodman@stinkyboi.com` before and after the Entra conversion; the target Fleet
+account is SSO-only. Separate ExternalSecrets keep the root and administrator
+credentials out of Fleet server Pods. Preserve the encryption key with MySQL
+backups. Platform APNs/WSTEP identities are additional enrollment prerequisites;
+see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
@@ -369,7 +371,7 @@ Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
 `--admin-user-name`, `--admin-email` and `--admin-object-id` when creating the
 runtime-only HUMAN admin mapping. Email is contact metadata; the Entra `oid`
 claim supplies identity. Do not commit personal Entra identifiers into this
-public repo. Follow the [migration preflight](octelium.md#entra-identity-migration)
+public repo. Follow the [owner-conversion preflight](octelium.md#entra-owner-conversion)
 before refreshing an older email-based mapping.
 
 The legacy `octelium-public` Cloudflare Tunnel Deployment and its existing

@@ -7,6 +7,7 @@ source "${script_dir}/terragrunt-filter-base.sh"
 
 extra_plan_json_files=()
 cleanup_dirs=()
+azuread_report_args=()
 
 azuread_credentials_available() {
   [[ -n "${ARM_CLIENT_ID:-}" && -n "${ARM_TENANT_ID:-}" ]] || return 1
@@ -180,9 +181,15 @@ plan_deleted_terragrunt_units "${deleted_plan_units[@]}"
 
 echo "::group::AzureAD application registration plan"
 if azuread_credentials_available; then
+  if [[ -n "${HOMELAB_AZUREAD_PLAN_REPORT_FILE:-}" ]]; then
+    azuread_report_args=(
+      --report-file "$HOMELAB_AZUREAD_PLAN_REPORT_FILE"
+      --report-format json
+    )
+  fi
   (
     cd IaC/live/azuread-applications
-    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter true)" --parallelism 1 --source-update -- plan -lock=false -out plan.out -no-color
+    terragrunt run --all --filter "$(terragrunt_azuread_changed_filter true)" --parallelism 1 --source-update "${azuread_report_args[@]}" -- plan -lock=false -out plan.out -no-color
   )
 
   while IFS= read -r unit_file; do

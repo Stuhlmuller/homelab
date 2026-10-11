@@ -15,5 +15,5 @@ EOF
 }
 
 inputs = {
-  operator_user_principal_name = "rodman@stinkyboi.com"
+  operator_object_id = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
 }

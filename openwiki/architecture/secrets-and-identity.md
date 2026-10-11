@@ -607,7 +607,7 @@ separate from the legacy AzureAD user module, and the AzureAD workflow selects
 that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
 
-The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-and-historical-alias-release-evidence)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device
 registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
 Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only

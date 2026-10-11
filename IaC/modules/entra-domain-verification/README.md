@@ -18,11 +18,12 @@ or Entra accounts other than the separately declared pilot user.
 
 ## Two-stage operator rollout
 
-The baseline catalog input starts with `verify_domain = false`. After both
-authoritative DNS servers return the exact Microsoft TXT record, a reviewed
-phase-two commit sets `verify_domain = true` and retains that value after the
-verification action is applied. From reviewed, signed `main`, use an Entra
-Domain Name Administrator or higher and the normal AWS backend credentials:
+The module default is `verify_domain = false`. This repository's reviewed
+catalog already sets `verify_domain = true` for `stuhlmuller.net`, so the
+operator must first prove that the TXT has propagated and then apply only the
+reviewed verification action. Retain `verify_domain = true` after successful
+verification. From reviewed, signed `main`, use an Entra Domain Name
+Administrator or higher and the normal AWS backend credentials:
 
 ```sh
 cd IaC
@@ -51,7 +52,8 @@ all Google MX/service records.
 `stuhlmuller.net` DNS is not currently owned by a repository Terraform unit.
 Add the returned TXT through the DNS owner's reviewed declarative workflow;
 do not use a web-console workaround. Once both authoritative nameservers return
-the exact value, commit `verify_domain = true` and complete protected review.
+the exact value, retain the catalog's reviewed `verify_domain = true` value and
+complete protected review for the focused verification plan.
 
 ## Phase two: verify the domain
 

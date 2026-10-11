@@ -269,6 +269,14 @@ dynamic_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+
 
 private_wrapper_start := "if ! nix develop --command bash >\"$private_log\" 2>&1 <<'EOF'\n"
 
+azuread_plan_private_wrapper_start := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+private_log="$private_dir/plan.log"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+`
+
 live_script_command_count(run) := count(regex.find_all_string_submatch_n(shell_live_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(direct_live_command_pattern, run, -1))
 
 live_cluster_command_count(run) := count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1)) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
@@ -296,6 +304,21 @@ private_live_output(run) if {
 	regex.match(`(?m)^[\t ]*trap[\t ]+'rm -f "\$private_log"'[\t ]+EXIT[\t ]*$`, run)
 	regex.match(`(?m)^[\t ]*umask[\t ]+077[\t ]*$`, body)
 	private_live_tail(tail)
+}
+
+# The AzureAD plan report can contain provider diagnostics, so keep it and the
+# plan log inside the same private directory and expose only the verified helper.
+private_live_output(run) if {
+	wrapped := split(run, azuread_plan_private_wrapper_start)
+	count(wrapped) == 2
+	closed := split(wrapped[1], "\nEOF\n")
+	count(closed) == 2
+	body := closed[0]
+	tail := closed[1]
+	sensitive_command_count(body) > 0
+	sensitive_command_count(run) == sensitive_command_count(body)
+	regex.match(`(?m)^[\t ]*umask[\t ]+077[\t ]*$`, body)
+	azuread_plan_private_live_tail(tail)
 }
 
 # Harbor exposes only the reviewed publisher's fixed status fields. Keep this
@@ -349,6 +372,19 @@ private_live_tail(tail) if {
 	lines[2] == "exit 1"
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
+}
+
+azuread_plan_private_live_tail(tail) if {
+	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
+	count(lines) == 8
+	lines[0] == "then"
+	lines[1] == `if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+	lines[2] == `HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+	lines[3] == "fi"
+	safe_withheld_echo(lines[4])
+	lines[5] == "exit 1"
+	lines[6] == "fi"
+	safe_withheld_echo(lines[7])
 }
 
 private_live_tail(tail) if {

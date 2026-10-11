@@ -283,7 +283,7 @@ lists, partial migration retry, preserved contact fields, mail-only PATCH scope,
 current-mail and identity drift, and rollback.
 
 Before live work, run `scripts/octelium-entra-oidc.sh --dry-run` with the three
-privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-identity-migration)
+privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-owner-conversion)
 and retain an independent session. Verify immutable owner binding and disabled
 email fallback before email reuse. The owner operator unit requires a private
 `-var-file` with current-mail and identity baselines and an encrypted saved plan;

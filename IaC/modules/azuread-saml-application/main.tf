@@ -1,13 +1,13 @@
 data "azuread_client_config" "current" {}
 
 data "azuread_user" "allowed" {
-  for_each            = var.allowed_user_principal_names
-  user_principal_name = each.value
+  for_each  = var.allowed_user_object_ids
+  object_id = each.value
 }
 
 data "azuread_user" "owner" {
-  for_each            = var.owner_user_principal_names
-  user_principal_name = each.value
+  for_each  = var.owner_user_object_ids
+  object_id = each.value
 }
 
 data "azuread_service_principal" "automation_owner" {
