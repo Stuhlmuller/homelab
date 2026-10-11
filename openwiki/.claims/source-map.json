@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d0daa67dab0d3ceab4ca5a0926e98c278a11fe624f638622691b44b928335b44",
+  "pageVersion": "sha256:a8989a5a8e599c416b7ddfff05a408b4f2db18f9ab86f6a629378d178dee1482",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -77,10 +77,40 @@
           "version": "repo-file-v1:sha256:be898d1d8531dbdffb3b4878c1ad566f52cbb16b6eb9824e872ee86010ea414a"
         }
       ]
+    },
+    {
+      "id": "claim_fe48554dd83e4d26a4dd4b5be9bd17a2",
+      "statement": "Signed offline validation is owned by the flake and extracted fixture/source-contract suites; fixed check publication and Linux export helpers keep signing local, while the canonical cache runbook preserves fresh live validation and rollback boundaries.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+        },
+        {
+          "resource": "repo://flake.nix#L15-L61",
+          "version": "repo-lines-v1:sha256:8c296f9b37cc7350fc3527d5e1d6ee761a7711f864abd9d166ec204c9a49a22a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDBlMjE4OGM2OTgxNmE2YzQyNWM1ZTA2MTM5ZTgyNmEyMjcwNDM5OTdlZjU2M2RmN2VlODcwMDg2YmU3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5M2ZjOTc4OTQxNDA2MjMwOTZjYTlkYjcxNTQ0MjJkNDA0NGNkZGJmYzk1YWQ0MGRhYTc4NWY5YjkzNDJjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1MzFhNDQ5YTg1NjI5YjdkNDIyYWEzZjM1NGFlZWZjYzMxNjBmNmNkY2EzM2E2NmQwMWFkOWIwNTE1MDg1MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4NDRhMmJiNzM2N2E0NDgyYTM5YzgzZDljZTQ5MGJmYzIxZGEyY2M0MjJjZTNhYzk3NDRkNWI4YmU1YjdkYjAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:a70422b3965edc43680ad4be9af3cca1517b19af33f130703e8719e9bc03e67f"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:0bfe8f7a53a4ed95cf2a3d4f6d2b1bfb893818b1347d3c9eb532a1c2b5c7cb4c"
+        },
+        {
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:08e332fe72b3a9120b1be867e60f018d9154ccf6d608ecca52c837f772840fe5"
+        },
+        {
+          "resource": "repo://scripts/nix-cache.py",
+          "version": "repo-file-v1:sha256:3f8c33cf8c3959c27906618e85e77638083479f8ce28ec2d46fb312e50206961"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T03:41:04.271Z"
+    "at": "2026-10-11T04:35:18.448Z"
   }
 }

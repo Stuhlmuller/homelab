@@ -6,6 +6,10 @@ tags: ["architecture", "talos", "kubernetes"]
 sources:
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
+    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
+  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
+    resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
@@ -24,10 +28,10 @@ sources:
     resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-11T00:43:33.251Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T05:03:05.268Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -168,6 +172,13 @@ evidence of a completed production rollout.
 Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
+
+The declared Linux Nix cache builder is a disposable executor restricted to
+amd64 `zimaboard-0` and `zimaboard-1`. Its memory request and limit are both
+`1Gi`; it excludes the control plane and smaller worker. It has no application
+ingress, Kubernetes token or persistent volume. Registration/build acceptance
+remains pending; verify scheduling and memory headroom before its first full
+build. See the [builder contract](../../clusters/homelab/apps/nix-builder/README.md).
 
 ### Octelium dataplane capacity
 

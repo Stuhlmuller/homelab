@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -32,10 +34,16 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -66,10 +74,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T04:35:18.448Z
 ---
 
 # Validation Gates
@@ -78,6 +86,14 @@ verified:
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
+
+The default static wrapper verifies the two Nix offline outputs, then runs
+remaining provider, network and security checks fresh. Python fixtures live in
+`scripts/ci/offline-checks.sh`; source contracts and exact workflow guards live
+in `offline-static-checks.sh`. Both Tailscale identity and native transport
+fixtures are included. CI reads cache trust from protected main and requires
+signatures and sandboxing. Cache reuse does not replace live plans or runtime
+acceptance. See [cache validation](../../docs/nix-cache.md).
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and

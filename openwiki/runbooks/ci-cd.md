@@ -6,18 +6,26 @@ tags: ["runbook", "ci", "github-actions"]
 sources:
   - id: openwiki-source-29ced481494f3a85c0d7921b
     resource: repo://.github/workflows/terragrunt-apply.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-de7fdd1af72d2845e129e766
     resource: repo://scripts/entra-ci-configure.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T00:48:42.400Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T04:35:18.448Z
 ---
 
 # CI/CD
@@ -73,6 +81,19 @@ the temporary home and transport were removed. No production apply ran.
 Follow the [canonical rotation procedure](../../docs/ci-cd.md); the next 21-day
 rotation is due October 17, 2026. Do not infer rollout completion from
 credential recovery or read-only diagnostics.
+
+## Signed offline validation
+
+Static workflows obtain cache URL/key policy from protected main, then verify or
+build the expected Nix offline-test and manifest-policy outputs. The remaining
+static wrapper still runs fresh provider, network and security checks. The
+trusted PR's protected live plan remains fresh and separately owner-reviewed.
+Neither a cached result nor a green static job authorizes production apply.
+
+Use the [signed cache runbook](../../docs/nix-cache.md) for local validation,
+Linux priming, key rotation and rollback. The declared builder is disposable;
+its signing key remains local. Deployment, full build and warm CI reuse are
+separate acceptance steps. See the [check flow](../architecture/gitops-flow.md#signed-offline-ci-checks).
 
 ## Tailscale CI cutover
 

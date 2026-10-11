@@ -14,18 +14,24 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
+  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
+    resource: repo://flake.nix
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T04:35:18.448Z
 ---
 
 # GitOps Flow
@@ -145,6 +151,33 @@ apply use the operator API proxy with tokenless runner kubeconfigs; admission
 permits plan dry-runs but denies real Application writes. Production jobs
 retain protected-environment and exact-current-main checks. This prepared
 source does not establish live CI acceptance or retire old native Services.
+
+## Signed offline CI checks
+
+Static jobs derive offline fixture and manifest-policy outputs from the complete
+tracked source, pinned tools and platform. They read cache trust from protected
+`origin/main`, require Nix signatures and sandboxing, and build on a cache miss.
+Provider validation, network-dependent rendering, secret scanning and live plans
+still run fresh. The Tailscale identity/transport fixtures and exact workflow
+security guards belong to the extracted offline suites.
+
+```mermaid
+flowchart TD
+    Source[Tracked source and pinned tools] --> Paths[Expected Nix check paths]
+    Policy[Protected main cache policy] --> Lookup[Verified cache lookup]
+    Paths --> Lookup
+    Lookup --> Result{Valid signed hit}
+    Result -->|Present| Fresh[Fresh remaining checks and live plan]
+    Result -->|Cache miss| Build[Sandboxed offline checks]
+    Build --> Fresh
+```
+
+Signed offline results do not establish live transport or deployment acceptance.
+
+The operator can prime Linux outputs through the declared disposable Nix builder;
+the private signing key remains on the operator machine. Builder registration,
+publication and warm CI reuse need their own acceptance. See
+[signed cache operation](../../docs/nix-cache.md).
 
 ## Important Paths
 

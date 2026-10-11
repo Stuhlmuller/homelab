@@ -14,14 +14,26 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
+  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
+    resource: repo://flake.nix
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-0f1996b7e0fc35047d4f05dd
     resource: repo://scripts/ci/install-kubeconfig.sh
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
+  - id: openwiki-source-4bbfe00c406fec8a213babcb
+    resource: repo://scripts/nix-builder.py
+  - id: openwiki-source-74dcbb88cca2d854985d0d67
+    resource: repo://scripts/nix-cache.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
   - id: openwiki-source-ff63d9d82b2370adf56a5f28
@@ -30,10 +42,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T04:35:18.448Z
 ---
 
 # Source Map
@@ -58,6 +70,9 @@ desired state.
 | `docs/argocd-app-onboarding.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 | `docs/image-automation.md` | [Image Automation](runbooks/image-automation.md) |
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
+| `docs/nix-cache.md` | [Signed offline CI checks](architecture/gitops-flow.md#signed-offline-ci-checks) |
+| `flake.nix`, `scripts/ci/nix-checks.sh`, `offline-checks.sh`, `offline-static-checks.sh` | [Offline validation ownership](operations/validation-gates.md#default-gate) |
+| `scripts/nix-cache.py`, `scripts/nix-builder.py`, `clusters/homelab/apps/nix-builder/README.md` | [Builder and local signing boundaries](architecture/secrets-and-identity.md#signed-nix-cache-trust) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
 | `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |

@@ -60,10 +60,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T04:35:18.448Z
 ---
 
 # Tailnet And App Ingress
@@ -277,6 +277,23 @@ Traefik AP/NP specs matched reviewed main. Forced ingress IPv6 failed before TLS
 consistent with the single-family Service; this is not IPv6 application acceptance.
 Normal-DNS cutover, authenticated user flows and signed callback delivery remain
 separate gates.
+
+## October 11 public callback acceptance
+
+At 04:23 UTC, the reviewed `df04e479` helpers moved Policy Bot's App callback
+and repository n8n hooks `589400612` and `636944763` to their declared Funnel
+URLs. URL-only readback preserved secrets, activation and events. Twenty denial
+requests across both public relay IPv4 addresses returned 404; Policy Bot's
+backend GET markers and both n8n workflows' non-executing OPTIONS checks passed.
+
+Naturally occurring GitHub deliveries subsequently returned HTTP 200 at all
+three new URLs. The acceptance helpers verified delivery IDs and timestamps
+newer than each saved cutover receipt. No event or redelivery was manufactured.
+The [draft CI change](https://github.com/Stuhlmuller/homelab/pull/1277) remains
+held for canonical private DNS/client acceptance. Public callbacks use their
+separate Funnel listener, so this URL migration could proceed while private
+application DNS and Talos host mappings remained unchanged. Keep legacy routes
+through the remaining application, node, CI and Cordium acceptance gates.
 
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and

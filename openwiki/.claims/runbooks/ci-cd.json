@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2840da89623c5b8f2adad4158ba2a51d8befb010455ed6877f279ba7075f2258",
+  "pageVersion": "sha256:8ad4534fef31a039a97f4b2d5354abaee1f6e3cb678ff54fc5634c01f6b30156",
   "claims": [
     {
       "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a7ac059987efcb86c4f7f4dbf97d3d6ca8beed360e6cb56c508582a6650cbea7"
+          "version": "repo-file-v1:sha256:3a143b6fc5dae1799af3dc32e946491914a8a9e56a488b6ae11fccd6752149e5"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -25,7 +25,7 @@
           "version": "repo-lines-v1:sha256:ce3ef3733f1e105a13bf5774d7a8f88052cb8d8adfe802a3ee96ae444a9b2127:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxMzllNDZjYmZkNDI0Yzk2MTBjZTYwZDhmODdiM2E0Nzc0MjNjNmFjN2Y2OWE0MjkzZmMwODc1MmRiYWM0MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxOWQ4Zjg2Njc0OWZhZGRjMzczNDU3ZDc1YzI3MGEzN2IzOGJjZjQ4NmE4Y2VmMmViYzI2ZDU2YTZhM2M4OWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViNWQxZWRlMzQ3OWM0NGE4NTc4ZTQ4NzFjZDRmODVkMDViMDY3YmQ4OGUxYzNiMWY3ZWY3MGRmZjE1MTRhYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1MTRlMDMyY2M4NDhjNjgxZTY0M2VkYzcyMzJkNjNlZGY5Y2EzNDE1YTQ4ODIyYzBiYjA2N2Q4NDgzOGRmNTYifQ"
         },
         {
-          "resource": "repo://docs/ci-cd.md#L221-L239",
+          "resource": "repo://docs/ci-cd.md#L223-L241",
           "version": "repo-lines-v1:sha256:28f2fbbb398644b1c06fffddd52d069da72f77f7358c78c2a4b9f26b0a9f834b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNzJkM2U5ZDI4YjJmZTU5YWRiMWY4YmZhZWQ0NjUyNTk1MmVhOWI1ODFiMDE4Yzk5M2FlM2EyYzMzNzNlMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI2MTAxODBhODg5ZWFkNzRmYjkzZmJkM2ZjODk1OWVkNWU0NTFlYTNmNmNkNDc5ZWMwYWM2NmQ1MWIxZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwM2M4ZDRhNjQ5MGIwMzBlMGRkNmVmYjI1YWIyMDFkMzdiMGZiZTk1YWQwZGIzODExYzYwNzZiNjE3NWRkMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhMmJkYWNhYmViZDhjNWMyYjcxOWIyZWQzODNhNGM0ZWE0MjhiNGUwYTNlZjc2MTFkOTBlMWQ4ZTZkNmM5ZmQifQ"
         },
         {
@@ -37,10 +37,32 @@
           "version": "repo-lines-v1:sha256:117fc48b8359933e876641d76bd30d28f8b496948b1e7ec08d56747381d80d60:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODI2ZWM4OWZlNTJhMWY3OTg1MTI4OWJkM2U3YjA5MTVkY2MyNWU3ODg0YTE4MWVlNjkzNWM4YzY0ZjgwOWFkMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ3ZTMwMDk4MmI4YmViOTEzNmMwNDk2MDZiYzg2MmFjMDlhMmIwZWQ0OWYzNjJlMmU5NzlhM2QwZDY3OTMzNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTZkMmEzOWI4NzQ0MDU2NmU1MGE3MjYwMzUzMTc3N2M5MDM5N2Y4OTNkNzg3YjA3YzI1Y2U0OGU2MmM0OTNmMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWIyZTQwYzc1YjNkNDg0NTcxYjg0MTJmNDlhNDRmZjViNDk3ZTYyZTJiNjMxN2U0MjM0ZDEyMGNlZGI1NDMzMiJ9"
         }
       ]
+    },
+    {
+      "id": "claim_c06aa88145794bfba8ffc6db14968041",
+      "statement": "Signed offline fixture and manifest-policy verification uses protected-main cache trust, while remaining static validation and protected owner-reviewed live plans run fresh; cache or static success does not authorize a production apply.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:9547b7f155d7a713d34ab561caa63a3e611345799d4293623883a88537987513"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:452a5cbfae9cc936e197adb9f47bfb08d177e4ef4d87c2b46cc210f1ce376b0f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T03:41:04.271Z"
+    "at": "2026-10-11T04:35:18.448Z"
   }
 }

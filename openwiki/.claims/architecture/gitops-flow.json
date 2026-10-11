@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b2ac81517a16fc2476e732c4cf1eb6a24e4ae30d4efedeb5faad0e3fa36e40f7",
+  "pageVersion": "sha256:d59adc95686ca65609a9830f09422135582effb1df661092772be4a37ed2eede",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -40,25 +40,47 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-apply.yml",
-          "version": "repo-file-v1:sha256:2c95765b989c636e40e7684a07b230cdf69bb759976682dd1e8d9c08f140ab94"
+          "version": "repo-file-v1:sha256:bf1a77d8421072679a92ae1a6095950a6ef1ee455c839cfb18263edd4959b101"
         },
         {
           "resource": "repo://.github/workflows/terragrunt-plan.yml",
-          "version": "repo-file-v1:sha256:1609e4139a919ef469dd508da6c3e09bd702527d77e89d8f9157be65c29a6b81"
+          "version": "repo-file-v1:sha256:9547b7f155d7a713d34ab561caa63a3e611345799d4293623883a88537987513"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a7ac059987efcb86c4f7f4dbf97d3d6ca8beed360e6cb56c508582a6650cbea7"
+          "version": "repo-file-v1:sha256:3a143b6fc5dae1799af3dc32e946491914a8a9e56a488b6ae11fccd6752149e5"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check.py",
           "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
         }
       ]
+    },
+    {
+      "id": "claim_9d6a1bb0d6cd48debdf0997ac7c30981",
+      "statement": "CI's offline fixture and manifest-policy outputs depend on tracked source, pinned tools and platform; static jobs use protected-main cache trust with signatures and sandboxing, build cache misses, and retain fresh remaining validation and live plans.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml#L65-L78",
+          "version": "repo-lines-v1:sha256:af78064f8cc1304590def210c435c6c23e7a7d9931c6d6b48a8ed15b19c471e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkYzUyODM3YTY5MWUwZmIxYTY5ZDQyNTk2M2Y3ZjEwYTVmMjgyYjMzNjVkMzdjZjZjZDQ1YjkxOGMwMmExZTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZWU1OTBiMDEzMjIwYzcxOGVmYzM1NDdiODRiOTgwMGMzMWY2NGZlODg5MzM3M2U4OGVhZDdhNzUzOWY4NTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4MGNjOTNmZTFmNjRiNTRiYzljYThmNjY3NWQ3ZmVjZGM3NjQ0OWRlOGRmZGFiYWUwNjg3NDc1ZWE5NjliYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyMTI1OWJlMTk3ZDRlY2UxNjM2YWJlMmM4ODNjYzY2MzgxZDk5ZjNmMTVjNDEwMDA4ZDY2ZDkzNzdhOTMxMzkifQ"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+        },
+        {
+          "resource": "repo://flake.nix#L15-L61",
+          "version": "repo-lines-v1:sha256:8c296f9b37cc7350fc3527d5e1d6ee761a7711f864abd9d166ec204c9a49a22a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDBlMjE4OGM2OTgxNmE2YzQyNWM1ZTA2MTM5ZTgyNmEyMjcwNDM5OTdlZjU2M2RmN2VlODcwMDg2YmU3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5M2ZjOTc4OTQxNDA2MjMwOTZjYTlkYjcxNTQ0MjJkNDA0NGNkZGJmYzk1YWQ0MGRhYTc4NWY5YjkzNDJjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1MzFhNDQ5YTg1NjI5YjdkNDIyYWEzZjM1NGFlZWZjYzMxNjBmNmNkY2EzM2E2NmQwMWFkOWIwNTE1MDg1MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4NDRhMmJiNzM2N2E0NDgyYTM5YzgzZDljZTQ5MGJmYzIxZGEyY2M0MjJjZTNhYzk3NDRkNWI4YmU1YjdkYjAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T03:41:04.271Z"
+    "at": "2026-10-11T04:35:18.448Z"
   }
 }

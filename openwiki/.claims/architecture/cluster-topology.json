@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a90212efa0a589fc76aeab771dd0753de2003ca99a78d550534ca24a290fd0c2",
+  "pageVersion": "sha256:b5954207befb279bcccc2798ac356851df584b141c590dd3b2a7bf88bbcf1fa4",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -60,7 +60,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a7ac059987efcb86c4f7f4dbf97d3d6ca8beed360e6cb56c508582a6650cbea7"
+          "version": "repo-file-v1:sha256:3a143b6fc5dae1799af3dc32e946491914a8a9e56a488b6ae11fccd6752149e5"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
@@ -71,10 +71,24 @@
           "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
         }
       ]
+    },
+    {
+      "id": "claim_24238620658c4194aaaf60df221779c8",
+      "statement": "The declared Linux Nix builder schedules only on amd64 zimaboard-0 or zimaboard-1 and reserves and caps memory at 1Gi; source constraints do not prove live deployment or sufficient build capacity.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
+          "version": "repo-file-v1:sha256:a0a5b29c22097eab93c043f1446029d93be11deb76897741f0e4acabc0a59330"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml#L41-L78",
+          "version": "repo-lines-v1:sha256:2b970a4516952e641db5412f227fa3e36c5f12ba3458f1857c09d45d64af7cd8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0Y2MyYWJlZThmZjQyYzVlNzEwYzAxOWU5ODk1NzVhMTYzOGU5YWMyZGYwYTczMWMwNzAwN2ExYmRjZTgyMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5NGQ1NGE2OTc1NDM0YTZjZGRhY2Y5ZTA1ODNkODE4NjgzYWNkNWQwNzEyZTZmMzI4Nzc3NmViZDkzNzhkZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmYTRiOWU3YWM2MGI1MzJjOWQ2YjZiZmUxYTBmNGMzZGU0ZDQ5YjE4ZmE5MTA1N2NhYjQwOWI4NDBlODJiYjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0YThjZWQ3ZWYwYmYzM2E5NTk1YWM1ZGZhYTFiZTNjZTgwMjg2NzA2NDRhNjZmNmMxY2I1YzM1ZTI1ODE3MzYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T03:41:04.271Z"
+    "at": "2026-10-11T05:03:05.268Z"
   }
 }

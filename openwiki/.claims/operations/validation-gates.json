@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:71b16e50c4c39f896a94867dc1e72e63abd4af80d8b13653ebcab991666152f2",
+  "pageVersion": "sha256:6086245f4b406f9088956ac0886d2da4c48ac70fa2c21e894d1d901f4d648c31",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -15,8 +15,12 @@
           "version": "repo-file-v1:sha256:d8ba5cb80354e9eb48327c6bd694820d9f3ff5ff0a0e31d0d09c822262341a3b"
         },
         {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:a70422b3965edc43680ad4be9af3cca1517b19af33f130703e8719e9bc03e67f"
+        },
+        {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:90b6bc733e8af7462ad6379a797473e6bdf848784afacfc5b27e3b6601363f96"
+          "version": "repo-file-v1:sha256:452a5cbfae9cc936e197adb9f47bfb08d177e4ef4d87c2b46cc210f1ce376b0f"
         }
       ]
     },
@@ -30,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a7ac059987efcb86c4f7f4dbf97d3d6ca8beed360e6cb56c508582a6650cbea7"
+          "version": "repo-file-v1:sha256:3a143b6fc5dae1799af3dc32e946491914a8a9e56a488b6ae11fccd6752149e5"
         }
       ]
     },
@@ -53,8 +57,8 @@
       "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge/overlay /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L19",
-          "version": "repo-lines-v1:sha256:2edbee3a0903cbca50af4857f32229b376e5cc45e7443deb662b264d9f84d3e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmZGFmY2RkZjA3ODViMzVmOWM2NTczY2YwYTQxN2FhNjRlYjhjZWM3ZTFkMGFkMTUzNjNhNzM5ZjMyY2NlZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE2Y2RjZTZiNjU0YzRkM2Q3MDJkOTg3YmU2ZGU3ZTI5ODY3YTVjYzA2YjM0MDQ4MmQxZTA4YTRmMWJmMjAyZjcifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh#L8-L20",
+          "version": "repo-lines-v1:sha256:3279057d4974abf7ff0764ed4c4e46713b124fc464a05b052a6c077a9a8dfcef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MDEyNjkzMzBhZDRjNzE0M2QzN2RiOGJiNTUzMWMzNTZjYjI2ZjI2NDViY2VjOGE1MjdhMzE0N2EyNDZmNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmOWEwNzYzYTEzODg5YmU0MDdjY2IyZjE5NWFhOGUyN2M5YmVhOTYwODhmNWI4NTU5NzhkNDZkYmYzM2UzN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MWNlMjgwNjJlOWU0NDhmOGIyMTQ1Nzg0MGM1YWU3ZDNjZTc5ZDA3ZDJiMzlhMzc0M2FkN2Y1ZWI3YWE4ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzNjRiOWFlOWVhOTE0ZTQyOWNjM2VlMzE3YzcxZmZiMTgyOGZhODM5NmNlNmMyMTAyYWEyZjc4MzY4ZjYzZDAifQ"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -161,8 +165,8 @@
       "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L1-L17",
-          "version": "repo-lines-v1:sha256:dbe801b0e4cabd03cbb0459a5cc8aa698c49b0928d7a4842fd4640e09c7930d7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh#L8-L20",
+          "version": "repo-lines-v1:sha256:3279057d4974abf7ff0764ed4c4e46713b124fc464a05b052a6c077a9a8dfcef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MDEyNjkzMzBhZDRjNzE0M2QzN2RiOGJiNTUzMWMzNTZjYjI2ZjI2NDViY2VjOGE1MjdhMzE0N2EyNDZmNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmOWEwNzYzYTEzODg5YmU0MDdjY2IyZjE5NWFhOGUyN2M5YmVhOTYwODhmNWI4NTU5NzhkNDZkYmYzM2UzN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MWNlMjgwNjJlOWU0NDhmOGIyMTQ1Nzg0MGM1YWU3ZDNjZTc5ZDA3ZDJiMzlhMzc0M2FkN2Y1ZWI3YWE4ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzNjRiOWFlOWVhOTE0ZTQyOWNjM2VlMzE3YzcxZmZiMTgyOGZhODM5NmNlNmMyMTAyYWEyZjc4MzY4ZjYzZDAifQ"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L123-L233",
@@ -275,18 +279,40 @@
           "version": "repo-file-v1:sha256:fd227ee3c571d2e1c7a83469668da65dfa38001dfea24cdb938cc7b27c405eb1"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:90b6bc733e8af7462ad6379a797473e6bdf848784afacfc5b27e3b6601363f96"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:a70422b3965edc43680ad4be9af3cca1517b19af33f130703e8719e9bc03e67f"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:0bfe8f7a53a4ed95cf2a3d4f6d2b1bfb893818b1347d3c9eb532a1c2b5c7cb4c"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
           "version": "repo-file-v1:sha256:7127b6a5ddf8c5340417cb3ab05af5b2770eddf06c2b0a0c596a289e1c9a7225"
         }
       ]
+    },
+    {
+      "id": "claim_f663b2d4ce5a4ae386f41809da0a0e91",
+      "statement": "The static gate verifies source-bound offline Nix check outputs with protected-main cache trust, signatures and sandboxing, then runs remaining provider, network and security validation fresh; cached receipts do not establish live plan or runtime acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:452a5cbfae9cc936e197adb9f47bfb08d177e4ef4d87c2b46cc210f1ce376b0f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T03:41:04.271Z"
+    "at": "2026-10-11T04:35:18.448Z"
   }
 }

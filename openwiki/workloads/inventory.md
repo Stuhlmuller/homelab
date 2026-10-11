@@ -16,6 +16,14 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
+    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
+  - id: openwiki-source-9fa73338d241a64216558c54
+    resource: repo://clusters/homelab/apps/nix-builder/namespace.yaml
+  - id: openwiki-source-67d34f0f260c94a7dff4a12a
+    resource: repo://clusters/homelab/apps/nix-builder/networkpolicy.yaml
+  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
+    resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
@@ -36,6 +44,8 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
+  - id: openwiki-source-556eb082b86343ef048df9f7
+    resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-65bc6c080b599d8e6d572a31
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
@@ -44,10 +54,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T05:03:05.268Z
 ---
 
 # Workload Inventory
@@ -138,6 +148,21 @@ and device connection tests.
 | `harbor`                | private OCI registry      | `harbor`                | `clusters/homelab/apps/harbor`                | `IaC/live/argocd-apps/harbor`                | external-secrets, cert-manager, Istio, storage, Prometheus  |
 | `media-postgres`        | support                   | `media`                 | `clusters/homelab/apps/media-postgres`        | `IaC/live/argocd-apps/media-postgres`        | external-secrets, platform-storage for retained NFS backups |
 | `n8n-postgres`          | support                   | `automation`            | `clusters/homelab/apps/n8n-postgres`          | `IaC/live/argocd-apps/n8n-postgres`          | external-secrets, platform-storage                          |
+
+`nix-builder` is a declared disposable executor in its own namespace, registered
+by the shared Terragrunt stack and managed through Kustomize. It uses the pinned
+Nix image, has no Service/ingress, host mounts, Kubernetes token or persistent
+volume, and accepts staged reviewed source through authenticated operator exec.
+Its amd64 worker affinity and `1Gi` request/limit bound scheduling and build
+memory. Registration, first full build and signed-cache reuse remain pending.
+
+Root and `SYS_ADMIN` support nested Nix sandboxes, making this a high-trust
+executor. Its NetworkPolicy expresses intended DNS/public-HTTPS egress and
+private-network denial; current Flannel does not enforce it, and this namespace
+is not ambient-enrolled. Do not claim network isolation. Keep reviewed homelab
+source as the input boundary; review an enforcing CNI/policy engine before
+expanding submissions. See [builder operation](../../clusters/homelab/apps/nix-builder/README.md)
+and [current enforced controls](../../docs/runtime-isolation.md).
 
 `platform-dns` forwards public lookups to the unfiltered Cloudflare resolvers
 `1.1.1.1` and `1.0.0.1`. This keeps explicit stable upstreams without

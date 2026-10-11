@@ -4,6 +4,8 @@ title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
@@ -12,6 +14,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -34,12 +38,16 @@ sources:
     resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-4bbfe00c406fec8a213babcb
+    resource: repo://scripts/nix-builder.py
+  - id: openwiki-source-74dcbb88cca2d854985d0d67
+    resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T03:41:04.271Z
+    at: 2026-10-11T04:35:18.448Z
 ---
 
 # Secrets And Identity
@@ -141,6 +149,21 @@ recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
 token to write only its fixed mesh A/AAAA inventory from reviewed current main.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
+
+## Signed Nix cache trust
+
+The offline-check cache has its own operator signing key. The publisher requires
+a private key outside the checkout with mode `0600` or stricter and checks it
+against the committed public key before signing expected check outputs. Linux
+builds return outputs for local signing; the builder and PR jobs never receive
+the private key.
+
+CI reads cache URL and public-key policy from protected `origin/main`, so a PR
+cannot select its own trusted signer. Nix requires signatures and sandboxing;
+missing entries build normally. Key rotation changes the protected policy and
+release URL through review. A compromised signing key can forge check results;
+remove it from that policy before trusting further cached outputs. See the
+[cache lifecycle](../../docs/nix-cache.md).
 
 ## AWS SSM Pattern
 
