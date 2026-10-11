@@ -226,3 +226,25 @@ The native login/logout acceptance and refresh caveats are recorded in
 live Kubernetes object has been created by this branch preparation.
 
 On 2026-10-11, hosted build run [38120324201](https://github.com/Stuhlmuller/homelab/actions/runs/38120324201) passed both image builds and the non-root/read-only/network-disabled controller smoke at head ebe67f7. Images were local to that job and were not published. Cordium execution, actual credential refresh, policy enforcement, publication/cold pulls and complete workflow acceptance remain unproven.
+
+## Protected private publication
+
+After reviewed merge and release of the cutover hold, dispatch the exact current
+main through cordium-runner-publish.yml with expected_sha. It rebuilds/smoke-tests
+both fixed images before registry login, enters homelab-production, shares the
+existing harbor-packages-production concurrency group, and uses the existing
+publisher/signing identity. The helper's publish-cordium mode accepts no image
+name or destination input and requires manual current-main dispatch.
+
+Only homelab-cordium-runner and homelab-cordium-controller in the private Harbor
+homelab project are pushed. Each digest is checked, fully downloaded with the
+private authentication, and checked again before the repository-owned signer
+receives it. The enrolled public-key fingerprint and both signatures must verify.
+Only then are fixed digest references emitted into a 30-day artifact. A digest,
+complete-pull, signer identity or signature failure withholds successful outputs
+and still runs the existing cleanup. NOFX and public mirror modes retain their
+original destination scopes. Forty-five mocked publisher regression tests passed;
+this Cordium publication path has not been executed live.
+
+Use the returned immutable references in a reviewed Deployment change only after
+cold-pull acceptance. Do not treat the build-only workflow as registry publication.
