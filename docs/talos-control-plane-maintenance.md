@@ -901,6 +901,17 @@ restarts, OOM kills, or an active Cordium workspace on `zimaboard-1`.
 
 ### Degraded Recovery: `zimaboard-2`
 
+On 2026-10-10 this worker lost kubelet heartbeats with about 45 MiB available
+memory, heavy memory and I/O stalls, and Argo CD's application controller using
+about 658 MiB resident memory. Its n8n PostgreSQL and NOFX Pods still mounted
+NFS PVCs; the August no-PVC recovery gate below did not apply. Authenticated
+Talos access then became unreachable, so only a physical power-cycle of this
+exact worker restored service. After boot, verify a new boot ID, healthy
+kubelet, all Nodes Ready, and PostgreSQL/NOFX readiness before trusting the
+recovery. The bootstrap Argo CD chart source excludes this undersized worker.
+The node failed again after boot when a Langfuse worker using about 495 MiB
+landed beside the 634 MiB Argo controller; the Langfuse worker now excludes it.
+
 This exception covers only the unreachable `zimaboard-2` (`10.1.0.202`) from
 the August 2026 outage. It does not relax the healthy-cluster gate for routine
 reboots. Its 1.28 GiB allocatable memory cannot hold the measured Octelium
