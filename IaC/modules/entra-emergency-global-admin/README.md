@@ -24,7 +24,11 @@ The bootstrap password is stored in KMS-encrypted state and saved plans. Treat
 both outputs as private: hand them off through a mode-0600 file outside a Git
 repository, replace the password at first sign-in, register the required security
 information, and prove a fresh independent administrator login before converting
-the existing owner. Do not print outputs in CI, chat, PRs, or logs.
+the existing owner. The private conversion receipt then requires Azure CLI to be
+authenticated as this exact account and read-validates its direct, tenant-root
+Global Administrator assignment. The read needs the documented delegated
+`RoleManagement.Read.Directory` permission (or `Directory.Read.All`); it never
+requests a Graph write permission. Do not print outputs in CI, chat, PRs, or logs.
 
 Validate before planning:
 

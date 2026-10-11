@@ -18,6 +18,7 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 SHA = "a" * 40
 FUTURE_PASSWORD_CHANGE = "9999-12-31T23:59:59Z"
+RECOVERY_OBJECT_ID = "2c1bc8ba-02ea-4dac-8b1a-88d33bfbac91"
 
 
 class Response:
@@ -45,6 +46,31 @@ def prepared_state():
                    "authenticationType": "Managed", "isDefault": False, "isInitial": False},
         "default_domain": {"id": "stinkyboi.com", "isVerified": True, "isDefault": True},
         "target": None,
+        "recovery": recovery_state(),
+    }
+
+
+def recovery_state():
+    initial_domain = {
+        "id": "stinkyboi.onmicrosoft.com", "isVerified": True,
+        "authenticationType": "Managed", "isDefault": False, "isInitial": True,
+    }
+    actor = {
+        "id": RECOVERY_OBJECT_ID,
+        "userPrincipalName": f"{MODULE.EMERGENCY_ADMIN_LOCAL_PART}@{initial_domain['id']}",
+        "userType": "Member", "accountEnabled": True,
+        "onPremisesSyncEnabled": None, "externalUserState": None,
+    }
+    return {
+        "initial_domain": initial_domain,
+        "actor": actor,
+        "assignment": {"value": [{
+            "id": "global-administrator-assignment",
+            "principalId": RECOVERY_OBJECT_ID,
+            "roleDefinitionId": MODULE.GLOBAL_ADMINISTRATOR_ROLE_DEFINITION_ID,
+            "directoryScopeId": "/",
+            "appScopeId": None,
+        }]},
     }
 
 
@@ -63,6 +89,7 @@ def attested_state():
         "default_domain": {"id": "stinkyboi.com", "isVerified": True, "isDefault": True},
         "target": {"id": MODULE.OWNER_OBJECT_ID},
         "actor": {"id": MODULE.OWNER_OBJECT_ID, "userPrincipalName": MODULE.TARGET_UPN},
+        "recovery": recovery_state(),
     }
 
 
@@ -96,7 +123,7 @@ class ConversionTransactionTest(unittest.TestCase):
         self.assertEqual(status, 0, output)
         path, receipt = self.receipt()
         self.assertEqual(path.parent, self.directory)
-        self.assertEqual(receipt["schema"], 4)
+        self.assertEqual(receipt["schema"], 5)
         self.assertEqual(receipt["status"], "prepared")
         self.assertEqual(receipt["expected_sha"], SHA)
         self.assertEqual(receipt["owner_object_id"], MODULE.OWNER_OBJECT_ID)
@@ -104,6 +131,8 @@ class ConversionTransactionTest(unittest.TestCase):
         self.assertEqual(receipt["before"]["userType"], "Member")
         self.assertEqual(receipt["before"]["creationType"], "Invitation")
         self.assertEqual(receipt["default_domain"]["id"], "stinkyboi.com")
+        self.assertEqual(receipt["recovery"]["actor"]["id"], RECOVERY_OBJECT_ID)
+        self.assertEqual(receipt["recovery"]["assignment"]["directoryScopeId"], "/")
         self.assertEqual(verified.call_count, 2)
         self.assertIn("No Graph write was made", output)
 
@@ -144,6 +173,58 @@ class ConversionTransactionTest(unittest.TestCase):
                 status, output, _ = self.run_command("prepare", state, directory=directory)
                 self.assertEqual(status, 1)
                 self.assertIn("does not match", output)
+
+    def test_prepare_requires_an_authenticated_independent_recovery_global_administrator(self):
+        cases = []
+        missing = prepared_state()
+        missing.pop("recovery")
+        cases.append(missing)
+        wrong_actor = prepared_state()
+        wrong_actor["recovery"]["actor"]["userPrincipalName"] = MODULE.OWNER_UPN
+        cases.append(wrong_actor)
+        disabled = prepared_state()
+        disabled["recovery"]["actor"]["accountEnabled"] = False
+        cases.append(disabled)
+        synced = prepared_state()
+        synced["recovery"]["actor"]["onPremisesSyncEnabled"] = True
+        cases.append(synced)
+        external = prepared_state()
+        external["recovery"]["actor"]["externalUserState"] = "Accepted"
+        cases.append(external)
+        invalid_initial_domain = prepared_state()
+        invalid_initial_domain["recovery"]["initial_domain"]["isInitial"] = False
+        cases.append(invalid_initial_domain)
+        wrong_assignment = prepared_state()
+        wrong_assignment["recovery"]["assignment"]["value"][0]["roleDefinitionId"] = "other"
+        cases.append(wrong_assignment)
+        missing_assignment = prepared_state()
+        missing_assignment["recovery"]["assignment"] = {"value": []}
+        cases.append(missing_assignment)
+        scoped_assignment = prepared_state()
+        scoped_assignment["recovery"]["assignment"]["value"][0]["directoryScopeId"] = "/applications/other"
+        cases.append(scoped_assignment)
+        app_scoped_assignment = prepared_state()
+        app_scoped_assignment["recovery"]["assignment"]["value"][0]["appScopeId"] = "/appScope"
+        cases.append(app_scoped_assignment)
+        paged_assignment = prepared_state()
+        paged_assignment["recovery"]["assignment"]["@odata.nextLink"] = "https://graph.microsoft.com/v1.0/next"
+        cases.append(paged_assignment)
+        for index, state in enumerate(cases):
+            with self.subTest(index=index):
+                directory = Path(self.temporary.name) / f"recovery-{index}"
+                directory.mkdir(mode=0o700)
+                directory.chmod(0o700)
+                status, output, _ = self.run_command("prepare", state, directory=directory)
+                self.assertEqual(status, 1)
+                self.assertIn("recovery administrator", output)
+                self.assertFalse((directory / MODULE.RECEIPT_NAME).exists())
+
+    def test_initial_recovery_domain_must_be_unique(self):
+        initial = recovery_state()["initial_domain"]
+        with self.assertRaises(MODULE.Failure):
+            MODULE.initial_domain_state({"value": []})
+        with self.assertRaises(MODULE.Failure):
+            MODULE.initial_domain_state({"value": [initial, initial]})
 
     def test_attest_requires_internal_postcondition_and_preserves_ambiguous_receipt(self):
         self.assertEqual(self.run_command("prepare", prepared_state())[0], 0)
@@ -208,6 +289,26 @@ class ConversionTransactionTest(unittest.TestCase):
         self.assertIsNone(receipt["after"]["onPremisesSyncEnabled"])
         self.assertEqual(receipt["after"]["identities"][0]["issuer"], "stinkyboi.com")
         self.assertEqual(self.run_command("attest", attested_state())[0], 0)
+
+    def test_attest_rechecks_the_same_independent_recovery_assignment(self):
+        self.assertEqual(self.run_command("prepare", prepared_state())[0], 0)
+        path, before = self.receipt()
+        cases = []
+        removed = attested_state()
+        removed["recovery"]["assignment"] = {"value": []}
+        cases.append(removed)
+        wrong_actor = attested_state()
+        wrong_actor["recovery"]["assignment"]["value"][0]["principalId"] = "different"
+        cases.append(wrong_actor)
+        changed_assignment = attested_state()
+        changed_assignment["recovery"]["assignment"]["value"][0]["id"] = "recreated"
+        cases.append(changed_assignment)
+        for state in cases:
+            with self.subTest(state=state["recovery"]):
+                status, output, _ = self.run_command("attest", state)
+                self.assertEqual(status, 1)
+                self.assertIn("recovery administrator", output)
+                self.assertEqual(json.loads(path.read_text()), before)
 
     def test_attest_requires_a_strictly_later_password_timestamp(self):
         prepared_at = "2030-01-01T00:00:00.900000Z"
@@ -313,14 +414,35 @@ class ConversionTransactionTest(unittest.TestCase):
         self.assertNotIn("beta", request.full_url)
         self.assertIsNone(request.data)
 
+    def test_recovery_assignment_read_is_a_direct_root_role_query(self):
+        response = Response({"value": []})
+        opener = MagicMock(return_value=response)
+        with patch.object(MODULE.GRAPH_OPENER, "open", opener):
+            MODULE.graph_get("private-token", MODULE.emergency_role_assignment_path(RECOVERY_OBJECT_ID))
+        request = opener.call_args.args[0]
+        self.assertEqual(request.get_method(), "GET")
+        self.assertTrue(request.full_url.startswith("https://graph.microsoft.com/v1.0/"))
+        self.assertIn("roleManagement/directory/roleAssignments?", request.full_url)
+        self.assertIn("principalId", request.full_url)
+        self.assertIn("roleDefinitionId", request.full_url)
+        self.assertIn("directoryScopeId", request.full_url)
+        self.assertNotIn("memberOf", request.full_url)
+        self.assertNotIn("%24count", request.full_url)
+        self.assertIsNone(request.get_header("Consistencylevel"))
+        self.assertIsNone(request.data)
+
     def test_graph_state_selects_local_identity_and_reads_actor_only_for_attestation(self):
-        default_domains = {"value": [prepared_state()["default_domain"]]}
+        recovery = recovery_state()
+        default_domains = {"value": [prepared_state()["default_domain"], recovery["initial_domain"]]}
         values = {
             f"users/{MODULE.OWNER_OBJECT_ID}?$select=id,userPrincipalName,userType,creationType,externalUserState,accountEnabled,identities,onPremisesSyncEnabled,lastPasswordChangeDateTime": attested_state()["owner"],
             f"domains/{MODULE.TARGET_DOMAIN}": attested_state()["domain"],
-            "domains?$select=id,isVerified,authenticationType,isDefault": default_domains,
+            "domains?$select=id,isVerified,authenticationType,isDefault,isInitial": default_domains,
             f"users/{MODULE.TARGET_UPN}?$select=id": attested_state()["target"],
             "me?$select=id,userPrincipalName": attested_state()["actor"],
+            "me?$select=id,userPrincipalName,userType,accountEnabled,onPremisesSyncEnabled,externalUserState": recovery["actor"],
+            f"users/{RECOVERY_OBJECT_ID}?$select=id,userPrincipalName,userType,accountEnabled,onPremisesSyncEnabled,externalUserState": recovery["actor"],
+            MODULE.emergency_role_assignment_path(RECOVERY_OBJECT_ID): recovery["assignment"],
         }
         calls = []
 
@@ -332,7 +454,16 @@ class ConversionTransactionTest(unittest.TestCase):
                 patch.object(MODULE, "graph_get", side_effect=get):
             self.assertNotIn("actor", MODULE.graph_state())
             self.assertEqual(MODULE.graph_state(include_actor=True)["actor"], attested_state()["actor"])
+            self.assertEqual(MODULE.graph_state(recovery_actor_id="")["recovery"]["actor"], recovery["actor"])
+            self.assertEqual(MODULE.graph_state(recovery_actor_id=RECOVERY_OBJECT_ID)["recovery"]["actor"], recovery["actor"])
         self.assertEqual(calls.count(("me?$select=id,userPrincipalName", {})), 1)
+        self.assertEqual(calls.count((
+            "me?$select=id,userPrincipalName,userType,accountEnabled,onPremisesSyncEnabled,externalUserState", {}
+        )), 1)
+        self.assertIn((
+            f"users/{RECOVERY_OBJECT_ID}?$select=id,userPrincipalName,userType,accountEnabled,onPremisesSyncEnabled,externalUserState", {}
+        ), calls)
+        self.assertIn((MODULE.emergency_role_assignment_path(RECOVERY_OBJECT_ID), {}), calls)
         self.assertIn((f"users/{MODULE.TARGET_UPN}?$select=id", {"missing": True}), calls)
 
     def test_graph_redirect_is_rejected_before_token_forwarding(self):

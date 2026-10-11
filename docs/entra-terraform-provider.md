@@ -152,8 +152,13 @@ permanent role assignment. Its source-controlled
 run --all apply/destroy operations. After explicit authorization, set it true
 only through a separate signed, reviewed change and apply its reviewed saved
 plan; then test its independent login and restore the literal to false in a
-separate signed change. Follow the exact conversion and Fleet ordering in the
-[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+separate signed change. The private conversion `prepare` transaction must use
+Azure CLI authenticated as that exact recovery account; it read-validates its
+cloud-only identity and direct tenant-root Global Administrator assignment before
+it creates a receipt, then rereads that same recovery path during attestation.
+The read needs delegated `RoleManagement.Read.Directory` (or `Directory.Read.All`),
+never a Graph write permission. Follow the exact conversion and Fleet ordering in the [Fleet
+runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 A federation or CI permission failure does not require recreating applications,
 resetting family passwords or changing Fleet authentication. Correct trust or

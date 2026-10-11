@@ -25,6 +25,8 @@ OWNER_OBJECT_ID = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
 OWNER_UPN = "rodman@stinkyboi.com"
 TARGET_UPN = "rodman@stuhlmuller.net"
 TARGET_DOMAIN = "stuhlmuller.net"
+EMERGENCY_ADMIN_LOCAL_PART = "homelab-emergency-admin"
+GLOBAL_ADMINISTRATOR_ROLE_DEFINITION_ID = "62e90394-69f5-4237-9190-012177145e10"
 RECEIPT_NAME = "entra-owner-conversion.json"
 SHA = re.compile(r"[0-9a-f]{40}")
 
@@ -200,17 +202,41 @@ def graph_get(token, path, *, missing=False):
     return value
 
 
-def graph_state(include_actor=False):
+def emergency_role_assignment_path(actor_id):
+    return "roleManagement/directory/roleAssignments?" + urllib.parse.urlencode({
+        "$filter": " and ".join((
+            f"principalId eq '{actor_id}'",
+            f"roleDefinitionId eq '{GLOBAL_ADMINISTRATOR_ROLE_DEFINITION_ID}'",
+            "directoryScopeId eq '/'",
+        )),
+        "$select": "id,principalId,roleDefinitionId,directoryScopeId,appScopeId",
+    })
+
+
+def graph_state(include_actor=False, recovery_actor_id=None):
     token = graph_token()
     owner = graph_get(token, f"users/{OWNER_OBJECT_ID}?$select=id,userPrincipalName,userType,creationType,externalUserState,accountEnabled,identities,onPremisesSyncEnabled,lastPasswordChangeDateTime")
     domain = graph_get(token, f"domains/{TARGET_DOMAIN}")
-    domains = graph_get(token, "domains?$select=id,isVerified,authenticationType,isDefault")
+    domains = graph_get(token, "domains?$select=id,isVerified,authenticationType,isDefault,isInitial")
     target = graph_get(token, "users/" + urllib.parse.quote(TARGET_UPN, safe="@") + "?$select=id",
                        missing=True)
     state = {"owner": owner, "domain": domain,
              "default_domain": default_domain_state(domains), "target": target}
     if include_actor:
         state["actor"] = graph_get(token, "me?$select=id,userPrincipalName")
+    if recovery_actor_id is not None:
+        initial_domain = initial_domain_state(domains)
+        actor_path = "me?$select=id,userPrincipalName,userType,accountEnabled,onPremisesSyncEnabled,externalUserState"
+        if recovery_actor_id:
+            actor_path = "users/" + urllib.parse.quote(recovery_actor_id, safe="") + "?$select=id,userPrincipalName,userType,accountEnabled,onPremisesSyncEnabled,externalUserState"
+        actor = emergency_actor_state(graph_get(
+            token, actor_path
+        ), initial_domain)
+        state["recovery"] = {
+            "initial_domain": initial_domain,
+            "actor": actor,
+            "assignment": graph_get(token, emergency_role_assignment_path(actor["id"])),
+        }
     return state
 
 
@@ -233,6 +259,69 @@ def default_domain_state(value):
     if not isinstance(domain.get("id"), str) or domain.get("isVerified") is not True:
         raise Failure("The tenant default Entra domain does not match the required conversion state")
     return {key: domain[key] for key in ("id", "isVerified", "isDefault")}
+
+
+def initial_domain_state(value):
+    domains = value.get("value") if isinstance(value, dict) else None
+    matches = [domain for domain in domains if isinstance(domain, dict)
+               and domain.get("isInitial") is True] if isinstance(domains, list) else []
+    if len(matches) != 1:
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    domain = matches[0]
+    if (not isinstance(domain.get("id"), str) or not domain["id"].endswith(".onmicrosoft.com")
+            or domain.get("isVerified") is not True
+            or domain.get("authenticationType") != "Managed"
+            or domain.get("isDefault") is not False):
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    return {key: domain[key] for key in
+            ("id", "isVerified", "authenticationType", "isDefault", "isInitial")}
+
+
+def emergency_actor_state(value, initial_domain):
+    expected_upn = f"{EMERGENCY_ADMIN_LOCAL_PART}@{initial_domain['id']}"
+    if (not isinstance(value, dict) or not isinstance(value.get("id"), str)
+            or value.get("id") == OWNER_OBJECT_ID or value.get("userPrincipalName") != expected_upn
+            or value.get("userType") != "Member" or value.get("accountEnabled") is not True
+            or "onPremisesSyncEnabled" not in value or value["onPremisesSyncEnabled"] is not None
+            or "externalUserState" not in value or value["externalUserState"] is not None):
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    try:
+        uuid.UUID(value["id"])
+    except (TypeError, ValueError):
+        raise Failure("The independent Entra recovery administrator does not match the required state") from None
+    return {key: value[key] for key in
+            ("id", "userPrincipalName", "userType", "accountEnabled", "onPremisesSyncEnabled",
+             "externalUserState")}
+
+
+def emergency_role_assignment_state(value, actor):
+    assignments = value.get("value") if isinstance(value, dict) else None
+    if not isinstance(assignments, list) or value.get("@odata.nextLink") is not None:
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    matches = [assignment for assignment in assignments if isinstance(assignment, dict)
+               and assignment.get("principalId") == actor["id"]
+               and assignment.get("roleDefinitionId") == GLOBAL_ADMINISTRATOR_ROLE_DEFINITION_ID
+               and assignment.get("directoryScopeId") == "/"
+               and assignment.get("appScopeId") is None]
+    if len(matches) != 1 or len(assignments) != 1:
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    assignment = matches[0]
+    if not isinstance(assignment.get("id"), str):
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    return {key: assignment[key] for key in
+            ("id", "principalId", "roleDefinitionId", "directoryScopeId", "appScopeId")}
+
+
+def recovery_state(value, *, stored=False):
+    if not isinstance(value, dict):
+        raise Failure("The independent Entra recovery administrator does not match the required state")
+    initial_domain = initial_domain_state({"value": [value.get("initial_domain")]})
+    actor = emergency_actor_state(value.get("actor"), initial_domain)
+    assignment_value = value.get("assignment")
+    if stored:
+        assignment_value = {"value": [assignment_value]}
+    assignment = emergency_role_assignment_state(assignment_value, actor)
+    return {"initial_domain": initial_domain, "actor": actor, "assignment": assignment}
 
 
 def owner_state(value, expected_upn=None, external=False):
@@ -294,10 +383,11 @@ def prepared_state(state):
     if before["userPrincipalName"] == TARGET_UPN or state.get("target") is not None:
         raise Failure("The target UPN is already occupied or the owner is already converted")
     default_domain = default_domain_state({"value": [state.get("default_domain")]})
-    return before, domain_state(state.get("domain")), default_domain
+    recovery = recovery_state(state.get("recovery"))
+    return before, domain_state(state.get("domain")), default_domain, recovery
 
 
-def attested_state(state, prepared_at, default_domain):
+def attested_state(state, prepared_at, default_domain, recovery):
     if state.get("default_domain") != default_domain:
         raise Failure("The tenant default Entra domain does not match the required conversion state")
     after = internal_owner_state(state.get("owner"), TARGET_UPN, default_domain)
@@ -306,26 +396,30 @@ def attested_state(state, prepared_at, default_domain):
     target = state.get("target")
     if not isinstance(target, dict) or target.get("id") != OWNER_OBJECT_ID:
         raise Failure("The converted target UPN does not resolve to the immutable Entra owner")
+    if recovery_state(state.get("recovery")) != recovery:
+        raise Failure("The independent Entra recovery administrator does not match the required state")
     return after, domain_state(state.get("domain"))
 
 
 def receipt_base(receipt, expected_sha):
-    if (receipt.get("schema") != 4 or receipt.get("owner_object_id") != OWNER_OBJECT_ID
+    if (receipt.get("schema") != 5 or receipt.get("owner_object_id") != OWNER_OBJECT_ID
             or receipt.get("target_upn") != TARGET_UPN or receipt.get("expected_sha") != expected_sha
             or receipt.get("status") not in ("prepared", "attested")
             or not isinstance(receipt.get("prepared_at"), str)
             or not isinstance(receipt.get("before"), dict) or not isinstance(receipt.get("domain"), dict)
-            or not isinstance(receipt.get("default_domain"), dict)):
+            or not isinstance(receipt.get("default_domain"), dict)
+            or not isinstance(receipt.get("recovery"), dict)):
         raise Failure("Conversion receipt does not match the reviewed transaction")
     owner_state(receipt["before"], OWNER_UPN, external=True)
     domain_state(receipt["domain"])
     default_domain = default_domain_state({"value": [receipt["default_domain"]]})
+    recovery = recovery_state(receipt["recovery"], stored=True)
     prepared_at = timestamp_value(receipt["prepared_at"])
     if receipt["status"] == "attested":
         if not isinstance(receipt.get("attested_at"), str) or not isinstance(receipt.get("after"), dict):
             raise Failure("Conversion receipt does not match the reviewed transaction")
         internal_owner_state(receipt["after"], TARGET_UPN, default_domain)
-    return prepared_at, default_domain
+    return prepared_at, default_domain, recovery
 
 
 def timestamp():
@@ -337,10 +431,10 @@ def prepare(expected_sha, directory):
     receipt_path = private_directory(directory) / RECEIPT_NAME
     if receipt_path.exists() or receipt_path.is_symlink():
         raise Failure("Conversion receipt already exists; inspect or attest it instead of preparing again")
-    before, domain, default_domain = prepared_state(graph_state())
+    before, domain, default_domain, recovery = prepared_state(graph_state(recovery_actor_id=""))
     verify_main(expected_sha)
     write_new_receipt(receipt_path, {
-        "schema": 4,
+        "schema": 5,
         "status": "prepared",
         "expected_sha": expected_sha,
         "owner_object_id": OWNER_OBJECT_ID,
@@ -349,6 +443,7 @@ def prepare(expected_sha, directory):
         "before": before,
         "domain": domain,
         "default_domain": default_domain,
+        "recovery": recovery,
     })
     print("Private conversion receipt prepared. In Entra admin center use only Convert to internal user for the existing owner, set the documented target UPN, then run attest. No Graph write was made.")
 
@@ -357,8 +452,11 @@ def attest(expected_sha, directory):
     verify_main(expected_sha)
     receipt_path = private_directory(directory) / RECEIPT_NAME
     receipt = read_receipt(receipt_path)
-    prepared_at, default_domain = receipt_base(receipt, expected_sha)
-    after, domain = attested_state(graph_state(include_actor=True), prepared_at, default_domain)
+    prepared_at, default_domain, recovery = receipt_base(receipt, expected_sha)
+    after, domain = attested_state(
+        graph_state(include_actor=True, recovery_actor_id=recovery["actor"]["id"]),
+        prepared_at, default_domain, recovery,
+    )
     verify_main(expected_sha)
     if receipt["status"] == "prepared":
         receipt.update({"status": "attested", "attested_at": timestamp(), "after": after, "domain": domain})

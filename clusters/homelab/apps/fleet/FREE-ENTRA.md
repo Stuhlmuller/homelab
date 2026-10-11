@@ -283,8 +283,10 @@ profile and leave the Mac baseline enforced.
    This must report the reviewed staged topology. It does not prove an
    interactive SAML login and must not be substituted with a target password
    login.
-3. From clean, signed current `main`, create the private conversion receipt. The
-   directory must already be mode `0700` and outside every Git checkout:
+3. From clean, signed current `main`, sign Azure CLI into the independently
+   tested cloud-only recovery administrator, then create the private conversion
+   receipt. The directory must already be mode `0700` and outside every Git
+   checkout:
 
    ```sh
    nix develop --command python3 -I scripts/entra-owner-conversion.py prepare \
@@ -293,8 +295,11 @@ profile and leave the Mac baseline enforced.
    ```
 
    It makes only Microsoft Graph v1.0 reads. It refuses an unverified domain,
-   occupied target UPN, wrong owner object, unclean checkout, or unsigned/stale
-   `main`.
+   occupied target UPN, wrong owner object, missing authenticated cloud-only
+   tenant-root Global Administrator assignment, unclean checkout, or unsigned/
+   stale `main`. The Azure CLI token needs the documented delegated
+   `RoleManagement.Read.Directory` permission (or `Directory.Read.All`); do not
+   grant a write permission to unblock this read.
 4. After direct authorization, in Entra admin center use only **Convert to
    internal user** for that prepared external owner. Set the UPN to exactly
    `rodman@stuhlmuller.net` and set the new Entra password. Do not alter the
@@ -318,7 +323,8 @@ profile and leave the Mac baseline enforced.
    directory-synced). It also requires a password timestamp strictly after
    preparation and `/me` from the new
    target-account token. `Member` and the historical `creationType: Invitation`
-   alone do not prove local-tenant authentication. Rerun the protected Entra
+   alone do not prove local-tenant authentication. Attestation rereads the same
+   independent recovery account and direct tenant-root assignment. Rerun the protected Entra
    OIDC verification from this `main` to reconcile Terraform data sources; there
    is no user resource to import.
 6. Re-run the staged Fleet topology verifier after attestation:

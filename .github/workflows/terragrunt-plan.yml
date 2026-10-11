@@ -137,9 +137,12 @@ jobs:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |
-          private_log="$(mktemp)"
-          trap 'rm -f "$private_log"' EXIT
-          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          private_dir="$(mktemp -d)"
+          chmod 700 "$private_dir"
+          private_log="$private_dir/plan.log"
+          azuread_report="$private_dir/azuread-report.json"
+          trap 'rm -rf -- "$private_dir"' EXIT
+          if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
           echo "::group::Kubeconfig setup"
@@ -150,8 +153,8 @@ jobs:
           bash scripts/ci/terragrunt-plan.sh
           EOF
           then
-            if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then
-              bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"
+            if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then
+              HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"
             fi
             echo "::error::Live plan failed; detailed output was withheld because this is a public repository. Reproduce it locally."
             exit 1
