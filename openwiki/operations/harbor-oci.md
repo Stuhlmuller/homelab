@@ -26,10 +26,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
+generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:43:46.551Z
+    at: 2026-10-11T00:23:56.319Z
 ---
 
 # Harbor Private OCI Registry
@@ -96,10 +96,12 @@ Offline regression covers these cases without proving a live node rollout.
 
 Flannel does not enforce the declared NetworkPolicy. Traefik's Istio policy
 restricts registry sources to the four declared LAN node addresses and their
-four individual `cni0` bridge `/32`s on port 9443, retaining the unauthenticated
-source restriction. Host-to-Service SNAT can select a bridge source; whole Pod
-CIDRs remain excluded. Authenticated Talos AddressStatuses confirmed bridges
-`10.244.1.1` through `10.244.4.1` on nodes `.199` through `.202`, respectively.
+four individual `cni0` bridge plus four `flannel.1` overlay `/32`s on port 9443,
+retaining the unauthenticated source restriction. Host-to-Service SNAT can select
+a bridge locally or an overlay source across nodes; whole Pod CIDRs remain
+excluded. Authenticated Talos reads confirmed bridges `10.244.1.1` through
+`10.244.4.1` and overlays `10.244.1.0` through `10.244.4.0` on nodes `.199`
+through `.202`, respectively.
 Trusted node-local traffic still has Istio's bypass behavior. The listener's
 path boundary and Harbor's artifact authorization remain required.
 
@@ -110,6 +112,14 @@ rollback subsequently removed that Harbor hosts entry without reboot, verified
 in `/etc/hosts`. No successful private node pull is claimed. Merge and converge
 the source-policy correction before retrying; hold remaining nodes and Harbor
 DNS until every node passes an uncached pull with correlated registry logs.
+
+On October 11, the first `zimaboard-2` host-only attempt timed out because
+cross-node SNAT used overlay source `10.244.4.0`, which the earlier eight-address
+policy omitted. Destination ztunnel logged six denials; Traefik received none.
+The exact overlay addresses are now declared for port 9443 only. This source
+repair is not successful pull acceptance: converge it before retrying and require
+successful manifest/blob requests from the corresponding node, alongside the
+native pull result. See the [dated incident](../../clusters/homelab/apps/traefik/CUTOVER.md#observed-cross-node-registry-rejection).
 
 Separately, `zimaboard-2` rebooted and returned Ready at 21:29:52 UTC after a
 21:13:45 NotReady event. At 21:31–21:32, authenticated Talos reads and all eight

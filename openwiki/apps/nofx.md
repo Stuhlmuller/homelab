@@ -7,7 +7,7 @@ workload_status: active
 updated: 2026-09-29
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:43:46.551Z
+    at: 2026-10-11T00:23:56.319Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md

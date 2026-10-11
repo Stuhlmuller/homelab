@@ -8,6 +8,7 @@ import io
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -47,6 +48,7 @@ class FakeCommands(BASE.FakeCommands):
         self.missing_metadata = False
         self.retired = []
         self.authority_change = None
+        self.node_id = "nTestMac01"
         for environment, _, name in MODULE.BINDINGS.values():
             self.names["variable", environment] = [{"name": name}]
 
@@ -54,7 +56,7 @@ class FakeCommands(BASE.FakeCommands):
         if args[0] == MODULE.TAILSCALE:
             self.calls.append((args, operation, data))
             if args[1:] == ["status", "--json"]:
-                return json.dumps({"BackendState": self.running, "Self": {"Online": self.online},
+                return json.dumps({"BackendState": self.running, "Self": {"Online": self.online, "ID": self.node_id},
                                    "CurrentTailnet": {"MagicDNSSuffix": self.tailnet}})
             if args[1:3] == ["lock", "status"]:
                 return json.dumps({"Enabled": self.enabled, "NodeKeySigned": self.signed,
@@ -74,8 +76,8 @@ class FakeCommands(BASE.FakeCommands):
                     self.authority_change(self.trusted, authority)
                 return wrapped + "\n"
             if args[1:3] == ["lock", "remove"]:
-                self.retired.append(args[3])
-                del self.trusted[args[3]]
+                self.retired.append(args[-1])
+                del self.trusted[args[-1]]
                 return ""
             raise AssertionError("Unexpected Tailscale command")
         if args[:3] == ["gh", "secret", "set"]:
@@ -99,8 +101,11 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         self.cache = Path(self.directory.name) / "private" / "ci-signed-keys.json"
         self.cache_patch = patch.object(MODULE, "CACHE", self.cache)
         self.cache_patch.start()
+        self.sleep_patch = patch.object(MODULE.time, "sleep")
+        self.sleep_patch.start()
 
     def tearDown(self):
+        self.sleep_patch.stop()
         self.cache_patch.stop()
         self.directory.cleanup()
 
@@ -177,6 +182,7 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         for mutation in (remove_added, wrong_metadata, duplicate_match, unrelated_added,
                          unrelated_removed, unrelated_changed):
             with self.subTest(mutation=mutation.__name__):
+                MODULE.pending_path().unlink(missing_ok=True)
                 fake = FakeCommands()
                 fake.authority_change = mutation
                 status, _ = self.run_script(fake, ["--execute"])
@@ -224,6 +230,92 @@ class TailscaleCIConfigureTest(unittest.TestCase):
                 self.assertEqual(MODULE.main(["--execute"]), 1)
             self.assertEqual(fake.writes, [])
             self.assertFalse(self.cache.exists())
+
+    def test_delayed_authority_readback_preserves_receipt_before_polling(self):
+        fake = FakeCommands()
+        command = fake.__call__
+        lag = 0
+        before = {}
+
+        def delayed(args, operation, *, data=None):
+            nonlocal lag, before
+            if args[1:3] == ["lock", "sign"]:
+                before = fake.trusted.copy()
+                value = command(args, operation, data=data)
+                lag = 2
+                return value
+            if args[1:3] == ["lock", "status"] and lag:
+                self.assertTrue(MODULE.pending_path().exists())
+                self.assertEqual(MODULE.pending_path().stat().st_mode & 0o777, 0o600)
+                lag -= 1
+                current, fake.trusted = fake.trusted, before
+                try:
+                    return command(args, operation, data=data)
+                finally:
+                    fake.trusted = current
+            return command(args, operation, data=data)
+
+        with patch.object(MODULE.GUARDS, "command", side_effect=delayed), redirect_stdout(io.StringIO()):
+            self.assertEqual(MODULE.main(["--execute"]), 0)
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
+        self.assertFalse(MODULE.pending_path().exists())
+
+    def test_timeout_retry_reuses_private_pending_signature(self):
+        fake = FakeCommands()
+        command = fake.__call__
+        before = fake.trusted.copy()
+
+        def stalled(args, operation, *, data=None):
+            if args[1:3] == ["lock", "status"]:
+                current, fake.trusted = fake.trusted, before
+                try:
+                    return command(args, operation, data=data)
+                finally:
+                    fake.trusted = current
+            return command(args, operation, data=data)
+
+        with patch.object(MODULE.GUARDS, "command", side_effect=stalled), redirect_stderr(io.StringIO()):
+            self.assertEqual(MODULE.main(["--execute"]), 1)
+        self.assertFalse(self.cache.exists())
+        receipt = MODULE.pending_path().read_bytes()
+        self.assertEqual(fake.writes, [])
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 1)
+        for arguments in ([], ["--retire-previous"]):
+            self.run_script(fake, arguments)
+            self.assertEqual(MODULE.pending_path().read_bytes(), receipt)
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
+        self.assertFalse(MODULE.pending_path().exists())
+
+    def test_retry_finishes_cached_receipt_after_partial_cache_write(self):
+        fake = FakeCommands()
+        save = MODULE.save_cache
+
+        def interrupted(entries):
+            save(entries)
+            raise OSError("interrupted after durable cache write")
+
+        with patch.object(MODULE, "save_cache", side_effect=interrupted):
+            self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+        self.assertTrue(self.cache.exists())
+        self.assertTrue(MODULE.pending_path().exists())
+        with patch.object(MODULE, "save_cache", wraps=save) as resumed:
+            self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+            self.assertEqual(resumed.call_count, 3)
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
+        self.assertFalse(MODULE.pending_path().exists())
+
+    def test_pending_receipt_survives_cache_failure_and_rejects_changed_provider(self):
+        fake = FakeCommands()
+        with patch.object(MODULE, "save_cache", side_effect=OSError("private error")):
+            self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+        self.assertTrue(MODULE.pending_path().exists())
+        fake.outputs = outputs(generation=2)
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 1)
+        fake.outputs = outputs(generation=1)
+        self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+        self.assertEqual(sum(call[1] == "CI key signing" for call in fake.calls), 3)
 
     def test_partial_publication_or_missing_metadata_retains_all_variables(self):
         for variant in ("fail_publication", "missing_metadata"):
@@ -414,6 +506,171 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         fake.outputs = outputs(generation=1)
         fake.outputs["github_auth_keys"]["value"]["plan"]["key"] += "changed"
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+
+    def orphan(self, fake):
+        authority = "tlpub:" + "b" * 64
+        created = int(MODULE.time.time()) - 60
+        key_id = fake.outputs["github_auth_keys"]["value"]["apply"]["id"]
+        fake.trusted[authority] = {"purpose": "pre-auth key", "authkey_stableid": key_id,
+                                   "wrapper_stableid": fake.node_id, "wrapper_createtime": str(created)}
+        return authority, ["--recover-orphan", "apply", "--authority", authority,
+                           "--created-at", str(created)]
+
+    def test_orphan_preview_and_execute_remove_only_exact_key_without_resigning(self):
+        for body in (b"[]", b"null"):
+            with self.subTest(body=body):
+                fake = FakeCommands()
+                authority, arguments = self.orphan(fake)
+                before = fake.trusted.copy()
+                with patch.object(MODULE.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=body)) as query:
+                    self.assertEqual(self.run_script(fake, arguments)[0], 0)
+                    self.assertEqual(fake.trusted, before)
+                    self.assertEqual(fake.retired, [])
+                    self.assertEqual(self.run_script(fake, [*arguments, "--execute"])[0], 0)
+                    self.assertEqual(fake.retired, [authority])
+                    self.assertEqual(fake.trusted, {SIGNER: None})
+                    self.assertEqual(self.run_script(fake, [*arguments, "--execute"])[0], 0)
+                    self.assertEqual(fake.retired, [authority])
+                self.assertEqual(query.call_args.args[0], [MODULE.TAILSCALE, "debug", "localapi", "POST",
+                                                          "/localapi/v0/tka/affected-sigs", "-"])
+                self.assertEqual(query.call_args.kwargs["input"], bytes.fromhex("b" * 64))
+                self.assertIn(([MODULE.TAILSCALE, "lock", "remove", "--re-sign=false", authority],
+                               "exact orphan signing-authority removal", None), fake.calls)
+                self.assertEqual(fake.writes, [])
+                self.assertNotIn("CI key signing", [call[1] for call in fake.calls])
+
+    def test_absent_orphan_preview_and_execute_remain_idempotent_after_publication_or_pending_receipt(self):
+        for variant in ("old", "published_cache", "pending"):
+            with self.subTest(variant=variant):
+                self.cache.unlink(missing_ok=True)
+                MODULE.pending_path().unlink(missing_ok=True)
+                fake = FakeCommands()
+                authority, arguments = self.orphan(fake)
+                del fake.trusted[authority]
+                arguments[-1] = str(int(MODULE.time.time()) - 86401)
+                if variant == "published_cache":
+                    self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+                elif variant == "pending":
+                    with patch.object(MODULE, "save_cache", side_effect=OSError("private")):
+                        self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+                trusted = json.dumps(fake.trusted, sort_keys=True)
+                saved = {path: path.read_bytes() if path.exists() else None
+                         for path in (self.cache, MODULE.pending_path())}
+                fake.calls.clear()
+                fake.writes.clear()
+                with patch.object(MODULE.subprocess, "run") as query:
+                    for argv in (arguments, [*arguments, "--execute"]):
+                        status, output = self.run_script(fake, argv)
+                        self.assertEqual(status, 0, output)
+                    query.assert_not_called()
+                self.assertEqual(json.dumps(fake.trusted, sort_keys=True), trusted)
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(fake.writes, [])
+                self.assertNotIn("CI key signing", [call[1] for call in fake.calls])
+                self.assertEqual({path: path.read_bytes() if path.exists() else None for path in saved}, saved)
+
+    def test_absent_orphan_still_requires_valid_provider_destination_cache_pending_and_main(self):
+        for variant in ("provider", "scope", "cache", "pending", "main"):
+            with self.subTest(variant=variant):
+                self.cache.unlink(missing_ok=True)
+                MODULE.pending_path().unlink(missing_ok=True)
+                fake = FakeCommands()
+                authority, arguments = self.orphan(fake)
+                del fake.trusted[authority]
+                if variant == "provider":
+                    fake.outputs["github_auth_keys"]["value"]["plan"]["expires_at"] = "2000-01-01T00:00:00Z"
+                elif variant == "scope":
+                    fake.names["secret", None] = [{"name": "TAILSCALE_AUTH_KEY"}]
+                elif variant in ("cache", "pending"):
+                    self.cache.parent.mkdir(mode=0o700, exist_ok=True)
+                    MODULE.save_private(self.cache if variant == "cache" else MODULE.pending_path(), {})
+                else:
+                    fake.dirty = "?? untracked\n"
+                with patch.object(MODULE.subprocess, "run") as query:
+                    self.assertEqual(self.run_script(fake, [*arguments, "--execute"])[0], 1)
+                    query.assert_not_called()
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(fake.writes, [])
+
+    def test_orphan_refuses_wrong_identity_signer_time_cache_pending_or_published_secret(self):
+        for variant in ("identity", "signer", "created", "old", "purpose", "duplicate", "cache", "pending", "published"):
+            with self.subTest(variant=variant):
+                self.cache.unlink(missing_ok=True)
+                MODULE.pending_path().unlink(missing_ok=True)
+                fake = FakeCommands()
+                authority, arguments = self.orphan(fake)
+                meta = fake.trusted[authority]
+                if variant == "identity":
+                    meta["authkey_stableid"] = "unrelated"
+                elif variant == "signer":
+                    meta["wrapper_stableid"] = "othernode"
+                elif variant == "created":
+                    meta["wrapper_createtime"] = "1"
+                elif variant == "old":
+                    arguments[-1] = "1"
+                elif variant == "purpose":
+                    meta["purpose"] = "unrelated signer"
+                elif variant == "duplicate":
+                    fake.trusted["tlpub:" + "c" * 64] = meta.copy()
+                elif variant in ("cache", "pending"):
+                    # Use a real private receipt/cache from an offline successful signing fixture.
+                    fresh = FakeCommands()
+                    if variant == "pending":
+                        with patch.object(MODULE, "save_cache", side_effect=OSError("private")):
+                            self.assertEqual(self.run_script(fresh, ["--execute"])[0], 1)
+                    else:
+                        self.assertEqual(self.run_script(fresh, ["--execute"])[0], 0)
+                else:
+                    fake.names["secret", "homelab-production"] = [{"name": "TAILSCALE_AUTH_KEY"}]
+                with patch.object(MODULE.subprocess, "run") as query:
+                    self.assertEqual(self.run_script(fake, [*arguments, "--execute"])[0], 1)
+                    query.assert_not_called()
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(fake.writes, [])
+
+    def test_orphan_affected_signatures_or_failed_lookup_never_remove(self):
+        for code, body in ((0, b'["private-signature"]'), (0, b'{}'), (0, b'false'),
+                           (0, b'malformed-private-output'), (1, b'[]')):
+            with self.subTest(code=code, body=body):
+                fake = FakeCommands()
+                _, arguments = self.orphan(fake)
+                with patch.object(MODULE.subprocess, "run", return_value=SimpleNamespace(returncode=code, stdout=body)):
+                    status, output = self.run_script(fake, [*arguments, "--execute"])
+                self.assertEqual(status, 1)
+                self.assertNotIn(body.decode(), output)
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(fake.writes, [])
+
+    def test_orphan_removal_waits_for_readback_and_rejects_unrelated_trust_change(self):
+        for drift in (False, True):
+            fake = FakeCommands()
+            _, arguments = self.orphan(fake)
+            command = fake.__call__
+            previous = fake.trusted.copy()
+            pending = 0
+
+            def remove(args, operation, *, data=None):
+                nonlocal pending
+                if args[1:3] == ["lock", "remove"]:
+                    value = command(args, operation, data=data)
+                    pending = 1
+                    if drift:
+                        fake.trusted["tlpub:" + "c" * 64] = {}
+                    return value
+                if args[1:3] == ["lock", "status"] and pending:
+                    pending -= 1
+                    current, fake.trusted = fake.trusted, previous
+                    try:
+                        return command(args, operation, data=data)
+                    finally:
+                        fake.trusted = current
+                return command(args, operation, data=data)
+
+            with patch.object(MODULE.GUARDS, "command", side_effect=remove), \
+                    patch.object(MODULE.subprocess, "run", return_value=SimpleNamespace(returncode=0, stdout=b"[]")), \
+                    redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                self.assertEqual(MODULE.main([*arguments, "--execute"]), 1 if drift else 0)
+            self.assertEqual(fake.writes, [])
 
     def test_subprocess_boundary_withholds_secret_errors(self):
         failure = OSError("-".join(("tskey", "auth", "redacted")))

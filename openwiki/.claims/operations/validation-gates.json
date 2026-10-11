@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:11a8189e89a4fdc065e688650b4f93550f8bc32fb0630894a49de75a12a0b570",
+  "pageVersion": "sha256:7ad8c78c7fcfce2511cd48ab0014c39dd68ba52264c4435c705363b1776277c0",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -50,7 +50,7 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge/overlay /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/static-checks.sh#L1-L18",
@@ -58,7 +58,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:e8c4f279160c32d83b429ad875931074bd399bfa1f6cbcac345cbcd9214c7ab1"
+          "version": "repo-file-v1:sha256:4e4c30b506be8055e5e5a3af2b8e89df693378d8c8ed3c7579728569efb8c41c"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -86,7 +86,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
@@ -165,8 +165,12 @@
           "version": "repo-lines-v1:sha256:4f5eb481f028f3d9260d56dcaab6ef013c91906bba3e5c3f36d313f98f8a268c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkOTVmYzA0YTgwYzk1MmY0OWNlNDE4ODYyN2M1M2IwZmJlOGM0NDA0MWI5NTJkNTkyYWNkMWRlOTk4NjE0NjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMwNjI3OWU4YzQ4YTFiMGVjNzhkYWY4NWYyMzBkOGM1ZDNiYTNhZTYwMDU5M2EwNzc2ZjVkNTJjMjFhNDM3ZjEifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L346-L418",
-          "version": "repo-lines-v1:sha256:c7b9f848043465aa8548f1b1914a2e976a41c076e90381c769eb0210a98dea9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxMzk5NTA1YmZlNmU3NmM0M2MyMjgxNzk5ZjAzODg4MGQzODUyNWJjOGQ5MDhmNWY4YTI1YjMwNDRlY2Q3ZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBiMTFiY2U5MDBkOTA3ZGNmYWQxZjc4ZDM0M2M3NDM3ZmQ1NjUxODNhMzJmMzMwYzg2YTRjNmY3NjdkNmIzM2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRkMzZmOTA5MzkwZjJlNGNiMjk5OWVhNTllOGE2M2MxODk5MWM5MzYyMDI2NGMzY2E1ZWQ3YWM0NWQyNTgzOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNjYzA3MjQyYzhjMzM2MThjYmRkYWRiNmVjNjgzN2JiNTFiMDZjZGI1NDkwMzRiYTZlNTUyYzA0Y2ZmZGY2YTYifQ"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L123-L233",
+          "version": "repo-lines-v1:sha256:3504e4fee89fd73c98828a05a8993ef1ea1e0d5dad15556deba614ec13575897:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NjE4ZjAwNDNlZmQwNjg1ZWVkMmQ4NGM1NDFhYWFhN2Q1YWE4MzhhMjBjOWU3ODU2OWU5NjlkMmVlMWNiYzkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NmI0NTEyYzFmMDY3ZTBiYjAxZDBjYmExMmQxZTBmZTE3ZWVlMDQwYjAwMmFmOGFiYzk1YmEyNGYzNWUwMTFlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNjI3MTUzNWY4Y2RkOTEyOGRjYzQ2ZjQ3NjZlY2MwNzY1YTQ0YTY2ZjlkMWJjY2I0MzI5MmZiNjZkNjdjYTU4In0"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L423-L516",
+          "version": "repo-lines-v1:sha256:b51b1e052886f853e991a601479a9dfb535969e612b420ef90ba9961e3c33052:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ODU4YTAwMDc5N2MwMmNkYTdkYjBjNTFkMmZiZGY2ZjdhYzBkMjgwNmNjZmE5M2IxMjQyZTg0NDQ4YmQzMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NjE0ZmIxMTE4OWI5ZjIzZWE4MTU1YTE2ZjhjZmFhNTE4NWY3NDM2MmZlNmJiYmE4Y2NhMmJhNjE3ZmE5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhODI2OGE5NTFiMjhhYzdlM2NmYmIyYjQzMTY3OTIzZjFhMjJjOTk5OTVmMjJjZjRiZTZiNmY4ZTM5NjNiZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOGQxMjcxMzI2MTllNzU5Y2JmNzkxYTQwMjMyOGM0MDFhMjIzOTRhMGJkNzIyZmYyMGQyZGRiOTU2MzBhMDkifQ"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -229,7 +233,7 @@
       "statement": "CI signing regression requires three raw keys passed through stdin and excludes raw key values from argv and printed output.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L107-L154",
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L112-L159",
           "version": "repo-lines-v1:sha256:5d58625ad5a9c2bf1cece2d24349e32ee3ca2a8df30a90c798bbefcc8723427a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkZTFmNWZiMzdkZmNiODE2NTU3ZjRmOWY0NmYxNDAxYTU0NzdlNjViOWY1OWY0ODBkN2NmNzkxYjM5MDIyN2EiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyNzM1NWVjOTcwNzllZWI0NTA4MTZmOGQyOGNiYWZiYzY1OTE4MjlkNWY2MmMyYTIwYzlkNDBmY2EyZWExNGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ZDM1MjQwMzA4NWFiZTM0MDVhYmJkMWFlZDYzZDY1YzQ0NjM4ZTMwMWZhMzE4ZjU1ZGNiOGE1NzQ3MWYzZWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTEyMjgxZDkwZjI3NzZlZjhhYmUzYWE3ZGNmMjU4YjI2ZmY4Mjc0ZTU0MTdlY2QyYjllODBlZGJmY2I0NWIifQ"
         }
       ]
@@ -239,14 +243,28 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L163-L198",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fdeb51ecab3c4f76a52516291a2c544e",
+      "statement": "Publisher regressions cover delayed and timed-out authority readback, durable pending receipt and cache replay, preview and retirement refusal with pending work, and exact orphan recovery that rejects nonempty or failed affected-signature lookup and unrelated trust drift.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L234-L318",
+          "version": "repo-lines-v1:sha256:2d4b1d14269f6e596147700cfefd3c4035bdcf1f08f20d2fdd256e57c34901b9:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NWZmNzQ4ZDkzZTIyMjRmNmRjYTExMDU0Njg3MzY3Y2IxZmI0OTM2ODIyMmRiODE1NjJhOGQ0OTBlOTllMWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5NTMzZTYxNDVlMzJmOGYwZDIyZTMxNzA4ODRiODQwNzIyYjk0ODY1MWE1OGRjYzliMzdmZGIwMWI2MmMzYTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxZTk1ZDA2MzBhMzY0ZDczMTkzYmI0ZWI5OWNmZmFjZTZiMTkyMjU3Y2Q0MGE4NTJlZWRlM2NkMjgzZjc0NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkNDVjNzZhNTE2MGIwOWYzMzdmMzIxMzIyY2VmMjgwMDIyNmVjZTc3MzU3YjBlOTBiZmIzNTRlNTJhYTk5NGQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L519-L620",
+          "version": "repo-lines-v1:sha256:35c9b50bc16bfb4c17030ac944877b42721d03a5f1fcdb6fbe17c9d7b95237f3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNzNhZWFiMzY1NDlhZGJmZTcxYTlhYzAxZDlhNDk2MDExNWY2MWQxYzYzYjdjOTRlMjdlMWYxNTAzNDJiODkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkNjRhZTc0ODJlMmJmOWQ0OTA5MjMxNWNlYWI1MmY3YjJiMmNmYzk0ZDNiMjc5Mzc5MDA5YjMyNGVjOGE1NTFkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmRlNjU2ZGZkNjQ4MTg2MTFlMWVjOTc5ZTAwMDk4NTZkNjgzMGQwOGIxNzQ1YWFmODAwZWVkZGYxN2JhYjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzNmZmRkYmViMjI5MzhjNTgwMzc0MDIxNWVhMjM5ZjRiMGVmMGEyNDQ4N2YwNjM3NGYwYWMxYzRhYWE2NWY4In0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:50:03.392Z"
+    "at": "2026-10-11T00:23:56.319Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7d20d269c210699aa3ab388f4dfcb7b380aed570a1621baf8d62a37da8e6f0e5",
+  "pageVersion": "sha256:7252c3f295a2cb9781b1485b94ab79d1809e7cf1918ff79b341182ae796768f7",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -36,19 +36,19 @@
     },
     {
       "id": "claim_8d503c93f9684f708a42cd045c5bdf97",
-      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, rotation and previous-authority retirement.",
+      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, interrupted-signature recovery, rotation and previous-authority retirement.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:b422512b97466de3245c222f8f5e17c9cb251a22ef033a677c33e5e4f0f5e467"
+          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:63b9a9c07560f14a1b0120bbf36acab0aa3e2ba439995e651565fe7bf0ed5377"
+          "version": "repo-file-v1:sha256:92cb75fff6e935086427aafcf1c884356e459fa868a10ec58588e5379e808230"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -59,6 +59,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:30:33.938Z"
+    "at": "2026-10-11T00:23:56.319Z"
   }
 }

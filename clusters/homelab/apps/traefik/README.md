@@ -30,10 +30,12 @@ nodes; TLS still validates that hostname. Its router permits only `/v2`,
 Harbor dashboards, management APIs, and every other application host are excluded.
 The ambient AuthorizationPolicy restricts the registry listener to the declared
 node source addresses; local-node traffic also follows Istio's trusted probe
-bypass. Talos host-to-ClusterIP routing can SNAT the source to its `cni0` bridge.
-The registry policies therefore allow only the four LAN node addresses and their
-verified bridge addresses `10.244.1.1` through `10.244.4.1`, each as a `/32`, on
-port 9443. They do not allow whole Pod CIDRs or change private/Funnel permissions.
+bypass. Talos host-to-ClusterIP routing can SNAT the source to its `cni0` bridge
+for a local endpoint or its `flannel.1` interface for a remote endpoint. The
+registry policies allow the four LAN node addresses, verified bridge addresses
+`10.244.1.1` through `10.244.4.1`, and verified overlay addresses `10.244.1.0`
+through `10.244.4.0`, each as a `/32`, on port 9443. They do not allow whole
+Pod CIDRs or change private/Funnel permissions.
 If node placement or Pod CIDRs change, recheck authenticated Talos address/route
 resources before revising this fixed inventory. Validate containerd pulls from
 each node before changing DNS.

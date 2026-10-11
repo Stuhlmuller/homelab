@@ -56,10 +56,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:50:03.392Z
+    at: 2026-10-11T00:23:56.319Z
 ---
 
 # Tailnet And App Ingress
@@ -117,10 +117,11 @@ separate from the direct application proxy routes.
 Talos uses a dedicated `10.96.0.50:443` registry Service and host-only DNS patch;
 see [Harbor](../operations/harbor-oci.md). It exposes OCI/token paths only, not
 Harbor management or unrelated application hosts. Registry port 9443 permits
-only the four fixed LAN node addresses and their verified `cni0` bridge `/32`s
-(`10.244.1.1` through `10.244.4.1`), with no authenticated mesh principal.
-Talos host-to-Service SNAT can select a bridge source; ordinary Pod CIDRs are
-not allowed. Converge these policies before the worker-first host-only mapping,
+only the four fixed LAN node addresses, four verified `cni0` bridge `/32`s
+(`10.244.1.1` through `10.244.4.1`) and four `flannel.1` overlay `/32`s
+(`10.244.1.0` through `10.244.4.0`), with no authenticated mesh principal.
+Talos host-to-Service SNAT selects a bridge locally or overlay across nodes;
+ordinary Pod CIDRs are not allowed. Converge these policies before the worker-first host-only mapping,
 then require an uncached successful pull from every node before Harbor DNS
 changes. See the [dated failed-pull and node-readiness findings](../operations/harbor-oci.md#private-node-registry-foundation).
 
@@ -147,7 +148,17 @@ CI uses three provider-managed reusable ephemeral keys, signed on the trusted
 Mac and published by `tailscale-ci-configure.py`. Run its read-only preview and
 then `--execute`; it accepts no arbitrary key or GitHub target. Preserve its
 private signature cache, which stores each wrapper and its separately verified
-public credential authority identity. The embedded private key delegates node
+public credential authority identity. Before any post-sign readback, it durably
+saves the validated wrapper in a private pending receipt. Bounded polling handles
+local trust-status lag; timeout retains the receipt and retry verifies it before
+any new signing. Preview and retirement never consume a pending receipt. If an
+older attempt lost its wrapper, use the separate
+[interrupted-signing recovery](../../IaC/modules/tailscale-access/README.md#interrupted-signing-recovery)
+command: exact provider/Mac/time metadata, absent receipts and fixed secrets, and
+an empty read-only affected-signature query must precede removal of that one
+authority without re-signing. Pause other signing/join activity during recovery;
+normal signing/publication is a separate operation afterward.
+The embedded private key delegates node
 signing; it is not the authority's private voting key. Rotate the committed
 generation every 60 days, before 90-day expiry, and verify protected plan/apply/Cordium acceptance. Then use
 `--retire-previous` to preview and `--retire-previous --execute` to remove only

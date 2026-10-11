@@ -28,10 +28,10 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-10T23:50:03.392Z" }
+generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:50:03.392Z
+    at: 2026-10-11T00:23:56.319Z
 ---
 
 # Secrets And Identity
@@ -87,7 +87,11 @@ sandbox refusing access to the private config directory.
 Wrapped keys contain a delegated private node-signing key, separate from the
 trusted credential authority's private voting key. The publisher requires exactly
 one new authority with matching auth-key metadata after signing, with every prior
-trust mapping unchanged. Its private `0600` cache records that separate public
+trust mapping unchanged. Before post-sign readback, it durably saves a private
+pending receipt containing the validated wrapper. Bounded polling tolerates local
+status lag; a timeout retains the receipt so retry verifies the same signature
+before signing another key. File and directory fsync precede receipt retirement.
+Its private `0600` cache records that separate public
 authority identity with the wrapper; reuse and retirement require a unique
 metadata match. Delegated node-signing capability exceeds normal tag enrollment
 permissions. Auth-key expiry or revocation does not remove that authority;
@@ -98,6 +102,13 @@ previous authority metadata before any removal. Execution rechecks each target;
 an already-absent previous authority remains safe to retry. Preview never signs,
 publishes or changes cache contents. Keep an encrypted private cache backup and use the
 [module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
+recovery. If an older publisher lost the wrapper before saving a receipt, the
+separate orphan-recovery mode requires the exact current provider identity,
+unique authority, this Mac's signer metadata and a timestamp within one day.
+It refuses any pending receipt, matching cache entry or published fixed CI secret,
+and requires the official read-only affected-signature query to return empty.
+Only that authority can be removed, without re-signing; recovery never signs or
+publishes. The query is a snapshot, so pause other signing/join activity through
 recovery. The operator OAuth SSM contract remains separate and unchanged.
 
 The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
