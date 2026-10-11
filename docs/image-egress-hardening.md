@@ -93,6 +93,44 @@ controller/webhook calls, storage mounts and the human/CI recovery route.
 Roll back through the owning GitOps application and reviewed Talos config;
 never repair a deny rule with manual cluster mutation.
 
+## Offline NRI prerequisite
+
+The candidate policy enforcer needs containerd's Node Resource Interface (NRI).
+The committed `.talos/patches/network-policy-nri.yaml` declares its CRI fragment;
+it is inactive. Talos strategic merge appends `machine.files`, so blindly applying
+enable and rollback patches can leave duplicate declarations for one path.
+The offline preparer replaces only the owned fragment, preserves every other
+configuration document and refuses duplicate existing NRI entries.
+
+Keep the authenticated node configuration and generated candidate outside git:
+
+```sh
+nix develop --command python3 -I scripts/talos-nri-config.py \
+  --input /private/path/worker-current.yaml \
+  --output /private/path/worker-nri-candidate.yaml
+```
+
+The output must be a new file outside this checkout. It is written with mode
+`0600` only after `talosctl validate --mode metal --strict` succeeds. The helper
+never contacts a node. Use a CLI matching the installed Talos release via
+`--talosctl /path/to/talosctl` when needed. Existing owned entries use
+`overwrite`, including re-enable after rollback; unrelated files stay intact.
+
+Prepare rollback from the enabled configuration with `--rollback` and a new
+private output path. Withdraw the policy enforcer before disabling NRI.
+`scripts/ci/talos-nri-config-check.py` checks generated worker/control-plane
+configs, enable/rollback/re-enable, preserved fields and private output guards.
+These checks passed with Talos 1.11.3 and 1.13.2.
+
+This change provides preparation only. Before activation, add the repository
+operator path for a drained worker canary and controlled CRI restart, review all
+existing NetworkPolicies, and prove NRI registration, recovery and allowed/denied
+traffic. No NRI setting, DaemonSet or live NetworkPolicy enforcement is activated
+by this prerequisite.
+
+Sources: [Talos NRI CRI fragment](https://github.com/siderolabs/talos/discussions/10068)
+and [Talos patch semantics](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/system-configuration/patching).
+
 Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practices/security/),
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
