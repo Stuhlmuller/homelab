@@ -1,4 +1,4 @@
-# checkov:skip=CKV_DOCKER_2: Kubernetes HTTP startup/readiness/liveness probes own runtime health; shell-free nginx is tested over HTTP before publication.
+# checkov:skip=CKV_DOCKER_2: Kubernetes HTTP readiness/liveness probes own runtime health; shell-free nginx is tested over HTTP before publication.
 FROM cgr.dev/chainguard/node:latest-dev@sha256:f0944f14c490643d52a065095087ac62094ee5ef50c08b5892bc1a9c6a5c14e1 AS dependencies
 USER 0
 WORKDIR /src
