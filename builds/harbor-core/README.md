@@ -36,6 +36,14 @@ uses actual key material and rejects an attacker key with a forged trusted key
 ID. Record these specific advisory assessments alongside unfiltered reports;
 they do not clear other Harbor components or the final container.
 
+After the Linux image/registry fixture, CI saves the exact built container and
+runs lock-pinned Grype 0.112.0 with a fresh advisory database. The audit checks
+the image/config hash, Linux amd64 platform, Photon 5.0 identification, report
+freshness and absence of exclusions/VEX/filtering. Available fixes fail the
+audit. Unfixed/unknown matches remain counted and are not CVE clearance or
+publication approval. Raw image metadata and transport output stay private;
+temporary scan inputs are removed on exit.
+
 Run `bash builds/harbor-core/build.sh` on a Linux Docker host. Its native build
 first requires the unpatched manager to fail the repeated-child regression,
 then requires the repaired manager suite and complete core compilation to pass

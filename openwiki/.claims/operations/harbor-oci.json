@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:19ecf7290eb538a108089860ebd82a88425f49c8e4d7745ed567efe4dc6c9fe1",
+  "pageVersion": "sha256:c5fe069ad0f2617f6d014fa2c7e9cee38bffcfb91988ed0f42eb61a741bffe4d",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -132,7 +132,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:b9f0ee1ef40141e383b45921a82b47fcb2317967dd1c8ebd1a54667f3da45676"
+          "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -164,11 +164,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:3003f856e2fa3d59458d0a6afe9dc8ba784bec580cc85a6c9d7df835a29f490f"
+          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:b9f0ee1ef40141e383b45921a82b47fcb2317967dd1c8ebd1a54667f3da45676"
+          "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
         }
       ]
     },
@@ -220,7 +220,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:b9f0ee1ef40141e383b45921a82b47fcb2317967dd1c8ebd1a54667f3da45676"
+          "version": "repo-file-v1:sha256:8a92966f27efbb07e38cb0065f765c29538de7e35f90c18e53b7184942c289f9"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -259,10 +259,28 @@
           "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
         }
       ]
+    },
+    {
+      "id": "claim_9c197834750641688d586789d82b2ec4",
+      "statement": "After the Linux registry fixture, the candidate CI scans the complete Docker-saved runtime archive with lock-pinned Grype 0.112.0. The report checker validates exact image/config identity, Linux amd64/Photon 5.0, fresh valid database/report and no exclusions/filtering/VEX, refusing available fixes while retaining unresolved counts. A sanitized identity/hash/database/severity receipt is emitted; raw metadata stays private, temporary inputs are cleaned, and collection success does not grant CVE clearance or publication.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
+        },
+        {
+          "resource": "repo://builds/harbor-core/scan.sh",
+          "version": "repo-file-v1:sha256:69eba1cabe6edcd9b49521f91c85acf22a82b36e1dfc1fc5cebb3f454d1907b2"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check.py",
+          "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T19:32:29.266Z"
+    "at": "2026-10-11T19:43:31.163Z"
   }
 }

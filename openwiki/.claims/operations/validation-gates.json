@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:23d11eea315e8b29127605e653071e9f1ebc329c071de256b993240cf39cf284",
+  "pageVersion": "sha256:cfd814d6974b59b115363a850f3edad366e4fac4c65f98b68d9c2f800ec21f6b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:3003f856e2fa3d59458d0a6afe9dc8ba784bec580cc85a6c9d7df835a29f490f"
+          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0c8515cd67e0876287db0717d35d39e66594bec8d779bb086d7c36344e760346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         }
       ]
     },
@@ -355,10 +355,32 @@
           "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
         }
       ]
+    },
+    {
+      "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
+      "statement": "The exact-container audit's offline regressions refuse wrong image/config/platform/distro identity, stale or invalid databases, finding filters/exclusions and available fixes; unresolved findings remain unchanged. The privacy regression requires sanitized output without raw metadata and explicit false CVE clearance. The credential-free Linux workflow runs the full Docker-archive audit after registry acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
+          "version": "repo-file-v1:sha256:b6ce625b0640378fba7908d9255f74c3088aa871cae9379bf256bbbd7b0d73fd"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check.py",
+          "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T19:32:29.266Z"
+    "at": "2026-10-11T19:43:31.163Z"
   }
 }

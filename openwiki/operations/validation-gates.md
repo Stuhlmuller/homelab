@@ -40,6 +40,10 @@ sources:
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
+    resource: repo://scripts/ci/harbor-core-scan-check-test.py
+  - id: openwiki-source-6bf00c52458ec78a0c3b6077
+    resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -84,10 +88,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T19:32:29.266Z" }
+generated: { by: "codex", at: "2026-10-11T19:43:31.163Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T19:32:29.266Z
+    at: 2026-10-11T19:43:31.163Z
 ---
 
 # Validation Gates
@@ -1451,6 +1455,12 @@ using its key ID. A compiled-package graph guard fails if core introduces
 OpenPGP or Distribution proxy/storage/handler server packages. These are
 specific prerequisite checks; unfiltered module-level findings remain in the
 audit receipts and final-container/component scans are still required.
+The Linux job now scans the exact Docker-saved candidate with a lock-pinned
+scanner after registry acceptance. Offline regressions refuse wrong image/config
+identity, platform/distro, stale or invalid databases, filters/exclusions and
+available fixes, while retaining unresolved findings unchanged. A privacy case
+requires sanitized receipts to omit raw image metadata and explicitly deny CVE
+clearance. Full-runtime audit execution still needs fresh Linux CI evidence.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
 with exactly one database relation. Offline fixtures also validate the OCI

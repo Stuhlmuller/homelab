@@ -26,6 +26,8 @@ sources:
     resource: repo://builds/harbor-core/README.md
   - id: openwiki-source-4809fcf6b821691d424ca089
     resource: repo://builds/harbor-core/registry-test.py
+  - id: openwiki-source-edb4db7f4400ce88789df37e
+    resource: repo://builds/harbor-core/scan.sh
   - id: openwiki-source-8747f81e985430015cf21baf
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
@@ -48,6 +50,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-6bf00c52458ec78a0c3b6077
+    resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
@@ -56,10 +60,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T19:32:29.266Z" }
+generated: { by: "codex", at: "2026-10-11T19:43:31.163Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T19:32:29.266Z
+    at: 2026-10-11T19:43:31.163Z
 ---
 
 # Harbor Private OCI Registry
@@ -398,6 +402,16 @@ The build now guards the package exclusions and reruns that trust test.
 All five raw Grype matches remain recorded. These assessments cover this core
 binary only: registry daemon/configuration, the final container, changed future
 dependencies and deployed workloads still need independent verification.
+
+The [full-runtime audit](../../builds/harbor-core/scan.sh) now saves the exact
+Linux candidate from Docker after registry acceptance and scans the complete
+archive with lock-pinned Grype. Its [report checker](../../scripts/ci/harbor-core-scan-check.py)
+verifies the config hash against the inspected image ID, platform/distro,
+fresh report/database and absence of filtering, exclusions or VEX input.
+Available fixes fail this audit. Unfixed/unknown matches remain counted;
+successful collection does not mean CVE clearance or authorize publication.
+CI emits only an identity/report-hash/database/severity-count receipt while
+raw metadata and transport logs stay private and temporary inputs are removed.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
