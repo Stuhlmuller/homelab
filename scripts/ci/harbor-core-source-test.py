@@ -39,6 +39,14 @@ class RegistryFixtureTests(unittest.TestCase):
                 self.fixture.request("PUT", "https://registry.invalid/upload", b"fixture")
         network.assert_not_called()
 
+    def test_valid_hostname_keeps_external_endpoint_on_loopback(self):
+        template = ("hostname: reg.mydomain.com\nhttp:\n  port: 80\nhttps:\n  port: 443\n"
+                    "harbor_admin_password: Harbor12345\ndata_volume: /data\nlog:\n    location: /var/log/harbor\n")
+        config = self.fixture.fixture_config(template, Path("/owned-fixture"), "fixture-password")
+        self.assertIn("hostname: harbor-fixture.invalid\nexternal_url: http://127.0.0.1:18085\n", config)
+        self.assertNotIn("https:\n", config)
+        self.assertIn("data_volume: /owned-fixture/data\n", config)
+
 
 class SourceTests(unittest.TestCase):
     def setUp(self):

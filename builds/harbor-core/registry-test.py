@@ -75,6 +75,19 @@ def fixture_payloads():
     return config, layer, child, index
 
 
+def fixture_config(template, work, password):
+    config, count = re.subn(r"^https:\n(?:[ \t].*\n|\n)*", "", template, flags=re.MULTILINE)
+    assert count == 1
+    for old, new in (("hostname: reg.mydomain.com", "hostname: harbor-fixture.invalid\nexternal_url: " + BASE),
+                     ("  port: 80", "  port: 18085"),
+                     ("harbor_admin_password: Harbor12345", "harbor_admin_password: " + password),
+                     ("data_volume: /data", "data_volume: " + str(work / "data")),
+                     ("    location: /var/log/harbor", "    location: " + str(work / "logs"))):
+        assert config.count(old) == 1, old
+        config = config.replace(old, new)
+    return config
+
+
 def acceptance(compose, password):
     for _ in range(120):
         try:
@@ -124,16 +137,7 @@ def main():
         for directory in ("input", "common/config", "data", "logs"):
             (work / directory).mkdir(parents=True, exist_ok=True)
         password = secrets.token_urlsafe(24)
-        config = source.read_text()
-        config, count = re.subn(r"^https:\n(?:[ \t].*\n|\n)*", "", config, flags=re.MULTILINE)
-        assert count == 1
-        for old, new in (("hostname: reg.mydomain.com", "hostname: 127.0.0.1"),
-                         ("  port: 80", "  port: 18085"),
-                         ("harbor_admin_password: Harbor12345", "harbor_admin_password: " + password),
-                         ("data_volume: /data", "data_volume: " + str(work / "data")),
-                         ("    location: /var/log/harbor", "    location: " + str(work / "logs"))):
-            assert config.count(old) == 1, old
-            config = config.replace(old, new)
+        config = fixture_config(source.read_text(), work, password)
         (work / "input/harbor.yml").write_text(config)
         command("docker", "run", "--rm", "--network=none",
                 "--mount", f"type=bind,src={work / 'input'},dst=/input,readonly",
