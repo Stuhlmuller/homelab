@@ -13,3 +13,5 @@ docker build --label "org.opencontainers.image.revision=${source_sha}" \
   --file "${build_context}/Dockerfile.frontend" --tag homelab-nofx-frontend:build "${build_context}"
 python3 -I "${recipe_dir}/frontend-check.py"
 python3 -I "${recipe_dir}/backend-check.py"
+python3 -I "${recipe_dir}/binary-vulnerability-check-test.py"
+python3 -I "${recipe_dir}/binary-vulnerability-check.py"

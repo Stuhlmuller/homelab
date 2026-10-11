@@ -119,6 +119,16 @@ package scans guide this change; raw reports stay outside git. Integrity,
 native regressions, the resulting binary and embedded C components still need
 separate verification before publication or a CVE-remediation claim.
 
+`build.sh` also runs pinned govulncheck binary analysis through the reviewed Go
+toolchain. The compiler records the exact tagged main import graph inside the
+same built image. The gate rejects affected compiled packages, incomplete
+scanner/advisory evidence, or module findings whose affected imports cannot be
+classified. A module-only advisory is accepted only when its reported package
+set is disjoint from that exact import inventory. Reports are private temporary
+files, never public workflow output or uploaded artifacts. Scanner failure
+fails the build. This Go gate does not cover embedded libc or other C code;
+those components still require component-aware artifact assessment.
+
 ## OKX US cash-spot competition
 
 Patch `0012` replaces this installation's OKX runtime construction with the
