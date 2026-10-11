@@ -140,7 +140,7 @@ def preflight():
 
 
 def attempt_command(policy, attempt_id):
-    script = "set -eu\n" + GROUP_SCRIPT + """
+    script = "set -eu\n" + GROUP_SCRIPT + r"""
 # Stay alive through TERM so the deadline can KILL the complete group.
 trap '' TERM INT
 pid=$PPID
@@ -162,8 +162,10 @@ printf '%s\n' "$pid" > /workspace/offline-check.lock/owner
 trap cleanup EXIT
 for proc in /proc/[0-9]*; do
     [ "${proc##*/}" = "$PPID" ] && continue
-    case "$(cat "$proc/comm" 2>/dev/null || true)" in
-        nix|timeout) echo 'Builder already has an active check process' >&2; exit 1 ;;
+    [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
+    marker=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' '\n' | tail -n 1)
+    case "$marker" in
+        homelab-offline-attempt:*) echo 'Builder already has an active check attempt' >&2; exit 1 ;;
     esac
 done
 test "$(nix eval --impure --raw --expr builtins.currentSystem)" = x86_64-linux

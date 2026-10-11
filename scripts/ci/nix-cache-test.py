@@ -124,6 +124,21 @@ class CacheLayoutTests(unittest.TestCase):
                 self.assertEqual("SIGNAL:-KILL -1234" in result.stdout, state == "S")
                 self.assertEqual(lock.exists(), state == "S")
 
+    def test_idle_scan_allows_readiness_probe_and_rejects_supervised_attempt(self):
+        command = builder.attempt_command({"url": "fixture", "publicKey": "fixture"}, ATTEMPT_ID)
+        script = command[5]
+        script = script[script.index("for proc in /proc/"):script.index('test "$(nix eval')]
+        for comm, args, expected in (("nix", ["nix", "store", "info"], 0),
+                                     ("timeout", ["timeout", "unrelated"], 0),
+                                     ("timeout", command, 1)):
+            with self.subTest(comm=comm, args=args), tempfile.TemporaryDirectory() as temporary:
+                proc = Path(temporary) / "1234"
+                proc.mkdir()
+                (proc / "comm").write_text(comm + "\n")
+                (proc / "cmdline").write_bytes(b"\0".join(arg.encode() for arg in args) + b"\0")
+                result = subprocess.run(["sh", "-ec", script.replace("/proc/", temporary + "/")], capture_output=True, text=True)
+                self.assertEqual(result.returncode, expected)
+
     def test_disconnect_cancels_original_pod(self):
         policy = {"url": "https://example.test", "publicKey": "fixture:key"}
         with patch.object(builder.subprocess, "run"), patch.object(builder.subprocess, "check_output", side_effect=[
