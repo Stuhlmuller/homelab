@@ -4,6 +4,7 @@ WORKDIR /src/upstream/src
 COPY upstream/ /src/upstream/
 COPY homelab-build/original-manager.go /src/original-manager.go
 COPY homelab-build/csrf-compat_test.go ./homelabcompat/csrf_test.go
+COPY homelab-build/token-trust_test.go ./homelabcompat/token-trust_test.go
 RUN go mod download && go mod verify
 RUN go run github.com/go-swagger/go-swagger/cmd/swagger@v0.33.1 generate server \
     --template-dir=../tools/swagger/templates --exclude-main \
@@ -16,6 +17,8 @@ RUN --network=none cp pkg/artifact/manager.go /src/patched-manager.go \
     && cp /src/patched-manager.go pkg/artifact/manager.go \
     && go test ./pkg/artifact -run TestManager -count=1 \
     && go test ./server/middleware/csrf ./homelabcompat -count=1 \
+    && go list -deps ./core >/tmp/core-packages \
+    && if grep -E '^(golang.org/x/crypto/openpgp($|/)|github.com/(docker|distribution)/distribution(/v3)?/registry/(proxy|handlers|storage)($|/))' /tmp/core-packages; then exit 1; fi \
     && CGO_ENABLED=0 go build -buildvcs=false -trimpath \
        -ldflags '-X github.com/goharbor/harbor/src/pkg/version.ReleaseVersion=v2.15.4 -X github.com/goharbor/harbor/src/pkg/version.GitCommit=0a6bf30d54e779962ad5b862fc67e3e9f6b010d8' \
        -o /out/harbor_core ./core

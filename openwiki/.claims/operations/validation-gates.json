@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0448e66001c660d84b885ecdd60cbbef3d8bb1a1a3bc170d99d7ef4a9109835f",
+  "pageVersion": "sha256:23d11eea315e8b29127605e653071e9f1ebc329c071de256b993240cf39cf284",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -334,13 +334,31 @@
         },
         {
           "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
-          "version": "repo-file-v1:sha256:7363e957cac7bd7f0974f4c0aeb2e6b07d679a79f5c8efad7a866695d3eadd72"
+          "version": "repo-file-v1:sha256:86f29601ee35c67ffa703e9116f88536ade766587395352084ddc582fea313a7"
+        }
+      ]
+    },
+    {
+      "id": "claim_7d87e06f64514a448f26a86d56d7b5f3",
+      "statement": "The candidate build adds a native JWK trust attack regression and a compiled-package graph guard against OpenPGP and Distribution proxy/storage/handler server packages. These specific advisory-prerequisite checks retain unfiltered module-level findings and do not replace final-container/component scans.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/token-trust_test.go",
+          "version": "repo-file-v1:sha256:c21ba56c5141c90a2ad57fc7f3f411238d3d9b4c98cf2a1cbbee23a987355fd7"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T19:03:26.465Z"
+    "at": "2026-10-11T19:32:29.266Z"
   }
 }

@@ -16,6 +16,8 @@ sources:
     resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
   - id: openwiki-source-4809fcf6b821691d424ca089
     resource: repo://builds/harbor-core/registry-test.py
+  - id: openwiki-source-db4fcfb731a7d9f94926969c
+    resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -28,6 +30,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-2d23b8001d89196fa1eba48a
+    resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -80,10 +84,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T19:03:26.465Z" }
+generated: { by: "codex", at: "2026-10-11T19:32:29.266Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T19:03:26.465Z
+    at: 2026-10-11T19:32:29.266Z
 ---
 
 # Validation Gates
@@ -1442,6 +1446,11 @@ compatibility cases against the replacement library. They require valid same-ori
 requests and legacy response headers, reject cross-site/same-site browser requests,
 and retain the non-session API exemption. The middleware unit tests use in-memory
 configuration; their unused PostgreSQL bootstrap is removed.
+The native suite also accepts a trusted JWK and rejects attacker key material
+using its key ID. A compiled-package graph guard fails if core introduces
+OpenPGP or Distribution proxy/storage/handler server packages. These are
+specific prerequisite checks; unfiltered module-level findings remain in the
+audit receipts and final-container/component scans are still required.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
 with exactly one database relation. Offline fixtures also validate the OCI

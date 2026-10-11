@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b148b87b6244eec2bbf70d733f3473a6ddce676b19bc7b3d339fab9e78149c2e",
+  "pageVersion": "sha256:19ecf7290eb538a108089860ebd82a88425f49c8e4d7745ed567efe4dc6c9fe1",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -132,7 +132,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:309c0de4e9e3690cb0a2d7ef39afa82eaf89c5b8b92e78f75ccb4b84514bded4"
+          "version": "repo-file-v1:sha256:b9f0ee1ef40141e383b45921a82b47fcb2317967dd1c8ebd1a54667f3da45676"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -150,7 +150,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
         },
         {
           "resource": "repo://builds/harbor-core/prepare-source.py",
@@ -168,7 +168,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:309c0de4e9e3690cb0a2d7ef39afa82eaf89c5b8b92e78f75ccb4b84514bded4"
+          "version": "repo-file-v1:sha256:b9f0ee1ef40141e383b45921a82b47fcb2317967dd1c8ebd1a54667f3da45676"
         }
       ]
     },
@@ -192,7 +192,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:3e0785e4f8634a446b05c581abd290512c8e793bd3daebf8bd56bf67c828ff66"
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
@@ -220,7 +220,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:309c0de4e9e3690cb0a2d7ef39afa82eaf89c5b8b92e78f75ccb4b84514bded4"
+          "version": "repo-file-v1:sha256:b9f0ee1ef40141e383b45921a82b47fcb2317967dd1c8ebd1a54667f3da45676"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -228,7 +228,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
-          "version": "repo-file-v1:sha256:7363e957cac7bd7f0974f4c0aeb2e6b07d679a79f5c8efad7a866695d3eadd72"
+          "version": "repo-file-v1:sha256:86f29601ee35c67ffa703e9116f88536ade766587395352084ddc582fea313a7"
         }
       ]
     },
@@ -241,10 +241,28 @@
           "version": "repo-file-v1:sha256:525d3a6620439a6305dd746dee26107de4a7cef6f4117f2ff778947dc4954aa0"
         }
       ]
+    },
+    {
+      "id": "claim_cfa5f8e1702e4d67b9b499470d074f45",
+      "statement": "The local remediated core assessment retains all five raw Grype matches while recording absence of affected OpenPGP and Distribution proxy/storage/handler packages from its compiled graph, a module-only OpenPGP finding from Go binary analysis, and a native positive/negative JWK verifier test rejecting attacker key material under a forged trusted key ID. Build guards preserve these specific conditions; the receipt denies final-image and other-component clearance.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/token-trust_test.go",
+          "version": "repo-file-v1:sha256:c21ba56c5141c90a2ad57fc7f3f411238d3d9b4c98cf2a1cbbee23a987355fd7"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T19:03:26.465Z"
+    "at": "2026-10-11T19:32:29.266Z"
   }
 }

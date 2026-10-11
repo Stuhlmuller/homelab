@@ -28,6 +28,8 @@ sources:
     resource: repo://builds/harbor-core/registry-test.py
   - id: openwiki-source-8747f81e985430015cf21baf
     resource: repo://builds/harbor-core/source.json
+  - id: openwiki-source-db4fcfb731a7d9f94926969c
+    resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -36,6 +38,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-2d23b8001d89196fa1eba48a
+    resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-48227484d35c61f86c7d08ff
     resource: repo://docs/evidence/harbor-core-base-scan-2026-10-11.json
   - id: openwiki-source-648b2cb9046d6972d8b44428
@@ -52,10 +56,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T19:03:26.465Z" }
+generated: { by: "codex", at: "2026-10-11T19:32:29.266Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T19:03:26.465Z
+    at: 2026-10-11T19:32:29.266Z
 ---
 
 # Harbor Private OCI Registry
@@ -382,6 +386,18 @@ This binary-only audit is separate from the upstream base audit and final
 container acceptance. Inspect and remediate these remaining findings; rerun
 the Linux image/registry fixture after the dependency change and scan the exact
 final container before protected publication. Do not filter away unresolved findings.
+
+The [advisory assessment receipt](../../docs/evidence/harbor-core-advisory-assessment-2026-10-11.json)
+adds precise evidence for this local core binary. Its package graph excludes
+OpenPGP and the Distribution proxy/storage/handler server packages implicated
+by the reported advisories. Go's binary analyzer reports only a module-level
+OpenPGP advisory, without an affected package/symbol trace. A native JWK attack
+test accepts a trusted key and rejects attacker key material with a forged
+trusted key ID; the primary JWK advisory targets Distribution v3 prereleases.
+The build now guards the package exclusions and reruns that trust test.
+All five raw Grype matches remain recorded. These assessments cover this core
+binary only: registry daemon/configuration, the final container, changed future
+dependencies and deployed workloads still need independent verification.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 

@@ -29,6 +29,13 @@ A local Linux binary scan after these changes still reports four Distribution
 v2 findings and one x/crypto finding as unfixed/unknown. Do not suppress these
 or treat the binary-only scan as final container or deployed-digest acceptance.
 
+The affected OpenPGP and Distribution proxy/storage/handler packages are absent
+from core's compiled dependency graph; the build guards against introducing
+them. A native positive/negative JWK test also verifies that the v2 token parser
+uses actual key material and rejects an attacker key with a forged trusted key
+ID. Record these specific advisory assessments alongside unfiltered reports;
+they do not clear other Harbor components or the final container.
+
 Run `bash builds/harbor-core/build.sh` on a Linux Docker host. Its native build
 first requires the unpatched manager to fail the repeated-child regression,
 then requires the repaired manager suite and complete core compilation to pass
