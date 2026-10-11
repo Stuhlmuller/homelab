@@ -150,27 +150,28 @@ the helper does not complete the live acceptance gate recorded below.
 
 ## Public access and authentication
 
+Fleet has no public ingress or Funnel route. Family devices and browsers must
+join the Tailscale mesh and keep the existing `fleet.stinkyboi.com` hostname:
+
 ```text
-family device/browser -> Cloudflare Tunnel (octelium-public)
-                      -> Istio TLS gateway -> Fleet:8080
+family device/browser -> Tailscale mesh -> Traefik private TLS -> Fleet:8080
                       -> Fleet user/device authentication
 ```
 
-This is an explicit native-client ingress exception. MDM check-ins and fleetd
-cannot follow an Octelium browser-login redirect. A single stable hostname
-serves the UI, enrollment and management protocols through the existing
-outbound tunnel. There is no router port forwarding or Tailscale Funnel.
-Cloudflare sees the HTTPS request content at its edge; database and cache ports
-remain private. Fleet user login, enrollment secrets, enrolled-device identity
-and MDM protocol authentication protect application operations.
+Fleet login, enrollment secrets, enrolled-device identity and MDM protocol
+checks remain in place. Devices do not need an Octelium browser-login session.
+The retained Tunnel and Istio route are migration state only; retire them after
+private administrator and enrolled-device acceptance through the
+[staged cutover](../traefik/CUTOVER.md). Database and cache ports remain private.
 
-Istio permanently returns 404 for `/setup`, `/setup/`, `/api/setup` and
-`/api/v1/setup` prefixes. Both upstream API aliases must remain blocked even
-after setup or a database restore. A separate `fleet-bootstrap` ServiceAccount
-may reach Fleet internally to create the first administrator. Its PostSync Job
-reads only the administrator Secret, verifies authentication and revokes its
-temporary session. It never resets an existing account. Default-deny mesh and
-network policies constrain Fleet, datastore and bootstrap access.
+Traefik permanently returns 404 for `/setup`, `/setup/`, `/api/setup` and
+`/api/v1/setup` prefixes. Both upstream API aliases remain blocked after setup
+or database restore. The separate `fleet-bootstrap` ServiceAccount may reach
+Fleet internally to create the first administrator. Its PostSync Job reads only
+the administrator Secret, verifies authentication and revokes its temporary
+session; it never resets an existing account. Istio authorization constrains
+mesh access. NetworkPolicy expresses intended isolation but the current Flannel
+CNI does not enforce it.
 
 ## Secrets and storage
 
@@ -233,18 +234,22 @@ gh workflow run harbor-mirror.yml --ref main \
 gh workflow run terragrunt-apply.yml --ref main \
   -f expected_sha='<current-main-sha>' -f argocd_app=fleet
 # The Fleet target applies shared SSM/IAM before registering only Fleet.
-gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<current-main-sha>'
+# Move the canonical Fleet hostname only through the staged private DNS cutover.
 ```
 
 Review shared SSM/IAM plans for unrelated changes. Registration dependencies
 order work; they do not establish upstream readiness. Require Healthy/Synced
-External Secrets, Istio, storage and public-tunnel applications, a Ready
+External Secrets, Istio, storage, Tailscale and Traefik applications, a Ready
 `aws-ssm` store permitting namespace `fleet`, and the `homelab` AppProject's
 Fleet destination before dispatch. The scoped path avoids unrelated AzureAD
 changes when a targeted Fleet rollout is appropriate. The earlier Azure
 credential gap is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
 advanced the current checkpoint. No manual Kubernetes or cloud mutation is
-needed.
+needed. Follow the [staged private DNS cutover](../traefik/CUTOVER.md) for
+`fleet.stinkyboi.com`; Fleet has no Funnel route. Require administrator access
+and an enrolled device check-in over the mesh without changing enrollment URLs.
+Retained Tunnel source is migration rollback state, not a Fleet public-access
+requirement.
 
 The fixed Fleet mirror scope contains exactly the four images rendered by this
 application. It verifies each manifest digest and a complete anonymous pull,
@@ -277,12 +282,13 @@ Require ready workloads and ExternalSecrets, Bound claims, HTTP 200 health and
 the pinned version, HTTP 404 for both setup aliases, and successful private
 administrator login. Require the initial backup Job's successful completion and
 verified-publication log. Verify the first scheduled run separately to establish
-nightly recurrence. Then verify a real device enrolls and checks in from outside
-the LAN.
+nightly recurrence. Then verify a real device enrolls and checks in over the
+Tailscale mesh from outside the LAN.
 A rendered configuration or healthy server alone does not prove MDM enrollment.
 
-Rollback public access by reverting the Fleet tunnel/DNS/VirtualService changes
-through a reviewed PR. Preserve the Fleet Application and PVCs while investigating.
+Rollback a failed ingress change through a reviewed Traefik/DNS revert while
+preserving Fleet's private canonical hostname. Do not restore public Fleet access.
+Preserve the Fleet Application and PVCs while investigating.
 For an app-version rollback, consult the release's migration notes and retain a
 database backup from before the upgrade.
 

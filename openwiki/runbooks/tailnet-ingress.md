@@ -6,6 +6,8 @@ tags: [runbook, networking, ingress]
 sources:
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
+  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
+    resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-d190dbce4c50934f34b78ce1
     resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-c6350999c9f74bf0f53f9005
@@ -14,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/networkpolicy.yaml
   - id: openwiki-source-fa98853a4d8b97699eb08972
     resource: repo://clusters/homelab/apps/policy-bot/networkpolicy.yaml
+  - id: openwiki-source-a11878298975bc4bd3bbaf7d
+    resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -28,8 +32,14 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-cc574ebd8a3bf817cd4a4c4b
     resource: repo://clusters/homelab/apps/traefik/values.yaml
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-bef786188ec490a342373148
+    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-511191e55632b55651ad4318
+    resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
@@ -42,17 +52,19 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
+  - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
+    resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-10T22:48:00.170Z" }
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:48:00.170Z
+    at: 2026-10-10T23:50:03.392Z
 ---
 
 # Tailnet And App Ingress
 
-The migration foundation declares Traefik as the reverse proxy for private
+The staged migration declares Traefik as the reverse proxy for private
 application URLs. Fleet devices and administrators use the Tailscale mesh;
 Fleet has no Funnel route. Octelium remains for Cordium and its required portal,
 API and console. Existing DNS and Cloudflare transport remain until cutover
@@ -62,8 +74,8 @@ Canonical desired state and validation:
 [Traefik README](../../clusters/homelab/apps/traefik/README.md),
 [route inventory](../../clusters/homelab/apps/traefik/routes.yaml), and
 [Tailscale provider runbook](../../IaC/modules/tailscale-access/README.md).
-The older [ingress runbook](../../docs/networking-tailnet-ingress.md) describes
-the retained migration source path until its traffic-cutover revision lands.
+The [ingress runbook](../../docs/networking-tailnet-ingress.md) describes the
+phase 2a source and the separate external DNS and later CI cutover gates.
 
 ```mermaid
 flowchart LR
@@ -86,6 +98,10 @@ Separate listeners prevent public callbacks from selecting private routers.
 cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
+The current single-stack IPv4 Service publishes only `100.99.16.74`; its peer's
+IPv6 address has no matching application forwarding rule. DNS derives A/AAAA
+from Service status, not all peer addresses, so AAAA stays empty. See the
+[IP-family contract and pinned upstream sources](../../docs/networking-tailnet-ingress.md#dns-model).
 
 Only `n8n-webhook.tail67beb.ts.net` and `policy-bot-hook.tail67beb.ts.net` use
 Funnel. The former accepts the three declared webhook path families; the latter
@@ -156,6 +172,12 @@ Istio rejects unrelated authenticated mesh principals; unmeshed intra-cluster
 callers still require application authentication. Registry source-IP restrictions
 have a trusted node-local bypass. Do not claim full east-west isolation.
 
+During the staged CoreDNS switch, Traefik also permits only the retained
+`cluster.local/ns/octelium-client/sa/octelium-client` principal on private TLS
+port 8443. The intended NetworkPolicy peer requires its exact namespace and
+both connector pod labels. Remove this temporary allowance with the connector
+after acceptance; it grants no callback or registry listener access.
+
 Publish Traefik's reviewed image, adopt policy through the operator Terraform
 unit, then register and verify the GitOps resources. Require Ready certificates,
 healthy proxies and actual application access from a mesh client before changing
@@ -179,8 +201,22 @@ cutover remain separate gates.
 Follow the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
 The additive `tailscale-private-dns.sh` previews by default and requires exact
 reviewed main to write only its fixed DNS-only A/AAAA inventory. It preserves
-legacy CI, callback and carrier names. First disable the old DNS-restoration
-workflow through code, preserve its tunnel, and verify Talos registry access.
+legacy CI, callback and carrier names. Phase 2a removes the old DNS-restoration
+workflow and public DNS helper; wait for in-flight runs, preserve the tunnel,
+and verify Talos registry access before external DNS writes.
+The same phase declares internal CoreDNS rewrites for Octelium API and Harbor
+to `traefik-private`, additive Cordium bootstrap network peers, and n8n's
+`https://n8n-webhook.tail67beb.ts.net/` advertised webhook URL. Require Funnel
+readiness before n8n restarts because it can register hooks during startup.
+Check native API and Harbor access after internal DNS convergence; keep CI and
+shared native operator transport unchanged until canonical mesh acceptance.
+
+The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
+the repository and live Deployment explicitly declare zero replicas and no
+live replicas remain. This accounts for Traefik's static ClusterIP backend
+while AFFiNE is suspended. All other application 5xx responses fail; this
+exception does not establish AFFiNE runtime health.
+
 Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most
 20 times with half-second pauses for the same macOS profile to become online,
@@ -194,11 +230,28 @@ The callback helpers change only the fixed n8n hooks and Policy Bot App webhook
 URL. Non-executing preflights protect live workflows; private local receipts
 require both a newer delivery ID and timestamp after cutover. Historical success
 cannot satisfy acceptance. The CI publisher captures sensitive provider keys
-privately, signs via temporary files and publishes only three scoped GitHub
+privately, signs via `file:/dev/stdin` and publishes only three scoped GitHub
 secrets after checking signed current main, environment protection and the
 trusted homelab signing profile. It removes the old client-ID variables only
 after all three writes and metadata checks succeed. These utilities do not switch
-CI workflows or retire the native catalog by themselves.
+CI workflows or retire the native catalog by themselves. Raw signing keys never
+enter command arguments or temporary files; stdin avoids the macOS app sandbox's
+private-file read restriction.
+
+PolicyBot's safe GET preflight requires HTTP 404 with exactly one valid backend
+`X-Request-ID` at `/api/github/hook`, and root HTTP 404 without that header.
+The pinned app registers POST only: GET proves routing, not HMAC validation.
+Fresh successful signed delivery remains the acceptance gate. The two fixed n8n
+POST-only hooks use non-executing OPTIONS probes before their URL changes.
+
+The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
+records all 28 canonical private routes passing strict TLS over published IPv4,
+including guarded suspended AFFiNE 502 and ready OpenClaw, plus 20 public negative
+cases, two safe n8n OPTIONS responses and the corrected PolicyBot GET check.
+Traefik AP/NP specs matched reviewed main. Forced ingress IPv6 failed before TLS,
+consistent with the single-family Service; this is not IPv6 application acceptance.
+Normal-DNS cutover, authenticated user flows and signed callback delivery remain
+separate gates.
 
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and

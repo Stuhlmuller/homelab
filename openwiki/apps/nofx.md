@@ -5,6 +5,15 @@ description: "NOFX access, Harbor images, cash-spot competition, SQLite persiste
 tags: ["homelab", "navigation"]
 workload_status: active
 updated: 2026-09-29
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:43:46.551Z
+sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
 ---
 
 # NOFX
@@ -151,17 +160,19 @@ contract from AWS SSM:
   The separate `nofx-registry-auth` ExternalSecret refreshes every five minutes
   into a retained recovery Docker config Secret, without mounting it in NOFX.
 
-The Cloudflare public tunnel provides browser transport. The Istio
-`VirtualService` keeps the direct public path disabled with
-`homelab.rst.io/public-funnel: "false"`.
+The retained Cloudflare/Octelium route supports legacy callers during the
+[staged private ingress cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
+NOFX keeps its canonical hostname through private Tailscale and Traefik after
+DNS acceptance; it has no public Funnel route. The old Istio `VirtualService`
+remains migration state until final retirement.
 
 Live validation on 2026-08-22 found the Argo CD Application synced and healthy,
 both deployments ready with zero restarts, the 10 GiB claim bound, and the
 ExternalSecret synced. The public Octelium route, DNS record, and end-to-end
-gate are owned by `clusters/homelab/apps/octelium-public`,
-`scripts/octelium-public-dns.sh`, and `scripts/octelium-e2e-check.sh`.
-The public Tunnel workflow now reconciles all declared CNAMEs, including the
-browser API and native TCP carrier.
+gate then used `octelium-public` and the former public DNS writer. That writer
+and its restoration workflow are now removed. Use the guarded private DNS path;
+the retained `octelium-e2e-check.sh` covers only the legacy transport and can
+fail intentionally after cutover.
 
 On 2026-09-04, the public root and `/api/health` returned HTTP 200 without
 Octelium denial headers. A read-only projection from `octelium_resources`

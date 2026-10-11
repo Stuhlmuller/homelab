@@ -26,10 +26,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T22:36:11.265Z" }
+generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T22:36:11.265Z
+    at: 2026-10-10T23:43:46.551Z
 ---
 
 # Harbor Private OCI Registry
@@ -43,17 +43,19 @@ runtime state lives in
 Talos mirror rollout redirects their pulls after all artifacts are copied. Fresh
 bootstrap and registry recovery use the reviewed upstream rollback path.
 
-`https://harbor.stinkyboi.com` uses Cloudflare Tunnel, the Octelium `harbor`
-WEB Service, and the shared Istio gateway. Octelium transport is anonymous and
+The retained legacy `https://harbor.stinkyboi.com` path uses Cloudflare Tunnel,
+the Octelium `harbor` WEB Service, and the shared Istio gateway until private
+DNS acceptance. Octelium transport is anonymous and
 passes Authorization headers; Harbor authenticates every private artifact
 request. Browser login interception would break Docker, Helm, ORAS and
 containerd. Harbor registration is disabled and only administrators can create
 projects. The `homelab` project is private.
 
-In-cluster DNS resolves the hostname directly to Istio, retaining the same
-publicly trusted TLS identity. Talos/containerd uses host DNS and pulls through
-the public route. Hosted CI establishes a bounded Kubernetes port-forward to
-Istio with the existing Octelium CI credential. Only its disposable runner maps
+Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
+publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
+the separate guarded registry mapping below before external DNS changes.
+Hosted CI still establishes a bounded Kubernetes port-forward to Istio with
+the existing Octelium CI credential until phase 2b. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
 retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
 
@@ -82,6 +84,15 @@ strict validation, uses the matching Talos executable, and requires exact review
 main for execution. Preflight checks the dedicated Service, TLS, registry/token
 paths and dashboard denial before any node change. Roll out workers first;
 correlate an uncached native node pull with Traefik/Harbor logs afterward.
+
+Talos 1.11.3 can expose active `v1alpha1` without `persistent` after a STATE-only
+boot. Every helper capture reads the full resource stream and compares all
+active/persistent configuration documents when both exist. Missing persistent
+is accepted only at initial active resource version 1. A staged/try difference,
+changed active version without a counterpart, duplicate/unknown resource, read
+failure, or absent active config stops the operation. The same checks run before
+and after apply; scope, identity, no-reboot and native-pull gates remain intact.
+Offline regression covers these cases without proving a live node rollout.
 
 Flannel does not enforce the declared NetworkPolicy. Traefik's Istio policy
 restricts registry sources to the four declared LAN node addresses and their
@@ -299,9 +310,10 @@ mirror rollout below extends this to third-party images.
    advanced the current checkpoint. Use the unit-level path for scoped Harbor
    changes, not to bypass a presumed Azure blocker. Require healthy external
    secrets, storage, PostgreSQL and the bootstrap Job.
-3. From a clean checkout of that exact reviewed main revision, reconcile the
-   fixed Octelium Service with the command below. Reconcile Tunnel DNS through
-   the existing `octelium-public-tunnel.yml` workflow.
+3. Follow the [ordered private DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md)
+   from exact reviewed main after registry-node acceptance. The old public DNS
+   writer and restoration workflow are removed. Retain the legacy Service and
+   Tunnel only for remaining callers and reviewed rollback until acceptance.
 4. Verify HTTPS, API health, `/v2/` authentication challenge, private project
    settings, denied anonymous artifact access and authenticated pull/push.
 5. Publish the exact reviewed custom-image revision and require complete
@@ -310,7 +322,7 @@ mirror rollout below extends this to third-party images.
 6. Require a completed verified database backup, retained PVCs and documented
    restore limits before reporting operational readiness.
 
-Operator command (review the exact SHA before running):
+Retained legacy Service recovery only (review the exact SHA before running):
 
 ```sh
 expected_sha='<reviewed-current-main-sha>'

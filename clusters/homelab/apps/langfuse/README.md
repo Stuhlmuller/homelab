@@ -275,20 +275,25 @@ scripts/octelium-e2e-check.sh
 
 ## Caller activation
 
-This change stages Langfuse and its credentials first. Existing OpenClaw and
-LiteLLM runtime configuration stays unchanged: an asynchronous protected
+This section records the original staged activation. Current gateway routing,
+credentials, and acceptance checks are documented in the
+[LiteLLM runbook](../litellm/README.md#validation-and-rollout).
+
+The initial rollout staged Langfuse and its credentials first. OpenClaw and
+LiteLLM runtime configuration stayed unchanged: an asynchronous protected
 apply must not race a caller restart requiring credentials that do not exist.
-The old OpenClaw gateway token still aliases the operator master key; the new
-`/homelab/openclaw/litellm-app-token` is provisioned independently. Do not rotate
-the old parameter during staging.
+At that stage, the old OpenClaw gateway token aliased the operator master key;
+`/homelab/openclaw/litellm-app-token` was provisioned independently. The staging
+procedure preserved the old parameter.
 
 Before a follow-up activation PR:
 
 1. Complete the protected full `Terragrunt Apply` or its dependency-aware
    `argocd_app=langfuse` dispatch described above. Both plan/policy-check and
    apply SSM/S3 producers before registering Langfuse.
-2. Reconcile the separate Octelium Service and public DNS paths. Terragrunt does
-   not apply either. The existing `homelab-human-web-access` Policy must already
+2. Follow the [private ingress cutover](../traefik/CUTOVER.md) for the canonical
+   Langfuse hostname. The following native Service command is retained legacy
+   recovery only; Terragrunt does not apply it. The `homelab-human-web-access` Policy must already
    exist. Install the pinned client through `scripts/install-octeliumctl.sh` and
    use an existing native operator login. Preview from a trusted checkout:
 
@@ -321,23 +326,17 @@ Before a follow-up activation PR:
    CLI errors reported with exit zero. Do not add `--prune`. Repair or roll back
    the declared Service through a reviewed PR and rerun the helper; removing
    the helper does not remove the live Service or bypass its human policy.
-   Wait for Argo CD's `octelium-public` Application to be
-   Synced/Healthy with the new tunnel pod revision before dispatching DNS:
-
-   ```sh
-   gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-   ```
-
-   Obtain normal `homelab-production` approval and require that exact run to
-   succeed. If `main` changed, review the new commit before redispatching; do
-   not bypass SHA or environment gates or edit DNS in the provider console.
+   The old public DNS writer and restoration workflow are removed. Use the
+   staged DNS helper after Traefik, signed mesh peers and backend readiness pass;
+   preserve legacy runtime routes until replacement acceptance. Never recreate
+   public app CNAMEs or edit DNS directly in a provider console.
 3. Verify the Langfuse Application is Synced/Healthy, datastore and retained
    recovery PVCs are Bound, the project is initialized, and the authenticated
-   UI opens through Octelium.
+   UI opens from the mesh through Traefik with Langfuse authentication.
    Verify `langfuse-secrets` and `litellm-app-keys`
    ExternalSecrets are Ready without printing their values.
-   Run `nix develop --command python3 scripts/octelium-tunnel-check.py` and
-   `scripts/octelium-e2e-check.sh`; DNS/catalog/backend or login failures block
+   Run the staged canonical DNS/TLS and application checks; the old Tunnel/e2e
+   probes describe legacy recovery only. DNS/backend or login failures block
    caller activation. An unauthenticated redirect alone is not UI acceptance.
 4. Implement caller activation in a separate PR. This foundation intentionally
    contains no activation patch or gateway callback implementation: the prior
@@ -354,7 +353,8 @@ Before a follow-up activation PR:
 5. After activation, verify one real OpenClaw free-model turn and gateway request
    produce correlated traces with expected provider/model, content and available
    usage. Preserve `openrouter/free` for interactive turns, heartbeat and
-   schedules, along with the retained Astra OAuth recovery metadata. Complete
+   schedules; keep retired OpenAI/Codex plugins disabled and private historical
+   credentials intact. Complete
    the separate n8n migration through its managed OpenAI credential and verify
    its own correlated generation.
 6. Activate NOFX separately using its
