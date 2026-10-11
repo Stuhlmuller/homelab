@@ -149,19 +149,8 @@ jobs:
       - name: Check private runtime vulnerability report
         run: |
           set -euo pipefail
-          private_log="$(mktemp)"
-          trap 'rm -f "$private_log"' EXIT
-          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
-          set -euo pipefail
-          umask 077
           image_id="$(cat "${RUNNER_TEMP}/litellm-scan-image-id")"
           python3 scripts/ci/litellm-scan-check.py "${RUNNER_TEMP}/litellm-scan.json" "$image_id"
-          EOF
-          then
-            echo "::error::Private report validation failed; private output withheld."
-            exit 1
-          fi
-          echo "Private report validation passed; private output withheld."
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh

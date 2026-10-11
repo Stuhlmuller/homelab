@@ -1,8 +1,12 @@
 import copy
+from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime, timedelta, timezone
 import importlib.util
+import io
+import json
 from pathlib import Path
 import unittest
+import tempfile
 
 spec = importlib.util.spec_from_file_location("scan", Path(__file__).with_name("litellm-scan-check.py"))
 scan = importlib.util.module_from_spec(spec)
@@ -47,6 +51,24 @@ class ScanGate(unittest.TestCase):
             mutate(report)
             with self.subTest(mutate=mutate), self.assertRaises((AssertionError, KeyError, TypeError, ValueError)):
                 scan.verify(report, IMAGE)
+
+    def test_cli_never_exposes_report_values(self):
+        report = self.report()
+        marker = "PRIVATE_REPORT_VALUE_MUST_NOT_ESCAPE"
+        report["source"]["target"]["os"] = marker
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "report.json"
+            path.write_text(json.dumps(report))
+            output = io.StringIO()
+            with redirect_stdout(output), redirect_stderr(output):
+                self.assertEqual(scan.main([str(path), IMAGE]), 1)
+            self.assertEqual(output.getvalue(), "Private report validation failed: identity; findings withheld.\n")
+            self.assertNotIn(marker, output.getvalue())
+            path.write_text('{"' + marker + '":')
+            output = io.StringIO()
+            with redirect_stdout(output), redirect_stderr(output):
+                self.assertEqual(scan.main([str(path), IMAGE]), 1)
+            self.assertEqual(output.getvalue(), "Private report validation failed: schema; findings withheld.\n")
 
 
 if __name__ == "__main__":

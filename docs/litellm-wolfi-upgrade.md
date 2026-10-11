@@ -70,7 +70,9 @@ identity, scanner version, valid recent database/report timestamps and absence
 of filtering before rejecting fixable findings. Unknown or upstream-unfixed
 findings remain in the private report and require separate review; passing this
 gate does not establish zero vulnerabilities or authorize release. Public output
-contains only fixed pass/fail messages. Fresh Harbor scans of the published
+contains only fixed pass/fail messages and whitelisted validation categories
+(identity, scanner, database, freshness, filtering, schema or remediation).
+Malformed report values and tracebacks are never printed. Fresh Harbor scans of the published
 digest remain required.
 
 Keep the PR draft until the original all-platform image is completely pulled
