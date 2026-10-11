@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - '.cordium/**'
-      - 'builds/cordium-runner/**'
+      - 'builds/cordium-runner/Dockerfile*'
+      - 'builds/cordium-runner/build.sh'
       - 'scripts/cordium-*.py'
       - 'scripts/ci/install-octelium-client.sh'
       - 'scripts/ci/install-cordium-client.sh'
+      - 'scripts/ci/cordium-runner-probe.sh'
       - 'scripts/policy-bot-webhook.py'
       - '.github/workflows/cordium-runner-images.yml'
   workflow_dispatch:
