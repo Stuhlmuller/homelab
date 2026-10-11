@@ -47,6 +47,7 @@
             jq
             k9s
             kubernetes-helm
+            kind
             kubectl
             kustomize
             lua5_1
