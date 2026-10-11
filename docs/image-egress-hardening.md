@@ -93,6 +93,27 @@ controller/webhook calls, storage mounts and the human/CI recovery route.
 Roll back through the owning GitOps application and reviewed Talos config;
 never repair a deny rule with manual cluster mutation.
 
+Before an NRI or egress-gateway canary, compare private, read-only Pod and
+NetworkPolicy snapshots with every rendered policy source by using
+`scripts/network-policy-inventory.py`. Include chart renders and generated
+Octelium policies in `--render`; repository YAML alone is insufficient. The
+JSON review file records the exact `sha256` fingerprints emitted by the audit.
+Run it with `--fail-on-findings` for the candidate namespace. It refuses
+wildcard or ranged CIDR/port egress, peer selectors or IP blocks that reach all
+other active Pods, unresolved namespace selectors, drifted, unowned and
+unreviewed egress, plus unisolated, host-network, privileged,
+NET_ADMIN/NET_RAW/SYS_ADMIN and init-container workloads that require a
+separate control-path review. The utility never calls Kubernetes and snapshot
+files must remain private.
+
+Candidate containers must explicitly drop `ALL` Linux capabilities before
+adding only reviewed capabilities. Otherwise runtime-default capabilities are
+reported as a separate-control-path finding.
+
+The Pod snapshot must include active Pod IPs when a candidate uses `ipBlock`.
+The audit compares resolved IP blocks against every other active Pod and flags
+an incomplete IP snapshot rather than assuming those peers are unreachable.
+
 Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practices/security/),
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
