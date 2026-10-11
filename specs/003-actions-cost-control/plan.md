@@ -4,7 +4,10 @@
 
 ## Summary
 
-Keep the seven `main` ruleset PR checks automatic, retain existing `main` push and manual lanes, remove optional PR work and excessive schedules, and remove only the `homelab-plan` environment reviewer from its declared source in `Stuhlmuller/github-iac`. The environment change and workflow changes are coordinated with documentation and exact-context verification. No production apply or credential change is part of this feature.
+Keep the seven `main` ruleset PR checks automatic, retain existing `main` push and manual lanes, remove optional PR work
+and excessive schedules, and remove only the `homelab-plan` environment reviewer from its declared source in
+`Stuhlmuller/github-iac`. The environment change and workflow changes are coordinated with documentation and
+exact-context verification. No production apply or credential change is part of this feature.
 
 ## Technical Context
 
@@ -24,7 +27,10 @@ The project constitution is an unfilled template. `AGENTS.md` is the operative r
 
 ## Design
 
-1. Obtain read-only current environment and ruleset settings before mutation. Repository source says ruleset `14700233` requires `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`, `analyze-actions`, `release-dry-run`, and `Terragrunt Gate`. An authenticated operator read confirmed the `homelab-plan` reviewer, but GitHub denied its removal with `Must have admin rights to Repository`; that setting remains unchanged.
+1. Obtain read-only current environment and ruleset settings before mutation. Repository source says ruleset `14700233`
+   requires `policy-bot: main`, `Lint`, `repo`, `Analyze (python)`, `analyze-actions`, `release-dry-run`, and
+   `Terragrunt Gate`. An authenticated operator read confirmed the `homelab-plan` reviewer, but GitHub denied its
+   removal with `Must have admin rights to Repository`; that setting remains unchanged.
 2. Keep PR triggers for all required context producers: Lint, validate, CodeQL, Release dry run, and Terragrunt Plan. Preserve the external `policy-bot: main` producer. Retain PR security/static checks rather than deadlocking protected merges.
 3. Review optional PR triggers in NOFX Images, OpenClaw native config, and Image automation. Remove only their PR events. Preserve their matching main push events; add a guarded main push to Image automation if its verification should run on merge. Keep existing manual dispatch for NOFX and Image automation; add manual dispatch to OpenClaw only if an actual operator use case requires it.
 4. Remove the five-minute Image automation schedule and document that its `observe` alert no longer runs automatically. Keep the weekly CodeQL schedule because it is a low-frequency security scan; review its value separately if cost remains a concern.
@@ -34,7 +40,10 @@ The project constitution is an unfilled template. `AGENTS.md` is the operative r
 
 ## Security Consideration
 
-Current `homelab-plan` live plan checks out same-repository PR code before using AWS/OIDC and Octelium inputs. Removing its reviewer allows such code to reach credentials unattended. Before applying the environment change, confirm the workflow's static gate, same-repository condition, plan identity permissions, and secret-output controls still match the repo policy. The user authorized this specific tradeoff; no broader approval gate removal is included.
+Current `homelab-plan` live plan checks out same-repository PR code before using AWS/OIDC and Octelium inputs. Removing
+its reviewer allows such code to reach credentials unattended. Before applying the environment change, confirm the
+workflow's static gate, same-repository condition, plan identity permissions, and secret-output controls still match the
+repo policy. The user authorized this specific tradeoff; no broader approval gate removal is included.
 
 ## Project Structure
 
@@ -50,4 +59,7 @@ openwiki/runbooks/ci-cd.md         # source-linked summary
 
 ## Rollout and Rollback
 
-Land trigger changes while preserving all seven required PR context producers. Reconcile github-iac environment desired state through its protected workflow; inspect resulting settings and one trusted plan job for removal of the waiting state. Revert the exact workflow and HCL commits to restore former triggers/reviewer if required contexts or credential boundaries fail acceptance. No live cluster rollout is involved.
+Land trigger changes while preserving all seven required PR context producers. Reconcile github-iac environment desired
+state through its protected workflow; inspect resulting settings and one trusted plan job for removal of the waiting
+state. Revert the exact workflow and HCL commits to restore former triggers/reviewer if required contexts or credential
+boundaries fail acceptance. No live cluster rollout is involved.

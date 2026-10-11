@@ -21,4 +21,7 @@
 | FR-006 | T010, T012 |
 | FR-007 | T011 |
 
-All seven functional requirements have tasks. All five success criteria map to T005, T007, T009, or T013. Thirteen tasks are defined. No critical contradiction, uncovered requirement, or unresolved product question remains. The project constitution is an unfilled template; `AGENTS.md` governs. Workflow implementation can proceed; the environment reviewer change awaits repository admin rights and a narrow reviewed provider plan.
+All seven functional requirements have tasks. All five success criteria map to T005, T007, T009, or T013. Thirteen tasks
+are defined. No critical contradiction, uncovered requirement, or unresolved product question remains. The project
+constitution is an unfilled template; `AGENTS.md` governs. Workflow implementation can proceed; the environment reviewer
+change awaits repository admin rights and a narrow reviewed provider plan.
