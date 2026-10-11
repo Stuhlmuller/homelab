@@ -36,7 +36,13 @@ def verify(report, image_id):
     assert config["search"]["scope"] == "squashed" and not report.get("ignoredMatches"), "filtering"
     assert isinstance(report["matches"], list), "schema"
     for match in report["matches"]:
-        state = match["vulnerability"]["fix"]["state"]
+        fix = match["vulnerability"]["fix"]
+        state = fix["state"]
+        if state == "":
+            # Grype serializes unset provider fix state as an empty string.
+            assert isinstance(fix["versions"], list), "schema"
+            assert not fix["versions"] and not fix.get("available"), "remediation"
+            state = "unknown"
         assert state in {"fixed", "not-fixed", "unknown", "wont-fix"}, "schema"
         assert state != "fixed", "remediation"
 

@@ -76,7 +76,10 @@ Docker archives leave the scanner's summary platform fields empty; populated
 summary fields must agree with the hashed configuration. The gate also checks
 scanner version, valid recent database/report timestamps and absence
 of filtering before rejecting fixable findings. Unknown or upstream-unfixed
-findings remain in the private report and require separate review; passing this
+findings remain in the private report and require separate review. Grype's
+unset provider fix-state is an empty string: accept it only with no listed
+fix versions or available fixes, and retain the original finding as unresolved.
+Missing/unknown schema values still fail closed. Passing this
 gate does not establish zero vulnerabilities or authorize release. Public output
 contains only fixed pass/fail messages and whitelisted validation categories
 (identity, scanner, database, freshness, filtering, schema or remediation).

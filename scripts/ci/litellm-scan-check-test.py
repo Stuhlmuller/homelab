@@ -49,6 +49,20 @@ class ScanGate(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "identity"):
             scan.verify(report, wrong_image)
 
+    def test_unspecified_fix_state_remains_unresolved(self):
+        report = self.report()
+        report["matches"] = [{"vulnerability": {"fix": {"state": "", "versions": []}}}]
+        before = copy.deepcopy(report)
+        scan.verify(report, IMAGE)
+        self.assertEqual(report, before, "Do not remove or rewrite unresolved findings")
+        report["matches"][0]["vulnerability"]["fix"]["versions"] = ["fixture-fixed-version"]
+        with self.assertRaisesRegex(AssertionError, "remediation"):
+            scan.verify(report, IMAGE)
+        report["matches"][0]["vulnerability"]["fix"]["versions"] = []
+        report["matches"][0]["vulnerability"]["fix"]["available"] = [{"version": "fixture-fix"}]
+        with self.assertRaisesRegex(AssertionError, "remediation"):
+            scan.verify(report, IMAGE)
+
     def test_refusals(self):
         base = self.report()
         mutations = [
