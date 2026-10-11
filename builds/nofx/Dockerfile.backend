@@ -26,12 +26,16 @@ RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
     go build -tags="netgo,osusergo,sqlite_omit_load_extension" -trimpath -ldflags="-s -w -linkmode external -extldflags -static" -o /out/nofx . && \
     readelf -l /out/nofx > /out/program-headers && ! grep -q INTERP /out/program-headers
 RUN readelf -d /out/nofx > /out/dynamic-headers && ! grep -q NEEDED /out/dynamic-headers
+RUN go version > /out/runtime-build.txt && \
+    go version -m /out/nofx >> /out/runtime-build.txt && \
+    apk info -W /usr/lib/libc.a >> /out/runtime-build.txt
 
 FROM cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327 AS final
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="AGPL-3.0" \
       org.opencontainers.image.description="NOFX pinned release with owned OKX US cash-spot trading and historical simulation fixes"
 COPY --from=build /out/nofx /app/nofx
+COPY --from=build /out/runtime-build.txt /usr/share/nofx/runtime-build.txt
 COPY upstream/LICENSE /usr/share/licenses/nofx/LICENSE
 USER 10000:10000
 WORKDIR /app/data

@@ -101,13 +101,18 @@ internal Docker network. It verifies HTTP health, SQLite integrity and retained
 installation identity across a graceful restart. No production data, credentials
 or account/trading requests are involved. Production backup/restore, original
 application actions and fresh artifact scans remain separate rollout gates.
+The runtime includes `/usr/share/nofx/runtime-build.txt` with Go build/module
+metadata and the package owning the linked static libc archive. CVE assessment
+must include those embedded components; a clean static base alone cannot prove
+the resulting application is CVE-free. The pinned static base already provides
+the `America/Los_Angeles` timezone files used by the deployment.
 
 The existing `test.sh` and `build.sh` must pass on Linux with the exact image
 digests. Local Docker is unavailable; the draft's native NOFX CI job is the
 compatibility gate. Source patches, financial behavior and data format are
 unchanged. After publication, verify application actions and active-image scan
-results before claiming CVE remediation; compiler replacement alone cannot
-prove the retained operating-system image is CVE-free.
+results before claiming CVE remediation; base/compiler replacement alone cannot
+prove the resulting application and embedded dependencies are CVE-free.
 
 ## OKX US cash-spot competition
 
