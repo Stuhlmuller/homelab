@@ -82,6 +82,15 @@ langfuse:
       limits:
         cpu: "1"
         memory: 1Gi
+    pod:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: NotIn
+                    values: [zimaboard-2]
 postgresql:
   deploy: false
   host: langfuse-postgres.langfuse.svc.cluster.local
