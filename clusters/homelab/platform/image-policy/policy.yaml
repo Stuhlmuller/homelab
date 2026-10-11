@@ -39,7 +39,7 @@ spec:
           c.image in variables.systemNetworkImages)
       message: Init container images must use Harbor.
     - expression: >-
-        variables.nodeMirror || !has(object.spec.ephemeralContainers) ||
+        !has(object.spec.ephemeralContainers) ||
         object.spec.ephemeralContainers.all(c,
           c.image.startsWith('harbor.stinkyboi.com/'))
       message: Debug container images must use Harbor.
