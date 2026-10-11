@@ -1,0 +1,89 @@
+diff --git a/store/pure_go_sqlite_test.go b/store/pure_go_sqlite_test.go
+new file mode 100644
+--- /dev/null
++++ b/store/pure_go_sqlite_test.go
+@@ -0,0 +1,84 @@
++package store
++
++import (
++	"errors"
++	"path/filepath"
++	"testing"
++
++	"gorm.io/gorm"
++)
++
++func TestSpotPureGoSQLiteContract(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "retained.db")
++	db, err := InitGorm(path)
++	if err != nil {
++		t.Fatal(err)
++	}
++	sqlDB, err := db.DB()
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer sqlDB.Close()
++	if sqlDB.Stats().MaxOpenConnections != 1 {
++		t.Fatal("SQLite pool contract changed")
++	}
++	for name, expected := range map[string]string{
++		"foreign_keys": "1", "journal_mode": "delete", "synchronous": "2", "busy_timeout": "5000",
++	} {
++		var actual string
++		if err := db.Raw("PRAGMA " + name).Scan(&actual).Error; err != nil {
++			t.Fatal(err)
++		}
++		if actual != expected {
++			t.Fatalf("PRAGMA %s: got %s, want %s", name, actual, expected)
++		}
++	}
++	for _, statement := range []string{
++		"CREATE TABLE fixture_parent (id INTEGER PRIMARY KEY)",
++		"CREATE TABLE fixture_child (id INTEGER PRIMARY KEY, parent_id INTEGER REFERENCES fixture_parent(id), payload TEXT)",
++		"INSERT INTO fixture_parent VALUES (1)",
++	} {
++		if err := db.Exec(statement).Error; err != nil {
++			t.Fatal(err)
++		}
++	}
++	if err := db.Exec("INSERT INTO fixture_child VALUES (9, 99, 'invalid')").Error; err == nil {
++		t.Fatal("Foreign-key denial lost")
++	}
++	rollback := errors.New("fixture rollback")
++	err = db.Transaction(func(tx *gorm.DB) error {
++		if err := tx.Exec("INSERT INTO fixture_child VALUES (1, 1, 'rolled back')").Error; err != nil {
++			return err
++		}
++		return rollback
++	})
++	if !errors.Is(err, rollback) {
++		t.Fatal(err)
++	}
++	var count int64
++	if err := db.Table("fixture_child").Count(&count).Error; err != nil || count != 0 {
++		t.Fatal("Rollback contract failed", err, count)
++	}
++	if err := db.Exec("INSERT INTO fixture_child VALUES (2, 1, ?)", "retained λ").Error; err != nil {
++		t.Fatal(err)
++	}
++	if err := sqlDB.Close(); err != nil {
++		t.Fatal(err)
++	}
++	reopened, err := InitGorm(path)
++	if err != nil {
++		t.Fatal(err)
++	}
++	reopenedSQL, err := reopened.DB()
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer reopenedSQL.Close()
++	var payload, integrity string
++	if err := reopened.Raw("SELECT payload FROM fixture_child WHERE id=2").Scan(&payload).Error; err != nil || payload != "retained λ" {
++		t.Fatal("Retained data lost", err, payload)
++	}
++	if err := reopened.Raw("PRAGMA integrity_check").Scan(&integrity).Error; err != nil || integrity != "ok" {
++		t.Fatal("Integrity failed", err, integrity)
++	}
++}

@@ -73,13 +73,14 @@ deployed NOFX artifacts remain private `harbor.stinkyboi.com/homelab` images.
 Do not merge deployment digest updates before protected publication and fresh
 scan/pull acceptance of the resulting artifacts.
 
-The backend builds on pinned Chainguard Wolfi with the Chainguard Go SDK and
-retains CGO for GORM SQLite. Pinned source has no TA-Lib linkage. The candidate
-uses static linking, Go DNS/user lookups, and disables unused SQLite extension
-loading. Existing Go regressions run with the same flags. ELF checks reject an
-interpreter or shared-library dependency before the binary enters Chainguard
-static. This replaces the proposed Alpine runtime exception only after native
-build, database and runtime acceptance pass.
+The backend reuses the existing `modernc.org/sqlite` driver through GORM's
+explicit driver selection. Patch `0022` updates production and SQLite fixtures;
+patch `0023` guards foreign keys, PRAGMAs, rollback, integrity and retained data.
+Builds and matching regressions disable CGO, removing the embedded libc archive.
+ELF checks reject an interpreter or shared-library dependency; build provenance
+requires `CGO_ENABLED=0` and the compiled import graph excludes `runtime/cgo`.
+The resulting binary runs in pinned Chainguard static. Native database/runtime
+acceptance must pass before deployment digest updates.
 The frontend uses the Node dev candidate with an explicit builder UID 0,
 preserving the old build identity; final artifacts still run as UID 10000.
 Its runtime now uses the pinned Chainguard nginx candidate. The upstream
@@ -102,21 +103,22 @@ installation identity across a graceful restart. No production data, credentials
 or account/trading requests are involved. Production backup/restore, original
 application actions and fresh artifact scans remain separate rollout gates.
 The runtime includes `/usr/share/nofx/runtime-build.txt` with Go build/module
-metadata and the package owning the linked static libc archive. CVE assessment
-must include those embedded components; a clean static base alone cannot prove
+metadata, including the enforced CGO setting. CVE assessment must include
+application dependencies; a clean static base alone cannot prove
 the resulting application is CVE-free. The pinned static base already provides
 the `America/Los_Angeles` timezone files used by the deployment.
 
 The existing `test.sh` and `build.sh` must pass on Linux with the exact image
 digests. Local Docker is unavailable; the draft's native NOFX CI job is the
-compatibility gate. Source patches, financial behavior and data format are
-unchanged. After publication, verify application actions and active-image scan
+compatibility gate. Financial behavior and SQLite data format remain unchanged;
+the driver change requires the native contract and retained-state fixtures.
+After publication, verify application actions and active-image scan
 results before claiming CVE remediation; base/compiler replacement alone cannot
 prove the resulting application and embedded dependencies are CVE-free.
 Patch `0021` updates fixed Go dependency versions and their checksums, including
 coherent transitive versions selected by Go's module graph. Private module and
 package scans guide this change; raw reports stay outside git. Integrity,
-native regressions, the resulting binary and embedded C components still need
+native regressions and the resulting binary still need
 separate verification before publication or a CVE-remediation claim.
 
 `build.sh` also runs pinned govulncheck binary analysis through the reviewed Go
@@ -128,8 +130,8 @@ set is disjoint from that exact import inventory. Reports are private temporary
 files. The binary `SBOM` Go version must match the same image's compiler
 provenance; missing/empty/mismatched inventories fail the gate. Reports are
 never public workflow output or uploaded artifacts. Scanner failure
-fails the build. This Go gate does not cover embedded libc or other C code;
-those components still require component-aware artifact assessment.
+fails the build. This Go gate does not assess other image components; fresh
+component-aware artifact scans remain required.
 The scanner's isolated `/tmp` explicitly permits executing the tool built by
 `go run`; the image and binary/import inputs remain read-only, with all
 capabilities dropped and privilege escalation disabled.

@@ -1,0 +1,146 @@
+--- a/store/gorm.go
++++ b/store/gorm.go
+@@ -19,7 +19,7 @@
+ 
+ // InitGorm initializes GORM with SQLite
+ func InitGorm(dbPath string) (*gorm.DB, error) {
+-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: dbPath}), &gorm.Config{
+ 		Logger: logger.Default.LogMode(logger.Silent),
+ 	})
+ 	if err != nil {
+--- a/store/spot_test.go
++++ b/store/spot_test.go
+@@ -17,7 +17,7 @@
+ 	setup := func(t *testing.T, allocations map[string]string) (*SpotStore, string) {
+ 		t.Helper()
+ 		path := filepath.Join(t.TempDir(), "spot.db")
+-		db, err := gorm.Open(sqlite.Open(path+"?_busy_timeout=5000"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++		db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: path+"?_pragma=busy_timeout(5000)"}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 		if err != nil {
+ 			t.Fatal(err)
+ 		}
+@@ -439,7 +439,7 @@
+ 		if snapshot(t, s).Cash != "60" {
+ 			t.Fatal("profit fixture failed")
+ 		}
+-		db2, err := gorm.Open(sqlite.Open(path+"?_busy_timeout=5000"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++		db2, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: path+"?_pragma=busy_timeout(5000)"}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 		must(t, err)
+ 		sql2, err := db2.DB()
+ 		must(t, err)
+--- a/store/trader_visibility_test.go
++++ b/store/trader_visibility_test.go
+@@ -9,7 +9,7 @@
+ )
+ 
+ func TestTraderCreatePreservesVisibility(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "traders.db")), &gorm.Config{})
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: filepath.Join(t.TempDir(), "traders.db")}), &gorm.Config{})
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+--- a/trader/exchange_sync_test.go
++++ b/trader/exchange_sync_test.go
+@@ -117,7 +117,7 @@
+ 	for _, scenario := range scenarios {
+ 		t.Run(scenario.Name, func(t *testing.T) {
+ 			// Setup database
+-			db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
++			db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: ":memory:"}), &gorm.Config{
+ 				Logger: logger.Default.LogMode(logger.Silent),
+ 			})
+ 			if err != nil {
+@@ -201,7 +201,7 @@
+ 
+ // TestPositionAccumulationBug tests that positions don't accumulate incorrectly
+ func TestPositionAccumulationBug(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: ":memory:"}), &gorm.Config{
+ 		Logger: logger.Default.LogMode(logger.Silent),
+ 	})
+ 	if err != nil {
+@@ -286,7 +286,7 @@
+ 
+ // TestQuantityPrecision tests handling of quantity precision issues
+ func TestQuantityPrecision(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: ":memory:"}), &gorm.Config{
+ 		Logger: logger.Default.LogMode(logger.Silent),
+ 	})
+ 	if err != nil {
+--- a/trader/hyperliquid_sync_test.go
++++ b/trader/hyperliquid_sync_test.go
+@@ -76,7 +76,7 @@
+ // TestHyperliquidPositionBuilding tests the complete flow of position building
+ func TestHyperliquidPositionBuilding(t *testing.T) {
+ 	// Setup in-memory database
+-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: ":memory:"}), &gorm.Config{
+ 		Logger: logger.Default.LogMode(logger.Silent),
+ 	})
+ 	if err != nil {
+@@ -306,7 +306,7 @@
+ // TestHyperliquidBugScenario tests the exact bug we fixed
+ func TestHyperliquidBugScenario(t *testing.T) {
+ 	// Setup database
+-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: ":memory:"}), &gorm.Config{
+ 		Logger: logger.Default.LogMode(logger.Silent),
+ 	})
+ 	if err != nil {
+--- a/trader/live_free_output_test.go
++++ b/trader/live_free_output_test.go
+@@ -19,7 +19,7 @@
+ )
+ 
+ func TestSpotLiveFreeOutputIntegration(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "live.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: filepath.Join(t.TempDir(), "live.db")}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+--- a/trader/okx_spot_context_test.go
++++ b/trader/okx_spot_context_test.go
+@@ -20,7 +20,7 @@
+ 
+ func spotContextFixture(t *testing.T, quote string) (*AutoTrader, *OKXSpotTrader, *string) {
+ 	t.Helper()
+-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "context.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: filepath.Join(t.TempDir(), "context.db")}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+--- a/trader/okx_spot_execution_test.go
++++ b/trader/okx_spot_execution_test.go
+@@ -22,7 +22,7 @@
+ // Exercise two owners sharing one exchange account using the real protocol,
+ // ledger, reservation and reconciliation paths. No socket or credentials.
+ func TestOKXSpotOwnedExecution(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "execution.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: filepath.Join(t.TempDir(), "execution.db")}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+--- a/trader/okx_spot_recovery_test.go
++++ b/trader/okx_spot_recovery_test.go
+@@ -16,7 +16,7 @@
+ )
+ 
+ func TestOKXSpotProtectionRecovery(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "recovery.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: filepath.Join(t.TempDir(), "recovery.db")}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
+--- a/trader/okx_spot_trader_test.go
++++ b/trader/okx_spot_trader_test.go
+@@ -13,7 +13,7 @@
+ )
+ 
+ func TestOKXSpotOwnedBalances(t *testing.T) {
+-	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "ledger.db")), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
++	db, err := gorm.Open(sqlite.New(sqlite.Config{DriverName: "sqlite", DSN: filepath.Join(t.TempDir(), "ledger.db")}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+ 	if err != nil {
+ 		t.Fatal(err)
+ 	}
