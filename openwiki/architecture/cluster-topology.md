@@ -5,7 +5,7 @@ description: "Talos node roles, API endpoints, scheduling capacity, Octelium rec
 tags: ["architecture", "talos", "kubernetes"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:10:17.563Z
+    at: 2026-10-11T00:37:53.413Z
 sources:
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
@@ -21,7 +21,7 @@ sources:
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-11T00:10:17.563Z" }
+generated: { by: "codex", at: "2026-10-11T00:37:53.413Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -316,7 +316,7 @@ Octelium does not provide a Talos-native Service mode.
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining
 canonical TLS names. Talos host pulls use the separate registry-only Service
-`10.96.0.50`; require the exact node/bridge policy and uncached pulls before
+`10.96.0.50`; require the exact LAN/bridge/overlay source policy and uncached pulls before
 external Harbor DNS changes. Source preparation does not prove live cutover.
 
 ## Source Files
