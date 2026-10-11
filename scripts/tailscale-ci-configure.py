@@ -331,17 +331,18 @@ def require_no_affected_signatures(authority):
 
 
 def orphan_preflight(keys, cache, identity, authority, created_at):
-    if (not re.fullmatch(r"tlpub:[0-9a-f]{64}", authority or "")
-            or created_at is None or not 0 <= time.time() - created_at <= 86400):
-        raise GUARDS.Failure("Recovery requires the exact authority and creation timestamp from the last day")
+    if not re.fullmatch(r"tlpub:[0-9a-f]{64}", authority or ""):
+        raise GUARDS.Failure("Recovery requires the exact signing authority")
+    trusted, node = lock_status(with_node=True)
+    if authority not in trusted:
+        return trusted  # Already absent: no removal guards or trust mutation.
+    if created_at is None or not 0 <= time.time() - created_at <= 86400:
+        raise GUARDS.Failure("Recovery requires the exact creation timestamp from the last day")
     if read_pending() or any(item["fingerprint"] == fingerprint(keys[identity])
                              or item["authority"] == authority for item in cache):
         raise GUARDS.Failure("Recover the existing private receipt/cache instead of removing its authority")
     if any(name in names("secret", environment) for environment, name, _ in BINDINGS.values()):
         raise GUARDS.Failure("Orphan recovery requires all three fixed GitHub secrets to remain absent")
-    trusted, node = lock_status(with_node=True)
-    if authority not in trusted:
-        return trusted  # Already absent: no trust mutation or signing.
     metadata = trusted[authority]
     raw = keys[identity]["key"]
     if (not authority_matches(raw, authority, trusted) or not isinstance(metadata, dict)

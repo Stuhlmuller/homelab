@@ -539,6 +539,59 @@ class TailscaleCIConfigureTest(unittest.TestCase):
                 self.assertEqual(fake.writes, [])
                 self.assertNotIn("CI key signing", [call[1] for call in fake.calls])
 
+    def test_absent_orphan_preview_and_execute_remain_idempotent_after_publication_or_pending_receipt(self):
+        for variant in ("old", "published_cache", "pending"):
+            with self.subTest(variant=variant):
+                self.cache.unlink(missing_ok=True)
+                MODULE.pending_path().unlink(missing_ok=True)
+                fake = FakeCommands()
+                authority, arguments = self.orphan(fake)
+                del fake.trusted[authority]
+                arguments[-1] = str(int(MODULE.time.time()) - 86401)
+                if variant == "published_cache":
+                    self.assertEqual(self.run_script(fake, ["--execute"])[0], 0)
+                elif variant == "pending":
+                    with patch.object(MODULE, "save_cache", side_effect=OSError("private")):
+                        self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
+                trusted = json.dumps(fake.trusted, sort_keys=True)
+                saved = {path: path.read_bytes() if path.exists() else None
+                         for path in (self.cache, MODULE.pending_path())}
+                fake.calls.clear()
+                fake.writes.clear()
+                with patch.object(MODULE.subprocess, "run") as query:
+                    for argv in (arguments, [*arguments, "--execute"]):
+                        status, output = self.run_script(fake, argv)
+                        self.assertEqual(status, 0, output)
+                    query.assert_not_called()
+                self.assertEqual(json.dumps(fake.trusted, sort_keys=True), trusted)
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(fake.writes, [])
+                self.assertNotIn("CI key signing", [call[1] for call in fake.calls])
+                self.assertEqual({path: path.read_bytes() if path.exists() else None for path in saved}, saved)
+
+    def test_absent_orphan_still_requires_valid_provider_destination_cache_pending_and_main(self):
+        for variant in ("provider", "scope", "cache", "pending", "main"):
+            with self.subTest(variant=variant):
+                self.cache.unlink(missing_ok=True)
+                MODULE.pending_path().unlink(missing_ok=True)
+                fake = FakeCommands()
+                authority, arguments = self.orphan(fake)
+                del fake.trusted[authority]
+                if variant == "provider":
+                    fake.outputs["github_auth_keys"]["value"]["plan"]["expires_at"] = "2000-01-01T00:00:00Z"
+                elif variant == "scope":
+                    fake.names["secret", None] = [{"name": "TAILSCALE_AUTH_KEY"}]
+                elif variant in ("cache", "pending"):
+                    self.cache.parent.mkdir(mode=0o700, exist_ok=True)
+                    MODULE.save_private(self.cache if variant == "cache" else MODULE.pending_path(), {})
+                else:
+                    fake.dirty = "?? untracked\n"
+                with patch.object(MODULE.subprocess, "run") as query:
+                    self.assertEqual(self.run_script(fake, [*arguments, "--execute"])[0], 1)
+                    query.assert_not_called()
+                self.assertEqual(fake.retired, [])
+                self.assertEqual(fake.writes, [])
+
     def test_orphan_refuses_wrong_identity_signer_time_cache_pending_or_published_secret(self):
         for variant in ("identity", "signer", "created", "old", "purpose", "duplicate", "cache", "pending", "published"):
             with self.subTest(variant=variant):
