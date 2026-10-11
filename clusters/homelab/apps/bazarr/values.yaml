@@ -21,7 +21,7 @@ controllers:
     initContainers:
       prepare-config:
         image:
-          repository: busybox
+          repository: harbor.stinkyboi.com/mirror/docker.io/library/busybox
           tag: 1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
         command:
           - /bin/sh
@@ -45,7 +45,7 @@ controllers:
       configure:
         dependsOn: prepare-config
         image:
-          repository: ghcr.io/linuxserver/bazarr
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/linuxserver/bazarr
           tag: 1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
         command: [/lsiopy/bin/python3, /bootstrap/bootstrap.py, configure]
         securityContext:
@@ -66,7 +66,7 @@ controllers:
     containers:
       app:
         image:
-          repository: ghcr.io/linuxserver/bazarr
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/linuxserver/bazarr
           tag: 1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
         workingDir: /app/bazarr/bin
         command:

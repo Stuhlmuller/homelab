@@ -33,8 +33,12 @@ cluster cannot bootstrap its own in-cluster registry.
 5. Merge consuming changes through normal protection, then verify Argo's
    observed revision, rollout, imageID and original application behavior.
 
-No workload references or live node settings change in the publication
-prerequisite. Removing old artifacts is not a vulnerability remediation method;
+The publication prerequisite changes no workloads or live node settings.
+The transport-only consumer draft changes named references while preserving
+tags, digests and all other workload fields; Helm defaults and generated images
+remain separate completion gates. Its source-normalized YAML comparison covered
+66 changed files. The explicit Harbor bootstrap overlays are inactive in normal
+Application sources and still require cold-recovery acceptance. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
 ## Read-only findings, 2026-10-10
@@ -63,6 +67,24 @@ Tailscale, metrics-server, descheduler, Crossplane, NFS provisioner and Harbor
 component paths were not anonymously readable. Denial does not prove an image
 is absent from Chainguard's production catalog. No production organization
 credentials are assumed; approved exceptions remain Harbor-hosted.
+
+## Verified Chainguard publication
+
+[Run 38092077585](https://github.com/Stuhlmuller/homelab/actions/runs/38092077585)
+completed successfully on reviewed `main`
+`31245542329cb3f74709356c755b3264683e1ef4` on 2026-10-10. The user authorized
+its production-environment approval. It published only the seven pinned
+entries in [the Chainguard scope](../scripts/config/harbor-chainguard-images.json),
+with all-platform digest preservation, matching source-tag aliases and fresh
+complete anonymous downloads. The shared full catalog was not published by
+this scoped run.
+
+Read-only Harbor API inspection found every expected index digest under
+`mirror/cgr.dev/chainguard/<name>`, with successful scan status and two child
+references. A missing severity map is not proof of zero vulnerabilities;
+require completed summaries for the exact deployed architecture/digest before
+claiming CVE remediation. No consuming applications or node configuration were
+changed by this publication.
 
 ## Egress enforcement contract
 
@@ -97,3 +119,72 @@ Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practic
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
 and the [existing isolation contract](runtime-isolation.md).
+
+## Chart-generated internal references
+
+The staged internal-reference migration overrides the Istio injector, Kiali's
+supported default server image and Tailscale's generated proxy image, alongside
+their controller images. Kiali keeps ad-hoc CR images disabled. Tailscale
+ProxyClass and kube-apiserver ProxyGroup image overrides need separate review.
+Grafana's main/test/dashboard images and the Prometheus stack's operator,
+config reloader, certificate hooks, kube-state-metrics, Prometheus and
+Alertmanager use the cataloged Harbor digests. The operator's default base
+repositories also point to Harbor; its Thanos default is pinned. New custom
+resources still require an explicitly published version/digest before rollout. Prometheus and Alertmanager
+version fields remain separate from their digest-bearing image tags.
+
+These settings preserve existing versions and do not remediate the retained
+images' CVEs. Pinned Helm renders and controller-created live Pods both need
+verification. Full-catalog publication, private node routing, remaining chart
+and controller defaults, compatible Chainguard upgrades and enforced egress
+remain rollout gates; the seven-image publication proves only its fixed scope.
+
+The unchanged Prometheus chart also renders an unused default Alertmanager
+Secret despite the existing `configSecret` reference. Generic raw-Secret
+Conftest rejects that resource in both before/after renders; the canonical
+comparison proves its content unchanged. The image migration does not commit
+that generated Secret. Review chart `useExistingSecret` ownership separately;
+retain the declared ExternalSecret-backed runtime configuration.
+
+Platform defaults are also overridden for External Secrets (including webhook
+and cert controller), descheduler, metrics-server, Crossplane core/RBAC manager
+and all five cert-manager images, including generated ACME solver Pods.
+Metrics-server and Crossplane use repository-owned Helm `valuesObject` inputs;
+no local environment supplies image selection. Provider/function images are not
+declared by the Crossplane core chart and require their own cataloged references.
+
+Inactive recovery profiles for cert-manager, External Secrets, Traefik and
+Istio live beside the Harbor recovery overlay. They preserve reviewed image
+versions/digests while restoring public repositories through an explicit,
+temporary source change. Normal sources never include them. This resolves the
+configuration needed to start Harbor prerequisites, but a cold install/restore
+and return to internal-only transport still need live acceptance.
+
+Generic rendered-policy checks also reject the unchanged Crossplane TLS scaffold
+Secrets (`crossplane-root-ca`, `crossplane-tls-server`, `crossplane-tls-client`)
+and External Secrets' `external-secrets-webhook` scaffold. Compare baseline and
+updated renders before interpreting these as migration failures; no raw Secret
+manifest is added to git. Review scaffold/controller ownership separately from
+image replacement, without relaxing the public-repository Secret rule.
+
+Argo CD's root bootstrap Helm values now select Harbor for Argo/Dex/Redis,
+including init and hook containers. Component-specific Argo tags preserve the
+chart's existing version labels. NFS and local-path controllers and generated
+local-path helpers also use the existing cataloged Harbor digests. The inactive
+Argo recovery profile preserves the same settings/pins with upstream sources;
+its temporary root `values` override is separate from Application value files.
+
+Additional anonymous probes found public Chainguard Node and Go latest indexes.
+They remain unpublished candidates for custom build/runtime base migration;
+the seven-image publication receipt does not cover them. Image Updater's paused
+chart defaults to `quay.io/argoprojlabs/argocd-image-updater:v1.3.0`, whose index
+is `sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b`.
+It needs a publication prerequisite before an internal consuming override;
+keep its zero replicas and proposal gates unchanged.
+
+The generic render policy rejects Argo's unchanged `argocd-secret` and
+`argocd-notifications-secret` scaffolds in both baseline and updated renders.
+No raw Secret is added to the source change. Keep the repository Secret rule;
+review Helm/controller scaffold ownership separately. Chart inventory extraction
+now reads only root bootstrap Helm inputs, so nested runtime image repositories
+do not masquerade as changed chart URLs.

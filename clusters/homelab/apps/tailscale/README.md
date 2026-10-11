@@ -73,3 +73,13 @@ StatefulSet has matching current and update revisions, the connector reports
 `10.1.0.0/24`, and the Istio Service remains `ClusterIP` with no Tailscale
 address. Then select `homelab-exit-node` on a client and verify DNS, HTTPS
 egress, and access to a LAN address in `10.1.0.0/24`.
+
+## Internal image contract
+
+`values.yaml` pins both `operatorConfig.image` and `proxyConfig.image` to
+Harbor copies of the reviewed 1.102.3 digests. The latter becomes `PROXY_IMAGE`
+in the rendered operator and controls generated Connector/Service proxy Pods.
+A ProxyClass can override it; review any new ProxyClass image and kube-apiserver
+ProxyGroup image separately. Neither resource existed in the read-only audit
+on 2026-10-10. Changing the proxy reference recreates singleton proxies; retain
+the current digest and verify tailnet and node registry paths before rollout.

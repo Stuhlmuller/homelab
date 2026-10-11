@@ -38,7 +38,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: backup
-              image: ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+              image: harbor.stinkyboi.com/mirror/ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
               command: [/lsiopy/bin/python3, /bootstrap/bootstrap.py, backup]
               resources:
                 requests:

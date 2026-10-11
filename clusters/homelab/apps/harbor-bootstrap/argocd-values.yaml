@@ -1,0 +1,32 @@
+global:
+  image:
+    repository: quay.io/argoproj/argocd
+controller:
+  image:
+    repository: quay.io/argoproj/argocd
+repoServer:
+  image:
+    repository: quay.io/argoproj/argocd
+server:
+  image:
+    repository: quay.io/argoproj/argocd
+applicationSet:
+  image:
+    repository: quay.io/argoproj/argocd
+notifications:
+  image:
+    repository: quay.io/argoproj/argocd
+redisSecretInit:
+  image:
+    repository: quay.io/argoproj/argocd
+commitServer:
+  image:
+    repository: quay.io/argoproj/argocd
+dex:
+  image:
+    repository: ghcr.io/dexidp/dex
+  initImage:
+    repository: quay.io/argoproj/argocd
+redis:
+  image:
+    repository: ecr-public.aws.com/docker/library/redis

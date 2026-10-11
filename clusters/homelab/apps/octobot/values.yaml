@@ -13,7 +13,7 @@ controllers:
     initContainers:
       reconcile-tentacles:
         image:
-          repository: drakkarsoftware/octobot
+          repository: harbor.stinkyboi.com/mirror/docker.io/drakkarsoftware/octobot
           tag: "2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
         command:
           - /bin/sh
@@ -35,7 +35,7 @@ controllers:
     containers:
       app:
         image:
-          repository: drakkarsoftware/octobot
+          repository: harbor.stinkyboi.com/mirror/docker.io/drakkarsoftware/octobot
           tag: "2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
         env:
           TZ: America/Los_Angeles

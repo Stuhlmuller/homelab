@@ -16,7 +16,7 @@ controllers:
     initContainers:
       wait-for-postgres:
         image:
-          repository: postgres
+          repository: harbor.stinkyboi.com/mirror/docker.io/library/postgres
           tag: 18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
         env:
           DB_POSTGRESDB_PASSWORD_FILE: /run/secrets/n8n-postgres/DB_POSTGRESDB_PASSWORD
@@ -58,7 +58,7 @@ controllers:
           runAsUser: 65534
       migrate-ai-workflow:
         image:
-          repository: ghcr.io/n8n-io/n8n
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/n8n-io/n8n
           tag: "stable@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
         env:
           DB_TYPE: postgresdb
@@ -168,7 +168,7 @@ controllers:
     containers:
       app:
         image:
-          repository: ghcr.io/n8n-io/n8n
+          repository: harbor.stinkyboi.com/mirror/ghcr.io/n8n-io/n8n
           tag: "stable@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
         env:
           TZ: America/Los_Angeles

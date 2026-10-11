@@ -1,0 +1,6 @@
+controllers:
+  traefik:
+    containers:
+      app:
+        image:
+          repository: docker.io/library/traefik

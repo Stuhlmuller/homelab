@@ -22,7 +22,7 @@ langfuse:
     telemetryEnabled: false
     signUpDisabled: true
   image:
-    repository: docker.io/langfuse/langfuse
+    repository: harbor.stinkyboi.com/mirror/docker.io/langfuse/langfuse
     tag: 4.35.0@sha256:a5d8d2457702ab7e051bc0788d73871970caebd10aae6635e87cfb736e4067cd
     pullPolicy: IfNotPresent
   web:
@@ -71,7 +71,7 @@ langfuse:
               key: init-user-password
   worker:
     image:
-      repository: docker.io/langfuse/langfuse-worker
+      repository: harbor.stinkyboi.com/mirror/docker.io/langfuse/langfuse-worker
       tag: 4.35.0@sha256:5e35e625a214dd868bb22adad90fc52e8f83cc856c3750e47f9a922622c207fb
       pullPolicy: IfNotPresent
     replicas: 1

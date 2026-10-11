@@ -43,7 +43,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: envoy
-          image: docker.io/envoyproxy/envoy:v1.38.0@sha256:8146b97ee61a42cd216514709e4e3198af75f014974e3d9f310aef9c901fcbdf
+          image: harbor.stinkyboi.com/mirror/docker.io/envoyproxy/envoy:v1.38.0@sha256:8146b97ee61a42cd216514709e4e3198af75f014974e3d9f310aef9c901fcbdf
           imagePullPolicy: IfNotPresent
           command:
             - envoy
@@ -149,7 +149,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -197,7 +197,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
         - name: managed
-          image: ghcr.io/octelium/octelium-portal:0.35.0@sha256:1d34d4ee148cca5b858303c0487b881248a49d7ce3e027971c221f31937d076c
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-portal:0.35.0@sha256:1d34d4ee148cca5b858303c0487b881248a49d7ce3e027971c221f31937d076c
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -292,7 +292,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -340,7 +340,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
         - name: managed
-          image: ghcr.io/octelium/octelium-authserver:0.35.0@sha256:9c1231dd2d9cca799b4fba36a8abee19185c76ba8b0c883481eefdc29822333e
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-authserver:0.35.0@sha256:9c1231dd2d9cca799b4fba36a8abee19185c76ba8b0c883481eefdc29822333e
           imagePullPolicy: IfNotPresent
           args:
             - grpc
@@ -437,7 +437,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -485,7 +485,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
         - name: managed
-          image: ghcr.io/octelium/octelium-authserver:0.35.0@sha256:9c1231dd2d9cca799b4fba36a8abee19185c76ba8b0c883481eefdc29822333e
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-authserver:0.35.0@sha256:9c1231dd2d9cca799b4fba36a8abee19185c76ba8b0c883481eefdc29822333e
           imagePullPolicy: IfNotPresent
           args:
             - http
@@ -582,7 +582,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -630,7 +630,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
         - name: managed
-          image: ghcr.io/octelium/octelium-apiserver:0.35.0@sha256:007ac8a0ef2ef9fde486e7cc30811ce250345db9ad62e45774127075035e8ad1
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-apiserver:0.35.0@sha256:007ac8a0ef2ef9fde486e7cc30811ce250345db9ad62e45774127075035e8ad1
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -713,7 +713,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: octovigil
-          image: ghcr.io/octelium/octelium-octovigil:0.35.0@sha256:907e4c87e6e3923d52bb14143c2a5156afc6f56c7001994034f232396182fb99
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-octovigil:0.35.0@sha256:907e4c87e6e3923d52bb14143c2a5156afc6f56c7001994034f232396182fb99
           imagePullPolicy: IfNotPresent
           ports:
             - name: grpc
@@ -803,7 +803,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -906,7 +906,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1009,7 +1009,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1112,7 +1112,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1215,7 +1215,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1263,7 +1263,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
         - name: managed
-          image: ghcr.io/octelium/cordium-portal:0.12.7@sha256:f3fe77690cd66b1f0285b55070ef855f9b649764824c1db7f22bf303f2b29f36
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/cordium-portal:0.12.7@sha256:f3fe77690cd66b1f0285b55070ef855f9b649764824c1db7f22bf303f2b29f36
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1365,7 +1365,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1413,7 +1413,7 @@ spec:
             privileged: false
             readOnlyRootFilesystem: true
         - name: managed
-          image: ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octeliumee-console:0.22.0@sha256:207da950bea1dc31acaef91ef57a3072c765a8d133cf0339c0940c6fb92ba322
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1508,7 +1508,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1611,7 +1611,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1714,7 +1714,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1817,7 +1817,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -1920,7 +1920,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2023,7 +2023,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2126,7 +2126,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2229,7 +2229,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2332,7 +2332,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2435,7 +2435,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2538,7 +2538,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2641,7 +2641,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2744,7 +2744,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
@@ -2847,7 +2847,7 @@ spec:
             value: "1"
       containers:
         - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
+          image: harbor.stinkyboi.com/mirror/ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
           imagePullPolicy: IfNotPresent
           env:
             - name: OCTELIUM_SVC_UID
