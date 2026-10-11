@@ -30,6 +30,8 @@ sources:
     resource: repo://builds/harbor-core/registry-test.py
   - id: openwiki-source-edb4db7f4400ce88789df37e
     resource: repo://builds/harbor-core/scan.sh
+  - id: openwiki-source-ce77d7835e45f7370160e6c6
+    resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-8747f81e985430015cf21baf
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
@@ -52,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-92f06a045a917688e7fed07d
+    resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-48227484d35c61f86c7d08ff
@@ -82,10 +86,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T20:54:31.009Z" }
+generated: { by: "codex", at: "2026-10-11T21:16:07.164Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T20:54:31.009Z
+    at: 2026-10-11T21:16:07.164Z
 ---
 
 # Harbor Private OCI Registry
@@ -460,6 +464,14 @@ destination verification against the enrolled public-key fingerprint.
 Failures withhold the output digest; success produces a pinned-reference artifact.
 Core signing Pods use only the pinned Harbor Cosign mirror, whose publication
 must be verified before dispatch. NOFX's two-subject behavior remains intact.
+The preferred core signer is the cataloged public Chainguard Cosign image at
+`mirror/cgr.dev/chainguard/cosign@sha256:3fad8be8...037ba18`.
+Its [complete internal pull receipt](../../docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json)
+verifies the original index, both platform manifests and all 18 referenced
+config/layer checks. This is content/transport evidence, not source-signature
+transfer. The [Linux compatibility fixture](../../builds/harbor-core/signer-test.sh)
+must verify P-256 import/public-key identity and signing flags before credentials;
+local Docker is unavailable, so that new compatibility gate remains pending CI.
 This source path does not authorize dispatch, activate the held consumer or
 clear shared recovery/advisory gates.
 Current-main source staging also applies the fresh private pull prerequisite to

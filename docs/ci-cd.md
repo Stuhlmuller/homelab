@@ -24,7 +24,7 @@ This repository uses GitHub Actions for the review and rollout path:
   or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
-  main-only `homelab-production` environment without reviewer approval, then
+  main-only `homelab-production` environment, then
   verifies `main` again before referencing
   environment credentials or running live commands. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
@@ -32,6 +32,10 @@ This repository uses GitHub Actions for the review and rollout path:
   They compare against the latest successful historical push apply or full
   dispatch so failed or deferred changes remain in the next affected range;
   targeted Argo reconciliations never advance that checkpoint.
+  A read-only settings check on 2026-10-11 found a required production reviewer
+  in GitHub's live environment configuration. Respect that current approval
+  gate and recheck live settings before dispatch; this corrects the older
+  reviewer-free documentation and does not change environment rules.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
   production branch gates, never prunes, and proves a second apply has no

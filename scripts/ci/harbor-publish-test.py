@@ -872,7 +872,7 @@ class HarborPublicationGates(unittest.TestCase):
         job = json.loads((self.root / "signing-job.json").read_text())
         pod = job["spec"]["template"]["spec"]
         for container in pod["initContainers"] + pod["containers"]:
-            self.assertEqual(container["image"], "harbor.stinkyboi.com/mirror/ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00")
+            self.assertEqual(container["image"], "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18")
         self.assert_cleaned()
 
     def test_core_refuses_implicit_push_publication_before_credentials(self):

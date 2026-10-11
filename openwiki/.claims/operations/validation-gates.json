@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3cb6f353fe15871d8099fb7061647f46870c15b8fa829cc5102df3635a4b54c9",
+  "pageVersion": "sha256:a02595984fdfa00c9fc5f2c026b5137b1b2c09dcd3e9f46241cdb1b79bf7d5c6",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f686cb19d2c9e0a69d07676e370f4e7642138f1d65206b6a5ad00de7cd545a7d"
+          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -362,7 +362,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -384,19 +384,19 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:cc8309960b1ad6c1d9b3235e55328b2144f127b53d6ed51cf56565da8d2c0d1b"
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:5bc73e74d3ed01777e7271eb5de5345bcb0cc52836c761f45a8f74e3881326e6"
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d4468d656f37f49661ee4b0d4612f1682d1c60c17bb3f6e2e2fe1eefb8c57788"
+          "version": "repo-file-v1:sha256:9df5071d813074ef493a834d925d69043dd767b0ba64a2cb8eabd301895825d7"
         }
       ]
     },
@@ -406,17 +406,39 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
           "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         }
       ]
+    },
+    {
+      "id": "claim_8e0f5d1def624426aff856de7987ba8e",
+      "statement": "Core CI/publication requires a pinned public-Chainguard signer fixture before credentials, testing disposable P-256 import, public-key equality with OpenSSL and producer signing flags; core Pods use the corresponding Harbor mirror. Documentation records the October 11 live production required-reviewer check without changing rules or claiming compatibility before Linux CI.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+        },
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/signer-test.sh",
+          "version": "repo-file-v1:sha256:360d920e7d253eb287a81b1372c0c6832bc2acad79017b99e574eb81aba4df52"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T20:54:31.009Z"
+    "at": "2026-10-11T21:16:07.164Z"
   }
 }

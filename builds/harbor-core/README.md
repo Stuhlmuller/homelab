@@ -71,6 +71,12 @@ or enable public fallback to bypass a failed publication.
 The core signer uses only the digest-pinned Harbor Cosign mirror; require its
 complete publication/availability before dispatch. No signing Pod uses a public
 registry reference in this core mode.
+The preferred signer is the public Chainguard Cosign candidate mirrored at
+`mirror/cgr.dev/chainguard/cosign`. The Linux compatibility fixture tests P-256
+key import/public-key identity and the signing API flags before credentials.
+The [complete internal pull receipt](../../docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json)
+verifies both platform manifests and all referenced blobs; it does not establish
+source-signature transfer or compatibility until Linux CI passes.
 
 Run `bash builds/harbor-core/build.sh` on a Linux Docker host. Its native build
 first requires the unpatched manager to fail the repeated-child regression,

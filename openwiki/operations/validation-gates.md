@@ -18,6 +18,8 @@ sources:
     resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
   - id: openwiki-source-4809fcf6b821691d424ca089
     resource: repo://builds/harbor-core/registry-test.py
+  - id: openwiki-source-ce77d7835e45f7370160e6c6
+    resource: repo://builds/harbor-core/signer-test.sh
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -94,10 +96,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T20:54:31.009Z" }
+generated: { by: "codex", at: "2026-10-11T21:16:07.164Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T20:54:31.009Z
+    at: 2026-10-11T21:16:07.164Z
 ---
 
 # Validation Gates
@@ -1474,6 +1476,14 @@ pull/digest/signature failures. The credentialed job inventory and canonical
 workflow hash enroll both the publisher and pinned-reference reporting job;
 dispatch verification precedes checkout and repeats before credentials.
 No publication workflow has been dispatched as part of these source tests.
+The pinned public Chainguard signer now has a Linux fixture before credentials:
+it imports a disposable P-256 key, requires the emitted public key to equal
+OpenSSL's output, and checks the signing API flags used by the producer. Core
+signing Pods use the matching Harbor mirror. Complete mirror content has been
+verified separately; Linux compatibility remains a fresh CI requirement.
+The October 11 read-only GitHub environment check found a required production
+reviewer. Respect live environment approval despite the older reviewer-free
+description; no environment protection rule changed.
 The merged publisher suite retains current-main anonymous source staging and
 all-subject complete-pull checks alongside the fixed-core cases. Its native
 offline OCI fixture still verifies multi-platform and repeated-descriptor

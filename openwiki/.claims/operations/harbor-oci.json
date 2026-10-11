@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f2f91d67369de9394e71f37d4acc265ca8899acb1bd1c51c2eaf6bf2ea0bb252",
+  "pageVersion": "sha256:f5252001b9c8fa9938e67b2967b084504dc60ea89ee318ef95b35eb2aff015f3",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:5bc73e74d3ed01777e7271eb5de5345bcb0cc52836c761f45a8f74e3881326e6"
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -132,7 +132,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
         },
         {
           "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
@@ -164,11 +164,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
@@ -224,7 +224,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -270,7 +270,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:de6176edff4bebde0ea28ecde1176321f0d4c8ac83b0ffcb49a0567ae2b474a0"
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -324,19 +324,19 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:cc8309960b1ad6c1d9b3235e55328b2144f127b53d6ed51cf56565da8d2c0d1b"
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
-          "version": "repo-file-v1:sha256:ea4effc298a0b25f2636e4389a680820d3171d47950672c70f619bb40191c51e"
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:5bc73e74d3ed01777e7271eb5de5345bcb0cc52836c761f45a8f74e3881326e6"
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
         }
       ]
     },
@@ -360,11 +360,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b32b7476168955bc156e09e4514ae198ce402f55825e62f9b5845e5621a3e408"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:5bc73e74d3ed01777e7271eb5de5345bcb0cc52836c761f45a8f74e3881326e6"
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
         }
       ]
     },
@@ -381,10 +381,32 @@
           "version": "repo-file-v1:sha256:23b98b8ec5034ad5c717d54691bb2e7fb9a2f435ac391790cee63cce1d1d11bf"
         }
       ]
+    },
+    {
+      "id": "claim_54dda1a75d0d4f659c072d7243bdc3b3",
+      "statement": "The core-only signer selects the cataloged internal public-Chainguard Cosign digest. A dated read-only pull receipt verifies its original index, two platform manifests and 18 referenced config/layer hashes, while explicitly denying source-signature and runtime-compatibility acceptance. Linux CI must pass P-256 key import/public-key identity and signing API flag checks before publication credentials.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+        },
+        {
+          "resource": "repo://builds/harbor-core/signer-test.sh",
+          "version": "repo-file-v1:sha256:360d920e7d253eb287a81b1372c0c6832bc2acad79017b99e574eb81aba4df52"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a7b8f7006f16a0638a33edf7f38b634782ccafc90bd36ab7872df2b9600ee1da"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T20:54:31.009Z"
+    "at": "2026-10-11T21:16:07.164Z"
   }
 }

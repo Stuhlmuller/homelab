@@ -311,7 +311,7 @@ if [[ "$mode" == publish ]]; then
       'del(.metadata.name) | .metadata.generateName = "harbor-sign-" |
        .spec.template.spec.initContainers[1].args += $subjects' >"$scratch/signing-job.json"
   if "$core_publication"; then
-    signer_image=harbor.stinkyboi.com/mirror/ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
+    signer_image=harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18
     jq --arg image "$signer_image" \
       '.spec.template.spec.initContainers |= map(.image = $image) |
        .spec.template.spec.containers |= map(.image = $image)' \

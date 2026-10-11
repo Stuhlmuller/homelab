@@ -48,6 +48,8 @@ jobs:
 
       - name: Build And Test Core Before Registry Credentials
         run: bash builds/harbor-core/build.sh
+      - name: Check Pinned Chainguard Signer Before Registry Credentials
+        run: bash builds/harbor-core/signer-test.sh
 
       - name: Install Nix
         uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
