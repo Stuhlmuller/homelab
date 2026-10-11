@@ -97,3 +97,13 @@ Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practic
 [ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
 [Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
 and the [existing isolation contract](runtime-isolation.md).
+
+## Admission boundary
+
+The staged [image policy](../clusters/homelab/platform/image-policy/README.md)
+rejects public references in all three Pod container kinds, including future
+operator-created Pods. Its narrow Talos system exceptions require proven strict
+node mirrors. The default binding denies violations; it must not reach main
+before existing application references and private pulls are accepted. Isolated
+Linux CI exercises the real Kubernetes admission API, rather than a second
+implementation of the CEL expressions. Pod egress enforcement remains required.

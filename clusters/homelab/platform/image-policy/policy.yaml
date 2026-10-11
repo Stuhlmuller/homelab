@@ -1,0 +1,45 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: harbor-only-images
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods, pods/ephemeralcontainers]
+  variables:
+    - name: nodeMirror
+      expression: >-
+        request.namespace == 'kube-system' &&
+        'system:nodes' in request.userInfo.groups &&
+        has(object.spec.nodeName) &&
+        request.userInfo.username == 'system:node:' + object.spec.nodeName &&
+        has(object.metadata.annotations) &&
+        'kubernetes.io/config.mirror' in object.metadata.annotations
+    - name: systemNetworkImages
+      expression: >-
+        request.namespace == 'kube-system' && has(object.spec.serviceAccountName) ?
+          (object.spec.serviceAccountName == 'flannel' ?
+            ['ghcr.io/siderolabs/flannel:v0.27.4'] :
+           object.spec.serviceAccountName == 'kube-proxy' ?
+            ['registry.k8s.io/kube-proxy:v1.34.11'] : []) : []
+  validations:
+    - expression: >-
+        variables.nodeMirror || object.spec.containers.all(c,
+          c.image.startsWith('harbor.stinkyboi.com/') ||
+          c.image in variables.systemNetworkImages)
+      message: Container images must use Harbor; only declared Talos system images are exempt.
+    - expression: >-
+        variables.nodeMirror || !has(object.spec.initContainers) ||
+        object.spec.initContainers.all(c,
+          c.image.startsWith('harbor.stinkyboi.com/') ||
+          c.image in variables.systemNetworkImages)
+      message: Init container images must use Harbor.
+    - expression: >-
+        !has(object.spec.ephemeralContainers) ||
+        object.spec.ephemeralContainers.all(c,
+          c.image.startsWith('harbor.stinkyboi.com/'))
+      message: Debug container images must use Harbor.
