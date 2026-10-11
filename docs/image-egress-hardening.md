@@ -289,6 +289,22 @@ prove Talos integration, ambient HBONE behavior, public-domain/SNI controls or
 the live application's original behavior. Local Docker is unavailable; the
 dedicated Linux CI job must pass before this prerequisite is ready.
 
+The same owned Kind fixture also runs `istio-egress-routing-check.py` with
+checksum-pinned Istio 1.27.3 charts and catalog-pinned component images. It
+installs Gateway API from the same immutable source as the registration
+prerequisite, enables DNS capture inside the fixture only, and requires the
+client to resolve the exact allocated ServiceEntry address. Both callers must
+succeed before authorization; the waypoint must subsequently deny the
+unauthorized service account while preserving the required caller. A direct-IP
+baseline precedes enforced egress isolation, which must retain the required
+route while denying the real destination IP and alternate port.
+
+This proves an isolated IPv4 TCP routing boundary, not the production domain
+allowlist. TLS origination/certificate checks, SNI/shared-IP behavior, DNS-query
+leakage, ambient IPv6, host-network/privileged bypass and original application
+actions remain required. Production DNS capture stays disabled. Local Docker is
+unavailable; fresh Linux CI must pass this added stage before trusting it.
+
 Sources: [pinned enforcer](https://github.com/kubernetes-sigs/kube-network-policies/tree/v1.1.2)
 and [upstream transport-only fixture](https://github.com/kubernetes-sigs/kube-network-policies/blob/v1.1.2/tests/setup_suite.bash).
 

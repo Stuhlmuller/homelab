@@ -2,6 +2,7 @@
 """Prove policy enforcement in disposable Kind; never load homelab credentials."""
 
 import json
+import runpy
 import select
 import subprocess
 import tempfile
@@ -190,9 +191,12 @@ def main():
                     held.kill()
                     held.communicate(timeout=10)
             print(f"Passed {count} dual-stack destination/port/protocol checks, Service/DNS access, first-packet isolation and established-connection revocation", flush=True)
+            runpy.run_path(str(ROOT / "scripts/ci/istio-egress-routing-check.py"))["check"](kubectl, root, PYTHON)
         except Exception:
             for args in (("get", "pods", "-A", "-o", "wide"),
-                         ("-n", "kube-system", "logs", "-l", "app=kube-network-policies", "--prefix=true", "--tail=100")):
+                         ("-n", "kube-system", "logs", "-l", "app=kube-network-policies", "--prefix=true", "--tail=100"),
+                         ("-n", "istio-system", "logs", "-l", "app=istiod", "--prefix=true", "--tail=80"),
+                         ("-n", "egress-gateway", "logs", "-l", "gateway.networking.k8s.io/gateway-name=required-egress", "--prefix=true", "--tail=80")):
                 result = subprocess.run([*kubectl, *args], capture_output=True, text=True, timeout=30)
                 print(result.stdout or result.stderr, flush=True)
             raise
