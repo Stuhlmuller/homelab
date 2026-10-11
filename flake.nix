@@ -42,6 +42,10 @@
                 cp -R ${source} source
                 chmod -R u+w source
                 cd source
+                # Linux sandboxes have no /usr/bin/env for generated fixture tools.
+                for fixture in scripts/ci/*.py; do
+                  substituteInPlace "$fixture" --replace-quiet "/usr/bin/env" "${pkgs.coreutils}/bin/env"
+                done
                 # Clone-based fixtures need Git objects, never the operator's history.
                 git init -q -b main
                 git add --all --force
