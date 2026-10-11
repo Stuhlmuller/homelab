@@ -3,15 +3,15 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-10T23:30:33.938Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-generated: { by: "codex", at: "2026-10-10T23:30:33.938Z" }
+generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-11T00:23:56.319Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -291,7 +291,7 @@ Octelium does not provide a Talos-native Service mode.
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining
 canonical TLS names. Talos host pulls use the separate registry-only Service
-`10.96.0.50`; require the exact node/bridge policy and uncached pulls before
+`10.96.0.50`; require the exact LAN/bridge/overlay source policy and uncached pulls before
 external Harbor DNS changes. Source preparation does not prove live cutover.
 
 ## Source Files

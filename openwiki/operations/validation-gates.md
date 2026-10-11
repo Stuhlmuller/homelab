@@ -60,10 +60,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:50:03.392Z
+    at: 2026-10-11T00:23:56.319Z
 ---
 
 # Validation Gates
@@ -159,7 +159,7 @@ otherwise Terragrunt can initialize the real S3 backend before running them.
 
 The static gate runs `traefik-routes-test.py` and `install-kubeconfig-test.py`.
 The first checks the fixed private inventory, callback/registry boundaries,
-Fleet setup denial, and the exact four LAN plus four bridge `/32` sources for
+Fleet setup denial, and the exact four LAN, four bridge and four overlay `/32` sources for
 registry port 9443 in both ingress policies. Adjacent LAN addresses and ordinary
 Pod addresses remain outside that source boundary. The second checks tokenless API-proxy configuration and
 plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
@@ -197,7 +197,12 @@ restrict authority retirement to previous generations. Retirement regressions
 corrupt each current or previous record, including later list positions, and
 require both preview and execution to fail with zero removals, unchanged cache,
 and no signing/publication. They also cover target drift after preflight and
-already-absent previous authority retries. Mock provider tests cover
+already-absent previous authority retries. Pending-receipt regressions cover
+lagging readback, timeout/retry without re-signing, durable cache replay after a
+partial write, and preview/retirement refusal while a receipt remains. Narrow
+orphan-recovery fixtures require exact provider/Mac/time metadata, no published
+fixed secrets and an empty binary affected-signature lookup; malformed, populated
+or failed lookups and unrelated trust drift stop removal. Mock provider tests cover
 tag, expiry and explicit-rotation contracts; real provider planning remains the
 proof of replacement behavior.
 
@@ -209,7 +214,7 @@ peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
 Before traffic cutover, verify observed Argo revision and health, certificate
 readiness, real mesh application access, Fleet device check-in, native Cordium
 execution/reconnection, and an uncached Talos registry pull from every node.
-Converge the exact node/bridge source policies before host-only node migration;
+Converge the exact LAN/bridge/overlay source policies before host-only node migration;
 a successful mapping or loopback preflight does not prove the node's SNAT path.
 Prove callback
 admin/root rejection off mesh and actual signed webhook delivery. Run protected

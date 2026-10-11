@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2a786c5ccd705ed7a67be8936a1d79cbd033ca821d5c77280d985fa10cd75ed8",
+  "pageVersion": "sha256:6ca22ec7e399b0ba630d2c7bfdd5aeddae6d2dfb1c623029bc74826596e83c3d",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -57,10 +57,6 @@
       "statement": "Fixed callback helpers preserve webhook credentials, use non-executing preflights and require newer delivery IDs and timestamps from saved receipts. The CI publisher signs private provider keys and publishes three fixed GitHub secrets behind current-main, environment and trusted homelab-signer guards; it caches the separate credential authority identity alongside the wrapped delegated node-signing key, and retires old variables only after all secret writes and metadata checks.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L84-L164",
-          "version": "repo-lines-v1:sha256:e1f0154ff96f1d3ac1d08ea0db07547d466d974d4de0b93a41868c5c29906460:eyJzZWxlY3RlZExpbmVDb3VudCI6ODEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5NzE1NDJmNjQzOGUyNTcxYjkyYWM1ODQxZTVmOWVhM2I2N2NlYjY3ODExOWRkMzZhMGExZTQ5YWQ4YmQzM2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMzExMzZjMzZlZGEyYzI4MGIwNTRjZDdhM2YzZWJhNDNkZDkxOTdjN2IzNTQ0YTk3YmZiZWMxN2IzMTQyNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YjJiYmUzZjY5Zjc0ODdiZTNhODc0OWI0YzhhMWI5MDBhZWI3ZGRhY2MyNjk4NjEwOWFmYjA4MGEwNzhjNWIifQ"
-        },
-        {
           "resource": "repo://scripts/n8n-github-webhooks.py",
           "version": "repo-file-v1:sha256:306ff8ce24d966f3c233427b37484a2ea6b9989fa1e644328c8976fb1dd6c22f"
         },
@@ -69,8 +65,12 @@
           "version": "repo-file-v1:sha256:d856eb227a25f4d4d8b43491805778d4562cd9c479f580c0f9767d08eb2b4a0e"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L180-L321",
-          "version": "repo-lines-v1:sha256:bd806ef07e5fa6559326a037787a15348e5b2e1349db3180af592af14735a310:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlYmU4YjYwNDQ3MWE1MGIwMjQ1MTFhM2FiZmVlMjQ3ZjNiZGRjMDhmYTBhMGRkMzgxOTY2NDcxYTc5NDAzZGI5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5NjM3MjZiMDVkMzg5ZWIwOTczOTUwYTA5NDljM2UwOGIwOWFjZmY0YjY4ODcxMWMwNWMyMjIzMjA4NGIyYzRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxNGMwNWFhNmFjNmZmYzQ0MzRmZjZiNjk5MmZlZjk5MTA4YWM4YTUwZDJiNDkzZDc5ZTAwMGI2ZThiNjBlZTViIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L275-L317",
+          "version": "repo-lines-v1:sha256:3d6fa368c7c230e9bfdf7fb86df0bcc311a9674ae93b3813e413f49a658f940c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NDc0MjhiOTViZGE4M2JkMDQ1NzAwMDQ4MjhlYjhmYzJhNzdhZmZjMzVkMzQ5ZTQ1OWZlODhhZThmYzU5ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzYTcxNDMyZDIzMWEyNTA5OTg4Y2U3OTAxNGRkMGNkNzYwMWE4NjVkY2Y5NDdhMzViODA5N2MwY2NjODBmNjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YjBiYzlhZTRhOGMwZDBiZWU0ZWVmOGJjNGM5OTJlMmI5NmJmMGEyMGY1MDAyMDBmZjUxODhkNWQzZDNjMGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNzc3MTg2MzQ1OGUxNzU1Mzc0ODFmYTNhYjgwM2JkMDEwMzM1NmQ3ZWI2YTNhY2M4ZjVmNmVmYzk5N2I5NDAifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L413-L469",
+          "version": "repo-lines-v1:sha256:fe0f342f843988e595b24be9f5a06895c5ee3acc64e2ebd2fd2bf6dd586b4324:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ODgwMmNhZDg2YWE5MzZkNGViY2Q2MmIzMTUzOGM2NmY1Y2Y3Nzc0ZjViMjY0OGY4ZTI3OGZmOTU2NDM4NzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ODZmZjVjZjkzNjNiNDQyOTMzNjgwM2IyYzk2MGU3M2RhOGM0N2ZhMGM2ZjY3NjU4ZDE0YjMyM2NkMjJkMzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ4YzYyNzM1MTYyOTRiODJjOTNmYjJkYjg5Yjk5YTFlNGYzYTMwODIxYzMzYTEyNDNiMTU4NzJhZTg4Y2U1MmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2MzcyNmIwNWQzODllYjA5NzM5NTBhMDk0OWMzZTA4YjA5YWNmZjRiNjg4NzExYzA1YzIyMjMyMDg0YjJjNGUifQ"
         }
       ]
     },
@@ -80,7 +80,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:e8c4f279160c32d83b429ad875931074bd399bfa1f6cbcac345cbcd9214c7ab1"
+          "version": "repo-file-v1:sha256:4e4c30b506be8055e5e5a3af2b8e89df693378d8c8ed3c7579728569efb8c41c"
         }
       ]
     },
@@ -119,7 +119,7 @@
       "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy and two Funnel proxies after verifying exact controller ownership, Ready state, tailnet, tags, published addresses, public node/rotation keys and local peer identity; already-signed targets are skipped without adding signing authorities.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/README.md#L74-L95",
+          "resource": "repo://clusters/homelab/apps/traefik/README.md#L76-L97",
           "version": "repo-lines-v1:sha256:b42a967cf619c082eb5e6fe842fa7e93f5b602bdeb1d02629afbdefda918a789:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOWY1Mzg4ZTg3YjA3NDg4MjBmODBmNzllNWQ2YmE1MzYwOWNhNzI2MzkyMDhlZjA1MDE0ZWNkN2MwYmVlNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjBhY2QxNzk2MzA4MDA5M2FhMTEyZGU1NzhjZDY1YzY4Y2U4NDM4MjQyNGEzZjRiZGVlZTBjNzNhODM1YWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2YzZiNWJhMmM4YjA5MDcyNjEwZmI0MjRlMjdhZDIwNGQ5ZDFiZTExOGM2YjBmNDhjMmNkMGY3ODA5YTQ4NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiNmY5MzM0MWE4MzM3YjFlYTA3MjBmMjk1Y2ZiNGY0YjljN2I1NjAwN2VmYmIwZTc5OGU5MDMyYTdkYTYyYjkifQ"
         },
         {
@@ -130,19 +130,19 @@
     },
     {
       "id": "claim_a059c652889b45e79db0e082f246ab7a",
-      "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from the four fixed LAN node addresses and their individually verified cni0 bridge /32s; node-to-Service SNAT requires those bridge sources, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
+      "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from four fixed LAN node addresses, four verified cni0 bridges and four flannel.1 overlay /32s; node-to-Service SNAT selects bridge or overlay by destination, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L159-L179",
+          "version": "repo-lines-v1:sha256:93a4ba98b55e6754691476e3c712a5c485b8697b16e5e3c70b9b61770ad9ae28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzAzYjYyZjNlN2U0Y2Q4NzdkOWJmNjJlMDQ2YjFhNTk1NmIxMDA5NWQyNTRjZWYzZTZiOTY5NjIwMzk2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2MzNTY0M2RjZWQ2YzgxYTNhOWNmZjczNzE1ZWE2OGNmNTdjNDk4ZTBjNWQ4MjMxMTk3M2FjYWQxOTQ2MDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1ZDk5NDlmMTRjYzNhNWVkYjJlODEyNDMyNTJhNTA3ODcwNGVjNjU5OWM0MmNlNzU4YTdkNjYwOWE2ODg4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:5064fa74df0e516848ce5a0ddc7677f2789ff0e68670591f03c997645cf49bad"
+          "version": "repo-file-v1:sha256:a2e7b7fa8e1068fe4a6cafd829406b2d46dfa5352fbc153f22cbd5173c0b1e98"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:ff416a6ea053612e2694602952cfee18e744c3c4404284072ebdb0c955de8122"
+          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
         }
       ]
     },
@@ -151,12 +151,12 @@
       "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L129-L158",
-          "version": "repo-lines-v1:sha256:a6b451b4ea561729e49731ddcff0d38bb542df71d21bc376cdf3007c6f4101be:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjYzEzMTA4MWJjZjk2ZTdlMzJlM2FlYWIzYWFmZTI3NGJiY2VmNGUxMzg2YzFmMzNkMGRmMGE0ZmM5NjYxZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MjY0NDYyYzNiOWM5OWYzMjgyNGY5MmFjYmZjZmNkNDI3MzliNzA2MGRjMjhhNTdlMjI4ODBmNGNiOWZhNjcifQ"
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L169-L191",
+          "version": "repo-lines-v1:sha256:0240c52d331907260bbff6155cd19ac9bb48c54aa317d867f346cd9cb952bc32:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3OTAzMmM2NGVmYjFhYWUyODZlZWNmZjcwMzc5ZGI2ZmNkMTgwYmM3YjA0YjM0YzZmMWE4MDg4ZWJkNDhlY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI5MGRhMGRmODBjYTNlY2RjZTdjYTk0MTdlOTFkYTU4YzhkOTczNzVmNzRlMjBiZDRiNjY2ZDkxMDE1MGIifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L251-L308",
-          "version": "repo-lines-v1:sha256:0060cbd98b372f78c13341a3b1c6050d18093086e6082c90a389d14e6d55f4e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1NzJkYTlmMGM5ZTFkZGRhYzZkOWY1MWE2YjVjMjM2MjY0N2NiOWNjMDQyMGNhNGJhNWM5OTMzZWJlMjhiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljMmQ2YjgwZTRlNjEwMjg2YzA3ZjdmNThiODU1YWFhM2YyZWRkOGYzMjhiNzI4MWNjYWEwMWY5OTA2Yzg0MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMmVjODA5OTE5ZWEyYzZlNTg3ODQ1OTViZGJiNmQwYzM4MTczNzhhOTkyNGQ5N2Q2ZDFmYTZkMjdlM2NjNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVjZjAxMTdmMTBiY2VjZDlhZWI4OWIzYzhlMmFlYmYyNDJjODk4NTZlMDQxNzRkYjBlZjUwZjI1MWY4ZjQ4YTQifQ"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L383-L410",
+          "version": "repo-lines-v1:sha256:db8619dd18d979650e756303c7f0f62de6974608c91ae8c88018d4cb3dff97e6:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1NzJkYTlmMGM5ZTFkZGRhYzZkOWY1MWE2YjVjMjM2MjY0N2NiOWNjMDQyMGNhNGJhNWM5OTMzZWJlMjhiYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NzYyYzE1ZTQ2ZDlmYjQxNGFiMmYyMzQxZWE2YmM4MTM0ZDYxZDA5NmZkMGE0YmFmOTc3N2E4NTgyYjQzYjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIwMmVjODA5OTE5ZWEyYzZlNTg3ODQ1OTViZGJiNmQwYzM4MTczNzhhOTkyNGQ5N2Q2ZDFmYTZkMjdlM2NjNmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwMGMxMzA4MmZhNjYxNjdhNDQ4N2E0ZDI5YTVjYjY4YTdhZDUwYjU0NzUyN2Q3MzAwMGUyYTMxNDljNTJmNTMifQ"
         }
       ]
     },
@@ -193,12 +193,12 @@
       "statement": "The trusted Mac CI publisher passes raw signing keys through stdin rather than command arguments or temporary files to avoid the sandboxed application's private-file restriction.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L85-L98",
-          "version": "repo-lines-v1:sha256:92f1e3a1a5e6d062c581f3b1543954ca99683677ac52d08d49b912638e3a7951:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhYzUzMWY5YmQ3NDQxMjcxNjM2YTZkYTYzMzViMzUzMTk3ZmE1MGM2ZDcyZWNjZTRlMzQ3ZThkMThjMGFmMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiYTZlOWEwYTdmYWIwMzQ5N2U2NjIxNjBiNmRkZGNhZjg2ZDNlZjA1N2E2ODllNjYyOWMwNWI5MjM1Nzg3M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMxYjFkZDk5YTYxZDRmNDMxNDFkYWJkNWI3OGI0YmZiYjM3ZDVkMTc2NzhkOGM2ZmEwYTFiYjk3MzEyODZiMDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2NzkyY2YwYjc3MzJlN2U3ZTU3YmRkYWYyNDBkMDViMjk4OTVhNmY4ZjZiMmEyN2JhMTg4ZjcwM2I4ODA4YTcifQ"
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L85-L88",
+          "version": "repo-lines-v1:sha256:92bf36c6a1187a072e7a07f1d57a0e20b2dc0dde9b508deb3512a5077f92971f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmFjNTMxZjliZDc0NDEyNzE2MzZhNmRhNjMzNWIzNTMxOTdmYTUwYzZkNzJlY2NlNGUzNDdlOGQxOGMwYWYxZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTE5Yjg0YzExY2VjNTQ3MDdjODA2MDk3ZjZmMjNmYTQ3ZjA5ZGYwZDU5YzM1NTQ2MzU1NTU1MGYxMjllMTBkMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzFiMWRkOTlhNjFkNGY0MzE0MWRhYmQ1Yjc4YjRiZmJiMzdkNWQxNzY3OGQ4YzZmYTBhMWJiOTczMTI4NmIwOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzI2YTE2ZTVlNTFhMzEzMjljNzE5MmZmYzk2OTllMDkyMDUzNmIxYjNmMmUzY2RmNTc0YTA2NDdmNzlkNWNhZiJ9"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L191-L225",
-          "version": "repo-lines-v1:sha256:aeb56c875eb488e6c5ca74948962a23429336490a8b3bb2018b437d8d2800648:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2NDc0MjhiOTViZGE4M2JkMDQ1NzAwMDQ4MjhlYjhmYzJhNzdhZmZjMzVkMzQ5ZTQ1OWZlODhhZThmYzU5ZmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmY2EzM2ZlNDlkMjQxMjVjMjFlYzA5ODQ1MzIyNDZjOGIwNDcwZTZmM2Y5N2ZlNDMwNjkyZTI4YzY0MWMyYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwNTczNzY5YTQ4YmYzMjE0OTBiZjBjN2IzNzVkOTAwZmRmYWY3MTI5OWEzNDhkYWE0MzExYzU2YmQ2OTdhMzkifQ"
+          "resource": "repo://scripts/tailscale-ci-configure.py#L292-L299",
+          "version": "repo-lines-v1:sha256:afd0cad319fbed6155e2af86e32a1e8eb7b0e9284044fd9166b64c775f095012:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmI5MjdlNjE1M2Y1MmJiZTAwMDQ2NTAxNWQwOGJhZGVkYjFhY2UxYzA4NWZiMzZlZTdjNTFjNTQzNzgxZmMwYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZmY4NzYyOWJlZWNhNTBhMzdmODk5YzJlNGNhYWZmYTgwNTJlMjRkMzQzOGIzODM2NjAyOTg4ODU5NWI3ZWM3ZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWUwZWNlZGM0YmE5MTZhMzRlYTVhZDU0ZDgzMTBkYzI0MjY0MjIwYmYzZTlmYjU5YzU4YzZiZDE5NTRiNjczNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTk5MzJkNDYwMGZiMWE0MzAzNjM5YTg5MjM5NDczYTUwZWUwN2Y3ZjczY2FmODU3MGYzZmFlMmZmNjM3NTY2NyJ9"
         }
       ]
     },
@@ -222,7 +222,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
-          "version": "repo-lines-v1:sha256:04f1f27f9952d23fcf53fce663f7dc1e69f017e745223dac6824960ab98ee39d:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
@@ -257,14 +257,36 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L163-L198",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7b7b2f03462a49a1b2c8f9cc676626e3",
+      "statement": "The publisher durably saves a validated pending wrapper before bounded authority readback and resumes it without re-signing after timeout; preview and retirement do not consume pending receipts. A separate guarded orphan recovery requires current provider/Mac/recent timestamp metadata, absent receipt and fixed secrets, and an empty affected-signature lookup before removing only that authority without re-signing.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L120-L152",
+          "version": "repo-lines-v1:sha256:3526673354f93d1e8f8794ba19b7896f625cc75300bcf75c4e316622900b01e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZGZiMjQzYmIyN2MwMmYyMTcyZDNiNDU5MDIzYTYyNTMzYjk4YWEyMWVmOWI2ZmFkZmU2YzEyZDFlZGNiYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1MWJiOTVmMTUwM2RlYTcyYWZkMGQ2N2MxM2M2NzRkZTA4ZWQ0ZjVjYzg5NGNlOGIxY2Q3YWZlNTViMzBhN2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhODY4OTMzZmI1ODMyYzRkNzRhMjFmYzk3YjNjODMwM2IwZTE5MWQ1MGJhOTZkZTk1NmE5ZjEwY2U3MTVjYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjODIwNTIwNTQxMzc1NTMyOWMxYTE0YmI5NDg3ODliYzM1YmYxNzhkN2QzNTMwMzI2Zjg2MWYyZDJhM2VjMzYifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L162-L212",
+          "version": "repo-lines-v1:sha256:97eeb2cc9ebf09c60255e3a9d83a27db87ca33f8850683e0684d8d534164df10:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3MTUwMzFkYTYwZDI0YTQwMDZiMjg5ZjEyYmNjMzA3Y2NiMDQ2ZGYyZWJlZTUzMzc0NWI5ZDcxZWQ1N2QyNzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1NmUzNzIyM2Y2ZDU2YjM5NDI2YzVkYzdlYTQ0MjZkMDI2YWYxNDU3MWY2NWNjMmU4ZjE5NzkxODZmMmE0MWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5ZWUxOTMyODRlODJmYjc2YWY0ZjRmNTgzZTQzZjA1MDdiNWYxMzJiMTY0ZTZkMzUyM2JhZmI5NGMwYzdiMWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5N2I4YTg4ZTYzYTY2NGQwM2U1NzU2YWJjOGJhMTkwYTcyZWRjNDU1OTMwN2YzYWZiNDJhNzFhZjNjYzMxNzEifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L239-L301",
+          "version": "repo-lines-v1:sha256:f08684075b556b98af823532ad131e1f93abe2f9ecfd93d03e1d0418138ab594:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRlOTkwMDUwOGNhZTNkOGI1NWEwYjBlNzczYjIyMDgwMGU4MTlmNTViNzlhMGVmNDZkYmFiNTljYjM3NGFkYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhMTFjMDU2N2QwYTVmOWU5YjEzNWY2NWNkMjUzNzJkZmQ2Mjg3NzVmN2MxZWQyNTNmOGJhZDQyZGQyZDY2NjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmY2EzM2ZlNDlkMjQxMjVjMjFlYzA5ODQ1MzIyNDZjOGIwNDcwZTZmM2Y5N2ZlNDMwNjkyZTI4YzY0MWMyYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwZTIwMWMxOWFlM2Q2YTZmZjI3NGNhYzM5NjE4NGIyZTEyNzFlM2NjZDUxNzc1MDUyYzIxNThmNDI5MTU4MGQifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py#L320-L385",
+          "version": "repo-lines-v1:sha256:300f0af06b660faf98050474097b8b439c7b8d5a31719af1e576d1c1717b3fbc:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1OWY2NWI0NzI0OTVmNzE5OTQwZGMyNDM5YjljNzlkNTFhNmY2MzI5ZDkxMjk2YThiMDNmZjViMjc2OTA1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYTVmNmE2OTNmODk5ZTA0MzRmOWQ5YmJhM2RjNzc1NzhhMDgxMzk3ZTIzMGIxYzJjMWY0YmRmYjJmMTFmMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFhNDdiMjU0ZGRiNDcyZWMzNmE2MDFjNGJiMWIyYWU4YjM2M2M1NjkyZWUzMTE0OGYzYjZlMzQ5ZTExZGEyZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyMjYwOGYzMTExYjg1MWM5Y2IyOTE1MzQ2ZjllYWVlMDVkNDEzMjVhMGUzNzUxZTQxZGQ2ZmUyMDRmNzI3YzMifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:50:03.392Z"
+    "at": "2026-10-11T00:23:56.319Z"
   }
 }

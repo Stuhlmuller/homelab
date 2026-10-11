@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:94c31500c59cbdf022b0c73f9e9a41fc31c9ed3ffcc43e8ea8593ce2ad4c06ab",
+  "pageVersion": "sha256:d6d8f6db9c6e43eac22fc1ac5c522ed1958e6b864d47828b7bd1784b1dcd9685",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://docs/octelium.md#L3-L20",
@@ -33,6 +33,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:43:46.551Z"
+    "at": "2026-10-11T00:23:56.319Z"
   }
 }

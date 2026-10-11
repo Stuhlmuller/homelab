@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4199cfc0a7cb6e7b35761e215068d21a345962f2d03effe6b75b995e2d202044",
+  "pageVersion": "sha256:2f73faae98a7801849d31e5aa6962546de55800bcfea248c37c7efef235de5f4",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -84,11 +84,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:ff416a6ea053612e2694602952cfee18e744c3c4404284072ebdb0c955de8122"
+          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
@@ -131,6 +131,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:50:03.392Z"
+    "at": "2026-10-11T00:23:56.319Z"
   }
 }

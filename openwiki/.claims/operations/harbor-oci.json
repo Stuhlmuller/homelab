@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bf505b35068249d81290339de9cef8acd318523c548d23559fd31bb7307f982d",
+  "pageVersion": "sha256:1e196383038551f7af1ed85d0b866b11fe6ece7188e436fd35879358bbf19f31",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -54,19 +54,19 @@
     },
     {
       "id": "claim_590031ddaaf7450ab33897e0d461f9a8",
-      "statement": "The Traefik registry listener permits only the four fixed Talos LAN node addresses and four individual cni0 bridge addresses on port 9443, retaining notPrincipals and OCI/token-only routing; whole Pod CIDRs remain excluded and Flannel NetworkPolicy is not enforced.",
+      "statement": "The Traefik registry listener permits only four fixed Talos LAN addresses, four individual cni0 bridges and four flannel.1 overlay addresses on port 9443, retaining notPrincipals and OCI/token-only routing; whole Pod CIDRs remain excluded and Flannel NetworkPolicy is not enforced.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:5064fa74df0e516848ce5a0ddc7677f2789ff0e68670591f03c997645cf49bad"
+          "version": "repo-file-v1:sha256:a2e7b7fa8e1068fe4a6cafd829406b2d46dfa5352fbc153f22cbd5173c0b1e98"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:ff416a6ea053612e2694602952cfee18e744c3c4404284072ebdb0c955de8122"
+          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
         }
       ]
     },
@@ -76,11 +76,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:cd4d773fddea02490ef886fd0d67f096895a362d21cbb0cddac1043a16e04603"
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:f4e9d61028235abadbf15bf9ac945bf79ce2699591bbbc8eb1c19a91f7174502"
+          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -101,10 +101,20 @@
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_51fe692dda2d4815934c4740fb9799f5",
+      "statement": "The October 11 zimaboard-2 host-only pull timed out with six destination ztunnel denials from overlay source 10.244.4.0 and no Traefik requests; the exact overlay source fix requires GitOps convergence and correlated successful registry requests before rollout acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L159-L179",
+          "version": "repo-lines-v1:sha256:93a4ba98b55e6754691476e3c712a5c485b8697b16e5e3c70b9b61770ad9ae28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzAzYjYyZjNlN2U0Y2Q4NzdkOWJmNjJlMDQ2YjFhNTk1NmIxMDA5NWQyNTRjZWYzZTZiOTY5NjIwMzk2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2MzNTY0M2RjZWQ2YzgxYTNhOWNmZjczNzE1ZWE2OGNmNTdjNDk4ZTBjNWQ4MjMxMTk3M2FjYWQxOTQ2MDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1ZDk5NDlmMTRjYzNhNWVkYjJlODEyNDMyNTJhNTA3ODcwNGVjNjU5OWM0MmNlNzU4YTdkNjYwOWE2ODg4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:43:46.551Z"
+    "at": "2026-10-11T00:23:56.319Z"
   }
 }
