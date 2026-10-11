@@ -15,6 +15,11 @@ exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
 
+Optional NOFX, OpenClaw, and Image automation PR runs are omitted; their
+matching `main` push and manual paths remain. Image automation journal alerts
+now require a manual `verify` or `promote` dispatch because the five-minute
+schedule was removed. Required PR checks and the weekly CodeQL schedule remain.
+
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
 Required GitHub checks and explicit Stuhlmuller organization-member disapproval
@@ -28,6 +33,8 @@ despite the canonical runbook describing production as having no reviewer.
 Policy changes do not remove those environment gates. Reconcile the environment
 configuration and runbook through the repository workflow before treating
 Terragrunt plans or applies as unattended.
+The October 11 attempt to remove only the `homelab-plan` reviewer was denied by
+GitHub with `Must have admin rights to Repository`; its reviewer is still active.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
