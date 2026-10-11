@@ -11,11 +11,15 @@ Wolfi PostgreSQL clients default to `/tmp` sockets; Debian clients default to
 PostgreSQL process, not the entrypoint's temporary initialization server.
 Production socket/probe contracts need the same explicit review.
 
-The fixture starts PostgreSQL 14 and 18 with the existing 65534/999 UID
-contracts, file-backed user/database/password inputs, a read-only image and no
-network. It logically exports synthetic JSONB data and restores it into the
-Chainguard candidate, checking a retained role, Unicode value, permissions,
-sequence and subsequent write. Containers and tmpfs data are disposable; no
+The fixture starts PostgreSQL 14 and 18 sources with their existing 65534/999
+UID contracts, file-backed user/database/password inputs, a read-only image
+and no network. The pinned Chainguard image rejects UID 999 because that account
+is absent; a negative check preserves this incompatibility. Both logical
+migrations restore into fresh UID 65534 tmpfs data directories. Production
+migration must use a new, correctly owned data directory and verified restore;
+this does not validate retaining UID 999 or changing existing volume ownership.
+It exports synthetic JSONB data and global roles, checking restored roles,
+Unicode, permissions, sequence and subsequent write. Containers and tmpfs data are disposable; no
 production mounts, credentials, cluster access or databases are involved.
 
 A passing fixture does not authorize an in-place major-version upgrade or

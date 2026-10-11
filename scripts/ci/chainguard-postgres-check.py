@@ -21,8 +21,14 @@ def run(*args, **kwargs):
     return result.stdout
 
 
-def database(image, uid, secrets, names):
+def database(image, uid, secrets, names, user="fixture"):
     name = "postgres-compat-" + uuid4().hex[:12]
+    credentials = secrets / name
+    credentials.mkdir(mode=0o755)
+    for key, value in (("user", user), ("database", "fixture"), ("password", "disposable-fixture-only")):
+        path = credentials / key
+        path.write_text(value + "\n")
+        path.chmod(0o444)
     # Register only our generated name before creation so partial startup cleans up.
     names.append(name)
     run("docker", "run", "--detach", "--name", name, "--network", "none",
@@ -31,16 +37,16 @@ def database(image, uid, secrets, names):
         "--tmpfs", f"/data:rw,nosuid,nodev,size=256m,uid={uid},gid={uid},mode=0700",
         "--tmpfs", f"/var/run/postgresql:rw,nosuid,nodev,size=16m,uid={uid},gid={uid},mode=0700",
         "--tmpfs", f"/tmp:rw,nosuid,nodev,size=32m,uid={uid},gid={uid},mode=0700",
-        "--volume", f"{secrets}:/fixture:ro",
+        "--volume", f"{credentials}:/fixture:ro",
         "--env", "PGDATA=/data/pgdata", "--env", "POSTGRES_USER_FILE=/fixture/user",
         "--env", "POSTGRES_DB_FILE=/fixture/database", "--env", "POSTGRES_PASSWORD_FILE=/fixture/password",
         # Wolfi clients default to /tmp; Debian clients default to /var/run/postgresql.
         image, "-c", "unix_socket_directories=/tmp,/var/run/postgresql")
     for _ in range(60):
-        ready = subprocess.run(["docker", "exec", name, "pg_isready", "-U", "fixture", "-d", "fixture"],
+        ready = subprocess.run(["docker", "exec", name, "pg_isready", "-U", user, "-d", "fixture"],
                                capture_output=True, text=True, timeout=10)
         if ready.returncode == 0 and run("docker", "exec", name, "cat", "/proc/1/comm").strip() == "postgres":
-            version = run("docker", "exec", name, "psql", "-U", "fixture", "-d", "fixture",
+            version = run("docker", "exec", name, "psql", "-U", user, "-d", "fixture",
                           "-Atqc", "SHOW server_version")
             print(f"Started {image} UID {uid}: PostgreSQL {version.strip()}", flush=True)
             return name
@@ -63,25 +69,31 @@ def main():
         with tempfile.TemporaryDirectory(prefix="postgres-compat-") as directory:
             secrets = Path(directory)
             secrets.chmod(0o755)
-            for key, value in (("user", "fixture"), ("database", "fixture"), ("password", "disposable-fixture-only")):
-                path = secrets / key
-                path.write_text(value + "\n")
-                path.chmod(0o444)
+            try:
+                database(TARGET, 999, secrets, names)
+            except RuntimeError as error:
+                assert "could not look up effective user ID 999" in str(error), str(error)
+                print("Confirmed existing UID 999 is unsupported; fresh-volume identity migration required", flush=True)
+            else:
+                raise AssertionError("UID 999 behavior changed; review the image identity contract")
             for image, uid in SOURCES:
                 source = database(image, uid, secrets, names)
                 sql(source, "CREATE ROLE app_reader; CREATE TABLE retained(id bigserial PRIMARY KEY, payload jsonb NOT NULL); "
                     "INSERT INTO retained(payload) VALUES ('{\"text\":\"retained unicode λ\",\"n\":42}'); "
                     "GRANT SELECT ON retained TO app_reader;")
                 dump = run("docker", "exec", source, "pg_dump", "-U", "fixture", "-d", "fixture")
-                target = database(TARGET, uid, secrets, names)
-                sql(target, "CREATE ROLE app_reader")
+                roles = run("docker", "exec", source, "pg_dumpall", "-U", "fixture", "--globals-only")
+                # Logical migration uses a fresh directory, never reowns existing production data.
+                target = database(TARGET, 65534, secrets, names, user="restore_admin")
+                run("docker", "exec", "--interactive", target, "psql", "-X", "-v", "ON_ERROR_STOP=1",
+                    "-U", "restore_admin", "-d", "fixture", input=roles)
                 run("docker", "exec", "--interactive", target, "psql", "-X", "-v", "ON_ERROR_STOP=1",
                     "-U", "fixture", "-d", "fixture", input=dump)
                 assert sql(target, "SELECT payload->>'text' FROM retained WHERE id=1") == "retained unicode λ"
                 assert sql(target, "SET ROLE app_reader; SELECT count(*) FROM retained") == "1"
                 assert sql(target, "INSERT INTO retained(payload) VALUES ('{}') RETURNING id") == "2"
                 assert sql(target, "SELECT count(*) FROM retained") == "2"
-                print(f"Logical restore and retained role/data/sequence passed at UID {uid}", flush=True)
+                print(f"Logical restore and retained roles/data/sequence passed from UID {uid} to 65534", flush=True)
     finally:
         for name in names:
             subprocess.run(["docker", "rm", "--force", name], capture_output=True, timeout=30, check=False)
