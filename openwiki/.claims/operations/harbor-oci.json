@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e7554d7a0cd63141f015483cd4237f4ee0704983829e39fa4a538cf24f261e18",
+  "pageVersion": "sha256:7c50a4e38baaad0568f6271caeedf5aa9f2edcd4aa7cddbef83bb186c3a04837",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -185,10 +185,38 @@
           "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
         }
       ]
+    },
+    {
+      "id": "claim_37c9728f18cc4087ae35ceefe5f0e46b",
+      "statement": "The dated 2026-10-11 base-scan receipt records an unfiltered Grype 0.112.0 audit of the hash-verified upstream Harbor v2.15.4 Photon 5.0 runtime base with a valid fresh database: 32 Go package matches across 26 advisory IDs, including three critical and 15 high matches, with 26 fixed, four not-fixed and two unknown fix states. It explicitly does not establish rebuilt-candidate or deployed-workload CVE clearance.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:e6d6ba15fce958011371547b1537a0a32e52d3f31f683a797d8dee57b33905e5"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
+          "version": "repo-file-v1:sha256:dbf7c85533aef3df756582015d7cfb700aea2083718b4d135e1d089fa4d647ad"
+        }
+      ]
+    },
+    {
+      "id": "claim_5af1526905384439aca41e79c4964956",
+      "statement": "The sanitized 2026-10-11 registry fixture receipt records successful candidate CI at e3f58417, including Linux image build, original failure and repaired manager tests, unchanged registry push/pull of eight descriptors plus child manifest and every blob, and one PostgreSQL parent/child relation. It retains the job URL, source head, index digest and log hash while denying publication, deployment and CVE-clearance acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/registry-test.py",
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json",
+          "version": "repo-file-v1:sha256:daeece3b13ba60ece6b36a273344357717594ee585fd0f49f3ef91cd9668d7fc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T18:27:07.104Z"
+    "at": "2026-10-11T18:47:24.043Z"
   }
 }

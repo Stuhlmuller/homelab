@@ -32,6 +32,10 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-48227484d35c61f86c7d08ff
+    resource: repo://docs/evidence/harbor-core-base-scan-2026-10-11.json
+  - id: openwiki-source-291f8c32edb318126465429b
+    resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -42,10 +46,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T18:27:07.104Z" }
+generated: { by: "codex", at: "2026-10-11T18:47:24.043Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T18:27:07.104Z
+    at: 2026-10-11T18:47:24.043Z
 ---
 
 # Harbor Private OCI Registry
@@ -336,6 +340,24 @@ digests, complete private scans and protected publication remain gates. Couple
 any v2.15.4 rollout with matching chart/components and verified database/blob/key
 backups. Keep the upstream cold-bootstrap and rollback paths. Source-manager
 tests alone do not establish real database, registry, CVE or workload acceptance.
+
+On 2026-10-11, [candidate CI at `e3f58417`](https://github.com/Stuhlmuller/homelab/actions/runs/38164012314/job/114542676251)
+passed Linux build and the isolated registry/PostgreSQL fixture: eight index
+descriptors, child manifest and both blobs remained unchanged, with one database
+relation. This is fixture acceptance, not full-catalog publication or deployment.
+The [sanitized fixture receipt](../../docs/evidence/harbor-core-registry-fixture-2026-10-11.json)
+retains the job/head/index identities and log hash without runtime credentials.
+
+The same day's [sanitized base-scan receipt](../../docs/evidence/harbor-core-base-scan-2026-10-11.json)
+records a separate local Grype 0.112.0 audit of the pinned upstream v2.15.4
+runtime base. Original manifest/config/blob hashes were checked; the fresh
+database was valid and no finding filters or exclusions were enabled. It found
+32 Go package matches across 26 advisory IDs: three critical, 15 high, six
+medium, two low and six unknown severity. Twenty-six matches report fixes;
+four report no fix and two have unknown fix state. These are scanner matches,
+not proven exploitability or results for the rebuilt candidate. Remediate the
+compiler/dependency findings, inspect unresolved advisories against source and
+reachability, then scan the exact rebuilt Linux image before publication.
 
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
