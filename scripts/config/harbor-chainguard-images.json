@@ -7,22 +7,22 @@
       "source": "cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18"
     },
     {
-      "source": "cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4"
+      "source": "cgr.dev/chainguard/curl:latest@sha256:ba503058cf6ca10e91f4be85c88217cdde7dfa2d3260975083e090c2ed1033b7"
     },
     {
-      "source": "cgr.dev/chainguard/go:latest@sha256:2c20827746d752c1f18989847956637a0dc979c42507f4059e1d9559ee7733af"
+      "source": "cgr.dev/chainguard/go:latest@sha256:9777674c18af3042ab4952fa5d8e70ebcc73f243748e4e2585c18ae69bcecd35"
     },
     {
       "source": "cgr.dev/chainguard/nginx:latest@sha256:028368a7e271b3e0aed3bdc82195de6b38a2fee2bdd2a0b7ce1c4b944907098c"
     },
     {
-      "source": "cgr.dev/chainguard/node:latest-dev@sha256:f0944f14c490643d52a065095087ac62094ee5ef50c08b5892bc1a9c6a5c14e1"
+      "source": "cgr.dev/chainguard/node:latest-dev@sha256:c392408d537d860a4da73ea6d7f1226b02ab3d9e870e4c710b2403d6c9144f44"
     },
     {
       "source": "cgr.dev/chainguard/node:latest@sha256:4e771308d07813bf9a1aa25299a45e5664533c47fe4c541c14498752f2dbc2dd"
     },
     {
-      "source": "cgr.dev/chainguard/postgres:latest@sha256:b409d66dd4c3e7138a7e06ebdfe46966843e9e1a9322cb3b20a13928011ad398"
+      "source": "cgr.dev/chainguard/postgres:latest@sha256:1a417cf464d938b1b1182411416401215af7fbc88395d9b90f7c805e96d639a7"
     },
     {
       "source": "cgr.dev/chainguard/python:latest@sha256:197cf542e9f4dc373864faecd4fd1a4f642622e654e9196881ca852e8fdf26bd"
@@ -34,7 +34,7 @@
       "source": "cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327"
     },
     {
-      "source": "cgr.dev/chainguard/valkey:latest@sha256:f61f933bd00446d2a28ca0c7ea4dc1f5c73a323191f173c40e2e86749a1db76b"
+      "source": "cgr.dev/chainguard/valkey:latest@sha256:2455445bd0d43431ccd16e3a1e30809c58f5e52ccf471d2d3f421cad13ee5f2f"
     },
     {
       "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e"
