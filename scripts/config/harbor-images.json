@@ -7,7 +7,7 @@
       "source": "cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18"
     },
     {
-      "source": "cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4"
+      "source": "cgr.dev/chainguard/curl:latest@sha256:ba503058cf6ca10e91f4be85c88217cdde7dfa2d3260975083e090c2ed1033b7"
     },
     {
       "source": "cgr.dev/chainguard/postgres:latest@sha256:b409d66dd4c3e7138a7e06ebdfe46966843e9e1a9322cb3b20a13928011ad398"

@@ -62,6 +62,9 @@ jobs:
       - name: Check Chainguard ephemeral Redis compatibility
         run: nix develop --command python3 -I scripts/ci/chainguard-redis-check.py
 
+      - name: Check Chainguard curl compatibility
+        run: nix develop --command python3 -I scripts/ci/chainguard-curl-check.py
+
       - name: Check HCL Formatting
         run: nix develop --command terragrunt hcl fmt --check
 

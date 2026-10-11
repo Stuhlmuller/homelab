@@ -29,7 +29,7 @@ cr:
       view_only_mode: true
       additional_pod_init_containers_yaml:
         - name: wait-for-prometheus
-          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4
+          image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/curl:latest@sha256:ba503058cf6ca10e91f4be85c88217cdde7dfa2d3260975083e090c2ed1033b7
           imagePullPolicy: IfNotPresent
           command: ["/usr/bin/curl"]
           args:
