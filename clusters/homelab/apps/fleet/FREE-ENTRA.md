@@ -188,6 +188,12 @@ record a live phone installation or acceptance result.
 
 ## Existing-account Platform SSO pilot
 
+The `stuhlmuller.net` domain is now federated with Google Workspace. Verify
+the federation sign-in route and Password Platform SSO eligibility with a
+separate test identity before converting the owner. The steps below were
+prepared before federation landed and do not establish that a new cloud
+password will authenticate the converted account.
+
 Use this Mac first. Before the one-device eligibility probe, verify Fleet
 user-approved MDM enrollment, a current MDM check-in, [Microsoft
 Authenticator][authenticator] registered for the target account, Company Portal
@@ -215,12 +221,18 @@ license, federate, or otherwise affect other `stuhlmuller.net` users.
 
 ### `stuhlmuller.net` Google Workspace boundary
 
+> Historical note: the isolated-cloud-pilot guidance below predates the approved
+> domain-wide Google Workspace federation. The current federation path is owned
+> by `IaC/operator/entra-google-workspace-federation`; it uses Google passwords
+> for every Google Workspace user included in Google auto-provisioning.
+
 `stuhlmuller.net` remains a Google Workspace domain. The Entra domain unit reads
 its existing managed-domain state and its TXT ownership record is additional DNS
-data: preserve Google MX, SPF, DKIM and DMARC. Do not enable Microsoft mail,
-Google federation, directory-wide assignment, or automatic user provisioning.
-Domain verification lets Entra issue the converted owner's UPN; it does not
-change any Google account or require other people to use Entra.
+data: preserve Google MX, SPF, DKIM and DMARC. Domain verification lets Entra
+issue the converted owner's UPN; it does not change any Google account. The
+separately managed Google Workspace federation and auto-provisioning remain in
+effect for their enrolled users; the owner conversion must not edit those
+settings or redirect other people.
 
 Before conversion, create and successfully test an independent cloud-only Entra
 Global Administrator. Do not convert the sole working tenant administrator. The
@@ -302,13 +314,16 @@ profile and leave the Mac baseline enforced.
    grant a write permission to unblock this read.
 4. After direct authorization, in Entra admin center use only **Convert to
    internal user** for that prepared external owner. Set the UPN to exactly
-   `rodman@stuhlmuller.net` and set the new Entra password. Do not alter the
+   `rodman@stuhlmuller.net` and set a password if the conversion requires one.
+   Confirm the current Google federation sign-in route before proceeding; a
+   password entered during conversion may not be the active sign-in method.
+   Do not alter the
    separate `rodman.mac@stuhlmuller.net` pilot or Google Workspace. No support
    case, Graph beta/API write, browser automation, user creation, or alias change
    is allowed.
-5. Complete required password and security-information registration through
+5. Complete required security-information registration through
    [Microsoft My Account](https://myaccount.microsoft.com/). Sign in to Azure
-   CLI as `rodman@stuhlmuller.net` with its new tenant password, then attest the
+   CLI as `rodman@stuhlmuller.net` through its actual sign-in route, then attest the
    immutable object and target UPN with the same receipt and SHA:
 
    ```sh

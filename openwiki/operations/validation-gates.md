@@ -16,6 +16,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -28,10 +30,14 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -60,10 +66,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-11T09:10:40.150Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:50:03.392Z
+    at: 2026-10-11T09:10:40.150Z
 ---
 
 # Validation Gates
@@ -72,6 +78,13 @@ verified:
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
+
+The static wrapper verifies source-bound offline fixture and manifest-policy
+Nix outputs, then runs remaining provider, network and security checks fresh.
+Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
+`offline-static-checks.sh`. CI uses protected-main cache trust with signatures
+and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+See [signed offline validation](../../docs/nix-cache.md).
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
@@ -159,7 +172,7 @@ otherwise Terragrunt can initialize the real S3 backend before running them.
 
 The static gate runs `traefik-routes-test.py` and `install-kubeconfig-test.py`.
 The first checks the fixed private inventory, callback/registry boundaries,
-Fleet setup denial, and the exact four LAN plus four bridge `/32` sources for
+Fleet setup denial, and the exact four LAN, four bridge and four overlay `/32` sources for
 registry port 9443 in both ingress policies. Adjacent LAN addresses and ordinary
 Pod addresses remain outside that source boundary. The second checks tokenless API-proxy configuration and
 plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
@@ -197,7 +210,12 @@ restrict authority retirement to previous generations. Retirement regressions
 corrupt each current or previous record, including later list positions, and
 require both preview and execution to fail with zero removals, unchanged cache,
 and no signing/publication. They also cover target drift after preflight and
-already-absent previous authority retries. Mock provider tests cover
+already-absent previous authority retries. Pending-receipt regressions cover
+lagging readback, timeout/retry without re-signing, durable cache replay after a
+partial write, and preview/retirement refusal while a receipt remains. Narrow
+orphan-recovery fixtures require exact provider/Mac/time metadata, no published
+fixed secrets and an empty binary affected-signature lookup; malformed, populated
+or failed lookups and unrelated trust drift stop removal. Mock provider tests cover
 tag, expiry and explicit-rotation contracts; real provider planning remains the
 proof of replacement behavior.
 
@@ -209,7 +227,7 @@ peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
 Before traffic cutover, verify observed Argo revision and health, certificate
 readiness, real mesh application access, Fleet device check-in, native Cordium
 execution/reconnection, and an uncached Talos registry pull from every node.
-Converge the exact node/bridge source policies before host-only node migration;
+Converge the exact LAN/bridge/overlay source policies before host-only node migration;
 a successful mapping or loopback preflight does not prove the node's SNAT path.
 Prove callback
 admin/root rejection off mesh and actual signed webhook delivery. Run protected

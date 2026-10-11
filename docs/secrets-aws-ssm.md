@@ -39,6 +39,13 @@ Microsoft Entra SSO parameters are managed by the
 tenant URLs, and generated client secrets come from the managed application
 registrations.
 
+`/homelab/entra/google-workspace-federation-metadata` is an operator-only
+SecureString. It holds the Google Workspace SAML issuer, redirect endpoint and
+signing certificate used by the Entra federation operator module. It has no
+Kubernetes consumer and is not granted to External Secrets readers. Populate it
+only with `scripts/entra-google-workspace-federation-metadata.py` from clean,
+signed current `main` after downloading Google Workspace metadata.
+
 The `IaC/live/aws-ssm-parameters` stack also attaches the existing
 `external-secrets_aws-ssm-auth` user to the
 `homelab-ssm-parameter-readers` IAM group. Deterministic customer-managed

@@ -63,18 +63,18 @@ jobs:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore Nix Store Cache
-        # nix-community/cache-nix-action@v7
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
-        with:
-          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
-
       - name: Run Static Checks
-        run: nix develop --command bash scripts/ci/static-checks.sh
-
-      - name: Run Conftest Policies
-        run: nix develop --command bash scripts/ci/conftest-policies.sh
+        run: |
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          if git cat-file -e origin/main:scripts/config/nix-cache.json 2>/dev/null; then
+            git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          else
+            # Bootstrap before the policy lands on main: build without this cache.
+            printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
+          fi
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 
   terragrunt-plan:
     name: Terragrunt Plan

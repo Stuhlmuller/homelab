@@ -64,6 +64,16 @@ Entra. See the
 [domain module](../IaC/modules/entra-domain-verification/README.md) for the
 saved-plan sequence.
 
+## Google Workspace federation
+
+`IaC/operator/entra-google-workspace-federation` is a separate, human-operated
+Terraform unit. It creates the Graph `internalDomainFederation` only after the
+Google Workspace Microsoft Office 365 SAML app has supplied validated metadata
+through the operator-only SSM contract. Google Workspace auto-provisioning must
+create matching Entra users for every enabled Google address; federation
+authenticates those users but does not create them. The CI identities retain no
+domain-write permission.
+
 The plan identity's claims-assignment refresh is a live acceptance gate:
 Microsoft's documented least permissions for that read include
 `Application.ReadWrite.OwnedBy`. Test the narrower read grants first. A denied

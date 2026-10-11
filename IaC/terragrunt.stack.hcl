@@ -158,6 +158,14 @@ unit "argocd_apps_multica" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/multica/stack.hcl").inputs
 }
 
+unit "argocd_apps_nix_builder" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/nix-builder"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/nix-builder/stack.hcl").inputs
+}
+
 unit "argocd_apps_nofx" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/nofx"
@@ -410,6 +418,12 @@ unit "operator_entra_stuhlmuller_domain" {
 unit "operator_entra_stuhlmuller_pilot_user" {
   source                  = "./.catalog/units/operator/entra-stuhlmuller-pilot-user"
   path                    = "operator/entra-stuhlmuller-pilot-user"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_entra_google_workspace_federation" {
+  source                  = "./.catalog/units/operator/entra-google-workspace-federation"
+  path                    = "operator/entra-google-workspace-federation"
   no_dot_terragrunt_stack = true
 }
 
