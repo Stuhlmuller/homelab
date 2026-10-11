@@ -19,7 +19,7 @@ auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "clusters/homelab/apps/litellm"))
 TelemetryAdmission = importlib.import_module("gateway").TelemetryAdmission
 
-assert version("starlette") == "0.49.1", "Match the deployed Host parser, not a newer implicit fix"
+assert version("starlette") == "1.7.0", "Match the reviewed candidate Host parser"
 
 
 async def check():
@@ -40,12 +40,15 @@ async def check():
 
     proxy = SimpleNamespace(
         general_settings={}, jwt_handler=None, litellm_proxy_admin_name="operator",
-        llm_model_list=[{"model_name": "openrouter/free"}], llm_router=None,
+        llm_model_list=[{"model_name": "openrouter/free"}], llm_router=None, proxy_config=SimpleNamespace(),
         master_key="sk-" + "m" * 48, model_max_budget_limiter=None,
         open_telemetry_logger=None, prisma_client=SimpleNamespace(),
-        proxy_logging_obj=SimpleNamespace(post_call_failure_hook=AsyncMock()),
-        user_api_key_cache=DualCache(), user_custom_auth=None, premium_user=False,
+        proxy_logging_obj=SimpleNamespace(post_call_failure_hook=AsyncMock(return_value=None)),
+        user_api_key_cache=DualCache(), spend_counter_cache=DualCache(), user_custom_auth=None, premium_user=False,
     )
+    native_proxy = importlib.import_module("litellm.proxy.proxy_server")
+    native_proxy.__dict__.update(vars(proxy))
+    proxy = native_proxy
     app = FastAPI()
 
     @app.exception_handler(ProxyException)
@@ -59,9 +62,12 @@ async def check():
     async def endpoint(user=Depends(auth.user_api_key_auth)):
         return {"alias": user.key_alias}
 
+    async def fixture_resolve_key(self, hashed_token):
+        return await key_object(hashed_token, check_cache_only=self._check_cache_only)
+
     with patch.dict(sys.modules, {"litellm.proxy.proxy_server": proxy}), \
             patch.object(auth, "enterprise_custom_auth", None), \
-            patch.object(auth, "get_key_object", side_effect=key_object), \
+            patch.object(auth.IdentityStore, "_resolve_key", new=fixture_resolve_key), \
             patch.object(auth.verbose_proxy_logger, "error"):
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
                                      base_url="http://fixture") as client:
@@ -80,11 +86,11 @@ async def check():
             state["revoked"] = True
             assert (await request()).status_code == 401
 
-        # Exercise the pinned image's vulnerable parser, not newer Starlette's fix.
+        # Require the candidate parser to deny the former unauthenticated Host bypass.
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
                                      base_url="http://fixture") as client:
             response = await client.post("/key/generate", headers={"Host": "fixture/#"}, json={})
-            assert response.status_code == 200, "Fixture no longer reproduces the unguarded native bypass"
+            assert response.status_code == 401, "Candidate native Host parser must reject unauthenticated management access"
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=TelemetryAdmission(app)),
                                      base_url="http://fixture") as client:
             # Management auth failures also parse caller telemetry before logging.
