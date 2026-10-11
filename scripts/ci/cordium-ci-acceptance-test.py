@@ -197,7 +197,7 @@ class Workflow(unittest.TestCase):
         for status, receipt, expected in ((42, True, 42), (42, False, 1), (1, True, 1), (0, True, 1)):
             with tempfile.TemporaryDirectory() as temporary:
                 binary = Path(temporary) / "nix"
-                binary.write_text("#!/bin/bash\nprintf '%s\\n' 'private-native-output'\n" +
+                binary.write_text("#!/usr/bin/env bash\nprintf '%s\\n' 'private-native-output'\n" +
                                   (f"printf '%s\\n' '{marker}'\n" if receipt else "") +
                                   f"exit {status}\n")
                 binary.chmod(0o700)

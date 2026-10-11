@@ -175,6 +175,11 @@ inputs = {
       description   = "Argo CD OIDC client secret."
       initial_value = local.placeholder
     }
+    "/homelab/entra/google-workspace-federation-metadata" = {
+      description   = "Google Workspace SAML metadata for the operator-owned Entra domain federation."
+      initial_value = local.placeholder
+      reader_access = false
+    }
     "/homelab/argocd-image-updater/github-app/id" = {
       description   = "Retired Image Updater GitHub App ID retained as an IaC state tombstone; no workload consumes it."
       initial_value = local.placeholder
