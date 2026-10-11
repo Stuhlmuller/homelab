@@ -21,6 +21,7 @@ python3 -I scripts/ci/n8n-github-webhooks-test.py
 python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-runner-test.py
 python3 -I scripts/ci/cordium-runner-controller-test.py
+python3 -I scripts/ci/cordium-runner-access-test.py
 python3 -I scripts/ci/cordium-runner-credentials-test.py
 python3 -I scripts/ci/cordium-runner-network-test.py
 python3 -I scripts/ci/cordium-ci-acceptance-test.py

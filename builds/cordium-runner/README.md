@@ -111,6 +111,17 @@ its private lock, and stops when activation remains disabled. It is not register
 as a Deployment yet; image publication, RBAC, token-file kubeconfig and actual
 projected-file refresh acceptance still precede activation.
 
+The dormant access manifest declares one controller ServiceAccount and only
+namespace Roles. In cordium it can create/delete/read/watch NetworkPolicies and
+inspect Pods, Deployments and PVCs; it cannot mutate workloads or read Secrets.
+In kube-system it can get only the named enforcer DaemonSet and list Pods for
+worker readiness checks. No ClusterRole or ClusterRoleBinding is added.
+Automatic service-account mounting is disabled. The token-file kubeconfig
+references a future explicit projected API token and CA at
+/var/run/cordium-runner-api; no token or certificate material is committed.
+Mount its config at the image user's default kubeconfig path when registering
+the published controller Deployment. These declarations are not applied live.
+
 Dockerfile.controller packages the non-root entrypoint and pinned native clients,
 with kubectl 1.34.1 verified against its official SHA-256. It fetches only the
 exact public source revision supplied by the reviewed build, so local ignored

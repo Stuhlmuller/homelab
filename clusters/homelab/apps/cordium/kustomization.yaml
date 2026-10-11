@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - runner-credentials.yaml
+  - runner-controller-access.yaml
   - externalsecret.yaml
   - user-namespace-sysctl.yaml
   - networkpolicy.yaml
