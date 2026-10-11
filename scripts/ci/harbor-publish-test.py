@@ -108,10 +108,12 @@ class HarborPublicationGates(unittest.TestCase):
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
-                        source_error="toomanyrequests"):
+                        source_error="toomanyrequests", core=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
-        names = ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        if core:
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
@@ -178,7 +180,7 @@ class HarborPublicationGates(unittest.TestCase):
                         assert flag in sign["args"]
                     expected = ["harbor.stinkyboi.com/homelab/" + name + "@" + digest
                                 for name, digest in sorted(FIXTURE["published_digests"].items())]
-                    assert sign["args"][-2:] == expected
+                    assert sign["args"][-len(expected):] == expected
                     assert not pod["automountServiceAccountToken"]
                     assert job["spec"]["backoffLimit"] == 0
                     assert job["spec"]["activeDeadlineSeconds"] == 300
@@ -274,9 +276,9 @@ class HarborPublicationGates(unittest.TestCase):
                     raw = FIXTURE["manifests"][reference] if FIXTURE["mirror"] else FIXTURE["published_manifests"][name]
                     if upstream and FIXTURE["failure"] == "upstream-digest":
                         raw += "corrupted upstream index"
-                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith("frontend"):
+                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith(("frontend", "core")):
                         raw += "corrupted download"
-                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith("frontend"):
+                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith(("frontend", "core")):
                         raise SystemExit(15)
                     directory = Path(args[-1][4:])
                     assert list(directory.iterdir()) == []
@@ -855,6 +857,50 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse((self.root / "outputs").exists())
         self.assertFalse((self.root / "summary").exists())
         self.assert_cleaned()
+
+    def test_core_publication_has_one_fixed_subject_and_complete_pull(self):
+        self.transport_mocks(core=True)
+        result = self.run_helper(mode="publish-harbor-core")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        reference = f"harbor.stinkyboi.com/homelab/homelab-harbor-core:homelab-{SHA}@{self.published_digests['homelab-harbor-core']}"
+        self.assertEqual((self.root / "outputs").read_text().splitlines(), ["core=" + reference])
+        self.assertEqual([a[-1] for a in self.calls_for("cosign")], [reference.split(":homelab-")[0] + "@" + reference.split("@")[1]])
+        copies = [a for a in self.calls_for("skopeo") if a[0] == "copy"]
+        self.assertEqual(len(copies), 1)
+        self.assertIn("--all", copies[0])
+        self.assertIn("--preserve-digests", copies[0])
+        job = json.loads((self.root / "signing-job.json").read_text())
+        pod = job["spec"]["template"]["spec"]
+        for container in pod["initContainers"] + pod["containers"]:
+            self.assertEqual(container["image"], "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18")
+        self.assert_cleaned()
+
+    def test_core_refuses_implicit_push_publication_before_credentials(self):
+        self.env["GITHUB_EVENT_NAME"] = "push"
+        self.rejected(mode="publish-harbor-core")
+
+    def test_core_requires_exact_head_and_enrolled_signer_before_credentials(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
+        self.env["EXPECTED_SHA"] = "0" * 40
+        self.rejected(mode="publish-harbor-core")
+        self.env["EXPECTED_SHA"] = SHA
+        (self.root / "scripts/config/harbor-signing.json").write_text('{}')
+        self.rejected(mode="publish-harbor-core")
+
+    def test_core_refuses_another_workflow_before_credentials(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/nofx-images.yml@refs/heads/main"
+        self.rejected(mode="publish-harbor-core")
+
+    def test_core_pull_or_signature_failure_withholds_outputs(self):
+        for failure in ("pull", "pull-digest", "sign", "verify", "signer-owner"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(core=True, failure=failure)
+                result = self.run_helper(mode="publish-harbor-core")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "outputs").exists())
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+                (self.root / "published-images.json").unlink(missing_ok=True)
 
     def test_publisher_incomplete_pull_withholds_signing_and_outputs(self):
         for failure in ("pull", "pull-digest"):

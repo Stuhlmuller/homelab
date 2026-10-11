@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ef26dd9e4cff14e9b850ed5f44d3f3da9fb8a203f8653824f7536c0694298c42",
+  "pageVersion": "sha256:f5252001b9c8fa9938e67b2967b084504dc60ea89ee318ef95b35eb2aff015f3",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:b0af70f38c2ebdbafc90c552a66bf49f32c18b0fc744fa8967df253bbd0669a3"
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -127,12 +127,226 @@
       ]
     },
     {
-      "id": "claim_11fd02c874044c27b9fb540a878c557d",
+      "id": "claim_1b0d791a497a4adbb97f2f95e691b3ee",
+      "statement": "The maintained Harbor v2.15.4 core candidate verifies a pinned source archive and patches the manager to persist identical child relations once while rejecting differing digest/platform/URL/annotation metadata before any DAO write; its repair preserves the artifact digest and descriptors and changes no registry bytes or database schema.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0002-identical-reference-relations.patch",
+          "version": "repo-file-v1:sha256:203df86d0136580050036bed7e7642a25e8759023fb16d98dce09f81bd5a595a"
+        },
+        {
+          "resource": "repo://builds/harbor-core/source.json",
+          "version": "repo-file-v1:sha256:296be270358beb5b2d6776091e65780cc90bea3406424a298637dfbc1c7b40c8"
+        }
+      ]
+    },
+    {
+      "id": "claim_a117542d930b46119afdd3dc03e214ad",
+      "statement": "The core candidate uses a pinned Chainguard Go builder, upstream-pinned Swagger generation and an upstream runtime payload; its build must reproduce the original duplicate-reference failure before passing repaired manager tests and complete core compilation, with networking disabled for tests/build after dependency download.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/prepare-source.py",
+          "version": "repo-file-v1:sha256:994031d060b602448a062deb2750799935eb48a3c30ba336ec1a36c8a879853c"
+        }
+      ]
+    },
+    {
+      "id": "claim_2f510861461e44f79cec94649f5ca448",
+      "statement": "The held core candidate changes no active consuming references, credential producers or live database. It also stages an excluded namespace pull contract; activation still requires Linux/registry/scan acceptance, protected publication, reviewed component/chart compatibility and verified backups.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
+          "version": "repo-file-v1:sha256:b5625bc137fac9e35c719e7750efa833cec33b52a6f2c2750cd68e66224338ca"
+        }
+      ]
+    },
+    {
+      "id": "claim_33f0785e94cc44d1b38d2bcc1a07ca0a",
+      "statement": "The candidate build invokes a disposable pinned Harbor v2.15.4 stack without host ports on an internal service network. Its test client shares the proxy network namespace and uses loopback, while proxy and jobservice await core health. It requires unchanged push/pull of an eight-descriptor repeated OCI index and all child content plus exactly one PostgreSQL relation, then cleans fixture-owned credentials and resources without production inputs.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/build.sh",
+          "version": "repo-file-v1:sha256:b4e6000a65c87c8238c2e7f4e85fa73807cadc54017c0dc55c3416fd987c37ba"
+        },
+        {
+          "resource": "repo://builds/harbor-core/registry-test.py",
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+        }
+      ]
+    },
+    {
+      "id": "claim_37c9728f18cc4087ae35ceefe5f0e46b",
+      "statement": "The dated 2026-10-11 base-scan receipt records an unfiltered Grype 0.112.0 audit of the hash-verified upstream Harbor v2.15.4 Photon 5.0 runtime base with a valid fresh database: 32 Go package matches across 26 advisory IDs, including three critical and 15 high matches, with 26 fixed, four not-fixed and two unknown fix states. It explicitly does not establish rebuilt-candidate or deployed-workload CVE clearance.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
+          "version": "repo-file-v1:sha256:dbf7c85533aef3df756582015d7cfb700aea2083718b4d135e1d089fa4d647ad"
+        }
+      ]
+    },
+    {
+      "id": "claim_5af1526905384439aca41e79c4964956",
+      "statement": "The sanitized 2026-10-11 registry fixture receipt records successful candidate CI at e3f58417, including Linux image build, original failure and repaired manager tests, unchanged registry push/pull of eight descriptors plus child manifest and every blob, and one PostgreSQL parent/child relation. It retains the job URL, source head, index digest and log hash while denying publication, deployment and CVE-clearance acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/registry-test.py",
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json",
+          "version": "repo-file-v1:sha256:daeece3b13ba60ece6b36a273344357717594ee585fd0f49f3ef91cd9668d7fc"
+        }
+      ]
+    },
+    {
+      "id": "claim_69e9dd8b8009438fa6927a189eccf406",
+      "statement": "The third Harbor source patch requires Go 1.27.2, upgrades the reported NTLM/networking/crypto/Helm/telemetry/compression dependencies, and replaces gorilla/csrf with filippo.io/csrf/gorilla. Browser origin/Fetch metadata enforce CSRF while legacy response token headers, the declared key contract, invalid-key refusal and non-session API exemption remain; tokens no longer provide the check and nonbrowser requests are allowed.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
+        },
+        {
+          "resource": "repo://builds/harbor-core/csrf-compat_test.go",
+          "version": "repo-file-v1:sha256:e1db3ea7a3470aa44476a8b6a96d6fb41699733de7fa2487445f321882a68a2b"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
+          "version": "repo-file-v1:sha256:86f29601ee35c67ffa703e9116f88536ade766587395352084ddc582fea313a7"
+        }
+      ]
+    },
+    {
+      "id": "claim_9bd558899cbf498e8c35ff6533161c16",
+      "statement": "The dated rebuilt Linux binary scan receipt records five remaining matches with no finding exclusions: four Distribution v2 advisories and one x/crypto advisory, all unfixed/unknown, with two high, two medium and one unknown severity. It explicitly denies final-container or deployed-digest CVE clearance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/harbor-core-binary-scan-2026-10-11.json",
+          "version": "repo-file-v1:sha256:525d3a6620439a6305dd746dee26107de4a7cef6f4117f2ff778947dc4954aa0"
+        }
+      ]
+    },
+    {
+      "id": "claim_cfa5f8e1702e4d67b9b499470d074f45",
+      "statement": "The local remediated core assessment retains all five raw Grype matches while recording absence of affected OpenPGP and Distribution proxy/storage/handler packages from its compiled graph, a module-only OpenPGP finding from Go binary analysis, and a native positive/negative JWK verifier test rejecting attacker key material under a forged trusted key ID. Build guards preserve these specific conditions; the receipt denies final-image and other-component clearance.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/token-trust_test.go",
+          "version": "repo-file-v1:sha256:c21ba56c5141c90a2ad57fc7f3f411238d3d9b4c98cf2a1cbbee23a987355fd7"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
+        }
+      ]
+    },
+    {
+      "id": "claim_9c197834750641688d586789d82b2ec4",
+      "statement": "After the Linux registry fixture, the candidate CI scans the complete Docker-saved runtime archive with lock-pinned Grype 0.112.0. The report checker validates exact image/config identity, Linux amd64/Photon 5.0, fresh valid database/report and no exclusions/filtering/VEX, refusing available fixes while retaining unresolved counts. A sanitized identity/hash/database/severity receipt is emitted; raw metadata stays private, temporary inputs are cleaned, and collection success does not grant CVE clearance or publication.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/scan.sh",
+          "version": "repo-file-v1:sha256:69eba1cabe6edcd9b49521f91c85acf22a82b36e1dfc1fc5cebb3f454d1907b2"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check.py",
+          "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
+        }
+      ]
+    },
+    {
+      "id": "claim_f601e1fc02454c98bb3a4d113e0eab72",
+      "statement": "The full-container receipt records successful candidate Linux audit at279092e6 with exact image config identity and five unfiltered unresolved matches (two high, two medium, one unknown), passing the available-fix refusal gate while explicitly denying CVE clearance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json",
+          "version": "repo-file-v1:sha256:5ea008ccab8ebe6e27062b3e8df6fbb24db1703a68e9014d1ef4026e7177c037"
+        }
+      ]
+    },
+    {
+      "id": "claim_a6434f50ff3543fdb91030087a459c4f",
+      "statement": "The excluded Harbor private-core directory stages a namespace-local Docker-config ExternalSecret and kubelet-only ServiceAccount pull reference using the existing read-only robot parameter, without new IAM/SSM declarations or rotation. Active Harbor Kustomization excludes it and activation retains publication/scan/recovery/readiness and cold-bootstrap safeguards.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/kustomization.yaml",
+          "version": "repo-file-v1:sha256:6656afa97408bd0c8eb4a3ae4fbc08d7193731e46d4fcf00c63835c065cef1ed"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
+          "version": "repo-file-v1:sha256:b5625bc137fac9e35c719e7750efa833cec33b52a6f2c2750cd68e66224338ca"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml",
+          "version": "repo-file-v1:sha256:b8f1f26e96e3b59a15b693270fa7d156fda4ca1c79d9dbec9b10dc61db3ca438"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml",
+          "version": "repo-file-v1:sha256:e8efc8d40b9652c1bd3ac81b90fa1d1e1c27ae16250c90d1492b168c05e9c5de"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5a032b0a5d00158f851b147fae5ffbd0b52209c7082db49ee0f08fea1fd97308"
+        }
+      ]
+    },
+    {
+      "id": "claim_69018d54de594753b1f852c4ee5f8358",
+      "statement": "The dispatch-only protected core publisher accepts only exact current main and the dedicated workflow, builds/tests/audits before credentials, publishes one fixed core reference, completely pulls and verifies its digest before signing, and verifies destination signatures against the enrolled key before emitting a pinned artifact. Core signer Pods use the Harbor Cosign mirror; NOFX behavior stays two-subject and all release/recovery gates remain.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+        },
+        {
+          "resource": "repo://builds/harbor-core/README.md",
+          "version": "repo-file-v1:sha256:7e9213450bcff3cc47fd87d5a7bf8ca294a65f4c66fc0931bf78492e9ccd39e6"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+        }
+      ]
+    },
+    {
+      "id": "claim_12e9068cc39548eebbc31fe4756e5aad",
       "statement": "The fixed Chainguard publication scope contains thirteen digest-pinned public candidates; Go, nginx, Node runtime, Node dev, static and Wolfi base are six additions to the original seven-image scope, and prior receipts cannot cover the expanded scope or changed digests.",
       "evidence": [
         {
-          "resource": "repo://docs/image-egress-hardening.md#L102-L140",
-          "version": "repo-lines-v1:sha256:f4b3fb79122286ef5fafa3dc8d99d8a73c76a4388517f75376ab8d8a3d2fa6e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2MmM4MGUzZjgyMzRkMGVjMWYxZGM2ZmE5ZmRiYzE5MjY0M2FhMmI4MjNmMjJiMTk0MWQxOGFjYzcyZDI1MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhZTI2Y2Q0NGUzODZmMTdjMmNlMDIwYjI0YjhhY2QyNWZjY2UxMWIzMWYyNzI2ZWE2NThjOGJiYjlhNDEwNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExZjNkOTg4OGEzMmI4YzY4ZjE5MTY3OTZiNzJjZTk4YjQ0MGRhZmJjZDcwZTE3OTBhNDkwNTNkNzAwNjBhMjQifQ"
+          "resource": "repo://docs/image-egress-hardening.md",
+          "version": "repo-file-v1:sha256:4dde03378b0913a4dc031bc4677dc30d42752c4e46adbdd4a85828e861461346"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -141,36 +355,58 @@
       ]
     },
     {
-      "id": "claim_e9e0f125de114bc8a13e185120255c07",
+      "id": "claim_0a32a2a96b494440b84d3c41940a6533",
       "statement": "Missing mirror artifacts are anonymously downloaded with all platforms into local directory staging and their original root manifest digest is verified before authenticated upload; fresh complete destination pulls and alias checks remain required, while the native offline fixture verifies multiple architectures and repeated descriptors without network transports.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:14cfbca3624f8eb0bea7607f18763b4779a9ce9f8587e5b8b66502885354cc6d"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L194-L267",
-          "version": "repo-lines-v1:sha256:9ce75d03869ee42da6334c45ed75ad12997d15ef76710a10ad9ecce2a47cb6a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4Mzg3NzY0NDYyNWYxZWIyNGRlOTVkNWJjNjlmMzE4ODZkYjExY2IzNjc1ZWRhOWUwYzU5MDNhODU2ZWMxMGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNDIwZmIwNTFmYTRmY2JkYWFhYzMyZmE2ZmE5ZjcwYTY2YTRhNjA2NGUxOTdjZjU2YjdiN2I0ZWVlYTAxMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0YmVhMzVkYjQ4MjE0MTMyNDhlOThmNjQ2NGRhZTBkODZiMmYzMDcxMDhmNjBkZjZmMWY0NmMzNjA4YWRiYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkMmQxYjIwZDNjYjJiODMxMjViOWJjN2MyM2NkM2QzZWVjODk0ZWRiMGI2MWY2NjkyNDMxMGY4MDY0YjU0NTMifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
         }
       ]
     },
     {
-      "id": "claim_20c5ee5304424e0b899932b967e467d8",
+      "id": "claim_d6f10f15d9864661a1f9c69dcbbf71f6",
       "statement": "The full publication catalog stages kube-network-policies v1.1.2 and paused Image Updater v1.3.0; enforcer activation requires Talos NRI/runtime synchronization and a complete policy audit with Istio egress bypass acceptance, and cataloging alone activates no enforcement.",
       "evidence": [
         {
-          "resource": "repo://docs/image-egress-hardening.md#L147-L165",
-          "version": "repo-lines-v1:sha256:c8520b9aa7f137a777ae08475c1c9a8f352df8a62872d46f0945f099e1c68e6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwYmFhMTY2Y2JhZmQxYTMwYWQ1NjZiNTY1MzFkZjBjMGY4NDUwZmEyZDJiMzg5YWZkNTJmZmQ1ZWEyZDhkMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3N2E3NzM5YjhjMmM1OGQ5YjNiMzk4OTg4YWJlODdlZjlhNzVlZmMzZTY5MTJkNjkyZjVlNDdlNDRhNDg5ZTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzOTY1ZTZjNDlhYzEwNjJlMDhjMzdlYzJkMzhjZmFlZDljMTRjYTYwMmIxMGQ5Y2M2YTQ4YmE2YzRhYjgwNzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjliZGE3N2RiNGU2MjNhNTVmMTQ5OGJiNTE3YjM4ZGU2OTE3ODYzMjQxYjA3MDFhZTkwNDA2NDQzMWRlMzQ0OGIifQ"
+          "resource": "repo://docs/image-egress-hardening.md",
+          "version": "repo-file-v1:sha256:4dde03378b0913a4dc031bc4677dc30d42752c4e46adbdd4a85828e861461346"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
           "version": "repo-file-v1:sha256:23b98b8ec5034ad5c717d54691bb2e7fb9a2f435ac391790cee63cce1d1d11bf"
         }
       ]
+    },
+    {
+      "id": "claim_54dda1a75d0d4f659c072d7243bdc3b3",
+      "statement": "The core-only signer selects the cataloged internal public-Chainguard Cosign digest. A dated read-only pull receipt verifies its original index, two platform manifests and 18 referenced config/layer hashes, while explicitly denying source-signature and runtime-compatibility acceptance. Linux CI must pass P-256 key import/public-key identity and signing API flag checks before publication credentials.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+        },
+        {
+          "resource": "repo://builds/harbor-core/signer-test.sh",
+          "version": "repo-file-v1:sha256:360d920e7d253eb287a81b1372c0c6832bc2acad79017b99e574eb81aba4df52"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a7b8f7006f16a0638a33edf7f38b634782ccafc90bd36ab7872df2b9600ee1da"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T16:45:39.177Z"
+    "at": "2026-10-11T21:16:07.164Z"
   }
 }

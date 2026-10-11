@@ -30,11 +30,11 @@
       "completedRunId": "8ebfd2be-e655-4296-9998-0bac2ae898ed"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "gitHead": "52ca27d30a6caf7f4c5479eca6ab3660a03a5929",
-      "sourceFingerprint": "sha256:ce85f7f36ef5f3586f79f82f6eeef2c5af1d6082e8a0202c35acd585f34c039f",
-      "pageVersion": "sha256:5e5a648a99dbc87ae913a6b0aca7dce8017f003348c48fb6da3cc14cb861efbe",
+      "gitHead": "279092e65e8687aabb1387e435d291fbd232542c",
+      "sourceFingerprint": "sha256:9b781c9212bade2fea4919af2aa528f082269ba594f5084a375b482008bdd9dd",
+      "pageVersion": "sha256:ea22002cd999e89bd390bc803071f96d5c379620f4c77dfdab774a5cc85cf3e2",
       "completedBy": "codex",
-      "completedRunId": "2cf73447-5767-4053-8e16-fc69eed991ca"
+      "completedRunId": "bffbd7e6-d103-44d2-8146-2174e6773da3"
     },
     "/openwiki/operations/continuous-improvement.md": {
       "gitHead": "7eaba8dffa9c1a2107ae1af5bd3d6de72e2f6f14",
@@ -58,11 +58,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
-      "pageVersion": "sha256:ef26dd9e4cff14e9b850ed5f44d3f3da9fb8a203f8653824f7536c0694298c42",
+      "pageVersion": "sha256:f5252001b9c8fa9938e67b2967b084504dc60ea89ee318ef95b35eb2aff015f3",
       "completedBy": "codex",
-      "completedRunId": "5dfff55f-acdb-4526-8026-e5763101d357",
-      "gitHead": "0bee8b4f1af1c83c95c912e11fabf7a39b084534",
-      "sourceFingerprint": "sha256:55595af7e3566ad68f236afd614d9de4a693e5fbd2ca9717e3ca7c7711f7bb03"
+      "completedRunId": "13f5f873-166a-4ed2-8ebd-411a8b6df517",
+      "gitHead": "032774373bd4d4e42f74c11b02882ccfb9f433bd",
+      "sourceFingerprint": "sha256:b8e00e27c49cb76056cac896e51ed44d456786ab09284f8df38466739ccd5455"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "7eaba8dffa9c1a2107ae1af5bd3d6de72e2f6f14",
@@ -72,11 +72,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:bc8d4648fdccd42e67a10e6f7ef31f183e579ba5076f498fa88606592ac1edd3",
+      "pageVersion": "sha256:a02595984fdfa00c9fc5f2c026b5137b1b2c09dcd3e9f46241cdb1b79bf7d5c6",
       "completedBy": "codex",
-      "completedRunId": "5dfff55f-acdb-4526-8026-e5763101d357",
-      "gitHead": "0bee8b4f1af1c83c95c912e11fabf7a39b084534",
-      "sourceFingerprint": "sha256:55595af7e3566ad68f236afd614d9de4a693e5fbd2ca9717e3ca7c7711f7bb03"
+      "completedRunId": "13f5f873-166a-4ed2-8ebd-411a8b6df517",
+      "gitHead": "032774373bd4d4e42f74c11b02882ccfb9f433bd",
+      "sourceFingerprint": "sha256:b8e00e27c49cb76056cac896e51ed44d456786ab09284f8df38466739ccd5455"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "902a0c25f1879c58b057ef6a7030bbf400908973",

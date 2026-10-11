@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc8d4648fdccd42e67a10e6f7ef31f183e579ba5076f498fa88606592ac1edd3",
+  "pageVersion": "sha256:a02595984fdfa00c9fc5f2c026b5137b1b2c09dcd3e9f46241cdb1b79bf7d5c6",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f686cb19d2c9e0a69d07676e370f4e7642138f1d65206b6a5ad00de7cd545a7d"
+          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:14cfbca3624f8eb0bea7607f18763b4779a9ce9f8587e5b8b66502885354cc6d"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2db7d00c00907bd665ac90935caa8b2fbcb25417a502290c8f2666c4984b9346"
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -281,22 +281,164 @@
       ]
     },
     {
-      "id": "claim_c8d1d8145a2b4e69a53f7cdb9c5c583a",
+      "id": "claim_79921f1a97d243a9a583eabfcdc7d7cf",
+      "statement": "Offline fixtures run the Harbor core source trust test covering pinned archive verification and preparation, baseline retention, patch validation, wrong hashes/roots, escaping symlinks and nonempty contexts without network access; the credential-free Linux candidate job requires original failure, repaired manager tests, upstream API generation and complete core compilation without production inputs.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-source-test.py",
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+        }
+      ]
+    },
+    {
+      "id": "claim_c41196c353124e3791747938c5a2c0a5",
+      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly one database relation. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/build.sh",
+          "version": "repo-file-v1:sha256:b4e6000a65c87c8238c2e7f4e85fa73807cadc54017c0dc55c3416fd987c37ba"
+        },
+        {
+          "resource": "repo://builds/harbor-core/registry-test.py",
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-source-test.py",
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+        }
+      ]
+    },
+    {
+      "id": "claim_d646b4dc1e7f451ab5dfec678e40706d",
+      "statement": "The candidate build runs the complete CSRF middleware tests and ten browser/session compatibility cases against the replacement dependency with networking disabled; cases require valid same-origin requests and legacy headers, deny cross-site/same-site browser requests and preserve the non-session API exemption. The middleware unit tests use in-memory configuration without their former unused PostgreSQL bootstrap.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/csrf-compat_test.go",
+          "version": "repo-file-v1:sha256:e1db3ea7a3470aa44476a8b6a96d6fb41699733de7fa2487445f321882a68a2b"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
+          "version": "repo-file-v1:sha256:86f29601ee35c67ffa703e9116f88536ade766587395352084ddc582fea313a7"
+        }
+      ]
+    },
+    {
+      "id": "claim_7d87e06f64514a448f26a86d56d7b5f3",
+      "statement": "The candidate build adds a native JWK trust attack regression and a compiled-package graph guard against OpenPGP and Distribution proxy/storage/handler server packages. These specific advisory-prerequisite checks retain unfiltered module-level findings and do not replace final-container/component scans.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/token-trust_test.go",
+          "version": "repo-file-v1:sha256:c21ba56c5141c90a2ad57fc7f3f411238d3d9b4c98cf2a1cbbee23a987355fd7"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
+        }
+      ]
+    },
+    {
+      "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
+      "statement": "The exact-container audit's offline regressions refuse wrong image/config/platform/distro identity, stale or invalid databases, finding filters/exclusions and available fixes; unresolved findings remain unchanged. The privacy regression requires sanitized output without raw metadata and explicit false CVE clearance. The credential-free Linux workflow runs the full Docker-archive audit after registry acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
+          "version": "repo-file-v1:sha256:b6ce625b0640378fba7908d9255f74c3088aa871cae9379bf256bbbd7b0d73fd"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check.py",
+          "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+        }
+      ]
+    },
+    {
+      "id": "claim_6bbbb12ce316403bb6c6bf0305f520b8",
+      "statement": "Core publication fixtures enforce one fixed subject, dedicated workflow/current-main binding, full private pull/digest verification before signing, enrolled-key verification, Harbor-only signer images and withheld outputs on failure. Static credential-job inventory and canonical workflow hashes enroll the publisher/reporting jobs, including dispatch checks before checkout and credentials; these source tests do not dispatch publication.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:9df5071d813074ef493a834d925d69043dd767b0ba64a2cb8eabd301895825d7"
+        }
+      ]
+    },
+    {
+      "id": "claim_aa50d28e91f34c30a1febb5a92eeb530",
       "statement": "Harbor publication regressions include a native offline Skopeo test using generated local OCI fixtures with network transports rejected, requiring original root and both platform-child manifest digests and repeated descriptors to survive directory staging and a second copy; this does not prove Harbor publication, signature accessories or live consumers.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:14cfbca3624f8eb0bea7607f18763b4779a9ce9f8587e5b8b66502885354cc6d"
+          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L46-L46",
-          "version": "repo-lines-v1:sha256:30e180a54130f6b895a1a8fa3bf5a3f9290c84635080c82788d00b2bde9c3b8b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzBlMTgwYTU0MTMwZjZiODk1YTFhOGZhM2JmNWEzZjkyOTBjODQ2MzUwODBjODI3ODhkMDBiMmJkZTljM2I4YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzBlMTgwYTU0MTMwZjZiODk1YTFhOGZhM2JmNWEzZjkyOTBjODQ2MzUwODBjODI3ODhkMDBiMmJkZTljM2I4YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMWQxMDg4MWQ4ZDkxOWJlMjJkZDMxMzQ3MjcyOWMyYTFlMTdjMjM4ZDAzY2QxNzc0Y2UxMTNmNzQwYzA5MmY4NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzQ0OGMyODgyNjY3MWQ2NjQ3YjAxNTFhMDFkMjc2MmM1NjI2N2I0MGZhMzk1ZTlkZTc0NGVmZGU0MzE4ZDM2NSJ9"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+        }
+      ]
+    },
+    {
+      "id": "claim_8e0f5d1def624426aff856de7987ba8e",
+      "statement": "Core CI/publication requires a pinned public-Chainguard signer fixture before credentials, testing disposable P-256 import, public-key equality with OpenSSL and producer signing flags; core Pods use the corresponding Harbor mirror. Documentation records the October 11 live production required-reviewer check without changing rules or claiming compatibility before Linux CI.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+        },
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/signer-test.sh",
+          "version": "repo-file-v1:sha256:360d920e7d253eb287a81b1372c0c6832bc2acad79017b99e574eb81aba4df52"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T16:45:39.177Z"
+    "at": "2026-10-11T21:16:07.164Z"
   }
 }
