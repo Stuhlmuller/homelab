@@ -28,11 +28,16 @@ helm template langfuse langfuse --repo https://langfuse.github.io/langfuse-k8s \
       .readinessProbe.httpGet.path == "/api/public/ready" and
       .readinessProbe.initialDelaySeconds == 20)) and
     ([.[] | select(.metadata.name == "langfuse-worker")
+      | .spec.template.spec.containers[] | select(.name == "langfuse-worker")] |
+    length == 1 and (.[0] |
+      .livenessProbe.initialDelaySeconds >= 180 and
+      .livenessProbe.httpGet.path == "/api/health")) and
+    ([.[] | select(.metadata.name == "langfuse-worker")
       | .spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[]?.matchExpressions[]?
       | select(.key == "kubernetes.io/hostname" and .operator == "NotIn" and
           .values == ["zimaboard-2"])] | length == 1)
   ' >/dev/null
-echo "Langfuse: rendered replicas, web memory budget, worker placement, startup allowance and health probes verified"
+echo "Langfuse: rendered replicas, web memory budget, worker placement and startup allowances verified"
 
 # Keep the recovery copy managed without redeploying its one-shot writer.
 kubectl kustomize clusters/homelab/apps/langfuse |
