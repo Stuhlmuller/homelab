@@ -129,6 +129,13 @@ credentials never enter the build context. Its source/revision labels identify
 that checkout. This image has not been built or published yet; do not add a
 consuming Deployment reference until publication and cold-pull acceptance pass.
 
+The build-only workflow runs both recipes from a fixed public checkout with an
+empty Docker context. It verifies the controller's non-root UID, read-only root
+filesystem, dropped capabilities and private projected-file copying without
+network access in the smoke container. It publishes no image and consumes no
+production credentials. Native API, Docker-in-Cordium, session renewal and
+workload isolation remain separate live acceptance gates.
+
 The optional serve mode polls active workflow runs and every job page, matching
 all requested labels case-insensitively. It refreshes the scoped App client and
 rechecks current main and the native identity on each cycle, executes one
