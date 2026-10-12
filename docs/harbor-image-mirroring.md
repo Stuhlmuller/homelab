@@ -25,16 +25,20 @@ It includes repository declarations, rendered Helm charts and the observed
 cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
-read access is public, including through the existing public Harbor hostname.
-The separate `robot$mirror+publisher` can pull/push only within `mirror` and
-uses its own generated `/homelab/harbor/mirror-robot-push-password`. Nodes need
-no new credentials.
+stage-one read access remains public, including through the existing public
+Harbor hostname. The separate `robot$mirror+publisher` is used only for writes
+within `mirror`, while `robot$mirror+pull` independently reads publication receipts;
+they use generated `/homelab/harbor/mirror-robot-push-password` and
+`/homelab/harbor/mirror-robot-pull-password` credentials. The reviewed node-auth
+step gives Talos the pull credential before project privacy changes; workloads
+do not receive it.
 
 The normal project retains copied artifacts independently of upstream tags or
 deletion. It is deliberately not a proxy cache. The protected
 `harbor-mirror.yml` workflow copies all platforms with digest preservation,
 keeps a digest-named tag for each entry, maintains reviewed source-tag aliases,
-and downloads every image anonymously into a fresh temporary directory.
+and downloads every Harbor image with the dedicated pull robot into a fresh
+temporary directory.
 Retries reuse an existing digest-named tag only after its manifest hash matches
 the catalog; a missing tag is copied from upstream. Missing-content detection
 accepts registry manifest/name-unknown errors and Harbor's exact expected
@@ -42,7 +46,8 @@ artifact or repository `not found` message. Generic 404 responses and messages
 for another repository or digest tag still stop publication. Other lookup errors
 and unexpected hashes stop publication. Source-tag aliases are copied from that
 verified Harbor digest, avoiding a second upstream transfer. Every entry still
-receives a complete anonymous download and alias verification on each run.
+receives a complete authenticated Harbor download and alias verification on
+each run.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
 No retention/delete job is introduced. Size NFS for the additional images and
 retain registry blobs together with Harbor database/encryption-key backups.
@@ -50,12 +55,12 @@ retain registry blobs together with Harbor database/encryption-key backups.
 ## Delivery
 
 1. Merge the bootstrap, inventory, publisher and unapplied Talos patches through
-   normal signed-commit, review and CI gates. Apply the reviewed
-   `IaC/live/aws-ssm-parameters` saved plan through the existing
-   [Harbor rollout path](../openwiki/operations/harbor-oci.md#rollout-and-acceptance),
-   inspecting it for unrelated changes first. This creates the independent mirror
-   publisher secret. Wait for Harbor secrets to reconcile and its PostSync
-   bootstrap to finish Synced/Healthy before publication.
+   normal signed-commit, review and CI gates. The reviewed Stage A saved plan has
+   created and metadata-verified the independent mirror reader SSM parameter.
+   This consumer revision advances `harbor-secrets` to `v3`; wait for External
+   Secrets to reconcile it and Harbor's PostSync bootstrap to finish
+   Synced/Healthy before publication. The parameter alone does not create a
+   Harbor robot, enable authenticated receipts, or change Talos.
 2. Run the protected copy workflow against exact reviewed current `main`:
 
    ```sh
@@ -75,7 +80,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
    Their publication uses the same all-platform digest copy, reviewed tag
-   alias, and fresh complete anonymous download checks. A scoped success proves
+   alias, and fresh complete authenticated Harbor download checks. A scoped success proves
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
 
@@ -84,7 +89,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
    Wolfi base and static runtime. It publishes to the same normal
    `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
-   digest preservation and fresh anonymous downloads. It does not change
+   digest preservation and fresh authenticated Harbor downloads. It does not change
    consumers or prove runtime compatibility. Run after the prerequisite merges:
 
    ```sh
@@ -96,7 +101,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:<reviewed-tag>@sha256:<verified-index-digest>`
    only after successful publication and compatibility validation.
 
-   Require a successful run, including complete anonymous downloads. A completed
+   Require a successful run, including complete authenticated Harbor downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication
    bundle is byte-identical to current reviewed `main`: `scripts/config/harbor-images.json`,
    `.github/workflows/harbor-mirror.yml`, `scripts/ci/harbor-publish.sh`,
@@ -116,15 +121,32 @@ retain registry blobs together with Harbor database/encryption-key backups.
    before authenticated Harbor upload (`destination-copy`). Preserve the original
    index bytes, including repeated descriptors; do not normalize the index to
    manufacture a different digest. The temporary source is removed before the
-   independent anonymous Harbor pull, keeping one full image tree on disk at a
+   independent authenticated Harbor pull, keeping one full image tree on disk at a
    time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
    Categories also distinguish bare HTTP 403, payload-size limits, 5xx server
    responses and quota exhaustion. A category is a diagnostic hint, not source
    or destination attribution, an absent-artifact proof, or permission to retry.
-3. From that clean checkout, render and strictly validate each existing machine
-   configuration. The helper defaults to inspection; use Talos client 1.11.3.
+3. After a successful full-catalog publication, materialize the fixed mirror
+   reader credential into an existing owner-only directory outside every Git
+   checkout. Use a named AWS profile with only this parameter's declared read
+   grant; never pass the password through an argument or environment variable.
+
+   ```sh
+   mkdir -p -m 700 /path/to/private/harbor-mirror
+   python3 -I scripts/talos-harbor-mirror-credential.py \
+     --profile <named-aws-profile> \
+     --directory /path/to/private/harbor-mirror \
+     --expected-sha "$reviewed_sha"
+   ```
+
+   The command writes only
+   `/path/to/private/harbor-mirror/harbor-mirror-registry-auth.json` at mode
+   `0600`. It verifies exact current `main` before and after SSM read.
+
+4. From that clean checkout, render and strictly validate each existing machine
+   configuration with that credential. The helper defaults to inspection; use Talos client 1.11.3.
    Restore the private client config at `.talos/talosconfig`, or pass an existing
    private file explicitly with `--talosconfig /path/to/private/talosconfig` on
    every command below. It never falls back to the user config or `TALOSCONFIG`;
@@ -132,28 +154,36 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    ```sh
    for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
-     python3 -I scripts/talos-harbor-mirrors.py --node "$node"
+     python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+       --registry-auth-file /path/to/private/harbor-mirror/harbor-mirror-registry-auth.json
    done
    ```
 
-4. Apply one node at a time, workers first and the sole control plane last:
+5. Apply one node at a time, workers first and the sole control plane last:
 
    ```sh
    python3 -I scripts/talos-harbor-mirrors.py --node 10.1.0.202 \
+     --registry-auth-file /path/to/private/harbor-mirror/harbor-mirror-registry-auth.json \
      --execute --expected-sha "$reviewed_sha"
    ```
 
    Repeat for `.201`, `.200`, then `.199` only after the preceding node passes.
    The helper requires successful publication of the same bundle, verifies destination
-   manifests, preserves the full persistent machine configuration, allows only
-   registry-mirror differences, validates with `--mode metal --strict`, and
+   manifests with the dedicated mirror reader, preserves the full persistent machine
+   configuration, allows only registry-mirror and owned Harbor-auth differences, validates with `--mode metal --strict`, and
    applies with `--mode no-reboot`. It checks configuration readback and node
    readiness/boot identity, then requests `registry.k8s.io/pause:3.10` through
    Talos's native `image pull --namespace system` using the selected client
-   config. Rollback and dry-run do not pull images. It never drains, restarts or
-   deletes workloads.
-5. Verify every node's `registryconfigs` resource contains the committed
-   endpoints and `skipFallback: true`. Correlate each native pause pull with
+   config. Execution without the reader credential proceeds only when the
+   captured configuration already has valid `robot$mirror+pull` auth.
+   Rollback and dry-run do not pull images. It never drains, restarts or deletes
+   workloads.
+6. Verify every node's `registryconfigs` resource contains the committed
+   endpoints, `skipFallback: true`, and only the owned Harbor reader auth.
+   Keep `mirror` public until all node readbacks and native pulls pass. Then make
+   its project metadata private through a separate reviewed bootstrap change;
+   prove anonymous Harbor pulls fail and a previously uncached node pull still
+   succeeds. Correlate each native pause pull with
    Harbor manifest access logs from that node before claiming live migration.
    Talos skips an already pulled and unpacked reference entirely. Before the
    first apply, inspect `talosctl ... image list --namespace system` on each node
@@ -173,9 +203,10 @@ The operator helper verifies destination manifests with curl using the fixed
 `https://1.1.1.1/dns-query` DNS-over-HTTPS resolver. Workstation split DNS can
 otherwise return the unreachable Istio ClusterIP. Requests retain the Harbor
 hostname and TLS verification; no system DNS, hosts file, or environment override
-is changed. Anonymous Bearer tokens stay in a private temporary header file and
-are removed on exit. Every digest-named tag and source-tag alias must return the
-catalog's exact manifest bytes after a successful copy workflow for the same
+is changed. Registry authentication and Bearer token headers stay in private
+temporary files and are removed on exit. Every digest-named tag and source-tag
+alias must return the catalog's exact manifest bytes after a successful copy
+workflow for the same
 publication bundle. Rollout still requires a clean checkout of exact current `main`.
 
 ## Private Talos registry route
@@ -300,19 +331,17 @@ terragrunt --log-disable show -json /path/to/private/mirror-reader-secret.plan \
 conftest test --policy ../../../policy /path/to/private/mirror-reader-secret.json
 ```
 
-Keep both reader-plan files private. After this declaration merges, from clean
-reviewed `main`, review and apply that exact saved plan, then verify parameter
-metadata without reading its value before merging a reader-enabled ExternalSecret,
-reader bootstrap, publisher receipt/readback, or Talos-auth consumer. The plan
-must create the reader parameter and may change only the exact-ARN External
-Secrets reader-policy entries identified in that saved plan, including
-deterministic chunk creation or rebalancing. Its wider shared dependency closure
-remains outside approved scope and needs separate explicit approval; reject
-unexpected grants, rotations, deletes, or other actions. This stage does not
-change `harbor-secrets`, Harbor robots, publication receipt logic, or nodes.
+Keep both reader-plan files private. The reviewed plan has been applied from
+clean `main` and its SSM metadata verified without reading its value. It created
+only the reader parameter and the exact-ARN External Secrets reader-policy
+changes identified in the plan, including deterministic policy chunk rebalancing.
+Its wider shared dependency closure remains outside approved scope; reject
+unexpected grants, rotations, deletes, or other actions.
 
-The later consumer revision must advance `harbor-secrets`' `OnChange` revision
-only after the parameter exists, so External Secrets reconciles the new key.
+This later consumer revision advances `harbor-secrets`' `OnChange` revision to
+`v3`, after the parameter exists, so External Secrets reconciles the new key.
+Until that reconciliation and the PostSync bootstrap succeed, it does not create
+the Harbor reader robot, enable publication receipt/readback, or change nodes.
 Keep that Secret `OnChange`: periodic reconciliation would regenerate its salted
 bcrypt registry password hash.
 
@@ -332,14 +361,14 @@ hash the exact manifest bytes. For `tag@sha256` references pass `repo@sha256`
 to Skopeo; it rejects combined tag/digest addresses. Preserve historical pinned
 digests when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
-into the public mirror project.
+into the mirror project.
 
 ## Bootstrap and recovery
 
 An in-cluster registry cannot cold-start from itself on empty nodes. Fresh
 bootstrap uses upstream image names without the steady-state mirror patch.
 Bring up networking, DNS, secret management, ingress, Harbor and its retained
-storage, restore or republish the catalog, verify complete pulls, then enable
+storage, restore or republish the catalog, verify complete authenticated Harbor pulls, then enable
 strict mirrors. Preserve upstream references and recovery material.
 
 For an unavailable Harbor, the reviewed rollback patch restores direct upstream

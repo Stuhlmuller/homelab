@@ -86,6 +86,8 @@ sources:
     resource: repo://scripts/ci/tailscale-ingress-sign-test.py
   - id: openwiki-source-511191e55632b55651ad4318
     resource: repo://scripts/ci/tailscale-private-dns-test.py
+  - id: openwiki-source-bd3e0276a60a943533e8286a
+    resource: repo://scripts/ci/talos-harbor-mirror-credential-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
@@ -100,12 +102,14 @@ sources:
     resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
+  - id: openwiki-source-43db0977cfa60875fd0350f6
+    resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T05:12:36.902Z" }
+generated: { by: "codex", at: "2026-10-12T06:30:40.778Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T05:12:36.902Z
+    at: 2026-10-12T07:11:29.496Z
 ---
 
 # Validation Gates
@@ -1381,8 +1385,8 @@ server and dump client both permit 512 MiB packets for stored MDM packages.
 The targeted protected apply validates existing platform readiness before shared
 SSM/IAM reconciliation and Fleet registration. The fixed Fleet mirror inventory
 must match the application's rendered images exactly and remain a subset of the
-full reviewed inventory; scoped publication retains digest and complete anonymous
-pull verification. Require published Harbor digests,
+full reviewed inventory; scoped publication retains digest and complete authenticated
+Harbor-pull verification. Require published Harbor digests,
 ready workloads and secrets, Bound claims, the pinned public version, blocked
 setup aliases, authenticated administrator access and the PostSync backup's
 verified-publication log. Nightly recurrence, offsite recovery, actual device
@@ -1506,7 +1510,7 @@ source contract now declares automatic plan/production environments, with
 production restricted to the exact `main` branch. Recheck live settings before
 dispatch; source configuration alone is not live acceptance.
 The merged publisher suite retains current-main anonymous source staging and
-all-subject complete-pull checks alongside the fixed-core cases. Its native
+reader-authenticated destination-pull checks alongside the fixed-core cases. Its native
 offline OCI fixture still verifies multi-platform and repeated-descriptor
 byte preservation with network transports rejected.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
@@ -1536,8 +1540,18 @@ not Docker or production credentials. It proves local staging behavior;
 complete Harbor pulls, destination signatures, scans and live consumers still
 require separate acceptance.
 
+`talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
+profile names, inherited AWS credentials and proxies, stale main, and leaked
+values while exercising the owner-only credential materializer. The Talos
+regression then limits the auth patch to `robot$mirror+pull`, rejects unrelated
+Harbor auth, and verifies rollback removes only that owned entry. An executable
+ordinary mirror rollout requires supplied reader auth unless its captured config already has the
+owned reader auth. The missing-reader fixture reaches neither Harbor receipt
+checks nor candidate machine-config rendering or `apply-config`. These fixtures
+do not read SSM or change a node.
+
 The fixed Traefik publication scope retains all-platform digest, tag alias and
-fresh complete anonymous-pull checks. The Talos regression rejects scoped,
+fresh complete authenticated Harbor-pull checks. The Talos regression rejects scoped,
 untitled and mismatched-revision run receipts as full-catalog evidence before
 provenance or registry access; cluster-wide mirror verification requires
 `Mirror all @ <run head SHA>` and the unchanged publication bundle.

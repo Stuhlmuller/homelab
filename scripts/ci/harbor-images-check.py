@@ -232,7 +232,10 @@ def check():
         "overridePath": True, "skipFallback": True,
     } for registry in registries}
     patch = yaml_documents([ROOT / ".talos/patches/harbor-mirrors.yaml"])[0]
-    if patch["machine"]["registries"]["mirrors"] != expected_mirrors:
+    registry_config = patch["machine"]["registries"]
+    if "config" in registry_config:
+        errors.append("Talos Harbor mirror patch must not contain registry authentication")
+    if registry_config["mirrors"] != expected_mirrors:
         errors.append("Talos mirror endpoints must cover exactly the catalog registries with overridePath and skipFallback enabled")
     if chart_sources() != json.loads(CHARTS.read_text()):
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")

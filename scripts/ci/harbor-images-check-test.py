@@ -145,9 +145,9 @@ with tempfile.TemporaryDirectory() as directory:
     mirrors = {registry: {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
                           "overridePath": True, "skipFallback": True}
                for registry in ("docker.io", "quay.io")}
+    mirror_patch = {"machine": {"registries": {"mirrors": mirrors}}}
     check.yaml_documents = lambda paths: (
-        [{"machine": {"registries": {"mirrors": mirrors}}}]
-        if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
+        [mirror_patch] if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
@@ -166,6 +166,14 @@ with tempfile.TemporaryDirectory() as directory:
         assert "Mastodon mirror scope has unused image: " in str(error)
         assert "Mastodon mirror scope source absent from full catalog: " in str(error)
     check.MASTODON_CATALOG.write_text(json.dumps(catalog))
+    mirror_patch["machine"]["registries"]["config"] = {}
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Talos Harbor mirror patch must not contain registry authentication" in str(error)
+    else:
+        raise AssertionError("committed Talos registry config passed")
+    mirror_patch["machine"]["registries"].pop("config")
     check.FLEET_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
     try:
         check.check()
