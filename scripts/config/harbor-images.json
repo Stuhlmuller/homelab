@@ -259,6 +259,12 @@
       "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
     },
     {
+      "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b"
+    },
+    {
+      "source": "ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca"
+    },
+    {
       "source": "ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66"
     },
     {
