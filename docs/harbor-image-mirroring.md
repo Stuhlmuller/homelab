@@ -361,6 +361,22 @@ rollback changes image transport, not workload versions or stored data.
 Sources: [Talos 1.11 Harbor mirror configuration](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/images-container-runtime/pull-through-cache),
 [Harbor proxy-cache behavior and retention](https://goharbor.io/docs/2.14.0/administration/configure-proxy-cache/).
 
+## Mastodon publication scope
+
+Select `image_scope=mastodon` to publish the four reviewed runtime images in
+`scripts/config/harbor-mastodon-images.json`: official web/Sidekiq, streaming,
+PostgreSQL 18, and Redis 7.4. This is the entire new workload image set, including
+migration/bootstrap/backup reuse. The fixed scope excludes unrelated Node and
+other catalog aliases while retaining all-platform digest copies, source-tag
+aliases, and complete anonymous destination pulls. No caller-supplied repository,
+digest, manifest, or destination is accepted.
+
+The inventory gate compares the scope with the rendered Mastodon overlay once
+that consumer exists. Before onboarding, it compares all four fixed version tags
+against the full reviewed catalog. Runtime version changes must update the
+publication scope in the prerequisite change before the consumer reaches main.
+Existing shared platform dependencies keep their own publication ownership.
+
 ## Publication queue boundaries
 
 The public mirror workflow uses `harbor-mirror-production` with cancellation
