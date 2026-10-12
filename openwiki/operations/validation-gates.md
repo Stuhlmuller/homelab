@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T21:16:07.164Z" }
+generated: { by: "codex", at: "2026-10-12T02:35:12.978Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T21:16:07.164Z
+    at: 2026-10-12T03:59:12.990Z
 ---
 
 # Validation Gates
@@ -200,19 +200,21 @@ otherwise Terragrunt can initialize the real S3 backend before running them.
 
 ## Tailscale and Traefik foundation
 
-The static gate runs `traefik-routes-test.py` and `install-kubeconfig-test.py`.
-The first checks the fixed private inventory, callback/registry boundaries,
-Fleet setup denial, and the exact four LAN, four bridge and four overlay `/32` sources for
-registry port 9443 in both ingress policies. Adjacent LAN addresses and ordinary
-Pod addresses remain outside that source boundary. The second checks tokenless API-proxy configuration and
+Offline validation runs `traefik-routes-test.py` and
+`install-kubeconfig-test.py`. The first checks the fixed private inventory,
+callback/registry boundaries, Fleet setup denial, and the exact four LAN, four
+bridge, and four overlay `/32` sources for registry port 9443 in both ingress
+policies. Adjacent LAN addresses and ordinary Pod addresses remain outside that
+source boundary. The second checks tokenless API-proxy configuration and
 plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
 and run Conftest on all declared routing resources.
 
-Use `traefik-runtime-check.py --binary /absolute/path/to/traefik` with the declared
-version to exercise the actual proxy on loopback. It downloads nothing and
-checks Host/path isolation, encoded path rejection, WebSockets, h2c, console
-upstream TLS/SNI, Harbor Authorization preservation and projected certificate
-reload. Test certificate verification bypasses are confined to this local harness.
+Separately invoke `traefik-runtime-check.py --binary /absolute/path/to/traefik`
+with the declared version to exercise the actual proxy on loopback. It downloads
+nothing and checks Host/path isolation, encoded path rejection, WebSockets, h2c,
+console upstream TLS/SNI, Harbor Authorization preservation, and projected
+certificate reload. Test certificate verification bypasses are confined to this
+local harness. Neither fixture replaces live ingress acceptance.
 
 Private DNS readiness uses the transport-neutral `octelium-api-response.py`
 parser. It checks only the final HTTP/2 response, retains duplicate fields for
@@ -227,7 +229,7 @@ Tailnet Lock addition must create exactly three scoped CI auth keys and preserve
 the ACL and dormant federated identities. Keep state, tokens and saved plans
 private. Generation rotation must replace keys, not merely update a description.
 
-The static gate also runs the fixed ingress signer and CI publisher tests. They
+Offline validation also runs the fixed ingress signer and CI publisher tests. They
 reject wrong proxy ownership/identity, wrong tailnet or signing profile, stale or
 unsigned main, misplaced secrets, invalid provider keys, and unsafe private cache
 permissions. Signer fixtures also cover the CLI's null empty peer classes before
@@ -324,11 +326,12 @@ the protected tag's administration permission without changing resources.
 
 ## Entra owner-mail and Octelium identity checks
 
-The static gate runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
-native APIs and the plan-only tests in `IaC/modules/entra-owner-mail`. These
-cover disabled email fallback, implicit fallback-user inventory, native empty
-lists, partial migration retry, preserved contact fields, mail-only PATCH scope,
-current-mail and identity drift, and rollback.
+Offline validation runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
+native APIs. Static validation separately runs the plan-only tests in
+`IaC/modules/entra-owner-mail`. Together they cover disabled email fallback,
+implicit fallback-user inventory, native empty lists, partial migration retry,
+preserved contact fields, mail-only PATCH scope, current-mail and identity drift,
+and rollback.
 
 Before live work, run `scripts/octelium-entra-oidc.sh --dry-run` with the three
 privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-identity-migration)
@@ -339,8 +342,9 @@ inspect that plan privately for exactly one
 `msgraph_update_resource.mail` PATCH containing only `mail`. Follow the
 [module contract](../../IaC/modules/entra-owner-mail/README.md), then verify
 unchanged owner identity, fresh owner access and actual SMTP proxy release.
-Local tests and a valid plan do not prove Graph alias recalculation or Mac SSO;
-the [Fleet acceptance checks](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#platform-differences-and-acceptance)
+Offline tests and a valid plan do not prove Graph alias recalculation, owner
+access, SMTP proxy release, or Mac SSO. The
+[Fleet acceptance checks](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#platform-differences-and-acceptance)
 remain required after the pilot rename.
 
 ## GitHub Workflow Checks
@@ -1449,10 +1453,11 @@ The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,
 retained original-manager baseline, hash mismatch refusal, unexpected archive
 roots, escaping symlinks and nonempty-context refusal without network access.
-The credential-free Linux `harbor-core-compatibility` job builds the pinned
-candidate: original repeated-child failure must precede repaired manager tests,
-upstream API generation and complete core compilation. Networking is disabled
-for tests/build after dependency download. No production inputs are mounted.
+The Linux `harbor-core-compatibility` job declares read-only contents and uses a
+checkout without persisted credentials. It builds the pinned candidate: original
+repeated-child failure must precede repaired manager tests, upstream API generation,
+and complete core compilation. Networking is disabled for tests/build after
+dependency download. No production inputs are mounted.
 The candidate also runs the complete CSRF middleware suite and ten browser/session
 compatibility cases against the replacement library. They require valid same-origin
 requests and legacy response headers, reject cross-site/same-site browser requests,
@@ -1463,12 +1468,12 @@ using its key ID. A compiled-package graph guard fails if core introduces
 OpenPGP or Distribution proxy/storage/handler server packages. These are
 specific prerequisite checks; unfiltered module-level findings remain in the
 audit receipts and final-container/component scans are still required.
-The Linux job now scans the exact Docker-saved candidate with a lock-pinned
-scanner after registry acceptance. Offline regressions refuse wrong image/config
-identity, platform/distro, stale or invalid databases, filters/exclusions and
-available fixes, while retaining unresolved findings unchanged. A privacy case
-requires sanitized receipts to omit raw image metadata and explicitly deny CVE
-clearance. Full-runtime audit execution still needs fresh Linux CI evidence.
+The Linux job runs the checker and private runtime-audit command for the exact
+Docker-saved candidate. Offline regressions refuse wrong image/config identity,
+platform/distro, stale or invalid databases, filters/exclusions, and available
+fixes, while retaining unresolved findings unchanged. A privacy case requires
+sanitized receipts to omit raw image metadata and explicitly deny CVE clearance.
+Full registry and runtime acceptance still needs fresh Linux CI evidence.
 Core publication regression cases additionally require one fixed subject,
 dedicated workflow/current-main binding, complete private pulls before signing,
 the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
@@ -1476,14 +1481,12 @@ pull/digest/signature failures. The credentialed job inventory and canonical
 workflow hash enroll both the publisher and pinned-reference reporting job;
 dispatch verification precedes checkout and repeats before credentials.
 No publication workflow has been dispatched as part of these source tests.
-The pinned public Chainguard signer now has a Linux fixture before credentials:
-it imports a disposable P-256 key, requires the emitted public key to equal
-OpenSSL's output, and checks the signing API flags used by the producer. Core
-signing Pods use the matching Harbor mirror. Complete mirror content has been
-verified separately; Linux compatibility remains a fresh CI requirement.
-The October 11 read-only GitHub environment check found a required production
-reviewer. Respect live environment approval despite the older reviewer-free
-description; no environment protection rule changed.
+The Harbor Core publication workflow runs the pinned public Chainguard signer
+fixture before AWS credential configuration, and `validate` runs the same fixture.
+It imports a disposable P-256 key, requires the emitted public key to equal
+OpenSSL's output, and checks the signing API flags used by the producer. A
+2026-10-11 read-only GitHub environment check found a required
+`homelab-production` reviewer; recheck live environment settings before dispatch.
 The merged publisher suite retains current-main anonymous source staging and
 all-subject complete-pull checks alongside the fixed-core cases. Its native
 offline OCI fixture still verifies multi-platform and repeated-descriptor
