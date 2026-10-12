@@ -252,29 +252,69 @@ deletion or workload restart path.
 
 ## Initial secret plan scope
 
-The 2026-09-28 shared SSM plan also contained pending AI secret creation.
-For this migration, plan only the new parameter and its declared dependencies:
+The repository configures public-mirror publisher bootstrap with
+`/homelab/harbor/mirror-robot-push-password`. The repository-owned
+`harbor-secrets` ExternalSecret and protected publisher reference that
+credential; this initial publisher plan does not provision the later reader
+prerequisite below.
+
+The 2026-09-28 shared SSM plan also contained pending AI secret creation. For
+the initial publisher bootstrap, plan only its parameter and declared
+dependencies:
 
 ```sh
+(cd IaC && terragrunt stack generate)
 cd IaC/live/aws-ssm-parameters
 terragrunt plan \
   -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-push-password"]' \
-  -out /path/to/private/mirror-secret.plan
-terragrunt --log-disable show -json /path/to/private/mirror-secret.plan \
-  > /path/to/private/mirror-secret.json
-conftest test --policy ../../../policy /path/to/private/mirror-secret.json
+  -out /path/to/private/mirror-publisher-secret.plan
+terragrunt --log-disable show -json /path/to/private/mirror-publisher-secret.plan \
+  > /path/to/private/mirror-publisher-secret.json
+conftest test --policy ../../../policy /path/to/private/mirror-publisher-secret.json
 ```
 
 Keep both files private. Review the saved plan before applying that exact plan
-from clean reviewed `main`. The inspected plan creates only the Harbor SSM
-parameter, with its independent password. Shared dependencies create 12 other
-pending random values in encrypted state and add 14 already-declared AI secret
-paths to the External Secrets reader policies; they do not create those SSM
-parameters, rotate existing values, or delete resources. Those shared changes
-require explicit operator approval; do not silently treat them as Harbor-only.
-Reject any further change or replan/review if state advances. This is a one-time
-scope limit, not the steady-state bootstrap command; normal full Terragrunt
-apply still owns the whole declared stack.
+from clean reviewed `main`. The inspected publisher plan creates the Harbor SSM
+parameter with its independent password. Shared dependencies may also create 12
+other pending random values in encrypted state and add 14 already-declared AI
+secret paths to the reader policies; they do not create those SSM parameters,
+rotate existing values, or delete resources. Those shared changes require
+explicit operator approval; do not silently treat them as Harbor-only. Reject
+any further change or replan/review if state advances. This is a one-time scope
+limit, not the steady-state bootstrap command; normal full Terragrunt apply
+still owns the whole declared stack.
+
+## Mirror reader prerequisite
+
+The `/homelab/harbor/mirror-robot-pull-password` catalog entry is a deliberate
+first stage. It has a separate saved plan from the publisher bootstrap:
+
+```sh
+(cd IaC && terragrunt stack generate)
+cd IaC/live/aws-ssm-parameters
+terragrunt plan \
+  -target='aws_ssm_parameter.generated["/homelab/harbor/mirror-robot-pull-password"]' \
+  -out /path/to/private/mirror-reader-secret.plan
+terragrunt --log-disable show -json /path/to/private/mirror-reader-secret.plan \
+  > /path/to/private/mirror-reader-secret.json
+conftest test --policy ../../../policy /path/to/private/mirror-reader-secret.json
+```
+
+Keep both reader-plan files private. After this declaration merges, from clean
+reviewed `main`, review and apply that exact saved plan, then verify parameter
+metadata without reading its value before merging a reader-enabled ExternalSecret,
+reader bootstrap, publisher receipt/readback, or Talos-auth consumer. The plan
+must create the reader parameter and may change only the exact-ARN External
+Secrets reader-policy entries identified in that saved plan, including
+deterministic chunk creation or rebalancing. Its wider shared dependency closure
+remains outside approved scope and needs separate explicit approval; reject
+unexpected grants, rotations, deletes, or other actions. This stage does not
+change `harbor-secrets`, Harbor robots, publication receipt logic, or nodes.
+
+The later consumer revision must advance `harbor-secrets`' `OnChange` revision
+only after the parameter exists, so External Secrets reconciles the new key.
+Keep that Secret `OnChange`: periodic reconciliation would regenerate its salted
+bcrypt registry password hash.
 
 ## Updates and coverage
 
