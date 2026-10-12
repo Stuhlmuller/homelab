@@ -102,10 +102,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T04:36:16.555Z" }
+generated: { by: "codex", at: "2026-10-12T05:12:36.902Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T04:36:16.555Z
+    at: 2026-10-12T05:12:36.902Z
 ---
 
 # Validation Gates
@@ -682,7 +682,7 @@ resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
 secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
-PR plans retain their reviewer gate. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
+Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. Main-only diagnostics use the same production environment.
@@ -1501,8 +1501,10 @@ The Harbor Core publication workflow runs the pinned public Chainguard signer
 fixture before AWS credential configuration, and `validate` runs the same fixture.
 It imports a disposable P-256 key, requires the emitted public key to equal
 OpenSSL's output, and checks the signing API flags used by the producer. A
-2026-10-11 read-only GitHub environment check found a required
-`homelab-production` reviewer; recheck live environment settings before dispatch.
+dated 2026-10-11 read-only check found a production reviewer, but the current
+source contract now declares automatic plan/production environments, with
+production restricted to the exact `main` branch. Recheck live settings before
+dispatch; source configuration alone is not live acceptance.
 The merged publisher suite retains current-main anonymous source staging and
 all-subject complete-pull checks alongside the fixed-core cases. Its native
 offline OCI fixture still verifies multi-platform and repeated-descriptor

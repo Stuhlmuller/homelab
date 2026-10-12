@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:87fad121d0e9fcb4a035606e4f35a2decebb1612df1590b81c84a227f8a59fa8",
+  "pageVersion": "sha256:52037ad5bb93391de746d3429e0c955ec2e05cdddd3da36d3498ad7fb8ad7f8b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
+          "version": "repo-file-v1:sha256:beaeb3c00edd141ffe858fdb5b8dc6f650fa7128489f88532eb155f5724099cb"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6d16f6b97509d2d289b37fdff6baaba32ba6d0381e59dff9231001e110f463a8"
+          "version": "repo-file-v1:sha256:d5e1a1a6c2543bef1c720d4d75029608a9225d38307ee70bcc4ec7475f981510"
         }
       ]
     },
@@ -406,7 +406,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -416,7 +416,7 @@
     },
     {
       "id": "claim_8e0f5d1def624426aff856de7987ba8e",
-      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and `validate` runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality, and the producer signing flags. A 2026-10-11 read-only check found a required `homelab-production` reviewer; recheck live environment settings before dispatch.",
+      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and validate runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality and producer signing flags. The dated October 11 reviewer observation is historical; current source declares automatic same-repository PR-plan and production environments, with production restricted to exact main. Live settings require fresh verification.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
+          "version": "repo-file-v1:sha256:beaeb3c00edd141ffe858fdb5b8dc6f650fa7128489f88532eb155f5724099cb"
         }
       ]
     },
@@ -461,6 +461,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T04:36:16.555Z"
+    "at": "2026-10-12T05:12:36.902Z"
   }
 }
