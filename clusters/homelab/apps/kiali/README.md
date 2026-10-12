@@ -98,3 +98,13 @@ For telemetry rollback, revert the Kiali values and Prometheus monitor changes
 in git and let Argo CD reconcile both apps. Historical metrics remain until
 normal retention expires. A green Argo CD status alone does not prove traffic
 visibility: `scripts/kiali-check.py` must pass with recent real mesh traffic.
+## Readiness image compatibility
+
+The readiness init container uses a digest-pinned Harbor copy of public
+Chainguard curl. `scripts/ci/chainguard-curl-check.py` executes its declared
+command/arguments as UID 65532 with a read-only filesystem, no capabilities and
+networking disabled. A disposable Unix-socket HTTP fixture checks the exact
+Prometheus readiness path and Host header, returning one temporary failure
+before success to verify retries. This proves command/runtime compatibility;
+service DNS, Istio routing, complete private image pulls and original Kiali
+behavior remain live acceptance gates. No production credentials are used.

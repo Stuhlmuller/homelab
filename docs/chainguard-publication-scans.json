@@ -1,0 +1,316 @@
+{
+  "observed_at": "2026-10-10T23:27:19+00:00",
+  "publication_run": "https://github.com/Stuhlmuller/homelab/actions/runs/38092077585",
+  "scope": "scripts/config/harbor-chainguard-images.json",
+  "limitations": "Harbor scanner snapshot for published artifacts; not deployed workload acceptance or a guarantee against future advisories.",
+  "artifacts": [
+    {
+      "image": "busybox",
+      "platform": "index",
+      "digest": "sha256:f7d9063f22547e726221275158930e5033be3c6d8340c6867afb7d0d779fad8d",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:44:18.000Z"
+    },
+    {
+      "image": "busybox",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:e7117adad8172cc030bc87b931a0fbbec1bcdd7ebb1c00a67e1c76f4a3eab1ff",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:44:17.000Z"
+    },
+    {
+      "image": "busybox",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:9e2d12a790568dea1d5582cc56a316b0f908207268063f81969ad26e1f37c523",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:44:18.000Z"
+    },
+    {
+      "image": "cosign",
+      "platform": "index",
+      "digest": "sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:44:54.000Z"
+    },
+    {
+      "image": "cosign",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:70b49cd62302297b3e6a92eb63f86d699bc545c1231fe823147784c5fd742768",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:44:53.000Z"
+    },
+    {
+      "image": "cosign",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:4b8ce0e26013c038599fd47fe6c05d4a7ef728a4794987a94e75c9ece7bdd788",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:44:54.000Z"
+    },
+    {
+      "image": "curl",
+      "platform": "index",
+      "digest": "sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T23:00:21.000Z"
+    },
+    {
+      "image": "curl",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:1dd2830a3ad654423effe97725df18b82330a977d3b26aa706ca9394c72e82c0",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T23:00:21.000Z"
+    },
+    {
+      "image": "curl",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:54d877aa640496100edfd134af022a745a595ca8c6532c6f4e8785ebeb45a2e0",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T23:00:20.000Z"
+    },
+    {
+      "image": "postgres",
+      "platform": "index",
+      "digest": "sha256:b409d66dd4c3e7138a7e06ebdfe46966843e9e1a9322cb3b20a13928011ad398",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:47:38.000Z"
+    },
+    {
+      "image": "postgres",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:94e5fea44552b9346851a506209acdb9a8c8aec55269c5657e5fbf8a17abc646",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:47:38.000Z"
+    },
+    {
+      "image": "postgres",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:f13bf433402a961b99877ce59d9fd03a4398741d1aea8556900c78f933f9e4db",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:47:36.000Z"
+    },
+    {
+      "image": "python",
+      "platform": "index",
+      "digest": "sha256:197cf542e9f4dc373864faecd4fd1a4f642622e654e9196881ca852e8fdf26bd",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:49:13.000Z"
+    },
+    {
+      "image": "python",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:29ba28eeb37d00fba93ad2667fdae3ba6aa5b823c587be27ff481e20d1e95e2a",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:49:13.000Z"
+    },
+    {
+      "image": "python",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:69c9aa61817ef18e6866f76a90374416c0aac0f3e7698381dc2464b3770c6bd7",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:49:12.000Z"
+    },
+    {
+      "image": "redis",
+      "platform": "index",
+      "digest": "sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:49:59.000Z"
+    },
+    {
+      "image": "redis",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:d52aa714779ebbad0a89ab97f10c1483069002ba2f4f409c8afcbaebb9756441",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:49:59.000Z"
+    },
+    {
+      "image": "redis",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:93158668d9daacbdf021d78f1003849764a6f6ce59ed4f13ae2b09815c8ec7cb",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:49:56.000Z"
+    },
+    {
+      "image": "valkey",
+      "platform": "index",
+      "digest": "sha256:f61f933bd00446d2a28ca0c7ea4dc1f5c73a323191f173c40e2e86749a1db76b",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:50:40.000Z"
+    },
+    {
+      "image": "valkey",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "digest": "sha256:72d205341f56f9feca02cd7d581f9899dde2be0761810aca64fd5b121005deb7",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:50:40.000Z"
+    },
+    {
+      "image": "valkey",
+      "platform": {
+        "OsFeatures": null,
+        "architecture": "arm64",
+        "os": "linux"
+      },
+      "digest": "sha256:5cd81a394e5f6913bbf88e7f6e004912b94b0084a264b54924a6467ff16d59d2",
+      "status": "Success",
+      "summary": {
+        "fixable": 0,
+        "summary": {},
+        "total": 0
+      },
+      "end_time": "2026-10-10T22:50:40.000Z"
+    }
+  ]
+}

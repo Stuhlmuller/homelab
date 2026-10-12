@@ -1,7 +1,7 @@
 {
   "images": [
     {
-      "source": "docker.io/library/busybox:1.38.0@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e"
+      "source": "cgr.dev/chainguard/busybox:latest@sha256:f7d9063f22547e726221275158930e5033be3c6d8340c6867afb7d0d779fad8d"
     },
     {
       "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
