@@ -141,6 +141,23 @@ unproved. Preserve raw failure logs and original attempt IDs privately.
 The earlier one-attempt release remains exhausted; further attempts require
 new explicit authorization.
 
+The newly authorized attempt after PR #1291 on `af18e0e6` passed the private
+loopback setup but failed at Nix sandbox root pivot for the Node.js dependency:
+`cannot pivot old root directory ... Operation not permitted`. Neither offline
+check completed, and no signed outputs were published. RuntimeDefault seccomp,
+strict sandbox/signature verification, the 1 GiB limit and the reviewed
+capabilities were retained. This error identifies the failing operation, not
+its confirmed enforcement cause; diagnose the sandbox/profile boundary before
+proposing any additional privilege or profile change.
+
+The attempt exited with status 1. Independent inspection confirmed the owner
+lock and attempt workspaces absent, no active Nix/timeout process, four Ready
+nodes without pressure and fresh leases. Memory peak was 1,060,679,680 bytes
+(about 1,012 MiB), below the configured 1 GiB limit, with no max/OOM events.
+The full-check resource budget remains unproved. The one additional attempt
+release is exhausted; further execution or privilege/profile changes require
+new explicit authorization through the protected source/rollout path.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input
