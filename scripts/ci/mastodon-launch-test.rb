@@ -16,12 +16,13 @@ runner = <<~RUBY
       def read(path, *args)
         return ARGV.shift if path == '/run/mastodon/vapid.pem'
         return ARGV.shift if path == '/opt/mastodon/.env.production'
+        return 'fixture#=$literal' if path == '/run/mastodon/smtp-password'
         original_read(path, *args)
       end
     end
   end
   def exec(*args)
-    puts JSON.generate({private: ENV.fetch('VAPID_PRIVATE_KEY'), public: ENV.fetch('VAPID_PUBLIC_KEY'), command: args, removed: ($removed || [])})
+    puts JSON.generate({private: ENV.fetch('VAPID_PRIVATE_KEY'), public: ENV.fetch('VAPID_PUBLIC_KEY'), command: args, removed: ($removed || []), smtp: ENV.fetch('SMTP_PASSWORD')})
   end
   load #{launcher.inspect}
 RUBY
@@ -30,6 +31,7 @@ raise 'launcher failed for a valid key' unless result.success?
 data = JSON.parse(stdout)
 raise 'wrong command' unless data.fetch('command') == ['bundle', 'exec', 'puma']
 raise 'web launcher cleared worker readiness' unless data.fetch('removed').empty?
+raise 'SMTP password changed' unless data.fetch('smtp') == 'fixture#=$literal'
 raise 'wrong private scalar' unless Base64.urlsafe_decode64(data.fetch('private')) == key.private_key.to_s(2).rjust(32, "\0")
 raise 'wrong public point' unless Base64.urlsafe_decode64(data.fetch('public')) == key.public_key.to_octet_string(:uncompressed)
 raise 'keys contain padding' if [data.fetch('private'), data.fetch('public')].any? { |value| value.include?('=') }
@@ -47,4 +49,10 @@ raise 'worker launch failed' unless result.success?
 data = JSON.parse(stdout)
 raise 'stale readiness survived restart' unless data.fetch('removed') == ['/opt/mastodon/tmp/sidekiq_process_has_started_and_will_begin_processing_jobs']
 raise 'worker command changed' unless data.fetch('command') == ['bundle', 'exec', 'sidekiq', '-c', '5']
-puts 'Mastodon launcher: VAPID conversion, config rejection, command forwarding, and stale readiness cleanup passed'
+for password in ['', 'REPLACE_ME']
+  invalid_runner = runner.sub("return 'fixture#=$literal'", "return #{password.inspect}")
+  stdout, stderr, result = Open3.capture3('ruby', '-e', invalid_runner, '--', key.to_pem, 'LOCAL_DOMAIN=chosen.example', 'bundle', 'exec', 'puma')
+  raise 'invalid SMTP credential launched app' if result.success? || !stdout.empty?
+  raise 'wrong SMTP rejection' unless stderr.include?('SMTP password is missing or still a placeholder')
+end
+puts 'Mastodon launcher: VAPID, exact SMTP password, placeholder rejection, forwarding, and restart readiness passed'

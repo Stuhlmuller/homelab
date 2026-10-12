@@ -31,7 +31,6 @@ data:
     SMTP_SERVER=REPLACE_ME
     SMTP_PORT=587
     SMTP_LOGIN=REPLACE_ME
-    SMTP_PASSWORD={{ .smtp_password | toJson }}
     SMTP_FROM_ADDRESS=REPLACE_ME
     SMTP_ENABLE_STARTTLS=always
     S3_ENABLED=false

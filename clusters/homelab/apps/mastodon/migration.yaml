@@ -61,6 +61,10 @@ spec:
               mountPath: /run/mastodon/vapid.pem
               subPath: vapid.pem
               readOnly: true
+            - name: runtime
+              mountPath: /run/mastodon/smtp-password
+              subPath: smtp-password
+              readOnly: true
             - name: launcher
               mountPath: /run/launcher
               readOnly: true

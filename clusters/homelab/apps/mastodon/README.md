@@ -52,7 +52,9 @@ combines committed settings and SSM credentials into mounted `.env.production`
 and `streaming.env` files. Streaming receives only its own configuration file.
 SSM also generates stable Rails, Active Record encryption, and P-256 VAPID keys.
 The Ruby launcher derives the raw base64url Web Push key pair from the mounted
-PEM; it never persists another key pair or logs keys. Its regression test proves
+PEM; it never persists another key pair or logs keys. SMTP passwords mount as
+a separate file and enter the native process directly, avoiding dotenv variable
+expansion or quote escaping. Its regression test proves
 conversion, command forwarding, and rejection of placeholders and invalid keys.
 
 Keep encryption and VAPID keys with encrypted-state backups. Recreating them
@@ -92,10 +94,10 @@ active writer's database. Preserve local claims until recovery is verified.
 
 - Publish both official Mastodon 4.7.3 images from PR #1288 through the reviewed
   Harbor workflow; prove complete destination pulls before consumption. On
-  2026-10-11, run `38196403709` passed validation but its copy job queued behind
-  NOFX run `38173056151`, awaiting `homelab-production` approval in the shared
-  `harbor-packages-production` lane. The owner must resolve that earlier run;
-  a queued copy job is not a publication receipt.
+  2026-10-11, run `38196403709` passed validation but its copy job remained
+  pending in the shared `harbor-packages-production` publication lane. This is
+  a delivery-queue dependency, not a Mastodon application dependency. A queued
+  copy job is not a publication receipt.
 - Add apex WebFinger delegation so accounts at `stinkyboi.com` are discoverable
   while the website stays on `mastodon.stinkyboi.com`. Do not change the local
   account domain after creating identities.
