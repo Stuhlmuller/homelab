@@ -150,6 +150,23 @@ The DNS helper deliberately provides no deletion path: add a reviewed retirement
 contract before removing the record. For tunnel relocation, update only the
 owned record through this workflow after the replacement connector is ready.
 
+## Publication recovery evidence
+
+Scoped run `38210448448`, attempt 2, passed validation and failed the web image
+at `destination-copy` on 2026-10-12 06:24 UTC. Read-only registry logs showed
+an interrupted blob PATCH with `unexpected EOF` and client disconnect at
+06:24:48 UTC. The declared Istio upload timeout is disabled. This supports a
+bounded transfer retry, not digest/alias/pull bypass or database modification.
+The failed client stderr remains private, so its full cause is not proven.
+
+Earlier streaming scans reported a duplicate
+`scan_report_digest_registration_uuid_mime_type_key` at 06:22:28 UTC. This is
+separate from the web-image copy failure and needs Harbor scan/readiness
+follow-up before treating vulnerability coverage as complete. Preserve registry
+content and schema; source evidence is the failed run's sanitized status and
+Harbor core/registry/PostgreSQL logs for that interval. A failed or partial
+publication never authorizes consuming references.
+
 ## Remaining deployment gates
 
 - Publish both official Mastodon 4.7.3 images from PR #1288 through the reviewed
