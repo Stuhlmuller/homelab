@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6ac595f513eb4f9efd9ceed72ff177d9088020034066a51177dea3bacf0461fd",
+  "pageVersion": "sha256:2669839e318ff92e6efb14a750794188610639b0569003dc1a3ee23c51dc1d72",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
+          "version": "repo-file-v1:sha256:624287c2b4b1f975c8d9f24141c8910d29896da1c83a7af4c9891967919c395d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
+          "version": "repo-file-v1:sha256:624287c2b4b1f975c8d9f24141c8910d29896da1c83a7af4c9891967919c395d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:05db0e846985b7f4d64ac2f13ab8f7d3d0f3df7c4e2ed55252ea0febec8a1be9"
+          "version": "repo-file-v1:sha256:edb9893a17b69932006dce41f75204932deffb590aa974030f557cbe2b83796c"
         }
       ]
     },
@@ -406,7 +406,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
+          "version": "repo-file-v1:sha256:624287c2b4b1f975c8d9f24141c8910d29896da1c83a7af4c9891967919c395d"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -454,7 +454,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:05db0e846985b7f4d64ac2f13ab8f7d3d0f3df7c4e2ed55252ea0febec8a1be9"
+          "version": "repo-file-v1:sha256:edb9893a17b69932006dce41f75204932deffb590aa974030f557cbe2b83796c"
         }
       ]
     },
@@ -505,6 +505,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T04:52:40.862Z"
+    "at": "2026-10-12T05:11:16.911Z"
   }
 }

@@ -71,7 +71,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
-      group: harbor-packages-production
+      # Mirror runs share mutable aliases only within the public mirror project.
+      group: harbor-mirror-production
       cancel-in-progress: false
     environment:
       name: homelab-production

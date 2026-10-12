@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-3b8a5a1dece086403bc8ab75
+    resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -94,10 +96,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T03:59:12.990Z" }
+generated: { by: "codex", at: "2026-10-12T05:11:16.911Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T04:40:28.348Z
+    at: 2026-10-12T05:11:16.911Z
 ---
 
 # Harbor Private OCI Registry
@@ -309,6 +311,12 @@ mirror copy had successful scans for all 62 uploaded runnable manifests and
 snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
+
+Public mirror runs serialize in `harbor-mirror-production` to protect mutable
+aliases within the public mirror project. NOFX and core publication retain the
+separate `harbor-packages-production` queue; neither queue cancels an active run.
+This scheduling separation preserves source/destination verification and grants
+no publication or rollout authorization.
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
 `bazarr`, or `traefik`.
