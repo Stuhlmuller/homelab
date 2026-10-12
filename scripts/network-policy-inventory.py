@@ -103,7 +103,7 @@ def selector_matches(selector, labels):
         values = expression.get("values", [])
         present, value = key in labels, labels.get(key)
         if ((operator == "In" and (not present or value not in values)) or
-                (operator == "NotIn" and (present and value in values)) or
+                (operator == "NotIn" and (not present or value in values)) or
                 (operator == "Exists" and not present) or
                 (operator == "DoesNotExist" and present)):
             return False

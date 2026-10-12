@@ -157,6 +157,14 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
         result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
         self.assertEqual(result["driftedPolicies"], [])
 
+    def test_not_in_selector_requires_label_presence(self):
+        selector = {"matchExpressions": [{
+            "key": "app", "operator": "NotIn", "values": ["excluded"],
+        }]}
+        self.assertFalse(inventory.selector_matches(selector, {}))
+        self.assertTrue(inventory.selector_matches(selector, {"app": "included"}))
+        self.assertFalse(inventory.selector_matches(selector, {"app": "excluded"}))
+
     def test_normalizes_empty_policy_and_egress_fields_before_drift_comparison(self):
         live = [
             policy("apps", "empty-selectors", {}, [{
