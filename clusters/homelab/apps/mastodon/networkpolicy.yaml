@@ -26,16 +26,6 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-    - to:
-        - ipBlock:
-            cidr: 10.1.0.2/32
-      ports:
-        - protocol: TCP
-          port: 2049
-        - protocol: TCP
-          port: 111
-        - protocol: UDP
-          port: 111
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -75,3 +65,29 @@ spec:
           port: 465
         - protocol: TCP
           port: 587
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mastodon-gateway-ingress
+  namespace: mastodon
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - mastodon-web
+          - mastodon-streaming
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+      ports:
+        - protocol: TCP
+          port: 3000
+        - protocol: TCP
+          port: 4000

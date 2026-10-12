@@ -3,7 +3,11 @@
 Preparation for the requested Mastodon server for stinkyboi.com. This directory
 owns PostgreSQL, Redis, retained storage, web, Sidekiq, streaming, and a schema
 migration Job. No Argo CD Application registers it yet; no server or public
-route is deployed. The website uses `mastodon.stinkyboi.com`; account identities
+route is deployed. The declared Istio route sends streaming requests to port
+4000 and remaining subdomain requests to Puma on port 3000. STRICT mTLS and
+default-deny authorization admit only the shared gateway and Mastodon service
+account; NetworkPolicy separately limits ingress and federation egress. This
+route still needs a public transport and DNS declaration. The website uses `mastodon.stinkyboi.com`; account identities
 use `stinkyboi.com`. This preserves the existing apex portal and requires a
 public apex WebFinger delegation route. Mail settings remain explicit
 `REPLACE_ME` placeholders, which the Rails launcher rejects.

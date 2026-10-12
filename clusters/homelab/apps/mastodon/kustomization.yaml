@@ -14,6 +14,8 @@ resources:
   - runtime-externalsecret.yaml
   - migration.yaml
   - workloads.yaml
+  - virtualservice.yaml
+  - authorizationpolicy.yaml
 configMapGenerator:
   - name: mastodon-launcher
     namespace: mastodon
