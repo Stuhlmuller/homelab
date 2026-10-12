@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:601dc42ffc1267e4d7075b64693865d698ac7ed8e8177752387ef7deef10148f",
+  "pageVersion": "sha256:f5d4d114ff0492754accfaabbffe92c492eafeed0da6883fc5e56257529ac272",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
-      "statement": "Static checks cover Octelium immutable bindings with disabled email fallback, complete fallback-user inventory, preserved contact fields and retries, plus owner-mail plan guards for current-mail and identity drift. Live migration requires private encrypted mail-only planning, fresh owner access and SMTP proxy release before Mac SSO acceptance.",
+      "statement": "Offline validation runs the mocked Octelium OIDC migration regression; static validation runs the owner-mail plan-only test. The live runbook requires a private baseline and reviewed mail-only saved plan, then fresh Graph, owner-access, and SMTP-proxy readback; those live outcomes are not proven by the tests.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
@@ -54,7 +54,7 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge/overlay /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "statement": "Offline validation runs route and tokenless-kubeconfig fixtures, including exact LAN, bridge, and overlay `/32` sources for registry port 9443; the separately invoked loopback runtime harness exercises declared Traefik routes and TLS reload. Neither replaces live ingress acceptance.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -162,7 +162,7 @@
     },
     {
       "id": "claim_a7ed2b737fcd4aeb8d2d62a4c1910698",
-      "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
+      "statement": "Offline validation runs fixed ingress-signer and CI-publisher fixtures, including fail-closed retirement and orphan recovery; real provider plan and readback remain required for production replacement.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -282,7 +282,7 @@
     },
     {
       "id": "claim_79921f1a97d243a9a583eabfcdc7d7cf",
-      "statement": "Offline fixtures run the Harbor core source trust test covering pinned archive verification and preparation, baseline retention, patch validation, wrong hashes/roots, escaping symlinks and nonempty contexts without network access; the credential-free Linux candidate job requires original failure, repaired manager tests, upstream API generation and complete core compilation without production inputs.",
+      "statement": "Offline checks run mocked source-trust fixtures for pinned preparation, baseline retention, patch validation, bad hashes/roots, escaping symlinks, and nonempty contexts. The Linux candidate job declares read-only contents and non-persisted checkout credentials; it requires the original duplicate-reference failure, repaired tests, upstream API generation, and core compilation.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -358,7 +358,7 @@
     },
     {
       "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
-      "statement": "The exact-container audit's offline regressions refuse wrong image/config/platform/distro identity, stale or invalid databases, finding filters/exclusions and available fixes; unresolved findings remain unchanged. The privacy regression requires sanitized output without raw metadata and explicit false CVE clearance. The credential-free Linux workflow runs the full Docker-archive audit after registry acceptance.",
+      "statement": "Offline regressions reject incorrect image/config/platform/distro identity, invalid or stale databases, filters/exclusions, and available fixes while retaining unresolved findings; receipts omit raw metadata and set `cve_clearance: false`. The Linux job runs the unit checks then the private runtime-audit command with non-persisted checkout credentials.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9df5071d813074ef493a834d925d69043dd767b0ba64a2cb8eabd301895825d7"
+          "version": "repo-file-v1:sha256:6d16f6b97509d2d289b37fdff6baaba32ba6d0381e59dff9231001e110f463a8"
         }
       ]
     },
@@ -406,7 +406,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -416,7 +416,7 @@
     },
     {
       "id": "claim_8e0f5d1def624426aff856de7987ba8e",
-      "statement": "Core CI/publication requires a pinned public-Chainguard signer fixture before credentials, testing disposable P-256 import, public-key equality with OpenSSL and producer signing flags; core Pods use the corresponding Harbor mirror. Documentation records the October 11 live production required-reviewer check without changing rules or claiming compatibility before Linux CI.",
+      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and `validate` runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality, and the producer signing flags. A 2026-10-11 read-only check found a required `homelab-production` reviewer; recheck live environment settings before dispatch.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -435,32 +435,10 @@
           "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
         }
       ]
-    },
-    {
-      "id": "claim_55c3fab4db2e4b668ed4381d2ebab9d9",
-      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
-        },
-        {
-          "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
-        },
-        {
-          "resource": "repo://scripts/nix-builder.py",
-          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
-        }
-      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:01:36.579Z"
+    "at": "2026-10-12T03:59:12.990Z"
   }
 }

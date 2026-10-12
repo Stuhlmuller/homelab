@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d56b42ced7a40f8ff751af91077436b4c65b54b4400734e6a35b97cb5cb598e4",
+  "pageVersion": "sha256:bf72f3256f995b5d9737a086eef20caaaebf042fe8c2ebfd819ea920c34a5fac",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -26,11 +26,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:6df6b6499432ef310b6d1cd4e55a9c4ebbbb2ea9324271230913cadb8149e98e"
+          "version": "repo-file-v1:sha256:51d0fa821e459a83c37b4bced0703ee70d466179ba1c0c24f84934a18c012725"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -122,7 +122,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
         }
       ]
     },
@@ -332,7 +332,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -342,7 +342,7 @@
     },
     {
       "id": "claim_12e9068cc39548eebbc31fe4756e5aad",
-      "statement": "The fixed Chainguard publication scope contains thirteen digest-pinned public candidates; Go, nginx, Node runtime, Node dev, static and Wolfi base are six additions to the original seven-image scope, and prior receipts cannot cover the expanded scope or changed digests.",
+      "statement": "Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*` sources. The prior seven-image publication receipt excludes the six expanded entries—Go, nginx, Node runtime, Node dev, static, and Wolfi base—so expanded publication requires protected production approval and complete anonymous-download acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -351,6 +351,10 @@
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
           "version": "repo-file-v1:sha256:036493a69c2343e6ac9eea79feeb88ff28b9b17c32a4f070f452cdb010238836"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:bb3a025ce4a338f168e01a84ecaf3d75eb03277a8791d9e0dd9f900359c44515"
         }
       ]
     },
@@ -360,7 +364,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3085faab347b6b7185fe12a4293ebdf04764642d298a455cc5e79db547f2d851"
+          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -370,7 +374,7 @@
     },
     {
       "id": "claim_d6f10f15d9864661a1f9c69dcbbf71f6",
-      "statement": "The full publication catalog stages kube-network-policies v1.1.2 and paused Image Updater v1.3.0; enforcer activation requires Talos NRI/runtime synchronization and a complete policy audit with Istio egress bypass acceptance, and cataloging alone activates no enforcement.",
+      "statement": "The full catalog contains digest-pinned kube-network-policies v1.1.2 and paused Argo CD Image Updater v1.3.0. Cataloging activates no enforcer; activation requires repository-owned Talos NRI configuration, live socket/plugin registration, negative startup/bypass tests, NetworkPolicy review, and a fail-closed strict-mode worker canary.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -384,7 +388,7 @@
     },
     {
       "id": "claim_54dda1a75d0d4f659c072d7243bdc3b3",
-      "statement": "The core-only signer selects the cataloged internal public-Chainguard Cosign digest. A dated read-only pull receipt verifies its original index, two platform manifests and 18 referenced config/layer hashes, while explicitly denying source-signature and runtime-compatibility acceptance. Linux CI must pass P-256 key import/public-key identity and signing API flag checks before publication credentials.",
+      "statement": "The core publication workflow tests the pinned public Chainguard Cosign candidate before registry credentials, then runs every core signing-Pod container from the same digest mirrored in Harbor. The 2026-10-11 receipt proves a complete Harbor pull of the exact multi-platform image (two manifests, 18 blobs), but does not prove source-signature transfer or record Linux compatibility acceptance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -405,22 +409,30 @@
       ]
     },
     {
-      "id": "claim_840bd570c2aa473ea8b3c5a13d808b0d",
-      "statement": "The Linux core signer compatibility fixture tests the exact public upstream Cosign digest for P-256 import/public-key identity and signing API flags before publication credentials; this fixture does not establish destination source-signature coverage or authorize publication.",
+      "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
+      "statement": "The SSM catalog declares `/homelab/harbor/mirror-robot-pull-password` as a generated credential for a future public-mirror reader. Stage A adds no ExternalSecret, Harbor bootstrap, publisher, Talos, or workload consumer, so parameter creation alone creates no Harbor robot or workload registry access. Its runbook regenerates the Terragrunt stack before entering the generated SSM unit, then requires a saved plan that creates the parameter and may change only identified exact-ARN reader-policy entries, including deterministic chunks; its wider shared dependency closure requires separate approval. A later consumer change follows metadata verification, advances `harbor-secrets` OnChange after the parameter exists, and does not use periodic refresh because it would regenerate Harbor's salted bcrypt registry password hash.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:3a7bae96a8f1ee8443e54a4eaa8dfeb5aa2674c67d2f715752af9f2375420c28"
         },
         {
-          "resource": "repo://builds/harbor-core/signer-test.sh",
-          "version": "repo-file-v1:sha256:82073f75b29a67e5e1f8aca946deb9157c98798922fbf28604a02f7d13c41358"
+          "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
+          "version": "repo-file-v1:sha256:b3efabc48ca9aa05da6fcfdd97fd406c1ff7a152b909990ca7c679dccf0bda0c"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
+        },
+        {
+          "resource": "repo://docs/secrets-aws-ssm.md",
+          "version": "repo-file-v1:sha256:ff3f2f866267c410640159e9f3a5a3f208ecbac082ae5b4dd9c90d3fe5c66ec3"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:01:36.579Z"
+    "at": "2026-10-12T03:59:12.990Z"
   }
 }
