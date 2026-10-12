@@ -2,8 +2,9 @@
 
 Preparation for the requested Mastodon server for stinkyboi.com. This directory
 owns PostgreSQL, Redis, retained storage, web, Sidekiq, streaming, and a schema
-migration Job. No Argo CD Application registers it yet; no server or public
-route is deployed. The declared Istio route sends streaming requests to port
+migration Job. The shared Terragrunt stack declares its Application at
+`IaC/live/argocd-apps/mastodon`; the draft has not been merged or applied, and
+no server or public route is deployed. The declared Istio route sends streaming requests to port
 4000 and remaining subdomain requests to Puma on port 3000. STRICT mTLS and
 default-deny authorization admit only the shared gateway and Mastodon service
 account; NetworkPolicy separately limits ingress and federation egress. This
@@ -89,6 +90,26 @@ extensions from `initdb-configmap.yaml`; restore with `pg_restore --no-owner`
 into the initialized `mastodon` database. Stop application writes through
 repository-owned desired state before a production restore. Never overwrite an
 active writer's database. Preserve local claims until recovery is verified.
+
+## Application registration
+
+`IaC/stacks/mastodon/stack.hcl` uses the shared Application template, source
+revision `main`, and the existing `homelab` AppProject because its retained
+local storage needs PersistentVolume and StorageClass permissions. The project
+allows the Mastodon namespace explicitly. Dependencies order registrations;
+they do not prove runtime readiness.
+
+After all activation gates are satisfied and the reviewed change is on `main`,
+dispatch `terragrunt-apply.yml` with `argocd_app=mastodon` and exact current
+`main` as `expected_sha`. The targeted path checks upstream health, CRDs,
+namespace secret-store access, and storage permissions before any write;
+then plans/applies declared SSM/IAM prerequisites and this Application using
+checked saved plans. It does not reconcile unrelated application registrations.
+Review the private SSM plan before authorizing production because its shared
+catalog can contain other pending declarations. Confirm Argo observes the
+merged revision, migrations finish, and each process rolls out before testing
+public behavior. Do not dispatch while provider settings still contain
+placeholders or publication lacks complete-pull evidence.
 
 ## Remaining deployment gates
 

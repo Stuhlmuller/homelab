@@ -14,6 +14,14 @@ unit "argocd_apps_affine" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/affine/stack.hcl").inputs
 }
 
+unit "argocd_apps_mastodon" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/mastodon"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/mastodon/stack.hcl").inputs
+}
+
 unit "argocd_apps_bazarr" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/bazarr"

@@ -61,6 +61,8 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: langfuse
     - server: https://kubernetes.default.svc
+      namespace: mastodon
+    - server: https://kubernetes.default.svc
       namespace: media
     - server: https://kubernetes.default.svc
       namespace: monitoring
