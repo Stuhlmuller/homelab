@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bf72f3256f995b5d9737a086eef20caaaebf042fe8c2ebfd819ea920c34a5fac",
+  "pageVersion": "sha256:b1667772d8341d8a1de24585496fb6d24f4bcf5c09bd900182b041a3b372f97e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
+          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -26,11 +26,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:51d0fa821e459a83c37b4bced0703ee70d466179ba1c0c24f84934a18c012725"
+          "version": "repo-file-v1:sha256:6dd66d6af0dd3e547469fabc31a718760d9711f4c2839862cdc6e937a7637ac8"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
+          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -122,7 +122,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
+          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
         }
       ]
     },
@@ -332,7 +332,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -364,7 +364,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -422,7 +422,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
+          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -433,6 +433,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:59:12.990Z"
+    "at": "2026-10-12T05:12:36.902Z"
   }
 }
