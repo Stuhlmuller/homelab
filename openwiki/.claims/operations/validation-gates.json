@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f61a430b486a4528b30afa168a3b3a70bb6cfb7381b95f00fb81769f6ddee922",
+  "pageVersion": "sha256:e4d0a66ec07953be794025c64c817c51a09f59918df839ef556637efb83219f1",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
-      "statement": "Static checks cover Octelium immutable bindings with disabled email fallback, complete fallback-user inventory, preserved contact fields and retries, plus owner-mail plan guards for current-mail and identity drift. Live migration requires private encrypted mail-only planning, fresh owner access and SMTP proxy release before Mac SSO acceptance.",
+      "statement": "Offline validation runs the mocked Octelium OIDC migration regression; static validation runs the owner-mail plan-only test. The live runbook requires a private baseline and reviewed mail-only saved plan, then fresh Graph, owner-access, and SMTP-proxy readback; those live outcomes are not proven by the tests.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
@@ -54,7 +54,7 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge/overlay /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
+      "statement": "Offline validation runs route and tokenless-kubeconfig fixtures, including exact LAN, bridge, and overlay `/32` sources for registry port 9443; the separately invoked loopback runtime harness exercises declared Traefik routes and TLS reload. Neither replaces live ingress acceptance.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -162,7 +162,7 @@
     },
     {
       "id": "claim_a7ed2b737fcd4aeb8d2d62a4c1910698",
-      "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
+      "statement": "Offline validation runs fixed ingress-signer and CI-publisher fixtures, including fail-closed retirement and orphan recovery; real provider plan and readback remain required for production replacement.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -282,7 +282,7 @@
     },
     {
       "id": "claim_79921f1a97d243a9a583eabfcdc7d7cf",
-      "statement": "Offline fixtures run the Harbor core source trust test covering pinned archive verification and preparation, baseline retention, patch validation, wrong hashes/roots, escaping symlinks and nonempty contexts without network access; the credential-free Linux candidate job requires original failure, repaired manager tests, upstream API generation and complete core compilation without production inputs.",
+      "statement": "Offline checks run mocked source-trust fixtures for pinned preparation, baseline retention, patch validation, bad hashes/roots, escaping symlinks, and nonempty contexts. The Linux candidate job declares read-only contents and non-persisted checkout credentials; it requires the original duplicate-reference failure, repaired tests, upstream API generation, and core compilation.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -358,7 +358,7 @@
     },
     {
       "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
-      "statement": "The exact-container audit's offline regressions refuse wrong image/config/platform/distro identity, stale or invalid databases, finding filters/exclusions and available fixes; unresolved findings remain unchanged. The privacy regression requires sanitized output without raw metadata and explicit false CVE clearance. The credential-free Linux workflow runs the full Docker-archive audit after registry acceptance.",
+      "statement": "Offline regressions reject incorrect image/config/platform/distro identity, invalid or stale databases, filters/exclusions, and available fixes while retaining unresolved findings; receipts omit raw metadata and set `cve_clearance: false`. The Linux job runs the unit checks then the private runtime-audit command with non-persisted checkout credentials.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -406,7 +406,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -416,7 +416,7 @@
     },
     {
       "id": "claim_8e0f5d1def624426aff856de7987ba8e",
-      "statement": "Core CI/publication requires a pinned public-Chainguard signer fixture before credentials, testing disposable P-256 import, public-key equality with OpenSSL and producer signing flags; core Pods use the corresponding Harbor mirror. Documentation records the October 11 live production required-reviewer check without changing rules or claiming compatibility before Linux CI.",
+      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and `validate` runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality, and the producer signing flags. A 2026-10-11 read-only check found a required `homelab-production` reviewer; recheck live environment settings before dispatch.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -437,7 +437,7 @@
       ]
     },
     {
-      "id": "claim_435e08d16847405da3a521c7447ec2ac",
+      "id": "claim_25806bd4bbec43afa03859599167af6f",
       "statement": "Phase 2b workflow security contracts require nine fixed credentialed mesh jobs, including Harbor core publication, to use the pinned action/version, existing fixed secret scope, private per-job state, and exact identity verification before live consumers; offline tests and protected fresh live acceptance remain distinct.",
       "evidence": [
         {
@@ -459,7 +459,7 @@
       ]
     },
     {
-      "id": "claim_bd5bb0e7bf224557b8da279d4efc7d11",
+      "id": "claim_ebfea60c787a44d0a76dbb8d14940a83",
       "statement": "CI access checks emit fixed markers for kubeconfig verification, proxy identity, Application read, dry-run admission and real no-op write denial; the hashed classifier emits fixed stage/reason labels without private output, and regression tests reject forged markers and modified classifier hashes.",
       "evidence": [
         {
@@ -483,6 +483,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:17:35.648Z"
+    "at": "2026-10-12T04:40:28.348Z"
   }
 }

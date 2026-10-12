@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:491f725a8d5924edf7496c2fe85c7e2d6d3bc0375885cddb39579736b955d4b8",
+  "pageVersion": "sha256:30233573452f441752eaabfab0f8ba8e018ebbb34d19b098b08176cd325daf3c",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -122,7 +122,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:6ff07d08701ab0803cb7b9970c0efd885f1aacc2328b66b8304c89b45db8f6b9"
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
         }
       ]
     },
@@ -332,7 +332,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -342,7 +342,7 @@
     },
     {
       "id": "claim_12e9068cc39548eebbc31fe4756e5aad",
-      "statement": "The fixed Chainguard publication scope contains thirteen digest-pinned public candidates; Go, nginx, Node runtime, Node dev, static and Wolfi base are six additions to the original seven-image scope, and prior receipts cannot cover the expanded scope or changed digests.",
+      "statement": "Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*` sources. The prior seven-image publication receipt excludes the six expanded entries—Go, nginx, Node runtime, Node dev, static, and Wolfi base—so expanded publication requires protected production approval and complete anonymous-download acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -351,6 +351,10 @@
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
           "version": "repo-file-v1:sha256:036493a69c2343e6ac9eea79feeb88ff28b9b17c32a4f070f452cdb010238836"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:bb3a025ce4a338f168e01a84ecaf3d75eb03277a8791d9e0dd9f900359c44515"
         }
       ]
     },
@@ -360,7 +364,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+          "version": "repo-file-v1:sha256:eb6901ba8a3f39796838ca8fd01c9ca6624ce3291bad8f033fc35dca46ab6498"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -370,7 +374,7 @@
     },
     {
       "id": "claim_d6f10f15d9864661a1f9c69dcbbf71f6",
-      "statement": "The full publication catalog stages kube-network-policies v1.1.2 and paused Image Updater v1.3.0; enforcer activation requires Talos NRI/runtime synchronization and a complete policy audit with Istio egress bypass acceptance, and cataloging alone activates no enforcement.",
+      "statement": "The full catalog contains digest-pinned kube-network-policies v1.1.2 and paused Argo CD Image Updater v1.3.0. Cataloging activates no enforcer; activation requires repository-owned Talos NRI configuration, live socket/plugin registration, negative startup/bypass tests, NetworkPolicy review, and a fail-closed strict-mode worker canary.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -384,7 +388,7 @@
     },
     {
       "id": "claim_54dda1a75d0d4f659c072d7243bdc3b3",
-      "statement": "The core-only signer selects the cataloged internal public-Chainguard Cosign digest. A dated read-only pull receipt verifies its original index, two platform manifests and 18 referenced config/layer hashes, while explicitly denying source-signature and runtime-compatibility acceptance. Linux CI must pass P-256 key import/public-key identity and signing API flag checks before publication credentials.",
+      "statement": "The core publication workflow tests the pinned public Chainguard Cosign candidate before registry credentials, then runs every core signing-Pod container from the same digest mirrored in Harbor. The 2026-10-11 receipt proves a complete Harbor pull of the exact multi-platform image (two manifests, 18 blobs), but does not prove source-signature transfer or record Linux compatibility acceptance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -405,7 +409,29 @@
       ]
     },
     {
-      "id": "claim_e6834eb1eea74351b0cb83e14a678893",
+      "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
+      "statement": "The SSM catalog declares `/homelab/harbor/mirror-robot-pull-password` as a generated credential for a future public-mirror reader. Stage A adds no ExternalSecret, Harbor bootstrap, publisher, Talos, or workload consumer, so parameter creation alone creates no Harbor robot or workload registry access. Its runbook regenerates the Terragrunt stack before entering the generated SSM unit, then requires a saved plan that creates the parameter and may change only identified exact-ARN reader-policy entries, including deterministic chunks; its wider shared dependency closure requires separate approval. A later consumer change follows metadata verification, advances `harbor-secrets` OnChange after the parameter exists, and does not use periodic refresh because it would regenerate Harbor's salted bcrypt registry password hash.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:3a7bae96a8f1ee8443e54a4eaa8dfeb5aa2674c67d2f715752af9f2375420c28"
+        },
+        {
+          "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
+          "version": "repo-file-v1:sha256:b3efabc48ca9aa05da6fcfdd97fd406c1ff7a152b909990ca7c679dccf0bda0c"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:2365c3b7d24036e4cfdd6f742288a11461af487aa58556e2d0795b4dddbc613f"
+        },
+        {
+          "resource": "repo://docs/secrets-aws-ssm.md",
+          "version": "repo-file-v1:sha256:ff3f2f866267c410640159e9f3a5a3f208ecbac082ae5b4dd9c90d3fe5c66ec3"
+        }
+      ]
+    },
+    {
+      "id": "claim_0b465c4d77be49d39553f7d014071f62",
       "statement": "Prepared hosted CI publication, including the fixed core publisher, uses the pre-signed apply mesh identity and tokenless operator API kubeconfig to port-forward Traefik's private TLS Service; canonical Harbor TLS and registry authentication remain, and new transport publication still requires a protected successful run.",
       "evidence": [
         {
@@ -429,6 +455,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:17:35.648Z"
+    "at": "2026-10-12T04:40:28.348Z"
   }
 }

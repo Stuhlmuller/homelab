@@ -22,12 +22,16 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-cf9e058040b1a15ca636bb42
+    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -52,10 +56,10 @@ sources:
     resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T20:01:55.480Z" }
+generated: { by: "codex", at: "2026-10-12T03:15:02.981Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T03:17:35.648Z
+    at: 2026-10-12T04:40:28.348Z
 ---
 
 # Secrets And Identity
@@ -747,6 +751,18 @@ separate public-read `mirror` project; `robot$mirror+publisher` uses its own gen
 `/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
 Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
 see [the image mirror runbook](../../docs/harbor-image-mirroring.md).
+
+The catalog declares a separate generated
+`/homelab/harbor/mirror-robot-pull-password` for a future public-mirror reader.
+This first stage has no ExternalSecret, Harbor bootstrap, publisher, Talos, or
+workload consumer, so creating the parameter alone creates neither a Harbor
+robot nor registry access. Review and apply the separate
+[reader-parameter plan](../../docs/harbor-image-mirroring.md#mirror-reader-prerequisite)
+and verify only its metadata before a later consumer change. That later change
+must advance `harbor-secrets`' `OnChange` revision after the parameter exists.
+Do not substitute periodic refresh: it would regenerate Harbor's salted bcrypt
+registry password hash. Shared Terraform dependency changes remain separately
+reviewed and approved.
 
 The excluded
 [private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
