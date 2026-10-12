@@ -13,6 +13,7 @@ resources:
   - configmap.yaml
   - runtime-externalsecret.yaml
   - migration.yaml
+  - bootstrap-job.yaml
   - workloads.yaml
   - virtualservice.yaml
   - authorizationpolicy.yaml
@@ -24,3 +25,4 @@ configMapGenerator:
         argocd.argoproj.io/sync-wave: '-2'
     files:
       - launch.rb
+      - bootstrap.rb

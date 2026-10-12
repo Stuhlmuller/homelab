@@ -10,7 +10,7 @@ metadata:
     argocd.argoproj.io/sync-wave: '-2'
 data:
   .env.production: |
-    LOCAL_DOMAIN=stinkyboi.com
+    LOCAL_DOMAIN=mastodon.stinkyboi.com
     WEB_DOMAIN=mastodon.stinkyboi.com
     NODE_ENV=production
     DB_HOST=mastodon-postgres.mastodon.svc.cluster.local
@@ -28,10 +28,10 @@ data:
     ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY={{ .encryption_primary_key }}
     ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY={{ .encryption_deterministic_key }}
     ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT={{ .encryption_salt }}
-    SMTP_SERVER=REPLACE_ME
+    SMTP_SERVER=smtp.gmail.com
     SMTP_PORT=587
-    SMTP_LOGIN=REPLACE_ME
-    SMTP_FROM_ADDRESS=REPLACE_ME
+    SMTP_LOGIN=rodman@stuhlmuller.net
+    SMTP_FROM_ADDRESS="Mastodon <rodman@stuhlmuller.net>"
     SMTP_ENABLE_STARTTLS=always
     S3_ENABLED=false
     ES_ENABLED=false
@@ -39,7 +39,7 @@ data:
     MAX_THREADS=5
     STREAMING_API_BASE_URL=wss://mastodon.stinkyboi.com
   streaming.env: |
-    LOCAL_DOMAIN=stinkyboi.com
+    LOCAL_DOMAIN=mastodon.stinkyboi.com
     WEB_DOMAIN=mastodon.stinkyboi.com
     NODE_ENV=production
     DB_HOST=mastodon-postgres.mastodon.svc.cluster.local

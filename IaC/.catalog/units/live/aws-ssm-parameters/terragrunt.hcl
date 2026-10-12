@@ -40,6 +40,13 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/mastodon/admin-password" = {
+      description = "Mastodon initial owner password; bootstrap only, never overwrite an existing account."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/mastodon/secret-key-base" = {
       description = "Mastodon stable secret-key-base; retain with database backups and never regenerate during restore."
       generated = {

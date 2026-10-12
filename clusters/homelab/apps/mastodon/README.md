@@ -10,10 +10,12 @@ default-deny authorization admit only the shared gateway and Mastodon service
 account; NetworkPolicy separately limits ingress and federation egress. This
 The shared cloudflared configuration declares its native public route;
 `mastodon-public-dns.yml` publishes only the instance hostname after rollout
-readiness. Neither has been applied yet. The website uses `mastodon.stinkyboi.com`; account identities
-use `stinkyboi.com`. This preserves the existing apex portal and requires a
-public apex WebFinger delegation route. Mail settings remain explicit
-`REPLACE_ME` placeholders, which the Rails launcher rejects.
+readiness. Neither has been applied yet. The website and account identities both use `mastodon.stinkyboi.com`. This
+preserves the private apex portal and makes federation discovery independent
+of private apex DNS. The default administrator is `rodman`, using the existing
+repository owner address `rodman@stuhlmuller.net`. No account has been created. Google Workspace SMTP defaults use `smtp.gmail.com:587`, the existing owner
+login, and that same sender address. Its protected password is still a
+placeholder; the Rails launcher rejects activation until it is injected.
 
 ## Storage and credentials
 
@@ -42,8 +44,8 @@ restart through GitOps, plus database/Redis password coordination.
 ## Server configuration
 
 The official 4.7.3 image serves compiled static files and media through Puma;
-streaming runs separately on port 4000. A wave-1 migration Job prepares the
-schema before wave-2 Deployments start. Web and Sidekiq mount the retained media
+streaming runs separately on port 4000. Schema preparation runs in wave 1, owner bootstrap in wave 2, and the
+Deployments start in wave 3. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
 small homelab. Sidekiq startup/readiness checks use the upstream job-processing
@@ -64,9 +66,8 @@ Keep encryption and VAPID keys with encrypted-state backups. Recreating them
 during restore would invalidate encrypted records, sessions, or push clients.
 `OnChange` ExternalSecrets and subPath mounts require a declared secret/template
 revision and Deployment runtime revision to consume changes; SSM edits alone
-do not refresh running processes. Admin bootstrap still needs the administrator details. For SMTP activation,
-select the provider and commit its non-secret host, login, and sender settings
-in `configmap.yaml`. Set `MASTODON_SMTP_PASSWORD` in the protected GitHub
+do not refresh running processes. The owner and non-secret Google Workspace settings are committed. For SMTP
+activation, supply the account app credential through the protected workflow. Set `MASTODON_SMTP_PASSWORD` in the protected GitHub
 production environment, then run `mastodon-smtp-credential.yml` with exact
 current `main` as `expected_sha`. It validates the declared SecureString and
 stores only `/homelab/mastodon/smtp-password`, using a private temporary file;
@@ -75,6 +76,23 @@ Advance the runtime ExternalSecret and Deployment revisions through GitOps,
 then send and receive a real email. Failed delivery is an activation failure.
 The workflow is also the password-rotation path; preserve the prior protected
 credential until the new value works, so it can be restored through this path.
+
+## Initial owner
+
+The wave-2 `mastodon-owner-bootstrap` hook uses the upstream account-creation
+fields to create `rodman` as a confirmed, approved Owner. It reads the generated
+`/homelab/mastodon/admin-password` through a file mounted only into that Job.
+Later syncs preserve the account and password; a conflicting email, role, or
+confirmation state stops bootstrap instead of replacing or promoting a user.
+No initial password is printed. Native password changes remain native; SSM is
+only the initial bootstrap/recovery slot and must not be assumed current afterward.
+
+Before acceptance, retrieve the initial credential only through an authorized
+private operator read, then prove browser login and Owner administration. Do
+not paste the credential into chat or commit it. Preserve account/database and
+stable application keys through rollback; rerunning the hook is not a password
+reset mechanism. Tests verify first creation, repeat preservation, conflict
+refusal, and error containment. Actual Rails persistence is verified after rollout.
 
 ## Backup and restore
 
@@ -140,10 +158,10 @@ owned record through this workflow after the replacement connector is ready.
   pending in the shared `harbor-packages-production` publication lane. This is
   a delivery-queue dependency, not a Mastodon application dependency. A queued
   copy job is not a publication receipt.
-- Add apex WebFinger delegation so accounts at `stinkyboi.com` are discoverable
-  while the website stays on `mastodon.stinkyboi.com`. Do not change the local
-  account domain after creating identities.
-- Add admin bootstrap and supply the selected email provider settings/credential.
+- Keep `LOCAL_DOMAIN=mastodon.stinkyboi.com` stable once accounts exist. The
+  private apex is not part of this instance's discovery or public routing.
+- Supply the Google Workspace SMTP app credential through the protected
+  injection workflow, then verify owner bootstrap and actual email receipt.
 - Render and exercise the configuration template, migrations, and full image
   startup after domain/mail selection; static checks do not prove runtime boot.
 - Activate and verify the declared public route and DNS without restoring

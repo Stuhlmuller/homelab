@@ -113,7 +113,10 @@ acceptance, rotation, and recovery commands.
 The undeployed Mastodon draft declares generated PostgreSQL, Redis, Rails,
 Active Record encryption, and P-256 VAPID keys under `/homelab/mastodon/`.
 `mastodon-datastores` mounts database/Redis passwords; `mastodon-runtime`
-templates mounted application configuration and the stable VAPID PEM. The
+templates mounted application configuration, the stable VAPID PEM, and the
+initial owner password. `/homelab/mastodon/admin-password` is generated for
+first bootstrap only; its file mounts only into the owner Job, not the web or
+worker containers. Later syncs never overwrite an existing account password. The
 namespace policy permits only its own SSM prefix. Keep generated encryption
 and signing keys with encrypted-state backups; do not recreate them on restore.
 
@@ -265,6 +268,7 @@ cluster CA is intentionally rotated.
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
 | mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password` |
 | mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
+| mastodon owner | `mastodon-runtime` | `mastodon-runtime` (Job-only file mount) | `/homelab/mastodon/admin-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
