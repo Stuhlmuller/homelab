@@ -157,6 +157,35 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
         result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
         self.assertEqual(result["driftedPolicies"], [])
 
+    def test_normalizes_empty_policy_and_egress_fields_before_drift_comparison(self):
+        live = [
+            policy("apps", "empty-selectors", {}, [{
+                "to": [{"namespaceSelector": {}, "podSelector": {}}],
+                "ports": [{"protocol": "TCP", "port": 443}],
+            }], ["Egress"]),
+            policy("apps", "empty-rule-fields", {}, [{}], ["Egress"]),
+            policy("apps", "empty-except", {}, [{
+                "to": [{"ipBlock": {"cidr": "10.1.0.2/32"}}],
+                "ports": [{"port": 443}],
+            }], ["Egress"]),
+        ]
+        rendered = [
+            policy("apps", "empty-selectors", {"matchLabels": {}}, [{
+                "to": [{"namespaceSelector": {"matchLabels": {}},
+                        "podSelector": {"matchExpressions": []}}],
+                "ports": [{"port": 443}],
+            }], ["Egress"]),
+            policy("apps", "empty-rule-fields", {"matchExpressions": []}, [{
+                "to": [], "ports": [],
+            }], ["Egress"]),
+            policy("apps", "empty-except", {}, [{
+                "to": [{"ipBlock": {"cidr": "10.1.0.2/32", "except": []}}],
+                "ports": [{"protocol": "TCP", "port": 443}],
+            }], ["Egress"]),
+        ]
+        result = inventory.audit([pod("apps", "client", {})], live, [rendered])
+        self.assertEqual(result["driftedPolicies"], [])
+
     def test_review_hash_and_conflicting_snapshots_fail_closed(self):
         item = policy("apps", "reviewed", {}, [], ["Egress"])
         review = {"policies": [{

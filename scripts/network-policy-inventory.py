@@ -122,19 +122,52 @@ def negative_selector(selector):
     )
 
 
+def normalized_selector(selector):
+    if not isinstance(selector, dict):
+        return selector
+    return {
+        key: value for key, value in selector.items()
+        if not ((key == "matchLabels" and value == {}) or
+                (key == "matchExpressions" and value == []))
+    }
+
+
+def normalized_peer(peer):
+    if not isinstance(peer, dict):
+        return peer
+    normalized = dict(peer)
+    for field in ("podSelector", "namespaceSelector"):
+        if field in normalized:
+            normalized[field] = normalized_selector(normalized[field])
+    block = normalized.get("ipBlock")
+    if isinstance(block, dict) and block.get("except") == []:
+        normalized["ipBlock"] = {key: value for key, value in block.items() if key != "except"}
+    return normalized
+
+
 def normalized_egress(egress):
     """Apply Kubernetes defaults that affect NetworkPolicy equality."""
     normalized = []
     for rule in egress:
-        if not isinstance(rule, dict) or not isinstance(rule.get("ports"), list):
+        if not isinstance(rule, dict):
             normalized.append(rule)
             continue
-        ports = [
-            {**port, "protocol": "TCP"}
-            if isinstance(port, dict) and port.get("protocol") is None else port
-            for port in rule["ports"]
-        ]
-        normalized.append({**rule, "ports": ports})
+        normalized_rule = dict(rule)
+        ports = normalized_rule.get("ports")
+        if ports == []:
+            normalized_rule.pop("ports")
+        elif isinstance(ports, list):
+            normalized_rule["ports"] = [
+                {**port, "protocol": "TCP"}
+                if isinstance(port, dict) and port.get("protocol") is None else port
+                for port in ports
+            ]
+        destinations = normalized_rule.get("to")
+        if destinations == []:
+            normalized_rule.pop("to")
+        elif isinstance(destinations, list):
+            normalized_rule["to"] = [normalized_peer(peer) for peer in destinations]
+        normalized.append(normalized_rule)
     return canonical(normalized)
 
 
@@ -152,7 +185,7 @@ def normalized_policy(item):
     return {
         "namespace": namespace,
         "name": name,
-        "podSelector": canonical(spec["podSelector"]),
+        "podSelector": canonical(normalized_selector(spec["podSelector"])),
         "policyTypes": sorted(types),
         "egress": normalized_egress(egress if "Egress" in types else []),
     }
