@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:96f28909b70e136afc212b5a98a6e6e7be5571fb50b52424c68c50dc80545b6a",
+  "pageVersion": "sha256:a20f1c76eec5707b74ae534c32229ad98d077e92fb0f6e7e4ac51fc2836e1527",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -36,8 +36,12 @@
     },
     {
       "id": "claim_1e76027c22f74ebd8abc4362f0879415",
-      "statement": "Phase 2b switches eight CI workflows to scoped pre-signed Tailscale keys, exact tag/tailnet verification and direct native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
+      "statement": "Phase 2b switches nine CI workflows, including the current-main Harbor core publisher, to scoped pre-signed Tailscale keys, exact tag/tailnet verification and direct native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
       "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
         {
           "resource": "repo://.github/workflows/terragrunt-apply.yml",
           "version": "repo-file-v1:sha256:bf1a77d8421072679a92ae1a6095950a6ef1ee455c839cfb18263edd4959b101"
@@ -48,7 +52,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:869d08e3ba3cdc4bb806ebb1a8e5c263a0e8161e64aed0d875e53057498f227c"
+          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check.py",
@@ -66,7 +70,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://flake.nix#L15-L61",
@@ -81,6 +85,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T17:00:06.830Z"
+    "at": "2026-10-12T03:17:35.648Z"
   }
 }

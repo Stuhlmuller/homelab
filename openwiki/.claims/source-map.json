@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:481e7b8f8f57c8006367b36e6319f7e9c88e9260cc2caa5dd7d430babba3ccc9",
+  "pageVersion": "sha256:677190191838f1ceb9f39b2e0a14952d5db734d3322f23f396fa5420d33ee7bc",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -84,7 +84,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://flake.nix#L15-L61",
@@ -92,15 +92,15 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a70422b3965edc43680ad4be9af3cca1517b19af33f130703e8719e9bc03e67f"
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:179be37741030cf8b701d43a2f034e565fa1e749fb8e7cf889d13dcfe4f33b9b"
+          "version": "repo-file-v1:sha256:05db0e846985b7f4d64ac2f13ab8f7d3d0f3df7c4e2ed55252ea0febec8a1be9"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
-          "version": "repo-file-v1:sha256:08e332fe72b3a9120b1be867e60f018d9154ccf6d608ecca52c837f772840fe5"
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
         },
         {
           "resource": "repo://scripts/nix-cache.py",
@@ -129,6 +129,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T17:00:06.830Z"
+    "at": "2026-10-12T03:17:35.648Z"
   }
 }

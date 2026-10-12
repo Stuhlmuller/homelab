@@ -4,6 +4,8 @@ title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-29ced481494f3a85c0d7921b
     resource: repo://.github/workflows/terragrunt-apply.yml
   - id: openwiki-source-885831275c8e751281369a80
@@ -28,10 +30,10 @@ sources:
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T17:00:06.830Z
+    at: 2026-10-12T03:17:35.648Z
 ---
 
 # GitOps Flow
@@ -145,7 +147,7 @@ writes still require the guarded operator command after signed proxy, TLS,
 backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
 old native catalog, and credentials through their separate
 [ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b switches
-eight CI workflows to scoped pre-signed Tailscale keys, verifies the joined tag
+nine CI workflows to scoped pre-signed Tailscale keys, verifies the joined tag
 and tailnet, and sends native API calls directly through mesh TLS. Plan and
 apply use the operator API proxy with tokenless runner kubeconfigs; admission
 permits plan dry-runs but denies real Application writes. Production jobs

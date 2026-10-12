@@ -783,6 +783,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-login-denial.yml:deny' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
+    '.github/workflows/harbor-core-images.yml:publish' \
+    '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -837,8 +839,9 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml e7c61ae727c8cceee7b63a8e972a51ce0fc36eac5fc629b500af26304fbb504d
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-mirror.yml b67db201cf27f954e1756da13a4ae29f4162a0018c094f137ea980a7cda915d8
+.github/workflows/harbor-mirror.yml e2e424e46369e822f4da443ba415ec2eba39f644431ba0cddd82dd97a97f4cc2
 .github/workflows/homelab-diagnostics.yml e906d9d2c0fc1c6101da7312365739b6270d8f0a3d78296c9147440ffe39f273
+.github/workflows/harbor-core-images.yml cd08aa4ef45b3272d2f0b159c90955731feec9f4632330c1f4c16f93288a042c
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
 .github/workflows/nofx-images.yml a2c013981c542f91ff7cf00fbd7db7dde665b85d9fa20b5390bdd389560e2cce
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
@@ -884,6 +887,7 @@ done <<'EOF'
 .github/workflows/terragrunt-plan.yml terragrunt-plan plan TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/terragrunt-apply.yml terragrunt-apply apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/harbor-mirror.yml mirror apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/harbor-core-images.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/nofx-images.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/octelium-private-kubernetes-apply.yml reconcile apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/homelab-diagnostics.yml grafana apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
@@ -897,6 +901,7 @@ for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
+  '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \

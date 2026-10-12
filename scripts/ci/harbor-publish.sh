@@ -2,11 +2,20 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard) ]] || {
-  echo 'Usage: harbor-publish.sh publish|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard' >&2
   exit 2
 }
 mode="$1"
+core_publication=false
+publish_names=(homelab-nofx-backend homelab-nofx-frontend)
+if [[ "$mode" == publish-harbor-core ]]; then
+  core_publication=true
+  mode=publish
+  publish_names=(homelab-harbor-core)
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
+fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
   mode=mirror
@@ -96,6 +105,14 @@ cleanup() {
       mirror_category="rate-limited"
     elif grep -Fqi 'no space left on device' "$scratch/mirror-error"; then
       mirror_category="storage-full"
+    elif grep -Eiq 'quota exceeded|exceed[^[:cntrl:]]*quota' "$scratch/mirror-error"; then
+      mirror_category="quota-exceeded"
+    elif grep -Eiq '403 Forbidden|HTTP status(:| code:?)?[[:space:]]*403|status code:?[[:space:]]*403' "$scratch/mirror-error"; then
+      mirror_category="http-forbidden"
+    elif grep -Eiq '413 Request Entity Too Large|HTTP status(:| code:?)?[[:space:]]*413|status code:?[[:space:]]*413' "$scratch/mirror-error"; then
+      mirror_category="request-too-large"
+    elif grep -Eiq 'HTTP status(:| code:?)?[[:space:]]*5[0-9]{2}|status code:?[[:space:]]*5[0-9]{2}|50[234] (Bad Gateway|Service Unavailable|Gateway Timeout)' "$scratch/mirror-error"; then
+      mirror_category="server-error"
     elif grep -Eiq 'unauthorized|authentication required|access denied|denied:' "$scratch/mirror-error"; then
       mirror_category="authentication-denied"
     elif grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error"; then
@@ -202,10 +219,21 @@ if [[ "$mode" == mirror ]]; then
           ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
         exit "$lookup_status"
       fi
-      mirror_phase="upstream-copy"
+      mirror_phase="upstream-download"
+      upstream_directory="$(mktemp -d "$scratch/upstream.XXXXXX")"
+      skopeo copy --all --preserve-digests --src-no-creds \
+        --src-authfile "$scratch/anonymous-auth.json" \
+        "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"
+      mirror_phase="upstream-verify"
+      skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
+      mirror_category="digest-mismatch"
+      [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+      mirror_category="command-failed"
+      mirror_phase="destination-copy"
       skopeo copy --all --preserve-digests --src-no-creds \
         --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
-        "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+        "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
       skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
         "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"
@@ -247,7 +275,7 @@ if [[ "$mode" == mirror ]]; then
   exit 0
 fi
 
-for name in homelab-nofx-backend homelab-nofx-frontend; do
+for name in "${publish_names[@]}"; do
   tag="homelab-${GITHUB_SHA}"
   destination="harbor.stinkyboi.com/homelab/${name}"
   docker tag "${name}:build" "${destination}:${tag}"
@@ -259,6 +287,12 @@ for name in homelab-nofx-backend homelab-nofx-frontend; do
     >"$scratch/manifest.json"
   destination_digest="sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)"
   [[ "$destination_digest" == "$source_digest" ]]
+  pull_directory="$(mktemp -d "$scratch/published-pull.XXXXXX")"
+  skopeo copy --all --preserve-digests --src-authfile "$scratch/auth.json" \
+    "docker://${destination}@${destination_digest}" "dir:${pull_directory}"
+  skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json"
+  [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$destination_digest" ]]
+  rm -rf -- "$pull_directory"
   printf '%s:%s@%s\n' "$destination" "$tag" "$destination_digest" >>"$scratch/verified-digests"
 done
 
@@ -268,11 +302,20 @@ if [[ "$mode" == publish ]]; then
   while IFS=@ read -r tagged_repository digest; do
     signing_references+=("${tagged_repository%:*}@${digest}")
   done <"$scratch/verified-digests"
-  [[ "${#signing_references[@]}" -eq 2 ]]
+  [[ "${#signing_references[@]}" -eq "${#publish_names[@]}" ]]
+  signing_subjects="$(printf '%s\n' "${signing_references[@]}" | jq -R . | jq -s .)"
   yq -o=json '.' clusters/homelab/apps/harbor/signing-job.yaml |
-    jq --arg backend "${signing_references[0]}" --arg frontend "${signing_references[1]}" \
+    jq --argjson subjects "$signing_subjects" \
       'del(.metadata.name) | .metadata.generateName = "harbor-sign-" |
-       .spec.template.spec.initContainers[1].args += [$backend, $frontend]' >"$scratch/signing-job.json"
+       .spec.template.spec.initContainers[1].args += $subjects' >"$scratch/signing-job.json"
+  if "$core_publication"; then
+    signer_image=harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18
+    jq --arg image "$signer_image" \
+      '.spec.template.spec.initContainers |= map(.image = $image) |
+       .spec.template.spec.containers |= map(.image = $image)' \
+      "$scratch/signing-job.json" >"$scratch/private-signing-job.json"
+    mv "$scratch/private-signing-job.json" "$scratch/signing-job.json"
+  fi
   kubectl --namespace harbor create -f "$scratch/signing-job.json" -o json >"$scratch/created-job.json"
   signing_job="$(jq -er '.metadata.name' "$scratch/created-job.json")"
   signing_uid="$(jq -er '.metadata.uid' "$scratch/created-job.json")"
@@ -300,9 +343,15 @@ fi
 # Publish only allowlisted references after transfer and required acceptance pass.
 if [[ "$mode" == publish ]]; then
   mapfile -t published_refs <"$scratch/verified-digests"
+  if "$core_publication"; then
+    [[ "${#published_refs[@]}" -eq 1 ]]
+    [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-harbor-core:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    printf 'core=%s\n' "${published_refs[0]}" >>"$GITHUB_OUTPUT"
+  else
   [[ "${#published_refs[@]}" -eq 2 ]]
   [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
   [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
   printf 'backend=%s\nfrontend=%s\n' "${published_refs[0]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+  fi
 fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

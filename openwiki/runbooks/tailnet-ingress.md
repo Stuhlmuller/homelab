@@ -4,6 +4,8 @@ title: "Tailnet And App Ingress"
 description: "Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover."
 tags: [runbook, networking, ingress]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
@@ -60,10 +62,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T17:00:06.830Z
+    at: 2026-10-12T03:17:35.648Z
 ---
 
 # Tailnet And App Ingress
@@ -174,7 +176,7 @@ preview never signs, publishes or changes cache contents. Expired auth keys alon
 do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
-tradeoff. All eight phase 2b workflows supply a private per-job `statedir` to
+tradeoff. All nine phase 2b workflows supply a private per-job `statedir` to
 the pinned action and verify the exact single node tag and tailnet before live
 commands. State is never cached or uploaded; hosted Ubuntu VM decommissioning
 removes daemon state after the action logs out. Plan/apply use tokenless

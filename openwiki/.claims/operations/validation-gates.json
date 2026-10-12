@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f071a24e311469b25605fe343751bd9d03cfb185e47ec051eff9df2edcc03510",
+  "pageVersion": "sha256:f61a430b486a4528b30afa168a3b3a70bb6cfb7381b95f00fb81769f6ddee922",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a70422b3965edc43680ad4be9af3cca1517b19af33f130703e8719e9bc03e67f"
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:869d08e3ba3cdc4bb806ebb1a8e5c263a0e8161e64aed0d875e53057498f227c"
+          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
         }
       ]
     },
@@ -57,8 +57,8 @@
       "statement": "The static gate includes Traefik route and tokenless kubeconfig checks, including exact LAN/bridge/overlay /32 sources restricted to registry port 9443 in both ingress policies; the standalone real-proxy harness validates encoded-path isolation, registry and callback boundaries, protocols and certificate reload.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L8-L20",
-          "version": "repo-lines-v1:sha256:3279057d4974abf7ff0764ed4c4e46713b124fc464a05b052a6c077a9a8dfcef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MDEyNjkzMzBhZDRjNzE0M2QzN2RiOGJiNTUzMWMzNTZjYjI2ZjI2NDViY2VjOGE1MjdhMzE0N2EyNDZmNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmOWEwNzYzYTEzODg5YmU0MDdjY2IyZjE5NWFhOGUyN2M5YmVhOTYwODhmNWI4NTU5NzhkNDZkYmYzM2UzN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MWNlMjgwNjJlOWU0NDhmOGIyMTQ1Nzg0MGM1YWU3ZDNjZTc5ZDA3ZDJiMzlhMzc0M2FkN2Y1ZWI3YWE4ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzNjRiOWFlOWVhOTE0ZTQyOWNjM2VlMzE3YzcxZmZiMTgyOGZhODM5NmNlNmMyMTAyYWEyZjc4MzY4ZjYzZDAifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:86a3a7e8a5735c2af628cff31805a3f6030c5f58c0647f33fd4804a50893e582"
+          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -165,16 +165,12 @@
       "statement": "The static gate tests fixed ingress identity and trusted signers, distinct delegated/authority keys, trust changes, metadata-bound cache reuse and secret publication ordering. Retirement regressions reject bad current or previous records at every list position in preview and execute with zero removals and unchanged cache, signing and publication; drift rechecks and already-absent retries remain covered. Live acceptance is separate.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L8-L20",
-          "version": "repo-lines-v1:sha256:3279057d4974abf7ff0764ed4c4e46713b124fc464a05b052a6c077a9a8dfcef:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MDEyNjkzMzBhZDRjNzE0M2QzN2RiOGJiNTUzMWMzNTZjYjI2ZjI2NDViY2VjOGE1MjdhMzE0N2EyNDZmNjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmOWEwNzYzYTEzODg5YmU0MDdjY2IyZjE5NWFhOGUyN2M5YmVhOTYwODhmNWI4NTU5NzhkNDZkYmYzM2UzN2EiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM2MWNlMjgwNjJlOWU0NDhmOGIyMTQ1Nzg0MGM1YWU3ZDNjZTc5ZDA3ZDJiMzlhMzc0M2FkN2Y1ZWI3YWE4ZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMzNjRiOWFlOWVhOTE0ZTQyOWNjM2VlMzE3YzcxZmZiMTgyOGZhODM5NmNlNmMyMTAyYWEyZjc4MzY4ZjYzZDAifQ"
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L123-L233",
-          "version": "repo-lines-v1:sha256:3504e4fee89fd73c98828a05a8993ef1ea1e0d5dad15556deba614ec13575897:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI2NjE4ZjAwNDNlZmQwNjg1ZWVkMmQ4NGM1NDFhYWFhN2Q1YWE4MzhhMjBjOWU3ODU2OWU5NjlkMmVlMWNiYzkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI0NmI0NTEyYzFmMDY3ZTBiYjAxZDBjYmExMmQxZTBmZTE3ZWVlMDQwYjAwMmFmOGFiYzk1YmEyNGYzNWUwMTFlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNjI3MTUzNWY4Y2RkOTEyOGRjYzQ2ZjQ3NjZlY2MwNzY1YTQ0YTY2ZjlkMWJjY2I0MzI5MmZiNjZkNjdjYTU4In0"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L423-L516",
-          "version": "repo-lines-v1:sha256:b51b1e052886f853e991a601479a9dfb535969e612b420ef90ba9961e3c33052:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ODU4YTAwMDc5N2MwMmNkYTdkYjBjNTFkMmZiZGY2ZjdhYzBkMjgwNmNjZmE5M2IxMjQyZTg0NDQ4YmQzMTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NjE0ZmIxMTE4OWI5ZjIzZWE4MTU1YTE2ZjhjZmFhNTE4NWY3NDM2MmZlNmJiYmE4Y2NhMmJhNjE3ZmE5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhODI2OGE5NTFiMjhhYzdlM2NmYmIyYjQzMTY3OTIzZjFhMjJjOTk5OTVmMjJjZjRiZTZiNmY4ZTM5NjNiZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOGQxMjcxMzI2MTllNzU5Y2JmNzkxYTQwMjMyOGM0MDFhMjIzOTRhMGJkNzIyZmYyMGQyZGRiOTU2MzBhMDkifQ"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
+          "version": "repo-file-v1:sha256:67bd6e2675f60c6a0d565636ad5bfa7871252ce538e32da1bbadca79ee581395"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -261,44 +257,18 @@
           "version": "repo-lines-v1:sha256:2d4b1d14269f6e596147700cfefd3c4035bdcf1f08f20d2fdd256e57c34901b9:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NWZmNzQ4ZDkzZTIyMjRmNmRjYTExMDU0Njg3MzY3Y2IxZmI0OTM2ODIyMmRiODE1NjJhOGQ0OTBlOTllMWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5NTMzZTYxNDVlMzJmOGYwZDIyZTMxNzA4ODRiODQwNzIyYjk0ODY1MWE1OGRjYzliMzdmZGIwMWI2MmMzYTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxZTk1ZDA2MzBhMzY0ZDczMTkzYmI0ZWI5OWNmZmFjZTZiMTkyMjU3Y2Q0MGE4NTJlZWRlM2NkMjgzZjc0NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkNDVjNzZhNTE2MGIwOWYzMzdmMzIxMzIyY2VmMjgwMDIyNmVjZTc3MzU3YjBlOTBiZmIzNTRlNTJhYTk5NGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L519-L675",
-          "version": "repo-lines-v1:sha256:863f6d08dd1410298466167f77b6511f12a687711d2bb9204ffdc4cb872aa635:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNzNhZWFiMzY1NDlhZGJmZTcxYTlhYzAxZDlhNDk2MDExNWY2MWQxYzYzYjdjOTRlMjdlMWYxNTAzNDJiODkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwYjExYmNlOTAwZDkwN2RjZmFkMWY3OGQzNDNjNzQzN2ZkNTY1MTgzYTMyZjMzMGM4NmE0YzZmNzY3ZDZiMzNhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmRlNjU2ZGZkNjQ4MTg2MTFlMWVjOTc5ZTAwMDk4NTZkNjgzMGQwOGIxNzQ1YWFmODAwZWVkZGYxN2JhYjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjY2MwNzI0MmM4YzMzNjE4Y2JkZGFkYjZlYzY4MzdiYjUxYjA2Y2RiNTQ5MDM0YmE2ZTU1MmMwNGNmZmRmNmE2In0"
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L519-L673",
+          "version": "repo-lines-v1:sha256:8c127fc07a1f480a8590c5149333cac0112dfa1c6d30b927a02e002b38f8598a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNzNhZWFiMzY1NDlhZGJmZTcxYTlhYzAxZDlhNDk2MDExNWY2MWQxYzYzYjdjOTRlMjdlMWYxNTAzNDJiODkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkNjRhZTc0ODJlMmJmOWQ0OTA5MjMxNWNlYWI1MmY3YjJiMmNmYzk0ZDNiMjc5Mzc5MDA5YjMyNGVjOGE1NTFkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmRlNjU2ZGZkNjQ4MTg2MTFlMWVjOTc5ZTAwMDk4NTZkNjgzMGQwOGIxNzQ1YWFmODAwZWVkZGYxN2JhYjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzNmZmRkYmViMjI5MzhjNTgwMzc0MDIxNWVhMjM5ZjRiMGVmMGEyNDQ4N2YwNjM3NGYwYWMxYzRhYWE2NWY4In0"
         }
       ]
     },
     {
-      "id": "claim_0d1a641afe304af68125d5b2f28da3a5",
-      "statement": "Phase 2b workflow gates require eight credentialed mesh joins with pinned action/version, fixed secret scopes, private per-job state and exact identity checks; offline tests cover wrong identity, native TLS before login and cleanup failures.",
-      "evidence": [
-        {
-          "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:3c30e64c7577b346400e2fac598198332134c640d875185c37948c2aab857006"
-        },
-        {
-          "resource": "repo://scripts/ci/cordium-ci-transport-test.py",
-          "version": "repo-file-v1:sha256:fd227ee3c571d2e1c7a83469668da65dfa38001dfea24cdb938cc7b27c405eb1"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:a70422b3965edc43680ad4be9af3cca1517b19af33f130703e8719e9bc03e67f"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:179be37741030cf8b701d43a2f034e565fa1e749fb8e7cf889d13dcfe4f33b9b"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
-          "version": "repo-file-v1:sha256:7127b6a5ddf8c5340417cb3ab05af5b2770eddf06c2b0a0c596a289e1c9a7225"
-        }
-      ]
-    },
-    {
-      "id": "claim_f663b2d4ce5a4ae386f41809da0a0e91",
-      "statement": "The static gate verifies source-bound offline Nix check outputs with protected-main cache trust, signatures and sandboxing, then runs remaining provider, network and security validation fresh; cached receipts do not establish live plan or runtime acceptance.",
+      "id": "claim_c3895c712e9a4d029589c85a4d43570f",
+      "statement": "The static wrapper verifies source-bound offline fixture and manifest-policy Nix outputs with protected-main cache trust, signatures and sandboxing before fresh remaining provider, network and security checks; cache reuse does not establish live plan or runtime acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -311,8 +281,186 @@
       ]
     },
     {
-      "id": "claim_73098e88a9fc44bb9a31d019c6ed528a",
-      "statement": "CI access verification emits fixed markers for config, proxy identity, Application read, dry-run admission, and no-op write-denial phases; the verified classifier publishes only fixed labels and tests reject forged markers without leaking private text.",
+      "id": "claim_79921f1a97d243a9a583eabfcdc7d7cf",
+      "statement": "Offline fixtures run the Harbor core source trust test covering pinned archive verification and preparation, baseline retention, patch validation, wrong hashes/roots, escaping symlinks and nonempty contexts without network access; the credential-free Linux candidate job requires original failure, repaired manager tests, upstream API generation and complete core compilation without production inputs.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-source-test.py",
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+        }
+      ]
+    },
+    {
+      "id": "claim_c41196c353124e3791747938c5a2c0a5",
+      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly one database relation. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/build.sh",
+          "version": "repo-file-v1:sha256:b4e6000a65c87c8238c2e7f4e85fa73807cadc54017c0dc55c3416fd987c37ba"
+        },
+        {
+          "resource": "repo://builds/harbor-core/registry-test.py",
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-source-test.py",
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+        }
+      ]
+    },
+    {
+      "id": "claim_d646b4dc1e7f451ab5dfec678e40706d",
+      "statement": "The candidate build runs the complete CSRF middleware tests and ten browser/session compatibility cases against the replacement dependency with networking disabled; cases require valid same-origin requests and legacy headers, deny cross-site/same-site browser requests and preserve the non-session API exemption. The middleware unit tests use in-memory configuration without their former unused PostgreSQL bootstrap.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/csrf-compat_test.go",
+          "version": "repo-file-v1:sha256:e1db3ea7a3470aa44476a8b6a96d6fb41699733de7fa2487445f321882a68a2b"
+        },
+        {
+          "resource": "repo://builds/harbor-core/patches/0003-security-dependencies.patch",
+          "version": "repo-file-v1:sha256:86f29601ee35c67ffa703e9116f88536ade766587395352084ddc582fea313a7"
+        }
+      ]
+    },
+    {
+      "id": "claim_7d87e06f64514a448f26a86d56d7b5f3",
+      "statement": "The candidate build adds a native JWK trust attack regression and a compiled-package graph guard against OpenPGP and Distribution proxy/storage/handler server packages. These specific advisory-prerequisite checks retain unfiltered module-level findings and do not replace final-container/component scans.",
+      "evidence": [
+        {
+          "resource": "repo://builds/harbor-core/Dockerfile",
+          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+        },
+        {
+          "resource": "repo://builds/harbor-core/token-trust_test.go",
+          "version": "repo-file-v1:sha256:c21ba56c5141c90a2ad57fc7f3f411238d3d9b4c98cf2a1cbbee23a987355fd7"
+        },
+        {
+          "resource": "repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json",
+          "version": "repo-file-v1:sha256:a16c0a2f22244bf9c98d24b9d74f1bcd53516c40ff51f92de1034dbbcb303203"
+        }
+      ]
+    },
+    {
+      "id": "claim_504b7d07f9b44aff83347cdcd60e735f",
+      "statement": "The exact-container audit's offline regressions refuse wrong image/config/platform/distro identity, stale or invalid databases, finding filters/exclusions and available fixes; unresolved findings remain unchanged. The privacy regression requires sanitized output without raw metadata and explicit false CVE clearance. The credential-free Linux workflow runs the full Docker-archive audit after registry acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
+          "version": "repo-file-v1:sha256:b6ce625b0640378fba7908d9255f74c3088aa871cae9379bf256bbbd7b0d73fd"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-core-scan-check.py",
+          "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+        }
+      ]
+    },
+    {
+      "id": "claim_6bbbb12ce316403bb6c6bf0305f520b8",
+      "statement": "Core publication fixtures enforce one fixed subject, dedicated workflow/current-main binding, full private pull/digest verification before signing, enrolled-key verification, Harbor-only signer images and withheld outputs on failure. Static credential-job inventory and canonical workflow hashes enroll the publisher/reporting jobs, including dispatch checks before checkout and credentials; these source tests do not dispatch publication.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:b0e66fb04f2f6d1f18a51d83392bc91c364b2af15cc0879ac703e3a79def43a0"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:05db0e846985b7f4d64ac2f13ab8f7d3d0f3df7c4e2ed55252ea0febec8a1be9"
+        }
+      ]
+    },
+    {
+      "id": "claim_aa50d28e91f34c30a1febb5a92eeb530",
+      "statement": "Harbor publication regressions include a native offline Skopeo test using generated local OCI fixtures with network transports rejected, requiring original root and both platform-child manifest digests and repeated descriptors to survive directory staging and a second copy; this does not prove Harbor publication, signature accessories or live consumers.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:95e35e3b7433fd95cc8716b99f350d84b88f105ed7838898f1504927651711f9"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+        }
+      ]
+    },
+    {
+      "id": "claim_8e0f5d1def624426aff856de7987ba8e",
+      "statement": "Core CI/publication requires a pinned public-Chainguard signer fixture before credentials, testing disposable P-256 import, public-key equality with OpenSSL and producer signing flags; core Pods use the corresponding Harbor mirror. Documentation records the October 11 live production required-reviewer check without changing rules or claiming compatibility before Linux CI.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+        },
+        {
+          "resource": "repo://builds/harbor-core/signer-test.sh",
+          "version": "repo-file-v1:sha256:82073f75b29a67e5e1f8aca946deb9157c98798922fbf28604a02f7d13c41358"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
+        }
+      ]
+    },
+    {
+      "id": "claim_435e08d16847405da3a521c7447ec2ac",
+      "statement": "Phase 2b workflow security contracts require nine fixed credentialed mesh jobs, including Harbor core publication, to use the pinned action/version, existing fixed secret scope, private per-job state, and exact identity verification before live consumers; offline tests and protected fresh live acceptance remain distinct.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:6d854fe7419693cb56778bc5469d8a403da0f89db6d94358d0a51d59fe293591"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:05db0e846985b7f4d64ac2f13ab8f7d3d0f3df7c4e2ed55252ea0febec8a1be9"
+        }
+      ]
+    },
+    {
+      "id": "claim_bd5bb0e7bf224557b8da279d4efc7d11",
+      "statement": "CI access checks emit fixed markers for kubeconfig verification, proxy identity, Application read, dry-run admission and real no-op write denial; the hashed classifier emits fixed stage/reason labels without private output, and regression tests reject forged markers and modified classifier hashes.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-plan.yml",
@@ -335,6 +483,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T17:05:44.146Z"
+    "at": "2026-10-12T03:17:35.648Z"
   }
 }

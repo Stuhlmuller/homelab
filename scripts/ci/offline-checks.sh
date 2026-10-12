@@ -46,6 +46,8 @@ python3 -I scripts/ci/fleet-apple-csr-test.py
 python3 -I scripts/ci/fleet-free-setup-test.py
 python3 -I scripts/ci/fleet-airvpn-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
+python3 -I scripts/ci/harbor-core-source-test.py
+python3 -I scripts/ci/harbor-core-scan-check-test.py
 python3 -I scripts/ci/harbor-render-check-test.py
 python3 -I scripts/ci/harbor-images-check-test.py
 python3 -I scripts/ci/image-automation-test.py
@@ -54,6 +56,7 @@ python3 -I scripts/ci/image-automation-alert-test.py
 python3 -I scripts/ci/image-automation.py check
 python3 -I scripts/ci/image-automation.py render-check
 python3 -I scripts/ci/harbor-images-check.py
+python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py

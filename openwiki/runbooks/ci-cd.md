@@ -4,6 +4,8 @@ title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-29ced481494f3a85c0d7921b
     resource: repo://.github/workflows/terragrunt-apply.yml
   - id: openwiki-source-885831275c8e751281369a80
@@ -22,10 +24,10 @@ sources:
     resource: repo://scripts/entra-ci-configure.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T17:00:06.830Z
+    at: 2026-10-12T03:17:35.648Z
 ---
 
 # CI/CD
@@ -97,7 +99,7 @@ separate acceptance steps. See the [check flow](../architecture/gitops-flow.md#s
 
 ## Tailscale CI cutover
 
-Phase 2b moves eight workflows to pre-signed reusable ephemeral Tailscale keys
+Phase 2b moves nine workflows to pre-signed reusable ephemeral Tailscale keys
 while retaining Tailnet Lock. Plan and apply use separate protected environment
 keys; Cordium uses its own repository key and independent native OIDC policy.
 Every joined runner verifies its exact single tag and tailnet before live work.

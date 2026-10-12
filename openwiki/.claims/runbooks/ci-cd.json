@@ -1,14 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:166abd743abfac3530e9a076efcb972d492416ff48b6e608d1e22670c7252322",
+  "pageVersion": "sha256:b4999562cdae769ff153686cd5a2d9801d8b194795abeb6056969dcecf5eeaa9",
   "claims": [
     {
       "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
-      "statement": "Eight prepared CI workflows use separate scoped pre-signed ephemeral mesh keys with exact identity verification and private runner state; canonical DNS and key publication precede merge, while plan denial, publishers and Cordium execution/denial/cleanup require fresh live acceptance afterward.",
+      "statement": "Nine prepared CI workflows use separate scoped pre-signed ephemeral mesh keys with exact identity verification and private runner state; canonical DNS and key publication precede merge, while plan denial, publishers and Cordium execution/denial/cleanup require fresh live acceptance afterward.",
       "evidence": [
         {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:869d08e3ba3cdc4bb806ebb1a8e5c263a0e8161e64aed0d875e53057498f227c"
+          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -25,7 +29,7 @@
           "version": "repo-lines-v1:sha256:ce3ef3733f1e105a13bf5774d7a8f88052cb8d8adfe802a3ee96ae444a9b2127:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxMzllNDZjYmZkNDI0Yzk2MTBjZTYwZDhmODdiM2E0Nzc0MjNjNmFjN2Y2OWE0MjkzZmMwODc1MmRiYWM0MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxOWQ4Zjg2Njc0OWZhZGRjMzczNDU3ZDc1YzI3MGEzN2IzOGJjZjQ4NmE4Y2VmMmViYzI2ZDU2YTZhM2M4OWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViNWQxZWRlMzQ3OWM0NGE4NTc4ZTQ4NzFjZDRmODVkMDViMDY3YmQ4OGUxYzNiMWY3ZWY3MGRmZjE1MTRhYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1MTRlMDMyY2M4NDhjNjgxZTY0M2VkYzcyMzJkNjNlZGY5Y2EzNDE1YTQ4ODIyYzBiYjA2N2Q4NDgzOGRmNTYifQ"
         },
         {
-          "resource": "repo://docs/ci-cd.md#L230-L248",
+          "resource": "repo://docs/ci-cd.md#L234-L252",
           "version": "repo-lines-v1:sha256:28f2fbbb398644b1c06fffddd52d069da72f77f7358c78c2a4b9f26b0a9f834b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNzJkM2U5ZDI4YjJmZTU5YWRiMWY4YmZhZWQ0NjUyNTk1MmVhOWI1ODFiMDE4Yzk5M2FlM2EyYzMzNzNlMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI2MTAxODBhODg5ZWFkNzRmYjkzZmJkM2ZjODk1OWVkNWU0NTFlYTNmNmNkNDc5ZWMwYWM2NmQ1MWIxZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwM2M4ZDRhNjQ5MGIwMzBlMGRkNmVmYjI1YWIyMDFkMzdiMGZiZTk1YWQwZGIzODExYzYwNzZiNjE3NWRkMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhMmJkYWNhYmViZDhjNWMyYjcxOWIyZWQzODNhNGM0ZWE0MjhiNGUwYTNlZjc2MTFkOTBlMWQ4ZTZkNmM5ZmQifQ"
         },
         {
@@ -48,7 +52,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:6ac7b2e248f871425f6a959b58016e883405261a554f3a9fa42de511e5d70ed7"
+          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -63,6 +67,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T17:00:06.830Z"
+    "at": "2026-10-12T03:17:35.648Z"
   }
 }

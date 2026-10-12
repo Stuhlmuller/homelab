@@ -4,8 +4,26 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
+  - id: openwiki-source-d776ebf3a4d179a97fb3c239
+    resource: repo://builds/harbor-core/build.sh
+  - id: openwiki-source-5a4bc495baa769b6a5e9cae2
+    resource: repo://builds/harbor-core/csrf-compat_test.go
+  - id: openwiki-source-8ab7fab142e4f564e8f17f97
+    resource: repo://builds/harbor-core/Dockerfile
+  - id: openwiki-source-06f6e19e20cbeda12ce6f3b0
+    resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
+  - id: openwiki-source-4809fcf6b821691d424ca089
+    resource: repo://builds/harbor-core/registry-test.py
+  - id: openwiki-source-ce77d7835e45f7370160e6c6
+    resource: repo://builds/harbor-core/signer-test.sh
+  - id: openwiki-source-db4fcfb731a7d9f94926969c
+    resource: repo://builds/harbor-core/token-trust_test.go
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -18,6 +36,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-2d23b8001d89196fa1eba48a
+    resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -26,12 +46,18 @@ sources:
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
-  - id: openwiki-source-de814b7f881b5c7f3424eff6
-    resource: repo://scripts/ci/cordium-ci-transport-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
+    resource: repo://scripts/ci/harbor-core-scan-check-test.py
+  - id: openwiki-source-6bf00c52458ec78a0c3b6077
+    resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-faf0c71b216725764a045c19
+    resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -56,8 +82,6 @@ sources:
     resource: repo://scripts/ci/tailscale-access-check.py
   - id: openwiki-source-fc269dae2f6a8501f0c0fb75
     resource: repo://scripts/ci/tailscale-ci-configure-test.py
-  - id: openwiki-source-337735e4690d15019ba408c9
-    resource: repo://scripts/ci/tailscale-identity-check-test.py
   - id: openwiki-source-4ac432ebb03e57e6e256a336
     resource: repo://scripts/ci/tailscale-ingress-sign-test.py
   - id: openwiki-source-511191e55632b55651ad4318
@@ -80,10 +104,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T17:00:06.830Z" }
+generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T17:05:44.146Z
+    at: 2026-10-12T03:17:35.648Z
 ---
 
 # Validation Gates
@@ -440,7 +464,7 @@ does not satisfy or bypass the protected CI plan gate; see the
 [dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
 The legacy Tunnel DNS workflow was removed in phase 2a. Phase 2b security
-hashes and Rego require all eight credentialed mesh jobs to use the pinned
+hashes and Rego require all nine credentialed mesh jobs to use the pinned
 Tailscale action/version, fixed secret scope, private per-job state directory,
 and exact tag/tailnet verification before consumers. Offline identity tests
 reject wrong/broader tags, foreign or disconnected profiles, and malformed
@@ -1442,12 +1466,75 @@ enrollment compatibility.
 
 ## Harbor OCI rollout
 
+The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
+to offline fixtures. It checks verified source preparation, patch validation,
+retained original-manager baseline, hash mismatch refusal, unexpected archive
+roots, escaping symlinks and nonempty-context refusal without network access.
+The credential-free Linux `harbor-core-compatibility` job builds the pinned
+candidate: original repeated-child failure must precede repaired manager tests,
+upstream API generation and complete core compilation. Networking is disabled
+for tests/build after dependency download. No production inputs are mounted.
+The candidate also runs the complete CSRF middleware suite and ten browser/session
+compatibility cases against the replacement library. They require valid same-origin
+requests and legacy response headers, reject cross-site/same-site browser requests,
+and retain the non-session API exemption. The middleware unit tests use in-memory
+configuration; their unused PostgreSQL bootstrap is removed.
+The native suite also accepts a trusted JWK and rejects attacker key material
+using its key ID. A compiled-package graph guard fails if core introduces
+OpenPGP or Distribution proxy/storage/handler server packages. These are
+specific prerequisite checks; unfiltered module-level findings remain in the
+audit receipts and final-container/component scans are still required.
+The Linux job now scans the exact Docker-saved candidate with a lock-pinned
+scanner after registry acceptance. Offline regressions refuse wrong image/config
+identity, platform/distro, stale or invalid databases, filters/exclusions and
+available fixes, while retaining unresolved findings unchanged. A privacy case
+requires sanitized receipts to omit raw image metadata and explicitly deny CVE
+clearance. Full-runtime audit execution still needs fresh Linux CI evidence.
+Core publication regression cases additionally require one fixed subject,
+dedicated workflow/current-main binding, complete private pulls before signing,
+the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
+pull/digest/signature failures. The credentialed job inventory and canonical
+workflow hash enroll both the publisher and pinned-reference reporting job;
+dispatch verification precedes checkout and repeats before credentials.
+No publication workflow has been dispatched as part of these source tests.
+The pinned public Chainguard signer now has a Linux fixture before credentials:
+it imports a disposable P-256 key, requires the emitted public key to equal
+OpenSSL's output, and checks the signing API flags used by the producer. Core
+signing Pods use the matching Harbor mirror. Complete mirror content has been
+verified separately; Linux compatibility remains a fresh CI requirement.
+The October 11 read-only GitHub environment check found a required production
+reviewer. Respect live environment approval despite the older reviewer-free
+description; no environment protection rule changed.
+The merged publisher suite retains current-main anonymous source staging and
+all-subject complete-pull checks alongside the fixed-core cases. Its native
+offline OCI fixture still verifies multi-platform and repeated-descriptor
+byte preservation with network transports rejected.
+The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
+unchanged registry push/pull of eight repeated child descriptors and all blobs,
+with exactly one database relation. Offline fixtures also validate the OCI
+payload hashes, reject upload locations outside the disposable endpoint, and
+require no published host ports, internal networking and core health ordering.
+The registry client shares the proxy's network namespace and uses its loopback
+listener; this avoids publishing a port from an internal-only Docker bridge.
+Passing this fixture does not prove full-catalog or CVE-free publication;
+see the [candidate gates](../../builds/harbor-core/README.md).
+
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression
 tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
 verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
+publication gates. Its native staging test uses generated local OCI fixtures
+and actual Skopeo, rejecting network transports and requiring exact root and
+both architecture-child manifest digests through `dir:` staging and a second
+copy. The fixture retains repeated child descriptors; omitting all-platform
+copying fails the original-index digest assertion. This gate requires Skopeo,
+not Docker or production credentials. It proves local staging behavior;
+complete Harbor pulls, destination signatures, scans and live consumers still
+require separate acceptance.
 
 The fixed Traefik publication scope retains all-platform digest, tag alias and
 fresh complete anonymous-pull checks. The Talos regression rejects scoped,

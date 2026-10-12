@@ -32,6 +32,10 @@ This repository uses GitHub Actions for the review and rollout path:
   They compare against the latest successful historical push apply or full
   dispatch so failed or deferred changes remain in the next affected range;
   targeted Argo reconciliations never advance that checkpoint.
+  A read-only settings check on 2026-10-11 found a required production reviewer
+  in GitHub's live environment configuration. Respect that current approval
+  gate and recheck live settings before dispatch; this corrects the older
+  reviewer-free documentation and does not change environment rules.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
   production branch gates, never prunes, and proves a second apply has no
@@ -309,7 +313,7 @@ requires a pre-signed reusable ephemeral auth key and a `statedir`. Each workflo
 creates `$RUNNER_TEMP/tailscale-state` with `umask 077`, refuses an existing
 directory, and never caches or uploads it. The pinned action logs out and stops
 the daemon in its post step; it does not delete the supplied state directory.
-All eight jobs require `ubuntu-24.04` hosted runners: GitHub
+All nine jobs require `ubuntu-24.04` hosted runners: GitHub
 [decommissions each job's VM](https://docs.github.com/en/actions/how-tos/manage-runners/github-hosted-runners/use-github-hosted-runners)
 after completion, including root-owned daemon state that ordinary temporary
 folder cleanup may not remove. Do not move these jobs to persistent runners
@@ -317,8 +321,8 @@ without adding explicit post-daemon state cleanup. `tags` is intentionally absen
 from the action inputs: authkey mode uses the key's tags, and the status guard
 requires exactly one expected tag.
 
-Eight workflows join the mesh: Terragrunt plan/apply, Harbor mirror, NOFX image
-publication, diagnostics, the retained private catalog lane, Cordium execution,
+Nine workflows join the mesh: Terragrunt plan/apply, Harbor mirror and core image
+publication, NOFX publication, diagnostics, the retained private catalog lane, Cordium execution,
 and Cordium login denial. `install-kubeconfig.sh --tailscale` only accepts an
 ephemeral GitHub Actions runner and refuses to replace an existing kubeconfig.
 It uses the fixed TLS operator endpoint with an empty credential entry; network

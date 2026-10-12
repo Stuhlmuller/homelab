@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2f76fa7aea2e3501ae0cc811a52c798c8ffc97b16f3e96368466d406bbe3b733",
+  "pageVersion": "sha256:46d4eff239659973755805ba8cb38372539532fdcade425d6eefb4fb22474831",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -286,15 +286,19 @@
     },
     {
       "id": "claim_169861d7e70e420dbecaceeec142ab20",
-      "statement": "All eight phase 2b workflows use private per-job Tailscale state and exact identity verification; CI/native transport changes follow canonical mesh acceptance and precede protected CI, publisher and Cordium acceptance before legacy retirement.",
+      "statement": "All nine phase 2b workflows use private per-job Tailscale state and exact identity verification; CI/native transport changes follow canonical mesh acceptance and precede protected CI, publisher and Cordium acceptance before legacy retirement.",
       "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
           "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:869d08e3ba3cdc4bb806ebb1a8e5c263a0e8161e64aed0d875e53057498f227c"
+          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -305,6 +309,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T17:00:06.830Z"
+    "at": "2026-10-12T03:17:35.648Z"
   }
 }

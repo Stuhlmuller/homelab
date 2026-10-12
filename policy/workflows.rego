@@ -416,7 +416,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'fe5251689e0330adcaf705814afef4d8cb33fcbc610afe28f091562fa06d3d0b  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b0e66fb04f2f6d1f18a51d83392bc91c364b2af15cc0879ac703e3a79def43a0  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

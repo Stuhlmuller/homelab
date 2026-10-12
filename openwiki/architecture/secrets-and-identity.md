@@ -8,10 +8,18 @@ sources:
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-9749edd762a130f624e47007
+    resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-1635b3ffa6091ee664a713ee
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
+  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-bc26cfab2973077898d9ec21
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
-  - id: openwiki-source-e26a7307e86732ce7e6a34b6
-    resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-e038674a313521b0f6eadc03
     resource: repo://docs/cordium-ci.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -22,10 +30,6 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-326a085bf1ea3cb64a10924e
-    resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
-  - id: openwiki-source-0ea5376c0684f2dd735ec9d4
-    resource: repo://IaC/modules/entra-google-workspace-federation/README.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
@@ -38,20 +42,20 @@ sources:
     resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-0f1996b7e0fc35047d4f05dd
     resource: repo://scripts/ci/install-kubeconfig.sh
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-  - id: openwiki-source-4bbfe00c406fec8a213babcb
-    resource: repo://scripts/nix-builder.py
   - id: openwiki-source-74dcbb88cca2d854985d0d67
     resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T06:23:22.000Z" }
+generated: { by: "codex", at: "2026-10-11T20:01:55.480Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T06:23:22.000Z
+    at: 2026-10-12T03:17:35.648Z
 ---
 
 # Secrets And Identity
@@ -743,6 +747,17 @@ separate public-read `mirror` project; `robot$mirror+publisher` uses its own gen
 `/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
 Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
 see [the image mirror runbook](../../docs/harbor-image-mirroring.md).
+
+The excluded
+[private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages `harbor/harbor-pull` from the existing
+`/homelab/harbor/robot-pull-password`. Its only consumer reference is the
+ServiceAccount's kubelet image-pull list; no app-container mount, producer,
+reader grant or namespace allowlist expansion is added. The active Harbor
+Kustomization excludes this directory. Activation requires publication/scans,
+recovery clearance and ExternalSecret readiness; an `OnChange` annotation
+advance is required after a future credential rotation. The existing bootstrap
+Secret needs its own declared refresh, and upstream cold recovery remains.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

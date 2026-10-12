@@ -4,10 +4,48 @@ title: "Harbor Private OCI Registry"
 description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
 tags: ["harbor", "oci", "packages", "gitops"]
 sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-d776ebf3a4d179a97fb3c239
+    resource: repo://builds/harbor-core/build.sh
+  - id: openwiki-source-5a4bc495baa769b6a5e9cae2
+    resource: repo://builds/harbor-core/csrf-compat_test.go
+  - id: openwiki-source-8ab7fab142e4f564e8f17f97
+    resource: repo://builds/harbor-core/Dockerfile
+  - id: openwiki-source-8867139a733ec283c1c15d63
+    resource: repo://builds/harbor-core/patches/0002-identical-reference-relations.patch
+  - id: openwiki-source-06f6e19e20cbeda12ce6f3b0
+    resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
+  - id: openwiki-source-e63f21a2fc45e0b39144df0d
+    resource: repo://builds/harbor-core/prepare-source.py
+  - id: openwiki-source-d8462ae63760d7635fda38ef
+    resource: repo://builds/harbor-core/README.md
+  - id: openwiki-source-4809fcf6b821691d424ca089
+    resource: repo://builds/harbor-core/registry-test.py
+  - id: openwiki-source-edb4db7f4400ce88789df37e
+    resource: repo://builds/harbor-core/scan.sh
+  - id: openwiki-source-ce77d7835e45f7370160e6c6
+    resource: repo://builds/harbor-core/signer-test.sh
+  - id: openwiki-source-8747f81e985430015cf21baf
+    resource: repo://builds/harbor-core/source.json
+  - id: openwiki-source-db4fcfb731a7d9f94926969c
+    resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-9749edd762a130f624e47007
+    resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-1635b3ffa6091ee664a713ee
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
+  - id: openwiki-source-4284f84c777b5f9b078e069d
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml
+  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-bc26cfab2973077898d9ec21
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -16,22 +54,44 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-92f06a045a917688e7fed07d
+    resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
+  - id: openwiki-source-2d23b8001d89196fa1eba48a
+    resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-48227484d35c61f86c7d08ff
+    resource: repo://docs/evidence/harbor-core-base-scan-2026-10-11.json
+  - id: openwiki-source-648b2cb9046d6972d8b44428
+    resource: repo://docs/evidence/harbor-core-binary-scan-2026-10-11.json
+  - id: openwiki-source-ef838396d59512933660fb9b
+    resource: repo://docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json
+  - id: openwiki-source-291f8c32edb318126465429b
+    resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-e6fd9160ab2341143a5d45c8
+    resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-6bf00c52458ec78a0c3b6077
+    resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-0e4e3673c8be0ce1ef65beca
+    resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-0f1996b7e0fc35047d4f05dd
     resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+  - id: openwiki-source-8e156e6fb45ba3afd9795cd3
+    resource: repo://scripts/config/harbor-chainguard-images.json
+  - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
+    resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T09:50:39.941Z" }
+generated: { by: "codex", at: "2026-10-11T21:16:07.164Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:50:39.941Z
+    at: 2026-10-12T03:17:35.648Z
 ---
 
 # Harbor Private OCI Registry
@@ -290,6 +350,151 @@ still require successful full-catalog publication. See the
 [recorded repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
 
 
+### Identical-reference core repair candidate
+
+The [maintained core recipe](../../builds/harbor-core/README.md) pins upstream
+Harbor v2.15.4 source and its archive hash, the official amd64 runtime image and
+a public Chainguard Go builder. Its source patch deduplicates only identical
+database relations for the same child. Differing digest, platform, URL or
+annotation metadata fails before any DAO write. The artifact digest and
+descriptor list remain intact; this repair changes no registry index bytes or
+database schema.
+
+The recipe verifies the archive before safe extraction and checks all three committed
+patches. Native tests reproduce the unpatched unique-reference failure, then
+require the repaired manager suite and complete core compilation. API bindings
+use upstream's pinned Swagger v0.33.1 and templates. Image build tests run
+without networking after dependency download; the runtime preserves the
+upstream payload, user and entrypoint and declares its loopback health probe.
+
+The [disposable registry fixture](../../builds/harbor-core/registry-test.py)
+then prepares pinned v2.15.4 services with this candidate core. It publishes no
+host ports; the service network denies external traffic. The test client shares
+the proxy's network namespace and uses `127.0.0.1:8080`. Proxy and jobservice
+startup waits for the candidate core's health check. Eight
+identical OCI child descriptors must survive a push and complete pull unchanged,
+including the child manifest and both blobs. The PostgreSQL query requires one
+parent/child relation. Temporary credentials, containers, network and data are
+fixture-owned and removed on exit. This gate uses no production inputs; passing
+it remains separate from original full-catalog and live publication acceptance.
+
+```mermaid
+flowchart TD
+    Source["Verify pinned source archive"] --> Baseline["Require original duplicate-reference failure"]
+    Baseline --> Repair["Reject conflicts and deduplicate identical relations"]
+    Repair --> Compile["Pass manager tests and compile core"]
+    Compile --> Candidate["Build held runtime candidate"]
+    Candidate --> Registry["Push and pull unchanged repeated index in disposable Harbor"]
+    Registry --> Database["Require one PostgreSQL child relation"]
+```
+
+The candidate's build gate checks original failure and repaired behavior before
+creating an image; it does not authorize rollout.
+
+No active consuming image, credential producer or live database changes are included.
+Linux image build, disposable Harbor/PostgreSQL index push/pull with unchanged
+digests, complete private scans and protected publication remain gates. Couple
+any v2.15.4 rollout with matching chart/components and verified database/blob/key
+backups. Keep the upstream cold-bootstrap and rollback paths. Source-manager
+tests alone do not establish real database, registry, CVE or workload acceptance.
+
+On 2026-10-11, [candidate CI at `e3f58417`](https://github.com/Stuhlmuller/homelab/actions/runs/38164012314/job/114542676251)
+passed Linux build and the isolated registry/PostgreSQL fixture: eight index
+descriptors, child manifest and both blobs remained unchanged, with one database
+relation. This is fixture acceptance, not full-catalog publication or deployment.
+The [sanitized fixture receipt](../../docs/evidence/harbor-core-registry-fixture-2026-10-11.json)
+retains the job/head/index identities and log hash without runtime credentials.
+
+The same day's [sanitized base-scan receipt](../../docs/evidence/harbor-core-base-scan-2026-10-11.json)
+records a separate local Grype 0.112.0 audit of the pinned upstream v2.15.4
+runtime base. Original manifest/config/blob hashes were checked; the fresh
+database was valid and no finding filters or exclusions were enabled. It found
+32 Go package matches across 26 advisory IDs: three critical, 15 high, six
+medium, two low and six unknown severity. Twenty-six matches report fixes;
+four report no fix and two have unknown fix state. These are scanner matches,
+not proven exploitability or results for the rebuilt candidate. Remediate the
+compiler/dependency findings, inspect unresolved advisories against source and
+reachability, then scan the exact rebuilt Linux image before publication.
+
+The [dependency patch](../../builds/harbor-core/patches/0003-security-dependencies.patch)
+requires Go 1.27.2 and pins resolved updates for NTLM, networking, crypto, Helm,
+telemetry and compression. It replaces gorilla/csrf with the advisory-recommended
+`filippo.io/csrf/gorilla` compatibility package. Browser protection now checks
+origin/Fetch metadata; response token headers remain, but tokens are ignored and
+nonbrowser requests remain allowed. The declared key contract and invalid-key
+refusal stay intact. The complete middleware suite and ten
+[browser/session compatibility cases](../../builds/harbor-core/csrf-compat_test.go)
+passed locally against Harbor's actual middleware.
+
+The [rebuilt Linux binary receipt](../../docs/evidence/harbor-core-binary-scan-2026-10-11.json)
+still records five matches: four Distribution v2 advisories and one x/crypto
+advisory, all unfixed/unknown (two high, two medium, one unknown severity).
+This binary-only audit is separate from the upstream base audit and final
+container acceptance. Inspect and remediate these remaining findings; rerun
+the Linux image/registry fixture after the dependency change and scan the exact
+final container before protected publication. Do not filter away unresolved findings.
+
+The [advisory assessment receipt](../../docs/evidence/harbor-core-advisory-assessment-2026-10-11.json)
+adds precise evidence for this local core binary. Its package graph excludes
+OpenPGP and the Distribution proxy/storage/handler server packages implicated
+by the reported advisories. Go's binary analyzer reports only a module-level
+OpenPGP advisory, without an affected package/symbol trace. A native JWK attack
+test accepts a trusted key and rejects attacker key material with a forged
+trusted key ID; the primary JWK advisory targets Distribution v3 prereleases.
+The build now guards the package exclusions and reruns that trust test.
+All five raw Grype matches remain recorded. These assessments cover this core
+binary only: registry daemon/configuration, the final container, changed future
+dependencies and deployed workloads still need independent verification.
+
+The [full-runtime audit](../../builds/harbor-core/scan.sh) now saves the exact
+Linux candidate from Docker after registry acceptance and scans the complete
+archive with lock-pinned Grype. Its [report checker](../../scripts/ci/harbor-core-scan-check.py)
+verifies the config hash against the inspected image ID, platform/distro,
+fresh report/database and absence of filtering, exclusions or VEX input.
+Available fixes fail this audit. Unfixed/unknown matches remain counted;
+successful collection does not mean CVE clearance or authorize publication.
+CI emits only an identity/report-hash/database/severity-count receipt while
+raw metadata and transport logs stay private and temporary inputs are removed.
+
+The [full-container receipt](../../docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json)
+records successful Linux audit CI at `279092e6`, with exact image/config identity
+`06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
+The available-fix gate passed; CVE clearance remains explicitly false.
+
+The [excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+renders a namespace-local Docker-config ExternalSecret and ServiceAccount pull
+reference from the already-declared `/homelab/harbor/robot-pull-password`.
+Harbor is already permitted by the store and exact reader policy. No app-container
+mount, new IAM/SSM declaration or credential rotation is added. Active Harbor
+resources exclude this directory. Move its secret and merge the pull reference
+into the existing ServiceAccount only with reviewed publication/scans, recovery
+clearance and ExternalSecret readiness; preserve cold-bootstrap/rollback access.
+
+The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-core-images.yml)
+prepares a protected publication path for one fixed
+`homelab/homelab-harbor-core:homelab-<main-sha>` reference. It checks current
+main before checkout/build and again before credentials, rebuilds/tests/audits
+first, and uses `homelab-production` with the shared Harbor publication lock.
+The helper also requires that dedicated workflow reference. After push, a fresh
+complete private pull and digest comparison precede in-cluster signing and
+destination verification against the enrolled public-key fingerprint.
+Failures withhold the output digest; success produces a pinned-reference artifact.
+Core signing Pods use only the pinned Harbor Cosign mirror, whose publication
+must be verified before dispatch. NOFX's two-subject behavior remains intact.
+The preferred core signer is the cataloged public Chainguard Cosign image at
+`mirror/cgr.dev/chainguard/cosign@sha256:3fad8be8...037ba18`.
+Its [complete internal pull receipt](../../docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json)
+verifies the original index, both platform manifests and all 18 referenced
+config/layer checks. This is content/transport evidence, not source-signature
+transfer. The [Linux compatibility fixture](../../builds/harbor-core/signer-test.sh)
+must verify P-256 import/public-key identity and signing flags before credentials;
+local Docker is unavailable, so that new compatibility gate remains pending CI.
+This source path does not authorize dispatch, activate the held consumer or
+clear shared recovery/advisory gates.
+Current-main source staging also applies the fresh private pull prerequisite to
+both retained NOFX subjects; its anonymous source download and alias checks
+remain independent of this fixed core-only mode.
+
 ### Cloudflared 2026.9.3 prerequisite (HOME-17)
 
 [PR #1128](https://github.com/Stuhlmuller/homelab/pull/1128) at
@@ -426,6 +631,60 @@ Two rollout failures refined validation: ESO 2.0.1 requires an explicit
 `retries.attempts: 0` to prevent replaying writes. See the
 [Istio HTTPRoute reference](https://istio.io/latest/docs/reference/config/networking/virtual-service/#HTTPRoute).
 Static rendering did not catch either runtime validation issue.
+
+## Expanded publication and egress prerequisites
+
+The fixed [Chainguard publication scope](../../scripts/config/harbor-chainguard-images.json)
+contains thirteen public, digest-pinned candidates. Go, nginx, Node runtime,
+Node dev, static and Wolfi base are the six additions to the original Python,
+curl, BusyBox, Redis, Valkey, PostgreSQL and Cosign scope. Earlier seven-image
+receipts cannot establish availability of the expanded scope or refreshed
+digests. Require protected publication approval, complete destination pulls and
+exact-artifact compatibility before consuming changes. Public sources belong
+in the catalog; application runtime references must use Harbor.
+
+For a missing destination digest tag, the
+[publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
+anonymously into a local directory image tree and checks the original manifest
+digest before authenticated Harbor upload. Existing destination tags resume
+only after exact hash verification. Aliases come from the verified Harbor digest;
+every selected artifact still needs a fresh complete anonymous destination pull.
+The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
+both architecture children and repeated index descriptors through directory
+staging and a second copy. Its generated local OCI fixtures reject network
+transports; this proves local transport behavior, not Harbor acceptance or
+publisher signatures.
+
+```mermaid
+flowchart TD
+    Missing["Missing Harbor digest tag"] --> Source["Anonymous all-platform download"]
+    Source --> Staging["Local directory image tree"]
+    Staging --> Identity{"Original digest matches"}
+    Identity -->|yes|Upload["Authenticated Harbor upload"]
+    Identity -->|no|Stopped["Stop publication"]
+    Upload --> Verify["Verify digest and tag alias"]
+    Verify --> Pull["Fresh anonymous complete pull"]
+    Pull --> Receipt["Verify digest before receipt"]
+```
+
+Missing-artifact publication verifies source bytes before upload and independently
+checks the complete destination download.
+
+The [full catalog](../../scripts/config/harbor-images.json) additionally stages
+Image Updater v1.3.0 and Kubernetes SIG Network `kube-network-policies` v1.1.2.
+Neither cataloging the enforcer nor publishing its image activates a DaemonSet.
+Flannel remains the transport and does not enforce existing NetworkPolicies.
+The enforcer is the proposed L3/L4 boundary behind Istio egress waypoints;
+activation requires repository-owned Talos NRI configuration, plugin/runtime
+synchronization proof and review of every existing placeholder policy. Preserve
+DNS, API, HBONE, webhook, storage and recovery paths and prove direct-IP,
+alternate-port, IPv6 and gateway bypass denial before expansion. See
+[image and egress gates](../../docs/image-egress-hardening.md) and
+[runtime isolation](../runbooks/runtime-isolation.md).
+
+No consumer migration, full-catalog publication, zero-CVE result or live egress
+enforcement is established by these prerequisites. Image pulls remain
+node/containerd traffic, outside Istio pod interception.
 
 ## Proposed Chainguard automation
 
