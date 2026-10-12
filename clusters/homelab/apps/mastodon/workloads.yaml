@@ -1,0 +1,344 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mastodon-web
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-web
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  selector:
+    app.kubernetes.io/name: mastodon-web
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mastodon-web
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-web
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: &id001
+      app.kubernetes.io/name: mastodon-web
+  template:
+    metadata:
+      labels: *id001
+      annotations:
+        homelab.stuhlmuller.dev/runtime-revision: v1
+    spec:
+      serviceAccountName: mastodon
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          image: ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
+          imagePullPolicy: IfNotPresent
+          command:
+            - ruby
+            - /run/launcher/launch.rb
+            - bundle
+            - exec
+            - puma
+            - -C
+            - config/puma.rb
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: runtime
+              mountPath: /opt/mastodon/.env.production
+              subPath: .env.production
+              readOnly: true
+            - name: runtime
+              mountPath: /run/mastodon/vapid.pem
+              subPath: vapid.pem
+              readOnly: true
+            - name: launcher
+              mountPath: /run/launcher
+              readOnly: true
+            - name: media
+              mountPath: /opt/mastodon/public/system
+            - name: tmp
+              mountPath: /opt/mastodon/tmp
+            - name: tmp
+              mountPath: /tmp
+            - name: log
+              mountPath: /opt/mastodon/log
+          ports:
+            - name: http
+              containerPort: 3000
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 6
+      volumes:
+        - name: runtime
+          secret:
+            secretName: mastodon-runtime
+        - name: launcher
+          configMap:
+            name: mastodon-launcher
+        - name: media
+          persistentVolumeClaim:
+            claimName: mastodon-media
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: log
+          emptyDir:
+            sizeLimit: 64Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mastodon-sidekiq
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-sidekiq
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: &id001
+      app.kubernetes.io/name: mastodon-sidekiq
+  template:
+    metadata:
+      labels: *id001
+      annotations:
+        homelab.stuhlmuller.dev/runtime-revision: v1
+    spec:
+      serviceAccountName: mastodon
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: sidekiq
+          image: ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca
+          imagePullPolicy: IfNotPresent
+          command:
+            - ruby
+            - /run/launcher/launch.rb
+            - bundle
+            - exec
+            - sidekiq
+            - -c
+            - '5'
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: runtime
+              mountPath: /opt/mastodon/.env.production
+              subPath: .env.production
+              readOnly: true
+            - name: runtime
+              mountPath: /run/mastodon/vapid.pem
+              subPath: vapid.pem
+              readOnly: true
+            - name: launcher
+              mountPath: /run/launcher
+              readOnly: true
+            - name: media
+              mountPath: /opt/mastodon/public/system
+            - name: tmp
+              mountPath: /opt/mastodon/tmp
+            - name: tmp
+              mountPath: /tmp
+            - name: log
+              mountPath: /opt/mastodon/log
+          readinessProbe:
+            exec:
+              command: ["/bin/sh", "-ec", "kill -0 1"]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - kill -0 1
+            periodSeconds: 30
+            failureThreshold: 6
+      volumes:
+        - name: runtime
+          secret:
+            secretName: mastodon-runtime
+        - name: launcher
+          configMap:
+            name: mastodon-launcher
+        - name: media
+          persistentVolumeClaim:
+            claimName: mastodon-media
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: log
+          emptyDir:
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mastodon-streaming
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-streaming
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  selector:
+    app.kubernetes.io/name: mastodon-streaming
+  ports:
+    - name: http
+      port: 4000
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mastodon-streaming
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-streaming
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: &id001
+      app.kubernetes.io/name: mastodon-streaming
+  template:
+    metadata:
+      labels: *id001
+      annotations:
+        homelab.stuhlmuller.dev/runtime-revision: v1
+    spec:
+      serviceAccountName: mastodon
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: streaming
+          image: ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b
+          imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - --env-file=/run/mastodon/streaming.env
+            - ./streaming/index.js
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: '1'
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: runtime
+              mountPath: /run/mastodon/streaming.env
+              subPath: streaming.env
+              readOnly: true
+          ports:
+            - name: http
+              containerPort: 4000
+          startupProbe:
+            httpGet:
+              path: /api/v1/streaming/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/v1/streaming/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/streaming/health
+              port: http
+            periodSeconds: 30
+            failureThreshold: 6
+      volumes:
+        - name: runtime
+          secret:
+            secretName: mastodon-runtime

@@ -40,6 +40,50 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/mastodon/secret-key-base" = {
+      description = "Mastodon stable secret-key-base; retain with database backups and never regenerate during restore."
+      generated = {
+        kind    = "hex"
+        length  = 64
+        special = false
+      }
+    }
+    "/homelab/mastodon/encryption-primary-key" = {
+      description = "Mastodon stable encryption-primary-key; retain with database backups and never regenerate during restore."
+      generated = {
+        kind    = "password"
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/mastodon/encryption-deterministic-key" = {
+      description = "Mastodon stable encryption-deterministic-key; retain with database backups and never regenerate during restore."
+      generated = {
+        kind    = "password"
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/mastodon/encryption-salt" = {
+      description = "Mastodon stable encryption-salt; retain with database backups and never regenerate during restore."
+      generated = {
+        kind    = "password"
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/mastodon/vapid-private-key" = {
+      description = "Mastodon stable vapid-private-key; retain with database backups and never regenerate during restore."
+      generated = {
+        kind    = "ecdsa_private_key"
+        length  = 32
+        special = false
+      }
+    }
+    "/homelab/mastodon/smtp-password" = {
+      description   = "Mastodon outbound email provider credential; inject through CI before activation."
+      initial_value = local.placeholder
+    }
     "/homelab/mastodon/postgres-password" = {
       description = "Mastodon dedicated postgres password."
       generated = {

@@ -10,3 +10,15 @@ resources:
   - redis.yaml
   - networkpolicy.yaml
   - backup-cronjob.yaml
+  - configmap.yaml
+  - runtime-externalsecret.yaml
+  - migration.yaml
+  - workloads.yaml
+configMapGenerator:
+  - name: mastodon-launcher
+    namespace: mastodon
+    options:
+      annotations:
+        argocd.argoproj.io/sync-wave: '-2'
+    files:
+      - launch.rb
