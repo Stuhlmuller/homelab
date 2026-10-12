@@ -82,7 +82,11 @@ active writer's database. Preserve local claims until recovery is verified.
 ## Remaining deployment gates
 
 - Publish both official Mastodon 4.7.3 images from PR #1288 through the reviewed
-  Harbor workflow; prove complete destination pulls before consumption.
+  Harbor workflow; prove complete destination pulls before consumption. On
+  2026-10-11, run `38196403709` passed validation but its copy job queued behind
+  NOFX run `38173056151`, awaiting `homelab-production` approval in the shared
+  `harbor-packages-production` lane. The owner must resolve that earlier run;
+  a queued copy job is not a publication receipt.
 - Add apex WebFinger delegation so accounts at `stinkyboi.com` are discoverable
   while the website stays on `mastodon.stinkyboi.com`. Do not change the local
   account domain after creating identities.
