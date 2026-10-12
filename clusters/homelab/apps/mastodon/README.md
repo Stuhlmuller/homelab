@@ -159,6 +159,14 @@ an interrupted blob PATCH with `unexpected EOF` and client disconnect at
 bounded transfer retry, not digest/alias/pull bypass or database modification.
 The failed client stderr remains private, so its full cause is not proven.
 
+Attempt 3 repeated the same web-image `destination-copy` failure at
+06:40:14 UTC. Do not continue blind copy retries. Matching registry evidence
+again showed client disconnect/`unexpected EOF`; live nginx settings had no
+body-size limit, request/response buffering disabled, and 900-second proxy
+send/read timeouts. No causal gateway/body-limit error was established. Recover
+the private client diagnostic through a reviewed secret-safe path before the
+next write attempt; do not print raw client stderr into public Actions logs.
+
 Earlier streaming scans reported a duplicate
 `scan_report_digest_registration_uuid_mime_type_key` at 06:22:28 UTC. This is
 separate from the web-image copy failure and needs Harbor scan/readiness
