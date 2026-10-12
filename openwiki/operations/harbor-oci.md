@@ -86,10 +86,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-11T21:16:07.164Z" }
+generated: { by: "codex", at: "2026-10-12T03:01:36.579Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T21:16:07.164Z
+    at: 2026-10-12T03:01:36.579Z
 ---
 
 # Harbor Private OCI Registry
@@ -470,8 +470,9 @@ Its [complete internal pull receipt](../../docs/evidence/harbor-chainguard-signe
 verifies the original index, both platform manifests and all 18 referenced
 config/layer checks. This is content/transport evidence, not source-signature
 transfer. The [Linux compatibility fixture](../../builds/harbor-core/signer-test.sh)
-must verify P-256 import/public-key identity and signing flags before credentials;
-local Docker is unavailable, so that new compatibility gate remains pending CI.
+tests the exact public upstream Cosign digest for P-256 import/public-key identity
+and signing flags before publication credentials. These fixture checks do not
+establish destination source-signature coverage or authorize publication.
 This source path does not authorize dispatch, activate the held consumer or
 clear shared recovery/advisory gates.
 Current-main source staging also applies the fresh private pull prerequisite to

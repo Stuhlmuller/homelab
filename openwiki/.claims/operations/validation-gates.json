@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a02595984fdfa00c9fc5f2c026b5137b1b2c09dcd3e9f46241cdb1b79bf7d5c6",
+  "pageVersion": "sha256:601dc42ffc1267e4d7075b64693865d698ac7ed8e8177752387ef7deef10148f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:de2f86f0ccae1722b741506b3318b6bb34216ad0bc9022f5a2a8f9fef0ac2aa1"
+          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
         }
       ]
     },
@@ -428,17 +428,39 @@
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
-          "version": "repo-file-v1:sha256:360d920e7d253eb287a81b1372c0c6832bc2acad79017b99e574eb81aba4df52"
+          "version": "repo-file-v1:sha256:82073f75b29a67e5e1f8aca946deb9157c98798922fbf28604a02f7d13c41358"
         },
         {
           "resource": "repo://docs/ci-cd.md",
           "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
         }
       ]
+    },
+    {
+      "id": "claim_55c3fab4db2e4b668ed4381d2ebab9d9",
+      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
+          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+        },
+        {
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T21:16:07.164Z"
+    "at": "2026-10-12T03:01:36.579Z"
   }
 }
