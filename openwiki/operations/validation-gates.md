@@ -26,6 +26,10 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
+    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
+  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
+    resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -88,6 +92,8 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-4bbfe00c406fec8a213babcb
+    resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
@@ -96,10 +102,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T02:35:12.978Z" }
+generated: { by: "codex", at: "2026-10-12T04:36:16.555Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T03:59:12.990Z
+    at: 2026-10-12T04:36:16.555Z
 ---
 
 # Validation Gates
@@ -115,6 +121,16 @@ Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
 `offline-static-checks.sh`. CI uses protected-main cache trust with signatures
 and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
 See [signed offline validation](../../docs/nix-cache.md).
+
+The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
+`NET_ADMIN` to raise loopback in each private Nix network namespace when
+Talos disables user namespaces. That capability also permits Pod networking
+changes; reviewed homelab source remains the trust boundary. Keep strict
+sandbox/signature checks, RuntimeDefault seccomp, the 1 GiB reservation/limit,
+serial substitutions and original-Pod/attempt-ID cancellation. Fresh node
+health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt.
+A render or healthy rollout proves neither full-check memory sufficiency nor
+signed cache publication; verify actual substitution in fresh CI separately.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
