@@ -8,7 +8,9 @@ no server or public route is deployed. The declared Istio route sends streaming 
 4000 and remaining subdomain requests to Puma on port 3000. STRICT mTLS and
 default-deny authorization admit only the shared gateway and Mastodon service
 account; NetworkPolicy separately limits ingress and federation egress. This
-route still needs a public transport and DNS declaration. The website uses `mastodon.stinkyboi.com`; account identities
+The shared cloudflared configuration declares its native public route;
+`mastodon-public-dns.yml` publishes only the instance hostname after rollout
+readiness. Neither has been applied yet. The website uses `mastodon.stinkyboi.com`; account identities
 use `stinkyboi.com`. This preserves the existing apex portal and requires a
 public apex WebFinger delegation route. Mail settings remain explicit
 `REPLACE_ME` placeholders, which the Rails launcher rejects.
@@ -111,6 +113,25 @@ merged revision, migrations finish, and each process rolls out before testing
 public behavior. Do not dispatch while provider settings still contain
 placeholders or publication lacks complete-pull evidence.
 
+## Public DNS activation
+
+After reviewed `main` has reconciled Mastodon and `octelium-public`, dispatch
+`mastodon-public-dns.yml` with that exact commit as `expected_sha`. It refuses
+publication until both Applications are Synced/Healthy at the reviewed revision.
+The protected job reads only the existing Cloudflare DNS token and tunnel ID,
+then creates or updates the tagged `mastodon.stinkyboi.com` CNAME. It refuses
+foreign records, conflicting A/AAAA records, duplicate records, and incomplete
+pagination. It never deletes records or republishes private application names.
+
+The retained connector now includes Mastodon, so its retirement needs a reviewed
+replacement for this public transport. The existing private DNS inventory does
+not manage this hostname. Keep the shared tunnel until that replacement has
+passed real federation acceptance. To roll back activation, first disable
+Mastodon's public route through reviewed code; preserve its data and credentials.
+The DNS helper deliberately provides no deletion path: add a reviewed retirement
+contract before removing the record. For tunnel relocation, update only the
+owned record through this workflow after the replacement connector is ready.
+
 ## Remaining deployment gates
 
 - Publish both official Mastodon 4.7.3 images from PR #1288 through the reviewed
@@ -125,8 +146,8 @@ placeholders or publication lacks complete-pull evidence.
 - Add admin bootstrap and supply the selected email provider settings/credential.
 - Render and exercise the configuration template, migrations, and full image
   startup after domain/mail selection; static checks do not prove runtime boot.
-- Declare a dedicated public federation route and DNS without restoring private
-  applications' retired public routes. Existing Funnel policy admits only the
+- Activate and verify the declared public route and DNS without restoring
+  private applications' retired public routes. Existing Funnel policy admits only the
   two reviewed callbacks, so it cannot serve this custom-domain website as-is.
 - Register through the shared Terragrunt Application template after rendering,
   policy checks, capacity checks, secret readiness, and image publication.

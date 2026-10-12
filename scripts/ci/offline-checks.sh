@@ -9,6 +9,7 @@ python3 -I scripts/ci/speckit-check.py
 ruby scripts/ci/mastodon-launch-test.rb
 python3 -I scripts/ci/mastodon-routes-test.py
 python3 -I scripts/ci/mastodon-smtp-credential-test.py
+python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py

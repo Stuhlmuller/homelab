@@ -9,6 +9,7 @@ inputs = {
     "external-secrets",
     "cert-manager",
     "istio",
+    "octelium-public",
     "platform-storage"
   ]
   spec = {

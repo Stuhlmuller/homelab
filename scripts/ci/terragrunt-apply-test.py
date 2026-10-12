@@ -219,6 +219,7 @@ class TerragruntApplyTest(unittest.TestCase):
             if target == "fleet":
                 app_names = [*APPS, "traefik"]
             else:
+                app_names = [*APPS, "octelium-public"]
                 project["spec"]["clusterResourceWhitelist"] += [
                     {"group": "", "kind": "PersistentVolume"},
                     {"group": "storage.k8s.io", "kind": "StorageClass"},
@@ -397,7 +398,7 @@ class TerragruntApplyTest(unittest.TestCase):
                 ])
 
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
-        for target, access_app in (("fleet", "traefik"), ("mastodon", None)):
+        for target, access_app in (("fleet", "traefik"), ("mastodon", "octelium-public")):
             app_names = [*APPS, *([access_app] if access_app else [])]
             variants = [
                 {"project": PROJECT},  # Project permits Langfuse, not this target.
