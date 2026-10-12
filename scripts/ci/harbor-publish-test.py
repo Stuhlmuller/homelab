@@ -1098,5 +1098,17 @@ class NativeStagingTests(unittest.TestCase):
                 source = "dir:" + str(destination)
 
 
+class MirrorWorkflowStatusPin(unittest.TestCase):
+    def test_safe_status_requires_current_reviewed_publisher(self):
+        digest = hashlib.sha256((ROOT / "scripts/ci/harbor-publish.sh").read_bytes()).hexdigest()
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertIn(
+            f"sha256sum --check --status <<<'{digest}  scripts/ci/harbor-publish.sh'",
+            workflow,
+        )
+        for name in ("policy/workflows.rego", "policy/workflows_test.rego"):
+            self.assertIn(digest, (ROOT / name).read_text())
+
+
 if __name__ == "__main__":
     unittest.main()

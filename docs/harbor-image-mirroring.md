@@ -321,6 +321,15 @@ rollback changes image transport, not workload versions or stored data.
 Sources: [Talos 1.11 Harbor mirror configuration](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/images-container-runtime/pull-through-cache),
 [Harbor proxy-cache behavior and retention](https://goharbor.io/docs/2.14.0/administration/configure-proxy-cache/).
 
+## Publication failure diagnostics
+
+The mirror workflow keeps transport and registry logs private. On failure it
+prints only the publisher's fixed source, phase, exit status, and category fields
+when the publisher matches the reviewed checksum pinned in the workflow. Update
+that pin with publisher changes; the offline publication test checks this
+contract. A stale pin suppresses the safe summary as well as private logs, leaving
+only a generic failure. Never print the private log to recover missing context.
+
 ## Duplicate-index publication failure
 
 On October 11, 2026 UTC, full-catalog runs `38108370598` and `38117127796`
