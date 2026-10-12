@@ -40,6 +40,20 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/mastodon/postgres-password" = {
+      description = "Mastodon dedicated postgres password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/mastodon/redis-password" = {
+      description = "Mastodon dedicated redis password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
     "/homelab/fleet/mysql-password" = {
       description = "Fleet dedicated MySQL application password."
       generated = {

@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mastodon-datastores
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-datastores
+    app.kubernetes.io/part-of: mastodon
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 10.1.0.2/32
+      ports:
+        - protocol: TCP
+          port: 2049
+        - protocol: TCP
+          port: 111
+        - protocol: UDP
+          port: 111
