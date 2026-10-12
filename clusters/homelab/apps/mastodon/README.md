@@ -3,7 +3,9 @@
 Preparation for the requested Mastodon server for stinkyboi.com. This directory
 owns PostgreSQL, Redis, retained storage, web, Sidekiq, streaming, and a schema
 migration Job. No Argo CD Application registers it yet; no server or public
-route is deployed. Permanent domain and mail settings remain explicit
+route is deployed. The website uses `mastodon.stinkyboi.com`; account identities
+use `stinkyboi.com`. This preserves the existing apex portal and requires a
+public apex WebFinger delegation route. Mail settings remain explicit
 `REPLACE_ME` placeholders, which the Rails launcher rejects.
 
 ## Storage and credentials
@@ -37,7 +39,9 @@ streaming runs separately on port 4000. A wave-1 migration Job prepares the
 schema before wave-2 Deployments start. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
-small homelab. Recheck complete-server resource requests before registration.
+small homelab. Sidekiq startup/readiness checks use the upstream job-processing
+marker, cleared by the launcher before each restart to prevent stale readiness.
+Recheck complete-server resource requests before registration.
 
 The [External Secrets template](https://external-secrets.io/latest/guides/templating/#templatefrom)
 combines committed settings and SSM credentials into mounted `.env.production`
@@ -75,7 +79,9 @@ active writer's database. Preserve local claims until recovery is verified.
 
 - Publish both official Mastodon 4.7.3 images from PR #1288 through the reviewed
   Harbor workflow; prove complete destination pulls before consumption.
-- Set permanent account and web domains after the pending domain decision.
+- Add apex WebFinger delegation so accounts at `stinkyboi.com` are discoverable
+  while the website stays on `mastodon.stinkyboi.com`. Do not change the local
+  account domain after creating identities.
 - Add admin bootstrap and the selected outbound email provider injection path.
 - Render and exercise the configuration template, migrations, and full image
   startup after domain/mail selection; static checks do not prove runtime boot.

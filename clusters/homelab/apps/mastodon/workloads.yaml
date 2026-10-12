@@ -212,8 +212,11 @@ spec:
             - name: log
               mountPath: /opt/mastodon/log
           readinessProbe:
-            exec:
-              command: ["/bin/sh", "-ec", "kill -0 1"]
+            exec: &id002
+              command:
+                - /bin/sh
+                - -ec
+                - test -f /opt/mastodon/tmp/sidekiq_process_has_started_and_will_begin_processing_jobs
             periodSeconds: 10
           livenessProbe:
             exec:
@@ -223,6 +226,10 @@ spec:
                 - kill -0 1
             periodSeconds: 30
             failureThreshold: 6
+          startupProbe:
+            exec: *id002
+            periodSeconds: 10
+            failureThreshold: 60
       volumes:
         - name: runtime
           secret:
