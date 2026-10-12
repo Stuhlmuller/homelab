@@ -109,6 +109,38 @@ service recovery mutation was performed, and no signed outputs were published.
 Keep retries held until cancellation lifecycle and resource preflight are
 reviewed; preserve raw incident diagnostics in private operator storage.
 
+The separately released retry on main `65ecac9a` downloaded dependencies but
+failed before either check ran: `cannot set loopback interface flags:
+Operation not permitted`. The worker exposed `user.max_user_namespaces=0`,
+and the builder's effective/bounding capabilities omitted `NET_ADMIN`.
+[Nix 2.35.2 sandbox setup](https://github.com/NixOS/nix/blob/2.35.2/src/libstore/linux/build/linux-derivation-builder.cc)
+creates a private network namespace and raises its loopback interface. Without
+user namespaces, that interface operation needs `NET_ADMIN` in the parent
+user namespace. Do not disable the build sandbox to bypass this failure.
+
+All four nodes remained Ready without pressure; OOM/OOM-kill counters stayed
+zero. Observed cgroup peak was 1,079,291,904 bytes (about 1,029 MiB), with the
+configured memory limit still 1 GiB. The failed command exited, automatic
+cancellation found no remaining supervisor, and independent inspection
+confirmed the owner lock and attempt workspaces were absent. The release
+still contained only `nix-cache-info`; no signed results were published.
+
+The protected runtime fix adds only `NET_ADMIN` to the nix-builder container
+and updates its namespace
+justification/README, followed by Argo rollout and one newly authorized
+bounded retry. The operator explicitly approved this capability change and
+one further attempt on October 11, 2026. A temporary candidate rendered and
+passed all 224 Conftest policy assertions without policy changes; this is not runtime acceptance.
+`NET_ADMIN` also allows configuring the Pod's network namespace, so obtain
+explicit privilege-change approval first. Keep RuntimeDefault seccomp,
+strict sandbox/signature verification, the 1 GiB request/limit, serial
+substitutions and lifecycle safeguards. Host namespace sysctls, host
+networking, credentials, capacity and other workloads are outside this fix.
+The first full check's memory sufficiency and signed-cache hit remain
+unproved. Preserve raw failure logs and original attempt IDs privately.
+The earlier one-attempt release remains exhausted; further attempts require
+new explicit authorization.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input
