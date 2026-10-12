@@ -96,6 +96,9 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
                     },
                 }]),
                 pod("apps", "default-capabilities", {"app": "none"}, containers=[{"name": "app"}]),
+                {**pod("apps", "terminating", {"app": "none"}),
+                 "metadata": {"namespace": "apps", "name": "terminating", "labels": {"app": "none"},
+                              "deletionTimestamp": "2026-10-12T00:00:00Z"}},
                 {**pod("apps", "finished", {"app": "none"}), "status": {"phase": "Succeeded"}},
             ],
             [narrow, dns, broad, deny, other_namespace, live_only, drifted_live],
@@ -118,6 +121,8 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
                             for item in result["findings"]))
         self.assertTrue(any(item["kind"] == "unisolated-pod" and item["pod"] == "apps/unisolated"
                             for item in result["findings"]))
+        self.assertTrue(any(item["kind"] == "unisolated-pod" and item["pod"] == "apps/terminating"
+                            for item in result["findings"]))
         exceptions = {item["pod"]: item["exception"] for item in result["findings"]
                       if item["kind"] == "pod-requires-separate-review"}
         self.assertEqual(exceptions["apps/host"], "host-network")
@@ -139,6 +144,18 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
         self.assertEqual(
             reviewed, inventory.policy_fingerprint(inventory.normalized_policy(narrow))
         )
+
+    def test_defaults_port_protocols_before_drift_comparison(self):
+        live = policy("apps", "default-protocol", {}, [{
+            "to": [{"ipBlock": {"cidr": "10.1.0.2/32"}}],
+            "ports": [{"protocol": "TCP", "port": 443}],
+        }], ["Egress"])
+        rendered = policy("apps", "default-protocol", {}, [{
+            "to": [{"ipBlock": {"cidr": "10.1.0.2/32"}}],
+            "ports": [{"port": 443}],
+        }], ["Egress"])
+        result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
+        self.assertEqual(result["driftedPolicies"], [])
 
     def test_review_hash_and_conflicting_snapshots_fail_closed(self):
         item = policy("apps", "reviewed", {}, [], ["Egress"])

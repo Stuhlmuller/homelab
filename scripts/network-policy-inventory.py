@@ -122,6 +122,22 @@ def negative_selector(selector):
     )
 
 
+def normalized_egress(egress):
+    """Apply Kubernetes defaults that affect NetworkPolicy equality."""
+    normalized = []
+    for rule in egress:
+        if not isinstance(rule, dict) or not isinstance(rule.get("ports"), list):
+            normalized.append(rule)
+            continue
+        ports = [
+            {**port, "protocol": "TCP"}
+            if isinstance(port, dict) and port.get("protocol") is None else port
+            for port in rule["ports"]
+        ]
+        normalized.append({**rule, "ports": ports})
+    return canonical(normalized)
+
+
 def normalized_policy(item):
     if item.get("kind") != "NetworkPolicy":
         raise ValueError("Policy snapshot contains a non-NetworkPolicy object")
@@ -138,7 +154,7 @@ def normalized_policy(item):
         "name": name,
         "podSelector": canonical(spec["podSelector"]),
         "policyTypes": sorted(types),
-        "egress": canonical(egress if "Egress" in types else []),
+        "egress": normalized_egress(egress if "Egress" in types else []),
     }
 
 
@@ -428,8 +444,7 @@ def active_pods(items, namespaces):
             raise ValueError("Pod snapshot is missing namespace or name")
         if namespaces and namespace not in namespaces:
             continue
-        if (metadata_value.get("deletionTimestamp") or
-                status.get("phase") in {"Succeeded", "Failed"}):
+        if status.get("phase") in {"Succeeded", "Failed"}:
             continue
         labels = metadata_value.get("labels", {})
         if not isinstance(labels, dict) or not all(isinstance(key, str) and isinstance(value, str)
