@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f5d4d114ff0492754accfaabbffe92c492eafeed0da6883fc5e56257529ac272",
+  "pageVersion": "sha256:52037ad5bb93391de746d3429e0c955ec2e05cdddd3da36d3498ad7fb8ad7f8b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
+          "version": "repo-file-v1:sha256:beaeb3c00edd141ffe858fdb5b8dc6f650fa7128489f88532eb155f5724099cb"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6d16f6b97509d2d289b37fdff6baaba32ba6d0381e59dff9231001e110f463a8"
+          "version": "repo-file-v1:sha256:d5e1a1a6c2543bef1c720d4d75029608a9225d38307ee70bcc4ec7475f981510"
         }
       ]
     },
@@ -406,7 +406,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:ed60882f810bc5893d1f385884b06e443819c5396a6ed37d92cd4f78259ca089"
+          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -416,7 +416,7 @@
     },
     {
       "id": "claim_8e0f5d1def624426aff856de7987ba8e",
-      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and `validate` runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality, and the producer signing flags. A 2026-10-11 read-only check found a required `homelab-production` reviewer; recheck live environment settings before dispatch.",
+      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and validate runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality and producer signing flags. The dated October 11 reviewer observation is historical; current source declares automatic same-repository PR-plan and production environments, with production restricted to exact main. Live settings require fresh verification.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -432,13 +432,35 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:a328fdb70060ea96cb98e4615299f32796d6ffc8aa67da67c17bb16d7bd37dd4"
+          "version": "repo-file-v1:sha256:beaeb3c00edd141ffe858fdb5b8dc6f650fa7128489f88532eb155f5724099cb"
+        }
+      ]
+    },
+    {
+      "id": "claim_db920b24eb02493e958d3eaa74f91e5c",
+      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
+          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+        },
+        {
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:59:12.990Z"
+    "at": "2026-10-12T05:12:36.902Z"
   }
 }
