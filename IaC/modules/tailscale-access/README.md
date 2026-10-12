@@ -74,7 +74,8 @@ subprocess output without displaying it or passing keys in process arguments.
 Run the publisher on this homelab's trusted Mac signing node after the provider
 apply. It uses `/Applications/Tailscale.app/Contents/MacOS/Tailscale`, verifies
 Tailnet Lock is enabled and this node is a trusted signer, and checks the fixed
-GitHub environment owner-review and branch protections. The default is read-only.
+GitHub automatic environment protections and the exact main-only, no-tags
+production branch allowlist. The default is read-only.
 `--execute` also requires a clean checkout at signed, verified current `main`.
 
 ```sh

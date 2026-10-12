@@ -82,30 +82,35 @@ def read_identity():
 def verify_protection(environment, document):
     try:
         rules = document["protection_rules"]
-        expected_types = ["required_reviewers"] if environment == "homelab-plan" else [
-            "branch_policy", "required_reviewers"]
-        reviewer_rules = [rule for rule in rules if rule["type"] == "required_reviewers"]
-        reviewers = reviewer_rules[0]
+        expected_types = [] if environment == "homelab-plan" else ["branch_policy"]
         branch_policy = None if environment == "homelab-plan" else {
-            "protected_branches": True, "custom_branch_policies": False,
+            "protected_branches": False, "custom_branch_policies": True,
         }
         valid = (
             document["name"] == environment and document["can_admins_bypass"] is False
             and sorted(rule["type"] for rule in rules) == expected_types
-            and len(reviewer_rules) == 1 and reviewers["prevent_self_review"] is False
-            and [{"type": entry["type"], "id": entry["reviewer"]["id"]}
-                 for entry in reviewers["reviewers"]] == [{"type": "User", "id": 57728706}]
             and document["deployment_branch_policy"] == branch_policy
         )
     except (KeyError, TypeError, IndexError):
         valid = False
     if not valid:
-        raise Failure("GitHub environment protection differs from the declared owner-review policy")
+        raise Failure("GitHub environment protection differs from the declared automatic-deployment policy")
+
+
+def verify_production_allowlist():
+    policies = github("environments/homelab-production/deployment-branch-policies",
+                      "production branch allowlist lookup")
+    branches = policies.get("branch_policies") if isinstance(policies, dict) else None
+    if (not isinstance(branches, list) or len(branches) != 1
+            or not isinstance(branches[0], dict) or branches[0].get("name") != "main"
+            or branches[0].get("type") != "branch"):
+        raise Failure("Production deployment requires exactly the main branch and no tags")
 
 
 def verify_destinations():
     for environment in ENVIRONMENTS.values():
         verify_protection(environment, github(f"environments/{environment}", "environment protection lookup"))
+    verify_production_allowlist()
     if github("branches/main", "main protection lookup").get("protected") is not True:
         raise Failure("Production deployment requires a protected main branch")
     for environment in (None, *ENVIRONMENTS.values()):

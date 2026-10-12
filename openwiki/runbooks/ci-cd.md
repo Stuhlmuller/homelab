@@ -24,10 +24,10 @@ sources:
     resource: repo://scripts/entra-ci-configure.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
+generated: { by: "codex", at: "2026-10-12T04:52:40.862Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T03:17:35.648Z
+    at: 2026-10-12T04:52:40.862Z
 ---
 
 # CI/CD
@@ -52,13 +52,14 @@ required owner approval. The canonical guide's contrary production guidance was
 stale; it was corrected on 2026-10-11 UTC after verifying both live environments
 and the upstream `github-iac` declarations.
 
-The [environment guard](../../scripts/entra-ci-configure.py) requires exactly the
-configured owner reviewer, disables administrator bypass and allows self-review.
-Production restricts deployment to protected branches; the workflow additionally
-requires the exact current `main` revision before using credentials. The
-[Tailscale publisher](../../scripts/tailscale-ci-configure.py) reuses the guard
-and refuses publication if protection differs. Policy Bot approval does not
-remove these environment gates; plans and applies still require owner approval.
+Current `github-iac` desired state and live settings use automatic environments
+without required reviewers. The [environment guard](../../scripts/entra-ci-configure.py)
+disables administrator bypass and requires production's exact `main` branch
+allowlist, excluding tags. The workflow additionally verifies current `main`
+before credentials; the [Tailscale publisher](../../scripts/tailscale-ci-configure.py)
+reuses the exact allowlist guard and rejects drift before publication. These
+current settings supersede the dated owner-review snapshot above. A PR push can
+start its live plan automatically; it does not authorize a production apply.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
@@ -89,7 +90,7 @@ credential recovery or read-only diagnostics.
 Static workflows obtain cache URL/key policy from protected main, then verify or
 build the expected Nix offline-test and manifest-policy outputs. The remaining
 static wrapper still runs fresh provider, network and security checks. The
-trusted PR's protected live plan remains fresh and separately owner-reviewed.
+trusted PR's environment-scoped live plan remains fresh and runs automatically.
 Neither a cached result nor a green static job authorizes production apply.
 
 Use the [signed cache runbook](../../docs/nix-cache.md) for local validation,

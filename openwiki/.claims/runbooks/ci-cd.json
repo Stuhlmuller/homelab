@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b4999562cdae769ff153686cd5a2d9801d8b194795abeb6056969dcecf5eeaa9",
+  "pageVersion": "sha256:a71d92d22a73a2f5a3899b73c241a942c038380a767382cc8c413c18a5eb94f1",
   "claims": [
     {
       "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:2cc71523904037af7bf6e8ee7fdd0ec7939ad09d83333b2cbb76c557adf41abd"
+          "version": "repo-file-v1:sha256:82ede7b3dff3db22a22b1d3b5d859d11ef1b1cccc8c970d47070b0d7386a7e49"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -22,29 +22,29 @@
     },
     {
       "id": "claim_56175ee5158e4eff9c6692a106627f5a",
-      "statement": "Both CI environments require the exact configured owner reviewer with administrator bypass disabled and self-review allowed; production adds protected-branch restrictions, the workflow enforces exact current main, and the Tailscale publisher reuses the environment guard before publication.",
+      "statement": "Current automatic CI environments have no required reviewers and disable administrator bypass; production permits exactly the main branch and no tags, verifies exact current main before credentials, and both credential publishers share the allowlist guard. PR pushes can start live plans automatically without authorizing production applies.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/terragrunt-apply.yml#L88-L109",
-          "version": "repo-lines-v1:sha256:ce3ef3733f1e105a13bf5774d7a8f88052cb8d8adfe802a3ee96ae444a9b2127:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxMzllNDZjYmZkNDI0Yzk2MTBjZTYwZDhmODdiM2E0Nzc0MjNjNmFjN2Y2OWE0MjkzZmMwODc1MmRiYWM0MmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxOWQ4Zjg2Njc0OWZhZGRjMzczNDU3ZDc1YzI3MGEzN2IzOGJjZjQ4NmE4Y2VmMmViYzI2ZDU2YTZhM2M4OWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViNWQxZWRlMzQ3OWM0NGE4NTc4ZTQ4NzFjZDRmODVkMDViMDY3YmQ4OGUxYzNiMWY3ZWY3MGRmZjE1MTRhYjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1MTRlMDMyY2M4NDhjNjgxZTY0M2VkYzcyMzJkNjNlZGY5Y2EzNDE1YTQ4ODIyYzBiYjA2N2Q4NDgzOGRmNTYifQ"
+          "resource": "repo://.github/workflows/terragrunt-apply.yml",
+          "version": "repo-file-v1:sha256:bf1a77d8421072679a92ae1a6095950a6ef1ee455c839cfb18263edd4959b101"
         },
         {
-          "resource": "repo://docs/ci-cd.md#L234-L252",
-          "version": "repo-lines-v1:sha256:28f2fbbb398644b1c06fffddd52d069da72f77f7358c78c2a4b9f26b0a9f834b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNzJkM2U5ZDI4YjJmZTU5YWRiMWY4YmZhZWQ0NjUyNTk1MmVhOWI1ODFiMDE4Yzk5M2FlM2EyYzMzNzNlMDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0YzI2MTAxODBhODg5ZWFkNzRmYjkzZmJkM2ZjODk1OWVkNWU0NTFlYTNmNmNkNDc5ZWMwYWM2NmQ1MWIxZTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgwM2M4ZDRhNjQ5MGIwMzBlMGRkNmVmYjI1YWIyMDFkMzdiMGZiZTk1YWQwZGIzODExYzYwNzZiNjE3NWRkMWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJhMmJkYWNhYmViZDhjNWMyYjcxOWIyZWQzODNhNGM0ZWE0MjhiNGUwYTNlZjc2MTFkOTBlMWQ4ZTZkNmM5ZmQifQ"
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:82ede7b3dff3db22a22b1d3b5d859d11ef1b1cccc8c970d47070b0d7386a7e49"
         },
         {
-          "resource": "repo://scripts/entra-ci-configure.py#L82-L103",
-          "version": "repo-lines-v1:sha256:db57fc58eae954a9d0950e4c03c28680252b8264b18abfa50c0ddf6c7f09b4dd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjViODM5NDMyZTlkZDY2YzcwNTZhNTlhMWY3MmZjZjIyODUwNDMzMDMwY2Y4ZDY2ZDRkN2FkZmE0YjhiYTlhMDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViZWMwZWY2ZmZiYWZmNjkxMDAzZDM0Nzc0OTBiZDhjNjFlM2Y1ZmM2MzRlMTY3MjE4YWM3ZjNlOGMwMThlNzUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM5MDE0NDA0MGEzODkzMjhlMjBhNDQwNTY1OThmMWMxMTBkNjZkMmUwMzg4MWIxZGEwZGZjZTZjN2M0NzUzNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZkYjk5ODlhMDQ2OTExNWM3NTYwNGU2OTMxZDBiZTU2ZjgwYWZkODA0NGEyY2ExYmQ0ZDUwMmQxZmE5OWI2N2IifQ"
+          "resource": "repo://scripts/entra-ci-configure.py",
+          "version": "repo-file-v1:sha256:252272e7cf908036f033f8386315e2c8462e250a17f6f2ead4274adff344affc"
         },
         {
-          "resource": "repo://scripts/tailscale-ci-configure.py#L81-L86",
-          "version": "repo-lines-v1:sha256:117fc48b8359933e876641d76bd30d28f8b496948b1e7ec08d56747381d80d60:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODI2ZWM4OWZlNTJhMWY3OTg1MTI4OWJkM2U3YjA5MTVkY2MyNWU3ODg0YTE4MWVlNjkzNWM4YzY0ZjgwOWFkMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ3ZTMwMDk4MmI4YmViOTEzNmMwNDk2MDZiYzg2MmFjMDlhMmIwZWQ0OWYzNjJlMmU5NzlhM2QwZDY3OTMzNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTZkMmEzOWI4NzQ0MDU2NmU1MGE3MjYwMzUzMTc3N2M5MDM5N2Y4OTNkNzg3YjA3YzI1Y2U0OGU2MmM0OTNmMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWIyZTQwYzc1YjNkNDg0NTcxYjg0MTJmNDlhNDRmZjViNDk3ZTYyZTJiNjMxN2U0MjM0ZDEyMGNlZGI1NDMzMiJ9"
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:f34e43eea29a512cf3312df688c0fc273b9c4c31c6a76f8830f7996030975931"
         }
       ]
     },
     {
       "id": "claim_c06aa88145794bfba8ffc6db14968041",
-      "statement": "Signed offline fixture and manifest-policy verification uses protected-main cache trust, while remaining static validation and protected owner-reviewed live plans run fresh; cache or static success does not authorize a production apply.",
+      "statement": "Signed offline fixture and manifest-policy verification uses protected-main cache trust, while remaining static validation and automatic environment-scoped live plans run fresh; cache or static success does not authorize a production apply.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-plan.yml",
@@ -67,6 +67,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T03:17:35.648Z"
+    "at": "2026-10-12T04:52:40.862Z"
   }
 }

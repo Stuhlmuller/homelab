@@ -48,6 +48,8 @@ sources:
     resource: repo://policy/workflows.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-6b8b0a6dcf5a1967365a77cb
+    resource: repo://scripts/ci/entra-ci-configure-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -96,18 +98,22 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-de7fdd1af72d2845e129e766
+    resource: repo://scripts/entra-ci-configure.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T02:35:12.978Z" }
+generated: { by: "codex", at: "2026-10-12T04:52:40.862Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T04:40:28.348Z
+    at: 2026-10-12T04:52:40.862Z
 ---
 
 # Validation Gates
@@ -687,7 +693,7 @@ resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
 secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
-PR plans retain their reviewer gate. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
+Same-repository PR plans also enter automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. Main-only diagnostics use the same production environment.
