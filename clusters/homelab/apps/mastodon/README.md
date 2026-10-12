@@ -59,8 +59,17 @@ Keep encryption and VAPID keys with encrypted-state backups. Recreating them
 during restore would invalidate encrypted records, sessions, or push clients.
 `OnChange` ExternalSecrets and subPath mounts require a declared secret/template
 revision and Deployment runtime revision to consume changes; SSM edits alone
-do not refresh running processes. SMTP injection and admin bootstrap still need
-the selected provider and administrator details.
+do not refresh running processes. Admin bootstrap still needs the administrator details. For SMTP activation,
+select the provider and commit its non-secret host, login, and sender settings
+in `configmap.yaml`. Set `MASTODON_SMTP_PASSWORD` in the protected GitHub
+production environment, then run `mastodon-smtp-credential.yml` with exact
+current `main` as `expected_sha`. It validates the declared SecureString and
+stores only `/homelab/mastodon/smtp-password`, using a private temporary file;
+it neither changes application keys nor claims provider authentication works.
+Advance the runtime ExternalSecret and Deployment revisions through GitOps,
+then send and receive a real email. Failed delivery is an activation failure.
+The workflow is also the password-rotation path; preserve the prior protected
+credential until the new value works, so it can be restored through this path.
 
 ## Backup and restore
 
@@ -90,7 +99,7 @@ active writer's database. Preserve local claims until recovery is verified.
 - Add apex WebFinger delegation so accounts at `stinkyboi.com` are discoverable
   while the website stays on `mastodon.stinkyboi.com`. Do not change the local
   account domain after creating identities.
-- Add admin bootstrap and the selected outbound email provider injection path.
+- Add admin bootstrap and supply the selected email provider settings/credential.
 - Render and exercise the configuration template, migrations, and full image
   startup after domain/mail selection; static checks do not prove runtime boot.
 - Declare a dedicated public federation route and DNS without restoring private

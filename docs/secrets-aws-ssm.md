@@ -108,6 +108,26 @@ acceptance. Expiring an auth key alone does not remove that authority. The
 [module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
 acceptance, rotation, and recovery commands.
 
+## Mastodon secret contract
+
+The undeployed Mastodon draft declares generated PostgreSQL, Redis, Rails,
+Active Record encryption, and P-256 VAPID keys under `/homelab/mastodon/`.
+`mastodon-datastores` mounts database/Redis passwords; `mastodon-runtime`
+templates mounted application configuration and the stable VAPID PEM. The
+namespace policy permits only its own SSM prefix. Keep generated encryption
+and signing keys with encrypted-state backups; do not recreate them on restore.
+
+Use `mastodon-smtp-credential.yml` with exact current `main` as `expected_sha`
+to populate the declared `/homelab/mastodon/smtp-password` SecureString from
+`MASTODON_SMTP_PASSWORD` in `homelab-production`. The workflow writes only that
+parameter, using a private temporary payload and scoped OIDC session. It
+withholds CLI errors and does not validate SMTP authentication. Never pass the
+password as a workflow input or argument. After transfer, remove the temporary
+GitHub secret and advance the committed runtime ExternalSecret/Deployment
+revisions. Verify actual email receipt before accepting the new credential.
+See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md) for provider
+settings, activation, and rollback. This preparation is not live-secret proof.
+
 ## AI gateway contract
 
 Use the `LiteLLM Provider Credential` workflow to populate or refresh the
@@ -243,6 +263,8 @@ cluster CA is intentionally rotated.
 | litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
+| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password` |
+| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
