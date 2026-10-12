@@ -361,6 +361,16 @@ rollback changes image transport, not workload versions or stored data.
 Sources: [Talos 1.11 Harbor mirror configuration](https://docs.siderolabs.com/talos/v1.11/configure-your-talos-cluster/images-container-runtime/pull-through-cache),
 [Harbor proxy-cache behavior and retention](https://goharbor.io/docs/2.14.0/administration/configure-proxy-cache/).
 
+## Publication queue boundaries
+
+The public mirror workflow uses `harbor-mirror-production` with cancellation
+disabled, serializing every mirror scope and its shared tag aliases. Private
+custom-image publication retains `harbor-packages-production`. Public mirroring
+writes only to `mirror`; custom publication writes to `homelab`, so a private
+publication approval wait does not reserve the public mirror lane. Neither lane
+bypasses production environment approval, reviewed-main checks, digest checks,
+or complete destination pulls. Registry readiness remains a shared prerequisite.
+
 ## Publication failure diagnostics
 
 The mirror workflow keeps transport and registry logs private. On failure it

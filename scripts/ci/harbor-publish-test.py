@@ -1098,6 +1098,23 @@ class NativeStagingTests(unittest.TestCase):
                 source = "dir:" + str(destination)
 
 
+class MirrorProjectQueue(unittest.TestCase):
+    def test_public_mirrors_serialize_without_private_publication_queue(self):
+        def workflow(name):
+            return json.loads(subprocess.check_output([
+                "yq", "-o=json", ".", str(ROOT / ".github/workflows" / name),
+            ], text=True))
+        mirror = workflow("harbor-mirror.yml")["jobs"]["mirror"]
+        self.assertEqual(mirror["concurrency"], {
+            "group": "harbor-mirror-production", "cancel-in-progress": False,
+        })
+        for name in ("nofx-images.yml", "harbor-core-images.yml"):
+            jobs = workflow(name)["jobs"]
+            private = [job["concurrency"]["group"] for job in jobs.values() if "concurrency" in job]
+            self.assertIn("harbor-packages-production", private)
+            self.assertNotIn(mirror["concurrency"]["group"], private)
+
+
 class MirrorWorkflowStatusPin(unittest.TestCase):
     def test_safe_status_requires_current_reviewed_publisher(self):
         digest = hashlib.sha256((ROOT / "scripts/ci/harbor-publish.sh").read_bytes()).hexdigest()
