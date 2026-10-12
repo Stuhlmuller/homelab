@@ -94,8 +94,8 @@ switch the provider identity.
 3. Merge signed, reviewed code before applying the saved plan through the
    operator unit. Then review and apply each application's ownership transition
    from the same merged tree. Retain the human administrator and existing state.
-4. Ensure both GitHub environments have their declared reviewer protection with
-   administrator bypass disabled. Production must allow only protected branches.
+4. Ensure both GitHub environments have no required reviewers and administrator
+   bypass disabled. Production must allow only the exact `main` branch, no tags.
    These settings belong to `Stuhlmuller/github-iac`, not a duplicate homelab
    resource. Use that repository's documented environment-only saved-plan path
    to reconcile drift before activating federation.

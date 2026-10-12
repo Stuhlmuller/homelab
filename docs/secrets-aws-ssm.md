@@ -541,7 +541,12 @@ internal-service, PostgreSQL and project-robot passwords. External Secrets
 materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
 The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
 alias of the pull robot credential, into its Docker-config Secret. CI reads
-only the publisher credential during protected image publication. See the
+`/homelab/harbor/mirror-robot-push-password` only for protected public-mirror
+publication. The staged `/homelab/harbor/mirror-robot-pull-password` is a Stage
+A catalog declaration and provisioning prerequisite before any reader-enabled
+consumer references it; parameter creation alone does not create a Harbor robot
+or grant a workload registry access. See the
+[reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
 The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)

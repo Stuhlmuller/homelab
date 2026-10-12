@@ -207,6 +207,14 @@ inputs = {
         prefix  = "Aa1"
       }
     }
+    "/homelab/harbor/mirror-robot-pull-password" = {
+      description = "Harbor mirror project read-only robot credential."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
     "/homelab/harbor/mirror-robot-push-password" = {
       description = "Harbor public mirror project publisher credential, independent of private images."
       generated = {
