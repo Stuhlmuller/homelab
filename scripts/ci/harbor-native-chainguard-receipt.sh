@@ -88,7 +88,7 @@ aws ssm get-parameter --region us-west-2 --name /homelab/harbor/robot-scan-passw
   --with-decryption --query Parameter.Value --output text >"$scratch/harbor-scan-password" 2>>"$transport_log"
 [[ -s "$scratch/harbor-pull-password" ]]
 [[ -s "$scratch/harbor-scan-password" ]]
-skopeo login --authfile "$authfile" --username 'robot$homelab+pull' --password-stdin harbor.stinkyboi.com \
+skopeo login --authfile "$authfile" --username "robot\$homelab+pull" --password-stdin harbor.stinkyboi.com \
   <"$scratch/harbor-pull-password" >>"$transport_log" 2>&1
 rm -f -- "$scratch/harbor-pull-password"
 while IFS= read -r image_id; do
