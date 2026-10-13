@@ -765,6 +765,25 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
 
+    def test_mirror_error_capture_preserves_failure_and_cleans_plaintext(self):
+        helper = self.root / "scripts/ci/harbor-encrypt-diagnostic.py"
+        helper.write_text("from pathlib import Path\nimport sys\n"
+                          "assert Path(sys.argv[1]).read_bytes()\n"
+                          "Path(sys.argv[2]).write_bytes(b'ciphertext fixture')\n")
+        self.transport_mocks(failure="mirror-source", mirror=True)
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        artifact = self.root / "runner/harbor-publication-error.gpg"
+        self.assertEqual(artifact.read_bytes(), b"ciphertext fixture")
+        artifact.unlink()
+        self.assert_cleaned()
+        artifact.write_bytes(b"stale ciphertext")
+        helper.write_text("import sys\nsys.exit(1)\n")
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(artifact.exists())
+        self.assert_cleaned()
+
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
         for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
             with self.subTest(failure=failure):

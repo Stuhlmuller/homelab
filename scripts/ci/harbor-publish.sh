@@ -95,6 +95,9 @@ if grep -Eq '(^|[[:space:]])harbor[.]stinkyboi[.]com([[:space:]]|$)|# homelab-ha
 fi
 
 umask 077
+if [[ "$mode" == mirror ]]; then
+  rm -f -- "$RUNNER_TEMP/harbor-publication-error.gpg"
+fi
 scratch="$(mktemp -d "${RUNNER_TEMP}/harbor-publish.XXXXXX")"
 forward_pid=""
 hosts_added=false
@@ -135,6 +138,12 @@ cleanup() {
   fi
   if "$kubeconfig_added"; then
     rm -f -- "$HOME/.kube/config" || result=1
+  fi
+  if [[ "$mode" == mirror && "$result" -ne 0 && -s "$scratch/mirror-error" ]]; then
+    if ! python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$scratch/mirror-error" \
+        "$RUNNER_TEMP/harbor-publication-error.gpg" >"$scratch/encryption-status" 2>&1; then
+      rm -f -- "$RUNNER_TEMP/harbor-publication-error.gpg"
+    fi
   fi
   rm -rf -- "$scratch" || result=1
   if [[ "$mode" == mirror && "$result" -ne 0 ]]; then
