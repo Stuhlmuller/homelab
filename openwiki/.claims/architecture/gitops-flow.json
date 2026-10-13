@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:23ec152eae6a737d5e17cd027c3b58ca1f32baf8aa606e9c7aa932dd3a0f70bf",
+  "pageVersion": "sha256:9bece8b6a7ce818d1c2f42d6400d816312e55a3e746c29ff8979139208bfef69",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -70,7 +70,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
         },
         {
           "resource": "repo://flake.nix#L15-L61",
@@ -85,6 +85,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T05:00:13.954Z"
+    "at": "2026-10-13T04:33:12.797Z"
   }
 }

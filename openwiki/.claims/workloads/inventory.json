@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e4e64a062a0202f117d5d5a12fd34c32b3adba2756e27c4df1414bcf9630813c",
+  "pageVersion": "sha256:16643e082090057bf99d3a5dc0b8eb0ff5f07d247a3fb0f87f7f51429be27758",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:866753bb834344cfd36430efe79c72d6978b6e15bcf60e2aad94aceac4bfb359"
+          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -129,34 +129,30 @@
       ]
     },
     {
-      "id": "claim_77ecf1a909644b649d06dac708b93cbc",
-      "statement": "The declared nix-builder is a disposable high-trust executor with root and SYS_ADMIN, no ingress or Kubernetes token, and intended NetworkPolicy controls that current Flannel does not enforce; reviewed source remains its input boundary until effective network controls are established.",
+      "id": "claim_c0aa02fc63b944fdb2d22eb96a60a21e",
+      "statement": "The dedicated Nix builder's declared NetworkPolicy expresses intended egress and private-network denial but Flannel does not enforce it and the namespace is not ambient-enrolled; reviewed homelab source remains the submission boundary rather than a claim of network isolation.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:a0a5b29c22097eab93c043f1446029d93be11deb76897741f0e4acabc0a59330"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:3259c973fe03f968c9fba41686a52dffc419b15d9b7f76dfca2274fda5ff3ef2"
+          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/namespace.yaml",
-          "version": "repo-file-v1:sha256:d40ef0a4eada8ef29978d91ea813d802fe28f970587db87765724c9af7e35552"
+          "version": "repo-file-v1:sha256:4a4c17fdd5d4c0255c1db6017df4a96218667e04fedb6e20821af2ccc58927d1"
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:91c246d41f236acaf4d79562ace304edb21dad61da51408e1d7492f16e04972d"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md#L10-L24",
-          "version": "repo-lines-v1:sha256:d3255373978d378ec8bab63bde16a5799a44851616a7fafb84fcaa72ba086a9b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MWIxMjM1MzIyMmIwYzEyMGZlYTY3YjdkYjJlMzI4MzM2MjVjMzJjMjFlMzkzNWVkNWE4NThlZTcxMWE1N2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2OGY0ZWRkMzRiNTI1Y2Q3YWZjOWJjZjI0ODEwNDZlN2MzNmE4NmNmY2M4ZWExMTcwNzhlOTFiMGVmZGY4ZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwYmEzYjQ3NGQ3YmQ0YTQwMjg2ODdhYmY4ZmY0YjYyNjFhMDcxOWUwYjY4YjM0YjU4Nzk3ZTQxYmY5NTAyMTIifQ"
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:6f381303610f88a0bbd2d28e18be26d8f52f8d323074bf0f4bda4de7ff402860"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T06:23:22.000Z"
+    "at": "2026-10-13T04:33:12.797Z"
   }
 }

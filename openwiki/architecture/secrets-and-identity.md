@@ -8,6 +8,10 @@ sources:
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-c9627a5536c3972ce48bf57a
+    resource: repo://clusters/homelab/apps/harbor/bootstrap.py
+  - id: openwiki-source-64bca48d4f10b0676e24742b
+    resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-1635b3ffa6091ee664a713ee
@@ -30,8 +34,6 @@ sources:
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -56,10 +58,14 @@ sources:
     resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-12T03:15:02.981Z" }
+  - id: openwiki-source-43db0977cfa60875fd0350f6
+    resource: repo://scripts/talos-harbor-mirror-credential.py
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T05:11:16.911Z
+    at: 2026-10-13T04:33:12.797Z
 ---
 
 # Secrets And Identity
@@ -439,7 +445,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `OCTELIUM_CATALOG_AUTH_TOKEN` exists only between provisioning and the
   mandatory revoke step. Octelium v0.35 cannot scope these methods by object
   name; the fixed helper, reviewed hashes, exact `main` SHA, and production
-  approval provide that boundary. The workflow uses the scoped apply Tailscale
+  environment and exact-main guards provide that boundary. The workflow uses the scoped apply Tailscale
   key only for transport; its short-lived Octelium credential remains required.
   See `docs/ci-cd.md`.
   The self-hosted Octelium Cluster storage layer uses generated
@@ -746,23 +752,36 @@ preserving the identity. No Exchange write or additional permission grant occurr
 separate project robots for pull and publication. NOFX receives only the pull
 credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
-disabled and project creation is admin-only. Public upstream copies use the
-separate public-read `mirror` project; `robot$mirror+publisher` uses its own generated
-`/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
-Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
-see [the image mirror runbook](../../docs/harbor-image-mirroring.md).
+disabled and project creation is admin-only. Public upstream copies remain in
+the public-read `mirror` project until node authentication succeeds. Its
+`robot$mirror+publisher` is scoped to writes and its separate
+`robot$mirror+pull` to authenticated publication receipts and the later Talos
+registry-auth candidate; workloads do not receive either credential. Bootstrap
+and Harbor recovery use the reviewed upstream transport rollback; see [the image
+mirror runbook](../../docs/harbor-image-mirroring.md).
 
-The catalog declares a separate generated
-`/homelab/harbor/mirror-robot-pull-password` for a future public-mirror reader.
-This first stage has no ExternalSecret, Harbor bootstrap, publisher, Talos, or
-workload consumer, so creating the parameter alone creates neither a Harbor
-robot nor registry access. Review and apply the separate
-[reader-parameter plan](../../docs/harbor-image-mirroring.md#mirror-reader-prerequisite)
-and verify only its metadata before a later consumer change. That later change
-must advance `harbor-secrets`' `OnChange` revision after the parameter exists.
-Do not substitute periodic refresh: it would regenerate Harbor's salted bcrypt
-registry password hash. Shared Terraform dependency changes remain separately
-reviewed and approved.
+The reviewed Stage A saved plan created and metadata-verified the generated
+`/homelab/harbor/mirror-robot-pull-password` without reading its value. The
+Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
+to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+Secrets materializes the target Secret, that Job can reconcile the separate
+read-only robot during execution; require successful PostSync completion before
+accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
+creation alone does not create a Harbor robot, grant workload registry access,
+enable receipt reads, or change a node. Do not substitute periodic refresh: it
+would regenerate Harbor's salted bcrypt registry password hash. Shared Terraform
+dependency changes remain separately reviewed and approved. The project stays
+public until the separate reviewed Talos path has validated every node; the
+later privacy flip must prove uncached authenticated pulls continue to work.
+
+The operator materializer checks the reviewed `main` revision before and after
+reading that one SSM value, then writes the fixed reader-auth JSON outside the
+checkout in an owner-only `0700` directory with mode `0600`. An ordinary executable
+Talos mirror rollout requires that file unless the captured configuration already
+has valid `robot$mirror+pull` registry auth; otherwise it stops before it creates
+a candidate or applies a machine configuration. Rollback and `--registry-host-only`
+execution intentionally do not use reader auth. This rollout gate does not make
+the `mirror` project private.
 
 The excluded
 [private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)

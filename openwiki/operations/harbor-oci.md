@@ -8,8 +8,6 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
-  - id: openwiki-source-3b8a5a1dece086403bc8ab75
-    resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -38,6 +36,10 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-c9627a5536c3972ce48bf57a
+    resource: repo://clusters/homelab/apps/harbor/bootstrap.py
+  - id: openwiki-source-64bca48d4f10b0676e24742b
+    resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-1635b3ffa6091ee664a713ee
@@ -84,8 +86,6 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
-    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T05:11:16.911Z" }
+generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T05:11:16.911Z
+    at: 2026-10-13T04:33:12.797Z
 ---
 
 # Harbor Private OCI Registry
@@ -220,29 +220,34 @@ See the [host-only runbook](../../docs/harbor-image-mirroring.md) and
 
 ## Identity And State
 
-The SSM catalog declares twelve Harbor SecureStrings. `harbor-secrets` materializes
-the eleven existing administrator, internal service, encryption, database, and
-project-robot values. The bootstrap Job creates only the private `homelab`
-project and its `pull` and `publisher` robots, plus the public upstream-only
-`mirror` project and its scoped `publisher` robot; publisher has pull/push
-permissions and no artifact deletion. Source-controlled bootstrap credentials
-stay outside this public repository.
+The SSM catalog declares twelve Harbor SecureStrings. `harbor-secrets` renders
+the administrator, internal-service, encryption, database, and project-robot
+values. The bootstrap Job reconciles the private `homelab` project with `pull`
+and `publisher` robots and the public upstream-only `mirror` project with
+separate `publisher` and `pull` robots. The publisher has pull/push permissions
+and no artifact deletion; the reader has pull only. Source-controlled bootstrap
+credentials stay outside this public repository.
 
-The twelfth entry, `/homelab/harbor/mirror-robot-pull-password`, is a declared
-first stage for a future public-mirror reader. It has no ExternalSecret, Harbor
-bootstrap, publisher, Talos, or workload consumer, so creating the parameter
-does not create a robot or workload registry access. Review and apply the saved
-[reader-parameter plan](../../docs/harbor-image-mirroring.md#mirror-reader-prerequisite),
-then verify only parameter metadata before a later consumer change. The saved
-plan must create the reader parameter and may change only its identified
-exact-ARN reader-policy entries, including deterministic chunk creation or
-rebalancing; its wider shared dependency closure requires separate approval.
-On clean reviewed main, run `(cd IaC && terragrunt stack generate)` before
-changing into the generated `IaC/live/aws-ssm-parameters` unit for that saved
-plan.
-That later change must advance `harbor-secrets`' `OnChange` revision after the
-parameter exists. Do not use periodic refresh: it would regenerate Harbor's
-salted bcrypt registry password hash.
+The reviewed Stage A saved plan created and metadata-verified
+`/homelab/harbor/mirror-robot-pull-password` without exposing its value. It made
+only the reader parameter and identified exact-ARN reader-policy changes;
+unexpected shared dependency changes remain outside scope. On clean reviewed
+main, run `(cd IaC && terragrunt stack generate)` before entering the generated
+`IaC/live/aws-ssm-parameters` unit for reader-plan review. The plan may create
+the reader parameter and change only identified exact-ARN reader-policy entries,
+including deterministic chunk creation or rebalancing; its wider shared
+closure needs separate approval.
+
+The Stage B desired-state consumer advances `harbor-secrets`' `OnChange`
+revision to `v3` and mounts the reader key in the bootstrap Job. After External
+Secrets materializes the target Secret, a bootstrap execution can create or
+patch the reader robot. Require ExternalSecret Ready and successful PostSync
+completion before accepting reader-robot, authenticated-receipt, or Talos
+prerequisites. The Stage A parameter alone creates no robot, receipt-read
+behavior, workload registry access, or node change. Do not use periodic refresh:
+it would regenerate Harbor's salted bcrypt registry password hash. The public
+`mirror` project remains public until a separate reviewed Talos path validates
+authenticated pulls on every node before a privacy flip.
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -323,8 +328,9 @@ no publication or rollout authorization.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
-anonymous upstream reads, immutable digest checks and complete anonymous pulls.
-They use the same existing mirror publisher and destination repositories.
+anonymous upstream reads, immutable digest checks and complete authenticated
+Harbor pulls with the dedicated mirror reader. They use the same fixed
+destination repositories.
 
 Bazarr uses `image_scope=bazarr` with the fixed
 `scripts/config/harbor-bazarr-images.json` subset: its Bazarr app image and
@@ -334,7 +340,7 @@ containers. Missing, unused or non-inventoried sources fail validation. Publish
 and verify these digests through `harbor-mirror.yml` at reviewed current `main`
 before registering the Application. Talos mirrors keep `skipFallback: true`;
 an upstream digest pin cannot make an uncopied image pullable. Scoped publication
-preserves digest checks and complete anonymous pulls without coupling Bazarr to
+preserves digest checks and complete authenticated Harbor pulls without coupling Bazarr to
 unrelated historical images. See the
 [Bazarr rollout](../../clusters/homelab/apps/bazarr/README.md).
 
@@ -342,7 +348,7 @@ Traefik uses `image_scope=traefik` with the fixed two-image
 `scripts/config/harbor-traefik-images.json` subset of the reviewed full catalog:
 the ingress image and exact `pause:3.10` native node pull probe.
 It preserves all-platform digest copying, the reviewed tag alias and fresh
-complete anonymous pulls. No caller-supplied image, path or destination is
+complete authenticated Harbor pulls. No caller-supplied image, path or destination is
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
 
@@ -544,7 +550,7 @@ Require review and successful static/policy CI before an explicitly approved
 prerequisite merge. Then obtain separate approval to dispatch
 `harbor-mirror.yml` on exact reviewed current `main`, with matching
 `expected_sha`, using the existing protected environment. Require complete
-anonymous downloads and digest/alias verification before approving the
+authenticated Harbor pulls and digest/alias verification before approving the
 consumer upgrade. An older publication run cannot cover this changed catalog.
 Rebase the consumer onto the prerequisite and require current-head static
 success; keep HOME-17 open until two consecutive scheduled observations also
@@ -667,7 +673,7 @@ Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*`
 sources. Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six
 additions to the original seven-image scope. Earlier seven-image receipts exclude
 those additions, so expanded publication requires protected approval and complete
-anonymous-download acceptance before a consuming change. Public sources belong
+authenticated Harbor-pull acceptance before a consuming change. Public sources belong
 in the catalog; application runtime references must use Harbor.
 
 For a missing destination digest tag, the
@@ -675,7 +681,7 @@ For a missing destination digest tag, the
 anonymously into a local directory image tree and checks the original manifest
 digest before authenticated Harbor upload. Existing destination tags resume
 only after exact hash verification. Aliases come from the verified Harbor digest;
-every selected artifact still needs a fresh complete anonymous destination pull.
+every selected artifact still needs a fresh complete authenticated destination pull.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
@@ -690,7 +696,7 @@ flowchart TD
     Identity -->|yes|Upload["Authenticated Harbor upload"]
     Identity -->|no|Stopped["Stop publication"]
     Upload --> Verify["Verify digest and tag alias"]
-    Verify --> Pull["Fresh anonymous complete pull"]
+    Verify --> Pull["Fresh authenticated Harbor pull"]
     Pull --> Receipt["Verify digest before receipt"]
 ```
 
@@ -839,16 +845,17 @@ The [mirror runbook](../../docs/harbor-image-mirroring.md) owns copying, cutover
 recovery. `scripts/config/harbor-images.json` captures public upstream digests
 from repository declarations, rendered charts and live Pods/system images. The
 protected `harbor-mirror.yml` workflow copies all platforms into the normal
-public-read `mirror` project and verifies complete anonymous pulls. A completed
+public-read `mirror` project and verifies complete authenticated Harbor pulls. A completed
 ancestor publication is reusable only with the runbook's six publication files
 unchanged; node rollout still requires exact reviewed `main` and live digest
-checks. Its publisher
-uses a separate generated `/homelab/harbor/mirror-robot-push-password`; the
+checks. Its publisher uses a separate generated
+`/homelab/harbor/mirror-robot-push-password` for writes and the reader parameter
+for destination receipts; the
 [initial publisher plan](../../docs/harbor-image-mirroring.md#initial-secret-plan-scope)
-is its prerequisite. The separate
-[reader prerequisite](../../docs/harbor-image-mirroring.md#mirror-reader-prerequisite)
-does not enable publication. Private `homelab` artifacts retain their existing
-authentication/signing contract.
+is its prerequisite. The [reader prerequisite](../../docs/harbor-image-mirroring.md#mirror-reader-prerequisite)
+has created and metadata-verified the parameter, but it does not prove GitOps
+reconciliation, publication, or node authentication. Private `homelab` artifacts
+retain their existing authentication/signing contract.
 
 The [first copy](https://github.com/Stuhlmuller/homelab/actions/runs/36382200622)
 and [retry](https://github.com/Stuhlmuller/homelab/actions/runs/36388691071)
@@ -857,7 +864,7 @@ then 14.23). Destination digest uploads and readback
 had succeeded; Harbor showed no concurrent error or resource pressure. Deleted
 private client logs prevented proving the underlying failure. The publisher now
 creates aliases from the verified Harbor digest and resumes already-present
-digest tags only after exact hash comparison. Complete anonymous downloads
+digest tags only after exact hash comparison. Complete authenticated Harbor pulls
 still run for every entry. Failures expose fixed phase/status/category metadata
 and the public catalog source, never raw transport output. This removes the
 observed second external transfer.
@@ -876,19 +883,23 @@ During the earlier mirror-publisher rollout, `harbor-secrets` reconciled before
 its SSM parameter existed. The approved scoped plan applied 16 creations and
 three IAM updates, with no deletions or existing-secret rotations. Its GitOps
 `generated-secret-revision` advanced to `v2` to reconcile the publisher
-credential. That historical refresh does not provision or reconcile the separate
-mirror-reader parameter; its Stage A plan is separately reviewed. Keep
+credential. The reviewed reader parameter later existed as a separately scoped,
+metadata-verified Stage A apply. The current desired-state consumer advances to
+`v3`; it must report Ready and the PostSync bootstrap must finish before
+accepting reader-robot, authenticated-receipt, or Talos prerequisites. Keep
 `refreshPolicy: OnChange` to avoid periodically regenerating the salted bcrypt
-registry password hash. Require the ExternalSecret to report Ready and
-materialize a credential before accepting its dependent bootstrap or publication
-path; an annotation change alone is not readiness evidence.
+registry password hash; an annotation change alone is not readiness evidence.
 
 `.talos/patches/harbor-mirrors.yaml` and the validated
 `scripts/talos-harbor-mirrors.py` path redirect containerd for all inventoried
 registries, covering controller-generated Pods and Talos system images.
-Authenticated Talos calls explicitly select the private `.talos/talosconfig` or
-the operator-provided `--talosconfig` path; absent files fail before networking.
-Talos skips cached pull references. The cutover probes pause in the `system`
+After a successful full-catalog receipt, the credential materializer writes only
+the reader robot JSON into an existing owner-only directory outside a Git
+checkout. The Talos helper accepts that fixed `--registry-auth-file`, rejects
+symlinks and unrelated existing Harbor auth, and removes only its owned auth on
+rollback. Authenticated Talos calls explicitly select the private
+`.talos/talosconfig` or the operator-provided `--talosconfig` path; absent files
+fail before networking. Talos skips cached pull references. The cutover probes pause in the `system`
 namespace, where it was absent on all four nodes during this rollout. System
 images and CRI share the mirror configuration; correlate the pull with Harbor
 access logs, since repeating an already-cached probe proves no new request.
@@ -896,6 +907,11 @@ access logs, since repeating an already-cached probe proves no new request.
 new image/chart versions need a prerequisite catalog publication. The rollback
 patch restores upstream access for cold bootstrap or Harbor recovery. Existing
 public DNS transport remains; this does not establish network isolation.
+
+An ordinary `--execute` requires the materialized reader credential unless the
+captured configuration already has valid `robot$mirror+pull` auth. Any other or
+absent auth stops before a candidate configuration or `apply-config`. This gate
+does not itself change `mirror` project privacy.
 
 Initial inspection on 2026-09-28 UTC: all four nodes Ready, Harbor Synced/Healthy;
 OpenClaw had unready app/proxy containers before this change. The 145 catalog

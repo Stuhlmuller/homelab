@@ -56,7 +56,7 @@ spec:
               type: RuntimeDefault
             capabilities:
               drop: [ALL]
-              add: [CHOWN, DAC_OVERRIDE, FOWNER, KILL, SETGID, SETUID, SYS_ADMIN, SYS_CHROOT]
+              add: [CHOWN, DAC_OVERRIDE, FOWNER, KILL, NET_ADMIN, SETGID, SETUID, SYS_ADMIN, SYS_CHROOT]
           resources:
             requests:
               cpu: "500m"

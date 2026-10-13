@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2669839e318ff92e6efb14a750794188610639b0569003dc1a3ee23c51dc1d72",
+  "pageVersion": "sha256:c78a01c26d9573502b87f32e5c9dd3a28514a8dbb0022578860a0d40f7abad57",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -126,15 +126,15 @@
     },
     {
       "id": "claim_091ce963d4324833853a0c259f070cb2",
-      "statement": "Traefik scoped image publication retains digest, tag alias and complete anonymous-pull verification, while Talos regression tests reject scoped, untitled and mismatched-revision receipts as full-catalog evidence.",
+      "statement": "Traefik scoped image publication retains digest, tag alias, and complete authenticated Harbor-pull verification with the dedicated reader, while Talos regression tests reject scoped, untitled, and mismatched-revision receipts as full-catalog evidence.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:624287c2b4b1f975c8d9f24141c8910d29896da1c83a7af4c9891967919c395d"
+          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -220,10 +220,10 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L256-L286",
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L403-L433",
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
         }
       ]
     },
@@ -388,15 +388,15 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:624287c2b4b1f975c8d9f24141c8910d29896da1c83a7af4c9891967919c395d"
+          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:b0e66fb04f2f6d1f18a51d83392bc91c364b2af15cc0879ac703e3a79def43a0"
+          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:edb9893a17b69932006dce41f75204932deffb590aa974030f557cbe2b83796c"
+          "version": "repo-file-v1:sha256:cf2a703cc61b9e492487aac501cd674cd2873e155b38cb8e1a12c6c60a3462f4"
         }
       ]
     },
@@ -406,17 +406,17 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:624287c2b4b1f975c8d9f24141c8910d29896da1c83a7af4c9891967919c395d"
+          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:577ddb294b3fe81a50e15f1a3fe684e6078c42f3f6fc2370fbdbf95fc0691f15"
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
         }
       ]
     },
     {
       "id": "claim_8e0f5d1def624426aff856de7987ba8e",
-      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and `validate` runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality, and the producer signing flags. A 2026-10-11 read-only check found a required `homelab-production` reviewer; recheck live environment settings before dispatch.",
+      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and validate runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality and producer signing flags. The dated October 11 reviewer observation is historical; current source declares automatic same-repository PR-plan and production environments, with production restricted to exact main. Live settings require fresh verification.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -437,30 +437,104 @@
       ]
     },
     {
-      "id": "claim_25806bd4bbec43afa03859599167af6f",
-      "statement": "Phase 2b workflow security contracts require nine fixed credentialed mesh jobs, including Harbor core publication, to use the pinned action/version, existing fixed secret scope, private per-job state, and exact identity verification before live consumers; offline tests and protected fresh live acceptance remain distinct.",
+      "id": "claim_db920b24eb02493e958d3eaa74f91e5c",
+      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
+          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
         },
         {
-          "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:82ede7b3dff3db22a22b1d3b5d859d11ef1b1cccc8c970d47070b0d7386a7e49"
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
         },
         {
-          "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:6d854fe7419693cb56778bc5469d8a403da0f89db6d94358d0a51d59fe293591"
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
         },
         {
-          "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:edb9893a17b69932006dce41f75204932deffb590aa974030f557cbe2b83796c"
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
         }
       ]
     },
     {
-      "id": "claim_ebfea60c787a44d0a76dbb8d14940a83",
-      "statement": "CI access checks emit fixed markers for kubeconfig verification, proxy identity, Application read, dry-run admission and real no-op write denial; the hashed classifier emits fixed stage/reason labels without private output, and regression tests reject forged markers and modified classifier hashes.",
+      "id": "claim_54ce065d40c546a5a316f37b3fd05af7",
+      "statement": "Offline validation runs credential-materializer fixtures that reject unsafe files/directories, stale main, inherited AWS credentials and proxies, and private-value leaks. Talos fixtures limit registry auth to robot$mirror+pull, reject unrelated Harbor auth, and remove only their owned entry on rollback. An executable ordinary mirror rollout requires supplied reader auth unless its captured configuration already has owned reader auth; a missing credential stops before Harbor receipt checks, candidate machine-config rendering, or apply-config. The fixtures do not read SSM or mutate nodes.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirror-credential-test.py",
+          "version": "repo-file-v1:sha256:ce50e936a2072409efad48ac542f1d3c675752df788b3972dc2ca9d6bcb66d19"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirror-credential.py",
+          "version": "repo-file-v1:sha256:4190e8aa37cff6b0d3b4590c3013258aa2fac5563688193cbe08a17fa887c2cc"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
+        }
+      ]
+    },
+    {
+      "id": "claim_187df0e001164a33a4af918fdd3ce9bc",
+      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies a no-reboot apply through bounded asynchronous readback of /var/lib/kubelet/seccomp/profiles without repeating apply. Rollback refuses a profile still selected by a Pod and requires actual exact-path file-not-found readback; transport/authentication failures cannot establish deletion. Nine offline tests cover the exact baseline hash, idempotence, conflict rejection, stale configuration, selected-profile rollback refusal, delayed readback with pinned host path, wrong content, deadline expiry and deletion versus transport failure. The documented initial worker0 helper installed the approved profile but stopped on a legacy readback path; worker1 installation and all selection/publication stayed held. Profile installation precedes separately protected builder-only Localhost selection and one separately released bounded publication; the current manifest remains RuntimeDefault.",
+      "evidence": [
+        {
+          "resource": "repo://.talos/patches/nix-builder-seccomp.yaml",
+          "version": "repo-file-v1:sha256:f39a1f759f0e6cfe05bd610617c5a20fed6e6db19717b3aa096210b3eb863e69"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+        },
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:53d4c62fe7ae67785f3408779a6dc71f2c75a24b68789b9ce555d09ad2a56e52"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
+          "version": "repo-file-v1:sha256:d4372a25df4710837766ec1fcddf560d52dd1335a95487a36f9bdbfe2bc36a33"
+        },
+        {
+          "resource": "repo://scripts/talos-nix-builder-seccomp.py",
+          "version": "repo-file-v1:sha256:19492d889deec48274115a287ee9bd3ac9cc6a79f613794961514e6810575194"
+        }
+      ]
+    },
+    {
+      "id": "claim_438102d13c9a41d99228edd9adc527c5",
+      "statement": "All nine phase 2b credentialed mesh jobs require pinned Tailscale auth-key joins, private per-job state and exact scoped tag/tailnet verification; offline transport fixtures cover tokenless API access, strict native response parsing, Cordium denial-mode isolation and cleanup failures.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/cordium-ci-transport-test.py",
+          "version": "repo-file-v1:sha256:fd227ee3c571d2e1c7a83469668da65dfa38001dfea24cdb938cc7b27c405eb1"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-nofx-reconcile-test.py",
+          "version": "repo-file-v1:sha256:ff25776cec1f58564cc1c7bfa3d99629554652cbfe94e50385d0d7149b1fc0b6"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:cf2a703cc61b9e492487aac501cd674cd2873e155b38cb8e1a12c6c60a3462f4"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
+          "version": "repo-file-v1:sha256:7127b6a5ddf8c5340417cb3ab05af5b2770eddf06c2b0a0c596a289e1c9a7225"
+        }
+      ]
+    },
+    {
+      "id": "claim_8a1fd95d1df94c74a9c3e14d92c5bb7b",
+      "statement": "The plan access checker emits fixed stage markers for kubeconfig, proxy identity, reads, dry-run admission and real no-op write denial; the hashed classifier exposes only fixed stages and failure hints, with regression coverage preventing raw private output leaks.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-plan.yml",
@@ -479,32 +553,10 @@
           "version": "repo-file-v1:sha256:2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4"
         }
       ]
-    },
-    {
-      "id": "claim_50b5af603a184e79ae09c657d1640ffb",
-      "statement": "Both credential publishers validate automatic environment protection and reuse an exact production branch allowlist check requiring only main and no tags; Tailscale regression tests reject empty, tag-only or expanded lists before signing, cache creation or secret publication.",
-      "evidence": [
-        {
-          "resource": "repo://scripts/ci/entra-ci-configure-test.py",
-          "version": "repo-file-v1:sha256:8a5750d48ec942b10ec37e3f35bd118d4335b945169ba9afdef65456c488a8fb"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
-          "version": "repo-file-v1:sha256:c2bcac5fad98c4d161a329d11e9beb9d10c03f239baff9e256f0af04468335cd"
-        },
-        {
-          "resource": "repo://scripts/entra-ci-configure.py",
-          "version": "repo-file-v1:sha256:252272e7cf908036f033f8386315e2c8462e250a17f6f2ead4274adff344affc"
-        },
-        {
-          "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:f34e43eea29a512cf3312df688c0fc273b9c4c31c6a76f8830f7996030975931"
-        }
-      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T05:11:16.911Z"
+    "at": "2026-10-13T04:41:37.384Z"
   }
 }

@@ -33,6 +33,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.mirror_manifest = {"images": [{"source": "docker.io/library/busybox:1@sha256:" + "a" * 64}]}
         self.fleet_mirror_manifest = None
         self.bazarr_mirror_manifest = None
+        self.mastodon_mirror_manifest = None
         self.traefik_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.calls = self.root / "external-calls"
@@ -71,6 +72,11 @@ class HarborPublicationGates(unittest.TestCase):
             bazarr_manifest_path.unlink(missing_ok=True)
         else:
             bazarr_manifest_path.write_text(json.dumps(self.bazarr_mirror_manifest))
+        mastodon_manifest_path = self.root / "scripts/config/harbor-mastodon-images.json"
+        if self.mastodon_mirror_manifest is None:
+            mastodon_manifest_path.unlink(missing_ok=True)
+        else:
+            mastodon_manifest_path.write_text(json.dumps(self.mastodon_mirror_manifest))
         traefik_manifest_path = self.root / "scripts/config/harbor-traefik-images.json"
         if self.traefik_mirror_manifest is None:
             traefik_manifest_path.unlink(missing_ok=True)
@@ -233,6 +239,7 @@ class HarborPublicationGates(unittest.TestCase):
                     assert sys.stdin.read().strip() == "private-test-credential-must-never-appear"
                     authfile = Path(args[args.index("--authfile") + 1])
                     username = args[args.index("--username") + 1]
+                    assert username in {"robot$homelab+publisher", "robot$mirror+publisher", "robot$mirror+pull"}
                     authfile.write_text(json.dumps({"username": username}))
                     assert authfile.stat().st_mode & 0o077 == 0
                 elif args[0] == "inspect":
@@ -243,6 +250,10 @@ class HarborPublicationGates(unittest.TestCase):
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0].split(":", 1)[0]
                     published_file = root / "published-images.json"
                     published = json.loads(published_file.read_text()) if published_file.exists() else {}
+                    if FIXTURE["mirror"] and reference.startswith("harbor.stinkyboi.com/"):
+                        assert "--no-creds" not in args
+                        authfile = Path(args[args.index("--authfile") + 1])
+                        assert json.loads(authfile.read_text()) == {"username": "robot$mirror+pull"}
                     if FIXTURE["mirror"] and ":" in reference and not reference.endswith(":stable"):
                         if FIXTURE["failure"] == "mirror-lookup":
                             print("connection refused private-test-credential-must-never-appear", file=sys.stderr)
@@ -262,14 +273,20 @@ class HarborPublicationGates(unittest.TestCase):
                         raw += "tag corruption"
                     sys.stdout.write(raw)
                 elif args[0] == "copy" and args[-1].startswith("dir:"):
-                    authfile = Path(args[args.index("--src-authfile") + 1])
-                    expected_auth = {"auths": {}} if FIXTURE["mirror"] else {"username": "robot$homelab+publisher"}
-                    assert json.loads(authfile.read_text()) == expected_auth
-                    if FIXTURE["mirror"]:
-                        assert "--src-no-creds" in args
                     reference = args[-2].removeprefix("docker://")
-                    name = reference.rsplit("/", 1)[1].split("@", 1)[0]
                     upstream = FIXTURE["mirror"] and not reference.startswith("harbor.stinkyboi.com/")
+                    authfile = Path(args[args.index("--src-authfile") + 1])
+                    expected_auth = (
+                        {"auths": {}} if FIXTURE["mirror"] and upstream
+                        else {"username": "robot$mirror+pull"} if FIXTURE["mirror"]
+                        else {"username": "robot$homelab+publisher"}
+                    )
+                    assert json.loads(authfile.read_text()) == expected_auth
+                    if FIXTURE["mirror"] and upstream:
+                        assert "--src-no-creds" in args
+                    elif FIXTURE["mirror"]:
+                        assert "--src-no-creds" not in args
+                    name = reference.rsplit("/", 1)[1].split("@", 1)[0]
                     if upstream and FIXTURE["failure"] == "mirror-source":
                         print(FIXTURE["source_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(17)
@@ -287,9 +304,14 @@ class HarborPublicationGates(unittest.TestCase):
                 elif args[0] == "copy" and FIXTURE["mirror"]:
                     if not args[-2].startswith("dir:"):
                         assert ":" not in args[-2].removeprefix("docker://").split("@")[0], "Skopeo rejects tag@digest"
-                    assert "--src-no-creds" in args
+                    source = args[-2]
                     authfile = Path(args[args.index("--src-authfile") + 1])
-                    assert json.loads(authfile.read_text()) == {"auths": {}}
+                    expected_auth = {"auths": {}} if source.startswith("dir:") else {"username": "robot$mirror+pull"}
+                    assert json.loads(authfile.read_text()) == expected_auth
+                    if source.startswith("dir:"):
+                        assert "--src-no-creds" in args
+                    else:
+                        assert "--src-no-creds" not in args
                     authfile = Path(args[args.index("--dest-authfile") + 1])
                     assert json.loads(authfile.read_text()) == {"username": "robot$mirror+publisher"}
                     if args[-2].startswith("dir:"):
@@ -347,6 +369,22 @@ class HarborPublicationGates(unittest.TestCase):
             call["args"] for call in map(json.loads, self.calls.read_text().splitlines())
             if call["command"] == command
         ]
+
+    def assert_mirror_copy_credentials(self, copies):
+        for args in copies:
+            self.assertIn("--all", args)
+            self.assertIn("--preserve-digests", args)
+            source = args[-2]
+            source_auth = Path(args[args.index("--src-authfile") + 1]).name
+            if source.startswith("docker://harbor.stinkyboi.com/"):
+                self.assertNotIn("--src-no-creds", args)
+                self.assertEqual(source_auth, "mirror-pull-auth.json")
+            else:
+                self.assertIn("--src-no-creds", args)
+                self.assertEqual(source_auth, "anonymous-auth.json")
+            if args[-1].startswith("docker://"):
+                destination_auth = Path(args[args.index("--dest-authfile") + 1]).name
+                self.assertEqual(destination_auth, "mirror-publisher-auth.json")
 
     def test_cert_manager_pkcs8_key_import_and_public_key_handoff(self):
         # Exercise the real pinned CLI's file/password contract without services.
@@ -444,8 +482,7 @@ class HarborPublicationGates(unittest.TestCase):
                                         f"docker://{destination}:stable"])
         self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
         self.assertTrue(copies[3][-1].startswith("dir:"))
-        for args in copies:
-            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        self.assert_mirror_copy_credentials(copies)
         unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
         self.assertNotIn(unrelated, self.calls.read_text())
         self.assertEqual((self.root / "summary").read_text().splitlines(),
@@ -508,8 +545,7 @@ class HarborPublicationGates(unittest.TestCase):
                                         f"docker://{destination}:stable"])
         self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
         self.assertTrue(copies[3][-1].startswith("dir:"))
-        for args in copies:
-            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        self.assert_mirror_copy_credentials(copies)
         unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
         self.assertNotIn(unrelated, self.calls.read_text())
         self.assertEqual((self.root / "summary").read_text().splitlines(),
@@ -522,6 +558,69 @@ class HarborPublicationGates(unittest.TestCase):
                 self.transport_mocks(failure=failure, mirror=True)
                 self.bazarr_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
                 result = self.run_helper(mode="mirror-bazarr")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+
+    def test_mastodon_scope_rejects_missing_or_unreviewed_catalog_before_credentials(self):
+        valid = self.mirror_manifest["images"][0]
+        for catalog in (
+            None,
+            {"images": []},
+            {"images": [valid, valid]},
+            {"images": [{"source": valid["source"].replace("a" * 64, "b" * 64)}]},
+            {"images": [{"source": valid["source"].replace("busybox", "unreviewed")}]},
+            {"images": [valid], "destination": "other"},
+        ):
+            with self.subTest(catalog=catalog):
+                self.mastodon_mirror_manifest = catalog
+                self.rejected(mode="mirror-mastodon")
+        self.mastodon_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-mastodon")
+
+    def test_mastodon_scope_retains_dispatch_guards_and_rejects_arbitrary_modes(self):
+        self.mastodon_mirror_manifest = self.mirror_manifest
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-mastodon")
+                self.env[key] = previous
+        self.rejected(mode="mirror-mastodon:docker.io/library/busybox")
+
+    def test_mastodon_scope_excludes_unrelated_images_and_verifies_complete_pulls(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.mastodon_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-mastodon")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        repository = source.split(":")[0]
+        destination = "harbor.stinkyboi.com/mirror/" + repository
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 4)
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertEqual(copies[1][-2:], [copies[0][-1], f"docker://{destination}:{digest[7:]}"])
+        self.assertEqual(copies[2][-2:], [f"docker://{destination}@{digest}",
+                                        f"docker://{destination}:stable"])
+        self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
+        self.assertTrue(copies[3][-1].startswith("dir:"))
+        self.assert_mirror_copy_credentials(copies)
+        unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
+        self.assertNotIn(unrelated, self.calls.read_text())
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
+    def test_mastodon_scope_retains_digest_and_anonymous_pull_failure_gates(self):
+        for failure in ("digest", "mirror-tag", "pull", "pull-digest"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure, mirror=True)
+                self.mastodon_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+                result = self.run_helper(mode="mirror-mastodon")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
@@ -583,8 +682,7 @@ class HarborPublicationGates(unittest.TestCase):
                                         f"docker://{destination}:stable"])
         self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
         self.assertTrue(copies[3][-1].startswith("dir:"))
-        for args in copies:
-            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        self.assert_mirror_copy_credentials(copies)
         unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
         self.assertNotIn(unrelated, self.calls.read_text())
         self.assertEqual((self.root / "summary").read_text().splitlines(),
@@ -628,12 +726,10 @@ class HarborPublicationGates(unittest.TestCase):
                 if failure is None:
                     self.assertEqual(len(copies), 4)
                     self.assertTrue(copies[-1][-1].startswith("dir:"))
-                    for args in copies:
-                        self.assertTrue(all(flag in args for flag in
-                                            ("--all", "--preserve-digests", "--src-no-creds")))
+                    self.assert_mirror_copy_credentials(copies)
                 self.assert_cleaned()
 
-    def test_mirror_copies_public_sources_and_verifies_anonymous_complete_pulls(self):
+    def test_mirror_copies_anonymous_sources_and_verifies_authenticated_complete_pulls(self):
         self.transport_mocks(mirror=True)
         result = self.run_helper(mode="mirror")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -646,23 +742,37 @@ class HarborPublicationGates(unittest.TestCase):
             for args, tag in zip(copies[index * 2:index * 2 + 2], (digest[7:], "stable")):
                 self.assertIn("--all", args)
                 self.assertIn("--preserve-digests", args)
-                self.assertIn("--src-no-creds", args)
                 self.assertEqual(args[-1], f"docker://{destination}:{tag}")
                 if tag == digest[7:]:
                     self.assertTrue(args[-2].startswith("dir:"))
+                    self.assertIn("--src-no-creds", args)
+                    self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "anonymous-auth.json")
                 else:
                     self.assertEqual(args[-2], f"docker://{destination}@{digest}")
+                    self.assertNotIn("--src-no-creds", args)
+                    self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "mirror-pull-auth.json")
+                self.assertEqual(Path(args[args.index("--dest-authfile") + 1]).name,
+                                 "mirror-publisher-auth.json")
         pulls = [args for args in self.calls_for("skopeo") if args[0] == "copy" and args[-1].startswith("dir:") and args[-2].startswith("docker://harbor.stinkyboi.com/")]
         self.assertEqual(len(pulls), 2)
         self.assertEqual(len({args[-1] for args in pulls}), 2)
         for args in pulls:
             self.assertIn("--all", args)
             self.assertIn("--preserve-digests", args)
-            self.assertIn("--src-no-creds", args)
-            self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "anonymous-auth.json")
+            self.assertNotIn("--src-no-creds", args)
+            self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "mirror-pull-auth.json")
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
         parameters = [args[args.index("--name") + 1] for args in self.calls_for("aws")]
-        self.assertEqual(parameters, ["/homelab/harbor/mirror-robot-push-password"])
+        self.assertEqual(parameters, [
+            "/homelab/harbor/mirror-robot-push-password",
+            "/homelab/harbor/mirror-robot-pull-password",
+        ])
+        destination_inspections = [args for args in self.calls_for("skopeo")
+                                   if args[0] == "inspect" and args[-1].startswith("docker://harbor.stinkyboi.com/")]
+        self.assertTrue(destination_inspections)
+        for args in destination_inspections:
+            self.assertNotIn("--no-creds", args)
+            self.assertEqual(Path(args[args.index("--authfile") + 1]).name, "mirror-pull-auth.json")
         self.assertEqual(self.calls_for("docker"), [])
         self.assertEqual(self.calls_for("cosign"), [])
         self.assert_cleaned()
@@ -703,7 +813,7 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 phases = {"mirror-source": "upstream-download", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup",
-                          "digest": "digest-verify", "mirror-tag": "alias-verify", "pull": "anonymous-pull", "pull-digest": "pull-verify"}
+                          "digest": "digest-verify", "mirror-tag": "alias-verify", "pull": "authenticated-pull", "pull-digest": "pull-verify"}
                 categories = {"mirror-source": "rate-limited", "mirror-alias": "transport-failed", "mirror-lookup": "transport-failed",
                               "digest": "digest-mismatch", "mirror-tag": "digest-mismatch", "pull-digest": "digest-mismatch"}
                 status = dict(line.split("=", 1) for line in self.public_status.splitlines())
@@ -765,7 +875,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertTrue(all(args[-2].startswith("docker://harbor.stinkyboi.com/mirror/") for args in copies))
         self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
         self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 2)
-        self.assertTrue(all("--all" in args and "--preserve-digests" in args and "--src-no-creds" in args for args in copies))
+        self.assert_mirror_copy_credentials(copies)
         inspections = [args[-1] for args in self.calls_for("skopeo") if args[0] == "inspect"]
         self.assertEqual(sum(reference.endswith(":stable") for reference in inspections), 2)
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)

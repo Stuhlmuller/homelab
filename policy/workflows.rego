@@ -403,6 +403,9 @@ case "$IMAGE_SCOPE" in
   fleet)
     bash scripts/ci/harbor-publish.sh mirror-fleet
     ;;
+  mastodon)
+    bash scripts/ci/harbor-publish.sh mirror-mastodon
+    ;;
   bazarr)
     bash scripts/ci/harbor-publish.sh mirror-bazarr
     ;;
@@ -416,13 +419,13 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b0e66fb04f2f6d1f18a51d83392bc91c364b2af15cc0879ac703e3a79def43a0  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
   exit 1
 fi
-echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."`
+echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."`
 
 private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]

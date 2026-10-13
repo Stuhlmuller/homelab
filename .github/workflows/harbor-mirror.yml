@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Traefik/Chainguard inventories with unchanged destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard inventories with unchanged destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, traefik, chainguard]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard]
 
 permissions: {}
 
@@ -105,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|traefik|chainguard) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -162,6 +162,9 @@ jobs:
             fleet)
               bash scripts/ci/harbor-publish.sh mirror-fleet
               ;;
+            mastodon)
+              bash scripts/ci/harbor-publish.sh mirror-mastodon
+              ;;
             bazarr)
               bash scripts/ci/harbor-publish.sh mirror-bazarr
               ;;
@@ -175,10 +178,10 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b0e66fb04f2f6d1f18a51d83392bc91c364b2af15cc0879ac703e3a79def43a0  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."
+          echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."

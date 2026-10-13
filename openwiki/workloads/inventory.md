@@ -16,8 +16,6 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
-  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
-    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-9fa73338d241a64216558c54
     resource: repo://clusters/homelab/apps/nix-builder/namespace.yaml
   - id: openwiki-source-67d34f0f260c94a7dff4a12a
@@ -54,10 +52,10 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T06:23:22.000Z
+    at: 2026-10-13T04:33:12.797Z
 ---
 
 # Workload Inventory

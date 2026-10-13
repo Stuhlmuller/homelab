@@ -14,6 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
+MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
@@ -92,6 +93,28 @@ def declared_bazarr_images():
     documents = json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
     return declared_images(documents + yaml_documents([app / "values.yaml"]))[0]
+
+
+def declared_mastodon_images():
+    app = ROOT / "clusters/homelab/apps/mastodon"
+    if app.exists():
+        manifests = subprocess.check_output(["kubectl", "kustomize", str(app)], text=True)
+        documents = json.loads(subprocess.check_output(
+            ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
+        return declared_images(documents)[0]
+    # Publication precedes its consuming workload; compare the fixed four tags
+    # to the full reviewed catalog until the runtime overlay lands.
+    prefixes = (
+        "ghcr.io/mastodon/mastodon:v4.7.3@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "docker.io/library/postgres:18.6-bookworm@",
+        "docker.io/library/redis:7.4.11-alpine@",
+    )
+    sources = {item["source"] for item in json.loads(CATALOG.read_text())["images"]
+               if item["source"].startswith(prefixes)}
+    if len(sources) != 4:
+        raise RuntimeError("Mastodon publication prerequisite lacks its four reviewed runtime images")
+    return sources
 
 
 def chart_sources():
@@ -189,6 +212,7 @@ def check():
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
+        ("Mastodon", MASTODON_CATALOG, declared_mastodon_images()),
         ("Chainguard", CHAINGUARD_CATALOG,
          {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
     ):
@@ -208,7 +232,10 @@ def check():
         "overridePath": True, "skipFallback": True,
     } for registry in registries}
     patch = yaml_documents([ROOT / ".talos/patches/harbor-mirrors.yaml"])[0]
-    if patch["machine"]["registries"]["mirrors"] != expected_mirrors:
+    registry_config = patch["machine"]["registries"]
+    if "config" in registry_config:
+        errors.append("Talos Harbor mirror patch must not contain registry authentication")
+    if registry_config["mirrors"] != expected_mirrors:
         errors.append("Talos mirror endpoints must cover exactly the catalog registries with overridePath and skipFallback enabled")
     if chart_sources() != json.loads(CHARTS.read_text()):
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a71d92d22a73a2f5a3899b73c241a942c038380a767382cc8c413c18a5eb94f1",
+  "pageVersion": "sha256:dff7afbe2e33bf48a2ca36404bc57b23f1fbc2e202657f935b72e47672f899a0",
   "claims": [
     {
       "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
@@ -52,7 +52,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:37e0fa7fe3a257cee182dd197d8bef72b905ff1b449c4cfb1ccbfd44d1c39193"
+          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -67,6 +67,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T04:52:40.862Z"
+    "at": "2026-10-13T04:33:12.797Z"
   }
 }
