@@ -1,0 +1,124 @@
+name: Verify Native Chainguard Harbor Imports
+run-name: Verify native Chainguard imports @ ${{ github.sha }}
+
+# checkov:skip=CKV_GHA_7: expected_sha pins protected current main; the workflow has no caller-selected image, command, repository, or credential path.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit containing the reviewed native Chainguard contract
+        required: true
+        type: string
+
+permissions: {}
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Validate Native Chainguard Receipt
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          [[ "$ACTUAL_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Run Native Receipt Fixtures
+        run: |
+          python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py
+          python3 -I scripts/ci/harbor-native-chainguard-receipt.py plan
+
+  receipt:
+    name: Verify Private Native Imports
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    concurrency:
+      group: harbor-native-chainguard-receipt
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          [[ "$ACTUAL_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "$(git rev-parse HEAD)" = "$ACTUAL_SHA"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "$ACTUAL_SHA" = "$current_main_sha"
+
+      - name: Configure Exact Receipt Credential Access
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-native-chainguard-receipt-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+          inline-session-policy: >-
+            {"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"ssm:GetParameter","Resource":["arn:aws:ssm:us-west-2:*:parameter/homelab/harbor/robot-pull-password","arn:aws:ssm:us-west-2:*:parameter/homelab/harbor/robot-scan-password"]},{"Effect":"Allow","Action":["kms:Decrypt","kms:DescribeKey"],"Resource":"*","Condition":{"StringEquals":{"kms:ViaService":"ssm.us-west-2.amazonaws.com"}}}]}
+
+      - name: Verify Native Imports Without Exposing Transport Output
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash scripts/ci/harbor-native-chainguard-receipt.sh >"$private_log" 2>&1; then
+            echo '::error::Native Harbor receipt verification failed; private transport and registry output withheld.'
+            exit 1
+          fi
+          jq -e '
+            .schema_version == 1 and .kind == "native-chainguard-receipts-v1" and
+            (.receipts | type == "array" and length == 2 and all(.[]; .consumer_access == true))
+          ' "$RUNNER_TEMP/harbor-native-chainguard-receipt.json" >/dev/null
+          echo 'Native private Chainguard imports passed digest, platform, scan, and authenticated-pull verification.'
+
+      - name: Upload Native Receipt
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-native-chainguard-receipt-${{ github.sha }}
+          path: ${{ runner.temp }}/harbor-native-chainguard-receipt.json
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false

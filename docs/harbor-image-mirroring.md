@@ -4,14 +4,39 @@
 
 ## Chainguard source provenance
 
-Known Chainguard repositories are imported into the private Harbor destination
-by exact repository and stable tag. The public Chainguard rules are enabled; their
-copies become deployment-eligible only after the release recipe verifies the
-source/index digest, required platform children, and complete consumer pulls.
-Successful copies retain their immutable `sha256-<hex>` tag and may advance
-`verified-stable`; failed, partial, or inaccessible copies never advance the
-alias and are retained for diagnosis. Existing upstream-origin digests remain
-available for cold bootstrap and rollback.
+`scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
+public Chainguard source catalog. The protected `harbor-mirror.yml`
+`chainguard` scope copies its thirteen entries to
+`mirror/cgr.dev/chainguard/<image>`. That proves source provenance and Harbor
+custody only; it does not make an artifact deployment-eligible or move a
+consumer to the public `mirror` project.
+
+Native Harbor replication is currently limited to
+`cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest`, which
+it imports into private `homelab/chainguard-python:latest` and
+`homelab/chainguard-curl:latest` repositories. After bootstrap has reconciled
+those rules, the protected
+`harbor-native-chainguard-receipt.yml` workflow must run from exact current
+`main`. Its receipt is bound to the automation configuration, replication
+rules, and catalog pins. It proves that the source root index, private
+destination root index, and a complete authenticated `robot$homelab+pull`
+download have identical bytes; that the required `linux/amd64` and
+`linux/arm64` child descriptors match; and that Harbor reports `Success` with
+every reported finding count zero for those children.
+
+Protected CI queries those child scans directly with the separate
+`robot$homelab+scan` credential, limited to project-scoped `artifact:read`.
+It does not create an in-cluster scanner Job or use the Harbor administrator
+credential. Both receipt identities are read from exact SSM parameters into
+private temporary files and are excluded from workflow output and artifacts.
+
+The receipt is protected-workflow evidence only. It does not create a digest
+tag or `verified-stable` alias, update Image Updater state, or change a
+workload. A checked-in receipt cannot enroll a consumer until a verifiable
+artifact-attestation importer exists. A later reviewed migration must add
+namespace pull authorization, compatibility evidence, and a direct,
+digest-pinned private reference such as
+`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
 
 Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
 project. Repository and Pod image names retain upstream provenance; their bytes
@@ -97,17 +122,34 @@ retain registry blobs together with Harbor database/encryption-key backups.
    Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
    Wolfi base and static runtime. It publishes to the same normal
    `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
-   digest preservation and fresh authenticated Harbor downloads. It does not change
-   consumers or prove runtime compatibility. Run after the prerequisite merges:
+   digest preservation and fresh authenticated Harbor downloads. It does not
+   change consumers, prove native `homelab` imports, or prove runtime
+   compatibility. Run after the prerequisite merges:
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
    See [migration gates and current findings](image-egress-hardening.md).
-   Keep the public import source distinct from the internal runtime reference.
-   New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:<reviewed-tag>@sha256:<verified-index-digest>`
-   only after successful publication and compatibility validation.
+   Keep the public source copy distinct from the internal runtime reference.
+   No application consumes these `mirror` copies. Python and curl need a
+   successful native receipt from the separate protected workflow before a
+   reviewed compatibility migration may reference a private direct digest such
+   as `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+
+   After that public source copy and Harbor's native Python/curl replication
+   have both completed, verify the private imports from exact reviewed current
+   `main`:
+
+   ```sh
+   gh workflow run harbor-native-chainguard-receipt.yml --ref main -f expected_sha="$reviewed_sha"
+   ```
+
+   The receipt workflow accepts no image, registry, destination, or credential
+   input. It verifies only the committed Python and curl plan and uploads the
+   bounded receipt artifact. A successful receipt is necessary protected-workflow
+   evidence for a later workload migration; a checked-in copy cannot enroll a
+   consumer until a verifiable artifact-attestation importer exists.
 
    Require a successful run, including complete authenticated Harbor downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication
@@ -374,9 +416,9 @@ must be inventoried before use. Strict mirrors intentionally reject missing
 artifacts instead of silently contacting upstream.
 
 Resolve source digests anonymously with `skopeo inspect --raw --no-creds` and
-hash the exact manifest bytes. For `tag@sha256` references pass `repo@sha256`
-to Skopeo; it rejects combined tag/digest addresses. Preserve historical pinned
-digests when a mutable tag has moved. Each repository/tag has one catalog alias;
+hash the exact manifest bytes. Pass direct `repo@sha256` addresses to Skopeo;
+it rejects combined tag/digest addresses. Preserve historical pinned digests
+when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
 

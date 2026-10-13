@@ -471,6 +471,21 @@ test_rejects_live_job_artifact_upload if {
 	}
 }
 
+test_allows_exact_native_receipt_artifact if {
+	violations := deny with input as workflow_with_native_receipt_artifact(native_receipt_artifact_fixture)
+	count(violations) == 0
+}
+
+test_rejects_modified_native_receipt_artifact if {
+	options := object.union(object.get(native_receipt_artifact_fixture, "with", {}), {
+		"path": "${{ runner.temp }}/other.json",
+	})
+	artifact := object.union(native_receipt_artifact_fixture, {"with": options})
+	violations := deny with input as workflow_with_native_receipt_artifact(artifact)
+	some msg in violations
+	contains(msg, "must not upload artifacts")
+}
+
 test_allows_withheld_live_command_output if {
 	violations := deny with input as workflow_with_live_run(withheld_live_run)
 	count(violations) == 0
@@ -594,4 +609,31 @@ test_encrypted_harbor_artifact_exception_is_exact if {
 		some msg in denials
 		contains(msg, "must not upload artifacts")
 	}
+}
+
+native_receipt_artifact_fixture := {
+	"name": "Upload Native Receipt",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "harbor-native-chainguard-receipt-${{ github.sha }}",
+		"path": "${{ runner.temp }}/harbor-native-chainguard-receipt.json",
+		"if-no-files-found": "error",
+		"retention-days": 30,
+		"include-hidden-files": false,
+	},
+}
+
+workflow_with_native_receipt_artifact(artifact) := {
+	"name": "Verify Native Chainguard Harbor Imports",
+	"on": "workflow_dispatch",
+	"permissions": {},
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"jobs": {"receipt": {
+		"runs-on": "ubuntu-24.04",
+		"permissions": {"contents": "read", "id-token": "write"},
+		"steps": [
+			{"run": native_receipt_private_run, "env": {"OCTELIUM_AUTH_TOKEN": "test"}},
+			artifact,
+		],
+	}},
 }

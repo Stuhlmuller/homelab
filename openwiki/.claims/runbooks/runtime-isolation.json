@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f804ce12a68ae1f1d806df6bbd0b440c38b723ba162d9536785e832a855c835d",
+  "claims": [
+    {
+      "id": "claim_182c9edffb474a36b9087404516ef87f",
+      "statement": "The 2026-10-12 read-only egress audit found all Flannel and ztunnel instances Ready but no Gateway API CRDs/GatewayClass, NRI configuration, or kube-network-policies deployment; legacy Istio Gateway resources do not supply the Gateway API egress path. No egress enforcement is active. A capacity-isolated worker, declared Gateway API/NRI dataplane, private inventory audit, and positive/negative ambient canary evidence are prerequisites to activation.",
+      "evidence": [
+        {
+          "resource": "repo://docs/image-egress-hardening.md",
+          "version": "repo-file-v1:sha256:afdbc355598793d053357dabbe102c186970e633e29a5b411ceb7596a989a665"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:6f381303610f88a0bbd2d28e18be26d8f52f8d323074bf0f4bda4de7ff402860"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py",
+          "version": "repo-file-v1:sha256:df7edfc19aae05013415cc745f01da6d11a05cfe6645f932d5195c260c984137"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-13T04:30:15.405Z"
+  }
+}

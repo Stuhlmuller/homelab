@@ -146,10 +146,12 @@ deny contains msg if {
 	job_sensitive_command(job)
 	steps := object.get(job, "steps", [])
 	some index
-	uses := object.get(steps[index], "uses", "")
+	step := steps[index]
+	uses := object.get(step, "uses", "")
 	some prefix in {"actions/upload-artifact@", "chainguard-actions/actions-upload-artifact@"}
 	startswith(uses, prefix)
-	not encrypted_harbor_diagnostic(job_name, job, steps[index])
+	not encrypted_harbor_diagnostic(job_name, job, step)
+	not native_receipt_artifact(job_name, job, step)
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
@@ -251,6 +253,10 @@ live_homelab_workflow if {
 }
 
 live_homelab_workflow if {
+	workflow_run_contains("scripts/ci/harbor-native-chainguard-receipt.sh")
+}
+
+live_homelab_workflow if {
 	jobs := object.get(input, "jobs", {})
 	some _, job in jobs
 	steps := object.get(job, "steps", [])
@@ -264,9 +270,9 @@ job_sensitive_command(job) if {
 	sensitive_command_run(object.get(steps[index], "run", ""))
 }
 
-shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?(bash|sh|zsh)[\t ]+(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish)\.sh([\t ;]|$)`
+shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?(bash|sh|zsh)[\t ]+(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish|harbor-native-chainguard-receipt)\.sh([\t ;]|$)`
 
-direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish)\.sh([\t ;]|$)`
+direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish|harbor-native-chainguard-receipt)\.sh([\t ;]|$)`
 
 kubectl_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?kubectl["']?[\t ]+`
 
@@ -323,6 +329,43 @@ private_live_output(run) if {
 # exception exact: other private wrappers cannot print arbitrary files or logs.
 private_live_output(run) if {
 	trim(run, "\n") == harbor_mirror_private_run
+}
+
+# The native receipt is a bounded, nonsecret attestation. Its exact workflow
+# command and sole artifact are reviewed together below.
+private_live_output(run) if {
+	trim(run, "\n") == native_receipt_private_run
+}
+
+native_receipt_private_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash scripts/ci/harbor-native-chainguard-receipt.sh >"$private_log" 2>&1; then
+  echo '::error::Native Harbor receipt verification failed; private transport and registry output withheld.'
+  exit 1
+fi
+jq -e '
+  .schema_version == 1 and .kind == "native-chainguard-receipts-v1" and
+  (.receipts | type == "array" and length == 2 and all(.[]; .consumer_access == true))
+' "$RUNNER_TEMP/harbor-native-chainguard-receipt.json" >/dev/null
+echo 'Native private Chainguard imports passed digest, platform, scan, and authenticated-pull verification.'`
+
+native_receipt_artifact(job_name, job, step) if {
+	object.get(input, "name", "") == "Verify Native Chainguard Harbor Imports"
+	job_name == "receipt"
+	some candidate in object.get(job, "steps", [])
+	trim(object.get(candidate, "run", ""), "\n") == native_receipt_private_run
+	count(step) == 3
+	object.get(step, "name", "") == "Upload Native Receipt"
+	object.get(step, "uses", "") == "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6"
+	options := object.get(step, "with", {})
+	count(options) == 5
+	object.get(options, "name", "") == "harbor-native-chainguard-receipt-${{ github.sha }}"
+	object.get(options, "path", "") == "${{ runner.temp }}/harbor-native-chainguard-receipt.json"
+	object.get(options, "if-no-files-found", "") == "error"
+	object.get(options, "retention-days", 0) == 30
+	object.get(options, "include-hidden-files", true) == false
 }
 
 harbor_mirror_private_run := `set -euo pipefail

@@ -34,8 +34,9 @@ The PostSync bootstrap creates the private `homelab` project and reconciles:
 
 | Robot | Permissions | Use |
 | --- | --- | --- |
-| `robot$homelab+pull` | Pull repository | Kubernetes `imagePullSecrets` |
+| `robot$homelab+pull` | Pull repository | Kubernetes `imagePullSecrets` and the native receipt's authenticated OCI pull; no artifact-scan API access |
 | `robot$homelab+publisher` | Pull/push repository | Protected image publishing and migration |
+| `robot$homelab+scan` | `artifact:read` | Protected native-receipt CI queries exact child scan summaries; no OCI pull, push, or administrator access |
 | `robot$mirror+publisher` | Pull/push within `mirror` | Protected upstream image copies |
 | `robot$mirror+pull` | Pull within `mirror` | Node registry authentication and publication receipt |
 
@@ -62,6 +63,34 @@ queued/running scans are left alone; signatures and attestations are excluded.
 After rollout, verify the Trivy Pod is Ready and a newly pushed image shows a
 completed vulnerability report in Harbor. Bootstrap success proves the project
 setting and scan submission, not successful database downloads or completed scans.
+
+## Native Chainguard receipt
+
+Harbor replication imports only the catalog-pinned public
+`cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest` sources
+into private `homelab/chainguard-python:latest` and
+`homelab/chainguard-curl:latest` repositories. The import rule itself does not
+make an image eligible for a workload. The protected
+`harbor-native-chainguard-receipt.yml` workflow runs from exact current `main`
+and verifies the source root index, private root index, and a complete
+`robot$homelab+pull` download byte-for-byte against the reviewed catalog. It
+also requires matching `linux/amd64` and `linux/arm64` child descriptors and
+Harbor `Success` scans whose reported finding counts are all zero.
+
+The workflow reads the distinct `robot$homelab+scan` credential into a private
+temporary file and queries exact child scan summaries through the existing
+authenticated Harbor transport. That robot has only project-scoped
+`artifact:read`; it cannot pull, push, or administer Harbor. Receipt
+verification creates no Kubernetes Job and does not mount or depend on the
+administrator credential, a ConfigMap, or an unenforced NetworkPolicy.
+
+Receipt success is protected-workflow evidence only. It creates no digest tag,
+`verified-stable` alias, updater state, or consumer change. A checked-in
+receipt cannot enroll a consumer until a verifiable artifact-attestation
+importer exists. A later application migration needs its own compatibility
+evidence, namespace pull authorization, and a direct digest-pinned
+`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`
+reference.
 
 ## Critical CVE alerting
 
@@ -130,8 +159,9 @@ and [schedule validation](https://github.com/goharbor/harbor/blob/v2.15.2/src/co
 | `registry-http-secret` | Exactly 16 characters; upload-state authentication |
 | `registry-password` | Internal registry controller credential; ESO renders bcrypt htpasswd |
 | `database-password` | PostgreSQL password; `password` is the chart-required key alias |
-| `robot-pull-password` | Project pull robot credential |
+| `robot-pull-password` | Private project pull robot credential for namespace image pulls and the protected native receipt OCI pull |
 | `robot-push-password` | Private homelab project publisher robot credential |
+| `robot-scan-password` | Project-scoped `artifact:read` robot credential for protected native receipt scan queries; no OCI pull, push, or administrator permission |
 | `mirror-robot-pull-password` | Mirror read-only credential for node authentication and publication receipt |
 | `mirror-robot-push-password` | Independent mirror publisher credential |
 

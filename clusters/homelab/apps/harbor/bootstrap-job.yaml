@@ -77,6 +77,8 @@ spec:
                 path: robot-pull-password
               - key: robot-push-password
                 path: robot-push-password
+              - key: robot-scan-password
+                path: robot-scan-password
               - key: mirror-robot-pull-password
                 path: mirror-robot-pull-password
               - key: mirror-robot-push-password

@@ -11,27 +11,31 @@ are delivered. Data fields are defined in [data-model.md](../data-model.md).
 | Operation | Owner / input | Required result |
 | --- | --- | --- |
 | Reconcile imports | Existing Harbor PostSync bootstrap; committed enrollment | Idempotent exact-name scheduled pull rules; normal project; override enabled, deletion disabled, no flattening. |
-| Import | Harbor, hourly by default | `cgr.dev/chainguard/<image>:latest` appears at `mirror/cgr.dev/chainguard/<image>:latest`; no consumer edit. |
-| Verify | Main-owned CI; exact source digest and enrollment | Matching index digest, every required platform/child, complete intended-consumer downloads and receipt. |
-| Advertise | Verifier only, after verification | Retained `sha256-<hex>` tag and `verified-stable` alias point to that verified index digest. |
-| Discover | Image Updater | Read only `verified-stable` in enrolled Harbor repositories. |
+| Import | Harbor, hourly by default | The declared `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest` sources appear at private `homelab/chainguard-{python,curl}:latest`; no consumer edit. |
+| Verify | Protected main-owned CI; exact source catalog digest and configuration | Source root index, private destination root index, and authenticated all-platform pull have identical bytes; required platform children match; scans are complete with every reported count zero. |
+| Advertise | None | The verifier emits protected-workflow evidence only. It creates no digest tag, alias, updater state, or workload change. |
+| Discover | No current consumer | A checked-in receipt cannot enroll Python or curl until a verifiable artifact-attestation importer exists; they remain `not-enrolled`. |
 
-The `mirror` project is public. Restricted sources require a separately private
-project, scoped publisher/pull robots and declared namespace pull credentials
-before enrollment. Never infer redistribution permission from a successful
-authenticated pull. No new subscription is assumed. Source replication rules
-cannot overwrite verifier-owned aliases. Import errors preserve previous aliases
-and retained digests; no cleanup/deletion rule is introduced.
+The `mirror` project remains the temporary public source-copy path. Native
+Chainguard imports use the private `homelab` project, whose scoped pull robot
+and declared namespace credentials are separate. Never infer redistribution
+permission from a successful authenticated pull. No new subscription is
+assumed. Import errors do not promote an alias, alter updater state, or change a
+consumer; no cleanup/deletion rule is introduced.
 
 The pilot's release-metadata recipe and its tests ship with US1 verification,
 before its import acceptance. Imports do not depend on US2 workload health/data
 recipes; automatic consumer enrollment does. Unknown configured recipes fail
 validation at either stage.
 
-Use the existing authenticated CI connectivity path for Harbor verification and
-the intended public/private consumer identity for download tests. Capture a
-digest once; if upstream changes during verification, retry rather than publish
-mixed evidence. Latest-tag replication alone does not copy/prove referrers.
+Use the existing authenticated CI connectivity path for Harbor verification.
+The native receipt reads public source bytes anonymously, pulls the private
+destination with `robot$homelab+pull`, and queries exact child scans directly
+with the separate `robot$homelab+scan` `artifact:read` credential. It creates
+no in-cluster scanner Job and does not use an administrator credential. Capture
+a digest once; if upstream changes during verification, retry rather than
+publish mixed evidence. Latest-tag replication alone does not prove the pinned
+root index or its required platform children.
 
 ## Argo CD and Image Updater contract
 
@@ -40,15 +44,19 @@ mixed evidence. Latest-tag replication alone does not copy/prove referrers.
   Kustomize application pattern; keep Argo target revisions `main`.
 - Namespace `argocd`; namespace RBAC, `createClusterRoles: false`, explicit
   `--watch-namespaces=argocd`; only required Secrets and Applications accessible.
-- Generate explicit ImageUpdater application/image selectors from enrollment.
-  Strategy `digest`, tracked tag `verified-stable`, required `platforms` array.
+- No current native Chainguard candidate is enrolled in Image Updater. A future
+  enrollment is blocked until a verifiable artifact-attestation importer exists;
+  a checked-in native receipt is insufficient. It must then write a direct
+  `harbor.stinkyboi.com/homelab/chainguard-python@sha256:...` reference;
+  `verified-stable` is not part of this native import path.
 - Git write-back uses `--git-commit-method=api`, GitHub App credentials and
   `main:codex/image-updater-proposals`. Poll every two minutes by default.
   Neither direct main writes nor CLI force pushes are allowed for this identity.
 - Helm targets name exact repository/tag or full-image value keys and explicit
   `helmvalues:/clusters/.../values.yaml`; Kustomize names exact original image
-  and `kustomization:/clusters/...` target. Persist `tag@sha256:...` or full
-  digest-pinned Harbor references. Render proves the final workload image.
+  and `kustomization:/clusters/...` target. Persist a direct
+  `repository@sha256:...` Harbor reference. Render proves the final workload
+  image.
 - Multi-source apps require unambiguous target selection. Multiple same-type
   sources that cannot be addressed safely remain an explicit exception until
   the source layout is corrected through review.
@@ -146,8 +154,8 @@ and keep routine image changes scoped. Do not silently enable a broad bypass.
 | Identity | Storage / delivery | Authority |
 | --- | --- | --- |
 | Harbor bootstrap | Existing mounted admin secret | Reconcile declared registry endpoint/rules/projects/robots; never passed to updater. |
-| Chainguard source reader | Anonymous for public baseline; explicit SSM/ESO reference if entitlement requires credentials | Pull only approved source repositories; restricted destination must exist first. |
-| Harbor verifier/publisher | Existing scoped mirror publication credential through CI | Read/copy/alias only declared repositories; private destination needs its own scoped robot. |
+| Chainguard source reader | Anonymous public-source read | Pull only the catalog-pinned public repositories; no entitlement is assumed. |
+| Harbor native receipt | Exact `/homelab/harbor/robot-pull-password` and `/homelab/harbor/robot-scan-password` session reads to private temporary files | Pull robot performs authenticated OCI reads of declared private repositories; scan robot has only project-scoped `artifact:read` for exact child-scan queries. Neither can push, alias, or administer Harbor. |
 | Image Updater proposer App | Fresh verified `/homelab/argocd-image-updater/github-app/{id,installation-id,private-key}` via ESO | Homelab-only contents write for proposal branch; no main bypass, administration or checks write. |
 | Promoter App | New CI-only `/homelab/image-automation/github-app/{id,installation-id,private-key}` references | Homelab-only contents/deployments write; read checks/actions; bypass PR governance only; no administration or checks write. |
 | Observer / notifier | Existing declared cluster connectivity plus narrowly granted CI read access and Discord secret | Read app health/resources and send bounded failure notification; no ad hoc Kubernetes mutation. |
@@ -159,10 +167,14 @@ ESO and are available only to the dedicated CI role. Any credential bootstrap
 must use the repository's declared secret workflow. App registration and
 installation permissions are a reviewed external prerequisite.
 
-Use file-mounted runtime secrets. CI environment variables may carry credentials
-only. Never store tokens/private keys in JSON, logs or artifacts. Notification
-grants reuse `/homelab/grafana/discord-webhook-url`; redact its value and send
-only app/digests/stage/run URL/action. No source entitlement is assumed or bought.
+Use file-mounted runtime secrets. The native receipt reads its pull and scan
+passwords from SSM into private temporary files; it sends the pull password
+only to `--password-stdin` and the scan password only to the direct child-scan
+query. It never stores either value in workflow environment, arguments, JSON,
+logs, or artifacts. It creates no in-cluster scanner Job and does not use the
+administrator credential. Notification grants reuse
+`/homelab/grafana/discord-webhook-url`; redact its value and send only
+app/digests/stage/run URL/action. No source entitlement is assumed or bought.
 
 ## Health, recovery and operator controls
 

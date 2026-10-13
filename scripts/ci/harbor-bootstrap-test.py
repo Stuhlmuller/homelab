@@ -24,6 +24,7 @@ SPEC.loader.exec_module(bootstrap)
 ADMIN = "TestAdmin1-do-not-log"
 PASSWORDS = {("homelab", "pull"): "TestPull1-do-not-log",
              ("homelab", "publisher"): "TestPush1-do-not-log",
+             ("homelab", "scan"): "TestScan1-do-not-log",
              ("mirror", "pull"): "TestMirrorPull1-do-not-log",
              ("mirror", "publisher"): "TestMirrorPush1-do-not-log"}
 
@@ -378,7 +379,7 @@ class BootstrapTest(unittest.TestCase):
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
-        self.assertEqual(len(original), 4)
+        self.assertEqual(len(original), 5)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
         for project_name, settings in bootstrap.PROJECTS.items():
             for name in settings["robots"]:
@@ -386,13 +387,17 @@ class BootstrapTest(unittest.TestCase):
                              if robot["name"] == bootstrap.robot_name(name, project_name))
                 self.assertEqual(robot["permissions"], bootstrap.permissions(name, project_name))
                 self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[(project_name, name)])
+        scan = next(robot for robot in original.values() if robot["name"] == "robot$homelab+scan")
+        self.assertEqual(scan["permissions"], [{"kind": "project", "namespace": "homelab", "access": [
+            {"resource": "artifact", "action": "read", "effect": "allow"}]}])
         self.assertEqual(len(set(self.api.passwords.values())), len(self.api.passwords))
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots, original)
         self.assertEqual([(method, path) for method, path, _ in self.mutations()],
                          [("PATCH", "/robots/1"), ("PATCH", "/robots/2"),
-                          ("PATCH", "/robots/3"), ("PATCH", "/robots/4")])
+                          ("PATCH", "/robots/3"), ("PATCH", "/robots/4"),
+                          ("PATCH", "/robots/5")])
 
     def test_reconciles_public_project_and_robot_drift_without_touching_other_robots(self):
         self.reconcile()
@@ -415,16 +420,16 @@ class BootstrapTest(unittest.TestCase):
         self.reconcile()
         self.api.projects["mirror"]["metadata"].update(public="false", auto_scan="false")
         homelab = copy.deepcopy(self.api.projects["homelab"])
-        private_robots = copy.deepcopy({key: self.api.robots[key] for key in (1, 2)})
+        private_robots = copy.deepcopy({key: self.api.robots[key] for key in (1, 2, 3)})
         self.reconcile()
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
         self.assertEqual(self.api.projects["homelab"], homelab)
-        self.assertEqual({key: self.api.robots[key] for key in (1, 2)}, private_robots)
-        mirror_pull = self.api.robots[3]
+        self.assertEqual({key: self.api.robots[key] for key in (1, 2, 3)}, private_robots)
+        mirror_pull = self.api.robots[4]
         self.assertEqual(mirror_pull["name"], "robot$mirror+pull")
         self.assertEqual(mirror_pull["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
             {"resource": "repository", "action": "pull", "effect": "allow"}]}])
-        mirror_publisher = self.api.robots[4]
+        mirror_publisher = self.api.robots[5]
         self.assertEqual(mirror_publisher["name"], "robot$mirror+publisher")
         self.assertEqual(mirror_publisher["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
             {"resource": "repository", "action": "pull", "effect": "allow"},
