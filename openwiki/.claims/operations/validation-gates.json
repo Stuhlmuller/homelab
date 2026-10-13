@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:79c2bbc418b414d4a23bdfa836da96e30b874a996f196db6f1ed1482030014dd",
+  "pageVersion": "sha256:f4f315e9ae7220ae30ce630a84ce1851a4fb96c1c92fbf65e16392f2006d4f86",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -450,7 +450,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:f68697e9bc4bfd67e8c5906f0e3b7f3128219d8ab11cfac949ab54199de54a1f"
+          "version": "repo-file-v1:sha256:2398370f492ff6043d0356f62d70de69297f81ff2c2b82037e822aee481c2758"
         },
         {
           "resource": "repo://docs/nix-cache.md",
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:f68697e9bc4bfd67e8c5906f0e3b7f3128219d8ab11cfac949ab54199de54a1f"
+          "version": "repo-file-v1:sha256:2398370f492ff6043d0356f62d70de69297f81ff2c2b82037e822aee481c2758"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -516,11 +516,19 @@
     },
     {
       "id": "claim_db848ce0e6504967b9527b11ec48b503",
-      "statement": "The runbook records a dated verified 6dd7b02c Argo/Pod/OCI profile/capability/sandbox/signature/1GiB rollout, followed by a 2026-10-13 05:09 UTC publication preflight hold: selected-worker measured headroom was 1243.4 MiB below the 1536 MiB required guard despite Ready/no-pressure nodes. No publication/build started, leaving the newly approved retry unused. Resume requires fresh full preflight and separate release or a separately approved protected capacity change; the guard, workloads, Pod lifecycle and host caches must not be changed ad hoc. Signed publication, warm CI substitution and full-check capacity remain separate unproved acceptance gates.",
+      "statement": "The runbook preserves the dated exact6dd7 rollout and 05:09UTC headroom hold with no attempt then. It records later natural headroom recovery to1589.9MiB, fresh full preflight and separate release of one bounded retry on exact6dd7. Both Linux checks completed/signed/published; independent fresh-store signature acceptance and unknown-key/unsigned rejection passed; original-Pod cleanup and905MiB peak/noOOM passed. Main validation38349343865 attempt2 repojob115167993774 copied both exact published outputs from committed GitHubreleaseURL without check rebuild and completed successfully with remaining validation fresh. Acceptance is scoped to that source tree; later docs invalidate broad fingerprints. Fresh live plans remain an uncompleted gate; the receipt releases no further retry, credential/capacity/workload change or migration plan/apply.",
       "evidence": [
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:f68697e9bc4bfd67e8c5906f0e3b7f3128219d8ab11cfac949ab54199de54a1f"
+          "version": "repo-file-v1:sha256:2398370f492ff6043d0356f62d70de69297f81ff2c2b82037e822aee481c2758"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
@@ -531,6 +539,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T05:13:22.986Z"
+    "at": "2026-10-13T06:57:20.264Z"
   }
 }

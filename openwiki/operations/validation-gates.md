@@ -114,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T05:13:22.986Z" }
+generated: { by: "codex", at: "2026-10-13T06:57:20.264Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T05:13:22.986Z
+    at: 2026-10-13T06:57:20.264Z
 ---
 
 # Validation Gates
@@ -180,12 +180,23 @@ records exact Argo revision `6dd7b02c`, a Ready replacement Pod and matching
 running OCI profile, capabilities, sandbox/signature settings and actual 1 GiB
 cgroup limit. At 2026-10-13 05:09 UTC, publication preflight still failed:
 the selected worker had 1243.4 MiB measured headroom against the 1536 MiB guard.
-No publication command or build attempt ran; the newly approved retry remains
-unused. Wait for fresh natural headroom and a separate release, or obtain
+No publication command or build attempt had run at that receipt; the newly
+approved retry was still unused. Wait for fresh natural headroom and a separate release, or obtain
 explicit approval for a concrete protected capacity change. Never lower the
 guard, alter other workloads, restart Pods or reclaim host caches ad hoc.
-Neither rollout acceptance nor this dated record proves signed publication,
-warm-CI substitution or full-check capacity.
+That historical hold did not establish signed publication, warm-CI substitution
+or full-check capacity. The later [signed publication and warm CI receipt](../../docs/nix-builder-seccomp.md#signed-publication-and-warm-ci-receipt)
+records natural headroom recovery to 1589.9 MiB, fresh full preflight and a
+separately released bounded retry on exact main `6dd7b02c`. Both Linux checks
+completed, were signed and published, and passed independent fresh-store
+signature acceptance plus unknown-key/unsigned rejection. Original-Pod cleanup
+passed; peak memory was 905 MiB with no max/OOM/OOM-kill events. Main validation
+run `38349343865` attempt 2, repo job `115167993774`, copied both exact published
+outputs from the committed release URL without rebuilding either check and
+finished successfully with remaining validation fresh. Acceptance applies to
+that exact source tree; later tracked docs change the broad fingerprint. Fresh
+live plans remain a separate uncompleted gate; no extra retry, credential,
+capacity, workload or migration plan/apply is authorized by this receipt.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
