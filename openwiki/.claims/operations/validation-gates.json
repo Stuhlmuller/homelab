@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:be921b582a34911a4883481a11703ed701904b0929a3ca3ddaa63c97a1d69e62",
+  "pageVersion": "sha256:79c2bbc418b414d4a23bdfa836da96e30b874a996f196db6f1ed1482030014dd",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -450,7 +450,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
+          "version": "repo-file-v1:sha256:f68697e9bc4bfd67e8c5906f0e3b7f3128219d8ab11cfac949ab54199de54a1f"
         },
         {
           "resource": "repo://docs/nix-cache.md",
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
+          "version": "repo-file-v1:sha256:f68697e9bc4bfd67e8c5906f0e3b7f3128219d8ab11cfac949ab54199de54a1f"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -513,10 +513,24 @@
           "version": "repo-file-v1:sha256:19492d889deec48274115a287ee9bd3ac9cc6a79f613794961514e6810575194"
         }
       ]
+    },
+    {
+      "id": "claim_db848ce0e6504967b9527b11ec48b503",
+      "statement": "The runbook records a dated verified 6dd7b02c Argo/Pod/OCI profile/capability/sandbox/signature/1GiB rollout, followed by a 2026-10-13 05:09 UTC publication preflight hold: selected-worker measured headroom was 1243.4 MiB below the 1536 MiB required guard despite Ready/no-pressure nodes. No publication/build started, leaving the newly approved retry unused. Resume requires fresh full preflight and separate release or a separately approved protected capacity change; the guard, workloads, Pod lifecycle and host caches must not be changed ad hoc. Signed publication, warm CI substitution and full-check capacity remain separate unproved acceptance gates.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:f68697e9bc4bfd67e8c5906f0e3b7f3128219d8ab11cfac949ab54199de54a1f"
+        },
+        {
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:31:46.031Z"
+    "at": "2026-10-13T05:13:22.986Z"
   }
 }

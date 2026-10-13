@@ -114,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T04:31:46.031Z" }
+generated: { by: "codex", at: "2026-10-13T05:13:22.986Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T04:31:46.031Z
+    at: 2026-10-13T05:13:22.986Z
 ---
 
 # Validation Gates
@@ -174,6 +174,18 @@ RuntimeDefault at that receipt. Stage 2 still requires exact protected review,
 Argo rollout and actual OCI-profile verification. Retain sandboxing,
 signatures, the 1 GiB limit and fresh preflight before a separately released
 single bounded publication retry; any terminal failure consumes that attempt.
+
+The dated [post-rollout receipt](../../docs/nix-builder-seccomp.md#verified-rollout-publication-headroom-hold)
+records exact Argo revision `6dd7b02c`, a Ready replacement Pod and matching
+running OCI profile, capabilities, sandbox/signature settings and actual 1 GiB
+cgroup limit. At 2026-10-13 05:09 UTC, publication preflight still failed:
+the selected worker had 1243.4 MiB measured headroom against the 1536 MiB guard.
+No publication command or build attempt ran; the newly approved retry remains
+unused. Wait for fresh natural headroom and a separate release, or obtain
+explicit approval for a concrete protected capacity change. Never lower the
+guard, alter other workloads, restart Pods or reclaim host caches ad hoc.
+Neither rollout acceptance nor this dated record proves signed publication,
+warm-CI substitution or full-check capacity.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and

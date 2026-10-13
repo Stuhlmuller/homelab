@@ -88,3 +88,30 @@ canonical SHA256 `aa9efdab8100bee9695b8c72c107ddf338a740cff4190e0611893c31d455b7
 All four nodes remained Ready without pressure. The original builder remained
 RuntimeDefault with zero restarts at this receipt; container selection requires
 the separate protected runtime PR and Argo rollout. No publication retry ran.
+
+## Verified rollout; publication headroom hold
+
+Protected runtime PR #1301 merged as `6dd7b02c`. Natural Argo reconciliation
+reached that exact revision with Synced/Healthy/Succeeded and one Ready builder
+with zero restarts. Independent running-OCI readback matched the reviewed
+profile hash above. The effective/bounding capabilities retained NET_ADMIN,
+seccomp filtering was active, Nix reported sandbox=true and require-sigs=true
+with nixbld users, and the actual cgroup memory.max was 1073741824 bytes.
+Baseline memory peak was 24256512 bytes with zero max/OOM/OOM-kill events.
+These observations prove profile delivery, not successful sandbox builds.
+
+At 2026-10-13 05:09 UTC, fresh metrics showed 1243.4 MiB measured headroom
+on the selected worker and 978.4 MiB on the other eligible worker. All four
+nodes were Ready without pressure/network unavailability, with fresh leases;
+the repository preflight nevertheless rejected publication because the selected
+worker was below its required 1536 MiB headroom. No publication command or
+build attempt started, so the single newly authorized retry remains unused.
+No signed outputs or warm-CI substitution were established.
+
+Keep the 1GiB limit and existing preflight threshold. Resume only after natural
+headroom recovery passes fresh full preflight and the separate coordinator
+publication release, or after a separately reviewed and explicitly approved
+capacity change. Do not restart Pods, reclaim host caches, move the workload,
+change other workloads, or lower the guard to manufacture acceptance. Keep
+actual publication, fresh signed substitutions and live checks as separate
+completion gates. This receipt is dated evidence; recheck live metrics.
