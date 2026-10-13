@@ -56,7 +56,7 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the
   existing app hostnames such as `https://grafana.stinkyboi.com`.
 - `affine` is an anonymous Octelium app Service. AFFiNE signup is closed after
