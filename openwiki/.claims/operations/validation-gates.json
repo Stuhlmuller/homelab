@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:597edd217818631e0674a257c922b5f8cf8ff1240b14973b03752c5c3af1e017",
+  "pageVersion": "sha256:f9df457fe0dc71d1c0cdb5aa843ef25a82df0cd57dfaf7ba10f08ee49566181e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
+          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
+          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
         }
       ]
     },
@@ -557,6 +557,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:47:12.774Z"
+    "at": "2026-10-13T04:56:11.100Z"
   }
 }

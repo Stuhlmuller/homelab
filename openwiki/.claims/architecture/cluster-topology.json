@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fa81a14648234d13d9e618ce0cdd4c68d3830d7a7aad426849c7675b0532cb13",
+  "pageVersion": "sha256:cbc5056752c9d755db1a28062af1262a5720d173007e51a845d353f6ca08e5bf",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -60,7 +60,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
+          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
@@ -89,6 +89,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:47:12.774Z"
+    "at": "2026-10-13T04:56:11.100Z"
   }
 }

@@ -313,9 +313,10 @@ without adding explicit post-daemon state cleanup. `tags` is intentionally absen
 from the action inputs: authkey mode uses the key's tags, and the status guard
 requires exactly one expected tag.
 
-Nine workflows join the mesh: Terragrunt plan/apply, Harbor mirror and core image
-publication, NOFX publication, diagnostics, the retained private catalog lane,
-Cordium execution, and Cordium login denial. `install-kubeconfig.sh --tailscale` only accepts an
+Nine workflows join the mesh: Terragrunt plan/apply, Harbor mirror and core
+image publication, NOFX publication, diagnostics, the retained private
+catalog lane, Cordium execution, and Cordium login denial.
+`install-kubeconfig.sh --tailscale` only accepts an
 ephemeral GitHub Actions runner and refuses to replace an existing kubeconfig.
 It uses the fixed TLS operator endpoint with an empty credential entry; network
 identity supplies authentication. No persistent Kubernetes token enters GitHub.

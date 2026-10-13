@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:49c0d31f76f59fafc5b11488dc439217beaffabdaa48fe10efa7e57b0b27f5e1",
+  "pageVersion": "sha256:688bb5b8544c08116c752e8597d7cf746aac1e9b7fb55a0f40cc30b975fe0eae",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
+          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -309,6 +309,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:47:12.774Z"
+    "at": "2026-10-13T04:56:11.100Z"
   }
 }
