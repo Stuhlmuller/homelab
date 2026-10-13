@@ -79,3 +79,12 @@ with zero restarts. Stop-on-failure held worker-1 installation and all builder
 selection/publication. Correct only verification and rollback readback paths
 through a protected PR before any renewed scoped installation release. No
 additional apply, reboot, resource change or publication followed this failure.
+
+After the protected readback repair merged as `02efe9cb`, worker 0 was verified
+read-only with no second apply; worker 1's first released helper completed with
+exit 0. Independent readback found matching active/persistent configurations,
+unchanged boots and the same approved materialized profile on both workers:
+canonical SHA256 `aa9efdab8100bee9695b8c72c107ddf338a740cff4190e0611893c31d455b760`.
+All four nodes remained Ready without pressure. The original builder remained
+RuntimeDefault with zero restarts at this receipt; container selection requires
+the separate protected runtime PR and Argo rollout. No publication retry ran.
