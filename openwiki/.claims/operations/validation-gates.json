@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3231cd32f0c1ca08d7e080dd2b9cdb5c13ec284831894b3ddaa1d883720cc7b9",
+  "pageVersion": "sha256:da01a6a773109be70944eb13db071874b5de48f0d286bcc85949fb1e22da8482",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         }
       ]
     },
@@ -479,10 +479,40 @@
           "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
         }
       ]
+    },
+    {
+      "id": "claim_187df0e001164a33a4af918fdd3ce9bc",
+      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies a no-reboot apply through bounded asynchronous profile readback without repeating apply. Rollback refuses a profile still selected by a Pod and requires actual file-not-found readback; transport/authentication failures cannot establish deletion. Nine offline tests cover the exact baseline hash, idempotence, conflict rejection, stale configuration, selected-profile rollback refusal, delayed readback, wrong content, deadline expiry and deletion versus transport failure. Profile installation precedes a separately protected builder-only Localhost selection and one separately released bounded publication; the current manifest remains RuntimeDefault, and no live acceptance follows from declaration alone.",
+      "evidence": [
+        {
+          "resource": "repo://.talos/patches/nix-builder-seccomp.yaml",
+          "version": "repo-file-v1:sha256:f39a1f759f0e6cfe05bd610617c5a20fed6e6db19717b3aa096210b3eb863e69"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+        },
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:2675e64b20854167b583766faa452e5b303b4055dc81c1ca72d3067bbe1d7490"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
+          "version": "repo-file-v1:sha256:c0792545f5eedca0f0875adcafef1c319399e2a738dd66393ea554ac492b83fc"
+        },
+        {
+          "resource": "repo://scripts/talos-nix-builder-seccomp.py",
+          "version": "repo-file-v1:sha256:590bccdafc492be7bf608c53ca92eb72134649b5be403b3c6d862a197cddc36c"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T07:11:29.496Z"
+    "at": "2026-10-13T03:35:07.540Z"
   }
 }

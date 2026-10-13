@@ -57,6 +57,7 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
+python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
