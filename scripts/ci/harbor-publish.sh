@@ -194,22 +194,38 @@ done
 
 # Credentials stay in restrictive temporary files; transfer output is withheld
 # by the workflow. Harbor validates its normal public hostname and certificate.
-publisher_parameter=/homelab/harbor/robot-push-password
-[[ "$mode" != mirror ]] || publisher_parameter=/homelab/harbor/mirror-robot-push-password
-aws ssm get-parameter --region us-west-2 \
-  --name "$publisher_parameter" --with-decryption \
-  --query Parameter.Value --output text >"$scratch/harbor-password"
-[[ -s "$scratch/harbor-password" ]]
-publisher="robot\$homelab+publisher"
-[[ "$mode" != mirror ]] || publisher="robot\$mirror+publisher"
-skopeo login --authfile "$scratch/auth.json" --username "$publisher" \
-  --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
-if [[ "$mode" == publish ]]; then
+if [[ "$mode" == mirror ]]; then
+  aws ssm get-parameter --region us-west-2 \
+    --name /homelab/harbor/mirror-robot-push-password --with-decryption \
+    --query Parameter.Value --output text >"$scratch/mirror-publisher-password"
+  [[ -s "$scratch/mirror-publisher-password" ]]
+  skopeo login --authfile "$scratch/mirror-publisher-auth.json" \
+    --username "robot\$mirror+publisher" --password-stdin harbor.stinkyboi.com \
+    <"$scratch/mirror-publisher-password" >/dev/null
+  rm -f -- "$scratch/mirror-publisher-password"
+
+  # Keep the publisher credential on destination writes only. This distinct
+  # pull identity is the receipt for the private Harbor consumer path.
+  aws ssm get-parameter --region us-west-2 \
+    --name /homelab/harbor/mirror-robot-pull-password --with-decryption \
+    --query Parameter.Value --output text >"$scratch/mirror-pull-password"
+  [[ -s "$scratch/mirror-pull-password" ]]
+  skopeo login --authfile "$scratch/mirror-pull-auth.json" \
+    --username "robot\$mirror+pull" --password-stdin harbor.stinkyboi.com \
+    <"$scratch/mirror-pull-password" >/dev/null
+  rm -f -- "$scratch/mirror-pull-password"
+else
+  aws ssm get-parameter --region us-west-2 \
+    --name /homelab/harbor/robot-push-password --with-decryption \
+    --query Parameter.Value --output text >"$scratch/harbor-password"
+  [[ -s "$scratch/harbor-password" ]]
+  skopeo login --authfile "$scratch/auth.json" --username "robot\$homelab+publisher" \
+    --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
   mkdir "$scratch/docker"
   docker --config "$scratch/docker" login --username "robot\$homelab+publisher" \
     --password-stdin harbor.stinkyboi.com <"$scratch/harbor-password" >/dev/null
+  rm -f -- "$scratch/harbor-password"
 fi
-rm -f -- "$scratch/harbor-password"
 
 if [[ "$mode" == mirror ]]; then
   # Only anonymous upstream reads may populate this public project. Publish real
@@ -223,7 +239,7 @@ if [[ "$mode" == mirror ]]; then
     tag="${source_digest#sha256:}"
     mirror_source="$source"
     mirror_phase="digest-lookup"
-    if skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+    if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
       "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"; then
       : # Resume only after checking the exact bytes below.
     else
@@ -245,11 +261,11 @@ if [[ "$mode" == mirror ]]; then
       mirror_category="command-failed"
       mirror_phase="destination-copy"
       skopeo copy --all --preserve-digests --src-no-creds \
-        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
+        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
         "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
       rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
-      skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+      skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
         "docker://${destination}:${tag}" >"$scratch/manifest.json" 2>"$scratch/mirror-error"
     fi
     mirror_phase="digest-verify"
@@ -261,20 +277,20 @@ if [[ "$mode" == mirror ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
       mirror_phase="alias-copy"
-      skopeo copy --all --preserve-digests --src-no-creds \
-        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/auth.json" \
+      skopeo copy --all --preserve-digests \
+        --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
         "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
       mirror_phase="alias-verify"
-      skopeo inspect --raw --no-creds --authfile "$scratch/anonymous-auth.json" \
+      skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
         "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"
       mirror_category="digest-mismatch"
       [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
       mirror_category="command-failed"
     fi
-    mirror_phase="anonymous-pull"
+    mirror_phase="authenticated-pull"
     pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
-    skopeo copy --all --preserve-digests --src-no-creds \
-      --src-authfile "$scratch/anonymous-auth.json" \
+    skopeo copy --all --preserve-digests \
+      --src-authfile "$scratch/mirror-pull-auth.json" \
       "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
     mirror_phase="pull-verify"
     skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"

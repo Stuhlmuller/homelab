@@ -13,6 +13,11 @@ Private Harbor routing and fail-closed Talos mirrors are separate from pod
 policies. Retain the documented upstream cold-bootstrap/recovery path; an empty
 cluster cannot bootstrap its own in-cluster registry.
 
+Before the `mirror` project becomes private, reconcile the dedicated
+`robot$mirror+pull` credential and verify authenticated registry configuration
+on every Talos node. Keep `mirror` public through that node-auth phase; flipping
+privacy earlier can strand uncached image pulls.
+
 1. Publish the reviewed [Chainguard scope](harbor-image-mirroring.md#delivery)
    before merging any consuming references. Its seven latest-tag index digests
    were resolved anonymously on 2026-10-10; each index includes Linux amd64
@@ -151,7 +156,7 @@ gates unchanged until publication and its internal reference are accepted.
 The prior seven-image publication receipt covers only those seven entries,
 not the six additions: Go, nginx, Node runtime, Node dev, static and Wolfi base.
 Any publication of the expanded scope requires a new
-protected production approval and complete anonymous download acceptance.
+protected production approval and complete authenticated Harbor-pull acceptance.
 
 The publisher stages original multi-platform indexes using Skopeo's `dir:`
 transport. The native offline regression in `harbor-publish-test.py` verifies

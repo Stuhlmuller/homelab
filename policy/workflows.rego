@@ -357,13 +357,13 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'83e77b32c7cd03df55598c7890bbbf9f9e99103e3dace32d8138e0596e739817  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'a46356d726c9e41bfcfa3cc24d14c2840a5de96f5e9cd9272533788029e8a0a9  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
   exit 1
 fi
-echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."`
+echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."`
 
 private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]

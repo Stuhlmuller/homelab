@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:52037ad5bb93391de746d3429e0c955ec2e05cdddd3da36d3498ad7fb8ad7f8b",
+  "pageVersion": "sha256:3231cd32f0c1ca08d7e080dd2b9cdb5c13ec284831894b3ddaa1d883720cc7b9",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
+          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
+          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -126,15 +126,15 @@
     },
     {
       "id": "claim_091ce963d4324833853a0c259f070cb2",
-      "statement": "Traefik scoped image publication retains digest, tag alias and complete anonymous-pull verification, while Talos regression tests reject scoped, untitled and mismatched-revision receipts as full-catalog evidence.",
+      "statement": "Traefik scoped image publication retains digest, tag alias, and complete authenticated Harbor-pull verification with the dedicated reader, while Talos regression tests reject scoped, untitled, and mismatched-revision receipts as full-catalog evidence.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
+          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
+          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -220,10 +220,10 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L256-L286",
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L403-L433",
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
+          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
+          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
         }
       ]
     },
@@ -388,15 +388,15 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
+          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d5e1a1a6c2543bef1c720d4d75029608a9225d38307ee70bcc4ec7475f981510"
+          "version": "repo-file-v1:sha256:865026a9d761fea5952c54d124b34112d1a346830771d922f9a224518897c8ba"
         }
       ]
     },
@@ -406,11 +406,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
+          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:cc29061b15b64a9d835382550b334d398d18c2c32bba4291cc7445383d1fb30c"
+          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
         }
       ]
     },
@@ -457,10 +457,32 @@
           "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
         }
       ]
+    },
+    {
+      "id": "claim_54ce065d40c546a5a316f37b3fd05af7",
+      "statement": "Offline validation runs credential-materializer fixtures that reject unsafe files/directories, stale main, inherited AWS credentials and proxies, and private-value leaks. Talos fixtures limit registry auth to robot$mirror+pull, reject unrelated Harbor auth, and remove only their owned entry on rollback. An executable ordinary mirror rollout requires supplied reader auth unless its captured configuration already has owned reader auth; a missing credential stops before Harbor receipt checks, candidate machine-config rendering, or apply-config. The fixtures do not read SSM or mutate nodes.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirror-credential-test.py",
+          "version": "repo-file-v1:sha256:ce50e936a2072409efad48ac542f1d3c675752df788b3972dc2ca9d6bcb66d19"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirror-credential.py",
+          "version": "repo-file-v1:sha256:4190e8aa37cff6b0d3b4590c3013258aa2fac5563688193cbe08a17fa887c2cc"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T05:12:36.902Z"
+    "at": "2026-10-12T07:11:29.496Z"
   }
 }
