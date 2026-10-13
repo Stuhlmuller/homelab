@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:dff7afbe2e33bf48a2ca36404bc57b23f1fbc2e202657f935b72e47672f899a0",
+  "pageVersion": "sha256:537ecb1c4ce0ea11e0b554dc5cd7f384fc2f046af24b75debb9b0c41168f34cf",
   "claims": [
     {
       "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:82ede7b3dff3db22a22b1d3b5d859d11ef1b1cccc8c970d47070b0d7386a7e49"
+          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:82ede7b3dff3db22a22b1d3b5d859d11ef1b1cccc8c970d47070b0d7386a7e49"
+          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
         },
         {
           "resource": "repo://scripts/entra-ci-configure.py",
@@ -67,6 +67,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:33:12.797Z"
+    "at": "2026-10-13T04:47:12.774Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:032ad39612bc43f1ba872efb5b58517fee12908f9778343f5caa0b650a846c9a",
+  "pageVersion": "sha256:49c0d31f76f59fafc5b11488dc439217beaffabdaa48fe10efa7e57b0b27f5e1",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -151,7 +151,7 @@
       "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L169-L191",
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L170-L192",
           "version": "repo-lines-v1:sha256:0240c52d331907260bbff6155cd19ac9bb48c54aa317d867f346cd9cb952bc32:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3OTAzMmM2NGVmYjFhYWUyODZlZWNmZjcwMzc5ZGI2ZmNkMTgwYmM3YjA0YjM0YzZmMWE4MDg4ZWJkNDhlY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI5MGRhMGRmODBjYTNlY2RjZTdjYTk0MTdlOTFkYTU4YzhkOTczNzVmNzRlMjBiZDRiNjY2ZDkxMDE1MGIifQ"
         },
         {
@@ -193,7 +193,7 @@
       "statement": "The trusted Mac CI publisher passes raw signing keys through stdin rather than command arguments or temporary files to avoid the sandboxed application's private-file restriction.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L85-L88",
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L86-L89",
           "version": "repo-lines-v1:sha256:92bf36c6a1187a072e7a07f1d57a0e20b2dc0dde9b508deb3512a5077f92971f:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmFjNTMxZjliZDc0NDEyNzE2MzZhNmRhNjMzNWIzNTMxOTdmYTUwYzZkNzJlY2NlNGUzNDdlOGQxOGMwYWYxZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTE5Yjg0YzExY2VjNTQ3MDdjODA2MDk3ZjZmMjNmYTQ3ZjA5ZGYwZDU5YzM1NTQ2MzU1NTU1MGYxMjllMTBkMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzFiMWRkOTlhNjFkNGY0MzE0MWRhYmQ1Yjc4YjRiZmJiMzdkNWQxNzY3OGQ4YzZmYTBhMWJiOTczMTI4NmIwOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzI2YTE2ZTVlNTFhMzEzMjljNzE5MmZmYzk2OTllMDkyMDUzNmIxYjNmMmUzY2RmNTc0YTA2NDdmNzlkNWNhZiJ9"
         },
         {
@@ -267,7 +267,7 @@
       "statement": "The publisher durably saves a validated pending wrapper before bounded authority readback and resumes it without re-signing after timeout; preview and retirement do not consume pending receipts. A separate guarded orphan recovery requires current provider/Mac/recent timestamp metadata, absent receipt and fixed secrets, and an empty affected-signature lookup before removing only that authority without re-signing.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L120-L152",
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L121-L153",
           "version": "repo-lines-v1:sha256:3526673354f93d1e8f8794ba19b7896f625cc75300bcf75c4e316622900b01e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5ZGZiMjQzYmIyN2MwMmYyMTcyZDNiNDU5MDIzYTYyNTMzYjk4YWEyMWVmOWI2ZmFkZmU2YzEyZDFlZGNiYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1MWJiOTVmMTUwM2RlYTcyYWZkMGQ2N2MxM2M2NzRkZTA4ZWQ0ZjVjYzg5NGNlOGIxY2Q3YWZlNTViMzBhN2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVhODY4OTMzZmI1ODMyYzRkNzRhMjFmYzk3YjNjODMwM2IwZTE5MWQ1MGJhOTZkZTk1NmE5ZjEwY2U3MTVjYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjODIwNTIwNTQxMzc1NTMyOWMxYTE0YmI5NDg3ODliYzM1YmYxNzhkN2QzNTMwMzI2Zjg2MWYyZDJhM2VjMzYifQ"
         },
         {
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:82ede7b3dff3db22a22b1d3b5d859d11ef1b1cccc8c970d47070b0d7386a7e49"
+          "version": "repo-file-v1:sha256:1c6d8c7de2f386b6e7a8f286265bc9914f09e62f40c56f888bd6d4b6e119a814"
         },
         {
           "resource": "repo://docs/cordium-ci.md",
@@ -309,6 +309,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T04:52:40.862Z"
+    "at": "2026-10-13T04:47:12.774Z"
   }
 }
