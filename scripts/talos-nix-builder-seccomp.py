@@ -95,7 +95,7 @@ def verify_file(client, wanted):
             raise RuntimeError("Profile readback did not converge within its deadline")
         try:
             result = subprocess.run([operator.TALOSCTL, *client[1:], "read",
-                                     "/var/lib/seccomp/profiles/" + NAME],
+                                     "/var/lib/kubelet/seccomp/profiles/" + NAME],
                                     check=True, capture_output=True, text=True, timeout=min(5, remaining))
             if wanted is not None:
                 if json.loads(result.stdout) != wanted:
@@ -104,7 +104,7 @@ def verify_file(client, wanted):
         except (subprocess.SubprocessError, json.JSONDecodeError) as error:
             missing = (isinstance(error, subprocess.CalledProcessError)
                        and re.search(r"rpc error: code = NotFound desc = stat "
-                                     + re.escape("/var/lib/seccomp/profiles/" + NAME)
+                                     + re.escape("/var/lib/kubelet/seccomp/profiles/" + NAME)
                                      + r": no such file or directory", error.stderr or ""))
             if wanted is None and missing:
                 return

@@ -72,11 +72,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:da01a6a773109be70944eb13db071874b5de48f0d286bcc85949fb1e22da8482",
+      "pageVersion": "sha256:c483bce2b7738e4c3a05c62543532c1d3714c1212e39a4a2abb93b7f70f510ee",
       "completedBy": "codex",
-      "completedRunId": "75799991-c781-48ce-b487-1435eed30dfb",
-      "gitHead": "a2e263aee3dee97f16c03df5da9cff6b119f3f76",
-      "sourceFingerprint": "sha256:d2a7132463ebbc2a5978b590311da449943457850fcef3b18f14654d47ca90c0"
+      "completedRunId": "bbee61e0-7d52-42e7-b10a-64f5dd800b0d",
+      "gitHead": "a73fd76b985bd4645769cbcb1c083b2e7db89c38",
+      "sourceFingerprint": "sha256:8dee944de9acbed72ad0db88ff0161a9d977192716f7bf6b14f7674e481d686b"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "902a0c25f1879c58b057ef6a7030bbf400908973",

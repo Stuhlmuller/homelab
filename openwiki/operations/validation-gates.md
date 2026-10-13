@@ -114,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T03:35:07.540Z" }
+generated: { by: "codex", at: "2026-10-13T03:55:11.419Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T03:35:07.540Z
+    at: 2026-10-13T03:55:11.419Z
 ---
 
 # Validation Gates
@@ -160,7 +160,12 @@ runs nine focused profile tests, including the exact one-syscall baseline
 hash, idempotence, conflicting-profile refusal, configuration races and
 refusal to remove a profile still selected by a Pod, delayed readback,
 wrong content and deadline expiry. Rollback must verify actual file absence;
-authentication or transport failures cannot establish deletion. Retain sandboxing,
+authentication or transport failures cannot establish deletion. Read the pinned
+Talos 1.11.3 host path `/var/lib/kubelet/seccomp/profiles`; Kubernetes selection
+stays relative to kubelet as `profiles/<name>`. The initial worker-0 helper
+installed the approved file but stopped at a legacy-path readback. Worker-1
+installation and all selection/publication remained held; the readback-path
+repair needs its own protected checks and renewed coordinator release. Retain sandboxing,
 signatures, the 1 GiB limit and fresh preflight before a separately released
 single bounded publication retry; any terminal failure consumes that attempt.
 

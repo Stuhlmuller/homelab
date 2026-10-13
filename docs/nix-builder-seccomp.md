@@ -65,3 +65,17 @@ profiles, and requires an actual file-not-found readback before reporting
 success, including an already absent config entry. Transport/authentication
 failures never prove file absence. Retain historical
 failure evidence. Sandbox, signature checks and the 1GiB limit never change.
+
+## Talos 1.11.3 materialized path
+
+The pinned Talos `SeccompProfilesDirectory` constant is
+`/var/lib/kubelet/seccomp/profiles`; the Kubernetes Localhost reference remains
+`profiles/nix-builder-containerd-2.1.4.json` relative to kubelet's seccomp root.
+On 2026-10-13 UTC, the first released worker-0 helper installed the approved
+profile but exited at readback because it checked the legacy
+`/var/lib/seccomp/profiles` path. Read-only inspection found the exact reviewed
+profile at the pinned kubelet path; the original builder remained RuntimeDefault
+with zero restarts. Stop-on-failure held worker-1 installation and all builder
+selection/publication. Correct only verification and rollback readback paths
+through a protected PR before any renewed scoped installation release. No
+additional apply, reboot, resource change or publication followed this failure.
