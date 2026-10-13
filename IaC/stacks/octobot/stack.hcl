@@ -3,6 +3,9 @@ locals {
 }
 
 inputs = {
+  metadata = {
+    finalizers = ["resources-finalizer.argocd.argoproj.io"]
+  }
   defaults     = local.shared.argocd_defaults
   dependencies = ["cert-manager", "istio", "platform-storage"]
   spec = {
