@@ -37,8 +37,9 @@ additional bounded publication attempt. Preparation alone is not approval.
 
    The helper preserves active/persistent configuration and all unrelated
    profiles, refuses configuration/boot races, validates strictly for metal,
-   applies only the named profile with no reboot, then verifies exact
-   installed content. No RuntimeDefault/global OCI setting is changed.
+   applies only the named profile with no reboot, then waits up to 30 seconds
+   for asynchronous exact profile readback (each read times out after 5 seconds;
+   no second apply). No RuntimeDefault/global OCI setting is changed.
 3. Only after both nodes contain the exact profile, merge the container-only
    Localhost selection and README through a second signed protected PR.
    Let Argo reconcile main; verify exact revision, Synced/Healthy/Succeeded,
@@ -60,5 +61,7 @@ and natural Argo reconciliation. Once no Pod selects this profile, use the
 same scoped helper with `--rollback`, first validate, then explicitly released
 `--execute --expected-sha <full-current-main-sha>` on each worker. The helper
 refuses profile removal while any existing Pod selects it, preserves other
-profiles, and treats an already absent profile as complete. Retain historical
+profiles, and requires an actual file-not-found readback before reporting
+success, including an already absent config entry. Transport/authentication
+failures never prove file absence. Retain historical
 failure evidence. Sandbox, signature checks and the 1GiB limit never change.

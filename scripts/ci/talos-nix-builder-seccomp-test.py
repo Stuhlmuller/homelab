@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -73,6 +74,44 @@ class ProfileTests(unittest.TestCase):
         with patch.object(module.operator, "run", side_effect=["Talos v1.11.3", json.dumps({"items": [pod]})]):
             with self.assertRaisesRegex(RuntimeError, "Revert workload"):
                 module.reconcile(args)
+
+    def test_readback_waits_for_controller_without_reapplying(self):
+        ready = subprocess.CompletedProcess([], 0, json.dumps(self.wanted["value"]), "")
+        pending = subprocess.CalledProcessError(1, ["read"])
+        with patch.object(module.subprocess, "run", side_effect=[pending, ready]) as run, \
+                patch.object(module.time, "sleep"):
+            module.verify_file(["talosctl", "--nodes", "fixture"], self.wanted["value"])
+        self.assertEqual(run.call_count, 2)
+        self.assertTrue(all("read" in call.args[0] and "apply-config" not in call.args[0]
+                            and call.kwargs["timeout"] == 5 for call in run.call_args_list))
+
+    def test_readback_refuses_wrong_content_and_expired_deadline(self):
+        with patch.object(module.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "{}", "")):
+            with self.assertRaisesRegex(RuntimeError, "differs"):
+                module.verify_file(["talosctl"], self.wanted["value"])
+
+    def test_rollback_waits_for_actual_file_not_found(self):
+        exists = subprocess.CompletedProcess([], 0, "{}", "")
+        missing = subprocess.CalledProcessError(1, ["read"], stderr=(
+            "error reading: rpc error: code = NotFound desc = stat "
+            "/var/lib/seccomp/profiles/" + module.NAME + ": no such file or directory"))
+        with patch.object(module.subprocess, "run", side_effect=[exists, missing]) as run, \
+                patch.object(module.time, "sleep"):
+            module.verify_file(["talosctl"], None)
+        self.assertEqual(run.call_count, 2)
+        self.assertTrue(all("apply-config" not in call.args[0] for call in run.call_args_list))
+
+    def test_rollback_transport_failure_cannot_prove_absence(self):
+        for stderr in ("authentication failed", "rpc error: code = NotFound desc = stat /other: no such file or directory"):
+            failure = subprocess.CalledProcessError(1, ["read"], stderr=stderr)
+            with patch.object(module.subprocess, "run", side_effect=failure), \
+                    patch.object(module.time, "monotonic", side_effect=[0, 1, 31]):
+                with self.assertRaisesRegex(RuntimeError, "deadline"):
+                    module.verify_file(["talosctl"], None)
+        with patch.object(module.subprocess, "run", side_effect=subprocess.CalledProcessError(1, ["read"])), \
+                patch.object(module.time, "monotonic", side_effect=[0, 31]):
+            with self.assertRaisesRegex(RuntimeError, "deadline"):
+                module.verify_file(["talosctl"], self.wanted["value"])
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eeefa931c590eb357f195714218258149891cc469cc65177b53eeed8eeb6af7e",
+  "pageVersion": "sha256:da01a6a773109be70944eb13db071874b5de48f0d286bcc85949fb1e22da8482",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -482,7 +482,7 @@
     },
     {
       "id": "claim_187df0e001164a33a4af918fdd3ce9bc",
-      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies a no-reboot apply; rollback refuses a profile still selected by a Pod. Five offline tests cover the exact baseline hash, idempotence, conflict rejection, stale configuration and selected-profile rollback refusal. Profile installation precedes a separately protected builder-only Localhost selection and one separately released bounded publication; the current manifest remains RuntimeDefault, and no live acceptance follows from declaration alone.",
+      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies a no-reboot apply through bounded asynchronous profile readback without repeating apply. Rollback refuses a profile still selected by a Pod and requires actual file-not-found readback; transport/authentication failures cannot establish deletion. Nine offline tests cover the exact baseline hash, idempotence, conflict rejection, stale configuration, selected-profile rollback refusal, delayed readback, wrong content, deadline expiry and deletion versus transport failure. Profile installation precedes a separately protected builder-only Localhost selection and one separately released bounded publication; the current manifest remains RuntimeDefault, and no live acceptance follows from declaration alone.",
       "evidence": [
         {
           "resource": "repo://.talos/patches/nix-builder-seccomp.yaml",
@@ -494,7 +494,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:69a96b7f620100b60539cc78587ddc685ea877c1e438374901a8513df89b7300"
+          "version": "repo-file-v1:sha256:2675e64b20854167b583766faa452e5b303b4055dc81c1ca72d3067bbe1d7490"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -502,17 +502,17 @@
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
-          "version": "repo-file-v1:sha256:b248326f2cb12406eb5e9d87aba741c1f325637422e067d71ac6de6b2c0b88be"
+          "version": "repo-file-v1:sha256:c0792545f5eedca0f0875adcafef1c319399e2a738dd66393ea554ac492b83fc"
         },
         {
           "resource": "repo://scripts/talos-nix-builder-seccomp.py",
-          "version": "repo-file-v1:sha256:49799aaa4f2b248e11402ecd4d916efa16a4e27077343907cc6b97fce202f12e"
+          "version": "repo-file-v1:sha256:590bccdafc492be7bf608c53ca92eb72134649b5be403b3c6d862a197cddc36c"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T03:24:17.290Z"
+    "at": "2026-10-13T03:35:07.540Z"
   }
 }

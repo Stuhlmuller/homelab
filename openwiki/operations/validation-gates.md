@@ -114,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T03:24:17.290Z" }
+generated: { by: "codex", at: "2026-10-13T03:35:07.540Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T03:24:17.290Z
+    at: 2026-10-13T03:35:07.540Z
 ---
 
 # Validation Gates
@@ -151,13 +151,16 @@ the deny-by-default action. Stage 1 installs the named profile on the two
 eligible workers through `talos-nix-builder-seccomp.py`, after protected merge
 and explicit release. The helper requires matching active/persistent configs,
 preserves other profiles, rejects configuration/boot drift, validates strictly,
-and uses a no-reboot apply with exact profile readback. Stage 2 may select
+and uses a no-reboot apply with bounded exact profile readback, waiting
+for asynchronous controller convergence without repeating apply. Stage 2 may select
 Localhost only for the builder container after both node files are verified.
 The current manifest still selects RuntimeDefault; declaring the profile
 proves neither installation nor successful publication. Offline validation
-runs five focused profile tests, including the exact one-syscall baseline
+runs nine focused profile tests, including the exact one-syscall baseline
 hash, idempotence, conflicting-profile refusal, configuration races and
-refusal to remove a profile still selected by a Pod. Retain sandboxing,
+refusal to remove a profile still selected by a Pod, delayed readback,
+wrong content and deadline expiry. Rollback must verify actual file absence;
+authentication or transport failures cannot establish deletion. Retain sandboxing,
 signatures, the 1 GiB limit and fresh preflight before a separately released
 single bounded publication retry; any terminal failure consumes that attempt.
 

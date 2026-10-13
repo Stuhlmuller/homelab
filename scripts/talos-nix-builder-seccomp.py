@@ -10,6 +10,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "nix-builder-containerd-2.1.4.json"
@@ -85,6 +86,33 @@ def ready(node):
     return boot
 
 
+def verify_file(client, wanted):
+    # Talos materializes the declared profile asynchronously after config apply.
+    deadline = time.monotonic() + 30
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError("Profile readback did not converge within its deadline")
+        try:
+            result = subprocess.run([operator.TALOSCTL, *client[1:], "read",
+                                     "/var/lib/seccomp/profiles/" + NAME],
+                                    check=True, capture_output=True, text=True, timeout=min(5, remaining))
+            if wanted is not None:
+                if json.loads(result.stdout) != wanted:
+                    raise RuntimeError("Installed profile differs from reviewed content")
+                return
+        except (subprocess.SubprocessError, json.JSONDecodeError) as error:
+            missing = (isinstance(error, subprocess.CalledProcessError)
+                       and re.search(r"rpc error: code = NotFound desc = stat "
+                                     + re.escape("/var/lib/seccomp/profiles/" + NAME)
+                                     + r": no such file or directory", error.stderr or ""))
+            if wanted is None and missing:
+                return
+        if time.monotonic() >= deadline:
+            raise RuntimeError("Profile readback did not converge within its deadline")
+        time.sleep(min(1, max(0, deadline - time.monotonic())))
+
+
 def reconcile(args):
     if not re.search(r"^Talos v1\.11\.3$", operator.run("talosctl", "version", "--client", "--short"), re.MULTILINE):
         raise RuntimeError("Requires talosctl 1.11.3")
@@ -120,10 +148,7 @@ def reconcile(args):
                 operator.run(*client, "apply-config", "--mode", "no-reboot", "--file", str(candidate))
             if capture(client, directory) != after or ready(args.node) != boot:
                 raise RuntimeError("Post-apply configuration/boot verification failed")
-            if not args.rollback:
-                actual = json.loads(operator.run(*client, "read", "/var/lib/seccomp/profiles/" + NAME))
-                if actual != wanted["value"]:
-                    raise RuntimeError("Installed profile differs from reviewed content")
+            verify_file(client, None if args.rollback else wanted["value"])
     print(f"{operator.NODES[args.node]}: profile {'reconciled' if args.execute else 'validated only'}")
 
 
