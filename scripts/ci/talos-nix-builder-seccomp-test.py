@@ -83,6 +83,7 @@ class ProfileTests(unittest.TestCase):
             module.verify_file(["talosctl", "--nodes", "fixture"], self.wanted["value"])
         self.assertEqual(run.call_count, 2)
         self.assertTrue(all("read" in call.args[0] and "apply-config" not in call.args[0]
+                            and call.args[0][-1] == "/var/lib/kubelet/seccomp/profiles/" + module.NAME
                             and call.kwargs["timeout"] == 5 for call in run.call_args_list))
 
     def test_readback_refuses_wrong_content_and_expired_deadline(self):
@@ -94,7 +95,7 @@ class ProfileTests(unittest.TestCase):
         exists = subprocess.CompletedProcess([], 0, "{}", "")
         missing = subprocess.CalledProcessError(1, ["read"], stderr=(
             "error reading: rpc error: code = NotFound desc = stat "
-            "/var/lib/seccomp/profiles/" + module.NAME + ": no such file or directory"))
+            "/var/lib/kubelet/seccomp/profiles/" + module.NAME + ": no such file or directory"))
         with patch.object(module.subprocess, "run", side_effect=[exists, missing]) as run, \
                 patch.object(module.time, "sleep"):
             module.verify_file(["talosctl"], None)
