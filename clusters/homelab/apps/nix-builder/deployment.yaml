@@ -53,7 +53,8 @@ spec:
             runAsNonRoot: false
             allowPrivilegeEscalation: true
             seccompProfile:
-              type: RuntimeDefault
+              type: Localhost
+              localhostProfile: profiles/nix-builder-containerd-2.1.4.json
             capabilities:
               drop: [ALL]
               add: [CHOWN, DAC_OVERRIDE, FOWNER, KILL, NET_ADMIN, SETGID, SETUID, SYS_ADMIN, SYS_CHROOT]

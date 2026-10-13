@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c483bce2b7738e4c3a05c62543532c1d3714c1212e39a4a2abb93b7f70f510ee",
+  "pageVersion": "sha256:be921b582a34911a4883481a11703ed701904b0929a3ca3ddaa63c97a1d69e62",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -438,19 +438,23 @@
     },
     {
       "id": "claim_db920b24eb02493e958d3eaa74f91e5c",
-      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
+      "statement": "The Linux Nix builder retains NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. The manifest selects the dedicated deny-by-default Localhost profile only for the nix container while retaining Pod RuntimeDefault, sandbox/signature enforcement, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation. Both eligible worker profiles must be verified before selection rollout; each publication attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom. Rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
+          "version": "repo-file-v1:sha256:ce4b793ad09f4151fa5864adaaec0ff8ed9f144cd26bb168a2353f74c0e64e30"
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
+        },
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
@@ -482,7 +486,7 @@
     },
     {
       "id": "claim_187df0e001164a33a4af918fdd3ce9bc",
-      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies a no-reboot apply through bounded asynchronous readback of /var/lib/kubelet/seccomp/profiles without repeating apply. Rollback refuses a profile still selected by a Pod and requires actual exact-path file-not-found readback; transport/authentication failures cannot establish deletion. Nine offline tests cover the exact baseline hash, idempotence, conflict rejection, stale configuration, selected-profile rollback refusal, delayed readback with pinned host path, wrong content, deadline expiry and deletion versus transport failure. The documented initial worker0 helper installed the approved profile but stopped on a legacy readback path; worker1 installation and all selection/publication stayed held. Profile installation precedes separately protected builder-only Localhost selection and one separately released bounded publication; the current manifest remains RuntimeDefault.",
+      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies no-reboot installation through bounded asynchronous readback of /var/lib/kubelet/seccomp/profiles without repeating apply. Rollback refuses a selected profile and requires exact-path file-not-found readback, not transport/authentication failure. Nine tests cover baseline hash, idempotence, conflicts, configuration races, selected-profile refusal, delayed pinned-path readback, wrong content, deadline and deletion discrimination. The runbook records the initial worker0 legacy-path readback failure and subsequent protected repair: worker0 was verified read-only and worker1's first released helper succeeded, with both exact file hashes and unchanged boots. The current manifest declares container-only Localhost selection after those file receipts, retains Pod RuntimeDefault, and requires separate Argo/OCI verification and separately released bounded publication; no cache acceptance follows from source alone.",
       "evidence": [
         {
           "resource": "repo://.talos/patches/nix-builder-seccomp.yaml",
@@ -490,11 +494,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:53d4c62fe7ae67785f3408779a6dc71f2c75a24b68789b9ce555d09ad2a56e52"
+          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -513,6 +517,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T03:55:11.419Z"
+    "at": "2026-10-13T04:31:46.031Z"
   }
 }
