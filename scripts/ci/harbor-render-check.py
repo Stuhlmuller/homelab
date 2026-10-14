@@ -190,7 +190,11 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
     for image_id, image in enrolled.items():
         destination = image["destination"]
         repository = destination.split("@", 1)[0].rsplit(":", 1)[0]
-        if not any(ref.split("@", 1)[0].rsplit(":", 1)[0] == repository for ref in rendered):
+        matching_references = {
+            ref for ref in rendered
+            if ref.split("@", 1)[0].rsplit(":", 1)[0] == repository
+        }
+        if not matching_references:
             continue
         receipt = state.get("receipts", {}).get(image_id)
         if image_id.startswith("chainguard-"):
@@ -204,7 +208,9 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
                 }
             plan = native_plans.get(image_id)
             verified = (plan is not None and NATIVE_RECEIPT_IMPORT.verify_imported_receipt(plan, receipt)[0]
-                        and f'{plan["destination_repository"]}@{plan["source_digest"]}' in rendered)
+                        and matching_references == {
+                            f'{plan["destination_repository"]}@{plan["source_digest"]}'
+                        })
             if not verified:
                 errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue

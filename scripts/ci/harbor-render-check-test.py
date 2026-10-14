@@ -233,6 +233,15 @@ class HarborRenderPrerequisites(unittest.TestCase):
             }}}))
             self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
 
+            resources[0]["spec"]["template"]["spec"]["containers"].append({
+                "name": "unverified-copy",
+                "image": plan["destination_ref"],
+            })
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Native Chainguard consumer requires protected workflow evidence: chainguard-python"
+            ])
+            resources[0]["spec"]["template"]["spec"]["containers"].pop()
+
             provenance["run_id"] = "invalid"
             state.write_text(json.dumps({"receipts": {"chainguard-python": {
                 "receipt": receipt, "provenance": provenance,

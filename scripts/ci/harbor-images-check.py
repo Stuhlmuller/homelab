@@ -254,7 +254,11 @@ def receipt_errors():
         except (OSError, ValueError, subprocess.SubprocessError):
             errors.append(f"Enrolled native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
             continue
-        if expected not in target_images:
+        target_native_images = {
+            reference for reference in target_images
+            if reference.split("@", 1)[0].rsplit(":", 1)[0] == plan["destination_repository"]
+        }
+        if target_native_images != {expected}:
             errors.append(
                 f"Enrolled native Chainguard consumer lacks exact verified digest: {consumer.get('consumer_id')}"
             )

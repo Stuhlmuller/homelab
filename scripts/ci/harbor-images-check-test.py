@@ -360,6 +360,10 @@ with tempfile.TemporaryDirectory() as directory:
         }}}))
         assert check.receipt_errors() == []
 
+        declared.extend(container_fragment(plan["destination_ref"]))
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@{receipt["destination_digest"]}')
+
         provenance["artifact_id"] = "invalid"
         check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
             "receipt": receipt, "provenance": provenance,
