@@ -206,6 +206,23 @@ Its amd64 configuration retains PostgreSQL 18.6, Debian Bookworm and
 Publication and fresh scans must precede Mastodon consumption; the newer digest
 alone is not evidence of remediation.
 
+The candidate's amd64 child 9551dd5bf356409a21b31248f49b33bba9bb1877365f3a7e933aecd9af3cf52d
+completed a fresh Harbor scan with four Critical findings: libsqlite3-0
+CVE-2025-7458, libxml2 CVE-2026-6653, zlib1g CVE-2023-45853 and Go stdlib
+CVE-2025-68121. The 12 Perl findings no longer appear. Exact image-layer
+inspection verified patched Perl 5.36.0-7+deb12u4 and unchanged SQLite, libxml2
+and zlib package versions. The complete index/platform publication and scan
+acceptance remain pending; this partial child result is not a delivery receipt.
+
+Exact entrypoint inspection found gosu invoked only when PostgreSQL starts as
+UID 0. The declared database runs as UID 65534; its root directory init replaces
+the entrypoint with bounded chown/chmod commands. Password checks and backups
+also replace the entrypoint. The bundled gosu binary contains Go 1.24.6 metadata,
+consistent with the stdlib finding. The
+[Go advisory](https://pkg.go.dev/vuln/GO-2026-4337) concerns TLS session resumption
+with changed certificate-authority configuration. Keep the package finding;
+this execution-path evidence does not clear the SQLite or libxml2 findings.
+
 Debian's [zlib advisory](https://security-tracker.debian.org/tracker/CVE-2023-45853)
 records that Bookworm does not build the affected contrib/minizip code from
 src:zlib. This explains the zlib1g installed-package finding; retain it without
