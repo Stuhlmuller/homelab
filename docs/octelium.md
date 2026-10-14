@@ -926,23 +926,30 @@ reaps the client so launchd can restart it. Session expiration still requires
 login; the original client hang trigger remains unknown. The supervisor is
 copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
 
-## Retire a public WEB Service
+## Retire an app Service
 
 Catalog apply does not prune removed Services. In a clean checkout of the
-reviewed removal commit on current `main`, use the operator admin login:
+reviewed current `main`, use the operator admin login:
 
 ```sh
 python3 -I scripts/octelium-service-retire.py \
-  --service <removed-service> --homedir <private-admin-login-directory>
+  --service <removed-service> --homedir <private-admin-login-directory> \
+  --removal-sha <app-removal-commit>
 python3 -I scripts/octelium-service-retire.py \
   --service <removed-service> --homedir <private-admin-login-directory> \
-  --expected-sha <current-main-sha> --execute
+  --removal-sha <app-removal-commit> --expected-sha <current-main-sha> --execute
 ```
 
-The helper accepts only a public WEB Service removed between `HEAD^` and
-`HEAD`, verifies the pinned CLI and transport, deletes that exact Service, and
-checks absence. Already absent succeeds. Run at the removal commit before
-other changes advance `main`. Retire its removed app DNS entry through the same reviewed commit:
+The helper requires an ancestor removal commit whose parent catalog declares
+that public WEB Service, with no matching entry in current source. It also
+accepts `<app>.homelab` when the app directory remains removed and its prior
+README documents that exact legacy Service. Legacy retirement is limited to
+private TCP port 443 routed through the Istio ingress gateway. It verifies the
+pinned CLI, transport, live identity and contract, deletes that exact Service,
+and checks absence. Already absent succeeds.
+
+Retire its removed app DNS entry at the app-removal commit before other
+changes advance `main`:
 
 ```sh
 scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> --dry-run
