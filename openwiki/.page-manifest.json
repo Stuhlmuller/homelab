@@ -30,11 +30,11 @@
       "completedRunId": "f64f6b28-2fe1-4111-b12e-db03ee16717b"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "gitHead": "812cd2a3f125de5c80f0ff7ffeb454f27fc83f5a",
-      "sourceFingerprint": "sha256:49cb68c5c40566a2d232371670e63972dc9c72fd83de9f2bd0bb6c1270c59bab",
-      "pageVersion": "sha256:041b8456f9eaf1e9cb724ce880c4e6f16fd3e949c5b30aa2ac9899164579f249",
+      "pageVersion": "sha256:f6114b2a4d2420fb079464e71e423e3197529fbda263da337fa9ae058cfb5385",
       "completedBy": "codex",
-      "completedRunId": "f64f6b28-2fe1-4111-b12e-db03ee16717b"
+      "completedRunId": "c469c170-3178-4f05-843c-6500ad0ea533",
+      "gitHead": "174ffe2b19bf7463d1bff1eabe0dcb36ce5201e2",
+      "sourceFingerprint": "sha256:2bccd372dc1c0e8b564465df8fa09ae220acf093e8ade6a8def0a936d41e2052"
     },
     "/openwiki/operations/continuous-improvement.md": {
       "gitHead": "7eaba8dffa9c1a2107ae1af5bd3d6de72e2f6f14",
@@ -72,11 +72,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
+      "gitHead": "812cd2a3f125de5c80f0ff7ffeb454f27fc83f5a",
+      "sourceFingerprint": "sha256:c8567c2c18c799f6665e1eaea11f31d7374f209acbb51eaa26be8d51d00869e2",
       "pageVersion": "sha256:4d2a59443b2f6df4b96eb7dcadccd25d9665e1096324a031e6ad35892a9e709d",
       "completedBy": "codex",
-      "completedRunId": "6bb51195-7817-4d1e-95ca-3fb8660035d7",
-      "gitHead": "812cd2a3f125de5c80f0ff7ffeb454f27fc83f5a",
-      "sourceFingerprint": "sha256:c8567c2c18c799f6665e1eaea11f31d7374f209acbb51eaa26be8d51d00869e2"
+      "completedRunId": "6bb51195-7817-4d1e-95ca-3fb8660035d7"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "902a0c25f1879c58b057ef6a7030bbf400908973",
