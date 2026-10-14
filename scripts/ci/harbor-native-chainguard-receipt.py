@@ -191,7 +191,15 @@ def replication_rules(replication):
                 and rule["delete"] is False and rule["flatten"] is False
                 and rule["access_class"] == "public" and repository not in result,
                 "Chainguard replication rule is invalid")
-        result[repository] = destination
+        result[repository] = {
+            "repository": repository,
+            "source_tag": rule["source_tag"],
+            "destination": destination,
+            "override": rule["override"],
+            "delete": rule["delete"],
+            "flatten": rule["flatten"],
+            "access_class": rule["access_class"],
+        }
     return result
 
 
@@ -203,10 +211,20 @@ def build_plan(config, replication, catalog):
     for image_id, image in sorted(images.items()):
         require(image["source_ref"] in catalogs, "native source is not in the reviewed Chainguard catalog")
         expected_destination = "homelab/" + image_id
-        require(rules.get(image["repository"]) == expected_destination,
+        rule = rules.get(image["repository"])
+        require(rule is not None and rule["destination"] == expected_destination,
                 "native replication rule does not match automation configuration")
-        plan.append({**image, "source_digest": catalogs[image["source_ref"]],
-                     "config_digest": canonical_digest(config)})
+        source_digest = catalogs[image["source_ref"]]
+        contract = {
+            "image_id": image["image_id"],
+            "source_ref": image["source_ref"],
+            "destination_ref": image["destination_ref"],
+            "required_platforms": image["required_platforms"],
+            "source_digest": source_digest,
+            "replication_rule": rule,
+        }
+        plan.append({**image, "source_digest": source_digest,
+                     "config_digest": canonical_digest(contract)})
     require(len(plan) == len(rules), "native replication has an unmanaged rule")
     return plan
 
@@ -270,24 +288,22 @@ def scan_complete(artifact, digest, platform):
             "Harbor scan still reports CVEs")
 
 
-def scan_receipt(config, image_id, config_digest, destination_digest, platforms, password,
-                 client_type=HarborScanClient):
-    require(config_digest == canonical_digest(config), "native image configuration differs from the reviewed contract")
-    require(SHA256.fullmatch(destination_digest) is not None, "destination index digest is invalid")
-    image = config_images(config).get(image_id)
-    require(image is not None, "native image is not configured")
-    require(set(platforms) == set(image["required_platforms"])
+def scan_receipt(plan, destination_digest, platforms, password, client_type=HarborScanClient):
+    require(SHA256.fullmatch(destination_digest) is not None
+            and destination_digest == plan["source_digest"],
+            "destination index digest does not match the reviewed native contract")
+    require(set(platforms) == set(plan["required_platforms"])
             and all(SHA256.fullmatch(digest) is not None for digest in platforms.values()),
             "required platform digests are invalid")
-    repository = image["destination_repository"].removeprefix("harbor.stinkyboi.com/homelab/")
+    repository = plan["destination_repository"].removeprefix("harbor.stinkyboi.com/homelab/")
     client = client_type(password)
     for platform, digest in sorted(platforms.items()):
         scan_complete(client.artifact(repository, digest), digest, platform)
     return {
         "schema_version": 1,
         "kind": "native-chainguard-scan-v1",
-        "image_id": image_id,
-        "config_digest": config_digest,
+        "image_id": plan["image_id"],
+        "config_digest": plan["config_digest"],
         "destination_digest": destination_digest,
         "platforms": dict(sorted(platforms.items())),
         "scan_status": {platform: "Success" for platform in sorted(platforms)},
@@ -382,6 +398,8 @@ def main():
     parser.add_argument("--destination-index", type=Path)
     parser.add_argument("--pulled-index", type=Path)
     parser.add_argument("--index", type=Path)
+    parser.add_argument("--config-digest")
+    parser.add_argument("--destination-digest")
     parser.add_argument("--scan-password-file", type=Path)
     parser.add_argument("--scan-receipt", type=Path)
     parser.add_argument("--receipt", type=Path)
@@ -424,8 +442,7 @@ def main():
                 password = args.scan_password_file.read_text(encoding="utf-8").strip()
             except (OSError, UnicodeDecodeError):
                 raise ReceiptError("scan credential is unavailable") from None
-            result = scan_receipt(config, args.image_id, args.config_digest, args.destination_digest,
-                                  platforms, password)
+            result = scan_receipt(plan, args.destination_digest, platforms, password)
         else:
             paths = (args.source_index, args.destination_index, args.pulled_index, args.scan_receipt)
             if not args.repository_sha or any(path is None for path in paths):
