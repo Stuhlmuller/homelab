@@ -182,10 +182,10 @@ retention and pinned primary/encryption-subkey fingerprints. Scoped run
 aliases and fresh authenticated destination pulls. No failure artifact was
 needed. This proves publication recovery; the earlier EOF cause remains unproven.
 
-The runtime draft also requires Ruby for its native validation. PR #1308 prepares
-that shared toolchain before the final reusable publication receipt. After it
-merges, refresh the fixed Mastodon receipt: the runbook permits ancestor reuse
-only with a byte-identical publication bundle, including flake.nix and flake.lock.
+PR #1308 merged the Ruby validation toolchain into main at
+a435d6ffad694ebf3ea24563cf9aee01e43c0f6a. Refresh the fixed Mastodon receipt
+after the PostgreSQL candidate prerequisite: ancestor reuse requires a
+byte-identical publication bundle, including flake.nix and flake.lock.
 
 ## Scan acceptance evidence
 
@@ -194,6 +194,18 @@ for the published index digests and Mastodon amd64/arm64 children. PostgreSQL
 reported 16 Critical package findings, Redis zero, and web/streaming one each.
 Missing summaries on additional PostgreSQL/Redis children still need
 classification; do not report them as zero-CVE platform images.
+The original PostgreSQL index hash was independently verified against the
+immutable upstream manifest. It contains five runnable Linux platform entries
+and five unknown/unknown descriptors explicitly marked attestation-manifest.
+Match missing Harbor summaries to those digests before excluding attestations
+from platform coverage; this does not clear the 16 Critical package findings.
+
+PR #1309 enrolls a separate PostgreSQL 18-bookworm candidate at
+afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c.
+Its amd64 configuration retains PostgreSQL 18.6, Debian Bookworm and
+/var/lib/postgresql/18/docker. The existing Harbor database pin is preserved.
+Publication and fresh scans must precede Mastodon consumption; the newer digest
+alone is not evidence of remediation.
 
 | Image                    | Critical finding                                                                                                                                                       | Required follow-up                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
