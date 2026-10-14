@@ -32,6 +32,12 @@ NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
 )
 NATIVE_RECEIPT = importlib.util.module_from_spec(NATIVE_RECEIPT_SPEC)
 NATIVE_RECEIPT_SPEC.loader.exec_module(NATIVE_RECEIPT)
+NATIVE_RECEIPT_IMPORT_SPEC = importlib.util.spec_from_file_location(
+    "harbor_native_chainguard_receipt_import",
+    Path(__file__).with_name("harbor-native-chainguard-receipt-import.py"),
+)
+NATIVE_RECEIPT_IMPORT = importlib.util.module_from_spec(NATIVE_RECEIPT_IMPORT_SPEC)
+NATIVE_RECEIPT_IMPORT_SPEC.loader.exec_module(NATIVE_RECEIPT_IMPORT)
 
 
 def normalize(image):
@@ -212,18 +218,25 @@ def receipt_errors():
     native_plans = None
     native_plan_error = False
     for consumer in config.get("consumers", []):
-        if consumer.get("automation_status") != "enrolled":
-            continue
         image_id = consumer.get("image_id")
+        native = isinstance(image_id, str) and image_id.startswith("chainguard-")
+        if (consumer.get("automation_status") != "enrolled"
+                and not (native and consumer.get("migration_status") == "migrated")):
+            continue
         image = images.get(image_id)
         receipt = receipts.get(image_id)
-        if not image or not isinstance(receipt, dict):
+        if not image:
             errors.append(f"Enrolled image lacks publication receipt: {image_id}")
             continue
-        if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
-            errors.append(f"Enrolled image receipt lacks intended Harbor access: {image_id}")
+        if native and not isinstance(receipt, dict):
+            errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue
-        if not isinstance(image_id, str) or not image_id.startswith("chainguard-"):
+        if not isinstance(receipt, dict):
+            errors.append(f"Enrolled image lacks publication receipt: {image_id}")
+            continue
+        if not native:
+            if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
+                errors.append(f"Enrolled image receipt lacks intended Harbor access: {image_id}")
             continue
         if native_plans is None:
             try:
@@ -232,21 +245,24 @@ def receipt_errors():
                 native_plans = {}
                 native_plan_error = True
         plan = native_plans.get(image_id)
-        if native_plan_error or plan is None or not NATIVE_RECEIPT.verify_native_receipt(plan, receipt)[0]:
-            errors.append(f"Enrolled native Chainguard image lacks a verified receipt: {image_id}")
+        if native_plan_error or plan is None or not NATIVE_RECEIPT_IMPORT.verify_imported_receipt(plan, receipt)[0]:
+            errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue
-        expected = f'{plan["destination_repository"]}@{receipt["destination_digest"]}'
+        expected = f'{plan["destination_repository"]}@{plan["source_digest"]}'
         try:
             target_images = consumer_target_images(consumer)
         except (OSError, ValueError, subprocess.SubprocessError):
             errors.append(f"Enrolled native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
             continue
-        if expected not in target_images:
+        target_native_images = {
+            reference for reference in target_images
+            if reference.split("@", 1)[0].rsplit(":", 1)[0] == plan["destination_repository"]
+        }
+        if target_native_images != {expected}:
             errors.append(
                 f"Enrolled native Chainguard consumer lacks exact verified digest: {consumer.get('consumer_id')}"
             )
             continue
-        errors.append(f"Enrolled native Chainguard image requires protected workflow evidence: {image_id}")
     return errors
 
 

