@@ -175,14 +175,22 @@ content and schema; source evidence is the failed run's sanitized status and
 Harbor core/registry/PostgreSQL logs for that interval. A failed or partial
 publication never authorizes consuming references.
 
+The operator approved ciphertext-only client diagnostics with one-day GitHub
+Actions retention. PR #1298 pins the enrolled primary and encryption-subkey
+fingerprints and rejects plaintext fallback. Its refreshed signed head is
+awaiting protected CI; no diagnostic artifact has been captured. Merge that
+path before the next controlled publication attempt. Required validation on
+its previous head failed twice downloading AWS provider authentication checksums
+from GitHub; preserve checksum verification and protected merge requirements.
+
 ## Remaining deployment gates
 
-- Publish both official Mastodon 4.7.3 images from PR #1288 through the reviewed
-  Harbor workflow; prove complete destination pulls before consumption. On
-  2026-10-11, run `38196403709` passed validation but its copy job remained
-  pending in the shared `harbor-packages-production` publication lane. This is
-  a delivery-queue dependency, not a Mastodon application dependency. A queued
-  copy job is not a publication receipt.
+- Publish the fixed four-image Mastodon scope through the reviewed Harbor
+  workflow: PostgreSQL, Redis, Mastodon web and streaming. PR #1296 added this
+  scope; public mirrors now have their dedicated production publication lane.
+  Require exact digest/platform checks and complete authenticated destination
+  pulls before consumption. The earlier shared-queue delay is resolved; the
+  repeated web destination-copy failure remains unresolved.
 - Keep `LOCAL_DOMAIN=mastodon.stinkyboi.com` stable once accounts exist. The
   private apex is not part of this instance's discovery or public routing.
 - Supply the Google Workspace SMTP app credential through the protected
