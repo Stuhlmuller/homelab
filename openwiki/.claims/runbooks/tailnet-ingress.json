@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:688bb5b8544c08116c752e8597d7cf746aac1e9b7fb55a0f40cc30b975fe0eae",
+  "pageVersion": "sha256:36a53d82b31ed2f81aab45bc1ee22c6c62d83f7bfa9b16ec3eca24b4dcf88b07",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
     },
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:df06298c6267d82fa16874faee14c98e74927a885b11301a6a926b8280cb0c1a"
+          "version": "repo-file-v1:sha256:f49ebfc02d9711820a1b6234a318a75877c4cc9648c1095b721c764a2eed053f"
         }
       ]
     },
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:4e4c30b506be8055e5e5a3af2b8e89df693378d8c8ed3c7579728569efb8c41c"
+          "version": "repo-file-v1:sha256:208ad5f58c40defdd4d9ca188bc5315ec26e0e0a915fb6a3e7ced740443efecd"
         }
       ]
     },
@@ -151,7 +151,7 @@
       "statement": "Both retirement preview and execution validate every cached current signature and all previous authority metadata before removing any authority; execution retains per-target drift/readback checks and absent-previous idempotence, while preview never signs, publishes or changes cache contents.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md#L170-L192",
+          "resource": "repo://IaC/modules/tailscale-access/README.md#L189-L211",
           "version": "repo-lines-v1:sha256:0240c52d331907260bbff6155cd19ac9bb48c54aa317d867f346cd9cb952bc32:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwMDQ5MjU1M2NhMGJmYzYxOTk5NWZhYmYyMTM5MjRiY2MzZDRmOTE3ZWU2MjBiZTJjNzZlZGU0MTdlNGRmNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3OTAzMmM2NGVmYjFhYWUyODZlZWNmZjcwMzc5ZGI2ZmNkMTgwYmM3YjA0YjM0YzZmMWE4MDg4ZWJkNDhlY2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMjQxMjNhMzY0MWE3MWUxZmFlZWMwMzlkZDI0MWZlMTMwNWE2MmI0OTc1ZGYxMWU4ZWExZDg3ODMyNDgwZWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVmYmI5MGRhMGRmODBjYTNlY2RjZTdjYTk0MTdlOTFkYTU4YzhkOTczNzVmNzRlMjBiZDRiNjY2ZDkxMDE1MGIifQ"
         },
         {
@@ -170,7 +170,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
-          "version": "repo-lines-v1:sha256:16a93c99e3e95828f7fd40fd0149ccf5476135d95cc0826c9209cded0cbd9da4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
+          "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
         }
       ]
     },
@@ -236,11 +236,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:b3e8a0edd06b5411e88ca62e113bf7046008b473801ad7d2af6be1aaa337d87c"
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -257,7 +257,7 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L163-L198",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
@@ -309,6 +309,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:56:11.100Z"
+    "at": "2026-10-14T02:42:57.879Z"
   }
 }

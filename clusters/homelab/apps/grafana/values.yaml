@@ -236,8 +236,6 @@ alerting:
       - orgId: 1
         uid: homelab-octelium-api-upnp-stale
       - orgId: 1
-        uid: homelab-octobot-deployment-unavailable
-      - orgId: 1
         uid: homelab-deluge-unavailable
       - orgId: 1
         uid: homelab-github-actions-run-failed

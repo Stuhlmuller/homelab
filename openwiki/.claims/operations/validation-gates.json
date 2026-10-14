@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f9df457fe0dc71d1c0cdb5aa843ef25a82df0cd57dfaf7ba10f08ee49566181e",
+  "pageVersion": "sha256:d9680feb8d2ffec7128d6f725d533accfe157a5088ee1db1f4f79dd972b5f110",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,11 +58,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:4e4c30b506be8055e5e5a3af2b8e89df693378d8c8ed3c7579728569efb8c41c"
+          "version": "repo-file-v1:sha256:208ad5f58c40defdd4d9ca188bc5315ec26e0e0a915fb6a3e7ced740443efecd"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -106,7 +106,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:b3e8a0edd06b5411e88ca62e113bf7046008b473801ad7d2af6be1aaa337d87c"
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         }
       ]
     },
@@ -148,7 +148,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:b3e8a0edd06b5411e88ca62e113bf7046008b473801ad7d2af6be1aaa337d87c"
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -156,7 +156,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -184,7 +184,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
-          "version": "repo-lines-v1:sha256:16a93c99e3e95828f7fd40fd0149ccf5476135d95cc0826c9209cded0cbd9da4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
+          "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L125-L182",
@@ -192,7 +192,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -243,7 +243,7 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L163-L198",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:cf2a703cc61b9e492487aac501cd674cd2873e155b38cb8e1a12c6c60a3462f4"
+          "version": "repo-file-v1:sha256:9c7a958d06b45338e0120bf0fe16023fda60fa46236c897fddbf789c3fa17c2f"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         }
       ]
     },
@@ -438,19 +438,23 @@
     },
     {
       "id": "claim_db920b24eb02493e958d3eaa74f91e5c",
-      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
+      "statement": "The Linux Nix builder retains NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. The manifest selects the dedicated deny-by-default Localhost profile only for the nix container while retaining Pod RuntimeDefault, sandbox/signature enforcement, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation. Both eligible worker profiles must be verified before selection rollout; each publication attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom. Rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
+          "version": "repo-file-v1:sha256:ce4b793ad09f4151fa5864adaaec0ff8ed9f144cd26bb168a2353f74c0e64e30"
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
+        },
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
@@ -482,7 +486,7 @@
     },
     {
       "id": "claim_187df0e001164a33a4af918fdd3ce9bc",
-      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies a no-reboot apply through bounded asynchronous readback of /var/lib/kubelet/seccomp/profiles without repeating apply. Rollback refuses a profile still selected by a Pod and requires actual exact-path file-not-found readback; transport/authentication failures cannot establish deletion. Nine offline tests cover the exact baseline hash, idempotence, conflict rejection, stale configuration, selected-profile rollback refusal, delayed readback with pinned host path, wrong content, deadline expiry and deletion versus transport failure. The documented initial worker0 helper installed the approved profile but stopped on a legacy readback path; worker1 installation and all selection/publication stayed held. Profile installation precedes separately protected builder-only Localhost selection and one separately released bounded publication; the current manifest remains RuntimeDefault.",
+      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies no-reboot installation through bounded asynchronous readback of /var/lib/kubelet/seccomp/profiles without repeating apply. Rollback refuses a selected profile and requires exact-path file-not-found readback, not transport/authentication failure. Nine tests cover baseline hash, idempotence, conflicts, configuration races, selected-profile refusal, delayed pinned-path readback, wrong content, deadline and deletion discrimination. The runbook records the initial worker0 legacy-path readback failure and subsequent protected repair: worker0 was verified read-only and worker1's first released helper succeeded, with both exact file hashes and unchanged boots. The current manifest declares container-only Localhost selection after those file receipts, retains Pod RuntimeDefault, and requires separate Argo/OCI verification and separately released bounded publication; no cache acceptance follows from source alone.",
       "evidence": [
         {
           "resource": "repo://.talos/patches/nix-builder-seccomp.yaml",
@@ -490,15 +494,15 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:53d4c62fe7ae67785f3408779a6dc71f2c75a24b68789b9ce555d09ad2a56e52"
+          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0d5f68fe56edc0e12f78fa46b846ebdba7c6dc32b095211330248859e4ffe32a"
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -511,7 +515,7 @@
       ]
     },
     {
-      "id": "claim_438102d13c9a41d99228edd9adc527c5",
+      "id": "claim_e8f1f8a0004c4ce4a60b4a4439893b8e",
       "statement": "All nine phase 2b credentialed mesh jobs require pinned Tailscale auth-key joins, private per-job state and exact scoped tag/tailnet verification; offline transport fixtures cover tokenless API access, strict native response parsing, Cordium denial-mode isolation and cleanup failures.",
       "evidence": [
         {
@@ -524,7 +528,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:cf2a703cc61b9e492487aac501cd674cd2873e155b38cb8e1a12c6c60a3462f4"
+          "version": "repo-file-v1:sha256:9c7a958d06b45338e0120bf0fe16023fda60fa46236c897fddbf789c3fa17c2f"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
@@ -533,7 +537,7 @@
       ]
     },
     {
-      "id": "claim_8a1fd95d1df94c74a9c3e14d92c5bb7b",
+      "id": "claim_b9d242b78d9c45cfa39e126d35b999ba",
       "statement": "The plan access checker emits fixed stage markers for kubeconfig, proxy identity, reads, dry-run admission and real no-op write denial; the hashed classifier exposes only fixed stages and failure hints, with regression coverage preventing raw private output leaks.",
       "evidence": [
         {
@@ -557,6 +561,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:56:11.100Z"
+    "at": "2026-10-14T02:42:57.879Z"
   }
 }

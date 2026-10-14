@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1094e379fc15ea4d9a43a1ece9d1e802b7372099edda81cc5fa2459b17c69139",
+  "pageVersion": "sha256:f7db304038e175822aec43b65503c58d64286f8da2e58d7ac6cf820d23db29de",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:10b86e2a56c223b8f2374bbec7dc79abbfcbe9380e0bbb0864cc2fa220d41338"
+          "version": "repo-file-v1:sha256:12ec3d4b37d43501320bd5ec0aeadd877ef3563f16393d8d5b0c76d3798895a6"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
     },
@@ -70,7 +70,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://flake.nix#L15-L61",
@@ -85,6 +85,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:56:11.100Z"
+    "at": "2026-10-14T02:42:57.879Z"
   }
 }

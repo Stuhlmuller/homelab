@@ -105,8 +105,6 @@ Ambient is intentionally not enabled for:
 - `media`, because Deluge Gluetun/WireGuard and the current media app traffic
   model still need a repo-owned waypoint or equivalent policy design before
   re-enrollment;
-- `finance`, because OctoBot needs a separate identity-policy design before any
-  service-to-service or trading API control path is mesh-enrolled;
 - `argocd`, `cert-manager`, `external-secrets`, and `storage`, because their
   API server, webhook, NFS, and controller paths need separate validation;
 - `istio-system`, `octelium`, `octelium-client`, and `tailscale`, because they
@@ -139,7 +137,6 @@ These namespaces are explicitly kept at the Pod Security `baseline` profile:
 | `ai` | `clusters/homelab/apps/litellm/namespace.yaml` |
 | `argocd` | `clusters/homelab/argocd/self-management/namespace.yaml` |
 | `automation` | `clusters/homelab/apps/n8n/namespace.yaml` |
-| `finance` | `clusters/homelab/apps/octobot/namespace.yaml` |
 | `langfuse` | `clusters/homelab/apps/langfuse/namespace.yaml` |
 | `monitoring` | `clusters/homelab/apps/prometheus/namespace.yaml` |
 | `storage` | `clusters/homelab/platform/storage/namespace.yaml` |

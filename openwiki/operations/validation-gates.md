@@ -126,10 +126,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
+generated: { by: "codex", at: "2026-10-14T02:42:57.879Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T04:56:11.100Z
+    at: 2026-10-14T02:42:57.879Z
 ---
 
 # Validation Gates
@@ -151,7 +151,8 @@ The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
 Talos disables user namespaces. That capability also permits Pod networking
 changes; reviewed homelab source remains the trust boundary. Keep strict
-sandbox/signature checks, RuntimeDefault seccomp, the 1 GiB reservation/limit,
+sandbox/signature checks, Pod RuntimeDefault and the dedicated container
+Localhost profile, the 1 GiB reservation/limit,
 serial substitutions and original-Pod/attempt-ID cancellation. Fresh node
 health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt.
 A render or healthy rollout proves neither full-check memory sufficiency nor
@@ -167,8 +168,9 @@ preserves other profiles, rejects configuration/boot drift, validates strictly,
 and uses a no-reboot apply with bounded exact profile readback, waiting
 for asynchronous controller convergence without repeating apply. Stage 2 may select
 Localhost only for the builder container after both node files are verified.
-The current manifest still selects RuntimeDefault; declaring the profile
-proves neither installation nor successful publication. Offline validation
+The current manifest declares that container-only selection and retains Pod
+RuntimeDefault. Source/render validation proves neither applied OCI rules nor
+successful publication. Offline validation
 runs nine focused profile tests, including the exact one-syscall baseline
 hash, idempotence, conflicting-profile refusal, configuration races and
 refusal to remove a profile still selected by a Pod, delayed readback,
@@ -177,8 +179,12 @@ authentication or transport failures cannot establish deletion. Read the pinned
 Talos 1.11.3 host path `/var/lib/kubelet/seccomp/profiles`; Kubernetes selection
 stays relative to kubelet as `profiles/<name>`. The initial worker-0 helper
 installed the approved file but stopped at a legacy-path readback. Worker-1
-installation and all selection/publication remained held; the readback-path
-repair needs its own protected checks and renewed coordinator release. Retain sandboxing,
+installation and all selection/publication were held at that failure. After
+the protected path repair, worker 0 was verified read-only and worker 1's first
+released helper completed. Both node files matched the reviewed profile with
+active/persistent agreement and unchanged boots; the original builder remained
+RuntimeDefault at that receipt. Stage 2 still requires exact protected review,
+Argo rollout and actual OCI-profile verification. Retain sandboxing,
 signatures, the 1 GiB limit and fresh preflight before a separately released
 single bounded publication retry; any terminal failure consumes that attempt.
 

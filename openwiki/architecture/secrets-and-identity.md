@@ -36,6 +36,8 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-bbea6e00e65d0c9910507447
+    resource: repo://IaC/.catalog/units/operator/tailscale-access/terragrunt.hcl
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
@@ -62,10 +64,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
+generated: { by: "codex", at: "2026-10-14T02:42:57.879Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T04:56:11.100Z
+    at: 2026-10-14T02:42:57.879Z
 ---
 
 # Secrets And Identity
@@ -167,6 +169,23 @@ recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
 token to write only its fixed mesh A/AAAA inventory from reviewed current main.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
+
+## CI credential generation 2 recovery
+
+Generation 2 replaces the invalid CI keys through a signed repository input and
+an explicitly approved private saved provider plan containing only three key
+replacements. The fixed current-main Mac publisher signs and publishes to the
+same two environment secrets and one repository secret. Incident authority
+retirement covers only older cached CI authorities; unrelated signers, dormant
+provider identities, application routes and workload resources remain retained.
+
+The [operator runbook](../../IaC/modules/tailscale-access/README.md#rotation-and-retirement)
+records rotation/expiry dates, encrypted backup requirements and the staged
+pre-merge recovery used when invalid CI credentials block delivery. Revoked
+provider keys can retain API metadata; verify the invalid/revoked fields. Trust
+removal can propagate after the helper exits, so inspect actual trust before
+resuming idempotent cleanup. Fresh plan acceptance still precedes any migration
+workload apply or retirement; Fleet remains private.
 
 ## Signed Nix cache trust
 
@@ -577,11 +596,6 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   callback helper after Funnel routing and negative-path preflights pass;
   require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
-- OctoBot currently has no repository-owned SSM contract. Its first-run setup,
-  exchange credentials, tentacles, and strategy state live on the finance
-  namespace PVCs and are summarized in [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and
-  [Application Notes](../workloads/application-notes.md).
-
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cbc5056752c9d755db1a28062af1262a5720d173007e51a845d353f6ca08e5bf",
+  "pageVersion": "sha256:a1c873e1d00ae42b8f974c953b9e804a90849f293d0c991bda78c03ffd2f105c",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -78,17 +78,17 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
+          "version": "repo-file-v1:sha256:ce4b793ad09f4151fa5864adaaec0ff8ed9f144cd26bb168a2353f74c0e64e30"
         },
         {
-          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml#L41-L78",
-          "version": "repo-lines-v1:sha256:887d04526087a66a8279b8b4102b2a65dbc6a6ec43d9e9d4a500b6deeac144d8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0Y2MyYWJlZThmZjQyYzVlNzEwYzAxOWU5ODk1NzVhMTYzOGU5YWMyZGYwYTczMWMwNzAwN2ExYmRjZTgyMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5NGQ1NGE2OTc1NDM0YTZjZGRhY2Y5ZTA1ODNkODE4NjgzYWNkNWQwNzEyZTZmMzI4Nzc3NmViZDkzNzhkZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmYTRiOWU3YWM2MGI1MzJjOWQ2YjZiZmUxYTBmNGMzZGU0ZDQ5YjE4ZmE5MTA1N2NhYjQwOWI4NDBlODJiYjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0YThjZWQ3ZWYwYmYzM2E5NTk1YWM1ZGZhYTFiZTNjZTgwMjg2NzA2NDRhNjZmNmMxY2I1YzM1ZTI1ODE3MzYifQ"
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml#L41-L79",
+          "version": "repo-lines-v1:sha256:90234dd90d67c84b568238928cdb13775c84d8da04bd410831ceb0cb090c1330:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0Y2MyYWJlZThmZjQyYzVlNzEwYzAxOWU5ODk1NzVhMTYzOGU5YWMyZGYwYTczMWMwNzAwN2ExYmRjZTgyMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5NGQ1NGE2OTc1NDM0YTZjZGRhY2Y5ZTA1ODNkODE4NjgzYWNkNWQwNzEyZTZmMzI4Nzc3NmViZDkzNzhkZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmYTRiOWU3YWM2MGI1MzJjOWQ2YjZiZmUxYTBmNGMzZGU0ZDQ5YjE4ZmE5MTA1N2NhYjQwOWI4NDBlODJiYjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0YThjZWQ3ZWYwYmYzM2E5NTk1YWM1ZGZhYTFiZTNjZTgwMjg2NzA2NDRhNjZmNmMxY2I1YzM1ZTI1ODE3MzYifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T04:56:11.100Z"
+    "at": "2026-10-14T02:42:57.879Z"
   }
 }

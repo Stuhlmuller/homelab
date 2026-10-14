@@ -290,8 +290,6 @@ echo "::group::Cloudflare API response handling"
 echo "::endgroup::"
 
 echo "::group::Helm workload token contracts"
-yq -e '.controllers.octobot.pod.automountServiceAccountToken == false' \
-  clusters/homelab/apps/octobot/values.yaml >/dev/null
 yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"

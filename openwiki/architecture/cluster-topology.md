@@ -31,7 +31,7 @@ sources:
 generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T04:56:11.100Z
+    at: 2026-10-14T02:42:57.879Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -227,12 +227,11 @@ label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 ### Temporary August 2026 recovery
 
 For the outage of both labeled dataplane nodes,
-`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 26
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 25
 uniquely named temporary Deployments on `acer`: the Octelium ingress, shared
-Octovigil authorization service, Portal, login, Auth API, admin API, OctoBot,
-CI Kubernetes API, and 18 additional public WEB Service proxies. Including the
-existing OctoBot fallback, 19 public WEB proxies run during recovery. The
-additional public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
+Octovigil authorization service, Portal, login, Auth API, admin API,
+CI Kubernetes API, and 18 public WEB Service proxies. The
+public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
 console, Deluge, Dispatcharr, Grafana, Kiali, LiteLLM, Multica, n8n, NOFX,
 OpenClaw, Policy Bot, Prowlarr, Radarr, and Sonarr. Existing Service selector
 labels restore these paths without a new Service, ingress, port, node label, or
