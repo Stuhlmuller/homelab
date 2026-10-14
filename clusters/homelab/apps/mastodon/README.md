@@ -201,6 +201,27 @@ classification; do not report them as zero-CVE platform images.
 | Mastodon web             | JSON 2.18.0, CVE-2026-33210                                                                                                                                            | Verify the exact active bundle: upstream 4.7.3 locks JSON 2.21.2.                     |
 | Mastodon streaming       | proxy-addr 2.0.7, CVE-2026-90711; fixed version 2.0.8                                                                                                                  | Check trust-proxy applicability or pin a patched dependency before public activation. |
 
+Exact web-image inspection of amd64 child
+189964b9e0c45c55ab8c600c21449e05977550a120c5e84d996aed499a45d522
+verified its manifest hash and read layer files without executing the image.
+The vulnerable JSON 2.18.0 specification is a Ruby default gem under
+/usr/local/lib/ruby/gems/4.0.0/specifications/default. The application lockfile
+selects JSON 2.21.2, which is installed under /usr/local/bundle/specifications;
+GEM_HOME points to /usr/local/bundle. Web, worker, migration and owner-bootstrap
+commands all enter bundle exec. The launcher requires OpenSSL, Base64 and
+FileUtils, not JSON. Thus the reported 2.18.0 default gem is outside the declared
+application bundle. Retain the installed-package finding; runtime acceptance
+must still verify the loaded gem version on the real workload.
+
+Streaming trust is explicit: loopback,uniquelocal, matching the upstream default.
+A local reproduction against proxy-addr 2.0.7 reproduced the unsafe mapped-IPv6
+subnet case and proved this configuration rejects public IPv4, mapped IPv4 and
+IPv6 test addresses. The
+[vendor advisory](https://github.com/jshttp/proxy-addr/security/advisories/GHSA-jqcg-44mw-7w3h)
+requires unsafe mapped/zero-prefix IPv6 trust entries; this declaration contains
+neither. Retain the scan finding and prefer the patched dependency on a future
+verified upstream update; this is applicability evidence, not a scanner exclusion.
+
 Sources: [Harbor collector/client](../harbor/vulnerability-exporter.py),
 [JSON vendor advisory](https://github.com/ruby/json/security/advisories/GHSA-3m6g-2423-7cp3),
 [Mastodon 4.7.3 lockfile](https://github.com/mastodon/mastodon/blob/v4.7.3/Gemfile.lock),

@@ -39,6 +39,7 @@ data:
     MAX_THREADS=5
     STREAMING_API_BASE_URL=wss://mastodon.stinkyboi.com
   streaming.env: |
+    TRUSTED_PROXY_IP=loopback,uniquelocal
     LOCAL_DOMAIN=mastodon.stinkyboi.com
     WEB_DOMAIN=mastodon.stinkyboi.com
     NODE_ENV=production

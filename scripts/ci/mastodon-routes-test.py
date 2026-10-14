@@ -34,6 +34,11 @@ class Routes(unittest.TestCase):
             }}])
         self.assertNotIn("match", web)
 
+    def test_streaming_trust_avoids_unsafe_ipv6_subnets(self):
+        environment = documents("configmap.yaml")[0]["data"]["streaming.env"]
+        entries = dict(line.split("=", 1) for line in environment.splitlines() if "=" in line)
+        self.assertEqual(entries["TRUSTED_PROXY_IP"], "loopback,uniquelocal")
+
     def test_gateway_cannot_reach_datastore_ports(self):
         peer, default, allowed = documents("authorizationpolicy.yaml")
         self.assertEqual(peer["spec"]["mtls"]["mode"], "STRICT")
