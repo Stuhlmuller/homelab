@@ -15,8 +15,10 @@ spec.loader.exec_module(retire)
 
 
 class Retirement(unittest.TestCase):
-    def check(self, current, previous, name="removed"):
+    def check(self, current, previous, name="removed", readme=None):
         results = [json.dumps(current), "previous yaml", json.dumps(previous)]
+        if readme is not None:
+            results.append(readme)
         with patch.object(retire.native, "run", side_effect=[subprocess.CompletedProcess([], 0, value, "") for value in results]):
             return retire.removed_service(name)
 
@@ -30,9 +32,30 @@ class Retirement(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.check([], [{"kind": "Service", "metadata": {"name": "removed"}, "spec": spec}])
 
+    def test_legacy_scope_requires_removed_catalog_and_documented_owner(self):
+        old = [{"kind": "Service", "metadata": {"name": "removed"}, "spec": {"mode": "WEB", "isPublic": True}}]
+        self.assertEqual(self.check([], old, "removed.homelab", "UI targets `removed.homelab`"), "removed.homelab")
+        for readme in ("", "UI targets `other.homelab`", "UI targets `removed.homelab.other`"):
+            with self.assertRaises(ValueError):
+                self.check([], old, "removed.homelab", readme)
+        with patch.object(pathlib.Path, "exists", return_value=True), self.assertRaises(ValueError):
+            self.check([], old, "removed.homelab")
+        with patch.object(retire.native, "run") as run, self.assertRaises(ValueError):
+            retire.removed_service("removed", "main")
+        run.assert_not_called()
+        with patch.object(retire.native, "run", side_effect=subprocess.CalledProcessError(1, "git")), self.assertRaises(subprocess.CalledProcessError):
+            retire.removed_service("removed", "a" * 40)
+
     def test_live_retirement_is_exact_and_fail_closed(self):
+        self.live_retirement(False)
+        self.live_retirement(True)
+
+    def live_retirement(self, legacy):
         service = {"metadata": {"name": "removed.default"}, "spec": {"mode": "WEB", "isPublic": True}}
-        for mode in ("present", "absent", "unavailable", "wrong", "stuck"):
+        name = "removed.homelab" if legacy else "removed.default"
+        if legacy:
+            service = {"metadata": {"name": name}, "spec": {"mode": "TCP", "port": 443, "config": {"upstream": {"url": "tcp://istio-ingressgateway.istio-system.svc.cluster.local:443"}}}}
+        for mode in ("present", "absent", "unavailable", "wrong", "contract", "stuck"):
             calls = []
             def command(argv, **kwargs):
                 calls.append(argv[-4:])
@@ -42,15 +65,17 @@ class Retirement(unittest.TestCase):
                     return subprocess.CompletedProcess(argv, 1, "", "code = Unavailable")
                 if mode == "absent" or (len(calls) == 3 and mode != "stuck"):
                     return subprocess.CompletedProcess(argv, 1, "gRPC error NotFound:", "")
+                if mode == "contract":
+                    return subprocess.CompletedProcess(argv, 0, json.dumps(dict(service, spec={"mode":"TCP", "port":444, "isPublic":True})), "")
                 value = dict(service, metadata={"name": "other.default"}) if mode == "wrong" else service
                 return subprocess.CompletedProcess(argv, 0, json.dumps(value), "")
             with patch.object(sys, "argv", ["retire", "--service", "removed", "--homedir", "/private/login", "--execute"]), \
-                    patch.object(retire, "removed_service", return_value="removed.default"), \
+                    patch.object(retire, "removed_service", return_value=name), \
                     patch.object(retire.native, "verify_reviewed_main"), patch.object(retire.native, "run"), \
                     patch.object(retire.native, "verified_client", return_value="/pinned/client"), \
                     patch.object(retire.native, "native_transport", return_value=contextlib.nullcontext({})), \
                     patch.object(retire.subprocess, "run", side_effect=command):
-                if mode in ("unavailable", "wrong", "stuck"):
+                if mode in ("unavailable", "wrong", "contract", "stuck"):
                     with self.assertRaises(RuntimeError):
                         retire.main()
                 else:
