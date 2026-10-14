@@ -78,11 +78,6 @@ http:
       rule: Host(`nofx.stinkyboi.com`)
       service: nofx
       tls: {}
-    octobot:
-      entryPoints: [websecure]
-      rule: Host(`octobot.stinkyboi.com`)
-      service: octobot
-      tls: {}
     openclaw:
       entryPoints: [websecure]
       rule: Host(`openclaw.stinkyboi.com`)
@@ -223,10 +218,6 @@ http:
       loadBalancer:
         servers:
           - url: http://nofx-frontend.nofx.svc.cluster.local:80
-    octobot:
-      loadBalancer:
-        servers:
-          - url: http://octobot.finance.svc.cluster.local:5001
     openclaw:
       loadBalancer:
         servers:

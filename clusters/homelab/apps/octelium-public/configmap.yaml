@@ -128,10 +128,6 @@ data:
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
           httpHostHeader: nofx.stinkyboi.com
-      - hostname: octobot.stinkyboi.com
-        service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
-        originRequest:
-          httpHostHeader: octobot.stinkyboi.com
       - hostname: openclaw.stinkyboi.com
         service: http://octelium-ingress-dataplane.octelium.svc.cluster.local:8080
         originRequest:
