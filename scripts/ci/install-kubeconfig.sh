@@ -13,7 +13,8 @@ umask 077
 install -m 0700 -d "$HOME/.kube"
 kubectl config set-cluster homelab-ci \
   --server=https://homelab-tailscale-operator.tail67beb.ts.net >/dev/null
-kubectl config set-credentials homelab-ci >/dev/null
+# A nonsecret username disables kubectl prompting; the mesh proxy supplies identity.
+kubectl config set-credentials homelab-ci --username=tailscale >/dev/null
 kubectl config set-context homelab-ci --cluster=homelab-ci --user=homelab-ci >/dev/null
 kubectl config use-context homelab-ci >/dev/null
 chmod 0600 "$HOME/.kube/config"

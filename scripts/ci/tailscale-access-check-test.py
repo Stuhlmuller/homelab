@@ -20,7 +20,7 @@ class AccessCheckTest(unittest.TestCase):
         def fake(args):
             calls.append(args)
             if args[:2] == ["config", "view"]:
-                result = {"clusters": [{"cluster": {"server": MODULE.SERVER}}], "users": [{"user": credentials or {}}]}
+                result = {"clusters": [{"cluster": {"server": MODULE.SERVER}}], "users": [{"user": credentials if credentials is not None else {"username": "tailscale"}}]}
             elif args[:2] == ["auth", "whoami"]:
                 result = {"status": {"userInfo": {"groups": groups or [f"tag:homelab-ci-{identity}", "system:authenticated"]}}}
             elif args[:2] == ["auth", "can-i"]:
@@ -53,7 +53,9 @@ class AccessCheckTest(unittest.TestCase):
 
     def test_wrong_identity_or_bearer_token_never_reaches_patch(self):
         for kwargs in [{"groups": ["tag:homelab-ci-apply"]}, {"groups": ["tag:homelab-ci-plan", "system:masters"]},
-                       {"credentials": {"token": "synthetic-private-token"}}]:
+                       {"credentials": {"token": "synthetic-private-token"}}, {"credentials": {}},
+                       {"credentials": {"username": "unexpected"}},
+                       {"credentials": {"username": "tailscale", "password": "synthetic-private-token"}}]:
             status, output, calls = self.run_check(**kwargs)
             self.assertEqual(status, 1)
             self.assertFalse(any("patch" in call for call in calls))

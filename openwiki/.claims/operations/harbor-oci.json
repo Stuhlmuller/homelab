@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:90ce48086db0e88bda92083149adfcf79659bd298e2f303363730e2690c06e1a",
+  "pageVersion": "sha256:8e0828871065b93e7b1e51c51b1b0bdd09dce5f610fc5f03dd54653976609e95",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -336,7 +336,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -368,7 +368,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -463,6 +463,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T02:42:57.879Z"
+    "at": "2026-10-14T03:16:04.839Z"
   }
 }

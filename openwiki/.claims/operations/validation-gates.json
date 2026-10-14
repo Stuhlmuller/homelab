@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d9680feb8d2ffec7128d6f725d533accfe157a5088ee1db1f4f79dd972b5f110",
+  "pageVersion": "sha256:4d2a59443b2f6df4b96eb7dcadccd25d9665e1096324a031e6ad35892a9e709d",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
         }
       ]
     },
@@ -116,11 +116,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-access-check-test.py",
-          "version": "repo-file-v1:sha256:e3c6ddf149737edb47473d8b5b8fd561e55d70b4478718b7d5af48e2de1a7cb5"
+          "version": "repo-file-v1:sha256:636b18148c80c2d1ddb319cea486d07370a3b01974d7a8a047a43c76b19209c3"
         },
         {
           "resource": "repo://scripts/ci/tailscale-access-check.py",
-          "version": "repo-file-v1:sha256:62b377e2c1b15200ff20e11eab477f02dcc1bc19973f0d7eadc82e43d69d446a"
+          "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -406,7 +406,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3fa80e58d736218cc3b841f159243481ab5002cc0b750218830e273fa5d822a0"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
         }
       ]
     },
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-access-check.py",
-          "version": "repo-file-v1:sha256:62b377e2c1b15200ff20e11eab477f02dcc1bc19973f0d7eadc82e43d69d446a"
+          "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
         },
         {
           "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py",
@@ -557,10 +557,36 @@
           "version": "repo-file-v1:sha256:2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4"
         }
       ]
+    },
+    {
+      "id": "claim_10d4cbc81be04f6ea1dd8a85bd06e631",
+      "statement": "The shared mesh kubeconfig uses only the fixed nonsecret tailscale username to suppress kubectl's interactive EOF fallback; a real-client regression contrasts empty-user EOF with a nonprompting closed-loopback request, and the access guard rejects empty users, unexpected usernames and credential-bearing fields without weakening proxy identity or write-denial checks.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+        },
+        {
+          "resource": "repo://scripts/ci/install-kubeconfig-test.py",
+          "version": "repo-file-v1:sha256:e4c8c9bb5f31ebabf25a45e1e2251a72b073f275dd39aff4ac281392e66d31f9"
+        },
+        {
+          "resource": "repo://scripts/ci/install-kubeconfig.sh",
+          "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check-test.py",
+          "version": "repo-file-v1:sha256:636b18148c80c2d1ddb319cea486d07370a3b01974d7a8a047a43c76b19209c3"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check.py",
+          "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T02:42:57.879Z"
+    "at": "2026-10-14T03:20:08.279Z"
   }
 }

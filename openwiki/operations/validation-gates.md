@@ -66,6 +66,10 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-e1c7a14f8b0194ad69f4eedf
+    resource: repo://scripts/ci/install-kubeconfig-test.py
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -126,10 +130,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T02:42:57.879Z" }
+generated: { by: "codex", at: "2026-10-14T03:20:08.279Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T02:42:57.879Z
+    at: 2026-10-14T03:20:08.279Z
 ---
 
 # Validation Gates
@@ -500,6 +504,15 @@ recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
 label. These are not verified causes: misleading private text can change a
 label but cannot expose its text. Raw output, plans, and credentials remain
 withheld and deleted.
+
+The shared mesh kubeconfig helper sets only a fixed nonsecret `tailscale`
+username, with no password, bearer token or client certificate. An empty user
+makes kubectl prompt and exit with `error: EOF` before HTTP in a noninteractive
+runner. The real-client regression reproduces that EOF, then requires the
+fixed username to reach a closed loopback endpoint without prompting; the
+strict access guard also rejects empty users, other usernames and passwords.
+Normal mesh proxy introspection with this configuration succeeded locally;
+fresh CI identity, dry-run/write denial and Terraform planning remain required.
 
 The CI access checker emits fixed markers before kubeconfig verification, proxy
 identity, Application reads, dry-run admission, and the real no-op write-denial

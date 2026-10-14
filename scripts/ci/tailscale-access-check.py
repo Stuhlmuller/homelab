@@ -32,7 +32,7 @@ def verify(identity):
     print("::group::CI kubeconfig verification", flush=True)
     config = json.loads(checked(["config", "view", "--minify", "-o", "json"]))
     if (len(config["clusters"]) != 1 or config["clusters"][0]["cluster"] != {"server": SERVER}
-            or len(config["users"]) != 1 or config["users"][0].get("user", {}) != {}):
+            or len(config["users"]) != 1 or config["users"][0].get("user", {}) != {"username": "tailscale"}):
         raise Failure("CI kubeconfig must use the fixed verified mesh endpoint without bearer credentials")
     print("::group::API proxy identity", flush=True)
     who = json.loads(checked(["auth", "whoami", "-o", "json"]))

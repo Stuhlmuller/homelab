@@ -923,7 +923,7 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.run_helper(mode="mirror")
         self.assertEqual(result.returncode, 0, result.stderr)
         calls = self.calls_for("kubectl")
-        self.assertIn(["config", "set-credentials", "homelab-ci"], calls)
+        self.assertIn(["config", "set-credentials", "homelab-ci", "--username=tailscale"], calls)
         self.assertTrue(any("--server=https://homelab-tailscale-operator.tail67beb.ts.net" in args
                             for args in calls))
         self.assertFalse(any(arg.startswith("--token=") for args in calls for arg in args))

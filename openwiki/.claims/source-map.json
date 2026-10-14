@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50df07a071d03690791a395204abfa8fcc010df0fe2068e5e643308a45bf0bbb",
+  "pageVersion": "sha256:a3ce70e54ba3484e3ce56fbe07116aae4b4e5369a7b7ba40cd7ebd458b54d1a2",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -66,7 +66,7 @@
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
-          "version": "repo-file-v1:sha256:ffc78eb12e5f975c1032fbc9e0e10087fdaeb59dc4418c02b59d297272b72a6d"
+          "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check.py",
@@ -129,6 +129,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T02:42:57.879Z"
+    "at": "2026-10-14T03:16:04.839Z"
   }
 }

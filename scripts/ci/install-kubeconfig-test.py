@@ -43,7 +43,7 @@ with (root / 'calls').open('a') as log:
             calls = [json.loads(line) for line in (root / "calls").read_text().splitlines()]
             self.assertEqual(calls[0], ["config", "set-cluster", "homelab-ci",
                                        "--server=https://homelab-tailscale-operator.tail67beb.ts.net"])
-            self.assertIn(["config", "set-credentials", "homelab-ci"], calls)
+            self.assertIn(["config", "set-credentials", "homelab-ci", "--username=tailscale"], calls)
             self.assertFalse(any("--token" in arg or "insecure" in arg for call in calls for arg in call))
             self.assertEqual((root / ".kube/config").stat().st_mode & 0o777, 0o600)
             second = subprocess.run(["bash", str(ROOT / "scripts/ci/install-kubeconfig.sh"), "--tailscale"],
@@ -51,6 +51,27 @@ with (root / 'calls').open('a') as log:
             self.assertNotEqual(second.returncode, 0)
             self.assertIn("Refusing to replace", second.stderr)
             self.assertEqual(len((root / "calls").read_text().splitlines()), len(calls))
+
+    def test_real_kubectl_does_not_prompt_with_proxy_username(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config = Path(directory) / "config.json"
+            value = {"apiVersion": "v1", "kind": "Config",
+                     "clusters": [{"name": "proxy", "cluster": {"server": "https://127.0.0.1:1"}}],
+                     "users": [{"name": "proxy", "user": {}}],
+                     "contexts": [{"name": "proxy", "context": {"cluster": "proxy", "user": "proxy"}}],
+                     "current-context": "proxy"}
+            args = ["kubectl", "--kubeconfig", str(config), "--request-timeout=1s", "auth", "whoami", "-o", "json"]
+            config.write_text(json.dumps(value))
+            empty = subprocess.run(args, stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=10)
+            self.assertNotEqual(empty.returncode, 0)
+            self.assertEqual(empty.stderr.strip(), "error: EOF")
+            value["users"][0]["user"] = {"username": "tailscale"}
+            config.write_text(json.dumps(value))
+            fixed = subprocess.run(args, stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=10)
+            self.assertNotEqual(fixed.returncode, 0)  # The closed loopback endpoint has no API server.
+            self.assertNotIn("Please enter", fixed.stdout)
+            self.assertNotEqual(fixed.stderr.strip(), "error: EOF")
+            self.assertIn("127.0.0.1:1", fixed.stderr)
 
     def test_plan_write_rbac_requires_dry_run_admission(self):
         rendered = subprocess.check_output(["kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/tailscale")], text=True)

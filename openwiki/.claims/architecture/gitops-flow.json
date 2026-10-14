@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f7db304038e175822aec43b65503c58d64286f8da2e58d7ac6cf820d23db29de",
+  "pageVersion": "sha256:86d1e1f712666d781c2f0d09c361f0ffe3a9406e64efc44070f2e3602d58d043",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -52,7 +52,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:52b3907efc9a51e180375c8c1b7c7d6aef97f1c302a5503b3da40b75bce6971f"
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check.py",
@@ -85,6 +85,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T02:42:57.879Z"
+    "at": "2026-10-14T03:16:04.839Z"
   }
 }

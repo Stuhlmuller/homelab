@@ -318,8 +318,10 @@ image publication, NOFX publication, diagnostics, the retained private
 catalog lane, Cordium execution, and Cordium login denial.
 `install-kubeconfig.sh --tailscale` only accepts an
 ephemeral GitHub Actions runner and refuses to replace an existing kubeconfig.
-It uses the fixed TLS operator endpoint with an empty credential entry; network
-identity supplies authentication. No persistent Kubernetes token enters GitHub.
+It uses the fixed TLS operator endpoint and a nonsecret `tailscale` username
+to suppress kubectl's interactive credential prompt. The proxy discards client
+authentication headers and supplies the mesh identity. No bearer token, password
+or client certificate enters this kubeconfig.
 
 Apply and Cordium CI tags can reach shared `tag:homelab-ingress` TCP443,
 including every Traefik virtual host on that endpoint. Tailscale grants do not
