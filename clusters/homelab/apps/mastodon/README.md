@@ -187,6 +187,27 @@ that shared toolchain before the final reusable publication receipt. After it
 merges, refresh the fixed Mastodon receipt: the runbook permits ancestor reuse
 only with a byte-identical publication bundle, including flake.nix and flake.lock.
 
+## Scan acceptance evidence
+
+Read-only Harbor API inspection on 2026-10-14 found completed scan summaries
+for the published index digests and Mastodon amd64/arm64 children. PostgreSQL
+reported 16 Critical package findings, Redis zero, and web/streaming one each.
+Missing summaries on additional PostgreSQL/Redis children still need
+classification; do not report them as zero-CVE platform images.
+
+| Image                    | Critical finding                                                                                                                                                       | Required follow-up                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| PostgreSQL 18.6-bookworm | Perl CVE-2026-13221, CVE-2026-42496 and CVE-2026-8376 across four packages; SQLite CVE-2025-7458; libxml2 CVE-2026-6653; zlib CVE-2023-45853; Go stdlib CVE-2025-68121 | Verify distro/helper applicability; use a compatible patched official image.          |
+| Mastodon web             | JSON 2.18.0, CVE-2026-33210                                                                                                                                            | Verify the exact active bundle: upstream 4.7.3 locks JSON 2.21.2.                     |
+| Mastodon streaming       | proxy-addr 2.0.7, CVE-2026-90711; fixed version 2.0.8                                                                                                                  | Check trust-proxy applicability or pin a patched dependency before public activation. |
+
+Sources: [Harbor collector/client](../harbor/vulnerability-exporter.py),
+[JSON vendor advisory](https://github.com/ruby/json/security/advisories/GHSA-3m6g-2423-7cp3),
+[Mastodon 4.7.3 lockfile](https://github.com/mastodon/mastodon/blob/v4.7.3/Gemfile.lock),
+[proxy-addr CVE](https://nvd.nist.gov/vuln/detail/CVE-2026-90711), and
+[Debian zlib tracking](https://security-tracker.debian.org/tracker/CVE-2023-45853).
+These are triage findings, not scan-policy overrides or accepted deployment risk.
+
 ## Remaining deployment gates
 
 - Publish the fixed four-image Mastodon scope through the reviewed Harbor
