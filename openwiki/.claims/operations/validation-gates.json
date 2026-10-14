@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3231cd32f0c1ca08d7e080dd2b9cdb5c13ec284831894b3ddaa1d883720cc7b9",
+  "pageVersion": "sha256:be921b582a34911a4883481a11703ed701904b0929a3ca3ddaa63c97a1d69e62",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:3a72a4c951487fa59f74f1bed50b4739a6c044d86a745828b26cc0b0ef45c924"
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
         }
       ]
     },
@@ -438,19 +438,23 @@
     },
     {
       "id": "claim_db920b24eb02493e958d3eaa74f91e5c",
-      "statement": "The Linux Nix builder adds NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. Sandbox/signature enforcement, RuntimeDefault seccomp, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation remain required. Each attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom; rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
+      "statement": "The Linux Nix builder retains NET_ADMIN for private loopback with disabled host user namespaces; its Pod-networking authority restricts submissions to reviewed source. The manifest selects the dedicated deny-by-default Localhost profile only for the nix container while retaining Pod RuntimeDefault, sandbox/signature enforcement, the 1 GiB reservation/limit, serial substitutions and original-Pod/attempt-ID cancellation. Both eligible worker profiles must be verified before selection rollout; each publication attempt checks node health, fresh leases/metrics and at least 1.5 GiB measured headroom. Rendered/deployed source alone does not prove full-check capacity or signed cache substitution.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:d6eb625b5eb572f84ac2d601e8eee0d68a67d299e88c09e3688eb9164088b9cd"
+          "version": "repo-file-v1:sha256:ce4b793ad09f4151fa5864adaaec0ff8ed9f144cd26bb168a2353f74c0e64e30"
         },
         {
           "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
-          "version": "repo-file-v1:sha256:d95313f7a07607ede09dc701aeb11a4a00a67975b130d9bcb4802d77209b72bd"
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
+        },
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:cdb2f07a53ca909a3489f61c310d2eb3913a2564270c451419a0ac04f566ce1b"
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
@@ -479,10 +483,40 @@
           "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
         }
       ]
+    },
+    {
+      "id": "claim_187df0e001164a33a4af918fdd3ce9bc",
+      "statement": "The dedicated Nix builder seccomp declaration preserves the captured containerd 2.1.4 amd64 builder rules and adds only pivot_root with a deny-by-default action. Its node-scoped helper preserves other profiles and active/persistent configuration, requires exact reviewed main for execution, rejects configuration/boot drift, validates strictly and verifies no-reboot installation through bounded asynchronous readback of /var/lib/kubelet/seccomp/profiles without repeating apply. Rollback refuses a selected profile and requires exact-path file-not-found readback, not transport/authentication failure. Nine tests cover baseline hash, idempotence, conflicts, configuration races, selected-profile refusal, delayed pinned-path readback, wrong content, deadline and deletion discrimination. The runbook records the initial worker0 legacy-path readback failure and subsequent protected repair: worker0 was verified read-only and worker1's first released helper succeeded, with both exact file hashes and unchanged boots. The current manifest declares container-only Localhost selection after those file receipts, retains Pod RuntimeDefault, and requires separate Argo/OCI verification and separately released bounded publication; no cache acceptance follows from source alone.",
+      "evidence": [
+        {
+          "resource": "repo://.talos/patches/nix-builder-seccomp.yaml",
+          "version": "repo-file-v1:sha256:f39a1f759f0e6cfe05bd610617c5a20fed6e6db19717b3aa096210b3eb863e69"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
+        },
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
+          "version": "repo-file-v1:sha256:d4372a25df4710837766ec1fcddf560d52dd1335a95487a36f9bdbfe2bc36a33"
+        },
+        {
+          "resource": "repo://scripts/talos-nix-builder-seccomp.py",
+          "version": "repo-file-v1:sha256:19492d889deec48274115a287ee9bd3ac9cc6a79f613794961514e6810575194"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T07:11:29.496Z"
+    "at": "2026-10-13T04:31:46.031Z"
   }
 }

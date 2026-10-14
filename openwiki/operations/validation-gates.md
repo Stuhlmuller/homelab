@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
+  - id: openwiki-source-55e66a93073b222af31dbd6b
+    resource: repo://.talos/patches/nix-builder-seccomp.yaml
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -40,6 +42,8 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-e081ebe342fc946979516883
+    resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -90,6 +94,8 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirror-credential-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+  - id: openwiki-source-c65516e351b2fe2cbdfc5a79
+    resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
@@ -106,10 +112,12 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:30:40.778Z" }
+  - id: openwiki-source-1c2e8ef619584eb7386e226a
+    resource: repo://scripts/talos-nix-builder-seccomp.py
+generated: { by: "codex", at: "2026-10-13T04:31:46.031Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T07:11:29.496Z
+    at: 2026-10-13T04:31:46.031Z
 ---
 
 # Validation Gates
@@ -130,11 +138,42 @@ The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
 Talos disables user namespaces. That capability also permits Pod networking
 changes; reviewed homelab source remains the trust boundary. Keep strict
-sandbox/signature checks, RuntimeDefault seccomp, the 1 GiB reservation/limit,
+sandbox/signature checks, Pod RuntimeDefault and the dedicated container
+Localhost profile, the 1 GiB reservation/limit,
 serial substitutions and original-Pod/attempt-ID cancellation. Fresh node
 health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt.
 A render or healthy rollout proves neither full-check memory sufficiency nor
 signed cache publication; verify actual substitution in fresh CI separately.
+
+The [dedicated builder seccomp profile](../../docs/nix-builder-seccomp.md)
+is declared separately from container selection. It preserves the captured
+containerd 2.1.4 amd64 builder rules and adds only `pivot_root` while retaining
+the deny-by-default action. Stage 1 installs the named profile on the two
+eligible workers through `talos-nix-builder-seccomp.py`, after protected merge
+and explicit release. The helper requires matching active/persistent configs,
+preserves other profiles, rejects configuration/boot drift, validates strictly,
+and uses a no-reboot apply with bounded exact profile readback, waiting
+for asynchronous controller convergence without repeating apply. Stage 2 may select
+Localhost only for the builder container after both node files are verified.
+The current manifest declares that container-only selection and retains Pod
+RuntimeDefault. Source/render validation proves neither applied OCI rules nor
+successful publication. Offline validation
+runs nine focused profile tests, including the exact one-syscall baseline
+hash, idempotence, conflicting-profile refusal, configuration races and
+refusal to remove a profile still selected by a Pod, delayed readback,
+wrong content and deadline expiry. Rollback must verify actual file absence;
+authentication or transport failures cannot establish deletion. Read the pinned
+Talos 1.11.3 host path `/var/lib/kubelet/seccomp/profiles`; Kubernetes selection
+stays relative to kubelet as `profiles/<name>`. The initial worker-0 helper
+installed the approved file but stopped at a legacy-path readback. Worker-1
+installation and all selection/publication were held at that failure. After
+the protected path repair, worker 0 was verified read-only and worker 1's first
+released helper completed. Both node files matched the reviewed profile with
+active/persistent agreement and unchanged boots; the original builder remained
+RuntimeDefault at that receipt. Stage 2 still requires exact protected review,
+Argo rollout and actual OCI-profile verification. Retain sandboxing,
+signatures, the 1 GiB limit and fresh preflight before a separately released
+single bounded publication retry; any terminal failure consumes that attempt.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and

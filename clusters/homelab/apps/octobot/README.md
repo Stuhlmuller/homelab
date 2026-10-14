@@ -73,3 +73,12 @@ through Octelium.
   the version-marked init container removes the retired
   `simple_market_making_trading_mode` and `octobot_process_operators` modules,
   then repairs the executable-code mismatch once.
+
+## Retirement
+
+The Application declares the Argo CD cascading-deletion finalizer. Apply this
+registration through targeted Terragrunt Apply and verify the live finalizer
+before removing the stack unit. The subsequent full apply destroys the
+Application and Argo CD removes its resources, including the finance namespace
+and its three PVCs. Namespace deletion removes claims even if their underlying
+NFS directories are retained; treat retirement as loss of runtime state.
