@@ -144,6 +144,15 @@ both exact outputs from the committed GitHub release URL without rebuilding
 either check. The protected-main trust policy and unchanged sandbox/signature
 wrapper were used; remaining validation ran fresh. This establishes cache
 acceptance for that exact source tree, not later fingerprints. Merging these
-docs changes the broad check inputs. Fresh live plans remain a separate,
-uncompleted gate; this receipt authorizes no credential, capacity or workload
-change and no migration plan/apply.
+docs changes the broad check inputs.
+
+The separate [fresh plan-only run](https://github.com/Stuhlmuller/homelab/actions/runs/38506080728)
+completed successfully on signed PR #1277 head
+`12eaf629c3d16c2348cebe058e576b3ce0582de1`, base
+`0a4420559c24733b0e05d58b8978eab81ed5f415`. Live plan job `115665635536`
+and its policy gate passed, including fresh API-proxy checks and Terraform
+planning. Independent current cluster checks found all four nodes Ready without
+pressure and the original builder Ready with its 1GiB limit; Argo was
+Synced/Healthy/Succeeded at that base. These live checks were run separately
+from cached offline receipts. Migration apply, retirement and further cache
+publication remain held; merging this docs receipt releases none of them.

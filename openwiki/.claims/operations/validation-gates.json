@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f4f315e9ae7220ae30ce630a84ce1851a4fb96c1c92fbf65e16392f2006d4f86",
+  "pageVersion": "sha256:976f574ebf8868c2e34d6b655ac2e9365bc44758c4937b7089c6b09f408092ce",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,11 +58,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:4e4c30b506be8055e5e5a3af2b8e89df693378d8c8ed3c7579728569efb8c41c"
+          "version": "repo-file-v1:sha256:208ad5f58c40defdd4d9ca188bc5315ec26e0e0a915fb6a3e7ced740443efecd"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -106,7 +106,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:b3e8a0edd06b5411e88ca62e113bf7046008b473801ad7d2af6be1aaa337d87c"
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         }
       ]
     },
@@ -148,7 +148,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:b3e8a0edd06b5411e88ca62e113bf7046008b473801ad7d2af6be1aaa337d87c"
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -156,7 +156,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -184,7 +184,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
-          "version": "repo-lines-v1:sha256:16a93c99e3e95828f7fd40fd0149ccf5476135d95cc0826c9209cded0cbd9da4:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
+          "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L125-L182",
@@ -192,7 +192,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:8dcb901700a1c8f9ab7e288a2ac13e346b553bd3581abe7e44025b4e59b42e22"
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -243,7 +243,7 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L163-L198",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:865026a9d761fea5952c54d124b34112d1a346830771d922f9a224518897c8ba"
+          "version": "repo-file-v1:sha256:2ce31e45fff6b247fe12900490514c2ad46d3e7879ca6e6e78e4fbece636f753"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         }
       ]
     },
@@ -450,7 +450,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:2398370f492ff6043d0356f62d70de69297f81ff2c2b82037e822aee481c2758"
+          "version": "repo-file-v1:sha256:eb0536118a713dba1b7f667d3b8bc27a034ce549971ac018a45e019196241bb4"
         },
         {
           "resource": "repo://docs/nix-cache.md",
@@ -498,11 +498,11 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:2398370f492ff6043d0356f62d70de69297f81ff2c2b82037e822aee481c2758"
+          "version": "repo-file-v1:sha256:eb0536118a713dba1b7f667d3b8bc27a034ce549971ac018a45e019196241bb4"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8c062dc8092481f6c4a5a3416ed3e3ced510f6db8356b8bdf47dddbf7a0c3ec9"
+          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -516,11 +516,11 @@
     },
     {
       "id": "claim_db848ce0e6504967b9527b11ec48b503",
-      "statement": "The runbook preserves the dated exact6dd7 rollout and 05:09UTC headroom hold with no attempt then. It records later natural headroom recovery to1589.9MiB, fresh full preflight and separate release of one bounded retry on exact6dd7. Both Linux checks completed/signed/published; independent fresh-store signature acceptance and unknown-key/unsigned rejection passed; original-Pod cleanup and905MiB peak/noOOM passed. Main validation38349343865 attempt2 repojob115167993774 copied both exact published outputs from committed GitHubreleaseURL without check rebuild and completed successfully with remaining validation fresh. Acceptance is scoped to that source tree; later docs invalidate broad fingerprints. Fresh live plans remain an uncompleted gate; the receipt releases no further retry, credential/capacity/workload change or migration plan/apply.",
+      "statement": "The dated runbook preserves the initial exact6dd7 rollout/headroom hold and subsequent successful bounded signed publication of both Linux checks, independent signature acceptance/rejections, cleanup and905MiB peak/noOOM. Exactmain warmCI38349343865 attempt2 repojob115167993774 copied both published outputs without rebuilding and passed remaining freshvalidation. Cache proof applies to exact6dd7 source; laterdocs change fingerprints. Separately freshplan-only38506080728 exactsigned12eaf629/base0a442055 livejob115665635536 and policygate passed APIproxychecks and Terraformplanning; independentclusterchecks found allfourReady/no pressure/originalbuilderReady1Gi/Argohealthyatbase. Migrationapply,retirement and furthercachepublication remainheld; docsmerge releases none.",
       "evidence": [
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:2398370f492ff6043d0356f62d70de69297f81ff2c2b82037e822aee481c2758"
+          "version": "repo-file-v1:sha256:eb0536118a713dba1b7f667d3b8bc27a034ce549971ac018a45e019196241bb4"
         },
         {
           "resource": "repo://docs/nix-cache.md",
@@ -539,6 +539,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T06:57:20.264Z"
+    "at": "2026-10-14T03:46:52.296Z"
   }
 }

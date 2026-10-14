@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d44a40d2ab906b699b178265841180bdd3df682fc494fc96a3f3b1e57d6a969d",
+  "pageVersion": "sha256:f8d748a8e46b20a5d592992f8b92852fac05d0ca5ad84f8dde731a3eef0e97aa",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -358,7 +358,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:bb3a025ce4a338f168e01a84ecaf3d75eb03277a8791d9e0dd9f900359c44515"
+          "version": "repo-file-v1:sha256:7f15df94273c5d7680db7222a24b0c9a96dfca47fc6e9f41ef2e1ee8d5d82dd1"
         }
       ]
     },
@@ -386,7 +386,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:bb3a025ce4a338f168e01a84ecaf3d75eb03277a8791d9e0dd9f900359c44515"
+          "version": "repo-file-v1:sha256:7f15df94273c5d7680db7222a24b0c9a96dfca47fc6e9f41ef2e1ee8d5d82dd1"
         }
       ]
     },
@@ -438,13 +438,13 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:22d48e42a406686f659d25610009b5ecb1f944cb0815d0c925ea203bbd82a688"
+          "version": "repo-file-v1:sha256:d5ac3138ee83943714e96b06764418917aa6154fe42bf2d9c6a47137da07ff7d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T07:11:29.496Z"
+    "at": "2026-10-14T03:46:52.296Z"
   }
 }

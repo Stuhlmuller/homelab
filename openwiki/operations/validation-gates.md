@@ -114,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T06:57:20.264Z" }
+generated: { by: "codex", at: "2026-10-14T03:46:52.296Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T06:57:20.264Z
+    at: 2026-10-14T03:46:52.296Z
 ---
 
 # Validation Gates
@@ -194,9 +194,14 @@ passed; peak memory was 905 MiB with no max/OOM/OOM-kill events. Main validation
 run `38349343865` attempt 2, repo job `115167993774`, copied both exact published
 outputs from the committed release URL without rebuilding either check and
 finished successfully with remaining validation fresh. Acceptance applies to
-that exact source tree; later tracked docs change the broad fingerprint. Fresh
-live plans remain a separate uncompleted gate; no extra retry, credential,
-capacity, workload or migration plan/apply is authorized by this receipt.
+that exact source tree; later tracked docs change the broad fingerprint. The separate fresh plan-only run `38506080728` completed successfully on signed
+PR #1277 head `12eaf629`, base `0a442055`. Live plan job `115665635536` and its
+policy gate passed fresh API-proxy checks and Terraform planning. Independent
+cluster checks found four Ready nodes without pressure and the original builder
+Ready with its 1GiB limit; Argo was Synced/Healthy/Succeeded at that base. Those
+live checks ran separately from cached offline receipts. Migration apply,
+retirement and further cache publication remain held; merging this docs receipt
+releases none of them.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
