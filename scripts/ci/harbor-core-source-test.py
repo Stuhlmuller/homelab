@@ -6,6 +6,7 @@ import gzip
 import importlib.util
 import io
 import json
+from collections import Counter
 from pathlib import Path
 import shutil
 import tarfile
@@ -23,15 +24,17 @@ class RegistryFixtureTests(unittest.TestCase):
         spec.loader.exec_module(self.fixture)
 
     def test_repeated_index_and_every_blob_are_self_consistent(self):
-        config, layer, child, index = self.fixture.fixture_payloads()
+        children, index = self.fixture.fixture_payloads()
         descriptors = json.loads(index)["manifests"]
         self.assertEqual(len(descriptors), 8)
-        self.assertTrue(all(item == descriptors[0] for item in descriptors))
-        self.assertEqual(descriptors[0]["digest"], self.fixture.digest(child))
-        manifest = json.loads(child)
-        self.assertEqual(manifest["config"]["digest"], self.fixture.digest(config))
-        self.assertEqual(manifest["layers"][0]["digest"], self.fixture.digest(layer))
-        self.assertEqual(json.loads(config)["rootfs"]["diff_ids"], [self.fixture.digest(gzip.decompress(layer))])
+        self.assertEqual(set(Counter(self.fixture.encoded(item) for item in descriptors).values()), {2})
+        self.assertEqual({item["digest"] for item in descriptors}, {self.fixture.digest(child) for _, _, child in children})
+        self.assertEqual(len(children), 4)
+        for config, layer, child in children:
+            manifest = json.loads(child)
+            self.assertEqual(manifest["config"]["digest"], self.fixture.digest(config))
+            self.assertEqual(manifest["layers"][0]["digest"], self.fixture.digest(layer))
+            self.assertEqual(json.loads(config)["rootfs"]["diff_ids"], [self.fixture.digest(gzip.decompress(layer))])
 
     def test_upload_location_cannot_escape_disposable_endpoint(self):
         with patch.object(self.fixture.urllib.request, "urlopen") as network:

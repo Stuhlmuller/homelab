@@ -87,8 +87,9 @@ The same command then prepares an isolated upstream Harbor stack with pinned
 v2.15.4 component images and the candidate core. Its service network denies
 external access and publishes no host ports. The test client shares the proxy's
 network namespace and uses `127.0.0.1:8080`. A tiny OCI
-image with eight identical child descriptors must push and pull unchanged,
-including every blob, while PostgreSQL stores exactly one child relation.
+index with four distinct child descriptors, each repeated twice, must push and
+pull unchanged, including every child manifest and blob, while PostgreSQL
+stores exactly four child relations.
 The fixture owns temporary credentials/data and removes its containers,
 network and files on exit. No cluster or production registry credentials apply.
 
