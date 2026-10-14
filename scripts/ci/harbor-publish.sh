@@ -99,6 +99,10 @@ if [[ "$mode" == mirror ]]; then
   rm -f -- "$RUNNER_TEMP/harbor-publication-error.gpg"
 fi
 scratch="$(mktemp -d "${RUNNER_TEMP}/harbor-publish.XXXXXX")"
+if [[ "$mode" == mirror ]]; then
+  # Capture setup stderr too; transfer commands replace it with their own buffer.
+  exec 2>"$scratch/mirror-error"
+fi
 forward_pid=""
 hosts_added=false
 kubeconfig_added=false

@@ -125,7 +125,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
-   Operator-approved diagnostics encrypt only the failed command's stderr to
+   Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.
    GitHub Actions retains only `harbor-publication-error.gpg` for one day.
