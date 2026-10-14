@@ -108,6 +108,7 @@
             prometheus.cli
             python3
             ripgrep
+            ruby
             shellcheck
             shfmt
             skopeo
