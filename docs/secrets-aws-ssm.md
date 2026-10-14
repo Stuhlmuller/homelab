@@ -522,11 +522,12 @@ Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
-The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
-`/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
-supplies kubelet pulls only; the credential is not mounted in app containers.
-The candidate itself adds no further SSM parameter, IAM permission or rotation.
-Activation waits
-for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
-`OnChange` refresh requires a declared annotation revision after rotation.
+The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
+Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
+vulnerability exporter references it only for kubelet pulls; the credential is
+not mounted in app containers. The held
+[private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
+rotation. Native-image activation still waits for reviewed publication, scans,
+recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
+declared annotation revision after rotation.
