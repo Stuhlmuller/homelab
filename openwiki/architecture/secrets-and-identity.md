@@ -534,11 +534,6 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   callback helper after Funnel routing and negative-path preflights pass;
   require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
-- OctoBot currently has no repository-owned SSM contract. Its first-run setup,
-  exchange credentials, tentacles, and strategy state live on the finance
-  namespace PVCs and are summarized in [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and
-  [Application Notes](../workloads/application-notes.md).
-
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`

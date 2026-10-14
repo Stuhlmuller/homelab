@@ -56,7 +56,6 @@ destination, and resources.
 | n8n                   | requested                 | `automation`            | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                   | Yes           | external-secrets, cert-manager, istio, platform-storage, n8n-postgres                              |
 | nofx                  | requested                 | `nofx`                  | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                  | Yes           | external-secrets, istio, octelium, litellm, platform-storage                                       |
 | policy-bot            | requested                 | `automation`            | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`            | Yes           | external-secrets, cert-manager, istio                                                              |
-| octobot               | requested                 | `finance`               | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`               | Yes           | cert-manager, istio, platform-storage                                                              |
 
 ## Dependency Readiness
 

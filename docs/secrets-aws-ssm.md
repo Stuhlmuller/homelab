@@ -504,14 +504,6 @@ deliveries to `/api/github/hook` validate. The Deployment runs one replica
 after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
 
-OctoBot does not currently have a repository-owned SSM parameter contract.
-First-run setup, exchange credentials, tentacles, and strategy state are managed
-through the OctoBot UI and persist on the `finance` namespace PVCs. Do not add
-live-trading autostart configuration until a separate PR adds the
-repository-owned secret contract or documents why UI-managed state is sufficient,
-records backtest and paper-trading evidence, and confirms withdrawal access is
-disabled at the exchange.
-
 ## Harbor private registry
 
 The generated `/homelab/harbor/` contract owns administrator, encryption,
