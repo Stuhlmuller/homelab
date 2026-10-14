@@ -24,6 +24,7 @@ REPOSITORY = "Stuhlmuller/homelab"
 TALOSCTL = "talosctl"
 REGISTRY_HOST = "harbor.stinkyboi.com"
 REGISTRY_USERNAME = "robot$mirror+pull"
+PRIVATE_REGISTRY_HOST = {"ip": "10.96.0.50", "aliases": [REGISTRY_HOST]}
 _UNCHANGED = object()
 
 
@@ -267,7 +268,7 @@ def mirrors_only(before, after, wanted, registry_config=_UNCHANGED):
 
 
 def registry_hosts(entries, declaration, rollback):
-    if declaration != [{"ip": "10.96.0.50", "aliases": ["harbor.stinkyboi.com"]}]:
+    if declaration != [PRIVATE_REGISTRY_HOST]:
         raise RuntimeError("Unexpected private registry host declaration")
     result = []
     for entry in entries:
@@ -281,6 +282,19 @@ def registry_hosts(entries, declaration, rollback):
         if aliases:
             result.append({**entry, "aliases": aliases})
     return result if rollback else result + copy.deepcopy(declaration)
+
+
+def require_private_registry_host(entries):
+    if not isinstance(entries, list):
+        raise RuntimeError("Existing Harbor hostname mapping is invalid")
+    mappings = []
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("aliases"), list):
+            raise RuntimeError("Existing Harbor hostname mapping is invalid")
+        if REGISTRY_HOST in entry["aliases"]:
+            mappings.append(entry)
+    if mappings != [PRIVATE_REGISTRY_HOST]:
+        raise RuntimeError("Executing Harbor mirror rollout requires the exact private Harbor hostname mapping")
 
 
 def hosts_only(before, after, wanted):
@@ -448,6 +462,7 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         if not isinstance(registries, dict):
             raise RuntimeError("Existing registry configuration is invalid")
         if execute and not rollback and not registry_host_only:
+            require_private_registry_host(configs[0]["machine"].get("network", {}).get("extraHostEntries", []))
             verified_registry_auth = registry_auth or owned_registry_auth(registries)
             if verified_registry_auth is None:
                 raise RuntimeError("Executing Harbor mirror rollout requires the mirror reader credential")

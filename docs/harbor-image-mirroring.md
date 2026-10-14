@@ -246,6 +246,8 @@ of the four Talos nodes. This DNS cutover must preserve that state: it does
 **not** activate the strict mirror patch. The helper preserves unrelated host
 aliases, refuses a conflicting existing Harbor mapping, and validates that
 the complete machine configuration changes only `extraHostEntries`.
+Normal strict-mirror execution refuses to run until that exact per-node mapping
+is active; public DNS for the Harbor hostname is never an accepted fallback.
 
 Talos 1.11.3 can expose only the active `v1alpha1` machine-config resource after
 loading configuration from STATE at boot; `persistent` is populated by later
