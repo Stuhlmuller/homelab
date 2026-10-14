@@ -175,13 +175,17 @@ content and schema; source evidence is the failed run's sanitized status and
 Harbor core/registry/PostgreSQL logs for that interval. A failed or partial
 publication never authorizes consuming references.
 
-The operator approved ciphertext-only client diagnostics with one-day GitHub
-Actions retention. PR #1298 pins the enrolled primary and encryption-subkey
-fingerprints and rejects plaintext fallback. Its refreshed signed head is
-awaiting protected CI; no diagnostic artifact has been captured. Merge that
-path before the next controlled publication attempt. Required validation on
-its previous head failed twice downloading AWS provider authentication checksums
-from GitHub; preserve checksum verification and protected merge requirements.
+PR #1298 merged the operator-approved ciphertext-only diagnostics with one-day
+retention and pinned primary/encryption-subkey fingerprints. Scoped run
+38508845110 on main deeaa9982be617813cb0973a4e33e9ce3264241f passed on
+2026-10-14: all four Mastodon scope entries completed digest-preserving copies,
+aliases and fresh authenticated destination pulls. No failure artifact was
+needed. This proves publication recovery; the earlier EOF cause remains unproven.
+
+The runtime draft also requires Ruby for its native validation. PR #1308 prepares
+that shared toolchain before the final reusable publication receipt. After it
+merges, refresh the fixed Mastodon receipt: the runbook permits ancestor reuse
+only with a byte-identical publication bundle, including flake.nix and flake.lock.
 
 ## Remaining deployment gates
 
@@ -190,7 +194,8 @@ from GitHub; preserve checksum verification and protected merge requirements.
   scope; public mirrors now have their dedicated production publication lane.
   Require exact digest/platform checks and complete authenticated destination
   pulls before consumption. The earlier shared-queue delay is resolved; the
-  repeated web destination-copy failure remains unresolved.
+  web destination-copy failure is recovered by scoped run 38508845110; refresh
+  the final receipt after the Ruby prerequisite.
 - Keep `LOCAL_DOMAIN=mastodon.stinkyboi.com` stable once accounts exist. The
   private apex is not part of this instance's discovery or public routing.
 - Supply the Google Workspace SMTP app credential through the protected
