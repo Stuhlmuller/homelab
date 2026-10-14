@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:976f574ebf8868c2e34d6b655ac2e9365bc44758c4937b7089c6b09f408092ce",
+  "pageVersion": "sha256:7960b732894bf6614da8a505868c9e6ba0bc419b8da997b630ef3437853f2731",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,11 +16,11 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:beaeb3c00edd141ffe858fdb5b8dc6f650fa7128489f88532eb155f5724099cb"
+          "version": "repo-file-v1:sha256:f29769c0c774e591fc9cd4915aedc3ab9466f96aefb71513093af1edf4280d49"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
+          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         }
       ]
     },
@@ -388,15 +388,15 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
+          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
+          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:2ce31e45fff6b247fe12900490514c2ad46d3e7879ca6e6e78e4fbece636f753"
+          "version": "repo-file-v1:sha256:43c95d2825d5cad63dcff4de642e134279c19215fa96b3dd7da08b49d8a0cb54"
         }
       ]
     },
@@ -406,11 +406,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
+          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:beaeb3c00edd141ffe858fdb5b8dc6f650fa7128489f88532eb155f5724099cb"
+          "version": "repo-file-v1:sha256:f29769c0c774e591fc9cd4915aedc3ab9466f96aefb71513093af1edf4280d49"
         }
       ]
     },
@@ -502,7 +502,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:51aadcd23241cc00c86f1f8c394386d6de4221b968f737aae870f1c974859298"
+          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -539,6 +539,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:46:52.296Z"
+    "at": "2026-10-14T04:07:45.942Z"
   }
 }
