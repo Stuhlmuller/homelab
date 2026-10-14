@@ -209,6 +209,7 @@ class HarborPublicationGates(unittest.TestCase):
                     (root / "forward-pid.tmp").write_text(str(os.getpid()))
                     (root / "forward-pid.tmp").replace(root / "forward-pid")
                     if FIXTURE["failure"] == "forward":
+                        print("x" * 70000 + "private port-forward fixture", file=sys.stderr)
                         raise SystemExit(13)
                     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
                     while True:
@@ -218,6 +219,7 @@ class HarborPublicationGates(unittest.TestCase):
                 os.execv(args[3], args[3:])
             elif command == "curl":
                 if FIXTURE["failure"] == "forward":
+                    print("private readiness fixture", file=sys.stderr)
                     time.sleep(0.2)
                     raise SystemExit(7)
                 print("401", end="")
@@ -804,6 +806,24 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertIn("phase=digest-lookup\n", self.public_status)
                     self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
+
+    def test_mirror_transport_logs_are_bounded_and_private(self):
+        helper = self.root / "scripts/ci/harbor-encrypt-diagnostic.py"
+        helper.write_text("from pathlib import Path\nimport sys\n"
+                          "data = Path(sys.argv[1]).read_bytes()\n"
+                          "assert b'private port-forward fixture' in data\n"
+                          "assert b'private readiness fixture' in data\n"
+                          "assert len(data) < 66000\n"
+                          "Path(sys.argv[2]).write_bytes(b'ciphertext fixture')\n")
+        self.transport_mocks(failure="forward", mirror=True)
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("private port-forward fixture", result.stdout + result.stderr)
+        self.assertNotIn("private readiness fixture", result.stdout + result.stderr)
+        artifact = self.root / "runner/harbor-publication-error.gpg"
+        self.assertEqual(artifact.read_bytes(), b"ciphertext fixture")
+        artifact.unlink()
+        self.assert_cleaned()
 
     def test_mirror_setup_failure_keeps_only_encrypted_diagnostic(self):
         helper = self.root / "scripts/ci/harbor-encrypt-diagnostic.py"

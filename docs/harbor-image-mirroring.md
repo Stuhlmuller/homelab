@@ -128,6 +128,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
    the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
    encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.
+   Readiness and port-forward details include at most 64 KiB from each log.
    GitHub Actions retains only `harbor-publication-error.gpg` for one day.
    Key download, fingerprint or encryption failure leaves no artifact; there is
    no plaintext fallback. Download and decrypt locally with `gpg --decrypt`
