@@ -166,9 +166,10 @@ def main():
 
             run(*kubectl, "create", "-f", "-", input=json.dumps(pod()))
             update = invoke(*kubectl, "-n", "image-policy-test", "patch", "pod", "proof",
-                            "--type=merge", "--patch", json.dumps({"spec": {"containers": [{
-                                "name": "workload", "image": "busybox:latest",
-                            }]}}), "--dry-run=server")
+                            "--type=json", "--patch", json.dumps([{
+                                "op": "replace", "path": "/spec/containers/0/image",
+                                "value": "busybox:latest",
+                            }]), "--dry-run=server")
             expect_warning(update)
             cases += 1
 
@@ -209,9 +210,10 @@ def main():
             cases += 2
 
             denied_update = invoke(*kubectl, "-n", "image-policy-test", "patch", "pod", "proof",
-                                   "--type=merge", "--patch", json.dumps({"spec": {"containers": [{
-                                       "name": "workload", "image": "busybox:latest",
-                                   }]}}), "--dry-run=server")
+                                   "--type=json", "--patch", json.dumps([{
+                                       "op": "replace", "path": "/spec/containers/0/image",
+                                       "value": "busybox:latest",
+                                   }]), "--dry-run=server")
             expect_denied(denied_update)
             cases += 1
 
