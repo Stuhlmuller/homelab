@@ -84,6 +84,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
    only its selected entries; it cannot establish full-catalog coverage. Require
    successful Traefik publication before merging the consuming ingress rollout.
 
+   Mastodon PostgreSQL candidate uses the separate upstream tag
+   postgres:18-bookworm at index
+   afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c.
+   Its amd64 configuration reports PostgreSQL 18.6-1.pgdg12+2 and the unchanged
+   /var/lib/postgresql/18/docker data directory. The older 18.6-bookworm digest
+   remains enrolled for Harbor; this preparation changes no live database.
+   Publish and inspect fresh scan results before changing the Mastodon consumer.
+
    The `chainguard` scope selects the thirteen digest-pinned public candidates in
    `scripts/config/harbor-chainguard-images.json`: Python, curl, BusyBox,
    Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
