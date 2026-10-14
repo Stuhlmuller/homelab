@@ -101,7 +101,7 @@ They create:
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `bazarr`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
@@ -649,10 +649,9 @@ outside git.
 During the August 2026 two-node dataplane outage,
 `clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` provides a
 bounded fallback on `acer`. It restores the ingress and shared authorization
-service, the Portal and API control paths, OctoBot, the CI Kubernetes API, and
-18 additional public WEB Services—19 public WEB fallbacks including
-OctoBot—without adding the control-plane node to the native dataplane pool. The
-fallback service Pods use only the primary
+service, the Portal and API control paths, the CI Kubernetes API, and
+18 public WEB Services without adding the control-plane node to the native
+dataplane pool. The fallback service Pods use only the primary
 Kubernetes network and reuse the existing generated Service selectors;
 `default.cordium` and `console.octelium` include their required managed
 sidecars. Refresh a fallback UID whenever Octelium recreates its Service.
@@ -926,3 +925,34 @@ seconds for startup and 30 seconds of sustained failure after readiness, then
 reaps the client so launchd can restart it. Session expiration still requires
 login; the original client hang trigger remains unknown. The supervisor is
 copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
+
+## Retire a public WEB Service
+
+Catalog apply does not prune removed Services. In a clean checkout of the
+reviewed removal commit on current `main`, use the operator admin login:
+
+```sh
+python3 -I scripts/octelium-service-retire.py \
+  --service <removed-service> --homedir <private-admin-login-directory>
+python3 -I scripts/octelium-service-retire.py \
+  --service <removed-service> --homedir <private-admin-login-directory> \
+  --expected-sha <current-main-sha> --execute
+```
+
+The helper accepts only a public WEB Service removed between `HEAD^` and
+`HEAD`, verifies the pinned CLI and transport, deletes that exact Service, and
+checks absence. Already absent succeeds. Run at the removal commit before
+other changes advance `main`. Retire its removed app DNS entry through the same reviewed commit:
+
+```sh
+scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> --dry-run
+scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> \
+  --execute --expected-sha <current-main-sha>
+```
+
+This deletes only A/AAAA/CNAME records for an active app hostname removed by
+the commit, preserves other records, and verifies absence. The retired
+CI/callback/carrier inventory remains excluded. Verify authoritative DNS
+and confirm the old URL no longer serves the app.
+Restore its catalog entry and apply the catalog to roll back; generated proxy
+UIDs must be refreshed after recreation.

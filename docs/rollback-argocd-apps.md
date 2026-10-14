@@ -10,25 +10,24 @@ handling is clear.
 1. AFFiNE
 2. Policy Bot
 3. OpenClaw
-4. OctoBot
-5. n8n
-6. n8n-postgres
-7. Radarr and Sonarr
-8. Prowlarr
-9. media-postgres
-10. LiteLLM
-11. Langfuse
-12. Deluge
-13. Kiali
-14. Grafana
-15. Descheduler
-16. Prometheus
-17. platform-storage
-18. Tailscale
-19. Istio
-20. cert-manager
-21. external-secrets
-22. platform-dns
+4. n8n
+5. n8n-postgres
+6. Radarr and Sonarr
+7. Prowlarr
+8. media-postgres
+9. LiteLLM
+10. Langfuse
+11. Deluge
+12. Kiali
+13. Grafana
+14. Descheduler
+15. Prometheus
+16. platform-storage
+17. Tailscale
+18. Istio
+19. cert-manager
+20. external-secrets
+21. platform-dns
 
 ## cert-manager v1.20.3
 

@@ -232,7 +232,7 @@ with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
 backend upload PVCs, n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium
 Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
 `octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
-NOFX SQLite state, and OctoBot. OpenClaw keeps configuration and workspace on
+and NOFX SQLite state. OpenClaw keeps configuration and workspace on
 its retained NAS claim, but its global state, per-agent SQLite databases, and
 native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The
 platform-storage application owns its StorageClass and PV;
