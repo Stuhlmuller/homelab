@@ -35,6 +35,21 @@ HARBOR_TEMPLATE = (
     '{{ printf "robot$homelab+pull:%s" .password | b64enc }}'
     '"}}}'
 )
+FRONTEND_PROBE = {
+    "exec": {"command": ["wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/health"]},
+    "periodSeconds": 10,
+    "timeoutSeconds": 5,
+    "failureThreshold": 6,
+}
+FRONTEND_EGRESS = [
+    {"to": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}},
+             "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}}],
+     "ports": [{"protocol": "UDP", "port": 53}, {"protocol": "TCP", "port": 53}]},
+    {"to": [{"podSelector": {"matchLabels": {
+        "app.kubernetes.io/name": "nofx", "app.kubernetes.io/component": "backend"}}}],
+     "ports": [{"protocol": "TCP", "port": 8080}, {"protocol": "TCP", "port": 15008}]},
+]
+BACKEND_HBONE_INGRESS = {"ports": [{"protocol": "TCP", "port": 15008}]}
 
 
 def deployment(resources, component="backend"):
@@ -244,10 +259,42 @@ def litellm_routing_errors(resources, pod, container, active):
     return errors
 
 
+def frontend_egress_errors(resources):
+    """The stateless frontend reaches DNS and its backend, never a registry."""
+    errors = []
+    pod, container = deployment(resources, "frontend")
+    if pod.get("automountServiceAccountToken") is not False:
+        errors.append("frontend must not mount a service-account token")
+    if container.get("readinessProbe") != FRONTEND_PROBE:
+        errors.append("frontend must use the fixed local exec readiness probe")
+    liveness = dict(FRONTEND_PROBE, periodSeconds=30, failureThreshold=3)
+    if container.get("livenessProbe") != liveness:
+        errors.append("frontend must use the fixed local exec liveness probe")
+    policies = [item for item in resources if item.get("kind") == "NetworkPolicy"
+                and item.get("metadata", {}).get("name") == "nofx-frontend"
+                and item.get("metadata", {}).get("namespace") == "nofx"]
+    if len(policies) != 1:
+        return errors + ["expected one nofx/nofx-frontend NetworkPolicy"]
+    spec = policies[0].get("spec", {})
+    if spec.get("policyTypes") != ["Ingress", "Egress"]:
+        errors.append("frontend policy must isolate ingress and egress")
+    if spec.get("egress") != FRONTEND_EGRESS:
+        errors.append("frontend egress must allow only CoreDNS and the NOFX backend")
+    backends = [item for item in resources if item.get("kind") == "NetworkPolicy"
+                and item.get("metadata", {}).get("name") == "nofx-backend"
+                and item.get("metadata", {}).get("namespace") == "nofx"]
+    if len(backends) != 1:
+        return errors + ["expected one nofx/nofx-backend NetworkPolicy"]
+    if BACKEND_HBONE_INGRESS not in backends[0].get("spec", {}).get("ingress", []):
+        errors.append("backend policy must admit ambient HBONE on TCP 15008")
+    return errors
+
+
 def validate(resources, active=False):
     pod, container = deployment(resources)
     errors = registry_errors(resources)
     errors += litellm_routing_errors(resources, pod, container, active)
+    errors += frontend_egress_errors(resources)
     if container.get("securityContext", {}).get("readOnlyRootFilesystem") is not True:
         errors.append("backend must keep readOnlyRootFilesystem: true")
     if container.get("command") != ["/app/nofx"]:
@@ -288,7 +335,9 @@ def negative_checks(resources):
              "harbor-json-injection", "harbor-raw-key", "harbor-missing-secret",
              "harbor-refresh", "harbor-env", "harbor-init-env", "harbor-ephemeral-env",
              "harbor-mount", "harbor-projected-mount", "harbor-committed-secret",
-             "litellm-service-account", "litellm-config", "litellm-token-mount", "litellm-token-env")
+             "litellm-service-account", "litellm-config", "litellm-token-mount", "litellm-token-env",
+             "frontend-service-token", "frontend-http-probe", "frontend-egress-wildcard",
+             "frontend-egress-no-hbone", "backend-ingress-no-hbone")
     for case in cases:
         changed = copy.deepcopy(resources)
         pod, container = deployment(changed)
@@ -386,6 +435,23 @@ def negative_checks(resources):
             next(item for item in container["volumeMounts"] if item["name"] == "litellm-token")["readOnly"] = False
         elif case == "litellm-token-env":
             container["envFrom"].append({"secretRef": {"name": LITELLM_SECRET_NAME}})
+        elif case == "frontend-service-token":
+            frontend_pod, _ = deployment(changed, "frontend")
+            frontend_pod.pop("automountServiceAccountToken", None)
+        elif case == "frontend-http-probe":
+            _, frontend = deployment(changed, "frontend")
+            frontend["readinessProbe"] = {"httpGet": {"path": "/health", "port": "http"}}
+        elif case in ("frontend-egress-wildcard", "frontend-egress-no-hbone"):
+            policy = next(item for item in changed if item.get("kind") == "NetworkPolicy"
+                          and item.get("metadata", {}).get("name") == "nofx-frontend")
+            if case == "frontend-egress-wildcard":
+                policy["spec"]["egress"] = [{}]
+            else:
+                policy["spec"]["egress"][1]["ports"].pop()
+        elif case == "backend-ingress-no-hbone":
+            policy = next(item for item in changed if item.get("kind") == "NetworkPolicy"
+                          and item.get("metadata", {}).get("name") == "nofx-backend")
+            policy["spec"]["ingress"].remove(BACKEND_HBONE_INGRESS)
         if not validate(changed, active=True):
             raise ValueError(f"runtime regression was accepted: {case}")
     return len(cases)
@@ -398,7 +464,7 @@ def main():
     if errors:
         raise ValueError("; ".join(errors))
     count = negative_checks(resources)
-    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth, active LiteLLM route; "
+    print(f"NOFX runtime: persisted paths, database identity, read-only root, private image auth, active LiteLLM route, frontend egress; "
           f"{count} regressions rejected")
 
 
