@@ -192,20 +192,29 @@ byte-identical publication bundle, including flake.nix and flake.lock.
 Read-only Harbor API inspection on 2026-10-14 found completed scan summaries
 for the published index digests and Mastodon amd64/arm64 children. PostgreSQL
 reported 16 Critical package findings, Redis zero, and web/streaming one each.
-Missing summaries on additional PostgreSQL/Redis children still need
-classification; do not report them as zero-CVE platform images.
-The original PostgreSQL index hash was independently verified against the
-immutable upstream manifest. It contains five runnable Linux platform entries
-and five unknown/unknown descriptors explicitly marked attestation-manifest.
-Match missing Harbor summaries to those digests before excluding attestations
-from platform coverage; this does not clear the 16 Critical package findings.
+Digest-verified immutable upstream indexes and read-only Harbor child metadata
+confirmed complete runnable-platform coverage: PostgreSQL has five Linux
+platforms, each with 16 Critical findings; Redis has eight, each with zero
+Critical findings. All missing scan summaries match attestation-manifest
+descriptors with unknown/unknown platforms: five for PostgreSQL, eight for
+Redis. Those are not runnable platform images or zero-CVE scan results.
 
-PR #1309 enrolls a separate PostgreSQL 18-bookworm candidate at
+PR #1309 merged a separate PostgreSQL 18-bookworm candidate at
 afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c.
 Its amd64 configuration retains PostgreSQL 18.6, Debian Bookworm and
 /var/lib/postgresql/18/docker. The existing Harbor database pin is preserved.
 Publication and fresh scans must precede Mastodon consumption; the newer digest
 alone is not evidence of remediation.
+
+Debian's [zlib advisory](https://security-tracker.debian.org/tracker/CVE-2023-45853)
+records that Bookworm does not build the affected contrib/minizip code from
+src:zlib. This explains the zlib1g installed-package finding; retain it without
+scanner suppression. The
+[SQLite advisory](https://security-tracker.debian.org/tracker/CVE-2025-7458)
+still marks Bookworm vulnerable and requires arbitrary crafted SQL execution.
+The [libxml2 advisory](https://security-tracker.debian.org/tracker/CVE-2026-6653)
+also remains unfixed in Bookworm. Neither is cleared by the candidate's newer
+tag; use fresh package scans and actual PostgreSQL feature usage for acceptance.
 
 | Image                    | Critical finding                                                                                                                                                       | Required follow-up                                                                    |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
