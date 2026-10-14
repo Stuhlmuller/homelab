@@ -12,11 +12,12 @@ WEB transport, then the private Istio gateway. Harbor authenticates browsers
 and OCI clients itself. The transport must preserve `Authorization` and the
 OCI bearer-token challenge; a browser SSO redirect would break containerd,
 Docker, Helm, and ORAS. Internal publisher Pods use the same HTTPS hostname
-through CoreDNS split resolution to the existing Istio gateway.
+through CoreDNS split resolution to the private Traefik route.
 
 Public Tunnel requests remain subject to Cloudflare's [upload limits][limits].
-Large-image migration and publication use the CI TLS port-forward into Istio. A
-successful browser page or `/v2/` challenge does not prove large uploads.
+Large-image migration and publication use the CI TLS port-forward to
+`traefik-private`; a successful browser page or `/v2/` challenge does not prove
+large uploads.
 Talos containerd resolves names through the host resolver, so the Pod-only
 CoreDNS rewrite does not change node image pulls. Verify a new Pod can pull a
 private digest before changing a workload's image source.
