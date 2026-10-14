@@ -110,6 +110,7 @@ def main():
                 "apiVersions": ["v1"],
                 "operations": ["CREATE", "UPDATE"],
                 "resources": ["pods", "pods/ephemeralcontainers"],
+                "scope": "*",
             }], spec
             assert "variables" not in spec and "matchConditions" not in spec, spec
             assert binding["spec"] == {
