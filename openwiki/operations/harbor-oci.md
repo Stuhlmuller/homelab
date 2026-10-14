@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -40,6 +42,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-18a62bd8e6557f91a37822f4
+    resource: repo://clusters/homelab/apps/harbor/image-automation.json
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-1635b3ffa6091ee664a713ee
@@ -74,6 +78,8 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-556eb082b86343ef048df9f7
+    resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
@@ -82,10 +88,14 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-28fa6202184199322ab68bca
+    resource: repo://scripts/ci/network-policy-inventory-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -96,10 +106,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:18:51.612Z" }
+generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-14T04:57:20.007Z
 ---
 
 # Harbor Private OCI Registry
@@ -224,7 +234,7 @@ including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
 
 The Stage B desired-state consumer advances `harbor-secrets`' `OnChange`
-revision to `v3` and mounts the reader key in the bootstrap Job. After External
+revision to `v4` and mounts the reader key in the bootstrap Job. After External
 Secrets materializes the target Secret, a bootstrap execution can create or
 patch the reader robot. Require ExternalSecret Ready and successful PostSync
 completion before accepting reader-robot, authenticated-receipt, or Talos
@@ -233,6 +243,13 @@ behavior, workload registry access, or node change. Do not use periodic refresh:
 it would regenerate Harbor's salted bcrypt registry password hash. The public
 `mirror` project remains public until a separate reviewed Talos path validates
 authenticated pulls on every node before a privacy flip.
+
+The native Chainguard receipt uses two additional least-privilege homelab
+project identities: the existing pull robot only completes authenticated OCI
+pulls, while `robot$homelab+scan` holds only `artifact:read` for exact child
+scan summaries. They are not workload credentials. The protected receipt path
+reads their SSM parameters into private files and retains only a bounded
+nonsecret receipt after verification.
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -690,6 +707,8 @@ enforce existing NetworkPolicies. The enforcer is the proposed L3/L4 boundary
 behind Istio egress waypoints; activation requires repository-owned Talos NRI
 configuration, live socket/plugin registration, negative startup/bypass tests,
 review of every NetworkPolicy, and a fail-closed strict-mode worker canary.
+No current worker is a safe canary; first define and provision a dedicated,
+tainted worker with an explicit hardware, scheduling, and storage contract.
 Preserve DNS, API, HBONE, webhook, storage, and recovery paths and prove direct-IP,
 alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
@@ -699,7 +718,29 @@ No consumer migration, full-catalog publication, zero-CVE result or live egress
 enforcement is established by these prerequisites. Image pulls remain
 node/containerd traffic, outside Istio pod interception.
 
-## Proposed Chainguard automation
+## Native Chainguard receipt gate
+
+Repository desired state currently registers only
+`cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest` for the
+private `homelab` project. The exporter and Kiali candidates remain
+`candidate` and `not-enrolled`; receipt evidence does not change a workload
+image reference.
+
+The protected, manual, exact-`main` receipt workflow verifies the configured
+source and destination against the replication, catalog, and image-automation
+records; compares authenticated OCI index bytes; verifies both `amd64` and
+`arm64` child descriptors; and reads only the exact child scan summaries using
+the scan reader. Each scan must succeed with zero CVEs. It retains a bounded,
+non-secret receipt only after all checks pass.
+
+The receipt checker rejects an otherwise valid receipt when a consumer is not
+enrolled with an exact Harbor digest and compatibility evidence. A stateless
+exporter pilot can be considered first; Kiali requires a shell-free readiness
+rewrite. Full-catalog publication remains required before a Talos-wide strict
+no-fallback policy. A source receipt proves neither publication, workload
+migration, global Harbor-only pulls, nor live egress enforcement.
+
+## Historical Chainguard automation design
 
 The [Chainguard image automation specification](../../specs/002-chainguard-image-automation/spec.md)
 proposes migrating all compatible active workloads, recording exceptions,

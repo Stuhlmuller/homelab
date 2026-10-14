@@ -4,6 +4,8 @@ title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
 sources:
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
@@ -38,6 +40,10 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
+  - id: openwiki-source-d88444044033fa951eb38e67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.sh
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -46,10 +52,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:35:49.067Z" }
+generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-14T04:57:20.007Z
 ---
 
 # Secrets And Identity
@@ -709,7 +715,7 @@ mirror runbook](../../docs/harbor-image-mirroring.md).
 The reviewed Stage A saved plan created and metadata-verified the generated
 `/homelab/harbor/mirror-robot-pull-password` without reading its value. The
 Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
-to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+to `v4` and mounts the reader key in the Harbor bootstrap Job. After External
 Secrets materializes the target Secret, that Job can reconcile the separate
 read-only robot during execution; require successful PostSync completion before
 accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
@@ -728,6 +734,17 @@ has valid `robot$mirror+pull` registry auth; otherwise it stops before it create
 a candidate or applies a machine configuration. Rollback and `--registry-host-only`
 execution intentionally do not use reader auth. This rollout gate does not make
 the `mirror` project private.
+
+The protected native Chainguard receipt workflow is an exact-`main`, manual
+verification path. Its inline AWS session policy reads only the homelab pull and
+scan robot parameters. The pull identity is used only for authenticated OCI
+pulls; the separate scan identity has only project-scoped `artifact:read` for
+the exact child-manifest scan queries. Both values are written to private files,
+never workflow environment, arguments, logs, JSON, or artifacts. The workflow
+emits only a bounded receipt after source and Harbor indexes, required platforms,
+scan success, and authenticated destination pulls agree. It does not publish an
+image, enrol a consumer, create an in-cluster scanner Job, or grant application
+registry access.
 
 The excluded
 [private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)

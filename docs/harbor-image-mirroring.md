@@ -82,7 +82,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
 1. Merge the bootstrap, inventory, publisher and unapplied Talos patches through
    normal signed-commit, review and CI gates. The reviewed Stage A saved plan has
    created and metadata-verified the independent mirror reader SSM parameter.
-   This consumer revision advances `harbor-secrets` to `v3`; wait for External
+   This consumer revision advances `harbor-secrets` to `v4`; wait for External
    Secrets to reconcile it and Harbor's PostSync bootstrap to finish
    Synced/Healthy before publication. The parameter alone does not create a
    Harbor robot, enable authenticated receipts, or change Talos.
@@ -398,7 +398,7 @@ Its wider shared dependency closure remains outside approved scope; reject
 unexpected grants, rotations, deletes, or other actions.
 
 This later consumer revision advances `harbor-secrets`' `OnChange` revision to
-`v3`, after the parameter exists, so External Secrets reconciles the new key.
+`v4`, after the parameter exists, so External Secrets reconciles the new key.
 Until that reconciliation and the PostSync bootstrap succeed, it does not create
 the Harbor reader robot, enable publication receipt/readback, or change nodes.
 Keep that Secret `OnChange`: periodic reconciliation would regenerate its salted

@@ -8,12 +8,14 @@ sources:
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
+  - id: openwiki-source-28fa6202184199322ab68bca
+    resource: repo://scripts/ci/network-policy-inventory-test.py
   - id: openwiki-source-221eda5e9e283a2549066105
     resource: repo://scripts/network-policy-inventory.py
-generated: { by: "codex", at: "2026-10-13T03:34:25.328Z" }
+generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T05:09:09.786Z
+    at: 2026-10-14T04:45:23.387Z
 ---
 
 # Runtime Isolation
@@ -37,11 +39,13 @@ broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
 limited capacity, system DaemonSets, and a live backup workload.
 
-First add Gateway API, a repository-owned NRI policy dataplane, and a
-capacity-isolated worker through their declared owners. Before activation,
-compare private read-only Pod/NetworkPolicy snapshots and all rendered policies
-with `scripts/network-policy-inventory.py --fail-on-findings`. A disposable
-ambient canary must prove exact allowed DNS/destinations and denial of
-undeclared domains, direct IPs, alternate ports, IPv6, and gateway bypasses.
+First add Gateway API, a repository-owned NRI policy dataplane, and a dedicated
+tainted canary worker through their declared owners. Its reviewed contract must
+cover capacity, scheduling, and storage placement before workloads are placed
+there. Before activation, compare private read-only Pod/NetworkPolicy snapshots
+and all rendered policies with `scripts/network-policy-inventory.py
+--fail-on-findings`. A disposable ambient canary must prove exact allowed
+DNS/destinations and denial of undeclared domains, direct IPs, alternate ports,
+IPv6, and gateway bypasses.
 
 See [Validation Gates](../operations/validation-gates.md) and [Workload Inventory](../workloads/inventory.md).

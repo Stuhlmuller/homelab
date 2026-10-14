@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:de6a7f137eac3fa10c840d27d25e51add1c99df2e699777b557f66965bade9a9",
+  "pageVersion": "sha256:6b8bcf2eeeb4953aeb18ba3b30a4cd3513ab7bb505cabab76ffd26b3c5a13615",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:fdf2b1e4c2f765eadfc3b159466985451614033bc656c43a73b917d859e04e71"
+          "version": "repo-file-v1:sha256:bfb7150ee34056a9789d9f6e8fd107163ded2255e80deba005d9ae2e118462ab"
         }
       ]
     },
@@ -127,10 +127,32 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c12e09fee2904168a36dadc5c1771d1f",
+      "statement": "The staged Image Updater controller remains unregistered and scaled to zero. Its native Chainguard receipt is only evidence for the candidate Python and curl artifacts: it neither creates a verified-stable alias nor writes updater state or enrolls a consumer. Enrollment requires a later reviewed compatibility migration using an exact private Harbor digest and verifiable receipt evidence.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/argocd-image-updater/stack.hcl",
+          "version": "repo-file-v1:sha256:026a1c7562a1d4f1335f41c4285521aaa50b54da43592ca7a46a7926dd60b55e"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:a77a3e31fce084f6db2fb543b65428ed3e9d494de6235d4681e34e5aff285cc7"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/image-automation.json",
+          "version": "repo-file-v1:sha256:d6364d806f3ccc0257d837d5c3291c386a8101a409fcd3976e63f62b36040805"
+        },
+        {
+          "resource": "repo://docs/argocd-image-updater.md",
+          "version": "repo-file-v1:sha256:bfb7150ee34056a9789d9f6e8fd107163ded2255e80deba005d9ae2e118462ab"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:46:52.296Z"
+    "at": "2026-10-14T04:45:23.387Z"
   }
 }

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50fb050d43a20c9bb0754b57f48be8d81455e378804b8d5e81db85567dfeb619",
+  "pageVersion": "sha256:36f1228531c4efd5647d7a7d9323c2dea7e80425155ba826284635101e49f008",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
-      "statement": "The 2026-10-12 read-only egress audit found all Flannel and ztunnel instances Ready but no Gateway API CRDs/GatewayClass, NRI configuration, or kube-network-policies deployment; legacy Istio Gateway resources do not supply the Gateway API egress path. No egress enforcement is active. A capacity-isolated worker, declared Gateway API/NRI dataplane, private inventory audit, and positive/negative ambient canary evidence are prerequisites to activation.",
+      "statement": "The 2026-10-12 read-only egress audit found all Flannel and ztunnel instances Ready but no Gateway API CRDs/GatewayClass, NRI configuration, or kube-network-policies deployment; legacy Istio Gateway resources do not supply the Gateway API egress path. No egress enforcement is active. Activation first requires a dedicated tainted canary worker with reviewed capacity, scheduling, and storage placement, a declared Gateway API/NRI dataplane, private inventory audit, and positive and negative ambient canary evidence.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -12,7 +12,11 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:6f381303610f88a0bbd2d28e18be26d8f52f8d323074bf0f4bda4de7ff402860"
+          "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py",
+          "version": "repo-file-v1:sha256:fe5d5912c9c103367f5c1720f97f6e978e631ca03f1f88cfef9a1af1f34d68bf"
         },
         {
           "resource": "repo://scripts/network-policy-inventory.py",
@@ -23,6 +27,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-13T05:09:09.786Z"
+    "at": "2026-10-14T04:45:23.387Z"
   }
 }
