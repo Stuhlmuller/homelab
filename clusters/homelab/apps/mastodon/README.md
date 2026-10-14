@@ -213,9 +213,13 @@ Remaining findings: libsqlite3-0
 CVE-2025-7458, libxml2 CVE-2026-6653, zlib1g CVE-2023-45853 and Go stdlib
 CVE-2025-68121. The 12 Perl findings no longer appear. Exact image-layer
 inspection verified patched Perl 5.36.0-7+deb12u4 and unchanged SQLite, libxml2
-and zlib package versions. Publication still needs final complete authenticated
-pulls, and CVE applicability remains unresolved; scan results alone are not a
-delivery receipt.
+and zlib package versions. Scoped publication run 38516246033 on main
+fcba3da76643f67c76ddffc086948967fc3f708d succeeded at 2026-10-14 05:43 UTC.
+All four fixed images passed digest-preserving copies, aliases and complete
+authenticated destination pulls. No failure artifact was emitted. The draft
+now uses this candidate for database, init and backup callers; Harbor retains
+its old pin. Runtime CVE applicability still needs acceptance; delivery does
+not waive package findings.
 
 Exact entrypoint inspection found gosu invoked only when PostgreSQL starts as
 UID 0. The declared database runs as UID 65534; its root directory init replaces
@@ -225,6 +229,13 @@ consistent with the stdlib finding. The
 [Go advisory](https://pkg.go.dev/vuln/GO-2026-4337) concerns TLS session resumption
 with changed certificate-authority configuration. Keep the package finding;
 this execution-path evidence does not clear the SQLite or libxml2 findings.
+Exact ELF dynamic dependencies show no direct SQLite linkage from the database
+binary or declared pg_trgm/unaccent extensions. The database does link libxml2.
+Database ingress is limited to Mastodon pods with the declared Istio principal
+and NetworkPolicy; the application role loses superuser privileges after the
+required extensions are installed. Do not expose a public SQL endpoint or
+interpret isolation as a package fix. Verify loaded libraries and app behavior
+on the actual workload before public acceptance.
 
 Debian's [zlib advisory](https://security-tracker.debian.org/tracker/CVE-2023-45853)
 records that Bookworm does not build the affected contrib/minizip code from
@@ -278,7 +289,8 @@ These are triage findings, not scan-policy overrides or accepted deployment risk
   Require exact digest/platform checks and complete authenticated destination
   pulls before consumption. The earlier shared-queue delay is resolved; the
   web destination-copy failure is recovered by scoped run 38508845110; refresh
-  the final receipt after the Ruby prerequisite.
+  the refreshed fixed-scope receipt is run 38516246033 after Ruby and candidate
+  prerequisites. Recheck bundle equality if main advances before registration.
 - Keep `LOCAL_DOMAIN=mastodon.stinkyboi.com` stable once accounts exist. The
   private apex is not part of this instance's discovery or public routing.
 - Supply the Google Workspace SMTP app credential through the protected
