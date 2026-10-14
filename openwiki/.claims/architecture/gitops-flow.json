@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7f9cae3c5a586508e6221debcd06f7bf9b2003d2656569d1e810803fb8fb07bd",
+  "pageVersion": "sha256:f8f00b9d1c9bb47787af6b91409a12ce38dc881537463b440e7b0054581d5776",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -30,13 +30,13 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-14T03:46:52.296Z"
   }
 }
