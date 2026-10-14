@@ -17,12 +17,14 @@ it imports into private `homelab/chainguard-python:latest` and
 `homelab/chainguard-curl:latest` repositories. After bootstrap has reconciled
 those rules, the protected
 `harbor-native-chainguard-receipt.yml` workflow must run from exact current
-`main`. Its receipt is bound to the automation configuration, replication
-rules, and catalog pins. It proves that the source root index, private
-destination root index, and a complete authenticated `robot$homelab+pull`
-download have identical bytes; that the required `linux/amd64` and
-`linux/arm64` child descriptors match; and that Harbor reports `Success` with
-every reported finding count zero for those children.
+`main`. Its receipt is bound to the per-image native import contract: the
+source and private destination mapping, catalog pin, required platforms and
+fixed replication rule. Unrelated consumer or automation-state changes do not
+invalidate that contract. The receipt proves that the source root index,
+private destination root index, and a complete authenticated
+`robot$homelab+pull` download have identical bytes; that the required
+`linux/amd64` and `linux/arm64` child descriptors match; and that Harbor
+reports `Success` with every reported finding count zero for those children.
 
 Protected CI queries those child scans directly with the separate
 `robot$homelab+scan` credential, limited to project-scoped `artifact:read`.
@@ -32,11 +34,22 @@ private temporary files and are excluded from workflow output and artifacts.
 
 The receipt is protected-workflow evidence only. It does not create a digest
 tag or `verified-stable` alias, update Image Updater state, or change a
-workload. A checked-in receipt cannot enroll a consumer until a verifiable
-artifact-attestation importer exists. A later reviewed migration must add
-namespace pull authorization, compatibility evidence, and a direct,
+workload. A receipt-state-only pull request is checked by
+`harbor-native-chainguard-receipt-provenance.yml`, which runs trusted base
+code and reads the proposed state as data. A changed native receipt must match
+the exact successful protected Actions run, workflow, `main` revision and
+bounded artifact whose SHA-256 is recorded with its provenance in
+`scripts/config/image-automation-state.json`; a copied receipt alone is
+rejected. Artifact expiry does not invalidate unchanged historic imported
+state, while every changed entry must be reverified from its available
+artifact. This importer design does not deploy a workload or migrate a
+consumer. A later reviewed migration must add namespace pull authorization,
+compatibility evidence, imported protected receipt state, and a direct,
 digest-pinned private reference such as
 `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+Before any receipt-state import or migration, the provenance context must first
+run successfully on `main` and be required by the production GitHub ruleset.
+The bootstrap workflow alone does not unlock a consumer.
 
 Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
 project. Repository and Pod image names retain upstream provenance; their bytes
@@ -133,9 +146,9 @@ retain registry blobs together with Harbor database/encryption-key backups.
    See [migration gates and current findings](image-egress-hardening.md).
    Keep the public source copy distinct from the internal runtime reference.
    No application consumes these `mirror` copies. Python and curl need a
-   successful native receipt from the separate protected workflow before a
-   reviewed compatibility migration may reference a private direct digest such
-   as `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+   successfully imported protected native receipt before a reviewed
+   compatibility migration may reference a private direct digest such as
+   `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
 
    After that public source copy and Harbor's native Python/curl replication
    have both completed, verify the private imports from exact reviewed current
@@ -147,9 +160,14 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    The receipt workflow accepts no image, registry, destination, or credential
    input. It verifies only the committed Python and curl plan and uploads the
-   bounded receipt artifact. A successful receipt is necessary protected-workflow
-   evidence for a later workload migration; a checked-in copy cannot enroll a
-   consumer until a verifiable artifact-attestation importer exists.
+   bounded receipt artifact. Import it only through a receipt-state-only pull
+   request. The trusted provenance workflow rechecks each changed entry against
+   the exact protected Actions artifact and records its provenance; it does not
+   migrate a consumer or deploy a workload. An unchanged historic entry remains
+   valid if its artifact later expires, but changing it requires a fresh
+   verifiable artifact. First let the provenance context run on `main` and add
+   it as a required production ruleset check; do not import receipt state or
+   migrate a consumer before that enforcement is live.
 
    Require a successful run, including complete authenticated Harbor downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication

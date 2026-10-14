@@ -19,12 +19,12 @@ restore. Enable replicas only through a reviewed change after recovery readiness
 The native Chainguard receipt is protected-workflow evidence, not an Image
 Updater release. For the current Python and curl candidates it proves the
 catalog-pinned root index, required platform children, authenticated private
-Harbor pull, and zero reported scan findings. It does not advance
-`verified-stable`, write updater state, or enroll a consumer. A checked-in
-receipt cannot enroll a consumer until a verifiable artifact-attestation
-importer exists. A later compatibility migration must add a direct
-digest-pinned `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<digest>`
-reference before updater enrollment can be reviewed.
+Harbor pull, and zero reported scan findings. The artifact-provenance importer
+accepts a receipt-state change only from a successful protected receipt. That
+state does not advance `verified-stable` or enroll a consumer. A later
+compatibility migration must add a direct digest-pinned
+`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<digest>` reference
+before updater enrollment can be reviewed.
 
 Renovate continues to own unrelated image and chart updates. Enrolled Harbor
 targets transfer ownership only after their `automation_status` becomes

@@ -5,6 +5,7 @@ import rego.v1
 deny contains msg if {
 	events := workflow_events
 	has_event(events, "pull_request_target")
+	not native_receipt_provenance_workflow
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must not use pull_request_target for infrastructure checks", [name])
 }
@@ -188,6 +189,26 @@ deny contains msg if {
 }
 
 workflow_events := object.get(input, "on", object.get(input, true, {}))
+
+# This checker runs only trusted base-branch code and reads a receipt-only PR
+# as bounded API data. Any shape change must also update the exact workflow hash.
+native_receipt_provenance_workflow if {
+	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
+	workflow_events == {
+		"push": {"branches": ["main"]},
+		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]},
+	}
+	object.get(input, "permissions", {}) == {}
+	object.get(input, "env", null) == null
+	jobs := object.get(input, "jobs", {})
+	count(jobs) == 1
+	job := jobs["verify"]
+	job["runs-on"] == "ubuntu-24.04"
+	job["timeout-minutes"] == 10
+	object.get(job, "permissions", {}) == {"actions": "read", "contents": "read"}
+	object.get(job, "environment", null) == null
+	object.get(job, "env", null) == null
+}
 
 has_event(events, event) if {
 	events == event
