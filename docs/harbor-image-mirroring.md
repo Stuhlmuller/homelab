@@ -125,6 +125,15 @@ retain registry blobs together with Harbor database/encryption-key backups.
    time. Existing artifacts retain their strict resume/hash/full-pull checks.
    Failed runs expose only the catalog source, operation phase, exit status and
    a fixed error category. Raw transport logs and credentials remain private.
+   Operator-approved diagnostics encrypt mirror stderr, including setup errors, to
+   the primary fingerprint `2E0AE9393F24306F26A9AEB5A86F8F76C83C03EC` and exact
+   encryption subkey `4CF2875A21C967B08566F07D686CEA719DC4B96D` before cleanup.
+   Readiness and port-forward details include at most 64 KiB from each log.
+   GitHub Actions retains only `harbor-publication-error.gpg` for one day.
+   Key download, fingerprint or encryption failure leaves no artifact; there is
+   no plaintext fallback. Download and decrypt locally with `gpg --decrypt`
+   into a private file, then remove it after diagnosis. Remove the workflow
+   upload step and helper call to disable capture.
    Categories also distinguish bare HTTP 403, payload-size limits, 5xx server
    responses and quota exhaustion. A category is a diagnostic hint, not source
    or destination attribution, an absent-artifact proof, or permission to retry.

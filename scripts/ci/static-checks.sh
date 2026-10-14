@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+# GitHub checksum metadata can exceed OpenTofu's ten-second default.
+if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+  export TF_REGISTRY_CLIENT_TIMEOUT=60
+fi
 case "${1:-}" in
   "") bash scripts/ci/nix-checks.sh ;;
   --offline-verified) [[ $# == 1 ]] ;;
