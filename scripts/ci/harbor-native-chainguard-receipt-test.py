@@ -246,6 +246,8 @@ class ScanReceiptTests(unittest.TestCase):
 
     def test_runner_uses_separate_artifact_read_credential_without_a_cluster_job(self):
         script = (ROOT / "scripts/ci/harbor-native-chainguard-receipt.sh").read_text()
+        self.assertIn('"$scratch/kubectl" --kubeconfig "$HOME/.kube/config" --namespace traefik \\\n  port-forward --address 127.0.0.1 service/traefik-private 443:443', script)
+        self.assertNotIn("service/istio-ingressgateway", script)
         self.assertIn("/homelab/harbor/robot-pull-password", script)
         self.assertIn("/homelab/harbor/robot-scan-password", script)
         self.assertIn("--password-stdin", script)
