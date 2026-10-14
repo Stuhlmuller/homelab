@@ -59,6 +59,11 @@ contract for Grafana.
 
 ## Security Model
 
+GitHub Actions static validation allows 60 seconds per OpenTofu registry metadata
+request after repeated provider authentication-checksum download timeouts.
+This transport setting changes no infrastructure inputs, provider pins or
+checksum/signature verification. Existing retry and job limits still apply.
+
 Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache.md).
 Static jobs verify cache signatures or build on a miss; live plans and cluster
 checks remain fresh.
