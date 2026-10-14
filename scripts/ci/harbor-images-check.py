@@ -22,6 +22,18 @@ CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
 RENOVATE = ROOT / "renovate.json"
+HARBOR_COMPONENTS = frozenset({
+    "docker.io/goharbor/harbor-core",
+    "docker.io/goharbor/harbor-exporter",
+    "docker.io/goharbor/harbor-jobservice",
+    "docker.io/goharbor/harbor-portal",
+    "docker.io/goharbor/harbor-registryctl",
+    "docker.io/goharbor/nginx-photon",
+    "docker.io/goharbor/registry-photon",
+    "docker.io/goharbor/trivy-adapter-photon",
+    "docker.io/goharbor/valkey-photon",
+})
+HARBOR_RUNTIME_VERSION = "v2.15.4"
 
 
 def normalize(image):
@@ -204,6 +216,59 @@ def ownership_errors():
             for destination in sorted(destinations - disabled)]
 
 
+def harbor_component_errors(values, catalog):
+    """Keep the coupled Harbor runtime and its mirror catalog on one version."""
+    declared = {}
+
+    def collect(value):
+        if isinstance(value, dict):
+            repository = value.get("repository")
+            if repository in HARBOR_COMPONENTS:
+                declared.setdefault(repository, []).append(value.get("tag"))
+            for child in value.values():
+                collect(child)
+        elif isinstance(value, list):
+            for child in value:
+                collect(child)
+
+    collect(values)
+    cataloged = {repository: [] for repository in HARBOR_COMPONENTS}
+    for item in catalog:
+        source = item.get("source")
+        if not isinstance(source, str):
+            continue
+        reference = source.split("@", 1)[0]
+        if ":" not in reference.rsplit("/", 1)[-1]:
+            continue
+        repository, _ = reference.rsplit(":", 1)
+        if repository in HARBOR_COMPONENTS:
+            cataloged[repository].append(source)
+
+    errors = []
+    tag_pattern = re.compile(rf"{re.escape(HARBOR_RUNTIME_VERSION)}@sha256:[0-9a-f]{{64}}$")
+    for repository in sorted(HARBOR_COMPONENTS):
+        tags = declared.get(repository, [])
+        if len(tags) != 1:
+            errors.append(f"Harbor values must declare exactly one image for {repository}")
+            continue
+        tag = tags[0]
+        if not isinstance(tag, str) or not tag_pattern.fullmatch(tag):
+            errors.append(f"Harbor component {repository} must use {HARBOR_RUNTIME_VERSION}@sha256:<digest>")
+            continue
+        expected = f"{repository}:{tag}"
+        if cataloged[repository] != [expected]:
+            errors.append(f"Harbor catalog must contain the same {HARBOR_RUNTIME_VERSION} source as values for {repository}")
+    return errors
+
+
+def check_harbor_components():
+    values = yaml_documents([ROOT / "clusters/homelab/apps/harbor/values.yaml"])
+    errors = harbor_component_errors(values[0], json.loads(CATALOG.read_text())["images"])
+    if errors:
+        raise SystemExit("\n".join(errors))
+    print(f"Harbor coupled runtime: {len(HARBOR_COMPONENTS)} components pinned to {HARBOR_RUNTIME_VERSION}")
+
+
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
@@ -275,5 +340,7 @@ def check():
 if __name__ == "__main__":
     if sys.argv[1:] == ["--chart-sources"]:
         print(json.dumps(chart_sources(), indent=2))
+    elif sys.argv[1:] == ["--harbor-components"]:
+        check_harbor_components()
     else:
         check()

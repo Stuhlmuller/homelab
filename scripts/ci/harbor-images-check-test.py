@@ -101,6 +101,26 @@ documents = [{"initContainers": [{"image": "busybox:1.38@" + digest}],
 images, digests = check.declared_images(documents)
 assert images == {"busybox:1.38@" + digest, "quay.io/example/operator:v1@" + digest}
 assert digests == {digest}
+
+# Coupled Harbor components must stay on one runtime version and match the
+# publication catalog; a single Renovate-style component bump is unsafe.
+harbor_tag = "v2.15.4@" + digest
+harbor_values = {"images": [
+    {"repository": repository, "tag": harbor_tag}
+    for repository in sorted(check.HARBOR_COMPONENTS)
+]}
+harbor_catalog = [
+    {"source": f"{repository}:{harbor_tag}"}
+    for repository in sorted(check.HARBOR_COMPONENTS)
+]
+assert check.harbor_component_errors(harbor_values, harbor_catalog) == []
+mixed_values = {"images": [*harbor_values["images"]]}
+mixed_values["images"][0] = {**mixed_values["images"][0], "tag": "v2.15.2@" + digest}
+assert any("must use v2.15.4" in error
+           for error in check.harbor_component_errors(mixed_values, harbor_catalog))
+assert any("Harbor catalog" in error
+           for error in check.harbor_component_errors(harbor_values, harbor_catalog[1:]))
+
 # Before its consumer lands, the Mastodon scope still requires all four tags.
 with tempfile.TemporaryDirectory() as directory:
     root, catalog_path = check.ROOT, check.CATALOG

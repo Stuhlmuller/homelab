@@ -406,15 +406,29 @@ digests when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
 
+## Harbor runtime patch update
+
 The Harbor 2.15.4 prerequisite adds all nine coupled component digests while
 retaining the active 2.15.2 entries. Publish the fixed Harbor scope with
 `image_scope=harbor` and require fresh authenticated pulls of the nine new digests
 before merging a Harbor 2.15.4 consumer. This catalog change does not alter
 running Pods. The scoped receipt proves these nine components only; the full
 catalog remains held on the separate LiteLLM duplicate-index repair. The
-consuming upgrade must verify that the singleton nginx
-Deployment retains a rolling update that keeps Harbor reachable during its
+consuming upgrade must verify that the singleton nginx Deployment retains a
+rolling update that keeps Harbor reachable during its
 replacement image pull.
+
+The chart remains 1.19.2 even though `apps/harbor/values.yaml` overrides all
+nine coupled Harbor components to 2.15.4. Keep every component and its image
+on that same digest-pinned runtime version; the offline component check
+rejects a mixed update.
+
+Harbor 2.15.4 includes migration `0181`. Treat the database as forward-only:
+never downgrade a Harbor schema in place. Accept the update only after a
+verified database-and-registry-blob backup, an isolated restore of that backup,
+and live authenticated registry/API and scan checks. The release still carries
+Distribution `v2.8.3-harbor.2`; Distribution-v2 CVE findings remain unresolved
+and the patch must not be described as CVE-clear.
 
 ## Bootstrap and recovery
 
