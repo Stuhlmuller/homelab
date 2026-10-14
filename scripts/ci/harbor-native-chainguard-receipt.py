@@ -398,6 +398,8 @@ def main():
     parser.add_argument("--destination-index", type=Path)
     parser.add_argument("--pulled-index", type=Path)
     parser.add_argument("--index", type=Path)
+    parser.add_argument("--config-digest")
+    parser.add_argument("--destination-digest")
     parser.add_argument("--scan-password-file", type=Path)
     parser.add_argument("--scan-receipt", type=Path)
     parser.add_argument("--receipt", type=Path)

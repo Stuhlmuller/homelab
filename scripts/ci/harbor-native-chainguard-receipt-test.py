@@ -5,8 +5,11 @@ import base64
 import copy
 import importlib.util
 import json
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -172,6 +175,39 @@ class ScanReceiptTests(unittest.TestCase):
                                       {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                       self.client(artifacts))
         self.assertEqual(receipt["scan_status"]["linux/arm64"], "Success")
+
+    def test_scan_cli_accepts_contract_digests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            config = directory / "config.json"
+            replication = directory / "replication.json"
+            catalog = directory / "catalog.json"
+            raw_index = directory / "index.json"
+            password = directory / "password"
+            output = directory / "scan.json"
+            config.write_text(json.dumps(self.config))
+            replication.write_text(json.dumps(self.replication))
+            catalog.write_text(json.dumps(self.catalog))
+            raw_index.write_bytes(index())
+            password.write_text("not-a-real-secret")
+
+            def scan(plan, destination_digest, platforms, scan_password):
+                self.assertEqual(plan, self.plan)
+                self.assertEqual(destination_digest, self.plan["source_digest"])
+                self.assertEqual(platforms, {"linux/amd64": AMD64, "linux/arm64": ARM64})
+                self.assertEqual(scan_password, "not-a-real-secret")
+                return scan_receipt(self.plan)
+
+            with mock.patch.object(VERIFY, "scan_receipt", side_effect=scan), \
+                 mock.patch.object(sys, "argv", [
+                     "harbor-native-chainguard-receipt.py", "scan",
+                     "--config", str(config), "--replication", str(replication), "--catalog", str(catalog),
+                     "--image-id", "chainguard-python", "--config-digest", self.plan["config_digest"],
+                     "--destination-digest", self.plan["source_digest"], "--index", str(raw_index),
+                     "--scan-password-file", str(password), "--output", str(output),
+                 ]):
+                VERIFY.main()
+            self.assertEqual(json.loads(output.read_text()), scan_receipt(self.plan))
 
     def test_scan_client_uses_the_exact_artifact_read_endpoint(self):
         class Response:

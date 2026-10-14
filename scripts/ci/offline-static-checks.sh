@@ -985,7 +985,7 @@ while read -r source expected_hash; do
   }
 done <<'EOF'
 scripts/ci/harbor-native-chainguard-receipt-import.py 9f294680f328c9627ac3fa7b8d6f6063f2b81d643a55a540e4747e1e17719e2d
-scripts/ci/harbor-native-chainguard-receipt.py c3be17916a425ef04457a2e6922d440022650c34f2bd896e07cd5b99b6a27bac
+scripts/ci/harbor-native-chainguard-receipt.py 87dec41a885f95e6ab430909f314b767882cf93b748393f56d0bb7a0cb32dfc1
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '
