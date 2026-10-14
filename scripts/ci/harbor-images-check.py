@@ -204,9 +204,14 @@ def check():
                   if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1]}
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
     images, digests = declared_images(yaml_documents(paths))
+    # Direct Harbor mirror references must retain the reviewed digest. Upstream
+    # provenance refs may use a reviewed tag because Talos resolves them through
+    # the strict Harbor mirror path.
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/homelab/")
-                     and catalog_reference(image) not in known | known_tags)
+                     and catalog_reference(image) not in (
+                         known if image.startswith("harbor.stinkyboi.com/mirror/")
+                         else known | known_tags))
     missing_digests = sorted(digests - known_digests - {
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),

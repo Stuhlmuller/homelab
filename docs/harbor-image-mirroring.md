@@ -24,7 +24,8 @@ adding an admission webhook or rewriting controller-generated resources.
 It includes repository declarations, rendered Helm charts and the observed
 cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
 The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
-back to the exact reviewed source; `homelab` remains reserved for custom builds.
+back to the exact reviewed source digest and rejects digestless mirror tags;
+`homelab` remains reserved for custom builds.
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public
