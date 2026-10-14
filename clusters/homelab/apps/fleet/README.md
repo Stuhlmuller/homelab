@@ -252,7 +252,7 @@ Retained Tunnel source is migration rollback state, not a Fleet public-access
 requirement.
 
 The fixed Fleet mirror scope contains exactly the four images rendered by this
-application. It verifies each manifest digest and a complete anonymous pull,
+application. It verifies each manifest digest and a complete authenticated Harbor pull,
 without processing the full homelab image history. CI rejects scope drift or
 sources absent from the reviewed full inventory.
 

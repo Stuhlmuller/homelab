@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b1667772d8341d8a1de24585496fb6d24f4bcf5c09bd900182b041a3b372f97e",
+  "pageVersion": "sha256:d44a40d2ab906b699b178265841180bdd3df682fc494fc96a3f3b1e57d6a969d",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,29 +12,29 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
+          "version": "repo-file-v1:sha256:b47b3e592b766899f247755f1424be92377529b42d2e20455a4b38459859a33e"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:d64881033a76b7c1df294226339e58e8766fecb556947f4fe9cde013ae4b863a"
+          "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
         }
       ]
     },
     {
       "id": "claim_6e195784924949f099a02a853c474ea4",
-      "statement": "Harbor's fixed Traefik scope selects the ingress image and exact pause:3.10 native pull probe from the reviewed full catalog, preserving all-platform digests, tag aliases and fresh complete anonymous pulls without caller-selected images or destinations; scoped success cannot establish global mirror coverage.",
+      "statement": "Harbor's fixed Traefik scope selects the ingress image and exact pause:3.10 native pull probe from the reviewed full catalog, preserves all-platform digests and tag aliases, and requires fresh complete authenticated Harbor pulls with robot$mirror+pull; callers cannot choose images or destinations, and scoped success does not establish global mirror coverage.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:6dd66d6af0dd3e547469fabc31a718760d9711f4c2839862cdc6e937a7637ac8"
+          "version": "repo-file-v1:sha256:1ba123f0193a851745081b86a80464557ff3365eb8e155a54d836e7d5a1233e5"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
+          "version": "repo-file-v1:sha256:b47b3e592b766899f247755f1424be92377529b42d2e20455a4b38459859a33e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -44,15 +44,19 @@
     },
     {
       "id": "claim_e99e15b69847424091edfdfb4e5ea068",
-      "statement": "Full-catalog Talos mirror verification requires a successful workflow run titled Mirror all @ followed by that run's full head SHA and an unchanged publication bundle, rejecting scoped, untitled and mismatched-revision runs.",
+      "statement": "Full-catalog Talos mirror verification requires a successful workflow run titled Mirror all @ followed by that run's full head SHA and an unchanged publication bundle, rejecting scoped, untitled and mismatched-revision runs. An ordinary execute also requires supplied reader auth or captured exact valid robot$mirror+pull auth; otherwise it stops before candidate configuration or apply.",
       "evidence": [
         {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:b47b3e592b766899f247755f1424be92377529b42d2e20455a4b38459859a33e"
+        },
+        {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:88b5ab88955c7d5594276acdf285968d7d5f6fd74ddca3186f139cbfcbe64031"
+          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:d64881033a76b7c1df294226339e58e8766fecb556947f4fe9cde013ae4b863a"
+          "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
         }
       ]
     },
@@ -88,7 +92,7 @@
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:d64881033a76b7c1df294226339e58e8766fecb556947f4fe9cde013ae4b863a"
+          "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
         }
       ]
     },
@@ -97,11 +101,11 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L201-L212",
+          "resource": "repo://docs/harbor-image-mirroring.md#L232-L243",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L256-L286",
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L403-L433",
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
@@ -122,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
+          "version": "repo-file-v1:sha256:b47b3e592b766899f247755f1424be92377529b42d2e20455a4b38459859a33e"
         }
       ]
     },
@@ -332,21 +336,21 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
+          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
         }
       ]
     },
     {
       "id": "claim_12e9068cc39548eebbc31fe4756e5aad",
-      "statement": "Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*` sources. The prior seven-image publication receipt excludes the six expanded entries—Go, nginx, Node runtime, Node dev, static, and Wolfi base—so expanded publication requires protected production approval and complete anonymous-download acceptance.",
+      "statement": "Both publication catalogs list thirteen digest-pinned cgr.dev/chainguard/* sources. Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six additions to the prior seven-image receipt, so expanded publication requires protected production approval and complete authenticated Harbor-pull acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:6e31a9c489816929bf99bfc7d928e168d1f6af619d78360af5c7911a74c099cf"
+          "version": "repo-file-v1:sha256:36dc8dc3ac7e15b5b938259da9d0312e21bfb2ca18bfc7be98d0007466b691c1"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -364,11 +368,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:63dc4ff3ae6a30f24b17bee0ae789fd1f88c23f09805dae28c4abcd0f8d79c8d"
+          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
         }
       ]
     },
@@ -378,7 +382,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:6e31a9c489816929bf99bfc7d928e168d1f6af619d78360af5c7911a74c099cf"
+          "version": "repo-file-v1:sha256:36dc8dc3ac7e15b5b938259da9d0312e21bfb2ca18bfc7be98d0007466b691c1"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -404,13 +408,13 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:44019f6179d3c363425a72679e8c237f12dee3eac191fa503691143fa9988fbc"
+          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
         }
       ]
     },
     {
       "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
-      "statement": "The SSM catalog declares `/homelab/harbor/mirror-robot-pull-password` as a generated credential for a future public-mirror reader. Stage A adds no ExternalSecret, Harbor bootstrap, publisher, Talos, or workload consumer, so parameter creation alone creates no Harbor robot or workload registry access. Its runbook regenerates the Terragrunt stack before entering the generated SSM unit, then requires a saved plan that creates the parameter and may change only identified exact-ARN reader-policy entries, including deterministic chunks; its wider shared dependency closure requires separate approval. A later consumer change follows metadata verification, advances `harbor-secrets` OnChange after the parameter exists, and does not use periodic refresh because it would regenerate Harbor's salted bcrypt registry password hash.",
+      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v3 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
@@ -421,18 +425,26 @@
           "version": "repo-file-v1:sha256:b3efabc48ca9aa05da6fcfdd97fd406c1ff7a152b909990ca7c679dccf0bda0c"
         },
         {
+          "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
+          "version": "repo-file-v1:sha256:80bd33b3381ff93b92fecedbcb53a591d7a4b88654d8828f7cf174cc61688a4d"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
+          "version": "repo-file-v1:sha256:354a0de92d62d1147f2cb6b38945a2190ee62c74b2e3d187637a901b2ffe39c9"
+        },
+        {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:2fbd259c6c233044d4ed2568139a961618ab0c9460f1853e3d0fbfc0bec8e112"
+          "version": "repo-file-v1:sha256:b47b3e592b766899f247755f1424be92377529b42d2e20455a4b38459859a33e"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:ff3f2f866267c410640159e9f3a5a3f208ecbac082ae5b4dd9c90d3fe5c66ec3"
+          "version": "repo-file-v1:sha256:22d48e42a406686f659d25610009b5ecb1f944cb0815d0c925ea203bbd82a688"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T05:12:36.902Z"
+    "at": "2026-10-12T07:11:29.496Z"
   }
 }

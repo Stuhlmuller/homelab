@@ -546,10 +546,13 @@ materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
 The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
 alias of the pull robot credential, into its Docker-config Secret. CI reads
 `/homelab/harbor/mirror-robot-push-password` only for protected public-mirror
-publication. The staged `/homelab/harbor/mirror-robot-pull-password` is a Stage
-A catalog declaration and provisioning prerequisite before any reader-enabled
-consumer references it; parameter creation alone does not create a Harbor robot
-or grant a workload registry access. See the
+publication. The Stage A saved plan has created and metadata-verified
+`/homelab/harbor/mirror-robot-pull-password`; it is used for authenticated Harbor
+publication receipts and the later Talos registry-auth candidate. The Stage B
+`harbor-secrets` revision advances its `OnChange` annotation to `v3` so External
+Secrets can reconcile the new key. Parameter creation alone does not create a
+Harbor robot, grant a workload registry access, or change a node; wait for the
+Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
@@ -557,6 +560,7 @@ The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-co
 stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
 `/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
 supplies kubelet pulls only; the credential is not mounted in app containers.
-No new SSM parameter, IAM permission or rotation is included. Activation waits
+The candidate itself adds no further SSM parameter, IAM permission or rotation.
+Activation waits
 for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
 `OnChange` refresh requires a declared annotation revision after rotation.

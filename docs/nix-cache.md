@@ -141,6 +141,15 @@ unproved. Preserve raw failure logs and original attempt IDs privately.
 The earlier one-attempt release remains exhausted; further attempts require
 new explicit authorization.
 
+The separately approved `pivot_root` recovery uses a dedicated Localhost
+profile for only the builder container; the Pod default remains RuntimeDefault.
+The profile preserves the captured containerd 2.1.4 rules and adds only
+`pivot_root`. Both eligible workers must have exact profile readback before
+container selection is merged. Follow [protected profile delivery](nix-builder-seccomp.md),
+then verify the actual Pod profile, sandbox/signature settings and 1 GiB limit
+before fresh headroom preflight and the single newly released publication
+attempt. Profile installation or selection is not signed-cache acceptance.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input
