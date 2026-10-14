@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Traefik/Chainguard inventories with unchanged destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard inventories with unchanged destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, traefik, chainguard]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard]
 
 permissions: {}
 
@@ -71,7 +71,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
-      group: harbor-packages-production
+      # Mirror runs share mutable aliases only within the public mirror project.
+      group: harbor-mirror-production
       cancel-in-progress: false
     environment:
       name: homelab-production
@@ -104,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|traefik|chainguard) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -144,6 +145,9 @@ jobs:
             fleet)
               bash scripts/ci/harbor-publish.sh mirror-fleet
               ;;
+            mastodon)
+              bash scripts/ci/harbor-publish.sh mirror-mastodon
+              ;;
             bazarr)
               bash scripts/ci/harbor-publish.sh mirror-bazarr
               ;;
@@ -157,10 +161,20 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'b4e570d3d829060b96f5f557d534775365a177fe6305c2d4eba6a77e09d1f8f8  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."
+          echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."
+
+      - name: Retain Only Encrypted Failure Diagnostic
+        if: failure()
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harbor-publication-error.gpg
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: false

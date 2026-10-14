@@ -25,7 +25,6 @@ APPS = {
     "multica": "multica-frontend.ai:3000",
     "n8n": "n8n.automation:5678",
     "nofx": "nofx-frontend.nofx:80",
-    "octobot": "octobot.finance:5001",
     "openclaw": "openclaw.ai:8080",
     "policy-bot": "policy-bot.automation:8080",
     "prowlarr": "prowlarr.media:9696",

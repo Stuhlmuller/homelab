@@ -93,7 +93,7 @@ exception only, not a migration exception.
 | LinuxServer Bazarr/Deluge/Prowlarr/Radarr/Sonarr | No equivalent confirmed | Preserve `/init`, s6, `/lsiopy/bin/python3`, PUID/PGID, extensions and mounts. Reconsider after exact package and original-action acceptance. |
 | Gluetun / UPnP helper | No equivalent confirmed | Preserve VPN/firewall and UPnP executable contracts; require exact mapping and network acceptance. |
 | Octelium/OcteliumEE/Cordium, every component | No equivalent confirmed | Preserve privileged gateways, agents, init and generated Pods; require exact application packages. |
-| Compass/OctoBot/FleetDM/policy-bot/podinfo | No equivalent confirmed | Verify actual app identity and original action. Rancher Fleet and Elastic fleet-server are not FleetDM. |
+| Compass/FleetDM/policy-bot/podinfo | No equivalent confirmed | Verify actual app identity and original action. Rancher Fleet and Elastic fleet-server are not FleetDM. |
 | Langfuse web/worker, LiteLLM database image, Dispatcharr, Multica backend/web, n8n, OpenClaw, Affine | No equivalent confirmed | Packaged application code, extensions and migrations are required. A Python/Node base image alone is not an application replacement. |
 | Private NOFX backend/frontend | Custom build exception | Preserve private project and signing/build contract. Rebuilding on a new base is separate work. |
 | Nix runner | Toolchain exception | Preserve Nix/tool availability; reconsider with an identified complete runtime replacement. |

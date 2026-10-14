@@ -51,8 +51,6 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc
-      namespace: finance
-    - server: https://kubernetes.default.svc
       namespace: fleet
     - server: https://kubernetes.default.svc
       namespace: harbor

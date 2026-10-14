@@ -3,13 +3,181 @@
 
 import argparse
 import io
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 import shlex
 import subprocess
+import sys
 import tarfile
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKS = ("offline-tests", "manifest-policy")
+
+GROUP_SCRIPT = r"""
+group_alive() {
+    for member in /proc/[0-9]*/stat; do
+        IFS= read -r fields 2>/dev/null < "$member" || continue
+        member_pid=${member%/stat}
+        member_pid=${member_pid##*/}
+        case " ${ignored:-} " in *" $member_pid "*) continue ;; esac
+        fields=${fields##*) }
+        set -- $fields
+        [ "$3" = "$pid" ] && [ "$1" != Z ] && return 0
+    done
+    return 1
+}
+"""
+
+CANCEL_SCRIPT = "set -eu\n" + GROUP_SCRIPT + r"""
+found=0
+for proc in /proc/[0-9]*; do
+    [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
+    command=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' '\n' | tail -n 1)
+    [ "$command" = EXPECTED ] || continue
+    pid=${proc##*/}
+    fields=$(cat "$proc/stat")
+    fields=${fields##*) }
+    set -- $fields
+    [ "$3" = "$pid" ] || { echo 'Refusing non-isolated process group' >&2; exit 1; }
+    kill -TERM "-$pid"
+    remaining=10
+    while group_alive && [ "$remaining" -gt 0 ]; do
+        sleep 1
+        remaining=$((remaining - 1))
+    done
+    if group_alive; then kill -KILL "-$pid"; fi
+    remaining=10
+    while group_alive && [ "$remaining" -gt 0 ]; do
+        sleep 1
+        remaining=$((remaining - 1))
+    done
+    if group_alive; then echo "Cancellation unconfirmed for group $pid" >&2; exit 1; fi
+    if [ "$(cat /workspace/offline-check.lock/owner 2>/dev/null || true)" = "$pid" ]; then
+        rm /workspace/offline-check.lock/owner
+        rmdir /workspace/offline-check.lock
+    fi
+    echo "Cancelled offline check process group $pid"
+    found=1
+done
+[ "$found" = 1 ] || echo 'No matching offline check supervisor remains; retained locks require review'
+"""
+
+
+def build_command(policy):
+    return ["nix", "build",
+            "--print-build-logs", "--no-link", "--print-out-paths", "--no-update-lock-file",
+            "--option", "sandbox", "true", "--option", "require-sigs", "true",
+            "--option", "max-substitution-jobs", "1",
+            "--option", "extra-substituters", policy["url"],
+            "--option", "extra-trusted-public-keys", policy["publicKey"],
+            ".#checks.x86_64-linux.offline-tests", ".#checks.x86_64-linux.manifest-policy"]
+
+
+def cancel(pod, uid, attempt_id):
+    attempt_id = str(uuid.UUID(attempt_id))
+    # Confirm group termination even when the supervisor exits before a child.
+    current = json.loads(subprocess.check_output([
+        "kubectl", "--request-timeout=15s", "get", "pod", pod, "--namespace", "nix-builder", "-o", "json"],
+        text=True, timeout=20))
+    if current["metadata"]["uid"] != uid:
+        raise ValueError("Refusing cancellation against a replacement pod")
+    command = "homelab-offline-attempt:" + attempt_id
+    subprocess.run([
+        "kubectl", "--request-timeout=15s", "exec", "-i", "--namespace", "nix-builder",
+        pod, "--container", "nix", "--", "sh", "-s"],
+        input=CANCEL_SCRIPT.replace("EXPECTED", shlex.quote(command)), text=True,
+        cwd=ROOT, check=True, timeout=40)
+
+
+def memory_bytes(value):
+    for suffix, multiplier in (("Ki", 1024), ("Mi", 1024 ** 2), ("Gi", 1024 ** 3)):
+        if value.endswith(suffix):
+            return int(value[:-len(suffix)]) * multiplier
+    return int(value)
+
+
+def verify_preflight(nodes, leases, metrics, pod, now):
+    for node in nodes["items"]:
+        name = node["metadata"]["name"]
+        conditions = {item["type"]: item["status"] for item in node["status"]["conditions"]}
+        if conditions.get("Ready") != "True" or any(
+                conditions.get(condition) != "False" for condition in ("MemoryPressure", "DiskPressure", "PIDPressure")):
+            raise ValueError(f"Node not ready or under pressure: {name}")
+        lease = next(item for item in leases["items"] if item["metadata"]["name"] == name)
+        renewed = datetime.fromisoformat(lease["spec"]["renewTime"].replace("Z", "+00:00"))
+        if not 0 <= (now - renewed).total_seconds() <= 75:
+            raise ValueError(f"Stale node lease: {name}")
+    if pod["metadata"].get("deletionTimestamp") or not any(
+            item["type"] == "Ready" and item["status"] == "True" for item in pod["status"].get("conditions", [])):
+        raise ValueError("Builder pod is not Ready")
+    container = next(item for item in pod["spec"]["containers"] if item["name"] == "nix")
+    if any(memory_bytes(container["resources"][kind]["memory"]) != 1024 ** 3 for kind in ("limits", "requests")):
+        raise ValueError("Builder must retain its 1 GiB memory reservation and limit")
+    node_name = pod["spec"]["nodeName"]
+    node = next(item for item in nodes["items"] if item["metadata"]["name"] == node_name)
+    metric = next(item for item in metrics["items"] if item["metadata"]["name"] == node_name)
+    measured = datetime.fromisoformat(metric["timestamp"].replace("Z", "+00:00"))
+    if not 0 <= (now - measured).total_seconds() <= 120:
+        raise ValueError("Builder node memory metrics are stale")
+    headroom = memory_bytes(node["status"]["allocatable"]["memory"]) - memory_bytes(metric["usage"]["memory"])
+    if headroom < 1536 * 1024 ** 2:
+        raise ValueError("Builder node needs at least 1.5 GiB measured allocatable memory headroom")
+
+
+def preflight():
+    def read(*args):
+        return json.loads(subprocess.check_output(["kubectl", "--request-timeout=15s", *args], text=True, timeout=20))
+    pods = read("get", "pods", "--namespace", "nix-builder", "--selector", "app.kubernetes.io/name=nix-builder", "-o", "json")["items"]
+    if len(pods) != 1:
+        raise ValueError("Expected exactly one idle builder pod")
+    pod = pods[0]
+    verify_preflight(read("get", "nodes", "-o", "json"),
+                     read("get", "leases", "--namespace", "kube-node-lease", "-o", "json"),
+                     read("get", "--raw", "/apis/metrics.k8s.io/v1beta1/nodes"), pod, datetime.now(timezone.utc))
+    return pod["metadata"]["name"], pod["metadata"]["uid"]
+
+
+def attempt_command(policy, attempt_id):
+    script = "set -eu\n" + GROUP_SCRIPT + r"""
+# Stay alive through TERM so the deadline can KILL the complete group.
+trap ':' TERM INT
+pid=$PPID
+ignored="$$ $PPID"
+cleanup() {
+    remaining=10
+    while group_alive && [ "$remaining" -gt 0 ]; do
+        sleep 1
+        remaining=$((remaining - 1))
+    done
+    if group_alive; then kill -KILL "-$pid"; exit 1; fi
+    if [ -n "${job:-}" ] && [ -d "$job" ]; then rm -rf -- "$job"; fi
+    rm /workspace/offline-check.lock/owner
+    rmdir /workspace/offline-check.lock
+}
+test "$(cat /sys/fs/cgroup/memory.max)" = 1073741824
+mkdir /workspace/offline-check.lock
+printf '%s\n' "$pid" > /workspace/offline-check.lock/owner
+trap cleanup EXIT
+for proc in /proc/[0-9]*; do
+    [ "${proc##*/}" = "$PPID" ] && continue
+    [ "$(cat "$proc/comm" 2>/dev/null || true)" = timeout ] || continue
+    marker=$(cat "$proc/cmdline" 2>/dev/null | tr '\000' '\n' | tail -n 1)
+    case "$marker" in
+        homelab-offline-attempt:*) echo 'Builder already has an active check attempt' >&2; exit 1 ;;
+    esac
+done
+test "$(nix eval --impure --raw --expr builtins.currentSystem)" = x86_64-linux
+job="$(mktemp -d /workspace/check.XXXXXX)"
+mkdir "$job/source"
+tar -x -C "$job/source"
+cd "$job/source"
+COMMAND > "$job/outputs"
+nix copy --to "file://$job/cache" $(cat "$job/outputs")
+tar -c -C "$job/cache" .
+""".replace("COMMAND", shlex.join(build_command(policy)))
+    return ["timeout", "--kill-after=10s", "1800s", "sh", "-ec", script, "homelab-offline-attempt:" + attempt_id]
 
 
 def export(destination, policy):
@@ -21,27 +189,17 @@ def export(destination, policy):
                                  f".#checks.x86_64-linux.{check}.outPath"], cwd=ROOT, text=True).strip()
         for check in CHECKS
     }
-    flags = " ".join(shlex.quote(value) for value in (
-        "--option", "extra-substituters", policy["url"],
-        "--option", "extra-trusted-public-keys", policy["publicKey"]))
-    script = """
-set -eu
-test "$(nix eval --impure --raw --expr builtins.currentSystem)" = x86_64-linux
-job="$(mktemp -d /workspace/check.XXXXXX)"
-trap 'if [ -d "$job" ]; then rm -rf -- "$job"; fi' EXIT
-mkdir "$job/source"
-tar -x -C "$job/source"
-cd "$job/source"
-nix build --print-build-logs --no-link --print-out-paths --no-update-lock-file \
-  --option sandbox true --option require-sigs true FLAGS \
-  .#checks.x86_64-linux.offline-tests .#checks.x86_64-linux.manifest-policy > "$job/outputs"
-nix copy --to "file://$job/cache" $(cat "$job/outputs")
-tar -c -C "$job/cache" .
-""".replace("FLAGS", flags)
-    archive = subprocess.check_output([
-        "kubectl", "exec", "-i", "--namespace", "nix-builder",
-        "deployment/nix-builder", "--container", "nix", "--", "sh", "-ec", script],
-        input=source, cwd=ROOT, timeout=3600)
+    pod, uid = preflight()
+    attempt_id = str(uuid.uuid4())
+    print(f"Builder attempt uses pod {pod} UID {uid} attempt ID {attempt_id}", file=sys.stderr)
+    try:
+        archive = subprocess.check_output([
+            "kubectl", "exec", "-i", "--namespace", "nix-builder",
+            pod, "--container", "nix", "--", *attempt_command(policy, attempt_id)],
+            input=source, cwd=ROOT, timeout=1860)
+    except BaseException:
+        cancel(pod, uid, attempt_id)
+        raise
     unpack(archive, destination)
     actual = set()
     for info in destination.glob("*.narinfo"):
@@ -69,11 +227,19 @@ def unpack(archive, destination):
 
 
 if __name__ == "__main__":
-    import json
-
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-directory", type=Path, required=True)
+    action = parser.add_mutually_exclusive_group(required=True)
+    action.add_argument("--output-directory", type=Path)
+    action.add_argument("--cancel", action="store_true", help="Stop only matching offline checks on the declared builder")
+    parser.add_argument("--pod", help="Original pod name, required for cancellation")
+    parser.add_argument("--pod-uid", help="Original pod UID printed when the attempt started")
+    parser.add_argument("--attempt-id", help="Immutable attempt ID printed before execution")
     args = parser.parse_args()
+    if args.cancel:
+        if not args.pod or not args.pod.startswith("nix-builder-") or not args.pod_uid or not args.attempt_id:
+            parser.error("Cancellation requires the original --pod nix-builder-..., --pod-uid and --attempt-id")
+        cancel(args.pod, args.pod_uid, args.attempt_id)
+        raise SystemExit(0)
     if args.output_directory.exists():
         parser.error("Output directory must be new")
     args.output_directory.mkdir(mode=0o700, parents=True)

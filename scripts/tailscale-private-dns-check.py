@@ -54,6 +54,14 @@ def verify_main(expected):
         native.run("git", "-C", str(ROOT), "cat-file", "-e", f"HEAD:{path}")
 
 
+def removed_hostname(hostname, value):
+    if not re.fullmatch(r"[a-z0-9-]+\.stinkyboi\.com", hostname):
+        raise RuntimeError("Retirement requires one app hostname in the declared zone")
+    previous = json.loads(run("git", "-C", str(ROOT), "show", "HEAD^:scripts/config/tailscale-private-dns.json"))
+    if hostname not in previous["hostnames"] or hostname in value["hostnames"] + value["retired_hostnames"]:
+        raise RuntimeError("Hostname must be removed from the active inventory by this commit")
+
+
 def mesh_address(value):
     try:
         address = ipaddress.ip_address(value)
@@ -209,10 +217,14 @@ def main():
     parser.add_argument("--verify-dns", action="store_true", help="Verify authoritative and normal client DNS/TLS after cutover")
     parser.add_argument("--addresses-json", action="store_true", help="Return verified controller addresses and observed previous TTL for the DNS operator")
     parser.add_argument("--expected-sha")
+    parser.add_argument("--retire-hostname", help="Validate one hostname removed by this commit")
     args = parser.parse_args()
     value = inventory()
     if args.execute:
         verify_main(args.expected_sha)
+    if args.retire_hostname:
+        removed_hostname(args.retire_hostname, value)
+        return
     addresses = mesh_addresses()
     if args.execute or args.check or args.verify_dns:
         declared_routes()

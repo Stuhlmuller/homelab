@@ -84,6 +84,7 @@
             findutils
             gh
             git
+            gnupg
             gitleaks
             gnugrep
             gnused

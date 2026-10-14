@@ -53,7 +53,7 @@ spec:
         - name: sign
           image: ghcr.io/sigstore/cosign/cosign:v3.0.6@sha256:de9c65609e6bde17e6b48de485ee788407c9502fa08b8f4459f595b21f56cd00
           imagePullPolicy: IfNotPresent
-          # The publisher appends exactly the two verified NOFX digest references.
+          # The fixed publisher appends two NOFX subjects or one verified core subject.
           args:
             - sign
             - --yes

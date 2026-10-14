@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f863c57ad0374f941a0f86606c7e8aed0415efe0ea4016c5f8b2d498031d02e6",
+  "pageVersion": "sha256:de6a7f137eac3fa10c840d27d25e51add1c99df2e699777b557f66965bade9a9",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:a5f911b047b4836372ca44bce017b666bfab0119f16d2aa09bc181d89a77ddb7"
+          "version": "repo-file-v1:sha256:a77a3e31fce084f6db2fb543b65428ed3e9d494de6235d4681e34e5aff285cc7"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -65,7 +65,7 @@
           "version": "repo-file-v1:sha256:288c12e698c394a549175802f19aab69e86eca34a0f44c52040c9edede72673a"
         },
         {
-          "resource": "repo://docs/rollback-argocd-apps.md#L33-L49",
+          "resource": "repo://docs/rollback-argocd-apps.md#L32-L48",
           "version": "repo-lines-v1:sha256:de8c2d79a1add616514d8c7ea0d41a6ce55ae0968df1bf17b9f4de9ff97a39f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTM2ZjczMWVkYTgyZDY0OGZiZTFjNjJlMThmMTI1OGE1OGQ0YTIyYTYyOWUwNTg3YWQ5MDRmNjQ2MjNjYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNGRhNTllMzcxNzJjYmRmNjAzNzVkOTI3N2I0ZDA1MDM5MWE4N2YyNDc4YjE4ZWQwNDc2YjgxNjQ1OGZlMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZGM0MGViNDVkMjhiOWEyYjJhMzZmZjVhZDQ4ZWUxZTUzMzMyZjkwM2MwZGQyYWI0ODhlMmU3MTg1NzY5MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzE2OWFhMmQ2ZmY2YjZlYTVkYzI3NTJkNzVhODRkYjhlM2JiMDc1MjhkYTE5ZTkyNWQxNGMyYTgwOGEyMDkifQ"
         }
       ]
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:866753bb834344cfd36430efe79c72d6978b6e15bcf60e2aad94aceac4bfb359"
+          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
     },
@@ -131,6 +131,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-14T03:46:52.296Z"
   }
 }

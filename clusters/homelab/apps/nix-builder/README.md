@@ -15,11 +15,20 @@ archives contain tracked files only. Builds require sandboxing and verified
 substitutes. The signing key remains on the operator machine.
 
 Nix requires root and mount/chroot capabilities to create its nested build
-sandboxes. The container uses RuntimeDefault seccomp and is not fully
-privileged, but `SYS_ADMIN` makes this a high-trust executor. Submit reviewed
-homelab source only. NetworkPolicy permits DNS and public HTTPS dependency
-downloads while denying ingress and private-network destinations. Do not
-reuse this workload for arbitrary third-party submissions.
+sandboxes. With host user namespaces disabled, NET_ADMIN is also required
+to raise loopback inside each private build network namespace. This capability
+also permits changes to the Pod network namespace, so the executor remains
+limited to reviewed homelab source. The container uses a pinned deny-by-default Localhost seccomp profile containing
+the containerd 2.1.4 builder rules plus only `pivot_root`; its Pod default remains
+RuntimeDefault. Install the profile on both eligible workers before this
+manifest is merged; see [profile delivery](../../../../docs/nix-builder-seccomp.md).
+It is not fully privileged, but `SYS_ADMIN` makes this a high-trust executor. Submit reviewed
+homelab source only. NetworkPolicy declares intended DNS/public HTTPS access
+and ingress/private-network denial, but current Flannel does not enforce it.
+This namespace is not ambient-enrolled; do not assume effective network
+isolation. Reviewed source is the input trust boundary. See
+[runtime isolation](../../../../docs/runtime-isolation.md#current-boundary).
+Do not reuse this workload for arbitrary third-party submissions.
 
 The store and workspaces are disposable container/emptyDir data. No backups
 or persistent volumes are required; signed release outputs survive Pod

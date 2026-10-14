@@ -8,10 +8,14 @@ aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 dry_run="true"
 expected_sha=""
+retire_hostname=""
 
 usage() {
   cat <<'USAGE'
 Usage: scripts/tailscale-private-dns.sh [--dry-run | --execute --expected-sha SHA]
+
+Use --retire-hostname NAME to remove A/AAAA/CNAME records for one app name
+removed by the current commit. Legacy CI/callback/carrier entries are excluded.
 
 Preview the fixed private DNS inventory by default. Execution requires a clean
 checkout at reviewed current main and a ready, reachable Traefik mesh service.
@@ -24,6 +28,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --dry-run) dry_run="true"; shift ;;
     --execute) dry_run="false"; shift ;;
+    --retire-hostname) retire_hostname="${2:?Missing hostname}"; shift 2 ;;
     --expected-sha) expected_sha="${2:?Missing expected SHA}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "error: unknown argument: $1" >&2; exit 2 ;;
@@ -35,7 +40,13 @@ for command in aws curl jq python3; do
 done
 
 preflight=(python3 -I "$root/scripts/tailscale-private-dns-check.py")
-if [[ "$dry_run" == "false" ]]; then
+if [[ -n "$retire_hostname" ]]; then
+  if [[ "$dry_run" == "false" ]]; then
+    "${preflight[@]}" --execute --expected-sha "$expected_sha" --retire-hostname "$retire_hostname"
+  else
+    "${preflight[@]}" --retire-hostname "$retire_hostname"
+  fi
+elif [[ "$dry_run" == "false" ]]; then
   mesh="$("${preflight[@]}" --execute --expected-sha "$expected_sha" --addresses-json)"
 else
   mesh="$("${preflight[@]}" --addresses-json)"
@@ -83,9 +94,11 @@ cf_api() {
 zone_response="$(cf_api GET "/zones?name=${zone_name}")"
 zone_id="$(jq -er --arg name "$zone_name" '.result | select(length == 1) | .[0] | select(.name == $name) | .id' <<<"$zone_response")"
 inventory="$root/scripts/config/tailscale-private-dns.json"
-desired="$(jq -ce '[.addresses | to_entries[] | .key as $type | .value[] | {type:$type,content:.}] | sort_by(.type) | select(length > 0)' <<<"$mesh")"
-previous_ttl="$(jq -er '.previous_ttl | select(type == "number" and . >= 0)' <<<"$mesh")"
-echo "Observed authoritative cache TTL before cutover: ${previous_ttl} seconds"
+if [[ -z "$retire_hostname" ]]; then
+  desired="$(jq -ce '[.addresses | to_entries[] | .key as $type | .value[] | {type:$type,content:.}] | sort_by(.type) | select(length > 0)' <<<"$mesh")"
+  previous_ttl="$(jq -er '.previous_ttl | select(type == "number" and . >= 0)' <<<"$mesh")"
+  echo "Observed authoritative cache TTL before cutover: ${previous_ttl} seconds"
+fi
 
 records_for() {
   local hostname="$1" encoded response
@@ -106,7 +119,7 @@ chmod 700 "$private_dir"
 trap 'rm -rf -- "$private_dir"' EXIT
 while IFS= read -r hostname; do
   records_for "$hostname" >"$private_dir/$hostname.json"
-done < <(jq -r '.hostnames[]' "$inventory")
+done < <(if [[ -n "$retire_hostname" ]]; then printf '%s\n' "$retire_hostname"; else jq -r '.hostnames[]' "$inventory"; fi)
 
 delete_record() {
   local hostname="$1" record="$2" id type
@@ -118,6 +131,20 @@ delete_record() {
     cf_api DELETE "/zones/${zone_id}/dns_records/${id}" >/dev/null
   fi
 }
+
+if [[ -n "$retire_hostname" ]]; then
+  current="$(cat "$private_dir/$retire_hostname.json")"
+  while IFS= read -r record; do
+    [[ -n "$record" ]] && delete_record "$retire_hostname" "$record"
+  done < <(jq -c '.[]' <<<"$current")
+  if [[ "$dry_run" == "false" ]]; then
+    [[ "$(records_for "$retire_hostname" | jq 'length')" == 0 ]] || {
+      echo 'error: retired hostname still has address records' >&2; exit 1;
+    }
+    echo "Verified retired DNS hostname: ${retire_hostname}"
+  fi
+  exit 0
+fi
 
 while IFS= read -r hostname; do
   current="$(cat "$private_dir/$hostname.json")"
