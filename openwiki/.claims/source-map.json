@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b4e2db0f80f9f5fbde76c5048d64b3e7f9decb68df779cc63b6eba1adb0f981",
+  "pageVersion": "sha256:a3ce70e54ba3484e3ce56fbe07116aae4b4e5369a7b7ba40cd7ebd458b54d1a2",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+          "version": "repo-file-v1:sha256:12ec3d4b37d43501320bd5ec0aeadd877ef3563f16393d8d5b0c76d3798895a6"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -48,17 +48,87 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:0a277a4679653e6bf472506e7da1991fb51b9d15db6d9c7f9f6adabc73d774ea"
+          "version": "repo-file-v1:sha256:f34e43eea29a512cf3312df688c0fc273b9c4c31c6a76f8830f7996030975931"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
           "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
+    },
+    {
+      "id": "claim_11f6712f77254d26a8bbe6d5ed6ba442",
+      "statement": "CI joined-identity and tokenless API setup live in dedicated helpers; shared native mesh transport remains in octelium-nofx-reconcile.py for retained catalog and credential callers, while old CI connector helpers are removed.",
+      "evidence": [
+        {
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+        },
+        {
+          "resource": "repo://scripts/ci/install-kubeconfig.sh",
+          "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-identity-check.py",
+          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
+        },
+        {
+          "resource": "repo://scripts/octelium-nofx-reconcile.py",
+          "version": "repo-file-v1:sha256:be898d1d8531dbdffb3b4878c1ad566f52cbb16b6eb9824e872ee86010ea414a"
+        }
+      ]
+    },
+    {
+      "id": "claim_fe48554dd83e4d26a4dd4b5be9bd17a2",
+      "statement": "Signed offline validation is owned by the flake and extracted fixture/source-contract suites; fixed check publication and Linux export helpers keep signing local, while the canonical cache runbook preserves fresh live validation and rollback boundaries.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+        },
+        {
+          "resource": "repo://flake.nix#L15-L61",
+          "version": "repo-lines-v1:sha256:8c296f9b37cc7350fc3527d5e1d6ee761a7711f864abd9d166ec204c9a49a22a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDBlMjE4OGM2OTgxNmE2YzQyNWM1ZTA2MTM5ZTgyNmEyMjcwNDM5OTdlZjU2M2RmN2VlODcwMDg2YmU3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5M2ZjOTc4OTQxNDA2MjMwOTZjYTlkYjcxNTQ0MjJkNDA0NGNkZGJmYzk1YWQ0MGRhYTc4NWY5YjkzNDJjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1MzFhNDQ5YTg1NjI5YjdkNDIyYWEzZjM1NGFlZWZjYzMxNjBmNmNkY2EzM2E2NmQwMWFkOWIwNTE1MDg1MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4NDRhMmJiNzM2N2E0NDgyYTM5YzgzZDljZTQ5MGJmYzIxZGEyY2M0MjJjZTNhYzk3NDRkNWI4YmU1YjdkYjAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:9c7a958d06b45338e0120bf0fe16023fda60fa46236c897fddbf789c3fa17c2f"
+        },
+        {
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
+        },
+        {
+          "resource": "repo://scripts/nix-cache.py",
+          "version": "repo-file-v1:sha256:3f8c33cf8c3959c27906618e85e77638083479f8ce28ec2d46fb312e50206961"
+        }
+      ]
+    },
+    {
+      "id": "claim_4fdc25d5799544a69025a0aaf3d128e8",
+      "statement": "The Google Workspace federation module runbook owns protected metadata ingestion and a separate private saved-plan operator apply; it does not replace the existing owner-mail migration or Mac acceptance runbooks.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/entra-google-workspace-federation/README.md",
+          "version": "repo-file-v1:sha256:aa81f07eafb0f50a5c66c319492124076be297f6fe2af40631371c7f8fdb31a3"
+        },
+        {
+          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-14T03:16:04.839Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:eeda91cf11d4f464b62ae2bb5fe6be7b239cee253e84ef45f1cf79eba3767399",
+  "pageVersion": "sha256:0945cf843a4f62b6545ffc25d47a7e01cdfa253bbb4d603706483dd1004cfbbf",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:a5f911b047b4836372ca44bce017b666bfab0119f16d2aa09bc181d89a77ddb7"
+          "version": "repo-file-v1:sha256:a77a3e31fce084f6db2fb543b65428ed3e9d494de6235d4681e34e5aff285cc7"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -65,7 +65,7 @@
           "version": "repo-file-v1:sha256:288c12e698c394a549175802f19aab69e86eca34a0f44c52040c9edede72673a"
         },
         {
-          "resource": "repo://docs/rollback-argocd-apps.md#L33-L49",
+          "resource": "repo://docs/rollback-argocd-apps.md#L32-L48",
           "version": "repo-lines-v1:sha256:de8c2d79a1add616514d8c7ea0d41a6ce55ae0968df1bf17b9f4de9ff97a39f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI2OTM2ZjczMWVkYTgyZDY0OGZiZTFjNjJlMThmMTI1OGE1OGQ0YTIyYTYyOWUwNTg3YWQ5MDRmNjQ2MjNjYjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgzNGRhNTllMzcxNzJjYmRmNjAzNzVkOTI3N2I0ZDA1MDM5MWE4N2YyNDc4YjE4ZWQwNDc2YjgxNjQ1OGZlMGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2ZGM0MGViNDVkMjhiOWEyYjJhMzZmZjVhZDQ4ZWUxZTUzMzMyZjkwM2MwZGQyYWI0ODhlMmU3MTg1NzY5MDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjllNzE2OWFhMmQ2ZmY2YjZlYTVkYzI3NTJkNzVhODRkYjhlM2JiMDc1MjhkYTE5ZTkyNWQxNGMyYTgwOGEyMDkifQ"
         }
       ]
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
     },
@@ -127,10 +127,32 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c0aa02fc63b944fdb2d22eb96a60a21e",
+      "statement": "The dedicated Nix builder's declared NetworkPolicy expresses intended egress and private-network denial but Flannel does not enforce it and the namespace is not ambient-enrolled; reviewed homelab source remains the submission boundary rather than a claim of network isolation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
+          "version": "repo-file-v1:sha256:ce4b793ad09f4151fa5864adaaec0ff8ed9f144cd26bb168a2353f74c0e64e30"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/namespace.yaml",
+          "version": "repo-file-v1:sha256:4a4c17fdd5d4c0255c1db6017df4a96218667e04fedb6e20821af2ccc58927d1"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:91c246d41f236acaf4d79562ace304edb21dad61da51408e1d7492f16e04972d"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T06:47:45.778Z"
+    "at": "2026-10-14T02:42:57.879Z"
   }
 }

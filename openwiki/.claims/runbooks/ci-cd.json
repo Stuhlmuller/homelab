@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:cadf33b799b0824c8bbcc5ead9a6fdb2b8a7496c4d28900f7691aeb878588df5",
+  "claims": [
+    {
+      "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
+      "statement": "Nine prepared CI workflows use separate scoped pre-signed ephemeral mesh keys with exact identity verification and private runner state; canonical DNS and key publication precede merge, while plan denial, publishers and Cordium execution/denial/cleanup require fresh live acceptance afterward.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+        },
+        {
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+        }
+      ]
+    },
+    {
+      "id": "claim_56175ee5158e4eff9c6692a106627f5a",
+      "statement": "Current automatic CI environments have no required reviewers and disable administrator bypass; production permits exactly the main branch and no tags, verifies exact current main before credentials, and both credential publishers share the allowlist guard. PR pushes can start live plans automatically without authorizing production applies.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-apply.yml",
+          "version": "repo-file-v1:sha256:bf1a77d8421072679a92ae1a6095950a6ef1ee455c839cfb18263edd4959b101"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+        },
+        {
+          "resource": "repo://scripts/entra-ci-configure.py",
+          "version": "repo-file-v1:sha256:252272e7cf908036f033f8386315e2c8462e250a17f6f2ead4274adff344affc"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:f34e43eea29a512cf3312df688c0fc273b9c4c31c6a76f8830f7996030975931"
+        }
+      ]
+    },
+    {
+      "id": "claim_c06aa88145794bfba8ffc6db14968041",
+      "statement": "Signed offline fixture and manifest-policy verification uses protected-main cache trust, while remaining static validation and automatic environment-scoped live plans run fresh; cache or static success does not authorize a production apply.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:788f378893ba9b6a8d719dd8e429e1dcb0688c01921798e280ba8fb2bd2e934a"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-14T03:16:04.839Z"
+  }
+}

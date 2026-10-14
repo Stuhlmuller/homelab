@@ -7,13 +7,17 @@ workload_status: active
 updated: 2026-09-29
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:23:56.319Z
+    at: 2026-10-14T02:42:57.879Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+  - id: openwiki-source-b11e34f0c0d38354842445ae
+    resource: repo://docs/octelium-nofx-reconciliation.md
+  - id: openwiki-source-ff63d9d82b2370adf56a5f28
+    resource: repo://scripts/octelium-nofx-reconcile.py
+generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
 ---
 
 # NOFX
@@ -182,8 +186,9 @@ git. Desired state now explicitly declares `isAnonymous: false`; the existing
 policy and `authorizationMode: PASS` remain required.
 
 Use the [fixed NOFX operator path](../../docs/octelium-nofx-reconciliation.md) after
-its review and merge. It verifies the pinned native client, starts the scoped
-Tunnel transport, and defaults to read-only inspection:
+its review and merge. It verifies the pinned native client, the declared mesh
+peer, canonical DNS, TLS and native protocols, then connects directly with
+inherited proxy settings removed. It defaults to read-only inspection:
 
 ```sh
 nix develop --command python3 -I scripts/octelium-nofx-reconcile.py

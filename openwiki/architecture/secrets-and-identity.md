@@ -4,6 +4,8 @@ title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
@@ -20,14 +22,22 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-bbea6e00e65d0c9910507447
+    resource: repo://IaC/.catalog/units/operator/tailscale-access/terragrunt.hcl
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
@@ -38,18 +48,26 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-74dcbb88cca2d854985d0d67
+    resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:35:49.067Z" }
+generated: { by: "codex", at: "2026-10-14T02:42:57.879Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T06:47:45.778Z
+    at: 2026-10-14T03:23:14.118Z
 ---
 
 # Secrets And Identity
@@ -133,8 +151,17 @@ The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
 read resources, including Helm release Secrets, and submit Argo Application
 dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
 Apply retains cluster administration for existing bootstrap and RBAC ownership;
-Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
-until authenticated plan/apply and denial checks succeed over the new proxy.
+Cordium's mesh identity has no Kubernetes binding. Phase 2b workflows use the
+scoped keys, verify an exact single node tag and tailnet before live commands,
+and create tokenless kubeconfigs for the fixed TLS proxy endpoint. Authenticated
+plan/apply and denial checks remain live acceptance gates; old native catalog
+and credentials are retained until those gates pass.
+
+Apply and Cordium CI tags can reach shared `tag:homelab-ingress` TCP443,
+including every Traefik virtual host on that endpoint. Tailscale grants do not
+inspect HTTP Host. App authentication and native Cordium policy supply the
+application checks; the plan tag is denied shared ingress. Separate proxy
+identities would be the next step if host-level CI isolation is required.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
@@ -142,6 +169,38 @@ recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
 token to write only its fixed mesh A/AAAA inventory from reviewed current main.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
+
+## CI credential generation 2 recovery
+
+Generation 2 replaces the invalid CI keys through a signed repository input and
+an explicitly approved private saved provider plan containing only three key
+replacements. The fixed current-main Mac publisher signs and publishes to the
+same two environment secrets and one repository secret. Incident authority
+retirement covers only older cached CI authorities; unrelated signers, dormant
+provider identities, application routes and workload resources remain retained.
+
+The [operator runbook](../../IaC/modules/tailscale-access/README.md#rotation-and-retirement)
+records rotation/expiry dates, encrypted backup requirements and the staged
+pre-merge recovery used when invalid CI credentials block delivery. Revoked
+provider keys can retain API metadata; verify the invalid/revoked fields. Trust
+removal can propagate after the helper exits, so inspect actual trust before
+resuming idempotent cleanup. Fresh plan acceptance still precedes any migration
+workload apply or retirement; Fleet remains private.
+
+## Signed Nix cache trust
+
+The offline-check cache has its own operator signing key. The publisher requires
+a private key outside the checkout with mode `0600` or stricter and checks it
+against the committed public key before signing expected check outputs. Linux
+builds return outputs for local signing; the builder and PR jobs never receive
+the private key.
+
+CI reads cache URL and public-key policy from protected `origin/main`, so a PR
+cannot select its own trusted signer. Nix requires signatures and sandboxing;
+missing entries build normally. Key rotation changes the protected policy and
+release URL through review. A compromised signing key can forge check results;
+remove it from that policy before trusting further cached outputs. See the
+[cache lifecycle](../../docs/nix-cache.md).
 
 ## AWS SSM Pattern
 
@@ -367,7 +426,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   the Octelium native Secret `entra-oidc-client-secret` and IdentityProvider
   `entra` by `scripts/octelium-entra-oidc.sh`. HUMAN user Entra identifiers are
   runtime mappings and must not be committed to the public repo.
-  GitHub Actions uses a separate Octelium workload credential for User
+  The retained legacy GitHub Actions rollback path uses an Octelium workload credential for User
   `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
   `kubernetes-api-ci`. Store the credential only as GitHub environment
   secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
@@ -378,8 +437,9 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   after reviewing its exact code because that job also assumes the environment-bound AWS OIDC
   identity. Repository Actions policy rejects mutable action tags, and the
   `main` ruleset requires signed, squash-only pull requests with strict
-  always-on checks and no force pushes. The CI connector does not pass Octelium
-  `--scope` flags on v0.35. Its Session policy requires the exact WORKLOAD User,
+  always-on checks and no force pushes. Migrated workflows no longer consume
+  this credential; restore the prior transport through reviewed code before
+  attempting legacy recovery. Its Session policy requires the exact WORKLOAD User,
   CLIENTLESS Session, `kubernetes-api-ci.default` Service, and KUBERNETES mode;
   it must not grant the bearer access to other public Services. The User owns
   matching 30-day clientless-session and access-token lifetimes. Rotate it every
@@ -390,8 +450,8 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   Octelium Secret `homelab-ci-kubeconfig` stores the upstream credential shared
   by `kubernetes-api-ci` and private Service `kubernetes-api.homelab`; clients
   receive only Octelium-generated kubeconfigs. Recreating the Secret briefly
-  affects CI, operator, and Cordium Kubernetes access, so validate both Services
-  after rotation.
+  affects legacy CI, operator, and Cordium Kubernetes access; Tailscale CI does
+  not consume it. Validate both retained Services after rotation.
 - Focused reconciliation of `homelab-private-kubernetes-access` and
   `kubernetes-api.homelab` uses the separate `homelab-catalog-ci` workload User
   and `homelab-private-kubernetes-ci` AUTH_TOKEN Credential. The Credential is
@@ -404,7 +464,9 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `OCTELIUM_CATALOG_AUTH_TOKEN` exists only between provisioning and the
   mandatory revoke step. Octelium v0.35 cannot scope these methods by object
   name; the fixed helper, reviewed hashes, exact `main` SHA, and production
-  approval provide that boundary. See `docs/ci-cd.md`.
+  environment and exact-main guards provide that boundary. The workflow uses the scoped apply Tailscale
+  key only for transport; its short-lived Octelium credential remains required.
+  See `docs/ci-cd.md`.
   The self-hosted Octelium Cluster storage layer uses generated
   `/homelab/octelium/postgres-password` and
   `/homelab/octelium/redis-password` values materialized by
@@ -546,7 +608,10 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
 `homelab-cordium-ci-oidc` accepts GitHub assertions only for the exact repository,
 owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
 separate workload identity with bounded sessions and workspace lifecycle/exec
-permissions; bootstrap management credentials are not shared. A catch-all
+permissions; bootstrap management credentials are not shared. Phase 2b provides
+network access with the separate pre-signed Cordium Tailscale key, then uses
+canonical mesh TLS for the independent native OIDC assertion. That network key
+does not grant Cordium API methods. A catch-all
 post-authentication denial and priority -4 method denial close upstream
 default allowances. The fixed `scripts/cordium-ci-reconcile.py` path previews
 only these three resources by default. Execution requires clean, exact reviewed
@@ -639,6 +704,9 @@ operator-only SSM SecureString and never appears in Git. Google Workspace
 auto-provisioning creates the matching Entra users; the Entra federation only
 authenticates those users. CI provider identities do not receive domain-write
 permissions, so the unit remains an independently reviewed operator apply.
+The module requires a verified, managed, non-default, non-initial domain and
+protects federation from destruction. These are declared guards; source alone
+does not establish an applied federation or a successful user sign-in.
 
 The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7f9cae3c5a586508e6221debcd06f7bf9b2003d2656569d1e810803fb8fb07bd",
+  "pageVersion": "sha256:86d1e1f712666d781c2f0d09c361f0ffe3a9406e64efc44070f2e3602d58d043",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+          "version": "repo-file-v1:sha256:12ec3d4b37d43501320bd5ec0aeadd877ef3563f16393d8d5b0c76d3798895a6"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -30,13 +30,61 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+        }
+      ]
+    },
+    {
+      "id": "claim_1e76027c22f74ebd8abc4362f0879415",
+      "statement": "Phase 2b switches nine CI workflows, including the current-main Harbor core publisher, to scoped pre-signed Tailscale keys, exact tag/tailnet verification and direct native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
+          "resource": "repo://.github/workflows/terragrunt-apply.yml",
+          "version": "repo-file-v1:sha256:bf1a77d8421072679a92ae1a6095950a6ef1ee455c839cfb18263edd4959b101"
+        },
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:788f378893ba9b6a8d719dd8e429e1dcb0688c01921798e280ba8fb2bd2e934a"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-identity-check.py",
+          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
+        }
+      ]
+    },
+    {
+      "id": "claim_9d6a1bb0d6cd48debdf0997ac7c30981",
+      "statement": "CI's offline fixture and manifest-policy outputs depend on tracked source, pinned tools and platform; static jobs use protected-main cache trust with signatures and sandboxing, build cache misses, and retain fresh remaining validation and live plans.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml#L65-L78",
+          "version": "repo-lines-v1:sha256:af78064f8cc1304590def210c435c6c23e7a7d9931c6d6b48a8ed15b19c471e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkYzUyODM3YTY5MWUwZmIxYTY5ZDQyNTk2M2Y3ZjEwYTVmMjgyYjMzNjVkMzdjZjZjZDQ1YjkxOGMwMmExZTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZWU1OTBiMDEzMjIwYzcxOGVmYzM1NDdiODRiOTgwMGMzMWY2NGZlODg5MzM3M2U4OGVhZDdhNzUzOWY4NTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4MGNjOTNmZTFmNjRiNTRiYzljYThmNjY3NWQ3ZmVjZGM3NjQ0OWRlOGRmZGFiYWUwNjg3NDc1ZWE5NjliYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyMTI1OWJlMTk3ZDRlY2UxNjM2YWJlMmM4ODNjYzY2MzgxZDk5ZjNmMTVjNDEwMDA4ZDY2ZDkzNzdhOTMxMzkifQ"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+        },
+        {
+          "resource": "repo://flake.nix#L15-L61",
+          "version": "repo-lines-v1:sha256:8c296f9b37cc7350fc3527d5e1d6ee761a7711f864abd9d166ec204c9a49a22a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDBlMjE4OGM2OTgxNmE2YzQyNWM1ZTA2MTM5ZTgyNmEyMjcwNDM5OTdlZjU2M2RmN2VlODcwMDg2YmU3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5M2ZjOTc4OTQxNDA2MjMwOTZjYTlkYjcxNTQ0MjJkNDA0NGNkZGJmYzk1YWQ0MGRhYTc4NWY5YjkzNDJjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1MzFhNDQ5YTg1NjI5YjdkNDIyYWEzZjM1NGFlZWZjYzMxNjBmNmNkY2EzM2E2NmQwMWFkOWIwNTE1MDg1MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4NDRhMmJiNzM2N2E0NDgyYTM5YzgzZDljZTQ5MGJmYzIxZGEyY2M0MjJjZTNhYzk3NDRkNWI4YmU1YjdkYjAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-14T03:16:04.839Z"
   }
 }

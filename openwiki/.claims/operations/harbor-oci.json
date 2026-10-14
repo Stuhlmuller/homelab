@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d44a40d2ab906b699b178265841180bdd3df682fc494fc96a3f3b1e57d6a969d",
+  "pageVersion": "sha256:8e0828871065b93e7b1e51c51b1b0bdd09dce5f610fc5f03dd54653976609e95",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:1ba123f0193a851745081b86a80464557ff3365eb8e155a54d836e7d5a1233e5"
+          "version": "repo-file-v1:sha256:6de99e086a2380cd8fd93d36c667065474f92859e5633836fb54d452a371c46b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
+          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -328,7 +328,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -336,11 +336,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
+          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
         }
       ]
     },
@@ -358,7 +358,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:bb3a025ce4a338f168e01a84ecaf3d75eb03277a8791d9e0dd9f900359c44515"
+          "version": "repo-file-v1:sha256:7f15df94273c5d7680db7222a24b0c9a96dfca47fc6e9f41ef2e1ee8d5d82dd1"
         }
       ]
     },
@@ -368,11 +368,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:54190b9f44a7ede7f4b8c66dfa5ce75b6f60829e4cd2bb665273f4b8fadcf215"
+          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
+          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
         }
       ]
     },
@@ -386,7 +386,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:bb3a025ce4a338f168e01a84ecaf3d75eb03277a8791d9e0dd9f900359c44515"
+          "version": "repo-file-v1:sha256:7f15df94273c5d7680db7222a24b0c9a96dfca47fc6e9f41ef2e1ee8d5d82dd1"
         }
       ]
     },
@@ -396,7 +396,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -408,7 +408,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536"
+          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
         }
       ]
     },
@@ -438,13 +438,31 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:22d48e42a406686f659d25610009b5ecb1f944cb0815d0c925ea203bbd82a688"
+          "version": "repo-file-v1:sha256:d5ac3138ee83943714e96b06764418917aa6154fe42bf2d9c6a47137da07ff7d"
+        }
+      ]
+    },
+    {
+      "id": "claim_62473c3ec0cc452ab2966f5bc54e58a3",
+      "statement": "Prepared phase 2b Harbor publication joins with the pre-signed apply Tailscale key, verifies its scoped identity and uses a tokenless operator API kubeconfig for a bounded Traefik private port-forward; protected live publication acceptance remains required.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-core-images.yml",
+          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+        },
+        {
+          "resource": "repo://.github/workflows/harbor-mirror.yml",
+          "version": "repo-file-v1:sha256:6de99e086a2380cd8fd93d36c667065474f92859e5633836fb54d452a371c46b"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-12T07:11:29.496Z"
+    "at": "2026-10-14T03:16:04.839Z"
   }
 }

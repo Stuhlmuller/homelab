@@ -122,12 +122,29 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
           unset-current-credentials: true
 
+      - name: Prepare Tailscale State
+        timeout-minutes: 1
+        run: |
+          umask 077
+          mkdir -- "$RUNNER_TEMP/tailscale-state"
+
+      - name: Connect To Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          statedir: ${{ runner.temp }}/tailscale-state
+          version: 1.102.3
+          log-mode: quiet
+          ping: homelab-tailscale-operator.tail67beb.ts.net
+
+      - name: Verify Tailscale Identity
+        timeout-minutes: 1
+        run: python3 -I scripts/ci/tailscale-identity-check.py apply
+
       - name: Copy And Verify Fixed Public Digests
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
           set -euo pipefail
           umask 077
@@ -161,7 +178,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

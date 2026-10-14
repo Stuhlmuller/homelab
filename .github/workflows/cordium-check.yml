@@ -31,7 +31,7 @@ jobs:
       github.ref == 'refs/heads/main' ||
       (github.ref == 'refs/heads/codex/cordium-oidc-denial' && inputs.mode == 'deny-ref')
     runs-on: ubuntu-24.04
-    timeout-minutes: 50
+    timeout-minutes: 55
     # Keep the branch OIDC subject; an environment would change its identity.
     permissions:
       contents: read
@@ -73,6 +73,26 @@ jobs:
         run: |
           scripts/ci/install-octelium-client.sh
           bash scripts/ci/install-cordium-client.sh --install-dir "$HOME/.local/bin"
+
+      - name: Prepare Tailscale State
+        timeout-minutes: 1
+        run: |
+          umask 077
+          mkdir -- "$RUNNER_TEMP/tailscale-state"
+
+      - name: Connect To Tailscale
+        timeout-minutes: 2
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_CORDIUM_AUTH_KEY }}
+          statedir: ${{ runner.temp }}/tailscale-state
+          version: 1.102.3
+          log-mode: quiet
+          ping: homelab-ingress.tail67beb.ts.net
+
+      - name: Verify Tailscale Identity
+        timeout-minutes: 1
+        run: python3 -I scripts/ci/tailscale-identity-check.py cordium
 
       - name: Execute Checks In Cordium
         timeout-minutes: 38

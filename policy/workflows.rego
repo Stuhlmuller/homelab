@@ -103,19 +103,36 @@ deny contains msg if {
 	msg := sprintf("workflow job %q environment variable %q must not contain a credential; scope it to one step", [job_name, key])
 }
 
+# Every live mesh invocation needs its own earlier, unconditional pre-signed authkey join.
+# Full workflow hashes additionally pin trusted-PR and exact-main dispatch gates.
 deny contains msg if {
-	live_homelab_workflow
-	not workflow_step_env_has("OCTELIUM_AUTH_TOKEN")
-	name := object.get(input, "name", "<unnamed workflow>")
-	msg := sprintf("workflow %q touches live homelab access but does not provide an Octelium clientless access token", [name])
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	some index, step in object.get(job, "steps", [])
+	mesh_command_run(object.get(step, "run", ""))
+	not tailscale_join_before(job, index)
+	msg := sprintf("live workflow job %q step %d requires an earlier pinned Tailscale authkey join with its scoped identity", [job_name, index])
 }
 
 deny contains msg if {
-	live_homelab_workflow
-	value := workflow_env_value("KUBE_API_SERVER_URL")
-	value != "https://kubernetes-api-ci.stinkyboi.com"
-	name := object.get(input, "name", "<unnamed workflow>")
-	msg := sprintf("workflow %q must reach Kubernetes through the Octelium clientless endpoint", [name])
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	job_mesh_command(job)
+	some env in array.concat([object.get(input, "env", {}), object.get(job, "env", {})], [object.get(step, "env", {}) | some step in object.get(job, "steps", [])])
+	some key in {"OCTELIUM_AUTH_TOKEN", "KUBE_API_SERVER_URL"}
+	object.get(env, key, null) != null
+	msg := sprintf("live workflow job %q must not configure legacy Octelium Kubernetes transport", [job_name])
+}
+
+deny contains msg if {
+	jobs := object.get(input, "jobs", {})
+	some job_name, job in jobs
+	some step in object.get(job, "steps", [])
+	run := object.get(step, "run", "")
+	mesh_command_run(run)
+	contains(run, "scripts/ci/install-kubeconfig.sh")
+	not contains(run, "bash scripts/ci/install-kubeconfig.sh --tailscale")
+	msg := sprintf("live workflow job %q must explicitly install the fixed Tailscale kubeconfig", [job_name])
 }
 
 deny contains msg if {
@@ -217,24 +234,88 @@ job_container_image(job) := image if {
 	image != ""
 }
 
-live_homelab_workflow if {
-	workflow_run_contains("scripts/ci/install-kubeconfig.sh")
+mesh_command_run(run) if {
+	regex.match(`scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|harbor-publish|cordium-ci)\.sh([[:space:]]|$)`, run)
 }
 
-live_homelab_workflow if {
-	workflow_run_contains("scripts/ci/terragrunt-plan.sh")
+mesh_command_run(run) if {
+	live_cluster_command_count(run) > 0
 }
 
-live_homelab_workflow if {
-	workflow_run_contains("scripts/ci/terragrunt-apply.sh")
+mesh_command_run(run) if {
+	regex.match(identity_check_command_pattern, run)
 }
 
-live_homelab_workflow if {
-	jobs := object.get(input, "jobs", {})
-	some _, job in jobs
-	steps := object.get(job, "steps", [])
-	some index
-	live_cluster_command_count(object.get(steps[index], "run", "")) > 0
+job_mesh_command(job) if {
+	some step in object.get(job, "steps", [])
+	mesh_command_run(object.get(step, "run", ""))
+}
+
+job_cordium_command(job) if {
+	some step in object.get(job, "steps", [])
+	contains(object.get(step, "run", ""), "scripts/ci/cordium-ci.sh")
+}
+
+job_environment(job) := env if {
+	env := object.get(job, "environment", "")
+	is_string(env)
+}
+
+job_environment(job) := env if {
+	setting := object.get(job, "environment", {})
+	is_object(setting)
+	env := object.get(setting, "name", "")
+}
+
+tailscale_identity(job) := "cordium" if {
+	job_cordium_command(job)
+	job_environment(job) == ""
+} else := "plan" if {
+	not job_cordium_command(job)
+	job_environment(job) == "homelab-plan"
+} else := "apply" if {
+	not job_cordium_command(job)
+	job_environment(job) == "homelab-production"
+}
+
+tailscale_authkey("cordium") := "${{ secrets.TAILSCALE_CORDIUM_AUTH_KEY }}"
+tailscale_authkey(identity) := "${{ secrets.TAILSCALE_AUTH_KEY }}" if identity != "cordium"
+tailscale_ping("cordium") := "homelab-ingress.tail67beb.ts.net"
+tailscale_ping(identity) := "homelab-tailscale-operator.tail67beb.ts.net" if identity != "cordium"
+
+tailscale_state_run := `umask 077
+mkdir -- "$RUNNER_TEMP/tailscale-state"`
+
+unconditional_step(step) if {
+	object.get(step, "if", null) == null
+	object.get(step, "continue-on-error", false) == false
+	object.get(step, "env", null) == null
+}
+
+tailscale_join_before(job, live_index) if {
+	# The supplied state directory relies on GitHub's per-job VM disposal.
+	job["runs-on"] == "ubuntu-24.04"
+	identity := tailscale_identity(job)
+	some join_index, step in object.get(job, "steps", [])
+	join_index < live_index
+	step.uses == "tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd"
+	unconditional_step(step)
+	step.with == {
+		"authkey": tailscale_authkey(identity),
+		"statedir": "${{ runner.temp }}/tailscale-state",
+		"version": "1.102.3",
+		"log-mode": "quiet",
+		"ping": tailscale_ping(identity),
+	}
+	some state_index, state_step in object.get(job, "steps", [])
+	state_index < join_index
+	unconditional_step(state_step)
+	trim_space(state_step.run) == tailscale_state_run
+	some guard_index, guard_step in object.get(job, "steps", [])
+	join_index < guard_index
+	guard_index < live_index
+	unconditional_step(guard_step)
+	trim_space(guard_step.run) == sprintf("python3 -I scripts/ci/tailscale-identity-check.py %s", [identity])
 }
 
 job_sensitive_command(job) if {
@@ -269,15 +350,17 @@ dynamic_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+
 
 private_wrapper_start := "if ! nix develop --command bash >\"$private_log\" 2>&1 <<'EOF'\n"
 
-live_script_command_count(run) := count(regex.find_all_string_submatch_n(shell_live_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(direct_live_command_pattern, run, -1))
+identity_check_command_pattern := `scripts/ci/tailscale-access-check\.py([[:space:]]|$)`
 
-live_cluster_command_count(run) := count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1)) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
+live_script_command_count(run) := (count(regex.find_all_string_submatch_n(identity_check_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(shell_live_command_pattern, run, -1))) + count(regex.find_all_string_submatch_n(direct_live_command_pattern, run, -1))
+
+live_cluster_command_count(run) := (count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1))) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
 
 iac_command_count(run) := count(regex.find_all_string_submatch_n(iac_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(iac_local_validation_pattern, run, -1))
 
 helm_command_count(run) := count(regex.find_all_string_submatch_n(helm_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(helm_local_render_pattern, run, -1))
 
-sensitive_command_count(run) := live_script_command_count(run) + live_cluster_command_count(run) + count(regex.find_all_string_submatch_n(aws_command_pattern, run, -1)) + iac_command_count(run) + helm_command_count(run) + count(regex.find_all_string_submatch_n(octeliumctl_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(dynamic_command_pattern, run, -1))
+sensitive_command_count(run) := (((((live_script_command_count(run) + live_cluster_command_count(run)) + count(regex.find_all_string_submatch_n(aws_command_pattern, run, -1))) + iac_command_count(run)) + helm_command_count(run)) + count(regex.find_all_string_submatch_n(octeliumctl_command_pattern, run, -1))) + count(regex.find_all_string_submatch_n(dynamic_command_pattern, run, -1))
 
 sensitive_command_run(run) if {
 	sensitive_command_count(run) > 0
@@ -336,7 +419,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'256a408c86e10f3a498cab8ffe30d07dde8bc936cd52487a369000a028632536  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -358,7 +441,7 @@ private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
 	count(lines) == 8
 	lines[0] == "then"
-	lines[1] == `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+	lines[1] == `if sha256sum --check --status <<<'2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 	lines[2] == `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
@@ -388,29 +471,4 @@ safe_withheld_echo(line) if {
 	not contains(line, "$")
 	not contains(line, "`")
 	not contains(line, "\\")
-}
-
-workflow_run_contains(needle) if {
-	jobs := object.get(input, "jobs", {})
-	some _, job in jobs
-	steps := object.get(job, "steps", [])
-	some index
-	step := steps[index]
-	run := lower(sprintf("%v", [object.get(step, "run", "")]))
-	contains(run, lower(needle))
-}
-
-workflow_step_env_has(key) if {
-	jobs := object.get(input, "jobs", {})
-	some _, job in jobs
-	steps := object.get(job, "steps", [])
-	some index
-	step := steps[index]
-	env := object.get(step, "env", {})
-	object.get(env, key, null) != null
-}
-
-workflow_env_value(key) := value if {
-	env := object.get(input, "env", {})
-	value := sprintf("%v", [object.get(env, key, "")])
 }

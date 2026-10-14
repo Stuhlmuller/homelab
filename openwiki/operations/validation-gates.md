@@ -6,6 +6,8 @@ tags: ["operations", "validation"]
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -50,6 +52,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-de814b7f881b5c7f3424eff6
+    resource: repo://scripts/ci/cordium-ci-transport-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
@@ -62,6 +66,10 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-e1c7a14f8b0194ad69f4eedf
+    resource: repo://scripts/ci/install-kubeconfig-test.py
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -72,6 +80,8 @@ sources:
     resource: repo://scripts/ci/octelium-api-response-test.py
   - id: openwiki-source-9d1513ec6ffec6dad14a5d87
     resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-41efcaef13a2f84ca5556bc7
+    resource: repo://scripts/ci/octelium-nofx-reconcile-test.py
   - id: openwiki-source-c7852b586f8f1a45684f7ab4
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
@@ -86,6 +96,8 @@ sources:
     resource: repo://scripts/ci/tailscale-access-check.py
   - id: openwiki-source-fc269dae2f6a8501f0c0fb75
     resource: repo://scripts/ci/tailscale-ci-configure-test.py
+  - id: openwiki-source-337735e4690d15019ba408c9
+    resource: repo://scripts/ci/tailscale-identity-check-test.py
   - id: openwiki-source-4ac432ebb03e57e6e256a336
     resource: repo://scripts/ci/tailscale-ingress-sign-test.py
   - id: openwiki-source-511191e55632b55651ad4318
@@ -96,6 +108,10 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c65516e351b2fe2cbdfc5a79
     resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-290074bbdb2bf72571824d98
+    resource: repo://scripts/ci/terragrunt-plan-stage.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
@@ -114,10 +130,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-13T04:31:46.031Z" }
+generated: { by: "codex", at: "2026-10-14T03:20:08.279Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-13T04:31:46.031Z
+    at: 2026-10-14T03:20:08.279Z
 ---
 
 # Validation Gates
@@ -127,12 +143,13 @@ verified:
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
 
-The static wrapper verifies source-bound offline fixture and manifest-policy
-Nix outputs, then runs remaining provider, network and security checks fresh.
-Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
-`offline-static-checks.sh`. CI uses protected-main cache trust with signatures
-and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
-See [signed offline validation](../../docs/nix-cache.md).
+The default static wrapper verifies the two Nix offline outputs, then runs
+remaining provider, network and security checks fresh. Python fixtures live in
+`scripts/ci/offline-checks.sh`; source contracts and exact workflow guards live
+in `offline-static-checks.sh`. Both Tailscale identity and native transport
+fixtures are included. CI reads cache trust from protected main and requires
+signatures and sandboxing. Cache reuse does not replace live plans or runtime
+acceptance. See [cache validation](../../docs/nix-cache.md).
 
 The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
 `NET_ADMIN` to raise loopback in each private Nix network namespace when
@@ -360,7 +377,8 @@ CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness befor
 n8n rolls out because it can register hooks on startup. External DNS execution,
 Mac hosts migration, old-TTL expiry and normal canonical DNS/API verification
 remain ordered steps; callback receipts require fresh natural deliveries. Old
-CI and native operator transport stay until their later acceptance stage.
+native catalog and credentials stay until their later acceptance stage. Phase 2b
+switches CI/native transport only after canonical DNS/API acceptance.
 
 The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
@@ -487,6 +505,21 @@ label. These are not verified causes: misleading private text can change a
 label but cannot expose its text. Raw output, plans, and credentials remain
 withheld and deleted.
 
+The shared mesh kubeconfig helper sets only a fixed nonsecret `tailscale`
+username, with no password, bearer token or client certificate. An empty user
+makes kubectl prompt and exit with `error: EOF` before HTTP in a noninteractive
+runner. The real-client regression reproduces that EOF, then requires the
+fixed username to reach a closed loopback endpoint without prompting; the
+strict access guard also rejects empty users, other usernames and passwords.
+Normal mesh proxy introspection with this configuration succeeded locally;
+fresh CI identity, dry-run/write denial and Terraform planning remain required.
+
+The CI access checker emits fixed markers before kubeconfig verification, proxy
+identity, Application reads, dry-run admission, and the real no-op write-denial
+probe. The hashed classifier publishes only the last fixed stage; an unknown
+hint still leaves the cause unconfirmed. Regression tests reject forged markers
+and ensure private strings never enter public diagnostics.
+
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
 AzureAD was skipped without local credentials. Protected CI run `36272981407`
@@ -510,10 +543,15 @@ remained secondary, so the pilot rename was not retried. This operator execution
 does not satisfy or bypass the protected CI plan gate; see the
 [dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
-The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
-included in that closed credentialed-workflow inventory. It uses only the
-existing production AWS role and Cloudflare rule-removal secret, with private
-API output withheld. Validate its full definition before updating the hash.
+The legacy Tunnel DNS workflow was removed in phase 2a. Phase 2b security
+hashes and Rego require all nine credentialed mesh jobs to use the pinned
+Tailscale action/version, fixed secret scope, private per-job state directory,
+and exact tag/tailnet verification before consumers. Offline identity tests
+reject wrong/broader tags, foreign or disconnected profiles, and malformed
+status without disclosing raw output. Cordium transport tests verify TLS
+readiness before login, denial-mode isolation, and cleanup on remote or logout
+failure. The shared native helper tests canonical DNS against the exact online
+ingress peer and uses the strict transport-neutral API response parser.
 
 The `NOFX Registry Credential` workflow uses the same reviewed-main and protected
 environment boundaries. Its AWS session can update only the dedicated NOFX
@@ -1241,10 +1279,10 @@ to be removed on clean, exact reviewed local/remote main first, deletes only
 the three dedicated CI identity resources,
 and verifies absence. Tests reject remaining declarations, network errors,
 and incomplete deletion. Ordinary catalog apply does not prune these objects.
-Retirement verifies the pinned native client and reuses the private TLS carrier
-for every inspection and deletion. Transport/pin failures prevent native calls;
-the read-only target preview opens no carrier. Tests require carrier-scoped
-environment on every request and cleanup after failed inspection.
+Retirement verifies the pinned native client and reuses verified direct mesh
+TLS for every inspection and deletion. Transport/pin failures prevent native
+calls; the read-only target preview opens no native transport. Tests require the
+verified transport environment on each request and cleanup after failed inspection.
 
 The Tunnel probe accepts the protocol-defined empty-body gRPC-Web response
 with status trailers in headers. Live browser and native TCP-carrier probes

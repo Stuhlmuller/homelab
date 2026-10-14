@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d19762cfaa7179399345a7243239ae69a84294a5cffc0ea5d7a802612870780e",
+  "pageVersion": "sha256:f14016886ffff2e66eba5ca3800b1a3b607c005a2608ddb7d6509ce49952feea",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -12,13 +12,27 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:04d86126e2f9a6a5702d5ef2889db80868f0285162ef58412e271213a0df2119"
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+        }
+      ]
+    },
+    {
+      "id": "claim_db137e03d17e47d0a36191e342e89bfd",
+      "statement": "The fixed NOFX reconciliation helper verifies the native client and canonical mesh peer, DNS, TLS and protocols, strips inherited proxy settings and defaults to read-only inspection.",
+      "evidence": [
+        {
+          "resource": "repo://docs/octelium-nofx-reconciliation.md#L30-L45",
+          "version": "repo-lines-v1:sha256:bcae0509d8d89838604c0c2756a258f393aa2947805521b4e4483158b68e6466:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkNmViNGNiOGZiYjhiODNiOTRiZjhkNTkwMTViYzFkMGU3ZTgwMTAzMjllYzI1YTdjMGZhNDVmNmYzODgzZjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMyOTU1ZDA5YzMzZjM1YzM4ZWI4OWJmY2Q2MDFhYjA4NjhkMzFhZWVjMzY4ODVlMTA5MjNlNmMxZWUyYWM4M2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwOWI4MTQ1MTgwOWQwMmE4NjMwOWFlNmM3YmZiNGI1MDMwMzhiNzVlMDNiOGZkNDMyOTkyN2ZiYzc1MjljZjUifQ"
+        },
+        {
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L72-L113",
+          "version": "repo-lines-v1:sha256:7d89079aca67c36e3dee2ff2b43b9715b87a0747eeb44c5fbc45a35ac30f0eed:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZTA3MDVmMmIwZDI1NjkyZjM2NjliM2U0NzQ5Njg0N2VmMzZjM2IzNjk0MWQwMmFkMjNhODdlNWZiYTk3YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjllOTM3OTI4ODI0ZTc5NWRlNDA3MjhjNmIwNDIyMTFmNTFlYWVjMDFhMTMxNTMwMTJkY2MwYTgwNTU4YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjOWZmNmMyMDBkMTFmN2FhMzUxNzBkNzZiOGQzZGMwMmMxNTMxNjk2OThlOGU4ZWMwYjY5ZTA0ZmNlMTg0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViOWIwM2NjMDI4MDc0YzNjZWQ1ZDE3ODNhMjU1MTA3ZjYwZTQ1M2MzODJmMzIwMDFjYTNhMTEwZjQ3YjUxNGEifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-14T02:42:57.879Z"
   }
 }

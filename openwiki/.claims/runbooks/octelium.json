@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d6d8f6db9c6e43eac22fc1ac5c522ed1958e6b864d47828b7bd1784b1dcd9685",
+  "pageVersion": "sha256:bcbc8183aa790cb1aaa744b75e48b5d8557911ddc98400a5a3f4609f2851488b",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -29,10 +29,28 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_d9684f84d30046e582a416afe3695547",
+      "statement": "The shared native helper requires the online declared mesh and unique ingress peer, validates canonical DNS, native gRPC and gRPC-Web over TLS with the shared parser and removes proxy overrides; callers retain resource and reviewed-main guards while old catalog and Mac rollback stay until acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+        },
+        {
+          "resource": "repo://scripts/ci/cordium-ci.sh",
+          "version": "repo-file-v1:sha256:da1bbb4f1745e68c1a11fc0938dca2be131b4ddca7c87edfc4457291e4dd04b5"
+        },
+        {
+          "resource": "repo://scripts/octelium-nofx-reconcile.py#L72-L113",
+          "version": "repo-lines-v1:sha256:7d89079aca67c36e3dee2ff2b43b9715b87a0747eeb44c5fbc45a35ac30f0eed:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZTA3MDVmMmIwZDI1NjkyZjM2NjliM2U0NzQ5Njg0N2VmMzZjM2IzNjk0MWQwMmFkMjNhODdlNWZiYTk3YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjllOTM3OTI4ODI0ZTc5NWRlNDA3MjhjNmIwNDIyMTFmNTFlYWVjMDFhMTMxNTMwMTJkY2MwYTgwNTU4YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjOWZmNmMyMDBkMTFmN2FhMzUxNzBkNzZiOGQzZGMwMmMxNTMxNjk2OThlOGU4ZWMwYjY5ZTA0ZmNlMTg0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViOWIwM2NjMDI4MDc0YzNjZWQ1ZDE3ODNhMjU1MTA3ZjYwZTQ1M2MzODJmMzIwMDFjYTNhMTEwZjQ3YjUxNGEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T00:23:56.319Z"
+    "at": "2026-10-11T03:41:04.271Z"
   }
 }

@@ -109,6 +109,26 @@ jobs:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
+      - name: Prepare Tailscale State
+        timeout-minutes: 1
+        run: |
+          umask 077
+          mkdir -- "$RUNNER_TEMP/tailscale-state"
+
+      - name: Connect To Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        timeout-minutes: 3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          statedir: ${{ runner.temp }}/tailscale-state
+          version: 1.102.3
+          log-mode: quiet
+          ping: homelab-tailscale-operator.tail67beb.ts.net
+
+      - name: Verify Tailscale Identity
+        timeout-minutes: 1
+        run: python3 -I scripts/ci/tailscale-identity-check.py apply
+
       - name: Reconcile Private Kubernetes Catalog
         env:
           OCTELIUM_CATALOG_AUTH_TOKEN: ${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}

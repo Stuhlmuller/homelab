@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:18:51.612Z" }
+generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-12T07:11:29.496Z
+    at: 2026-10-14T03:16:04.839Z
 ---
 
 # Harbor Private OCI Registry
@@ -124,10 +124,12 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI still establishes a bounded Kubernetes port-forward to Istio with
-the existing Octelium CI credential until phase 2b. Only its disposable runner maps
-the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
-retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
+Phase 2b hosted CI joins with the pre-signed apply Tailscale key and verifies
+its exact node tag and tailnet. A tokenless operator API kubeconfig establishes
+the bounded Kubernetes port-forward to `traefik/traefik-private`. Only the
+disposable runner maps Harbor to loopback, retaining canonical TLS and registry
+authentication. New transport publication still requires a successful protected
+run; prepared source is not that evidence. See `scripts/ci/harbor-publish.sh`.
 
 The shared Octelium-to-Istio hop currently skips upstream certificate validation
 for the Kubernetes Service hostname, as declared in
@@ -190,6 +192,19 @@ The exact overlay addresses are now declared for port 9443 only. This source
 repair is not successful pull acceptance: converge it before retrying and require
 successful manifest/blob requests from the corresponding node, alongside the
 native pull result. See the [dated incident](../../clusters/homelab/apps/traefik/CUTOVER.md#observed-cross-node-registry-rejection).
+
+After the twelve-address policy converged on October 11, two guarded
+`zimaboard-2` attempts reached Harbor: the registry challenge returned 401,
+token exchange returned 200, and the pinned pause manifest returned 404.
+The friendly `3.10` alias, immutable alias, and digest were absent through both
+registry routes. Both attempts rolled back the host entry; the other nodes and
+external DNS remained unchanged. This was missing publication, not a source
+policy denial. The owner approved the existing full-catalog
+[Mirror all run 38108370598](https://github.com/Stuhlmuller/homelab/actions/runs/38108370598)
+at `df04e4792d6cef38cdf23f103c4b80dc22b324b0`; it was running when this note
+was written. Require successful publication and correlated native pulls before
+retrying the rollout. Do not weaken the pinned pull or replace the expected tag
+to conceal an absent alias.
 
 Separately, `zimaboard-2` rebooted and returned Ready at 21:29:52 UTC after a
 21:13:45 NotReady event. At 21:31–21:32, authenticated Talos reads and all eight
@@ -302,6 +317,12 @@ snapshot does not establish scan completion for images not yet uploaded.
 
 ## Scoped application image publication
 
+Public mirror runs serialize in `harbor-mirror-production` to protect mutable
+aliases within the public mirror project. NOFX and core publication retain the
+separate `harbor-packages-production` queue; neither queue cancels an active run.
+This scheduling separation preserves source/destination verification and grants
+no publication or rollout authorization.
+
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
 `bazarr`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
@@ -324,8 +345,8 @@ unrelated historical images. See the
 [Bazarr rollout](../../clusters/homelab/apps/bazarr/README.md).
 
 Traefik uses `image_scope=traefik` with the fixed two-image
-`scripts/config/harbor-traefik-images.json` subset of the reviewed full catalog.
-It includes the ingress image and exact `pause:3.10` native node pull probe.
+`scripts/config/harbor-traefik-images.json` subset of the reviewed full catalog:
+the ingress image and exact `pause:3.10` native node pull probe.
 It preserves all-platform digest copying, the reviewed tag alias and fresh
 complete authenticated Harbor pulls. No caller-supplied image, path or destination is
 accepted. Successful publication is required before the consuming ingress
@@ -350,19 +371,19 @@ establish full-inventory mirror completion.
 ### October 11 duplicate-index failure
 
 Full-catalog runs `38108370598` and `38117127796` failed at the pinned LiteLLM
-database index. Its eight descriptors repeat four child digests twice. The
-second run's parent-index write correlates with PostgreSQL `unique_reference`
+database index. Its eight descriptors repeat four identical child digests.
+The second run's parent write correlates with PostgreSQL `unique_reference`
 failure at `08:53:38.389Z`, matching
 [Harbor issue #16718](https://github.com/goharbor/harbor/issues/16718).
-Child writes succeeded, but the parent was unavailable by digest and either tag.
-Keep immutable source bytes and attestations intact; no live schema repair or
-index normalization is part of the ingress cutover.
+Preserve upstream bytes, attestations and the pinned digest; compatibility repair
+requires separate review. No live schema mutation or index normalization is part
+of ingress migration.
 
-The two-image Traefik scope can publish the native probe independently of this
-full-catalog incompatibility. A scoped receipt still proves only selected image
-availability. Native pulls on every node remain required before Harbor DNS
-changes; global `skipFallback` mirrors still require full publication. See the
-[recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
+The fixed Traefik scope can publish the native probe independently. Scoped
+success proves only selected artifact availability; node hostname migration
+still requires native pulls on all four nodes, and global `skipFallback` mirrors
+still require successful full-catalog publication. See the
+[recorded repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
 
 
 ### Identical-reference core repair candidate
@@ -600,7 +621,7 @@ nix develop --command python3 -I scripts/octelium-harbor-reconcile.py \
 
 The helper defaults to read-only without `--execute`. Execution selects only
 `harbor.default`, requires exact clean reviewed main, reuses the pinned native
-TLS carrier, verifies a second apply has no change, and reads back its access
+direct mesh TLS transport, verifies a second apply has no change, and reads back its access
 contract. It never creates operator credentials or applies the entire catalog.
 
 ## Current Evidence

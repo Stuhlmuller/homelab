@@ -3,6 +3,31 @@ type: runbook
 title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
+sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-29ced481494f3a85c0d7921b
+    resource: repo://.github/workflows/terragrunt-apply.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
+  - id: openwiki-source-de7fdd1af72d2845e129e766
+    resource: repo://scripts/entra-ci-configure.py
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
+generated: { by: "codex", at: "2026-10-12T04:52:40.862Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-14T03:16:04.839Z
 ---
 
 # CI/CD
@@ -12,7 +37,7 @@ Canonical runbook: [`docs/ci-cd.md`](../../docs/ci-cd.md)
 Pull requests always emit the aggregate `Terragrunt Gate`; only trusted changes
 to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
-Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
+Azure credentials and scoped pre-signed Tailscale keys remain protected GitHub inputs,
 while desired state stays in repository-owned files.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
@@ -22,12 +47,19 @@ still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
 
 Read-only GitHub inspection on 2026-10-06 UTC confirmed that `main` ruleset
-`14700233` already requires zero approving reviews. The `homelab-plan` and
-`homelab-production` environments separately require `rstuhlmuller` approval,
-despite the canonical runbook describing production as having no reviewer.
-Policy changes do not remove those environment gates. Reconcile the environment
-configuration and runbook through the repository workflow before treating
-Terragrunt plans or applies as unattended.
+`14700233` required zero approving reviews while both CI environments separately
+required owner approval. The canonical guide's contrary production guidance was
+stale; it was corrected on 2026-10-11 UTC after verifying both live environments
+and the upstream `github-iac` declarations.
+
+Current `github-iac` desired state and live settings use automatic environments
+without required reviewers. The [environment guard](../../scripts/entra-ci-configure.py)
+disables administrator bypass and requires production's exact `main` branch
+allowlist, excluding tags. The workflow additionally verifies current `main`
+before credentials; the [Tailscale publisher](../../scripts/tailscale-ci-configure.py)
+reuses the exact allowlist guard and rejects drift before publication. These
+current settings supersede the dated owner-review snapshot above. A PR push can
+start its live plan automatically; it does not authorize a production apply.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
@@ -52,3 +84,41 @@ the temporary home and transport were removed. No production apply ran.
 Follow the [canonical rotation procedure](../../docs/ci-cd.md); the next 21-day
 rotation is due October 17, 2026. Do not infer rollout completion from
 credential recovery or read-only diagnostics.
+
+## Signed offline validation
+
+Static workflows obtain cache URL/key policy from protected main, then verify or
+build the expected Nix offline-test and manifest-policy outputs. The remaining
+static wrapper still runs fresh provider, network and security checks. The
+trusted PR's environment-scoped live plan remains fresh and runs automatically.
+Neither a cached result nor a green static job authorizes production apply.
+
+Use the [signed cache runbook](../../docs/nix-cache.md) for local validation,
+Linux priming, key rotation and rollback. The declared builder is disposable;
+its signing key remains local. Deployment, full build and warm CI reuse are
+separate acceptance steps. See the [check flow](../architecture/gitops-flow.md#signed-offline-ci-checks).
+
+## Tailscale CI cutover
+
+Phase 2b moves nine workflows to pre-signed reusable ephemeral Tailscale keys
+while retaining Tailnet Lock. Plan and apply use separate protected environment
+keys; Cordium uses its own repository key and independent native OIDC policy.
+Every joined runner verifies its exact single tag and tailnet before live work.
+The hosted Ubuntu runner owns a private per-job state directory that is never
+cached or uploaded; daemon logout alone does not delete that directory.
+
+Before merging this source, complete canonical DNS/API acceptance, deploy the
+operator API proxy and plan admission/RBAC, and publish keys through the fixed
+reviewed `scripts/tailscale-ci-configure.py` helper. After merge, require protected
+plan with denied real writes, exact-main apply, diagnostics, both publishers,
+and Cordium execution, denial and cleanup checks. Source validation alone does
+not establish these live outcomes.
+
+The operator proxy kubeconfig contains no bearer token. Native catalog calls
+use canonical mesh TLS but retain their short-lived Octelium authorization.
+Legacy catalog, Tunnel and credentials stay until replacement acceptance; any
+legacy CI rollback first restores the prior reviewed workflow transport.
+Rotate provider generations before 60 days, republish signed keys, verify new
+CI runs, then explicitly retire previous cached signing authorities. Preserve
+the corrected separate authority/wrapper cache contract in the
+[provider runbook](../../IaC/modules/tailscale-access/README.md).

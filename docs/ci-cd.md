@@ -13,7 +13,7 @@ This repository uses GitHub Actions for the review and rollout path:
   policies. Only trusted same-repository changes to the plan workflow,
   `IaC/**`, flake inputs, OpenTofu/Terragrunt policy inputs, or live-plan helper
   scripts enter the protected `homelab-plan` environment, connect through
-  Octelium, and run the live plan with details withheld. Other same-repository
+  Tailscale, and run the live plan with details withheld. Other same-repository
   changes use a no-permission skip-check job;
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
@@ -24,8 +24,8 @@ This repository uses GitHub Actions for the review and rollout path:
   or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
-  main-only `homelab-production` environment, then
-  verifies `main` again before referencing
+  main-only `homelab-production` environment, then verifies the exact
+  current `main` revision again before referencing
   environment credentials or running live commands. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
@@ -39,8 +39,8 @@ This repository uses GitHub Actions for the review and rollout path:
   production branch gates, never prunes, and proves a second apply has no
   live diff.
 
-Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
-run the static checks and Conftest only.
+Forked pull requests never receive AWS, Tailscale, Octelium, or Kubernetes access.
+They run the static checks and Conftest only.
 
 ## Monitoring
 
@@ -93,17 +93,20 @@ checks remain fresh.
   can write to pull requests or another public GitHub surface.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
-- Octelium access uses an access-token credential for workload User `homelab-ci`
-  and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
-  Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
-  existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
-  This avoids the IPv6-only Gateway QUIC path, while the
-  `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
-  The dedicated User gives both its clientless session and access token a
-  30-day lifetime; rotate the credential every 21 days.
-  Trusted pull requests only open this live access path when the diff includes
-  the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
-  inputs.
+- Tailscale access keeps Tailnet Lock enabled and uses separate provider-owned,
+  reusable ephemeral auth keys for plan, apply, and Cordium. A trusted signer
+  pre-signs each key before the fixed GitHub secret is published. The pinned
+  action joins with the key's tag; a private-output guard verifies its exact tag
+  and tailnet before any live command. Live plans, applies, diagnostics, and image
+  publication use the operator auth-mode API proxy at
+  `https://homelab-tailscale-operator.tail67beb.ts.net`. The runner kubeconfig
+  contains no bearer token or client key. The proxy impersonates the node tag;
+  Kubernetes RBAC and admission enforce its permissions.
+  Plan jobs verify read access, accept a server-side dry-run Application patch,
+  and require an identical real no-op patch to be denied by the named admission
+  policy. Protected applies retain cluster administration. Cordium's tag has
+  no Kubernetes binding and still needs its separate native authorization.
+  Trusted PR environment approval and exact-main production gates remain.
 - The private cluster-access catalog lane uses a different, one-authentication
   `AUTH_TOKEN` Credential. Octelium auto-deletes it when the job logs in; the
   unused Credential expires after 30 minutes, the resulting client Session
@@ -113,14 +116,13 @@ checks remain fresh.
   Octelium v0.35 cannot restrict those methods by object name, so the fixed
   extraction script, reviewed workflow hash, exact `main` SHA, and production
   approval are the object-level boundary.
-- The upstream kubeconfig for both `kubernetes-api-ci` and the private
-  `kubernetes-api.homelab` Service is stored only as the Octelium Secret
+- The retained legacy `kubernetes-api-ci` and Cordium's private
+  `kubernetes-api.homelab` Services share the Octelium Secret
   `homelab-ci-kubeconfig`, materialized with
-  `scripts/octelium-ci-kubeconfig-secret.sh`; it is never committed or injected
-  into GitHub. CI writes a token-only kubeconfig with mode `0600`, then verifies
-  the Kubernetes API with authenticated `kubectl`. Recreating the shared Secret
-  briefly affects CI, operator, and Cordium access, so validate both Services
-  after rotation.
+  `scripts/octelium-ci-kubeconfig-secret.sh`. Preserve this Secret and the old
+  catalog until replacement acceptance. Tailscale CI does not consume it.
+  Recreating it still affects Cordium; validate that native Service after any
+  reviewed credential rotation.
 - Plans are not uploaded, printed, or copied into pull requests because
   Terraform/OpenTofu plans can include sensitive state context. Trusted
   same-repository jobs evaluate private plans with Conftest and delete them on
@@ -131,6 +133,9 @@ checks remain fresh.
   rejects direct live CLI output or reading the private log after the wrapper.
   On a protected apply failure, a reviewed classifier may print one fixed
   phase label after verifying its SHA-256; raw output remains withheld.
+  The live plan classifier distinguishes kubeconfig verification, proxy identity,
+  Application reads, dry-run admission, and the real no-op write-denial probe.
+  A failed phase is a diagnostic hint; it does not establish the cause.
   Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
@@ -238,8 +243,10 @@ environment-only saved plan; the ruleset-only deployment workflow does not
 reconcile environments. Restore reviewers through HCL and a saved plan to
 roll back approval behavior, retaining the exact `main` production allowlist.
 
-Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
-operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
+Publish the scoped, pre-signed Tailscale auth keys through
+`scripts/tailscale-ci-configure.py` after applying the
+[provider-owned keys](../IaC/modules/tailscale-access/README.md).
+Entra uses separate operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
 automatically for same-repository PRs and production credentials only to
@@ -248,7 +255,9 @@ duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |
 | --- | --- | --- |
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
+| `TAILSCALE_AUTH_KEY` | both environments, distinct keys | Pre-signed reusable ephemeral plan/apply keys; each key carries only its fixed CI tag. |
+| `TAILSCALE_CORDIUM_AUTH_KEY` | repository | Pre-signed reusable ephemeral Cordium key; private ingress only, no Kubernetes grant. |
+| `OCTELIUM_CI_AUTH_TOKEN` | both, retained temporarily | Legacy rollback credential; no migrated workflow consumes it. Remove only after acceptance through reviewed retirement. |
 | `OCTELIUM_CATALOG_AUTH_TOKEN` | `homelab-production`, temporary | One-authentication token created immediately before the private Kubernetes catalog dispatch and removed immediately afterward. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
@@ -257,10 +266,9 @@ guard remain temporarily because the production policy rejects SSM parameter
 deletion; remove both only with a reviewed repository-owned state and
 secret-retirement workflow.
 
-Add these environment variables. The workflows read each non-sensitive value
-from a GitHub variable first and fall back to a secret with the same name, so
-storing them as environment secrets also works when that is how the repository
-has been configured:
+The fixed GitHub variable bindings below are published by the reviewed operator
+helpers. The AWS role supports its existing variable/secret fallback. Entra selectors
+remain environment secrets as documented in its provider runbook:
 
 | Variable | Environment | Purpose |
 | --- | --- | --- |
@@ -268,16 +276,73 @@ has been configured:
 | `AZUREAD_CLIENT_ID` | both environments, distinct per environment | Entra OIDC application selector; published from Terraform outputs as an environment secret to mask its value. |
 | `AZUREAD_TENANT_ID` | both environments | Existing Entra tenant selector, published with the client ID. |
 
+## Tailscale CI Access Setup
+
+Before merging the CI cutover, deploy the operator auth proxy, scoped RBAC,
+plan dry-run admission policy, and provider-owned tagged auth keys. Preview with
+`python3 -I scripts/tailscale-ci-configure.py`; from clean current main,
+`python3 -I scripts/tailscale-ci-configure.py --execute` signs the keys through
+the trusted local Tailnet Lock signer and publishes only the three fixed secret
+bindings. It removes the corresponding unused client-ID variables after
+publication. The previous federated identities remain dormant during migration;
+CI no longer consumes them. Complete
+normal canonical DNS/API acceptance before changing the shared native transport.
+See the [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md).
+
+Rotate before 60 days by advancing the committed provider key generation,
+applying it, and running the same preview/publish helper. Keys expire after 90
+days; the rotation margin allows protected-run acceptance before expiry. After
+new-key acceptance, preview then execute the lock-foundation publisher's
+`--retire-previous` mode to remove cached previous signing authority. Auth-key
+expiry or revocation alone does not retire that authority. Preserve the helper's
+private signing cache until this verified retirement completes. Never paste a
+key into a command, workflow input, repository file, or log. These bearer
+keys rely on GitHub environment and workflow gates, rather than an OIDC claim,
+to restrict their release. AWS, Entra, and native Octelium OIDC stay unchanged.
+
+[Tailscale's Tailnet Lock integration](https://github.com/tailscale/github-action#tailnet-lock)
+requires a pre-signed reusable ephemeral auth key and a `statedir`. Each workflow
+creates `$RUNNER_TEMP/tailscale-state` with `umask 077`, refuses an existing
+directory, and never caches or uploads it. The pinned action logs out and stops
+the daemon in its post step; it does not delete the supplied state directory.
+All nine jobs require `ubuntu-24.04` hosted runners: GitHub
+[decommissions each job's VM](https://docs.github.com/en/actions/how-tos/manage-runners/github-hosted-runners/use-github-hosted-runners)
+after completion, including root-owned daemon state that ordinary temporary
+folder cleanup may not remove. Do not move these jobs to persistent runners
+without adding explicit post-daemon state cleanup. `tags` is intentionally absent
+from the action inputs: authkey mode uses the key's tags, and the status guard
+requires exactly one expected tag.
+
+Nine workflows join the mesh: Terragrunt plan/apply, Harbor mirror and core
+image publication, NOFX publication, diagnostics, the retained private
+catalog lane, Cordium execution, and Cordium login denial.
+`install-kubeconfig.sh --tailscale` only accepts an
+ephemeral GitHub Actions runner and refuses to replace an existing kubeconfig.
+It uses the fixed TLS operator endpoint and a nonsecret `tailscale` username
+to suppress kubectl's interactive credential prompt. The proxy discards client
+authentication headers and supplies the mesh identity. No bearer token, password
+or client certificate enters this kubeconfig.
+
+Apply and Cordium CI tags can reach shared `tag:homelab-ingress` TCP443,
+including every Traefik virtual host on that endpoint. Tailscale grants do not
+inspect HTTP Host. App authentication and native Cordium policy supply the
+application checks; the plan tag is denied shared ingress. Separate proxy
+identities would be needed for host-level CI isolation. The committed boundary
+is in [the tailnet policy](../scripts/config/tailscale-policy.json) and
+[Traefik routes](../clusters/homelab/apps/traefik/routes.yaml).
+
+After merge, require a protected plan including its real write-denial check,
+an exact-main apply, diagnostics verifying the apply tag, both image publishers,
+and Cordium execution/denial/cleanup. Logs remain private and successful checks
+are the public result. Retain the old catalog and credentials through acceptance.
+
 ## Octelium CI Access Setup
 
-The normal plan and apply path must keep using `OCTELIUM_CI_AUTH_TOKEN` and the
-clientless `kubernetes-api-ci` Service. Do not add kubeconfig material to the
-normal plan or apply jobs.
-
-GitHub-hosted runners have no independent route to the private Kubernetes API.
-The targeted `Terragrunt Apply` dispatch also installs its kubeconfig through
-Octelium, so it cannot repair an Octelium outage and does not consume a
-repository kubeconfig secret.
+This section preserves the legacy credential recovery procedure for reviewed
+rollback until final retirement. Migrated workflows do not consume
+`OCTELIUM_CI_AUTH_TOKEN` or `kubernetes-api-ci`; do not run this rotation to
+repair Tailscale identity, RBAC, or admission errors. A rollback must first
+restore the prior workflow transport through a reviewed source change.
 
 Node label and annotation resources must use distinct server-side apply field
 managers. Full apply
@@ -504,9 +569,9 @@ test "$(gh run view "$apply_run_id" --repo "$github_repo" \
 wait_for_success "$diagnostics_run_id" "$apply_run_id"
 ```
 
-Both exact-head runs must exit successfully. If either fails because the token
-is unusable, rerun the same recovery block; no second short-lived recovery
-identity is needed.
+For a reviewed legacy rollback, both exact-head runs must exit successfully.
+The current Tailscale workflows do not verify this old credential; use the mesh
+identity checks above for the migrated path.
 
 ## Private Cluster-Access Catalog Rollout
 
@@ -525,8 +590,9 @@ its deliberately expired timestamp with a 30-minute expiry. It verifies the
 complete live Credential spec, clears older Sessions, and rotates the token
 directly into the `homelab-production` secret without printing it. It binds the
 watch to the uniquely identified run it dispatched. The workflow extracts only
-those four reviewed objects, applies without `--prune`, then requires the second
-identical apply to report no changes. On success, failure, or interrupt,
+those four reviewed objects, joins Tailscale using the protected apply identity,
+and calls the native canonical API. It applies without `--prune`, then requires
+the second identical apply to report no changes. On success, failure, or interrupt,
 cleanup removes any unused Credential, clears and verifies Sessions, and deletes
 and verifies the GitHub secret. For an emergency cleanup retry, run:
 

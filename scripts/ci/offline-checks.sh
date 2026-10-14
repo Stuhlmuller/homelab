@@ -13,6 +13,7 @@ python3 -I scripts/ci/install-kubeconfig-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
+python3 -I scripts/ci/tailscale-identity-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
 python3 -I scripts/ci/multica-desktop-connect-test.py
@@ -20,6 +21,7 @@ python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
 python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-ci-acceptance-test.py
+python3 -I scripts/ci/cordium-ci-transport-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/octelium-service-retire-test.py
 python3 -I scripts/ci/cordium-ci-reconcile-test.py

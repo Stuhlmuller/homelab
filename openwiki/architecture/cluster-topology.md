@@ -3,25 +3,35 @@ type: architecture
 title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-11T00:37:53.413Z
 sources:
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
+    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
+  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
+    resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-f585f8850806deb1619ec0c5
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-11T00:37:53.413Z" }
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
+generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-14T03:16:04.839Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -163,6 +173,13 @@ Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
 
+The declared Linux Nix cache builder is a disposable executor restricted to
+amd64 `zimaboard-0` and `zimaboard-1`. Its memory request and limit are both
+`1Gi`; it excludes the control plane and smaller worker. It has no application
+ingress, Kubernetes token or persistent volume. Registration/build acceptance
+remains pending; verify scheduling and memory headroom before its first full
+build. See the [builder contract](../../clusters/homelab/apps/nix-builder/README.md).
+
 ### Octelium dataplane capacity
 
 Terragrunt assigns the Octelium dataplane label only to `zimaboard-0`.
@@ -290,7 +307,7 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 - Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
   through Traefik; canonical custom hostnames move during staged DNS cutover
 - Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
-  CI switches separately after mesh DNS and identity acceptance
+  phase 2b CI uses a tokenless kubeconfig after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -308,9 +325,13 @@ not retain stale SANs or append duplicates.
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
 resources and subresources stay denied. Tailscale provides remote Talos/LAN
-access and the declared application ingress. Old CI and operator transports
-remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
-Octelium does not provide a Talos-native Service mode.
+access and the declared application ingress. Phase 2b workflows join through
+scoped, pre-signed ephemeral keys and verify their exact node tag and tailnet.
+Plan and apply use the operator API proxy; Cordium reaches private ingress but
+has no Kubernetes grant. Legacy native Services, credentials, and the Mac
+carrier remain until live CI/client acceptance through the
+[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Prepared source
+does not establish that acceptance. Octelium has no Talos-native Service mode.
 
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining
