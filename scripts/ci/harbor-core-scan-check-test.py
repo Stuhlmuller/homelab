@@ -61,8 +61,10 @@ class ScanTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "report.json"
             path.write_text(json.dumps(report))
-            with redirect_stderr(io.StringIO()):
+            error = io.StringIO()
+            with redirect_stderr(error):
                 self.assertEqual(scan.main([str(path), IMAGE, "--require-zero-matches"]), 1)
+        self.assertIn("clearance", error.getvalue())
 
     def test_protected_publication_wires_the_zero_match_gate(self):
         workflow = CORE_PUBLICATION_WORKFLOW.read_text()
