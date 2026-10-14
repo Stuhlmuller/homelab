@@ -92,7 +92,9 @@ the checkout. Runner deployment and workflow cutover remain pending.
    checks pass on its exact head. Inspect job metadata after merge to prove
    all workflows execute in Cordium; YAML selectors alone do not prove this.
    Include generated Code Quality jobs and its configuration readback, plus all
-   bootstrap workflows added by #1278, beyond the original 33-job inventory.
+   bootstrap workflows added by #1278, beyond the original 33-job inventory. The
+   current selector branch covers 36 local jobs in 19 workflows, including
+   Harbor core publication, digest reporting, and compatibility validation.
 
 Rollback through a reviewed commit restoring the prior hosted selectors and
 the workflow security hashes and gate. Wait for active jobs and verify

@@ -7,19 +7,37 @@
       "source": "cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18"
     },
     {
-      "source": "cgr.dev/chainguard/curl:latest@sha256:cdf9f4e08dbf9878a12a46d679607735bad96bc8a9dde7752df6b328d7eba0a4"
+      "source": "cgr.dev/chainguard/curl:latest@sha256:ba503058cf6ca10e91f4be85c88217cdde7dfa2d3260975083e090c2ed1033b7"
     },
     {
-      "source": "cgr.dev/chainguard/postgres:latest@sha256:b409d66dd4c3e7138a7e06ebdfe46966843e9e1a9322cb3b20a13928011ad398"
+      "source": "cgr.dev/chainguard/go:latest@sha256:9777674c18af3042ab4952fa5d8e70ebcc73f243748e4e2585c18ae69bcecd35"
     },
     {
-      "source": "cgr.dev/chainguard/python:latest@sha256:197cf542e9f4dc373864faecd4fd1a4f642622e654e9196881ca852e8fdf26bd"
+      "source": "cgr.dev/chainguard/nginx:latest@sha256:028368a7e271b3e0aed3bdc82195de6b38a2fee2bdd2a0b7ce1c4b944907098c"
+    },
+    {
+      "source": "cgr.dev/chainguard/node:latest-dev@sha256:79f532b9d82481edcaad65bb76c0cc234ff836e40ce46a1a12fed78d89977cf3"
+    },
+    {
+      "source": "cgr.dev/chainguard/node:latest@sha256:4e771308d07813bf9a1aa25299a45e5664533c47fe4c541c14498752f2dbc2dd"
+    },
+    {
+      "source": "cgr.dev/chainguard/postgres:latest@sha256:0fb984eb4d7fc358563efdea19e59dd3b2dbfdbac86cd45749e4f5603dab651a"
+    },
+    {
+      "source": "cgr.dev/chainguard/python:latest@sha256:5d7edd76101b0b8112b723072125f428dbfd291d7cc56a6418a5f619023e2542"
     },
     {
       "source": "cgr.dev/chainguard/redis:latest@sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29"
     },
     {
-      "source": "cgr.dev/chainguard/valkey:latest@sha256:f61f933bd00446d2a28ca0c7ea4dc1f5c73a323191f173c40e2e86749a1db76b"
+      "source": "cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327"
+    },
+    {
+      "source": "cgr.dev/chainguard/valkey:latest@sha256:2455445bd0d43431ccd16e3a1e30809c58f5e52ccf471d2d3f421cad13ee5f2f"
+    },
+    {
+      "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e"
     },
     {
       "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
@@ -41,9 +59,6 @@
     },
     {
       "source": "docker.io/curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777"
-    },
-    {
-      "source": "docker.io/drakkarsoftware/octobot:2.1.1@sha256:415d93a9d676817bbe52fcd2a8d47fba146f04392e8a24651e4a432abdbf4628"
     },
     {
       "source": "docker.io/envoyproxy/envoy:v1.38.0@sha256:8146b97ee61a42cd216514709e4e3198af75f014974e3d9f310aef9c901fcbdf"
@@ -241,6 +256,12 @@
       "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
     },
     {
+      "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b"
+    },
+    {
+      "source": "ghcr.io/mastodon/mastodon:v4.7.3@sha256:0bf26ebfb7d694bddd2fcf0c5769642ac29d997eb42169c540963cf0f27ee6ca"
+    },
+    {
       "source": "ghcr.io/multica-ai/multica-backend:v0.4.29@sha256:d7a11917ee768aabc2cab34e89b6897de1c45b321ca44a6c5e5e33e223276f66"
     },
     {
@@ -409,6 +430,9 @@
       "source": "quay.io/argoproj/argocd:v3.4.2@sha256:c612d570cb6d6ff29afb72932c1bfe98a1ecc234df50f8ea4873fb7066e760fc"
     },
     {
+      "source": "quay.io/argoprojlabs/argocd-image-updater:v1.3.0@sha256:cb009167015c6212ea21de55dd5734cf123d8b8e95f40ac09b1f1aa1839fad5b"
+    },
+    {
       "source": "quay.io/jetstack/cert-manager-acmesolver@sha256:d8d948a9fa0fb9eeb9fd2432dee4945cc202c840ee25a733f0b238fd89fe5cbb"
     },
     {
@@ -470,6 +494,9 @@
     },
     {
       "source": "registry.k8s.io/metrics-server/metrics-server:v0.8.1@sha256:b2d2efaf5ac3b366ed0f839d2412a2c4279d4fc2a2a733f12c52133faed36c41"
+    },
+    {
+      "source": "registry.k8s.io/networking/kube-network-policies:v1.1.2@sha256:c671f98e444825d57c590c92da1b5e66070917c4d3dff1f9279775e6b73254fe"
     },
     {
       "source": "registry.k8s.io/pause:3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"

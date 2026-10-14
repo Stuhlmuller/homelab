@@ -290,8 +290,6 @@ echo "::group::Cloudflare API response handling"
 echo "::endgroup::"
 
 echo "::group::Helm workload token contracts"
-yq -e '.controllers.octobot.pod.automountServiceAccountToken == false' \
-  clusters/homelab/apps/octobot/values.yaml >/dev/null
 yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"
@@ -796,6 +794,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-login-denial.yml:deny' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
+    '.github/workflows/harbor-core-images.yml:publish' \
+    '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -850,10 +850,11 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml cf60d3f37d16525049fc650db155e8533619194d58071f0cc393a450d4f2aa26
 .github/workflows/entra-oidc-verify.yml e940fa49f69c08e61332744d8e51f942aad63fd3ce1d257f28cd36e5367c2ce6
 .github/workflows/codeql.yml 929e9aee59a60419c07150a220007622908ca5d66645e481f82a05ca98a40b16
-.github/workflows/harbor-mirror.yml 1d0e2ca4442ab2461b2c8793d8079a3a207b1ad0ff007aa84574da1fbc04a148
+.github/workflows/harbor-core-images.yml 3885ec975c20436b201365d723d0ff89afbd7164d6a85ecf39a79a97a5d1ee06
+.github/workflows/harbor-mirror.yml 7747616fc21732214fde323a3d16f096441e8ab182e5bdda26e46cb081d03006
 .github/workflows/homelab-diagnostics.yml 7df5d687810ead79250219b19e53b9b158078a9d25b72b1dfc2ad36affad4540
 .github/workflows/lint.yml 6d0de48c44f2d04133ac5894e679defe616b606de306f070dda7b9f3fc33f0d5
-.github/workflows/nofx-images.yml 544538cf3c84698951a168ec5727c0335fbe861a9e6008999a4f772511f4c3cb
+.github/workflows/nofx-images.yml 4668b524ebfd82ecf8eab1f15c71755aab8c9a656602231c2a1ecc8848c0437e
 .github/workflows/nofx-registry-credential.yml 9589f2e8ac2db4e10a5a6100d4d648353b98f9c70dbf25a3511be2a62788bccc
 .github/workflows/litellm-provider-credential.yml eb58d0d1b6b13f3a3e317adaa10fad764757d894c5a98b1d5a6d1bfadd6d62b8
 .github/workflows/octelium-private-kubernetes-apply.yml 6e9e2b645e267584327bf7a7b48f29dc84130a2d3d6f949cb56a545e3928165d
@@ -869,6 +870,7 @@ for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-login-denial.yml:deny' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
+  '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \

@@ -230,14 +230,6 @@ unit "argocd_apps_octelium_storage" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/octelium-storage/stack.hcl").inputs
 }
 
-unit "argocd_apps_octobot" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/octobot"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/octobot/stack.hcl").inputs
-}
-
 unit "argocd_apps_openclaw" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/openclaw"

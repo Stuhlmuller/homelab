@@ -6,8 +6,22 @@ tags: ["architecture", "secrets", "identity"]
 sources:
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-c9627a5536c3972ce48bf57a
+    resource: repo://clusters/homelab/apps/harbor/bootstrap.py
+  - id: openwiki-source-64bca48d4f10b0676e24742b
+    resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-9749edd762a130f624e47007
+    resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-1635b3ffa6091ee664a713ee
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
+  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-bc26cfab2973077898d9ec21
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
@@ -28,10 +42,14 @@ sources:
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
+  - id: openwiki-source-43db0977cfa60875fd0350f6
+    resource: repo://scripts/talos-harbor-mirror-credential.py
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-12T06:35:49.067Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-14T04:07:45.942Z
 ---
 
 # Secrets And Identity
@@ -516,11 +534,6 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   callback helper after Funnel routing and negative-path preflights pass;
   require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
-- OctoBot currently has no repository-owned SSM contract. Its first-run setup,
-  exchange credentials, tentacles, and strategy state live on the finance
-  namespace PVCs and are summarized in [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and
-  [Application Notes](../workloads/application-notes.md).
-
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`
@@ -685,11 +698,47 @@ preserving the identity. No Exchange write or additional permission grant occurr
 separate project robots for pull and publication. NOFX receives only the pull
 credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
-disabled and project creation is admin-only. Public upstream copies use the
-separate public-read `mirror` project; `robot$mirror+publisher` uses its own generated
-`/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
-Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
-see [the image mirror runbook](../../docs/harbor-image-mirroring.md).
+disabled and project creation is admin-only. Public upstream copies remain in
+the public-read `mirror` project until node authentication succeeds. Its
+`robot$mirror+publisher` is scoped to writes and its separate
+`robot$mirror+pull` to authenticated publication receipts and the later Talos
+registry-auth candidate; workloads do not receive either credential. Bootstrap
+and Harbor recovery use the reviewed upstream transport rollback; see [the image
+mirror runbook](../../docs/harbor-image-mirroring.md).
+
+The reviewed Stage A saved plan created and metadata-verified the generated
+`/homelab/harbor/mirror-robot-pull-password` without reading its value. The
+Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
+to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+Secrets materializes the target Secret, that Job can reconcile the separate
+read-only robot during execution; require successful PostSync completion before
+accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
+creation alone does not create a Harbor robot, grant workload registry access,
+enable receipt reads, or change a node. Do not substitute periodic refresh: it
+would regenerate Harbor's salted bcrypt registry password hash. Shared Terraform
+dependency changes remain separately reviewed and approved. The project stays
+public until the separate reviewed Talos path has validated every node; the
+later privacy flip must prove uncached authenticated pulls continue to work.
+
+The operator materializer checks the reviewed `main` revision before and after
+reading that one SSM value, then writes the fixed reader-auth JSON outside the
+checkout in an owner-only `0700` directory with mode `0600`. An ordinary executable
+Talos mirror rollout requires that file unless the captured configuration already
+has valid `robot$mirror+pull` registry auth; otherwise it stops before it creates
+a candidate or applies a machine configuration. Rollback and `--registry-host-only`
+execution intentionally do not use reader auth. This rollout gate does not make
+the `mirror` project private.
+
+The excluded
+[private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages `harbor/harbor-pull` from the existing
+`/homelab/harbor/robot-pull-password`. Its only consumer reference is the
+ServiceAccount's kubelet image-pull list; no app-container mount, producer,
+reader grant or namespace allowlist expansion is added. The active Harbor
+Kustomization excludes this directory. Activation requires publication/scans,
+recovery clearance and ExternalSecret readiness; an `OnChange` annotation
+advance is required after a future credential rotation. The existing bootstrap
+Secret needs its own declared refresh, and upstream cold recovery remains.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

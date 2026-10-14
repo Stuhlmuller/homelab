@@ -11,6 +11,36 @@ permissions:
   contents: read
 
 jobs:
+  harbor-core-compatibility:
+    runs-on: [self-hosted, Linux, X64, cordium]
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Check pinned source trust boundary
+        run: python3 -I scripts/ci/harbor-core-source-test.py
+      - name: Check pinned Chainguard signer compatibility
+        run: bash builds/harbor-core/signer-test.sh
+      - name: Build source-level duplicate-reference repair
+        run: bash builds/harbor-core/build.sh
+      - name: Install pinned runtime audit tools
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Check runtime report trust boundaries
+        run: python3 -I scripts/ci/harbor-core-scan-check-test.py
+      - name: Audit exact built runtime privately
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash builds/harbor-core/scan.sh >"$private_log" 2>&1; then
+            echo "::error::Runtime audit failed; private output withheld."
+            exit 1
+          fi
+          grep -F 'Complete private runtime audit passed;' "$private_log"
+          grep -F 'Runtime audit receipt: ' "$private_log"
   repo:
     runs-on: [self-hosted, Linux, X64, cordium]
     steps:

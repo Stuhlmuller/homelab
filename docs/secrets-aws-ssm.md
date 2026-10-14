@@ -504,14 +504,6 @@ deliveries to `/api/github/hook` validate. The Deployment runs one replica
 after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
 
-OctoBot does not currently have a repository-owned SSM parameter contract.
-First-run setup, exchange credentials, tentacles, and strategy state are managed
-through the OctoBot UI and persist on the `finance` namespace PVCs. Do not add
-live-trading autostart configuration until a separate PR adds the
-repository-owned secret contract or documents why UI-managed state is sufficient,
-records backtest and paper-trading evidence, and confirms withdrawal access is
-disabled at the exchange.
-
 ## Harbor private registry
 
 The generated `/homelab/harbor/` contract owns administrator, encryption,
@@ -519,5 +511,22 @@ internal-service, PostgreSQL and project-robot passwords. External Secrets
 materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
 The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
 alias of the pull robot credential, into its Docker-config Secret. CI reads
-only the publisher credential during protected image publication. See the
+`/homelab/harbor/mirror-robot-push-password` only for protected public-mirror
+publication. The Stage A saved plan has created and metadata-verified
+`/homelab/harbor/mirror-robot-pull-password`; it is used for authenticated Harbor
+publication receipts and the later Talos registry-auth candidate. The Stage B
+`harbor-secrets` revision advances its `OnChange` annotation to `v3` so External
+Secrets can reconcile the new key. Parameter creation alone does not create a
+Harbor robot, grant a workload registry access, or change a node; wait for the
+Harbor PostSync bootstrap and the separately reviewed Talos path. See the
+[reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
+
+The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
+`/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
+supplies kubelet pulls only; the credential is not mounted in app containers.
+The candidate itself adds no further SSM parameter, IAM permission or rotation.
+Activation waits
+for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
+`OnChange` refresh requires a declared annotation revision after rotation.
