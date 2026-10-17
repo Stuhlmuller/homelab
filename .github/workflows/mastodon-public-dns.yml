@@ -103,6 +103,12 @@ jobs:
             {"Effect":"Allow","Action":"ssm:GetParameter","Resource":["arn:aws:ssm:us-west-2:*:parameter/homelab/cert-manager/cloudflare-api-token","arn:aws:ssm:us-west-2:*:parameter/homelab/octelium/cloudflare-tunnel-id"]},
             {"Effect":"Allow","Action":"kms:Decrypt","Resource":"*","Condition":{"StringEquals":{"kms:ViaService":"ssm.us-west-2.amazonaws.com"},"StringLike":{"kms:EncryptionContext:PARAMETER_ARN":["arn:aws:ssm:us-west-2:*:parameter/homelab/cert-manager/cloudflare-api-token","arn:aws:ssm:us-west-2:*:parameter/homelab/octelium/cloudflare-tunnel-id"]}}}]}
 
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Readiness Kubeconfig
         env:
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
@@ -124,4 +130,4 @@ jobs:
           echo "Readiness kubeconfig installed; private details withheld."
 
       - name: Publish Fixed DNS Record
-        run: python3 -I scripts/mastodon-public-dns.py
+        run: nix develop --command python3 -I scripts/mastodon-public-dns.py
