@@ -103,7 +103,7 @@ sources:
 generated: { by: "codex", at: "2026-10-17T20:27:18.310Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:27:18.310Z
+    at: 2026-10-17T20:55:18.229Z
 ---
 
 # Harbor Private OCI Registry
@@ -662,6 +662,12 @@ additions to the original seven-image scope. Earlier seven-image receipts exclud
 those additions, so expanded publication requires protected approval and complete
 authenticated Harbor-pull acceptance before a consuming change. Public sources belong
 in the catalog; application runtime references must use Harbor.
+
+The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
+`3db21366…` digests while retaining prior digest-only references for rollback.
+The `latest` and `stable` aliases move only after protected publication verifies
+complete Harbor pulls. Their consuming Renovate PRs remain held until that
+publication and pull acceptance finish.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
