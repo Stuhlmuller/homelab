@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a941515f69471370742ada35d9c8487302a3731ba3881b221e2a81c87ddfdda1",
+  "pageVersion": "sha256:98eeb762f301a6616707c61e303d87be543085a0e42ddf5d10ebe2eaed28ab07",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:a817180c4741e6a077f2a1b7e965a141fe91d85bd71bdb6856510e21f4c1b75b"
+          "version": "repo-file-v1:sha256:acb2de43f7587ac919446b22bd8ba14da1b2e40416e45da134c284331d424641"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5a0d5523bf9f4830551f4041bd5b2c3f4057476f063947ad12285878c8264d8d"
+          "version": "repo-file-v1:sha256:0315274e2fb6bbd08704de4dc12eaf45bba3513b0be4261c4f9572125768cf1a"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:a817180c4741e6a077f2a1b7e965a141fe91d85bd71bdb6856510e21f4c1b75b"
+          "version": "repo-file-v1:sha256:acb2de43f7587ac919446b22bd8ba14da1b2e40416e45da134c284331d424641"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:a817180c4741e6a077f2a1b7e965a141fe91d85bd71bdb6856510e21f4c1b75b"
+          "version": "repo-file-v1:sha256:acb2de43f7587ac919446b22bd8ba14da1b2e40416e45da134c284331d424641"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -585,6 +585,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T22:03:58.921Z"
+    "at": "2026-10-17T22:16:21.206Z"
   }
 }
