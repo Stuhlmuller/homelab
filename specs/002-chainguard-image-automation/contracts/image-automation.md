@@ -48,7 +48,7 @@ root index or its required platform children.
   artifact-provenance importer accepts a receipt-state change only from a
   successful protected receipt; a checked-in native receipt remains
   insufficient for enrollment. A later compatibility migration must write a
-  direct `harbor.stinkyboi.com/homelab/chainguard-python@sha256:...` reference;
+  `harbor.stinkyboi.com/homelab/chainguard/python@sha256:...` reference;
   `verified-stable` is not part of this native import path.
 - Git write-back uses `--git-commit-method=api`, GitHub App credentials and
   `main:codex/image-updater-proposals`. Poll every two minutes by default.

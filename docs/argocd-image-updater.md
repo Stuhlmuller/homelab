@@ -23,7 +23,7 @@ Harbor pull, and zero reported scan findings. The artifact-provenance importer
 accepts a receipt-state change only from a successful protected receipt. That
 state does not advance `verified-stable` or enroll a consumer. A later
 compatibility migration must add a direct digest-pinned
-`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<digest>` reference
+`harbor.stinkyboi.com/homelab/chainguard/python@sha256:<digest>` reference
 before updater enrollment can be reviewed.
 Native enrollment renders without a `verified-stable` alias; protected receipt
 imports do not publish that alias.
