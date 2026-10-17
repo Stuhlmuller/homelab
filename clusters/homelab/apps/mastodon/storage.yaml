@@ -1,0 +1,169 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mastodon-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mastodon-postgres-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: '-2'
+  labels:
+    app.kubernetes.io/name: mastodon-postgres
+    app.kubernetes.io/part-of: mastodon
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 3Gi
+  claimRef:
+    name: mastodon-postgres-local
+    namespace: mastodon
+  hostPath:
+    path: /var/lib/mastodon-postgres
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-0
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: mastodon-postgres-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mastodon-postgres-local
+  namespace: mastodon
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: '-2'
+  labels:
+    app.kubernetes.io/name: mastodon-postgres
+    app.kubernetes.io/part-of: mastodon
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi
+  storageClassName: mastodon-postgres-local
+  volumeMode: Filesystem
+  volumeName: mastodon-postgres-local
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: mastodon-redis-local
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mastodon-redis-local
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: '-2'
+  labels:
+    app.kubernetes.io/name: mastodon-redis
+    app.kubernetes.io/part-of: mastodon
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  claimRef:
+    name: mastodon-redis-local
+    namespace: mastodon
+  hostPath:
+    path: /var/lib/mastodon-redis
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - zimaboard-0
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: mastodon-redis-local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mastodon-redis-local
+  namespace: mastodon
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: '-2'
+  labels:
+    app.kubernetes.io/name: mastodon-redis
+    app.kubernetes.io/part-of: mastodon
+    homelab.stuhlmuller.dev/storage-backend: talos-ephemeral-local
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: mastodon-redis-local
+  volumeMode: Filesystem
+  volumeName: mastodon-redis-local
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mastodon-media
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-media
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mastodon-backup
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-backup
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-default
+  resources:
+    requests:
+      storage: 30Gi

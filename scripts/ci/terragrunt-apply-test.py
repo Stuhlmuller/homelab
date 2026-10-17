@@ -57,6 +57,7 @@ units = {
     "IaC/live/argocd-apps": "apps",
     "IaC/live/argocd-apps/langfuse": "repair",
     "IaC/live/argocd-apps/fleet": "repair",
+    "IaC/live/argocd-apps/mastodon": "repair",
     "IaC/live/argocd-apps/traefik": "repair",
 }
 unit = units.get(cwd, cwd)
@@ -144,7 +145,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,10 +213,17 @@ class TerragruntApplyTest(unittest.TestCase):
         project = json.loads(json.dumps(PROJECT))
         app_names = APPS
         crds = CRDS
-        if target in ("fleet",):
+        if target in ("fleet", "mastodon"):
             project["spec"]["destinations"][0]["namespace"] = target
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
-            app_names = [*APPS, "traefik"]
+            if target == "fleet":
+                app_names = [*APPS, "traefik"]
+            else:
+                app_names = [*APPS, "octelium-public"]
+                project["spec"]["clusterResourceWhitelist"] += [
+                    {"group": "", "kind": "PersistentVolume"},
+                    {"group": "storage.k8s.io", "kind": "StorageClass"},
+                ]
         elif target == "traefik":
             project = json.loads(json.dumps(TRAEFIK_PROJECT))
             app_names = TRAEFIK_APPS
@@ -377,7 +385,7 @@ class TerragruntApplyTest(unittest.TestCase):
                                     for event in events), events)
 
     def test_generated_secret_apps_check_ssm_then_only_target_without_azuread(self):
-        for target in ("fleet",):
+        for target in ("fleet", "mastodon"):
             with self.subTest(target=target):
                 result, events = self.run_apply(target=target, without_azuread=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
@@ -390,8 +398,8 @@ class TerragruntApplyTest(unittest.TestCase):
                 ])
 
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
-        for target, access_app in (("fleet", "traefik"),):
-            app_names = [*APPS, access_app]
+        for target, access_app in (("fleet", "traefik"), ("mastodon", "octelium-public")):
+            app_names = [*APPS, *([access_app] if access_app else [])]
             variants = [
                 {"project": PROJECT},  # Project permits Langfuse, not this target.
                 {"apps": []},
@@ -414,13 +422,29 @@ class TerragruntApplyTest(unittest.TestCase):
                                         for event in events), events)
 
     def test_generated_secret_apps_failures_stop_later_stages(self):
-        for target in ("fleet",):
+        for target in ("fleet", "mastodon"):
             for failure in ("ssm.plan", "ssm.policy", "ssm.apply", "apps.plan", "apps.policy"):
                 with self.subTest(target=target, failure=failure):
                     result, events = self.run_apply(target=target, fail=failure)
                     self.assertNotEqual(result.returncode, 0)
                     self.assertEqual(events[-1], failure)
                     self.assertNotIn("apps.apply", events)
+
+    def test_mastodon_requires_cluster_storage_permissions_before_any_write(self):
+        for missing in ("PersistentVolume", "StorageClass"):
+            project = json.loads(json.dumps(PROJECT))
+            project["spec"]["destinations"][0]["namespace"] = "mastodon"
+            project["spec"]["clusterResourceWhitelist"] += [
+                {"group": "", "kind": "PersistentVolume"},
+                {"group": "storage.k8s.io", "kind": "StorageClass"},
+            ]
+            project["spec"]["clusterResourceWhitelist"] = [
+                resource for resource in project["spec"]["clusterResourceWhitelist"]
+                if resource["kind"] != missing
+            ]
+            result, events = self.run_apply(target="mastodon", project=project)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(events, ["generate", "preflight.project"])
 
     def test_full_apply_still_requires_changed_azuread_credentials(self):
         result, events = self.run_apply(target="", without_azuread=True)
