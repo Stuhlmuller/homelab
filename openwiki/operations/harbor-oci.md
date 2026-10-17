@@ -102,10 +102,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T22:03:58.921Z" }
+generated: { by: "codex", at: "2026-10-17T22:24:11.962Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:16:21.206Z
+    at: 2026-10-17T22:24:11.962Z
 ---
 
 # Harbor Private OCI Registry
@@ -239,6 +239,12 @@ behavior, workload registry access, or node change. Do not use periodic refresh:
 it would regenerate Harbor's salted bcrypt registry password hash. The public
 `mirror` project remains public until a separate reviewed Talos path validates
 authenticated pulls on every node before a privacy flip.
+
+The native receipt scan robot has a separate staged SSM parameter,
+`/homelab/harbor/robot-scan-password`, with an exact-ARN External Secrets reader
+grant. Its consumer remains held until a reviewed saved plan applies that
+parameter and read-only metadata verifies it. Staging this contract does not
+create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
