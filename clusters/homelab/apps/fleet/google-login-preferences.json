@@ -2,6 +2,7 @@
   "discoveryURL": "https://accounts.google.com/.well-known/openid-configuration",
   "redirectURI": "https://twocanoes.com/xcreds-redirect",
   "scopes": "profile openid email",
+  "map_username": "email",
   "shouldSetGoogleAccessTypeToOffline": true,
   "googleHostDomain": "stuhlmuller.net",
   "allowUsersClaim": "hd",

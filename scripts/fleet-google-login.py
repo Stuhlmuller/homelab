@@ -130,16 +130,19 @@ def profile(value):
     return plistlib.dumps(result), result
 
 
-def apply_profile(remove=False, host_id=None):
+def apply_profile(remove=False, host_id=None, native_login_restored=False):
     setup = module("fleet-free-setup.py")
     api = module("fleet-download-apple-csr.py")
     mdm = module("fleet-verify-apple-mdm.py")
     # Removal needs no usable OAuth credential, including after its revocation.
-    if remove:
+    if remove and host_id is None:
         rights = plistlib.loads(command(["/usr/bin/security", "authorizationdb", "read",
                                         "system.login.console"]).encode())
         if any("xcreds" in item.lower() for item in rights.get("mechanisms", [])):
             raise Failure("Restore native login with the vendor rollback command before removing settings")
+    if remove:
+        if host_id is not None and not native_login_restored:
+            raise Failure("Confirm native login on the selected Mac before remote profile removal")
         desired = [(b"", {"PayloadIdentifier": IDENTIFIER})]
     else:
         desired = [profile(read_credential())]
@@ -194,15 +197,18 @@ def main(argv=None):
     parser.add_argument("action", choices=("validate", "store", "install-profile", "remove-profile", "install-software"))
     parser.add_argument("--credential-file", type=Path)
     parser.add_argument("--package-file", type=Path)
-    parser.add_argument("--host-id", type=int, help="Explicit Fleet Mac ID for install-profile; default is this exact Mac")
+    parser.add_argument("--host-id", type=int, help="Explicit enrolled Fleet Mac ID for profile delivery or removal")
+    parser.add_argument("--native-login-restored", action="store_true", help="Attest native login was verified on the selected remote Mac before profile removal")
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args(argv)
     if (args.action == "store") != (args.credential_file is not None):
         parser.error("Only store requires --credential-file with an owner-only absolute file")
     if (args.action == "install-software") != (args.package_file is not None):
         parser.error("Only install-software requires --package-file with the pinned vendor installer")
-    if args.host_id is not None and (args.action != "install-profile" or args.host_id < 1):
-        parser.error("Only install-profile supports --host-id with a positive Fleet Mac ID")
+    if args.host_id is not None and (args.action not in ("install-profile", "remove-profile") or args.host_id < 1):
+        parser.error("Profile delivery and removal require a positive Fleet Mac ID")
+    if args.native_login_restored and (args.action != "remove-profile" or args.host_id is None):
+        parser.error("--native-login-restored applies only to remote profile removal")
     try:
         json.loads(PREFERENCES.read_text())
         if not args.execute:
@@ -217,7 +223,8 @@ def main(argv=None):
         elif args.action == "install-software":
             install_software(args.package_file)
         else:
-            apply_profile(remove=args.action == "remove-profile", host_id=args.host_id)
+            apply_profile(remove=args.action == "remove-profile", host_id=args.host_id,
+                          native_login_restored=args.native_login_restored)
         return 0
     except Exception:  # noqa: BLE001 - credential-bearing transport and parser failures must be redacted.
         print("Google login setup failed or is incomplete; private details withheld.", file=sys.stderr)

@@ -157,6 +157,16 @@ restore the login authorization database. Roll back through a reviewed operator
 path using the installed vendor command
 `/Applications/XCreds.app/Contents/Resources/xcreds_login.sh -r`, verify native
 local login, and only then remove its managed profile. Preserve users and homes.
+For a remote Mac, verify native login on that exact device after the vendor
+rollback, then run the operator from the trusted machine:
+
+```sh
+python3 -I scripts/fleet-google-login.py remove-profile \
+  --host-id <Fleet-Mac-ID> --native-login-restored --execute
+```
+
+The explicit attestation is required because the operator cannot inspect a remote
+Mac's login authorization database; Fleet still verifies platform and enrollment.
 
 Sources: [Google OIDC setup](https://twocanoes.com/knowledge-base/xcreds-setup-with-google-oidc/),
 [XCreds administration](https://twocanoes.com/knowledge-base/xcreds-admin-guide/),

@@ -48,6 +48,7 @@ class GoogleLoginTest(unittest.TestCase):
         self.assertEqual(settings["allowedUsersArray"], ["stuhlmuller.net"])
         self.assertEqual(settings["clientID"], helper.CLIENT_ID)
         self.assertEqual(settings["clientSecret"], SECRET)
+        self.assertEqual(settings["map_username"], "email")
         for key in ("CreateAdminUser", "shouldSkipFileVaultLogin", "shouldSkipFileVaultLoginAdmin", "EnableFDERekey"):
             self.assertIs(settings[key], False)
         self.assertIs(settings["shouldPromptForMigration"], True)
@@ -150,6 +151,20 @@ class GoogleLoginTest(unittest.TestCase):
         setup.apply_profiles.assert_not_called()
         logout_path = "/api/v1/fleet/logout"
         api.request.assert_called_with("POST", logout_path, token="test-session")
+
+    def test_remote_removal_requires_native_login_attestation_and_enrollment(self):
+        with self.assertRaises(helper.Failure):
+            helper.apply_profile(remove=True, host_id=7)
+        setup, api, mdm = Mock(), Mock(), Mock()
+        api.request.return_value = {"token": "test-session"}
+        setup.mac_host.return_value = "host-uuid"
+        with patch.object(helper, "module", side_effect=[setup, api, mdm]), patch.object(helper, "command") as command:
+            helper.apply_profile(remove=True, host_id=7, native_login_restored=True)
+        command.assert_not_called()
+        setup.mac_host.assert_called_once_with(api, mdm, "test-session", 7)
+        setup.apply_profiles.assert_called_once_with(api, mdm, "test-session", "host-uuid",
+                                                     [(b"", {"PayloadIdentifier": helper.IDENTIFIER})], remove=True)
+        api.request.assert_called_with("POST", "/api/v1/fleet/logout", token="test-session")
 
 
 if __name__ == "__main__":
