@@ -45,13 +45,17 @@ HELD = """import socket,sys,time
 with socket.create_connection((sys.argv[1],8080),timeout=2) as s:
  s.sendall(b'fixture\\n'); assert s.recv(128)==b'fixture\\n'
  print('READY',flush=True); revoked_at=float(sys.stdin.readline())
+ blocked_since=None
  while True:
   try:
    s.sendall(b'fixture\\n'); response=s.recv(128)
   except OSError: response=b''
   if response!=b'fixture\\n':
-   assert time.monotonic()-revoked_at<45, 'Revocation exceeded its acceptance deadline'
-   print('BLOCKED after %.1fs' % (time.monotonic()-revoked_at),flush=True); break
+   if blocked_since is None: blocked_since=time.monotonic()
+   if time.monotonic()-blocked_since>=5:
+    assert time.monotonic()-revoked_at<45, 'Revocation exceeded its acceptance deadline'
+    print('BLOCKED after %.1fs' % (time.monotonic()-revoked_at),flush=True); break
+  else: blocked_since=None
   assert time.monotonic()-revoked_at<45, 'Established connection bypassed revocation deadline'
   time.sleep(1)
 """
