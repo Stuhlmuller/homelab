@@ -558,6 +558,14 @@ Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
+The native Chainguard receipt scan robot needs
+`/homelab/harbor/robot-scan-password` before its ExternalSecret consumer can
+merge. This declaration generates the password and adds its exact ARN to the
+existing External Secrets reader policy. Apply only a reviewed saved plan
+for the shared SSM unit, then verify parameter metadata without reading its
+value. This prerequisite alone does not refresh `harbor-secrets`, create the
+Harbor robot, or start a receipt workflow.
+
 The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
 Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
 vulnerability exporter references it only for kubelet pulls; the credential is
