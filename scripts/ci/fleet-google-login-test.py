@@ -159,12 +159,14 @@ class GoogleLoginTest(unittest.TestCase):
         api.request.return_value = {"token": "test-session"}
         setup.mac_host.return_value = "host-uuid"
         with patch.object(helper, "module", side_effect=[setup, api, mdm]), patch.object(helper, "command") as command:
-            helper.apply_profile(remove=True, host_id=7, native_login_restored=True)
+            with contextlib.redirect_stdout(io.StringIO()):
+                helper.apply_profile(remove=True, host_id=7, native_login_restored=True)
         command.assert_not_called()
         setup.mac_host.assert_called_once_with(api, mdm, "test-session", 7)
         setup.apply_profiles.assert_called_once_with(api, mdm, "test-session", "host-uuid",
                                                      [(b"", {"PayloadIdentifier": helper.IDENTIFIER})], remove=True)
-        api.request.assert_called_with("POST", "/api/v1/fleet/logout", token="test-session")
+        logout_path = "/api/v1/fleet/logout"
+        api.request.assert_called_with("POST", logout_path, token="test-session")
 
 
 if __name__ == "__main__":
