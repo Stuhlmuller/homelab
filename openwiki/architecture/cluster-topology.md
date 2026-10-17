@@ -5,23 +5,35 @@ description: "Talos node roles, API endpoints, scheduling capacity, Octelium rec
 tags: ["architecture", "talos", "kubernetes"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:37:53.413Z
+    at: 2026-10-17T19:02:24.137Z
 sources:
+  - id: openwiki-source-ca326059051f964efd922366
+    resource: repo://clusters/homelab/apps/langfuse/datastores.yaml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-9910294ce1ff7215bfdf192c
+    resource: repo://clusters/homelab/apps/multica/postgres.yaml
+  - id: openwiki-source-b3aed729f2420412c9db8cec
+    resource: repo://clusters/homelab/apps/multica/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-0dd011c84b2dc53d92df4754
+    resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-f585f8850806deb1619ec0c5
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-11T00:37:53.413Z" }
+  - id: openwiki-source-f6467993984a2e9f139128f8
+    resource: repo://IaC/stacks/platform-crossplane/stack.hcl
+generated: { by: "codex", at: "2026-10-17T19:02:24.137Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -162,6 +174,26 @@ evidence of a completed production rollout.
 Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
+
+### October 17 Acer capacity preparation
+
+Acer's measured allocatable memory was 15,260.7 MiB against 14,483 MiB of
+requests. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+records seven-day Pod-specific working-set peaks and proposes reclaiming
+1,664 MiB: Crossplane core/RBAC controllers enter zero-replica standby with no
+installed consumers, while Multica backend/frontend/PostgreSQL requests become
+128/320/320 MiB and Langfuse PostgreSQL becomes 128 MiB. Limits, storage and
+placement stay unchanged. Crossplane's chart resources, CRDs and RBAC remain;
+restore both controllers before adding packages or compositions.
+
+Expected headroom is 2,441.7 MiB before a single 2 GiB workspace and 393.7 MiB
+afterward, before new controller/DaemonSet overhead. This is reviewed desired-state
+preparation, not proof of a live rollout or successful smoke. Recheck actual
+requests, application/SQL readiness and node pressure after GitOps convergence.
+Do not schedule another workspace or assume final Octelium retirement supplies
+bootstrap capacity; that retirement itself requires Cordium execution acceptance.
+Preserve all original workspace PV bindings. See the
+[standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
 
 ### Octelium dataplane capacity
 
