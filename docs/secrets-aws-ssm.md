@@ -108,6 +108,29 @@ acceptance. Expiring an auth key alone does not remove that authority. The
 [module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
 acceptance, rotation, and recovery commands.
 
+## Mastodon secret contract
+
+The undeployed Mastodon draft declares generated PostgreSQL, Redis, Rails,
+Active Record encryption, and P-256 VAPID keys under `/homelab/mastodon/`.
+`mastodon-datastores` mounts database/Redis passwords; `mastodon-runtime`
+templates mounted application configuration, the stable VAPID PEM, and the
+initial owner password. `/homelab/mastodon/admin-password` is generated for
+first bootstrap only; its file mounts only into the owner Job, not the web or
+worker containers. Later syncs never overwrite an existing account password. The
+namespace policy permits only its own SSM prefix. Keep generated encryption
+and signing keys with encrypted-state backups; do not recreate them on restore.
+
+Use `mastodon-smtp-credential.yml` with exact current `main` as `expected_sha`
+to populate the declared `/homelab/mastodon/smtp-password` SecureString from
+`MASTODON_SMTP_PASSWORD` in `homelab-production`. The workflow writes only that
+parameter, using a private temporary payload and scoped OIDC session. It
+withholds CLI errors and does not validate SMTP authentication. Never pass the
+password as a workflow input or argument. After transfer, remove the temporary
+GitHub secret and advance the committed runtime ExternalSecret/Deployment
+revisions. Verify actual email receipt before accepting the new credential.
+See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md) for provider
+settings, activation, and rollback. This preparation is not live-secret proof.
+
 ## AI gateway contract
 
 Use the `LiteLLM Provider Credential` workflow to populate or refresh the
@@ -243,6 +266,9 @@ cluster CA is intentionally rotated.
 | litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
+| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password` |
+| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
+| mastodon owner | `mastodon-runtime` | `mastodon-runtime` (Job-only file mount) | `/homelab/mastodon/admin-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
@@ -522,11 +548,12 @@ Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
-The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
-`/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
-supplies kubelet pulls only; the credential is not mounted in app containers.
-The candidate itself adds no further SSM parameter, IAM permission or rotation.
-Activation waits
-for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
-`OnChange` refresh requires a declared annotation revision after rotation.
+The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
+Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
+vulnerability exporter references it only for kubelet pulls; the credential is
+not mounted in app containers. The held
+[private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
+rotation. Native-image activation still waits for reviewed publication, scans,
+recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
+declared annotation revision after rotation.

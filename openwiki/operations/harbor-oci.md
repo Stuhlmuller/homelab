@@ -1,8 +1,8 @@
 ---
-type: operation
-title: "Harbor Private OCI Registry"
-description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
-tags: ["harbor", "oci", "packages", "gitops"]
+type: operations
+title: "Harbor OCI"
+description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
+tags: [harbor, images, registry, security]
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
@@ -40,16 +40,16 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-caccd49b346c867666da5f50
+    resource: repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
-  - id: openwiki-source-1635b3ffa6091ee664a713ee
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
-  - id: openwiki-source-4284f84c777b5f9b078e069d
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-bc26cfab2973077898d9ec21
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-6d89464fbd512a9fe7a09d90
+    resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -92,14 +92,16 @@ sources:
     resource: repo://scripts/config/harbor-chainguard-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
+  - id: openwiki-source-0a19fa5d8cf9ed1986095969
+    resource: repo://scripts/config/harbor-mastodon-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:18:51.612Z" }
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Harbor Private OCI Registry
@@ -303,7 +305,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, or `traefik`.
+`bazarr`, `mastodon`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -363,7 +365,6 @@ full-catalog incompatibility. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
-
 
 ### Identical-reference core repair candidate
 
@@ -476,14 +477,14 @@ records successful Linux audit CI at `279092e6`, with exact image/config identit
 `06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
 The available-fix gate passed; CVE clearance remains explicitly false.
 
-The [excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-renders a namespace-local Docker-config ExternalSecret and ServiceAccount pull
-reference from the already-declared `/homelab/harbor/robot-pull-password`.
-Harbor is already permitted by the store and exact reader policy. No app-container
-mount, new IAM/SSM declaration or credential rotation is added. Active Harbor
-resources exclude this directory. Move its secret and merge the pull reference
-into the existing ServiceAccount only with reviewed publication/scans, recovery
-clearance and ExternalSecret readiness; preserve cold-bootstrap/rollback access.
+The active Harbor Kustomization renders a namespace-local Docker-config
+ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.
+The vulnerability exporter references it only for kubelet pulls. The
+[excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+holds the ServiceAccount pull reference. No app-container mount, new IAM/SSM
+declaration or credential rotation is added. Merge the held pull reference
+only with reviewed publication/scans, recovery clearance and ExternalSecret
+readiness; preserve cold-bootstrap/rollback access.
 
 The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-core-images.yml)
 prepares a protected publication path for one fixed
@@ -496,6 +497,10 @@ destination verification against the enrolled public-key fingerprint.
 Failures withhold the output digest; success produces a pinned-reference artifact.
 Core signing Pods use only the pinned Harbor Cosign mirror, whose publication
 must be verified before dispatch. NOFX's two-subject behavior remains intact.
+The protected publisher additionally requires zero matches in the exact
+full-container Grype report before registry credentials are available. The
+ordinary audit retains unresolved counts for review; neither mode clears other
+Harbor components or proves a live rollout.
 Before registry credentials, the [Linux compatibility fixture](../../builds/harbor-core/signer-test.sh)
 tests the pinned public Chainguard Cosign candidate for P-256 import/public-key
 identity and signing flags. The protected publisher then replaces every core
@@ -562,6 +567,7 @@ desired references. Later source builds require a separate functional rollout.
 first verify copies and read-only pulls, then preserve that consumer's exact
 digest while changing its registry through GitOps. The later cluster-wide
 mirror rollout below extends this to third-party images.
+
 ## Rollout And Acceptance
 
 1. Validate static checks, rendered chart/manifests and Terragrunt plan. Merge
@@ -916,3 +922,15 @@ PR merges. See [compatibility, validation and rollback gates](../../docs/pgvecto
 Registry metadata verifies PostgreSQL 17.11 on both images and pgvector
 0.8.6 → 0.8.7 in build history; runtime extension and restore acceptance
 remain unverified. Catalog coverage is desired-state evidence only.
+
+## Mastodon publication boundary
+
+The fixed [Mastodon scope](../../scripts/config/harbor-mastodon-images.json)
+selects PostgreSQL, Redis, web and streaming digests from the full catalog.
+Publication verifies all-platform copies, aliases and complete authenticated
+Harbor pulls before consuming manifests merge. The dedicated PostgreSQL
+`18-bookworm` candidate preserves PostgreSQL 18 and its data directory; it does
+not change Harbor's existing database image. The
+[workload runbook](../../clusters/homelab/apps/mastodon/README.md#scan-acceptance-evidence)
+retains scan findings and source-based applicability evidence. Publication and
+scans do not prove runtime compatibility or live acceptance.

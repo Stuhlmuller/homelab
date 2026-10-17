@@ -1,31 +1,39 @@
 ---
 type: overview
 title: "Source Map"
-description: "Maps wiki topics to canonical repository guides, operational runbooks, workload READMEs, and source ownership."
-tags: ["knowledge-base", "source-map"]
+description: "Maps wiki topics to canonical guides, operational runbooks, workload READMEs and source ownership."
+tags: [knowledge-base, source-map]
 sources:
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-23ac5bc03d1cee79a72b06af
+    resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-8144ee95f00e2d4721210fcf
+    resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Source Map
@@ -60,7 +68,7 @@ desired state.
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/modules/entra-owner-mail/README.md` | [Owner-mail migration boundary](architecture/secrets-and-identity.md) |
-| `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Mac SSO recovery and acceptance](operations/validation-gates.md#entra-owner-mail-and-octelium-identity-checks) |
+| `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Retired Platform SSO boundary and historical identity evidence](architecture/secrets-and-identity.md#fleet-free-identity-boundaries) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
 | `docs/runtime-isolation.md` | [Runtime Isolation](runbooks/runtime-isolation.md) |
 | `docs/secrets-aws-ssm.md` | [AWS SSM Secret References](runbooks/secrets-aws-ssm.md) |
@@ -79,3 +87,12 @@ desired state.
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
+
+Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
+[registration](../IaC/stacks/mastodon/stack.hcl),
+[secret declarations](../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
+[protected SMTP injection](../.github/workflows/mastodon-smtp-credential.yml), and
+[public DNS publication](../.github/workflows/mastodon-public-dns.yml).
+See the [inventory](workloads/inventory.md),
+[credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
+and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
