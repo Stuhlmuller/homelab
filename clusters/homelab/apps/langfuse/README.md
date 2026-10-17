@@ -381,3 +381,11 @@ The activation PR must document rollback of any persisted caller settings,
 not just a Helm revert; retain Langfuse data and keys.
 The staging merge does not establish inference coverage or a datastore restore
 drill. Those acceptance gaps remain in the knowledge base.
+
+## Capacity reservation
+
+The October 17 [Acer capacity audit](../../../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+sets PostgreSQL's memory request to 128 MiB, above its observed seven-day peak
+working set of 63.8 MiB. Its 1 GiB limit, storage, placement and replica count stay
+unchanged. The existing `Recreate` update briefly interrupts database access;
+require SQL readiness and recovery of web/worker before accepting the rollout.

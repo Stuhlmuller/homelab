@@ -1,0 +1,64 @@
+{
+  "observed_at": "2026-10-17",
+  "window": "7d",
+  "measurement": "max_over_time(container_memory_working_set_bytes[7d]) by exact Pod/container; replacement Langfuse PostgreSQL Pods combined",
+  "request_changes": [
+    {
+      "workload": "multica-backend",
+      "before_request_mib": 512,
+      "after_request_mib": 128,
+      "seven_day_peak_working_set_mib": 30.26,
+      "observed_samples": 31771
+    },
+    {
+      "workload": "multica-frontend",
+      "before_request_mib": 512,
+      "after_request_mib": 320,
+      "seven_day_peak_working_set_mib": 245.86,
+      "observed_samples": 38610
+    },
+    {
+      "workload": "multica-postgres",
+      "before_request_mib": 512,
+      "after_request_mib": 320,
+      "seven_day_peak_working_set_mib": 230.09,
+      "observed_samples": 39975
+    },
+    {
+      "workload": "langfuse-postgres",
+      "before_request_mib": 512,
+      "after_request_mib": 128,
+      "seven_day_peak_working_set_mib": 63.77,
+      "observed_samples": 39961
+    }
+  ],
+  "crossplane": {
+    "installed_consumers": 0,
+    "installed_consumer_kinds": [
+      "Provider",
+      "Configuration",
+      "Function",
+      "Composition",
+      "CompositeResourceDefinition"
+    ],
+    "before_replicas": {
+      "core": 1,
+      "rbac_manager": 1
+    },
+    "after_replicas": {
+      "core": 0,
+      "rbac_manager": 0
+    },
+    "released_requests_mib": 512,
+    "crds_and_rbac_preserved": true
+  },
+  "acer": {
+    "allocatable_mib": 15260.6640625,
+    "before_requests_mib": 14483,
+    "released_requests_mib": 1664,
+    "expected_remaining_after_2048mib_workspace_mib": 393.6640625
+  },
+  "memory_limits_unchanged": true,
+  "storage_and_placement_unchanged": true,
+  "not_live_rollout_evidence": true
+}
