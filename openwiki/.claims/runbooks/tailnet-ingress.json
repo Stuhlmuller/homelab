@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:28834fc6e6a836939fb49d0d81119cda47bb93b7f6adfda2e39488f45b02cf3e",
+  "pageVersion": "sha256:6b920ba4ec164985d9f7c3d7108174583a47abc78baa0b298ba03de2b0260e2b",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:208ad5f58c40defdd4d9ca188bc5315ec26e0e0a915fb6a3e7ced740443efecd"
+          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
         }
       ]
     },
@@ -165,7 +165,7 @@
       "statement": "The current IPv4-only ingress publishes Service-derived A records and no AAAA despite its peer having IPv6; the DNS regression rejects using unsupported peer address families as application endpoints.",
       "evidence": [
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md#L18-L33",
+          "resource": "repo://docs/networking-tailnet-ingress.md#L27-L42",
           "version": "repo-lines-v1:sha256:e8f18f8a408f737aad7dfbfb499c0a9b032c9b47653adb33ba44bfe78be3939d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyYWI2OTRhMzE5NmQ3NmMwNWRkNWFmYmNiYzgwZTQ4YWE4ZTZiNTEyOTBjZDdlNDk0MWJiMGU5Y2EyYzE0ZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNTA1MDRmM2YwOGQ3NzE0MWIxOWQ3ZjljZTMxMGRjY2Y1NWNmYTVhNTI1NDVlM2UyNTNiYWIwODYxZmUwYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYWFiOTE2MjhiZWE5MmViNjk1Mjg4OGM3MWIyMzVjMTdkNzBkNTA0MjUwNWViOGQ4Y2NhYzQ3Mzg1MTYyNjAifQ"
         },
         {
@@ -257,7 +257,7 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
@@ -287,6 +287,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:46:52.296Z"
+    "at": "2026-10-17T20:20:01.784Z"
   }
 }

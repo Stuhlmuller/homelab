@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f8aa4fb8affd0d985f51d1f939a9db9527a799aa2295f7fdb43c6f4d2e781b9",
+  "pageVersion": "sha256:31df8a1ff07e41199752fad9eb9b9e85425fc3490032edd626b76385b228cf30",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:208ad5f58c40defdd4d9ca188bc5315ec26e0e0a915fb6a3e7ced740443efecd"
+          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -130,11 +130,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
+          "version": "repo-file-v1:sha256:38b2361e65de1d499bc379dc042e82eb72bdee9aea2a5e5cb556fe463a454e85"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
+          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
         }
       ]
     },
@@ -220,10 +220,10 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
+          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L403-L433",
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L447-L477",
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
@@ -243,7 +243,7 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:87ac1759fd8b2230e50558a5570b5f536a888fb410c8ddd1d1d9bb0a8a4e1d41"
+          "version": "repo-file-v1:sha256:ee00a2484d9dcd3a7d3be1af3da65fb3b7305e651c9bbf06e1db2406e01a4e98"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
+          "version": "repo-file-v1:sha256:38b2361e65de1d499bc379dc042e82eb72bdee9aea2a5e5cb556fe463a454e85"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -468,7 +468,7 @@
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:d2c138c97311d870d5a7df6aff32abba60d934b066aa66fbdfe22bbe43fb0d10"
+          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirror-credential.py",
@@ -476,7 +476,7 @@
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:a439cd0def8e7c9221d445badd643931e2c906d787eaa33d43f2c351e27818f4"
+          "version": "repo-file-v1:sha256:2d7487fd6f55bd03bbb63404e496993448e50b05664b25d5aed0c61078439d3e"
         }
       ]
     },
@@ -553,6 +553,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:30:45.319Z"
+    "at": "2026-10-17T21:08:50.718Z"
   }
 }

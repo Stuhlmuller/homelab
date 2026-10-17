@@ -233,9 +233,10 @@ That activation follow-up also consumes the patch, removes its scratch apply
 check, and makes `nofx-runtime-check.py` validate the active route directly.
 
 The CI helper uses the existing Octelium Kubernetes CI lane to port-forward
-Istio HTTPS on the ephemeral runner. A temporary `/etc/hosts` entry preserves
-`harbor.stinkyboi.com` certificate validation while uploads bypass the public
-Cloudflare HTTP request-size limit. Cleanup removes the forwarding process,
+`traefik/traefik-private` HTTPS on the ephemeral runner. A temporary
+`/etc/hosts` entry preserves `harbor.stinkyboi.com` certificate validation
+while uploads bypass the public Cloudflare HTTP request-size limit. Cleanup
+removes the forwarding process,
 host entry, kubeconfig, registry credentials, and private logs. Harbor, its TLS
 certificate, project/robot reconciliation, and production CI access must be
 ready before publication.
