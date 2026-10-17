@@ -11,6 +11,18 @@ permissions:
   contents: read
 
 jobs:
+  image-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+      - name: Exercise native image admission
+        run: nix develop --command python3 -I scripts/ci/image-policy-check.py
   harbor-core-compatibility:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -78,7 +90,7 @@ jobs:
 
       - name: Render Kustomize sources
         run: |
-          for overlay in clusters/homelab/platform/storage clusters/homelab/argocd/self-management clusters/homelab/apps/*; do
+          for overlay in clusters/homelab/platform/storage clusters/homelab/platform/image-policy clusters/homelab/argocd/self-management clusters/homelab/apps/*; do
             test -f "$overlay/kustomization.yaml" || continue
             echo "rendering $overlay"
             nix develop --command kubectl kustomize "$overlay" >/dev/null

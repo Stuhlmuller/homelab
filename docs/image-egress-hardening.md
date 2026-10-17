@@ -42,6 +42,17 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
+## Admission inventory
+
+The [Harbor-only image policy](../clusters/homelab/platform/image-policy/README.md)
+uses Kubernetes native admission to report public references in regular, init,
+and ephemeral containers. Its `Warn, Audit` binding has no system or namespace
+exceptions, so it observes future Pod writes rather than existing Pods. Use the
+separate static and live inventory for existing references. Promote it to `Deny`
+only after catalog publication, private node-pull acceptance, and clean
+inventories. It does not replace Istio egress controls or node-level Harbor
+routing.
+
 ## Read-only findings, 2026-10-10
 
 Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
