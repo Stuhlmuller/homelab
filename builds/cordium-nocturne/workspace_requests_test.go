@@ -16,6 +16,9 @@ func TestHomelabWorkspaceReservesItsLimits(t *testing.T) {
 			t.Fatal(err)
 		}
 		pod := (&Controller{}).newPodSpec(ws)
+		if pod.HostUsers == nil || *pod.HostUsers {
+			t.Error("workspace must use its own user namespace")
+		}
 		if len(pod.Containers) != 1 || pod.Containers[0].Name != "workspace" {
 			t.Fatalf("expected workspace container, got %v", pod.Containers)
 		}

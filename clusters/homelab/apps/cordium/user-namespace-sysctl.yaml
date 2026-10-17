@@ -26,7 +26,7 @@ spec:
       enableServiceLinks: false
       hostUsers: true
       nodeSelector:
-        kubernetes.io/hostname: zimaboard-1
+        octelium.com/node-mode-cordium: ""
       securityContext:
         seccompProfile:
           type: RuntimeDefault

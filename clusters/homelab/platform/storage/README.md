@@ -12,7 +12,7 @@ child Applications install upstream Helm charts into dedicated namespaces:
   Its upstream chart source is pinned to the exact commit resolved by release
   tag `v0.0.36`; its provisioner and helper images are digest-pinned.
   Rancher's helper Pods require `hostPath` access while creating and removing
-  volumes. The provisioner operates only on `zimaboard-1` under
+  volumes. The provisioner has explicit paths on `zimaboard-1` and staged Acer support under
   `/var/lib/cordium-workspaces`, where Cordium's rootless Podman runtime can
   enforce private ownership and mode bits that the QNAP NFS export cannot.
 
@@ -22,3 +22,9 @@ It is not replicated or backed up and must not be used for durable app data.
 The NAS-side setup is documented in `docs/storage-nfs.md`. Do not depend on
 stateful workloads until the provisioner is healthy and the PVC write, delete,
 and recreate validation in that runbook has passed.
+
+Acer topology/path support prepares the Cordium capacity plan. The Cordium role
+is not enabled on Acer by this change; existing PV node affinity stays on the
+original worker. Controller reservations, Pod user namespaces, node sysctls and
+schedulable headroom must pass before any workspace placement changes. See
+[the source fix and acceptance limits](../../../../builds/cordium-nocturne/README.md).

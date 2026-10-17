@@ -16,5 +16,5 @@ jobs:
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
           persist-credentials: false
-      - name: Reproduce pinned Pod resource reservations
-        run: bash builds/cordium-nocturne/check.sh
+      - name: Verify pinned reservations and build patched controller
+        run: bash builds/cordium-nocturne/build.sh
