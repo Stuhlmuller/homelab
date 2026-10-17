@@ -46,6 +46,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -82,6 +84,8 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-1882ca1e6f216149daf718a1
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
+  - id: openwiki-source-c9d15e45ff607987f9820f38
+    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -102,10 +106,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T22:03:58.921Z" }
+generated: { by: "codex", at: "2026-10-17T22:21:21.854Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:16:21.206Z
+    at: 2026-10-17T22:21:21.854Z
 ---
 
 # Harbor Private OCI Registry
@@ -380,6 +384,14 @@ the separate consumer upgrade. The scoped receipt does not prove full-catalog
 coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
+
+The consumer keeps chart 1.19.2 and pins all nine coupled components to 2.15.4.
+Harbor 2.15.4 includes database migration `0181`, so rollback requires a
+verified database and registry-blob backup with an isolated restore test;
+do not downgrade the schema in place. Accept the rollout only after live
+registry/API and scan checks. The bundled Distribution v2 component still has
+unresolved CVE findings. See the [runtime values](../../clusters/homelab/apps/harbor/values.yaml)
+and [upgrade runbook](../../docs/harbor-image-mirroring.md#harbor-runtime-patch-update).
 
 ### Identical-reference core repair candidate
 

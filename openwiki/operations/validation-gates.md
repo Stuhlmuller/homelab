@@ -30,6 +30,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
@@ -56,6 +58,8 @@ sources:
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-c9d15e45ff607987f9820f38
+    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -122,10 +126,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T22:03:58.921Z" }
+generated: { by: "codex", at: "2026-10-17T22:21:21.854Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:16:21.206Z
+    at: 2026-10-17T22:21:21.854Z
 ---
 
 # Validation Gates
@@ -1626,6 +1630,14 @@ reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
 selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
+
+The Harbor runtime check renders chart 1.19.2 twice, requires identical output,
+then asserts one replica of the `harbor-nginx` Deployment with no explicit
+strategy. Kubernetes' default rolling update keeps the old singleton available
+while the new Pod pulls. The checker also rejects mixed runtime component
+versions; it does not establish live registry availability. See the
+[render gate](../../scripts/ci/harbor-check.sh) and
+[catalog gate](../../scripts/ci/harbor-images-check.py).
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
