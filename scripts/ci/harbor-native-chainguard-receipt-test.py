@@ -5,8 +5,11 @@ import base64
 import copy
 import importlib.util
 import json
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -80,6 +83,19 @@ class VerificationTests(unittest.TestCase):
         with self.assertRaises(VERIFY.ReceiptError):
             VERIFY.build_plan(self.config, self.replication, broken_catalog)
 
+    def test_contract_digest_ignores_consumer_status_but_binds_import_contract(self):
+        with_status = copy.deepcopy(self.config)
+        with_status["consumers"] = [{"migration_status": "candidate"}]
+        changed_status = copy.deepcopy(with_status)
+        changed_status["consumers"][0]["migration_status"] = "migrated"
+        first = VERIFY.selected_plan(with_status, self.replication, self.catalog, "chainguard-python")
+        second = VERIFY.selected_plan(changed_status, self.replication, self.catalog, "chainguard-python")
+        self.assertEqual(first["config_digest"], second["config_digest"])
+        changed_catalog = copy.deepcopy(self.catalog)
+        changed_catalog["images"][0]["source"] = "cgr.dev/chainguard/python:latest@sha256:" + "c" * 64
+        changed = VERIFY.selected_plan(self.config, self.replication, changed_catalog, "chainguard-python")
+        self.assertNotEqual(self.plan["config_digest"], changed["config_digest"])
+
     def test_missing_platform_and_mismatched_private_index_fail(self):
         with self.assertRaises(VERIFY.ReceiptError):
             VERIFY.receipt_for(self.plan, "c" * 40, index({"linux/amd64": AMD64}),
@@ -107,7 +123,8 @@ def artifact(digest, platform, counts=None, status="Success"):
 
 class ScanReceiptTests(unittest.TestCase):
     def setUp(self):
-        self.config, _, _ = configuration(index())
+        self.config, self.replication, self.catalog = configuration(index())
+        self.plan = VERIFY.selected_plan(self.config, self.replication, self.catalog, "chainguard-python")
         self.artifacts = {AMD64: artifact(AMD64, "linux/amd64"), ARM64: artifact(ARM64, "linux/arm64")}
 
     def client(self, artifacts):
@@ -121,7 +138,7 @@ class ScanReceiptTests(unittest.TestCase):
         return FakeClient
 
     def test_only_cve_free_completed_children_produce_a_bounded_receipt(self):
-        receipt = VERIFY.scan_receipt(self.config, "chainguard-python", VERIFY.canonical_digest(self.config), VERIFY.bytes_digest(index()),
+        receipt = VERIFY.scan_receipt(self.plan, VERIFY.bytes_digest(index()),
                                       {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                       self.client(self.artifacts))
         self.assertEqual(receipt["scan_status"], {"linux/amd64": "Success", "linux/arm64": "Success"})
@@ -135,29 +152,62 @@ class ScanReceiptTests(unittest.TestCase):
                 else:
                     artifacts[ARM64] = artifact(ARM64, "linux/arm64", counts=change["counts"])
                 with self.assertRaises(VERIFY.ReceiptError):
-                    VERIFY.scan_receipt(self.config, "chainguard-python", VERIFY.canonical_digest(self.config), VERIFY.bytes_digest(index()),
+                    VERIFY.scan_receipt(self.plan, VERIFY.bytes_digest(index()),
                                         {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                         self.client(artifacts))
 
     def test_stale_configuration_or_malformed_scan_summary_is_rejected(self):
         with self.assertRaises(VERIFY.ReceiptError):
-            VERIFY.scan_receipt(self.config, "chainguard-python", "sha256:" + "f" * 64, VERIFY.bytes_digest(index()),
+            VERIFY.scan_receipt(self.plan, "sha256:" + "f" * 64,
                                 {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                 self.client(self.artifacts))
         artifacts = copy.deepcopy(self.artifacts)
         artifacts[ARM64]["scan_overview"][VERIFY.SCAN_REPORT_TYPE]["summary"] = {}
         with self.assertRaises(VERIFY.ReceiptError):
-            VERIFY.scan_receipt(self.config, "chainguard-python", VERIFY.canonical_digest(self.config), VERIFY.bytes_digest(index()),
+            VERIFY.scan_receipt(self.plan, VERIFY.bytes_digest(index()),
                                 {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                 self.client(artifacts))
 
     def test_empty_completed_scan_summary_is_cve_free(self):
         artifacts = copy.deepcopy(self.artifacts)
         artifacts[ARM64] = artifact(ARM64, "linux/arm64", counts={})
-        receipt = VERIFY.scan_receipt(self.config, "chainguard-python", VERIFY.canonical_digest(self.config), VERIFY.bytes_digest(index()),
+        receipt = VERIFY.scan_receipt(self.plan, VERIFY.bytes_digest(index()),
                                       {"linux/amd64": AMD64, "linux/arm64": ARM64}, "not-a-real-secret",
                                       self.client(artifacts))
         self.assertEqual(receipt["scan_status"]["linux/arm64"], "Success")
+
+    def test_scan_cli_accepts_contract_digests(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            config = directory / "config.json"
+            replication = directory / "replication.json"
+            catalog = directory / "catalog.json"
+            raw_index = directory / "index.json"
+            password = directory / "password"
+            output = directory / "scan.json"
+            config.write_text(json.dumps(self.config))
+            replication.write_text(json.dumps(self.replication))
+            catalog.write_text(json.dumps(self.catalog))
+            raw_index.write_bytes(index())
+            password.write_text("not-a-real-secret")
+
+            def scan(plan, destination_digest, platforms, scan_password):
+                self.assertEqual(plan, self.plan)
+                self.assertEqual(destination_digest, self.plan["source_digest"])
+                self.assertEqual(platforms, {"linux/amd64": AMD64, "linux/arm64": ARM64})
+                self.assertEqual(scan_password, "not-a-real-secret")
+                return scan_receipt(self.plan)
+
+            with mock.patch.object(VERIFY, "scan_receipt", side_effect=scan), \
+                 mock.patch.object(sys, "argv", [
+                     "harbor-native-chainguard-receipt.py", "scan",
+                     "--config", str(config), "--replication", str(replication), "--catalog", str(catalog),
+                     "--image-id", "chainguard-python", "--config-digest", self.plan["config_digest"],
+                     "--destination-digest", self.plan["source_digest"], "--index", str(raw_index),
+                     "--scan-password-file", str(password), "--output", str(output),
+                 ]):
+                VERIFY.main()
+            self.assertEqual(json.loads(output.read_text()), scan_receipt(self.plan))
 
     def test_scan_client_uses_the_exact_artifact_read_endpoint(self):
         class Response:
