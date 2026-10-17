@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:06206e950365f9fdaeedc685f8fb885fff7a444645cfc565847ecb9bf95aeb10",
+  "pageVersion": "sha256:091f71eefa529a45f98ce96fe1670ab9ac154629da524cba3e4f3824295dd8b4",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f29769c0c774e591fc9cd4915aedc3ab9466f96aefb71513093af1edf4280d49"
+          "version": "repo-file-v1:sha256:17dd1381594bafb51b963e3c8a03852b6cd645a95d669422392a3f4ebd9d9aea"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -294,11 +294,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:2f0aa776d49a8c6c04567573e0c12b1d29c9609a4773455352e723940099133a"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         }
       ]
     },
@@ -312,11 +312,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+          "version": "repo-file-v1:sha256:ec2fd0a31011e43321f1c223456b22e9ac8520315568c7a04b052e7a8be446a8"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:2f0aa776d49a8c6c04567573e0c12b1d29c9609a4773455352e723940099133a"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6a3d5d1dfa825868bd095dbcee61f8b9de131336827044529ccc4f70319e03f6"
+          "version": "repo-file-v1:sha256:6e987bd298795ab1281dcfb02e6d083d2109cc2691b75423267400f33b20a96f"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f29769c0c774e591fc9cd4915aedc3ab9466f96aefb71513093af1edf4280d49"
+          "version": "repo-file-v1:sha256:17dd1381594bafb51b963e3c8a03852b6cd645a95d669422392a3f4ebd9d9aea"
         }
       ]
     },
@@ -502,7 +502,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -546,25 +546,43 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:6856b42a3b4628c15b62df3485fa139136ff69a3d992111ba80e0f603ac35ef0"
+          "version": "repo-file-v1:sha256:b9b8964a82d5797decddf4cee185f8a8c5606e2da163b9b817233e41b60d4f0c"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
-          "version": "repo-file-v1:sha256:890e7afcaacbaecf41fb216366272ee1dad0aaca799b6c9b077ea185acb863be"
+          "version": "repo-file-v1:sha256:beeeb37a8a5c6633d318ce023b18481f5bd1ed6a9c91d341453b048c91ee2a35"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6a3d5d1dfa825868bd095dbcee61f8b9de131336827044529ccc4f70319e03f6"
+          "version": "repo-file-v1:sha256:6e987bd298795ab1281dcfb02e6d083d2109cc2691b75423267400f33b20a96f"
+        }
+      ]
+    },
+    {
+      "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
+      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA, while static policy fixtures pin its reviewed steps and status permission; its required status is activated after a successful main run.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:5675e5775a7032d71877d865a0f9bf44ccff1327bc32eab736082987de3e9295"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:b9b8964a82d5797decddf4cee185f8a8c5606e2da163b9b817233e41b60d4f0c"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:6e987bd298795ab1281dcfb02e6d083d2109cc2691b75423267400f33b20a96f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:45:23.387Z"
+    "at": "2026-10-17T18:39:37.338Z"
   }
 }

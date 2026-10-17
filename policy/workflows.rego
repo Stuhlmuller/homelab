@@ -208,7 +208,7 @@ native_receipt_provenance_job := {
 	"name": "Native Chainguard Receipt Provenance",
 	"runs-on": "ubuntu-24.04",
 	"timeout-minutes": 10,
-	"permissions": {"actions": "read", "contents": "read"},
+	"permissions": {"actions": "read", "contents": "read", "statuses": "write"},
 	"steps": [
 		{
 			"name": "Check Out Trusted Base",
@@ -232,9 +232,20 @@ umask 077
 token_file="$(mktemp)"
 trap 'rm -f "$token_file"' EXIT
 printf '%s' "$GH_TOKEN" >"$token_file"
-python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
+report_status() {
+  gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
+    -f state="$1" -f context='Native Chainguard Receipt Provenance' \
+    -f description='Protected receipt state verification' >/dev/null
+}
+report_status pending
+if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
   --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" \
-  --token-file "$token_file"
+  --token-file "$token_file"; then
+  report_status success
+else
+  report_status failure
+  exit 1
+fi
 `,
 		},
 	],

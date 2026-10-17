@@ -36,7 +36,9 @@ The receipt is protected-workflow evidence only. It does not create a digest
 tag or `verified-stable` alias, update Image Updater state, or change a
 workload. A receipt-state-only pull request is checked by
 `harbor-native-chainguard-receipt-provenance.yml`, which runs trusted base
-code and reads the proposed state as data. A changed native receipt must match
+code and reads the proposed state as data. It publishes the verified result as
+`Native Chainguard Receipt Provenance` on the PR head commit, so a required
+ruleset status can evaluate the exact proposal. A changed native receipt must match
 the exact successful protected Actions run, workflow, `main` revision and
 bounded artifact whose SHA-256 is recorded with its provenance in
 `scripts/config/image-automation-state.json`; a copied receipt alone is
@@ -168,6 +170,33 @@ retain registry blobs together with Harbor database/encryption-key backups.
    verifiable artifact. First let the provenance context run on `main` and add
    it as a required production ruleset check; do not import receipt state or
    migrate a consumer before that enforcement is live.
+
+   Select the successful dispatch whose full `headSha` equals `$reviewed_sha`,
+   then generate and verify a private candidate from its run ID:
+
+   ```sh
+   gh run list --workflow harbor-native-chainguard-receipt.yml --branch main \
+     --event workflow_dispatch --limit 20 \
+     --json databaseId,headSha,conclusion
+   run_id='<matching-successful-databaseId>'
+   (
+     umask 077
+     token_file=$(mktemp /path/to/private/harbor-receipt-token.XXXXXX)
+     trap 'rm -f "$token_file"' EXIT
+     gh auth token >"$token_file"
+     python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py import \
+       --run-id "$run_id" --expected-sha "$reviewed_sha" \
+       --token-file "$token_file" --output /path/to/private/native-state.json
+     python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-state-change \
+       --base-state scripts/config/image-automation-state.json \
+       --state /path/to/private/native-state.json --token-file "$token_file"
+   )
+   ```
+
+   If either command fails, retain the committed state and check the run ID,
+   exact main SHA, artifact availability and token access before retrying. Copy
+   only the verified candidate into `scripts/config/image-automation-state.json`
+   on a receipt-state-only branch and submit it through the protected PR path.
 
    Require a successful run, including complete authenticated Harbor downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication

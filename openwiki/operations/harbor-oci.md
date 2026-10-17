@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -88,6 +90,8 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-6044cd3de00b52da78c6cf44
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -106,10 +110,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+generated: { by: "codex", at: "2026-10-17T18:39:37.338Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:57:20.007Z
+    at: 2026-10-17T18:39:37.338Z
 ---
 
 # Harbor Private OCI Registry
@@ -739,6 +743,14 @@ exporter pilot can be considered first; Kiali requires a shell-free readiness
 rewrite. Full-catalog publication remains required before a Talos-wide strict
 no-fallback policy. A source receipt proves neither publication, workload
 migration, global Harbor-only pulls, nor live egress enforcement.
+
+The trusted `pull_request_target` provenance job reads only the committed
+receipt, verifies its private source-run evidence against GitHub, and publishes
+`Native Chainguard Receipt Provenance` as a commit status on the PR head SHA.
+Its required status must be enabled only after the workflow succeeds on `main`.
+The private receipt is imported from a successful exact-main run before the
+state-change verifier is run; the import rejects a run path outside the
+configured workflow, including a different branch suffix.
 
 ## Historical Chainguard automation design
 

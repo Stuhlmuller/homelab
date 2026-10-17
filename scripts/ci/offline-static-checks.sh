@@ -845,7 +845,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
 .github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml 57e1471f0bb3dc55573aeedf9b800f99502361c06f7823c353e7650e9c57102f
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 113771bdc0005aa08f6e61424b5c804b7615bebac7559cc926abc5d316fac328
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
@@ -938,7 +938,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     .jobs.verify.name == "Native Chainguard Receipt Provenance" and
     .jobs.verify["runs-on"] == "ubuntu-24.04" and
     .jobs.verify["timeout-minutes"] == 10 and
-    .jobs.verify.permissions == {"actions": "read", "contents": "read"} and
+    .jobs.verify.permissions == {"actions": "read", "contents": "read", "statuses": "write"} and
     .jobs.verify.environment == null and
     .jobs.verify.env == null and
     (.jobs.verify.steps | length) == 2 and
@@ -962,7 +962,11 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("printf '\''%s'\'' \"$GH_TOKEN\" >\"$token_file\"") and
       contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
       contains("--base-sha \"$BASE_SHA\" --head-sha \"$HEAD_SHA\"") and
-      contains("--token-file \"$token_file\""))
+      contains("--token-file \"$token_file\"") and
+      contains("repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}") and
+      contains("report_status pending") and
+      contains("report_status success") and
+      contains("report_status failure"))
   ' >/dev/null
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
@@ -984,7 +988,7 @@ while read -r source expected_hash; do
     exit 1
   }
 done <<'EOF'
-scripts/ci/harbor-native-chainguard-receipt-import.py 9f294680f328c9627ac3fa7b8d6f6063f2b81d643a55a540e4747e1e17719e2d
+scripts/ci/harbor-native-chainguard-receipt-import.py e36c7e23a323dccc474964077e37f1968d92b3e8aafb065428b016e474969659
 scripts/ci/harbor-native-chainguard-receipt.py 87dec41a885f95e6ab430909f314b767882cf93b748393f56d0bb7a0cb32dfc1
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6b8bcf2eeeb4953aeb18ba3b30a4cd3513ab7bb505cabab76ffd26b3c5a13615",
+  "pageVersion": "sha256:de2225b768d2a6d584e2af83362df1996651006b20cfa6d81089c277bfedcf50",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:bfb7150ee34056a9789d9f6e8fd107163ded2255e80deba005d9ae2e118462ab"
+          "version": "repo-file-v1:sha256:bb2be4417426003256cbd61120659d871a28475c5bbe01cce769c67b754ad91c"
         }
       ]
     },
@@ -146,13 +146,13 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:bfb7150ee34056a9789d9f6e8fd107163ded2255e80deba005d9ae2e118462ab"
+          "version": "repo-file-v1:sha256:bb2be4417426003256cbd61120659d871a28475c5bbe01cce769c67b754ad91c"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:45:23.387Z"
+    "at": "2026-10-17T18:39:37.338Z"
   }
 }

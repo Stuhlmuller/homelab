@@ -136,7 +136,7 @@ class ReceiptImportTests(unittest.TestCase):
                          "repository_sha": SHA, "receipts": [self.receipt]}
         self.payload = archive(self.envelope)
         self.run = {
-            "id": RUN_ID, "event": "workflow_dispatch", "path": IMPORT.WORKFLOW_PATH,
+            "id": RUN_ID, "event": "workflow_dispatch", "path": IMPORT.WORKFLOW_PATH + "@main",
             "head_branch": "main", "head_sha": SHA, "status": "completed", "conclusion": "success",
             "workflow_id": 77, "repository": {"full_name": IMPORT.REPOSITORY, "id": 88},
         }
@@ -169,6 +169,9 @@ class ReceiptImportTests(unittest.TestCase):
         cases = []
         bad_run = copy.deepcopy(self.run)
         bad_run["event"] = "push"
+        cases.append((bad_run, self.artifacts, self.payload))
+        bad_run = copy.deepcopy(self.run)
+        bad_run["path"] = IMPORT.WORKFLOW_PATH + "@other"
         cases.append((bad_run, self.artifacts, self.payload))
         bad_artifact = copy.deepcopy(self.artifacts)
         bad_artifact["artifacts"][0]["digest"] = "sha256:" + "0" * 64

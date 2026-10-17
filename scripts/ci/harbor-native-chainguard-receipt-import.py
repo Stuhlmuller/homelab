@@ -247,7 +247,8 @@ def verify_artifact(client, repository, run_id, expected_sha, plans):
     run = client.json(f"/repos/{repository}/actions/runs/{run_id}")
     repository_value = run.get("repository") if isinstance(run, dict) else None
     require(isinstance(run, dict) and run.get("id") == run_id and run.get("event") == "workflow_dispatch"
-            and run.get("path") == WORKFLOW_PATH and run.get("head_branch") == "main"
+            and run.get("path") in {WORKFLOW_PATH, WORKFLOW_PATH + "@main"}
+            and run.get("head_branch") == "main"
             and run.get("head_sha") == expected_sha and run.get("status") == "completed"
             and run.get("conclusion") == "success" and isinstance(repository_value, dict)
             and repository_value.get("full_name") == repository and type(run.get("workflow_id")) is int

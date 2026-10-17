@@ -6,6 +6,8 @@ tags: ["operations", "validation"]
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -120,10 +122,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+generated: { by: "codex", at: "2026-10-17T18:39:37.338Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:45:23.387Z
+    at: 2026-10-17T18:39:37.338Z
 ---
 
 # Validation Gates
@@ -1556,6 +1558,13 @@ Harbor index, platform, scan, and pull verification and uploads the bounded
 non-secret receipt when successful. Its result is evidence for a later reviewed
 compatibility migration, not authorization to change a consumer or enable a
 global Harbor-only pull policy.
+
+The separate trusted provenance workflow validates imported receipt state
+against the exact successful main run and publishes `Native Chainguard Receipt
+Provenance` on the PR head SHA. The required status is enabled only after that
+workflow succeeds on main; static policy tests pin its trusted steps and status
+permission. Neither a local fixture nor a copied receipt substitutes for this
+head-bound result.
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,
