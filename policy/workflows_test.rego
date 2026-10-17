@@ -68,6 +68,20 @@ test_rejects_native_receipt_provenance_with_changed_verifier_step if {
 	steps := [
 		base.jobs.verify.steps[0],
 		object.union(base.jobs.verify.steps[1], {"run": "echo \"$GH_TOKEN\""}),
+		base.jobs.verify.steps[2],
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_changed_revalidation if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		base.jobs.verify.steps[1],
+		object.union(base.jobs.verify.steps[2], {"run": "echo skip-revalidation"}),
 	]
 	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
 	violations := deny with input as workflow
@@ -92,7 +106,7 @@ test_rejects_native_receipt_provenance_with_head_checkout if {
 	)})
 	workflow := object.union(base, {"jobs": {"verify": object.union(
 		base.jobs.verify,
-		{"steps": [checkout, base.jobs.verify.steps[1]]},
+		{"steps": [checkout, base.jobs.verify.steps[1], base.jobs.verify.steps[2]]},
 	)}})
 	violations := deny with input as workflow
 	some msg in violations
