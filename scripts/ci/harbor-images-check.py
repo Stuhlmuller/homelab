@@ -14,8 +14,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
+MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
+CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
+AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
+AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
+RENOVATE = ROOT / "renovate.json"
 
 
 def normalize(image):
@@ -90,6 +95,28 @@ def declared_bazarr_images():
     return declared_images(documents + yaml_documents([app / "values.yaml"]))[0]
 
 
+def declared_mastodon_images():
+    app = ROOT / "clusters/homelab/apps/mastodon"
+    if app.exists():
+        manifests = subprocess.check_output(["kubectl", "kustomize", str(app)], text=True)
+        documents = json.loads(subprocess.check_output(
+            ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
+        return declared_images(documents)[0]
+    # Publication precedes its consuming workload; compare the fixed four tags
+    # to the full reviewed catalog until the runtime overlay lands.
+    prefixes = (
+        "ghcr.io/mastodon/mastodon:v4.7.3@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "docker.io/library/postgres:18-bookworm@",
+        "docker.io/library/redis:7.4.11-alpine@",
+    )
+    sources = {item["source"] for item in json.loads(CATALOG.read_text())["images"]
+               if item["source"].startswith(prefixes)}
+    if len(sources) != 4:
+        raise RuntimeError("Mastodon publication prerequisite lacks its four reviewed runtime images")
+    return sources
+
+
 def chart_sources():
     charts = []
     stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC/stacks").glob("*/stack.hcl"))]
@@ -118,6 +145,51 @@ def chart_sources():
     return [json.loads(item) for item in sorted({json.dumps(item, sort_keys=True) for item in charts})]
 
 
+def receipt_errors():
+    """Enrolled Harbor consumers require an immutable verified publication receipt."""
+    if not AUTOMATION.exists() or not AUTOMATION_STATE.exists():
+        return []
+    config = json.loads(AUTOMATION.read_text())
+    state = json.loads(AUTOMATION_STATE.read_text())
+    images = {item["image_id"]: item for item in config.get("images", [])}
+    receipts = state.get("receipts", {})
+    errors = []
+    for consumer in config.get("consumers", []):
+        if consumer.get("automation_status") != "enrolled":
+            continue
+        image = images.get(consumer.get("image_id"))
+        receipt = receipts.get(consumer.get("image_id"))
+        if not image or not isinstance(receipt, dict):
+            errors.append(f"Enrolled image lacks publication receipt: {consumer.get('image_id')}")
+            continue
+        if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
+            errors.append(f"Enrolled image receipt lacks intended Harbor access: {consumer['image_id']}")
+    return errors
+
+
+def ownership_errors():
+    """Image Updater targets must not also be eligible for Renovate updates."""
+    if not AUTOMATION.exists() or not RENOVATE.exists():
+        return []
+    config = json.loads(AUTOMATION.read_text())
+    renovate = json.loads(RENOVATE.read_text())
+    destinations = {
+        image["destination"].split("@", 1)[0].rsplit(":", 1)[0]
+        for image in config.get("images", [])
+        if any(consumer.get("image_id") == image.get("image_id")
+               and consumer.get("automation_status") == "enrolled"
+               for consumer in config.get("consumers", []))
+    }
+    disabled = {
+        package
+        for rule in renovate.get("packageRules", [])
+        if rule.get("enabled") is False
+        for package in rule.get("matchPackageNames", [])
+    }
+    return [f"Enrolled Harbor target remains Renovate-owned: {destination}"
+            for destination in sorted(destinations - disabled)]
+
+
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
@@ -134,10 +206,15 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
+    errors.extend(receipt_errors())
+    errors.extend(ownership_errors())
     scope_counts = {}
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
+        ("Mastodon", MASTODON_CATALOG, declared_mastodon_images()),
+        ("Chainguard", CHAINGUARD_CATALOG,
+         {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
@@ -155,7 +232,10 @@ def check():
         "overridePath": True, "skipFallback": True,
     } for registry in registries}
     patch = yaml_documents([ROOT / ".talos/patches/harbor-mirrors.yaml"])[0]
-    if patch["machine"]["registries"]["mirrors"] != expected_mirrors:
+    registry_config = patch["machine"]["registries"]
+    if "config" in registry_config:
+        errors.append("Talos Harbor mirror patch must not contain registry authentication")
+    if registry_config["mirrors"] != expected_mirrors:
         errors.append("Talos mirror endpoints must cover exactly the catalog registries with overridePath and skipFallback enabled")
     if chart_sources() != json.loads(CHARTS.read_text()):
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")

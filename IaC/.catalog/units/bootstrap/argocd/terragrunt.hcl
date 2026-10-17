@@ -70,6 +70,19 @@ inputs = {
 
   values = [
     yamlencode({
+      global = {
+        affinity = {
+          nodeAffinity = {
+            type = "hard"
+            matchExpressions = [{
+              key      = "kubernetes.io/hostname"
+              operator = "NotIn"
+              values   = ["zimaboard-2"]
+            }]
+          }
+        }
+      }
+
       configs = {
         cm = {
           url          = "https://argocd.stinkyboi.com"
@@ -108,7 +121,9 @@ inputs = {
       }
 
       controller = {
-        metrics = local.argocd_metrics
+        replicas            = 2
+        podManagementPolicy = "Parallel"
+        metrics             = local.argocd_metrics
         podAnnotations = {
           "homelab.stuhlmuller.dev/sync-timeout-revision" = "v1"
         }

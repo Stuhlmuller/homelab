@@ -1,0 +1,19 @@
+# Keep the controller paused until Harbor publication, promotion and recovery
+# readiness gates have reviewed evidence.
+crds:
+  install: true
+  keep: true
+
+replicaCount: 0
+extraArgs:
+  - --git-commit-method=api
+config:
+  logLevel: info
+  applicationsAPI: argocd
+  gitCommitUser: image-updater[bot]
+  gitCommitMail: image-updater[bot]@users.noreply.github.com
+# checkov:skip=CKV_SECRET_6: Public Image Updater write-back selector, not credential material.
+  gitWriteBackMethod: "git:secret:argocd-image-updater"
+  gitBranch: "main:codex/image-updater-proposals"
+  interval: 2m
+  updateStrategy: digest

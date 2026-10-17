@@ -7,6 +7,7 @@ ordering; controller readiness and registry acceptance still need live checks.
 
 import json
 import sys
+from pathlib import Path
 
 
 NAMESPACE = "harbor"
@@ -14,6 +15,9 @@ WORKLOADS = {"Deployment", "StatefulSet", "DaemonSet", "Job", "CronJob", "Pod"}
 PREREQUISITES = {"Secret", "ConfigMap", "PersistentVolumeClaim"}
 PHASES = {"PreSync": 0, "Sync": 1, "PostSync": 2}
 MAX_INPUT_BYTES = 4 * 1024 * 1024
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
+DEFAULT_STATE = ROOT / "scripts/config/image-automation-state.json"
 
 
 def identity(resource):
@@ -138,14 +142,62 @@ def validate(resources):
     return errors
 
 
+def _images(value):
+    if isinstance(value, dict):
+        for key in ("containers", "initContainers", "ephemeralContainers"):
+            for container in value.get(key, []):
+                image = container.get("image")
+                if isinstance(image, str):
+                    yield image
+        for child in value.values():
+            yield from _images(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from _images(child)
+
+
+def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT_STATE):
+    """Require verified publication before an enrolled Harbor image renders."""
+    if not config_path.exists() or not state_path.exists():
+        return []
+    config = json.loads(config_path.read_text())
+    state = json.loads(state_path.read_text())
+    enrolled = {
+        item["image_id"]: item for item in config.get("images", [])
+        if any(consumer.get("image_id") == item.get("image_id")
+               and consumer.get("automation_status") == "enrolled"
+               for consumer in config.get("consumers", []))
+    }
+    rendered = set(_images(resources))
+    errors = []
+    for image_id, image in enrolled.items():
+        destination = image["destination"]
+        repository = destination.split("@", 1)[0].rsplit(":", 1)[0]
+        if not any(ref.split("@", 1)[0].rsplit(":", 1)[0] == repository for ref in rendered):
+            continue
+        receipt = state.get("receipts", {}).get(image_id)
+        if not isinstance(receipt, dict) or receipt.get("destination_ref") != destination \
+                or receipt.get("consumer_access") is not True:
+            errors.append(f"Enrolled Harbor image lacks verified receipt: {image_id}")
+    return errors
+
+
 def main():
-    if len(sys.argv) != 1:
-        raise ValueError("usage: harbor-render-check.py < combined-render.json")
+    if len(sys.argv) not in (1, 3, 5) or len(sys.argv[1:]) % 2:
+        raise ValueError("usage: harbor-render-check.py [--automation-config FILE --automation-state FILE] < combined-render.json")
+    options = dict(zip(sys.argv[1::2], sys.argv[2::2]))
+    if set(options) - {"--automation-config", "--automation-state"}:
+        raise ValueError("unsupported option")
     source = sys.stdin.buffer.read(MAX_INPUT_BYTES + 1)
     if len(source) > MAX_INPUT_BYTES:
         raise ValueError("combined render exceeds the 4 MiB input limit")
     resources = json.loads(source)
     errors = validate(resources)
+    errors.extend(receipt_errors(
+        resources,
+        Path(options.get("--automation-config", DEFAULT_AUTOMATION)),
+        Path(options.get("--automation-state", DEFAULT_STATE)),
+    ))
     if errors:
         raise ValueError("; ".join(errors))
     print("Harbor rendered prerequisites: required Secrets, ConfigMaps, PVCs and sync ordering verified")

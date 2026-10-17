@@ -44,7 +44,7 @@ AFFiNE remains suspended. Both totals are below this alert threshold.
 
 This is a change in alerting policy, not proof of node-failure tolerance.
 The capacity risk remains recorded in
-`docs/knowledge-base/operations/monitoring-resource-requests.md`. Node pressure,
+`openwiki/operations/monitoring-resource-requests.md`. Node pressure,
 high actual memory use, readiness, and unschedulable-Pod alerts remain active.
 Requests and allocatable capacity are scheduling inputs, not actual RAM use
 or a guarantee that affinity-constrained Pods fit on individual nodes.

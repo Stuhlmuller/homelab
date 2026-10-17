@@ -1,0 +1,53 @@
+diff --git a/src/pkg/artifact/manager_test.go b/src/pkg/artifact/manager_test.go
+index af434d7..8ed9506 100644
+--- a/src/pkg/artifact/manager_test.go
++++ b/src/pkg/artifact/manager_test.go
+@@ -16,6 +16,7 @@ package artifact
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"testing"
+ 	"time"
+ 
+@@ -295,3 +296,40 @@ func (m *managerTestSuite) TestDeleteReference() {
+ func TestManager(t *testing.T) {
+ 	suite.Run(t, &managerTestSuite{})
+ }
++
++func (m *managerTestSuite) TestCreateIdenticalRepeatedChild() {
++	m.dao.On("Create", mock.Anything).Return(1, nil)
++	m.dao.On("CreateReference").Return(1, nil).Once()
++	m.dao.On("CreateReference").Return(0, errors.New("duplicate key violates unique_reference")).Maybe()
++	ref := &Reference{ChildID: 2, ChildDigest: "sha256:fixture", Platform: &v1.Platform{OS: "linux", Architecture: "amd64"}, Annotations: map[string]string{"fixture": "same"}}
++	duplicate := *ref
++	duplicate.Platform = &v1.Platform{OS: "linux", Architecture: "amd64"}
++	duplicate.Annotations = map[string]string{"fixture": "same"}
++	art := &Artifact{Digest: "sha256:original-index", References: []*Reference{ref, &duplicate}}
++	id, err := m.mgr.Create(nil, art)
++	m.Require().NoError(err)
++	m.Equal(int64(1), id)
++	m.Equal("sha256:original-index", art.Digest)
++	m.Len(art.References, 2)
++	m.Equal(int64(1), duplicate.ParentID)
++	m.dao.AssertNumberOfCalls(m.T(), "CreateReference", 1)
++}
++
++func (m *managerTestSuite) TestCreateConflictingRepeatedChild() {
++	cases := map[string]*Reference{
++		"digest":      {ChildID: 2, ChildDigest: "sha256:other"},
++		"platform":    {ChildID: 2, ChildDigest: "sha256:fixture", Platform: &v1.Platform{OS: "linux", Architecture: "arm64"}},
++		"urls":        {ChildID: 2, ChildDigest: "sha256:fixture", URLs: []string{"https://fixture.invalid/blob"}},
++		"annotations": {ChildID: 2, ChildDigest: "sha256:fixture", Annotations: map[string]string{"fixture": "different"}},
++	}
++	for name, ref := range cases {
++		m.Run(name, func() {
++			art := &Artifact{References: []*Reference{{ChildID: 2, ChildDigest: "sha256:fixture"}, ref}}
++			id, err := m.mgr.Create(nil, art)
++			m.Require().ErrorContains(err, "conflicting metadata")
++			m.Zero(id)
++			m.dao.AssertNotCalled(m.T(), "Create")
++			m.dao.AssertNotCalled(m.T(), "CreateReference")
++		})
++	}
++}

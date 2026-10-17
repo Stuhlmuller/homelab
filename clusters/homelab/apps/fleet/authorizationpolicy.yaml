@@ -36,6 +36,7 @@ spec:
         - source:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/traefik/sa/traefik
               - cluster.local/ns/fleet/sa/fleet-bootstrap
       to:
         - operation:

@@ -1,21 +1,21 @@
 # Third-Party Notices
 
-## Obsidian Skills
+## OpenWiki Skills
 
 The following directories contain material from
-[kepano/obsidian-skills](https://github.com/kepano/obsidian-skills), licensed
+[langchain-ai/openwiki](https://github.com/langchain-ai/openwiki), licensed
 under the MIT License:
 
-- `.agents/skills/obsidian-bases/`
-- `.agents/skills/obsidian-cli/`
-- `.agents/skills/obsidian-markdown/`
+- `.agents/skills/openwiki/` (OpenWiki 0.7.0 integration)
+- `.agents/skills/mermaid-diagrams/`
 
+`skills-lock.json` records the source revision, content hashes, and package pin.
 The upstream license notice is reproduced below.
 
 ```text
 MIT License
 
-Copyright (c) 2026 Steph Ango (@kepano)
+Copyright (c) 2026
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

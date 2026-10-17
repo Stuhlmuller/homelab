@@ -1,5 +1,25 @@
 # Independent application recovery (HOME-2)
 
+## Image automation pause and recovery controls
+
+Image updates are journaled with `auto_merge: false` and `auto_inactive: false`.
+An unresolved deployment blocks routine updates. A rollback may use only the
+same application's retained known-good deployment after a fresh `safe`
+current-data result; `unsafe` and `unknown` results pause and alert without
+restoring data. `pause-reject` is control-only and records the failed digest.
+The journal persists one recovery attempt before any ref movement, so restart
+cannot create a second revert. Resume requires reviewed resolution and a new
+healthy baseline.
+
+The offline contract can be exercised with:
+
+```sh
+python3 -I scripts/ci/image-automation.py gate \\
+  --application exporter --operation update
+python3 -I scripts/ci/image-automation.py recover \\
+  --application exporter --data-safety safe
+```
+
 This is a **staged implementation, not operational recovery proof**. Source was
 revalidated at `32dc911c8f86638ae2e2012afbe7f80c4d3f17b3` on 2026-09-29.
 No live cluster, S3 bucket, operator-managed backup, or recovery secret was
@@ -31,7 +51,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | Harbor (`apps/harbor`) | Local DB with logical backups to QNAP, NFS registry blobs | 24h / 8h | Fence pushes/GC and pair DB/blobs; restore encryption key and signing Secret separately; retain public verification key. DB dump excludes private signing key |
 | Langfuse (`apps/langfuse`) | NFS PostgreSQL/ClickHouse/Valkey; S3 raw events expire after 30d; no logical backup pipeline | 24h / 8h | Coordinate relational, ClickHouse and raw-object versions; recover application encryption/salt secrets; decide queue losses. A lifecycle-managed raw-event bucket is not a backup |
 | Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files | 24h / 8h | Paired stopped-writer dump/files, private provider credentials; no adapter scheduled |
-| OpenClaw, NOFX, OctoBot (`apps/openclaw`, `apps/nofx`, `apps/octobot`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
+| OpenClaw, NOFX (`apps/openclaw`, `apps/nofx`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
 
 <!-- markdownlint-enable MD013 -->
 | Sonarr/Radarr/Prowlarr/Deluge config, downloads and media | Some nightly config archives on same QNAP; media on QNAP `/media` | Config 24h / 8h; bulk-media loss undecided | Pair config with media DB window. Owner must identify irreplaceable uploads/media vs reproducible downloads; do not silently exclude bulk media |
@@ -41,7 +61,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 
 Paths abbreviated `apps/…` above mean `clusters/homelab/apps/…`. See
 [storage coverage](storage-nfs.md), the workload READMEs and
-[knowledge-base inventory](knowledge-base/workloads/inventory.md) for source
+[knowledge-base inventory](../openwiki/workloads/inventory.md) for source
 ownership. Automatic **capture** beyond existing Octelium/media jobs remains a
 gap. The paired adapters provide publication, not an approved writer-fencing or
 capture workflow. Do not enable them until that capture change is reviewed.
@@ -105,6 +125,10 @@ Partial uploads and failed local scratch are also retained. No automatic local
 pruning is implemented: provision capacity, monitor it, and arrange reviewed
 cleanup of disposable verification copies. The hourly runner refuses to start
 below 20 GiB free. Large datasets need a reviewed streaming/multipart design.
+Metrics use unique temporary files and atomic replacement, so an interrupted
+write cannot block later checks. The offline tests exercise the hourly runner
+for both initial applications; the runner remains a candidate until the
+activation gates below are satisfied.
 
 ## Exact proposed resources and authorization gates
 

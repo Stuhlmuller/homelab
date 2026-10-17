@@ -295,7 +295,7 @@ current flannel CNI does not enforce that policy, and Harbor is not mesh-enrolle
 compromised signing code could send the mounted key and publisher credential
 to arbitrary destinations. Treat the pinned signer as trusted code, not as an
 egress-isolated key service. Track enforcement and a denied-egress acceptance
-test in the [Harbor note](../../docs/knowledge-base/operations/harbor-oci.md#private-signing-rollout).
+test in the [Harbor note](../../openwiki/operations/harbor-oci.md#private-signing-rollout).
 Public signing configuration,
 transparency-log upload and ambient OIDC signing are explicitly disabled.
 Harbor-compatible signature attachments stay with the private images.
@@ -355,4 +355,4 @@ Rotate through a reviewed new Secret/Certificate and explicit trust-key update;
 retain old public keys and signatures. To stop new signing, revert the publishing
 change while retaining the Secret and its backup. Do not delete the key as
 rollback cleanup. Live backup and signature acceptance are tracked in the
-[Harbor knowledge-base note](../../docs/knowledge-base/operations/harbor-oci.md).
+[Harbor knowledge-base note](../../openwiki/operations/harbor-oci.md).

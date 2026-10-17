@@ -1,6 +1,6 @@
 ---
 # Temporary: use the capacity, 24-hour stability, and direct native Pod-probe
-# removal gate in docs/knowledge-base/architecture/cluster-topology.md.
+# removal gate in openwiki/architecture/cluster-topology.md.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -729,109 +729,6 @@ spec:
           livenessProbe:
             grpc:
               port: 49090
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 4
-            failureThreshold: 3
-          resources:
-            requests:
-              cpu: 10m
-              memory: 64Mi
-            limits:
-              cpu: 500m
-              memory: 256Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            privileged: false
-            readOnlyRootFilesystem: true
-      terminationGracePeriodSeconds: 30
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: emergency-octelium-octobot-public
-  namespace: octelium
-  annotations:
-    checkov.io/skip1: CKV_K8S_40=The Vigil image declares non-root UID 3454; this temporary copy preserves the validated package identity.
-    checkov.io/skip2: CKV2_K8S_6=The temporary Vigil keeps the existing Octelium Service selector and authorization model.
-  labels:
-    app: octelium
-    octelium.com/component: svc
-    octelium.com/component-type: cluster
-    octelium.com/namespace: default
-    octelium.com/svc: octobot.default
-    octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
-    homelab.rst.io/emergency-dataplane: octobot-public
-spec:
-  replicas: 1
-  revisionHistoryLimit: 2
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: octelium
-      octelium.com/component: svc
-      octelium.com/component-type: cluster
-      octelium.com/namespace: default
-      octelium.com/svc: octobot.default
-      octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
-      homelab.rst.io/emergency-dataplane: octobot-public
-  template:
-    metadata:
-      labels:
-        app: octelium
-        octelium.com/component: svc
-        octelium.com/component-type: cluster
-        octelium.com/namespace: default
-        octelium.com/svc: octobot.default
-        octelium.com/svc-uid: edf7e56a-34bd-475a-9865-e7a36525c7df
-        homelab.rst.io/emergency-dataplane: octobot-public
-    spec:
-      automountServiceAccountToken: false
-      nodeSelector:
-        kubernetes.io/hostname: acer
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 3454
-        seccompProfile:
-          type: RuntimeDefault
-        sysctls:
-          - name: net.ipv4.ip_unprivileged_port_start
-            value: "1"
-      containers:
-        - name: vigil
-          image: ghcr.io/octelium/octelium-vigil:0.35.0@sha256:a8d60479c8d7c0e1deb63c9ef33bb3bb0701b2cf589bc709a2bdef6e5a3f2390
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: OCTELIUM_SVC_UID
-              value: edf7e56a-34bd-475a-9865-e7a36525c7df
-            - name: OCTELIUM_SVC_NAME
-              value: octobot.default
-            - name: OCTELIUM_REGION_NAME
-              value: default
-            - name: OCTELIUM_REGION_UID
-              value: caa83d24-d1e2-4b97-a409-bb6446e48b76
-            - name: OCTELIUM_POD_UID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.uid
-            - name: OCTELIUM_POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-          readinessProbe:
-            grpc:
-              port: 49094
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 4
-            failureThreshold: 6
-          livenessProbe:
-            grpc:
-              port: 49094
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 4

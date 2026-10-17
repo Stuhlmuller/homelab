@@ -22,6 +22,13 @@ credential-selector publication and real CI acceptance.
 
 ## Entra `stuhlmuller.net` pilot
 
+The separate `entra-owner-mail` unit can update only the existing tenant owner's
+directory `mail`, guarded against identity changes. Its baseline and replacement
+address come from a private `-var-file`, never public stack inputs. Complete the
+Octelium immutable-identity migration first; mail updates may retain the old
+SMTP alias. Follow the [module's review and recovery contract](../modules/entra-owner-mail/README.md)
+before applying or retrying the pilot rename.
+
 `entra-stuhlmuller-domain` reads the existing Entra domain through the
 Microsoft Graph provider, reads the Microsoft-generated TXT verification record,
 and verifies it only after the DNS owner has published that record. It is
@@ -307,5 +314,5 @@ safe reconciliation or restore the broader direct-policy risk.
 `state-bucket-encryption` adopts the existing state bucket's encryption
 configuration and enables S3 Bucket Keys. It preserves the default KMS key,
 explicit backend KMS key, and SSE-C block. It never owns the bucket or objects.
-See [State encryption](../../docs/knowledge-base/operations/state-encryption.md)
+See [State encryption](../../openwiki/operations/state-encryption.md)
 for the focused plan/apply path, verification, and declarative rollback.

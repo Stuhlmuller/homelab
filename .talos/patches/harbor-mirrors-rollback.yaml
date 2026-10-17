@@ -48,3 +48,8 @@ machine:
           - https://docker.langfuse.com/v2
         overridePath: true
         skipFallback: false
+      cgr.dev:
+        endpoints:
+          - https://cgr.dev/v2
+        overridePath: true
+        skipFallback: false
