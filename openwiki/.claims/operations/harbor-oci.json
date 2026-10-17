@@ -168,7 +168,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -274,7 +274,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -531,6 +531,24 @@
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
           "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
+        }
+      ]
+    },
+    {
+      "id": "claim_59e1825af4de40d285f62283eb403c61",
+      "statement": "The staged harbor-only-images ValidatingAdmissionPolicy audits Pod image references on create and update, including init and ephemeral containers, with Warn and Audit actions; Deny promotion remains held for inventory, publication, and authenticated node-pull acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/README.md",
+          "version": "repo-file-v1:sha256:b41b4c909af5b6cc375e9db8c2ef1354692d2a3ae7cd65e41ef375e20ef5f3bf"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
+          "version": "repo-file-v1:sha256:c9ffa389cd458f804f5b3dd38db8d9120754311dc6dab226249e3d11347d5ebd"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/policy.yaml",
+          "version": "repo-file-v1:sha256:10245e8a30201657e40b7159b7673101e09baa5ff656859f7d70f0cf8877d9cc"
         }
       ]
     }

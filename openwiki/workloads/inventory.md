@@ -54,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
@@ -64,6 +66,8 @@ sources:
     resource: repo://IaC/stacks/cert-manager/stack.hcl
   - id: openwiki-source-8144ee95f00e2d4721210fcf
     resource: repo://IaC/stacks/mastodon/stack.hcl
+  - id: openwiki-source-25c085c78b1cbef8c164f9f7
+    resource: repo://IaC/stacks/platform-image-policy/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
@@ -420,6 +424,11 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
+Application. Its cluster-scoped admission policy starts with `Warn, Audit` for
+Pod image references; it declares no storage or credentials. Live audit data
+and any later `Deny` promotion require separate acceptance.
 
 ## Recovery inventory (HOME-2)
 
