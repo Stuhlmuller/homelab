@@ -100,6 +100,7 @@ native_enrollment["images"] = [{"image_id": "chainguard-python", "source": "cgr.
 native_enrollment["consumers"] = [{"consumer_id": "exporter", "application_id": "exporter", "image_id": "chainguard-python", "target": "/clusters/homelab/apps/harbor/vulnerability-exporter.yaml", "migration_status": "candidate", "automation_status": "enrolled", "owner": "argocd"}]
 native_enrollment["applications"] = [{"application_id": "exporter", "consumer_ids": ["exporter"], "preflight_recipe": "python-workload-v1", "health_recipe": "python-workload-v1", "recovery_recipe": "stateless-recovery-v1", "deadline_minutes": 30}]
 assert automation.validate(native_enrollment)
+assert "alias" not in automation.render(native_enrollment)["spec"][0]
 
 with tempfile.TemporaryDirectory() as directory:
     path = Path(directory) / "config.json"

@@ -149,7 +149,10 @@ def render(config):
     for app in sorted(config["applications"], key=lambda x: x["application_id"]):
         consumers = [next(c for c in config["consumers"] if c["consumer_id"] == cid) for cid in app["consumer_ids"]]
         if any(c["automation_status"] == "enrolled" for c in consumers):
-            entries.append({"application": app["application_id"], "images": sorted({c["image_id"] for c in consumers}), "platforms": sorted({p for i in config["images"] if i["image_id"] in {c["image_id"] for c in consumers} for p in i["required_platforms"]}), "strategy": "digest", "alias": "verified-stable", "write_back": "git:secret:github-app", "branch": "main:codex/image-updater-proposals", "poll_seconds": 120})
+            entry = {"application": app["application_id"], "images": sorted({c["image_id"] for c in consumers}), "platforms": sorted({p for i in config["images"] if i["image_id"] in {c["image_id"] for c in consumers} for p in i["required_platforms"]}), "strategy": "digest", "write_back": "git:secret:github-app", "branch": "main:codex/image-updater-proposals", "poll_seconds": 120}
+            if not any(c["image_id"].startswith("chainguard-") for c in consumers):
+                entry["alias"] = "verified-stable"
+            entries.append(entry)
     return {"apiVersion": "image-automation.homelab/v1", "kind": "ManagedImages", "spec": entries}
 
 

@@ -25,6 +25,8 @@ state does not advance `verified-stable` or enroll a consumer. A later
 compatibility migration must add a direct digest-pinned
 `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<digest>` reference
 before updater enrollment can be reviewed.
+Native enrollment renders without a `verified-stable` alias; protected receipt
+imports do not publish that alias.
 
 Renovate continues to own unrelated image and chart updates. Enrolled Harbor
 targets transfer ownership only after their `automation_status` becomes
