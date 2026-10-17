@@ -132,7 +132,7 @@ with tempfile.TemporaryDirectory() as directory:
     check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     check.CHARTS = check.ROOT / "charts.json"
     catalog = {"images": [
-        {"source": "docker.io/library/busybox@" + digest},
+        {"source": "docker.io/library/busybox:1.38@" + digest},
         {"source": "quay.io/example/operator@" + digest}]}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(catalog))
@@ -151,6 +151,35 @@ with tempfile.TemporaryDirectory() as directory:
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    original_image = documents[0]["initContainers"][0]["image"]
+    documents[0]["initContainers"][0]["image"] = "busybox:1.38"
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@" + digest)
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38")
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Digestless Harbor mirror tag passed")
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/unreviewed:1@" + digest)
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Internal image with unreviewed source repository passed")
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/homelab/private-tool:latest")
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = original_image
     check.MASTODON_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
     try:
         check.check()
