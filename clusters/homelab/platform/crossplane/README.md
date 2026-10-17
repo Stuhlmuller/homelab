@@ -33,11 +33,12 @@ the stack and protected apply before adding packages or compositions.
 Together with measured application reservations, this releases 1,664 MiB; see the
 [receipt](../../../../docs/evidence/acer-cordium-capacity-2026-10-17.json).
 After GitOps convergence, verify both Deployments have zero replicas and no
-remaining active Pods, all affected applications are healthy, and Acer has at
-least 2 GiB plus measured controller/DaemonSet overhead available. Run only one
-Cordium workspace. Retain control-plane headroom and stop if pressure rises.
+remaining active Pods, all affected applications are healthy, Langfuse web is
+Ready on Acer, and `zimaboard-1` has at least 2.5 GiB unreserved before starting
+one 2 GiB Cordium workspace. Keep at least 1 GiB unreserved on Acer and stop if
+either node develops pressure. Acer capacity alone cannot schedule a Workspace.
 
 Rollback: delete the owned smoke workspace through its verified native cleanup
-path first, restore original requests and Crossplane replicas in source, then
+path first, restore original requests, Langfuse web placement and Crossplane replicas in source, then
 use protected merge/apply. Check scheduler capacity before starting replacement
 Pods. Never move or delete existing database/workspace volumes.
