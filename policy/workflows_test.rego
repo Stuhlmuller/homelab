@@ -544,6 +544,16 @@ test_rejects_modified_native_receipt_artifact if {
 	contains(msg, "must not upload artifacts")
 }
 
+test_rejects_intervening_native_receipt_step if {
+	workflow := workflow_with_native_receipt_artifact(native_receipt_artifact_fixture)
+	job := workflow.jobs.receipt
+	steps := [job.steps[0], {"run": "echo unsafe > $RUNNER_TEMP/harbor-native-chainguard-receipt.json"}, job.steps[1]]
+	changed := object.union(workflow, {"jobs": {"receipt": object.union(job, {"steps": steps})}})
+	violations := deny with input as changed
+	some msg in violations
+	contains(msg, "must not upload artifacts")
+}
+
 test_allows_withheld_live_command_output if {
 	violations := deny with input as workflow_with_live_run(withheld_live_run)
 	count(violations) == 0

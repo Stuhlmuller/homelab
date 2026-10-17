@@ -416,8 +416,11 @@ echo 'Native private Chainguard imports passed digest, platform, scan, and authe
 native_receipt_artifact(job_name, job, step) if {
 	object.get(input, "name", "") == "Verify Native Chainguard Harbor Imports"
 	job_name == "receipt"
-	some candidate in object.get(job, "steps", [])
-	trim(object.get(candidate, "run", ""), "\n") == native_receipt_private_run
+	steps := object.get(job, "steps", [])
+	some index
+	step == steps[index]
+	index > 0
+	trim(object.get(steps[index - 1], "run", ""), "\n") == native_receipt_private_run
 	count(step) == 3
 	object.get(step, "name", "") == "Upload Native Receipt"
 	object.get(step, "uses", "") == "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6"
