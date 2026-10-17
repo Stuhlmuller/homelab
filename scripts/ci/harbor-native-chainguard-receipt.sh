@@ -62,8 +62,8 @@ cp "$(command -v kubectl)" "$scratch/kubectl"
 chmod 700 "$scratch/kubectl"
 sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
 timeout --signal=TERM --kill-after=5s 900 \
-  "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" --namespace istio-system \
-  port-forward --address 127.0.0.1 service/istio-ingressgateway 443:443 >>"$transport_log" 2>&1 &
+  "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" --namespace traefik \
+  port-forward --address 127.0.0.1 service/traefik-private 443:443 >>"$transport_log" 2>&1 &
 forward_pid=$!
 hosts_added=true
 printf '%s\n' '127.0.0.1 harbor.stinkyboi.com # homelab-harbor-ci' | sudo -n tee -a /etc/hosts >/dev/null

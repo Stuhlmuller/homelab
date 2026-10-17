@@ -122,6 +122,16 @@ def isolate_services(generated):
             service["image"] = image(component)
     for name in ("proxy", "jobservice"):
         generated["services"][name]["depends_on"]["core"] = {"condition": "service_healthy", "required": True}
+    generated["services"]["postgresql"]["healthcheck"] = {
+        "test": ["CMD-SHELL", "test \"$$(cat /proc/1/comm)\" = postgres && psql -U postgres -d registry -Atqc 'SELECT 1'"],
+        "interval": "1s",
+        "timeout": "5s",
+        "retries": 120,
+    }
+    generated["services"]["core"]["depends_on"]["postgresql"] = {
+        "condition": "service_healthy",
+        "required": True,
+    }
     for network in generated["networks"].values():
         network["internal"] = True
 

@@ -52,7 +52,7 @@ class RegistryFixtureTests(unittest.TestCase):
 
     def test_services_publish_no_ports_and_wait_for_candidate_health(self):
         generated = {"services": {}, "networks": {"harbor": {"internal": False}}}
-        for name, component in (("log", "harbor-log"), ("core", "harbor-core"),
+        for name, component in (("log", "harbor-log"), ("postgresql", "harbor-db"), ("core", "harbor-core"),
                                 ("proxy", "nginx-photon"), ("jobservice", "harbor-jobservice")):
             generated["services"][name] = {"image": "goharbor/" + component + ":v2.15.4",
                 "ports": [{"target": 8080, "published": "8080"}], "container_name": name,
@@ -62,6 +62,16 @@ class RegistryFixtureTests(unittest.TestCase):
         self.assertTrue(generated["networks"]["harbor"]["internal"])
         self.assertTrue(all("ports" not in service for service in generated["services"].values()))
         self.assertEqual(generated["services"]["core"]["image"], "homelab-harbor-core:build")
+        self.assertEqual(generated["services"]["postgresql"]["healthcheck"], {
+            "test": ["CMD-SHELL", "test \"$$(cat /proc/1/comm)\" = postgres && psql -U postgres -d registry -Atqc 'SELECT 1'"],
+            "interval": "1s",
+            "timeout": "5s",
+            "retries": 120,
+        })
+        self.assertEqual(generated["services"]["core"]["depends_on"]["postgresql"], {
+            "condition": "service_healthy",
+            "required": True,
+        })
         for name in ("proxy", "jobservice"):
             self.assertEqual(generated["services"][name]["depends_on"]["core"]["condition"], "service_healthy")
 
