@@ -12,6 +12,10 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
+    resource: repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
@@ -36,6 +40,8 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
+  - id: openwiki-source-cf9e058040b1a15ca636bb42
+    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-65bc6c080b599d8e6d572a31
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
@@ -44,10 +50,14 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+  - id: openwiki-source-6a90d887ebbab5a858408f90
+    resource: repo://scripts/fleet-free-setup.py
+  - id: openwiki-source-45a27dbbec11da74be9f5497
+    resource: repo://scripts/fleet-google-login.py
+generated: { by: "codex", at: "2026-10-17T19:12:05.022Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:46:52.296Z
+    at: 2026-10-17T19:12:05.022Z
 ---
 
 # Workload Inventory
@@ -90,9 +100,10 @@ retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-separates native Microsoft Password Platform SSO from console SAML. Company
-Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
+retains Fleet console SAML for administrators but retires Fleet-only Microsoft
+Platform SSO: Company Portal registration requires Intune MDM and licensed
+users. Fleet remains the sole Mac MDM. A repository operator delivers Mac and
+iPhone/iPad baseline profiles with host-scoped commands. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
@@ -103,7 +114,8 @@ before `mac-baseline-catalog --remove` deletes the old global entry; distinct
 identities prevent delayed catalog removals from erasing the replacement.
 The catalog action is removal-only and preserves other entries. New Macs need
 explicit installation; the baseline has no automatic assignment or drift repair.
-`mac-pilot` uses the new baseline with the existing Entra SSO profile.
+`mac-pilot` uses the host baseline and removes the retired PSSO profile only
+when called with `--remove`.
 `ios-baseline --host-id` targets only one Fleet MDM-connected `ios`/`ipados`
 host and validates its Apple device identifier before delivering the stable
 iPhone/iPad passcode profile:
@@ -117,6 +129,15 @@ The console enterprise app permits only an individually assigned, precreated
 administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security
 evidence; Fleet 4.92.2 SQL policies support macOS/Linux, not iOS.
+
+The [Google login pilot](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md)
+stages a dedicated XCreds OAuth client in an operator-only SSM SecureString.
+The repository operator delivers a profile to one enrolled Mac and maps the
+local username from Google's email claim; profile delivery and package
+verification do not prove interactive login or FileVault acceptance. Remote
+profile removal requires native login restoration on that Mac and an explicit
+operator attestation. No credential or Mac activation is established by source
+merge alone.
 
 Fleet's [WireGuard/AirVPN catalog](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 adds official app downloads for Mac and iPhone/iPad, a Mac installation-reporting

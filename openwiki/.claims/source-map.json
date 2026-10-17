@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b4e2db0f80f9f5fbde76c5048d64b3e7f9decb68df779cc63b6eba1adb0f981",
+  "pageVersion": "sha256:e158823e29a9e8175ea8e62f80c59e8744f8e32b4e6cbc9d450169ee3b5a1854",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
-      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook are the canonical sources for immutable identity migration, private mail-only operator updates and Mac SSO acceptance.",
+      "statement": "The Octelium Entra bootstrap and owner-mail module runbook remain canonical for immutable identity migration and private mail-only operator changes; the Fleet Free Entra runbook records retired Fleet-only PSSO guidance.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -55,10 +55,24 @@
           "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
+    },
+    {
+      "id": "claim_3ef79660687c415fae48e8721e8bbe0f",
+      "statement": "The Fleet Google login runbook is the canonical staged operator, pilot acceptance, and rollback path for XCreds on Fleet-managed Macs.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md",
+          "version": "repo-file-v1:sha256:e990aed4f33b785fed40d039767df60dcc1dfc0b885783201781a443dec0e7b2"
+        },
+        {
+          "resource": "repo://scripts/fleet-google-login.py",
+          "version": "repo-file-v1:sha256:10a8431899ca65f9feb84e1c61666571bb2146b2f5dadad0cd944fe1ee5fe5fa"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-17T19:12:05.022Z"
   }
 }

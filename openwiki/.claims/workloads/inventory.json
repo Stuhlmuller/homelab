@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:de6a7f137eac3fa10c840d27d25e51add1c99df2e699777b557f66965bade9a9",
+  "pageVersion": "sha256:1b41347b0da347cf6217fc4a35b03cb7c3d0efff79f4e41810859138c32f2a3b",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
+          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -127,10 +127,42 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_6f14df34a6544c658769ccad2b0f22e6",
+      "statement": "Fleet Free retains console SAML but retires Fleet-only Microsoft Platform SSO; host-scoped Mac and iPhone/iPad baseline delivery remains repository-owned.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
+        },
+        {
+          "resource": "repo://scripts/fleet-free-setup.py",
+          "version": "repo-file-v1:sha256:b2ccf43e0f97a41c95f45256559b534a489dfa1eda7586453416f024646cc399"
+        }
+      ]
+    },
+    {
+      "id": "claim_d0efafe7bf69441d9e7e3d41404e410c",
+      "statement": "The staged Fleet Google login pilot uses an operator-only OAuth SecureString and a host-scoped XCreds profile; interactive Google and FileVault acceptance remains separate, and remote profile removal requires native-login attestation.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:ae2714f02f7e3c47f894daf68fbdfaf4f03b53937aaf15875637580157d31658"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md",
+          "version": "repo-file-v1:sha256:e990aed4f33b785fed40d039767df60dcc1dfc0b885783201781a443dec0e7b2"
+        },
+        {
+          "resource": "repo://scripts/fleet-google-login.py",
+          "version": "repo-file-v1:sha256:10a8431899ca65f9feb84e1c61666571bb2146b2f5dadad0cd944fe1ee5fe5fa"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:46:52.296Z"
+    "at": "2026-10-17T19:12:05.022Z"
   }
 }
