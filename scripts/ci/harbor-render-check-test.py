@@ -211,6 +211,13 @@ class HarborRenderPrerequisites(unittest.TestCase):
         errors = CHECK.harbor_pull_secret_errors(resources)
         self.assertTrue(any("read only" in error for error in errors))
 
+    def test_harbor_pull_secret_and_exporter_reference_cannot_both_disappear(self):
+        resources = [workload(name="harbor-vulnerability-exporter", pod={
+            "containers": [{"name": "app", "image": "fixture"}]})]
+        errors = CHECK.harbor_pull_secret_errors(resources)
+        self.assertTrue(any("expected one ExternalSecret" in error for error in errors))
+        self.assertTrue(any("must reference harbor-pull" in error for error in errors))
+
     def test_harbor_pull_secret_is_never_mounted_or_injected(self):
         pod = {"containers": [{"name": "app", "image": "fixture"}],
                "imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}]}

@@ -172,11 +172,6 @@ def harbor_pull_secret_errors(resources):
     providers = [resource for resource in resources
                  if resource.get("kind") == "ExternalSecret"
                  and identity(resource) == ("ExternalSecret", NAMESPACE, HARBOR_PULL_SECRET)]
-    consumers = [resource for resource in resources
-                 if resource.get("kind") in WORKLOADS and identity(resource)[1] == NAMESPACE
-                 and {"name": HARBOR_PULL_SECRET} in pod_spec(resource).get("imagePullSecrets", [])]
-    if not providers and not consumers:
-        return []
     errors = []
     if len(providers) != 1:
         errors.append(f"expected one ExternalSecret {NAMESPACE}/{HARBOR_PULL_SECRET}")
