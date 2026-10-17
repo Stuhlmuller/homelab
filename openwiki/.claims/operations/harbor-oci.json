@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1860fcb5b2027ea5c787e57cfea2748d8f6c77351c3bce77695d619a18577578",
+  "pageVersion": "sha256:ea9d80d92dd49dd7b110958bd266dfde4186b0c63c4c387e0972579d34063730",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -354,7 +354,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:59b8c1786fdcbe5cef16b9212cd2c29a5eb98bc783ff204fea1c3a1a684f5540"
+          "version": "repo-file-v1:sha256:b3cbb5997b15412317bfbf5648f5cc70549d7818ba05d5a8fc56f9b6d41f9e3a"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:59b8c1786fdcbe5cef16b9212cd2c29a5eb98bc783ff204fea1c3a1a684f5540"
+          "version": "repo-file-v1:sha256:b3cbb5997b15412317bfbf5648f5cc70549d7818ba05d5a8fc56f9b6d41f9e3a"
         }
       ]
     },
@@ -469,10 +469,24 @@
           "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         }
       ]
+    },
+    {
+      "id": "claim_f2ba66acbd8f47958829bb4b5bb0a900",
+      "statement": "The full Harbor catalog stages the newer digest-pinned Dispatcharr and n8n sources while retaining their former digests for rollback. The consuming Renovate PRs remain held until protected publication and complete authenticated Harbor pulls verify the new destinations.",
+      "evidence": [
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:e63253c334f892c8d284933aa9d89e39564374d1da242d17c9930ae2d4f9ecd3"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:b3cbb5997b15412317bfbf5648f5cc70549d7818ba05d5a8fc56f9b6d41f9e3a"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:02:48.862Z"
+    "at": "2026-10-17T21:11:07.708Z"
   }
 }

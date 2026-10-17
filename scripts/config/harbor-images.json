@@ -244,7 +244,10 @@
       "source": "ghcr.io/dexidp/dex:v2.45.1@sha256:8499afd690c437f52301efd2b05b2455da5bd2dfc20332cd697dc9937f808462"
     },
     {
-      "source": "ghcr.io/dispatcharr/dispatcharr:latest@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f"
+      "source": "ghcr.io/dispatcharr/dispatcharr@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f"
+    },
+    {
+      "source": "ghcr.io/dispatcharr/dispatcharr:latest@sha256:b7d695c5cc98b9abd64c74a94539c1ebffc23d965021613c820c67e25dea41a3"
     },
     {
       "source": "ghcr.io/external-secrets/external-secrets:v2.0.1@sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f"
@@ -271,10 +274,13 @@
       "source": "ghcr.io/multica-ai/multica-web:v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f"
     },
     {
-      "source": "ghcr.io/n8n-io/n8n:stable@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
+      "source": "ghcr.io/n8n-io/n8n@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
     },
     {
       "source": "ghcr.io/n8n-io/n8n@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
     },
     {
       "source": "ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7"
