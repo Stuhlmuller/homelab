@@ -35,6 +35,7 @@ for parameter in \
   '/homelab/argocd-image-updater/github-app/id' \
   '/homelab/argocd-image-updater/github-app/installation-id' \
   '/homelab/argocd-image-updater/github-app/private-key' \
+  '/homelab/fleet/google-oauth' \
   '/homelab/entra/google-workspace-federation-metadata'; do
   parameter_block="$(
     awk -v target="\"${parameter}\" = {" '
