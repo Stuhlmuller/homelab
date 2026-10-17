@@ -410,8 +410,9 @@ The Harbor 2.15.4 prerequisite adds all nine coupled component digests while
 retaining the active 2.15.2 entries. Publish the full catalog with
 `image_scope=all` and require fresh authenticated pulls of the nine new digests
 before merging a Harbor 2.15.4 consumer. This catalog change does not alter
-running Pods. The singleton nginx replacement also needs a separate rollout
-path that keeps Harbor reachable for its own image pull.
+running Pods. The consuming upgrade must verify that the singleton nginx
+Deployment retains a rolling update that keeps Harbor reachable during its
+replacement image pull.
 
 ## Bootstrap and recovery
 
