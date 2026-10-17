@@ -5,16 +5,12 @@ description: "Talos node roles, API endpoints, scheduling capacity, Octelium rec
 tags: ["architecture", "talos", "kubernetes"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:02:24.137Z
+    at: 2026-10-17T22:13:58.169Z
 sources:
-  - id: openwiki-source-ca326059051f964efd922366
-    resource: repo://clusters/homelab/apps/langfuse/datastores.yaml
+  - id: openwiki-source-3ee445a5390585cab7a1edab
+    resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
-  - id: openwiki-source-9910294ce1ff7215bfdf192c
-    resource: repo://clusters/homelab/apps/multica/postgres.yaml
-  - id: openwiki-source-b3aed729f2420412c9db8cec
-    resource: repo://clusters/homelab/apps/multica/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-0dd011c84b2dc53d92df4754
@@ -31,9 +27,7 @@ sources:
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-  - id: openwiki-source-f6467993984a2e9f139128f8
-    resource: repo://IaC/stacks/platform-crossplane/stack.hcl
-generated: { by: "codex", at: "2026-10-17T19:02:24.137Z" }
+generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -175,25 +169,28 @@ Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
 
-### October 17 Acer capacity preparation
+### October 17 Cordium capacity preparation
 
 Acer's measured allocatable memory was 15,260.7 MiB against 14,483 MiB of
 requests. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 records seven-day Pod-specific working-set peaks and proposes reclaiming
-1,664 MiB: Crossplane core/RBAC controllers enter zero-replica standby with no
-installed consumers, while Multica backend/frontend/PostgreSQL requests become
-128/320/320 MiB and Langfuse PostgreSQL becomes 128 MiB. Limits, storage and
-placement stay unchanged. Crossplane's chart resources, CRDs and RBAC remain;
-restore both controllers before adding packages or compositions.
+1,664 MiB there: unused Crossplane core/RBAC controllers enter zero-replica
+standby, Multica backend/frontend/PostgreSQL requests become 128/320/320 MiB,
+and Langfuse PostgreSQL becomes 128 MiB. The stateless Langfuse web Pod moves
+from `zimaboard-1` to Acer with a 1280 MiB request against a 920.6 MiB peak.
+Its 2 GiB limit and all persistent storage stay unchanged. Acer's projected
+request headroom after the move is 1,161.7 MiB. Restore both Crossplane
+controllers before adding packages or compositions.
 
-Expected headroom is 2,441.7 MiB before a single 2 GiB workspace and 393.7 MiB
-afterward, before new controller/DaemonSet overhead. This is reviewed desired-state
-preparation, not proof of a live rollout or successful smoke. Recheck actual
-requests, application/SQL readiness and node pressure after GitOps convergence.
-Do not schedule another workspace or assume final Octelium retirement supplies
-bootstrap capacity; that retirement itself requires Cordium execution acceptance.
-Preserve all original workspace PV bindings. See the
-[standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
+`zimaboard-1` is the Cordium-eligible node. Its observed request headroom was
+710.5 MiB; removing the old 2 GiB Langfuse web reservation projects
+2,758.5 MiB before one 2 GiB Workspace and 710.5 MiB afterward. The chart's
+rolling web Deployment keeps the old Pod until the Acer replacement is Ready.
+These are desired-state projections, not live rollout proof. Before starting
+a Workspace, verify the new web Pod is Ready on Acer, the old Pod has left
+`zimaboard-1`, SQL and web behavior recover, and both nodes retain measured
+headroom without pressure. Preserve workspace PV bindings and run only one
+Workspace. See the [standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
 
 ### Octelium dataplane capacity
 
