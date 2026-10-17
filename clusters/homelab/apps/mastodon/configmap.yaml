@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mastodon-config
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-config
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+data:
+  .env.production: |
+    LOCAL_DOMAIN=mastodon.stinkyboi.com
+    WEB_DOMAIN=mastodon.stinkyboi.com
+    NODE_ENV=production
+    DB_HOST=mastodon-postgres.mastodon.svc.cluster.local
+    DB_PORT=5432
+    DB_NAME=mastodon
+    DB_USER=mastodon
+    DB_PASS={{ .postgres_password }}
+    REDIS_HOST=mastodon-redis.mastodon.svc.cluster.local
+    REDIS_PORT=6379
+    REDIS_PASSWORD={{ .redis_password }}
+    RAILS_ENV=production
+    RAILS_SERVE_STATIC_FILES=true
+    RAILS_LOG_TO_STDOUT=true
+    SECRET_KEY_BASE={{ .secret_key_base }}
+    ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY={{ .encryption_primary_key }}
+    ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY={{ .encryption_deterministic_key }}
+    ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT={{ .encryption_salt }}
+    SMTP_SERVER=smtp.gmail.com
+    SMTP_PORT=587
+    SMTP_LOGIN=rodman@stuhlmuller.net
+    SMTP_FROM_ADDRESS="Mastodon <rodman@stuhlmuller.net>"
+    SMTP_ENABLE_STARTTLS=always
+    S3_ENABLED=false
+    ES_ENABLED=false
+    WEB_CONCURRENCY=1
+    MAX_THREADS=5
+    STREAMING_API_BASE_URL=wss://mastodon.stinkyboi.com
+  streaming.env: |
+    TRUSTED_PROXY_IP=loopback,uniquelocal
+    LOCAL_DOMAIN=mastodon.stinkyboi.com
+    WEB_DOMAIN=mastodon.stinkyboi.com
+    NODE_ENV=production
+    DB_HOST=mastodon-postgres.mastodon.svc.cluster.local
+    DB_PORT=5432
+    DB_NAME=mastodon
+    DB_USER=mastodon
+    DB_PASS={{ .postgres_password }}
+    REDIS_HOST=mastodon-redis.mastodon.svc.cluster.local
+    REDIS_PORT=6379
+    REDIS_PASSWORD={{ .redis_password }}
+    PORT=4000
+    STREAMING_CLUSTER_NUM=1
