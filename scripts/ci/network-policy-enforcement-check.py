@@ -56,7 +56,7 @@ with socket.create_connection((sys.argv[1],8080),timeout=2) as s:
   time.sleep(1)
 """
 FIRST_PACKET = """import socket,sys
-for address,allowed in zip(sys.argv[1:],(True,False)):
+for address,allowed in zip(sys.argv[1:],(False,True)):
  try:
   with socket.create_connection((address,8080),timeout=2) as s:
    s.sendall(b'fixture\\n'); assert s.recv(128)==b'fixture\\n'
@@ -185,7 +185,7 @@ def main():
                         for namespace, addresses in targets.items()}
             for family in ("v4", "v6"):
                 pod("clients", "fresh-" + family, "worker",
-                    first_packet=[families["allowed"][family], families["blocked"][family]], wait=False)
+                    first_packet=[families["blocked"][family], families["allowed"][family]], wait=False)
             callbacks = ["Starting Pod clients/fresh-" + family for family in ("v4", "v6")]
             deadline = time.monotonic() + 30
             while True:
