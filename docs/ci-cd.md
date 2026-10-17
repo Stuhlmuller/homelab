@@ -28,10 +28,6 @@ This repository uses GitHub Actions for the review and rollout path:
   forks run only the static job.
   The always-present `Terragrunt Gate` succeeds only when static checks and
   every applicable live plan or skip-check job succeed.
-  The `homelab-plan` GitHub environment currently requires a human reviewer;
-  repository workflow edits cannot remove that settings gate. GitHub admin
-  access is required to remove only that environment reviewer. Retain the
-  `homelab-production` reviewer and all required status checks.
 - `Terragrunt Apply Request` runs after every change lands on `main`, cancels an
   older request check, and prints the exact current-SHA dispatch command plus
   links to active applies. It has no production environment, stored secrets,

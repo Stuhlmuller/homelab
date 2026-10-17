@@ -3,6 +3,19 @@ type: runbook
 title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T23:43:12.829Z
+sources:
+  - id: openwiki-source-9a01f0687eaa075cf78c3abc
+    resource: repo://.github/workflows/image-automation.yml
+  - id: openwiki-source-3b8a5a1dece086403bc8ab75
+    resource: repo://.github/workflows/nofx-images.yml
+  - id: openwiki-source-66763af1d94960a2aaf14e95
+    resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+generated: { by: "codex", at: "2026-10-17T23:43:12.829Z" }
 ---
 
 # CI/CD
@@ -15,26 +28,23 @@ exact-SHA apply request, and an operator dispatches the protected apply. AWS,
 Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
 while desired state stays in repository-owned files.
 
-Optional NOFX, OpenClaw, and Image automation PR runs are omitted; their
-matching `main` push and manual paths remain. Image automation journal alerts
-now require a manual `verify` or `promote` dispatch because the five-minute
-schedule was removed. Required PR checks and the weekly CodeQL schedule remain.
-
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
 Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
 
-Read-only GitHub inspection on 2026-10-06 UTC confirmed that `main` ruleset
-`14700233` already requires zero approving reviews. The `homelab-plan` and
-`homelab-production` environments separately require `rstuhlmuller` approval,
-despite the canonical runbook describing production as having no reviewer.
-Policy changes do not remove those environment gates. Reconcile the environment
-configuration and runbook through the repository workflow before treating
-Terragrunt plans or applies as unattended.
-The October 11 attempt to remove only the `homelab-plan` reviewer was denied by
-GitHub with `Must have admin rights to Repository`; its reviewer is still active.
+Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
+`14700233` still requires the seven documented checks. `homelab-plan` has no
+environment protection rules; `homelab-production` has its branch policy and
+no required reviewer. The older October 6 reviewer snapshot is superseded.
+Re-read live settings before changing environment or branch protections.
+
+NOFX image builds, OpenClaw native configuration checks, and Image automation
+verification now run on matching `main` pushes or reviewed manual dispatches,
+without optional pull-request runs. Image automation no longer observes every
+five minutes; dispatch its `verify` operation from `main` for a deliberate
+journal check. Required pull-request checks retain their existing producers.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 
