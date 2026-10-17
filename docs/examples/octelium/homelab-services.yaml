@@ -920,3 +920,66 @@ spec:
               ctx.request.grpc.method == "Exec"
             )
           )
+---
+kind: Policy
+metadata:
+  name: homelab-cordium-runner-execution
+spec:
+  rules:
+    # Genesis has a broad priority-0 MainService allow. Deny other methods first.
+    - name: deny-other-cordium-methods
+      priority: -4
+      effect: DENY
+      condition:
+        match: >-
+          ctx.user.metadata.name == "homelab-cordium-runners" &&
+          ctx.service.metadata.name == "default-cordium.octelium-api" &&
+          !(
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.MainService" &&
+              ctx.request.grpc.method in
+              ["CreateWorkspace", "StartWorkspace", "GetWorkspace",
+               "ListWorkspace", "DeleteWorkspace"]
+            ) ||
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.WorkspaceService" &&
+              ctx.request.grpc.method == "Exec"
+            )
+          )
+    - name: allow-runner-execution
+      effect: ALLOW
+      condition:
+        match: >-
+          ctx.user.metadata.name == "homelab-cordium-runners" &&
+          ctx.user.spec.type == "WORKLOAD" &&
+          ctx.service.metadata.name == "default-cordium.octelium-api" &&
+          ctx.service.spec.mode == "GRPC" &&
+          (
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.MainService" &&
+              ctx.request.grpc.method in
+              ["CreateWorkspace", "StartWorkspace", "GetWorkspace",
+               "ListWorkspace", "DeleteWorkspace"]
+            ) ||
+            (
+              ctx.request.grpc.serviceFullName ==
+              "octelium.api.main.cordium.v1.WorkspaceService" &&
+              ctx.request.grpc.method == "Exec"
+            )
+          )
+---
+kind: User
+metadata:
+  name: homelab-cordium-runners
+spec:
+  type: WORKLOAD
+  session:
+    clientDuration:
+      minutes: 60
+    maxPerUser: 1
+  authorization:
+    policies:
+      - homelab-cordium-runner-execution

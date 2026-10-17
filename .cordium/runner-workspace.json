@@ -1,0 +1,18 @@
+{
+  "spec": {
+    "image": {
+      "registry": {
+        "url": "ghcr.io/actions/actions-runner:2.338.0@sha256:4ffadc0002b2581327e06101fc8c06cd189232baf79fe561fac9caeb76f5e807"
+      }
+    },
+    "repository": {"url": "https://github.com/Stuhlmuller/homelab.git"},
+    "limit": {
+      "cpu": {"millicores": 2000},
+      "memory": {"megabytes": 2048},
+      "storage": {"megabytes": 10000}
+    },
+    "runtime": {
+      "capabilities": {"add": ["SYS_ADMIN", "NET_ADMIN"]}
+    }
+  }
+}

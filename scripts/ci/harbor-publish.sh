@@ -2,11 +2,12 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon' >&2
+[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon' >&2
   exit 2
 }
 mode="$1"
+publish_outputs=(backend frontend)
 core_publication=false
 publish_names=(homelab-nofx-backend homelab-nofx-frontend)
 if [[ "$mode" == publish-harbor-core ]]; then
@@ -15,6 +16,12 @@ if [[ "$mode" == publish-harbor-core ]]; then
   publish_names=(homelab-harbor-core)
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
+fi
+if [[ "$mode" == publish-cordium ]]; then
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  mode=publish
+  publish_names=(homelab-cordium-runner homelab-cordium-controller)
+  publish_outputs=(runner controller)
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
@@ -390,10 +397,10 @@ if [[ "$mode" == publish ]]; then
     [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-harbor-core:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
     printf 'core=%s\n' "${published_refs[0]}" >>"$GITHUB_OUTPUT"
   else
-  [[ "${#published_refs[@]}" -eq 2 ]]
-  [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-  [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-  printf 'backend=%s\nfrontend=%s\n' "${published_refs[0]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+    [[ "${#published_refs[@]}" -eq 2 ]]
+    [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[0]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[1]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    printf '%s=%s\n%s=%s\n' "${publish_outputs[0]}" "${published_refs[0]}" "${publish_outputs[1]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
   fi
 fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect or reconcile only the three repository-owned Cordium CI identities."""
+"""Inspect or reconcile the fixed Cordium CI or runner identity declarations."""
 import sys
 if __name__ == "__main__" and not sys.flags.isolated:
     raise SystemExit("Run with python3 -I")
@@ -7,6 +7,7 @@ if __name__ == "__main__" and not sys.flags.isolated:
 import argparse
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import signal
@@ -21,19 +22,24 @@ TARGETS = (
     ("IdentityProvider", "homelab-cordium-ci-oidc"),
     ("User", "homelab-cordium-ci"),
 )
+RUNNER_TARGETS = (
+    ("Policy", "homelab-cordium-runner-execution"),
+    ("User", "homelab-cordium-runners"),
+)
 spec = importlib.util.spec_from_file_location("native", ROOT / "scripts/octelium-nofx-reconcile.py")
 native = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(native)
 
 
-def declared_resources():
+def declared_resources(runners=False):
+    targets = RUNNER_TARGETS if runners else TARGETS
     records = json.loads(native.run("yq", "ea", "-o=json", "-I=0", "[.]", str(CATALOG)).stdout)
     selected = [item for item in records if isinstance(item, dict)
-                and (item.get("kind"), item.get("metadata", {}).get("name")) in TARGETS]
-    if len(selected) != len(TARGETS):
-        raise RuntimeError("Catalog must declare exactly the three Cordium CI resources")
+                and (item.get("kind"), item.get("metadata", {}).get("name")) in targets]
+    if len(selected) != len(targets):
+        raise RuntimeError("Catalog must declare exactly the selected Cordium identity resources")
     result = []
-    for kind, name in TARGETS:
+    for kind, name in targets:
         matches = [item for item in selected if (item["kind"], item["metadata"]["name"]) == (kind, name)]
         if len(matches) != 1 or not isinstance(matches[0].get("spec"), dict):
             raise RuntimeError("Missing, duplicate, or invalid Cordium CI resource")
@@ -84,22 +90,55 @@ def reconcile(client, environment, desired, directory, execute):
         current = inspect(client, environment, item)
         if current is None or current.get("spec") != item["spec"]:
             raise RuntimeError("Native resource does not match its reviewed specification")
-    print("Verified the three Cordium CI resources and repeated-apply convergence")
+    print(f"Verified {len(desired)} Cordium identity resources and repeated-apply convergence")
+
+
+def create_runner_credential(client, environment, output):
+    descriptor = os.open(output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        response = json.loads(native.run(*client, "create", "credential", "homelab-cordium-runner-controller",
+                                        "--user", "homelab-cordium-runners", "--policy", "homelab-cordium-runner-execution",
+                                        "--type", "auth-token", "--session-type", "client", "--expire-in", "30days",
+                                        "--out", "json", env=environment).stdout)
+        token = response["authenticationToken"]["authenticationToken"]
+        if not isinstance(token, str) or not token or len(token.encode()) > 4096 or any(char.isspace() for char in token):
+            raise RuntimeError("Credential creation returned an invalid token; inspect its fixed name before retrying")
+        with os.fdopen(descriptor, "w") as target:
+            descriptor = None
+            target.write(token)
+            target.flush()
+            os.fsync(target.fileno())
+    except Exception:
+        output.unlink(missing_ok=True)
+        raise
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+    print("Created the dedicated runner credential in a private output file; token withheld")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--homedir", help="Private existing operator login directory")
-    parser.add_argument("--execute", action="store_true", help="Apply and verify only the three fixed resources")
+    parser.add_argument("--execute", action="store_true", help="Apply and verify only the selected fixed resources")
+    parser.add_argument("--runner-identities", action="store_true", help="Select only the fixed runner Policy and User; default selects CI OIDC resources")
+    parser.add_argument("--runner-credential-output", type=pathlib.Path, help="Create the fixed 30-day runner credential into a new private file; requires runner scope and reviewed execution")
     parser.add_argument("--expected-sha", help="Exact reviewed main commit required for execution")
     args = parser.parse_args()
+    if args.runner_credential_output:
+        if not (args.runner_identities and args.execute):
+            parser.error("Credential output requires --runner-identities --execute")
+        args.runner_credential_output = args.runner_credential_output.resolve()
+        if (args.runner_credential_output.is_relative_to(ROOT) or args.runner_credential_output.exists()
+                or args.runner_credential_output.parent.stat().st_mode & 0o077):
+            parser.error("Credential output must be a new file in a private directory outside the checkout")
     def interrupted(signum, _frame):
         raise SystemExit(128 + signum)
     signal.signal(signal.SIGTERM, interrupted)
     if args.execute:
         native.verify_reviewed_main(args.expected_sha)
         native.run("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/cordium-ci-reconcile.py")
-    desired = declared_resources()
+    desired = declared_resources(args.runner_identities)
     client = [native.verified_client(), "--domain", "stinkyboi.com"]
     if args.homedir:
         client += ["--homedir", str(pathlib.Path(args.homedir).resolve())]
@@ -107,6 +146,8 @@ def main():
         directory = pathlib.Path(temporary)
         with native.native_transport(directory) as environment:
             reconcile(client, environment, desired, directory, args.execute)
+            if args.runner_credential_output:
+                create_runner_credential(client, environment, args.runner_credential_output)
 
 
 if __name__ == "__main__":

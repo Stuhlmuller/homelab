@@ -162,7 +162,9 @@ elif tool == "terragrunt":
     elif command[:2] == ["import", "-no-color"] and unit == "ssm":
         assert command[2] == 'aws_ssm_parameter.this["' + command[3] + '"]'
         assert command[3] in ["/homelab/github-actions-runner/registration-token",
-                              "/homelab/cordium/agent-auth-token"]
+                              "/homelab/cordium/agent-auth-token",
+                              "/homelab/cordium-runners/github-app-private-key",
+                              "/homelab/cordium-runners/auth-token"]
         event("ssm.import")
     elif command == ["run", "--", "untaint", "-no-color", "kubernetes_manifest.this"]:
         event("repair.untaint")
@@ -277,7 +279,7 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(events, [
             "generate", "preflight.project", "preflight.apps", "preflight.crds",
             "preflight.store", "preflight.storage", "ssm.init", "ssm.state",
-            "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
+            "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
@@ -384,7 +386,7 @@ class TerragruntApplyTest(unittest.TestCase):
                 self.assertEqual(events, [
                     "generate", "preflight.project", "preflight.apps", "preflight.crds",
                     "preflight.store", "preflight.store_scope", "preflight.storage",
-                    "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
+                    "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
                     "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
                     "apps.plan", "apps.policy", "apps.apply",
                 ])

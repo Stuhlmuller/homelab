@@ -19,6 +19,12 @@ python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
 python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-runner-test.py
+python3 -I scripts/ci/cordium-runner-controller-test.py
+python3 -I scripts/ci/cordium-code-quality-test.py
+python3 -I scripts/ci/cordium-runner-access-test.py
+python3 -I scripts/ci/cordium-runner-credentials-test.py
+python3 -I scripts/ci/cordium-runner-network-test.py
 python3 -I scripts/ci/cordium-ci-acceptance-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
 python3 -I scripts/ci/octelium-service-retire-test.py

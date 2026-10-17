@@ -229,6 +229,7 @@ cluster CA is intentionally rotated.
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | cordium | `cordium-agent-auth` | `cordium-agent-auth-v1` | `/homelab/cordium/agent-auth-token` |
+| cordium-runners | `cordium-runner-credentials` | `cordium-runner-credentials` | `/homelab/cordium-runners/github-app-private-key`, `/homelab/cordium-runners/auth-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
@@ -366,6 +367,26 @@ git. The ExternalSecret polls the current SSM version every five minutes, so a
 populated credential or later rotation replaces the declared placeholder
 without a manifest annotation bump. When populated before the stack apply,
 `scripts/ci/terragrunt-apply.sh` adopts the parameter into OpenTofu state.
+
+Cordium runner credentials have a separate restricted namespace, `cordium-runners`.
+The shared SSM catalog declares two external Standard SecureString slots; its
+existing reader IAM generator grants their exact ARNs. The ClusterSecretStore
+allowlist and source policy permit only `/homelab/cordium-runners/` there.
+`cordium-runner-credentials` polls every five minutes and retains its target on
+source deletion. The manager must mount both keys as read-only files; Workspaces
+receive neither key. Existing values are adopted before placeholder apply.
+
+The protected exact-main `cordium-runner-credentials.yml` intake validates the
+App private key against App `5270069`, validates the native token against the
+dedicated WORKLOAD User and exact forbidden-method denial, and verifies both slots' encryption
+metadata before writing. It accepts no parameter-name or command input. Only
+fixed slot names and version receipts reach public logs. Writes are not atomic:
+a partial failure is a failed intake and requires private inspection/retry.
+The pinned native logout can hide server logout failure; allow the one-hour
+session to expire or verify its revocation before starting the manager. Stop
+manager authentication before rotating the native credential because the User
+allows one session. Controller deployment and mounted-file refresh acceptance
+remain pending. See [runner bootstrap](../builds/cordium-runner/README.md).
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/live/azuread-applications/octelium`, which writes generated

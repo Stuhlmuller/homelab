@@ -93,6 +93,8 @@ adopt_existing_ssm_parameters() {
   local parameter_names=(
     "/homelab/github-actions-runner/registration-token"
     "/homelab/cordium/agent-auth-token"
+    "/homelab/cordium-runners/github-app-private-key"
+    "/homelab/cordium-runners/auth-token"
   )
 
   terragrunt init -no-color

@@ -12,7 +12,7 @@ import signal
 import subprocess
 import time
 
-MODES = ("checks", "force-failure", "forbidden-method", "deny-ref", "deny-workflow")
+MODES = ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref", "deny-workflow")
 REPOSITORY = "Stuhlmuller/homelab"
 DENIED_REF = "refs/heads/codex/cordium-oidc-denial"
 

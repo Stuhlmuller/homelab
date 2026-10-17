@@ -1,0 +1,99 @@
+name: Cordium Runner Canary
+
+# checkov:skip=CKV_GHA_7: expected_sha fixes current main; mode selects fixed acceptance cases.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current reviewed main to accept on the isolated runner pool
+        required: true
+        type: string
+      mode:
+        description: Fixed compatibility, failure or long-session check
+        required: true
+        default: checks
+        type: choice
+        options: [checks, force-failure, session-renewal]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cordium-runner-canary
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, cordium-canary]
+    timeout-minutes: 120
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          CHECK_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "$RUNNER_ENVIRONMENT" = self-hosted
+          [[ "$RUNNER_NAME" =~ ^cordium-[a-z0-9][a-z0-9-]*$ ]]
+          [[ "$CHECK_MODE" == checks || "$CHECK_MODE" == force-failure || "$CHECK_MODE" == session-renewal ]]
+          test "$(uname -s)/$(uname -m)" = Linux/x86_64
+
+      - name: Checkout Reviewed Source
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Verify Exact Current Main
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+
+      - name: Python Toolcache
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.13'
+
+      - name: Verify Tools And Docker Daemon
+        run: |
+          set -euo pipefail
+          python -c 'import ssl, sqlite3; assert ssl.OPENSSL_VERSION and sqlite3.sqlite_version'
+          nix develop --command python3 -I scripts/ci/cordium-runner-controller-test.py
+          docker info >/dev/null
+
+      - name: Docker Action Compatibility
+        uses: chainguard-actions/super-linter-super-linter@bf49e660c836f9c76777ae48293f937565e314d7 # v8.7.0
+        env:
+          RUN_LOCAL: true
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_BASH: true
+          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
+
+      - name: Cross Session And Installation Token Expiry
+        if: inputs.mode == 'session-renewal'
+        run: |
+          set -euo pipefail
+          for minute in {1..13}; do
+            sleep 300
+            echo "Runner still executing after $((minute * 5)) minutes."
+          done
+          docker info >/dev/null
+          echo 'Runner survived the one-hour boundary; verify controller cleanup independently.'
+
+      - name: Fixed Failure Case
+        env:
+          CHECK_MODE: ${{ inputs.mode }}
+        run: |
+          set -euo pipefail
+          if [[ "$CHECK_MODE" == force-failure ]]; then exit 42; fi
+          echo 'Canary runner compatibility checks passed; verify controller cleanup separately.'
