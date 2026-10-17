@@ -62,6 +62,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-9572753e0a38126e57fa7042
@@ -104,6 +106,8 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-8a05c67bc78632e51f4366db
+    resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
@@ -118,10 +122,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
+generated: { by: "codex", at: "2026-10-17T22:03:58.921Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:37:58.789Z
+    at: 2026-10-17T22:03:58.921Z
 ---
 
 # Validation Gates
@@ -1616,6 +1620,12 @@ verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+The fixed Harbor 2.15.4 scope must contain exactly the nine digests from the
+reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
+selected-image pull verification. A successful scoped run proves only those nine
+components; the LiteLLM duplicate-index failure still blocks full-catalog
+acceptance.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

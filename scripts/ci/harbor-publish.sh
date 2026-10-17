@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor' >&2
   exit 2
 }
 mode="$1"
@@ -29,6 +29,9 @@ elif [[ "$mode" == mirror-traefik ]]; then
 elif [[ "$mode" == mirror-mastodon ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-mastodon-images.json
+elif [[ "$mode" == mirror-harbor ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-runtime-images.json
 elif [[ "$mode" == mirror-chainguard ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-chainguard-images.json

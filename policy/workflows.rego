@@ -353,11 +353,14 @@ case "$IMAGE_SCOPE" in
   traefik)
     bash scripts/ci/harbor-publish.sh mirror-traefik
     ;;
+  harbor)
+    bash scripts/ci/harbor-publish.sh mirror-harbor
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

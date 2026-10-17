@@ -407,10 +407,12 @@ additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
 
 The Harbor 2.15.4 prerequisite adds all nine coupled component digests while
-retaining the active 2.15.2 entries. Publish the full catalog with
-`image_scope=all` and require fresh authenticated pulls of the nine new digests
+retaining the active 2.15.2 entries. Publish the fixed Harbor scope with
+`image_scope=harbor` and require fresh authenticated pulls of the nine new digests
 before merging a Harbor 2.15.4 consumer. This catalog change does not alter
-running Pods. The consuming upgrade must verify that the singleton nginx
+running Pods. The scoped receipt proves these nine components only; the full
+catalog remains held on the separate LiteLLM duplicate-index repair. The
+consuming upgrade must verify that the singleton nginx
 Deployment retains a rolling update that keeps Harbor reachable during its
 replacement image pull.
 
