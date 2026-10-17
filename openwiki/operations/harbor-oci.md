@@ -100,10 +100,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:27:18.310Z" }
+generated: { by: "codex", at: "2026-10-17T21:58:13.605Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:37:58.789Z
+    at: 2026-10-17T21:58:13.605Z
 ---
 
 # Harbor Private OCI Registry
@@ -367,6 +367,16 @@ full-catalog incompatibility. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
+
+### Harbor 2.15.4 catalog prerequisite
+
+The [full image catalog](../../scripts/config/harbor-images.json) stages all nine
+Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
+no running Pod. Publish the full catalog through the protected workflow and
+verify fresh complete authenticated Harbor pulls before merging the separate
+consumer upgrade. That upgrade must verify that singleton nginx retains a
+rolling update, so its existing Pod serves Harbor while the replacement pulls.
+See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 ### Identical-reference core repair candidate
 
