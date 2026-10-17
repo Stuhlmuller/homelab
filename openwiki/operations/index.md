@@ -12,7 +12,7 @@
 - [Etcd Offsite Storage](etcd-offsite-storage.md) - Operator-owned S3 bucket for etcd backups, version retention, encryption, destruction guards, and separate publication gates.
 - [Etcd Scheduler Diagnostics](etcd-scheduler-diagnostics.md) - macOS etcd scheduler timestamps, failed-command classifications, retained backups, and limits of historical failure diagnosis.
 - [Existing-Node Control-Plane Feasibility](existing-node-control-plane-feasibility-2026-09-12.md) - Read-only assessment of three-member control-plane conversion, worker memory and disk limits, quorum, and workload capacity.
-- [Harbor Private OCI Registry](harbor-oci.md) - Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates.
+- [Harbor OCI](harbor-oci.md) - Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries.
 - [Kubernetes Patch Maintenance, September 2026](kubernetes-patch-maintenance-2026-09.md) - Kubernetes 1.34.11 maintenance evidence, missing PVC metrics, Talos dry-run side effects, and CoreDNS ownership prerequisites.
 - [Monitoring Resource Requests](monitoring-resource-requests.md) - Prometheus and Grafana memory reservations, observed scheduling headroom, and the September memory-overcommit alert incident.
 - [Octelium and Cordium capability research — 2026-09-05](octelium-capability-research-2026-09-05.md) - Octelium and Cordium version boundaries, audit-console and agent execution capabilities, and separate live acceptance gates.
@@ -24,5 +24,5 @@
 - [QNAP Block Storage Candidate For Monitoring](qnap-monitoring-block-storage-research-2026-09-12.md) - Unapplied QNAP iSCSI and CSI candidate for monitoring storage, capacity unknowns, provisioning gaps, and restore acceptance.
 - [October 2026 synthetic recovery exercise](recovery-exercise-2026-10-01.md) - October synthetic backup and restore checks, independent publication proposals, and unproven operational Octelium recovery.
 - [State Encryption](state-encryption.md) - Separate runtime SSM and OpenTofu encryption keys, S3 Bucket Keys ownership, and preservation of confidential recovery archives.
-- [Validation Gates](validation-gates.md) - Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor.
+- [Validation Gates](validation-gates.md) - Static, policy, render, secret-scan and live acceptance gates for homelab workloads.
 - [OpenWiki Maintenance](wiki-maintenance.md) - Repository-scoped OpenWiki installation, focused retrieval, safe updates, validation, and rollback.

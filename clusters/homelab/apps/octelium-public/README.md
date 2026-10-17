@@ -24,6 +24,17 @@ the legacy source, not the target access contract:
 `octelium-api.stinkyboi.com` serves the browser API;
 `octelium-transport.stinkyboi.com` carries native clients over TCP.
 
+## Mastodon public transport exception
+
+The Mastodon draft adds `mastodon.stinkyboi.com` as an intentional public site
+for native clients and federation, routing directly to its Istio backend.
+Mastodon authenticates users. Its fixed-host `mastodon-public-dns.yml` workflow
+owns only that new CNAME; it does not restore the retired public DNS writer or
+private application records. Keep this connector while Mastodon depends on it;
+retirement now requires a separately reviewed replacement and federation test.
+See the [Mastodon activation contract](../mastodon/README.md#public-dns-activation).
+This declaration remains undeployed until its owning PR is merged and applied.
+
 ## Secret Contract
 
 `octelium-public-cloudflared-credentials` reads

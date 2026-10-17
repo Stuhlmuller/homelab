@@ -1,8 +1,8 @@
 ---
 type: workload
 title: "Workload Inventory"
-description: "Application and platform namespaces, GitOps paths, dependencies, resource and state contracts, and runtime readiness boundaries."
-tags: ["workloads", "argocd", "inventory"]
+description: "Application namespaces, GitOps paths, dependencies, state contracts and runtime readiness boundaries."
+tags: [workloads, argocd, inventory]
 sources:
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
@@ -14,8 +14,26 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/values.yaml
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-bb71538b4bc75dd401bfc1ec
+    resource: repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml
+  - id: openwiki-source-9909d58412f1a989bfab76c4
+    resource: repo://clusters/homelab/apps/mastodon/bootstrap-job.yaml
+  - id: openwiki-source-76c52b92a6019fb5db7199cb
+    resource: repo://clusters/homelab/apps/mastodon/launch.rb
+  - id: openwiki-source-dbeb78c2adb5040b8afe8540
+    resource: repo://clusters/homelab/apps/mastodon/migration.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-4301bd0984ddefae9a3aa9e4
+    resource: repo://clusters/homelab/apps/mastodon/storage.yaml
+  - id: openwiki-source-f63af960991dc66477879fc8
+    resource: repo://clusters/homelab/apps/mastodon/virtualservice.yaml
+  - id: openwiki-source-b7405e9378d7ba0db53f8842
+    resource: repo://clusters/homelab/apps/mastodon/workloads.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-eb9ba8868bbd263b0cd40e71
+    resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
@@ -40,14 +58,18 @@ sources:
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
     resource: repo://IaC/stacks/cert-manager/stack.hcl
+  - id: openwiki-source-8144ee95f00e2d4721210fcf
+    resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+  - id: openwiki-source-87efd56c37d4fbd91671cd82
+    resource: repo://scripts/mastodon-public-dns.py
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:46:52.296Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Workload Inventory
@@ -403,3 +425,58 @@ automatic capture. Candidate off-NAS publication and checks are not active.
 No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
 n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
 application behavior, not only a checksum or successful backup Job.
+
+## Mastodon
+
+The [Mastodon stack](../../IaC/stacks/mastodon/stack.hcl) registers namespace
+`mastodon` from `clusters/homelab/apps/mastodon`, following `main`. Dependencies
+are SSM, External Secrets, cert-manager, Istio, the retained public connector
+and platform storage. This is prepared source, not evidence of a live server.
+The instance and account domain are `mastodon.stinkyboi.com`; the private apex
+portal is preserved. The owner bootstrap declares `rodman`, with the existing
+repository owner email, and preserves an existing matching account.
+
+```mermaid
+flowchart TD
+  Client[Public Mastodon client] --> Edge[Cloudflare Tunnel]
+  Edge --> Gateway[Shared Istio gateway]
+  Gateway --> Web[Web on port 3000]
+  Gateway --> Streaming[Streaming on port 4000]
+  Web --> Database[Private PostgreSQL]
+  Streaming --> Database
+  Web --> Redis[Private Redis]
+  Streaming --> Redis
+  Worker[Sidekiq] --> Database
+  Worker --> Redis
+  Web --> Media[Retained NAS media]
+  Worker --> Media
+```
+
+The declared public connector and Istio route split website and streaming traffic.
+
+PostgreSQL 18 uses a retained 3 GiB local claim on `zimaboard-0`; Redis uses a
+separate retained 1 GiB local claim with AOF. These hostPath capacities are not
+quotas. Media uses a retained 50 GiB NAS claim, while checked nightly database
+dumps use a separate 30 GiB NAS claim with 14-day retention. NAS media and
+backups share a failure domain; they are not independent disaster recovery.
+Preserve the database, media and stable encryption/signing keys during rollback.
+
+SSM generates internal credentials and the bootstrap-only owner password.
+Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
+files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
+and runtime revisions after rotation. The launcher refuses SMTP placeholders.
+Schema preparation precedes owner bootstrap and application Deployments.
+
+The targeted Terragrunt saved-plan path checks upstream health, storage and
+secret-store permissions before SSM declarations and registration. The separate
+DNS workflow writes only the owned instance CNAME after Mastodon and the public
+connector are Synced/Healthy at its reviewed revision. STRICT mTLS and
+default-deny authorization/NetworkPolicy constrain the private backends.
+
+See the [workload runbook](../../clusters/homelab/apps/mastodon/README.md),
+[secret boundary](../architecture/secrets-and-identity.md#mastodon-credential-boundary),
+[publication boundary](../operations/harbor-oci.md#mastodon-publication-boundary)
+and [activation gates](../operations/validation-gates.md#mastodon-activation-gates).
+Merge, actual rollout, loaded-library checks, owner login, SMTP receipt,
+public website/media/streaming/federation and backup/isolated-restore acceptance
+remain distinct milestones.

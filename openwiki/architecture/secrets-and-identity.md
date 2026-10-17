@@ -2,22 +2,29 @@
 type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
-tags: ["architecture", "secrets", "identity"]
+tags: [architecture, secrets, identity]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T20:13:59.415Z
 sources:
+  - id: openwiki-source-23ac5bc03d1cee79a72b06af
+    resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-caccd49b346c867666da5f50
+    resource: repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
-  - id: openwiki-source-1635b3ffa6091ee664a713ee
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
-  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-bc26cfab2973077898d9ec21
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-6d89464fbd512a9fe7a09d90
+    resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-8547ae9691c6849e109e322b
+    resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -26,10 +33,10 @@ sources:
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-cf9e058040b1a15ca636bb42
+    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
   - id: openwiki-source-77d110fdd1547564be86e611
@@ -46,10 +53,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:35:49.067Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 ---
 
 # Secrets And Identity
@@ -534,6 +538,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   callback helper after Funnel routing and negative-path preflights pass;
   require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
+
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`
@@ -567,6 +572,11 @@ the temporary native transport changes no saved host or client settings.
 See [NOFX reconciliation](../../docs/octelium-nofx-reconciliation.md).
 
 ## Fleet Free identity boundaries
+
+The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
+and owner-address details below are dated history, not a procedure to repeat
+or authorization to modify owner identities. See the current
+[retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 The [WireGuard/AirVPN operator](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 accepts private owner-supplied client exports from outside git, separately per
@@ -632,6 +642,11 @@ that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
 
 ## Google Workspace federation boundary
+
+The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
+and owner-address details below are dated history, not a procedure to repeat
+or authorization to modify owner identities. See the current
+[retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 `operator/entra-google-workspace-federation` owns the Entra Graph federation
 configuration for `stuhlmuller.net`. Its Google SAML metadata is an
@@ -729,16 +744,14 @@ a candidate or applies a machine configuration. Rollback and `--registry-host-on
 execution intentionally do not use reader auth. This rollout gate does not make
 the `mirror` project private.
 
-The excluded
+The active Harbor Kustomization stages `harbor/harbor-pull` from the existing
+`/homelab/harbor/robot-pull-password`. The vulnerability exporter references
+it only for kubelet image pulls, without an app-container mount. The held
 [private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-stages `harbor/harbor-pull` from the existing
-`/homelab/harbor/robot-pull-password`. Its only consumer reference is the
-ServiceAccount's kubelet image-pull list; no app-container mount, producer,
-reader grant or namespace allowlist expansion is added. The active Harbor
-Kustomization excludes this directory. Activation requires publication/scans,
-recovery clearance and ExternalSecret readiness; an `OnChange` annotation
-advance is required after a future credential rotation. The existing bootstrap
-Secret needs its own declared refresh, and upstream cold recovery remains.
+uses the same prerequisite. No new SSM parameter or IAM grant is added.
+Native-image activation waits for publication/scans, recovery clearance and
+ExternalSecret readiness. An `OnChange` annotation advance is required after
+credential rotation; upstream cold recovery remains.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during
@@ -759,3 +772,21 @@ values, identities or permissions were created. Preserve app encryption/signing
 keys and password-free-dump role credentials through the existing private vault.
 Archive restore has no cloud credentials or production access and remains gated
 on enforced containment.
+
+## Mastodon credential boundary
+
+The [Mastodon declaration](../../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+adds nine exact `/homelab/mastodon/` parameters and namespace-scoped External
+Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
+owner password are generated in encrypted state. The external SMTP slot starts
+with a rejected placeholder; the protected
+[SMTP workflow](../../.github/workflows/mastodon-smtp-credential.yml) injects
+only that fixed SecureString from `MASTODON_SMTP_PASSWORD`.
+
+The [runtime template](../../clusters/homelab/apps/mastodon/runtime-externalsecret.yaml)
+mounts configuration, VAPID and SMTP as files. Only the owner-bootstrap Job
+mounts the generated administrator password; repeat bootstrap preserves the
+existing account. `OnChange` and subPath consumers need declared secret/runtime
+revisions after rotation. Preserve stable keys with the database. Source
+registration and credential storage do not prove deployment, owner login or
+email delivery; see the [workload runbook](../../clusters/homelab/apps/mastodon/README.md).
