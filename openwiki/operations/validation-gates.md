@@ -46,6 +46,8 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -122,10 +124,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T22:03:58.921Z" }
+generated: { by: "codex", at: "2026-10-17T22:53:57.740Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:24:11.962Z
+    at: 2026-10-17T22:53:57.740Z
 ---
 
 # Validation Gates
@@ -1646,6 +1648,13 @@ ordinary mirror rollout requires supplied reader auth unless its captured config
 owned reader auth. The missing-reader fixture reaches neither Harbor receipt
 checks nor candidate machine-config rendering or `apply-config`. These fixtures
 do not read SSM or change a node.
+
+The registry pre-pull fixture checks that dry-run mode does not pull, execution
+checks exact reviewed `main`, already-cached digests are skipped, and a pull
+without the expected cache alias fails. The live operator must still verify
+both pins on all four nodes immediately before a Harbor consumer merge. See
+the [Talos test](../../scripts/ci/talos-harbor-mirrors-test.py) and
+[operator](../../scripts/talos-harbor-mirrors.py).
 
 The fixed Traefik publication scope retains all-platform digest, tag alias and
 fresh complete authenticated Harbor-pull checks. The Talos regression rejects scoped,
