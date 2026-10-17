@@ -26,6 +26,12 @@ NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
 )
 NATIVE_RECEIPT = importlib.util.module_from_spec(NATIVE_RECEIPT_SPEC)
 NATIVE_RECEIPT_SPEC.loader.exec_module(NATIVE_RECEIPT)
+NATIVE_RECEIPT_IMPORT_SPEC = importlib.util.spec_from_file_location(
+    "harbor_native_chainguard_receipt_import",
+    Path(__file__).with_name("harbor-native-chainguard-receipt-import.py"),
+)
+NATIVE_RECEIPT_IMPORT = importlib.util.module_from_spec(NATIVE_RECEIPT_IMPORT_SPEC)
+NATIVE_RECEIPT_IMPORT_SPEC.loader.exec_module(NATIVE_RECEIPT_IMPORT)
 
 
 def identity(resource):
@@ -170,22 +176,46 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
         return []
     config = json.loads(config_path.read_text())
     state = json.loads(state_path.read_text())
+    rendered = set(_images(resources))
     enrolled = {
         item["image_id"]: item for item in config.get("images", [])
-        if any(consumer.get("image_id") == item.get("image_id")
-               and consumer.get("automation_status") == "enrolled"
-               for consumer in config.get("consumers", []))
+        if (any(consumer.get("image_id") == item.get("image_id")
+                and (consumer.get("automation_status") == "enrolled"
+                     or (item.get("image_id", "").startswith("chainguard-")
+                         and consumer.get("migration_status") == "migrated"))
+                for consumer in config.get("consumers", []))
+            or (item.get("image_id", "").startswith("chainguard-")
+                and any(ref.split("@", 1)[0].rsplit(":", 1)[0]
+                        == item["destination"].split("@", 1)[0].rsplit(":", 1)[0]
+                        for ref in rendered)))
     }
-    rendered = set(_images(resources))
     errors = []
+    native_repositories = {
+        image["destination"].split("@", 1)[0].rsplit(":", 1)[0]
+        for image_id, image in enrolled.items() if image_id.startswith("chainguard-")
+    }
+    if any(ref.startswith(("harbor.stinkyboi.com/homelab/chainguard/",
+                           "harbor.stinkyboi.com/homelab/chainguard-"))
+           and ref.split("@", 1)[0].rsplit(":", 1)[0] not in native_repositories
+           for ref in rendered):
+        errors.append("Undeclared native Chainguard Harbor reference")
     native_plans = None
     for image_id, image in enrolled.items():
         destination = image["destination"]
         repository = destination.split("@", 1)[0].rsplit(":", 1)[0]
-        if not any(ref.split("@", 1)[0].rsplit(":", 1)[0] == repository for ref in rendered):
+        matching_references = {
+            ref for ref in rendered
+            if ref.split("@", 1)[0].rsplit(":", 1)[0] == repository
+        }
+        if not matching_references:
             continue
         receipt = state.get("receipts", {}).get(image_id)
         if image_id.startswith("chainguard-"):
+            if not any(consumer.get("image_id") == image_id
+                       and consumer.get("migration_status") == "migrated"
+                       for consumer in config.get("consumers", [])):
+                errors.append(f"Native Chainguard reference lacks migrated status: {image_id}")
+                continue
             if native_plans is None:
                 native_plans = {
                     plan["image_id"]: plan for plan in NATIVE_RECEIPT.build_plan(
@@ -195,12 +225,12 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
                     )
                 }
             plan = native_plans.get(image_id)
-            verified = (plan is not None and NATIVE_RECEIPT.verify_native_receipt(plan, receipt)[0]
-                        and f'{plan["destination_repository"]}@{plan["source_digest"]}' in rendered)
-            if verified:
-                errors.append(f"Enrolled native Chainguard image requires protected workflow evidence: {image_id}")
-            else:
-                errors.append(f"Enrolled Harbor image lacks verified receipt: {image_id}")
+            verified = (plan is not None and NATIVE_RECEIPT_IMPORT.verify_imported_receipt(plan, receipt)[0]
+                        and matching_references == {
+                            f'{plan["destination_repository"]}@{plan["source_digest"]}'
+                        })
+            if not verified:
+                errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue
         verified = isinstance(receipt, dict) and receipt.get("destination_ref") == destination \
             and receipt.get("consumer_access") is True

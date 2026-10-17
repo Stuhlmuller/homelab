@@ -827,6 +827,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
+    '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
     '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -883,6 +884,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
 .github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 53d2b15f3d23944b2f6322c14ec1f216ef1cc9d743156450e702facc7098de91
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
@@ -961,6 +963,68 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt.yml |
       "include-hidden-files": false
     })
   ' >/dev/null
+yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml |
+  jq -e '
+    [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
+    [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
+    .name == "Verify Native Chainguard Receipt Provenance" and
+    (.on | keys | sort) == ["pull_request_target", "push"] and
+    .on.push == {"branches": ["main"]} and
+	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
+    .permissions == {} and
+    .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
+    .env == null and
+    (.jobs | keys) == ["verify"] and
+    .jobs.verify.name == "Native Chainguard Receipt Provenance" and
+    .jobs.verify["runs-on"] == "ubuntu-24.04" and
+    .jobs.verify["timeout-minutes"] == 20 and
+    .jobs.verify.permissions == {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"} and
+    .jobs.verify.environment == null and
+    .jobs.verify.env == null and
+    (.jobs.verify.steps | length) == 2 and
+    ($checkout | length) == 1 and
+    $checkout[0].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505" and
+    $checkout[0].with == {
+      "ref": "main",
+      "fetch-depth": 1,
+      "persist-credentials": false
+    } and
+    ($revalidate | length) == 1 and
+    $revalidate[0].if == null and
+    $revalidate[0].env == {"GH_TOKEN": "${{ github.token }}"} and
+    ($revalidate[0].run |
+      contains("set -euo pipefail") and
+      contains("base_sha=\"$(git rev-parse HEAD)\"") and
+      contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
+      contains("jq -r '\''.[].head.sha'\''") and
+      contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
+      contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
+      contains("repos/${GITHUB_REPOSITORY}/commits/main") and
+      contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
+  ' >/dev/null
+fixture_env=""
+if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
+  fixture_env="$(type -P env || true)"
+fi
+trusted_source_sha256() {
+  local source="$1" first_line
+  IFS= read -r first_line <"$source" || return 1
+  if [[ "$fixture_env" == /nix/store/*-coreutils-*/bin/env && "$first_line" == "#!$fixture_env python3" ]]; then
+    # Only the active Nix fixture rewrites this exact interpreter; production bytes stay pinned.
+    { printf '%s\n' '#!/usr/bin/env python3'; tail -n +2 "$source"; } | sha256sum | cut -d' ' -f1
+  else
+    sha256sum "$source" | cut -d' ' -f1
+  fi
+}
+while read -r source expected_hash; do
+  [[ "$(trusted_source_sha256 "$source")" == "$expected_hash" ]] || {
+    echo "Trusted native receipt provenance source changed; review it and update its exact security hash: $source" >&2
+    exit 1
+  }
+done <<'EOF'
+scripts/ci/harbor-native-chainguard-receipt-import.py c7a8b65baa2ae4a7a6f5afbd0b9b25a1e3f2638bdc5f8241e42590eef96e69d2
+scripts/ci/harbor-native-chainguard-receipt.py eee7fc668f177daf4e88291d947fca7fa87aeb00a4b3af70f664b524467ea4dc
+EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '
     (.on | keys) == ["push"] and

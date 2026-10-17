@@ -14,7 +14,7 @@ are delivered. Data fields are defined in [data-model.md](../data-model.md).
 | Import | Harbor, hourly by default | The declared `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest` sources appear at private `homelab/chainguard-{python,curl}:latest`; no consumer edit. |
 | Verify | Protected main-owned CI; exact source catalog digest and configuration | Source root index, private destination root index, and authenticated all-platform pull have identical bytes; required platform children match; scans are complete with every reported count zero. |
 | Advertise | None | The verifier emits protected-workflow evidence only. It creates no digest tag, alias, updater state, or workload change. |
-| Discover | No current consumer | A checked-in receipt cannot enroll Python or curl until a verifiable artifact-attestation importer exists; they remain `not-enrolled`. |
+| Discover | No current consumer | The artifact-provenance importer accepts a receipt-state change only from a successful protected receipt; Python and curl remain `not-enrolled` until a later compatibility migration. |
 
 The `mirror` project remains the temporary public source-copy path. Native
 Chainguard imports use the private `homelab` project, whose scoped pull robot
@@ -44,9 +44,10 @@ root index or its required platform children.
   Kustomize application pattern; keep Argo target revisions `main`.
 - Namespace `argocd`; namespace RBAC, `createClusterRoles: false`, explicit
   `--watch-namespaces=argocd`; only required Secrets and Applications accessible.
-- No current native Chainguard candidate is enrolled in Image Updater. A future
-  enrollment is blocked until a verifiable artifact-attestation importer exists;
-  a checked-in native receipt is insufficient. It must then write a direct
+- No current native Chainguard candidate is enrolled in Image Updater. The
+  artifact-provenance importer accepts a receipt-state change only from a
+  successful protected receipt; a checked-in native receipt remains
+  insufficient for enrollment. A later compatibility migration must write a
   `harbor.stinkyboi.com/homelab/chainguard/python@sha256:...` reference;
   `verified-stable` is not part of this native import path.
 - Git write-back uses `--git-commit-method=api`, GitHub App credentials and

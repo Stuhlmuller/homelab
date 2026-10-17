@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -88,12 +90,22 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
+  - id: openwiki-source-6044cd3de00b52da78c6cf44
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-b4ba5e3191f69df1237ac01d
+    resource: repo://scripts/ci/image-automation-test.py
+  - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
+    resource: repo://scripts/ci/image-automation.py
   - id: openwiki-source-28fa6202184199322ab68bca
     resource: repo://scripts/ci/network-policy-inventory-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
@@ -106,10 +118,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+generated: { by: "codex", at: "2026-10-17T21:56:49.510Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:57:20.007Z
+    at: 2026-10-17T21:56:49.510Z
 ---
 
 # Harbor Private OCI Registry
@@ -406,7 +418,8 @@ the proxy's network namespace and uses `127.0.0.1:8080`. Proxy and jobservice
 startup waits for the candidate core's health check. Eight
 identical OCI child descriptors must survive a push and complete pull unchanged,
 including the child manifest and both blobs. The PostgreSQL query requires one
-parent/child relation. Temporary credentials, containers, network and data are
+parent/child relations for the four unique child digests. Temporary credentials,
+containers, network and data are
 fixture-owned and removed on exit. This gate uses no production inputs; passing
 it remains separate from original full-catalog and live publication acceptance.
 
@@ -417,7 +430,7 @@ flowchart TD
     Repair --> Compile["Pass manager tests and compile core"]
     Compile --> Candidate["Build held runtime candidate"]
     Candidate --> Registry["Push and pull unchanged repeated index in disposable Harbor"]
-    Registry --> Database["Require one PostgreSQL child relation"]
+    Registry --> Database["Require four PostgreSQL child relations"]
 ```
 
 The candidate's build gate checks original failure and repaired behavior before
@@ -434,6 +447,8 @@ On 2026-10-11, [candidate CI at `e3f58417`](https://github.com/Stuhlmuller/homel
 passed Linux build and the isolated registry/PostgreSQL fixture: eight index
 descriptors, child manifest and both blobs remained unchanged, with one database
 relation. This is fixture acceptance, not full-catalog publication or deployment.
+The current fixture requires four relations; the dated receipt does not prove
+that tightened gate passed.
 The [sanitized fixture receipt](../../docs/evidence/harbor-core-registry-fixture-2026-10-11.json)
 retains the job/head/index identities and log hash without runtime credentials.
 
@@ -739,6 +754,34 @@ exporter pilot can be considered first; Kiali requires a shell-free readiness
 rewrite. Full-catalog publication remains required before a Talos-wide strict
 no-fallback policy. A source receipt proves neither publication, workload
 migration, global Harbor-only pulls, nor live egress enforcement.
+
+The trusted `pull_request_target` provenance job reads only the committed
+receipt, verifies its private source-run evidence against GitHub, and publishes
+`Native Chainguard Receipt Provenance` as a commit status on the PR head SHA.
+On each `main` push or PR edit, including base-branch retargets, the trusted job
+rechecks all open PR heads, including forks, against the current `main` and
+refreshes their statuses. One concurrency group serializes status writers; any
+replacement pending event still rechecks every PR. The job marks all collected
+heads pending before verifying them and continues after individual status errors. Main-SHA guards reject
+stale results. Its required
+status must be enabled only after the workflow succeeds on `main`.
+The private receipt is imported from a successful exact-main run before the
+state-change verifier is run; the import rejects a run path outside the
+configured workflow, including a different branch suffix. A changed receipt's
+run revision must equal the receipt-only PR's trusted base revision; older
+successful runs require a fresh exact-main dispatch.
+
+Offline image checks inspect each native consumer's declared target and scan
+repository `.yaml`, `.yml`, and `.json` workload resources, including Kustomize image transformations, inline or file-backed patches, and replacement-source literals, for private native Chainguard references. Every
+such reference must appear in the declared path of a `migrated` consumer with
+an imported protected receipt and the exact verified index digest, even if
+automation enrollment is still disabled. The Image Updater rejects native
+enrollment until candidate promotion binds proposed digests to protected
+receipt evidence; imported evidence alone does not authorize automation.
+The automation contract rejects applications mixing native Chainguard and
+alias-backed images, including a not-enrolled native candidate.
+The Harbor render check applies the same rule to rendered
+references and rejects undeclared native destinations.
 
 ## Historical Chainguard automation design
 

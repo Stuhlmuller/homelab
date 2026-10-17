@@ -5,6 +5,7 @@ import rego.v1
 deny contains msg if {
 	events := workflow_events
 	has_event(events, "pull_request_target")
+	not native_receipt_provenance_workflow
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must not use pull_request_target for infrastructure checks", [name])
 }
@@ -187,7 +188,91 @@ deny contains msg if {
 	msg := sprintf("Octelium catalog workflow job %q step %d must use its one-use catalog credential", [job_name, index])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
+
+# This checker runs only trusted base-branch code and reads a receipt-only PR
+# as bounded API data. Any shape change must also update the exact workflow hash.
+native_receipt_provenance_workflow if {
+	count(input) == 5
+	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
+	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false}
+	workflow_events == {
+		"push": {"branches": ["main"]},
+		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
+	}
+	object.get(input, "permissions", {}) == {}
+	jobs := object.get(input, "jobs", {})
+	jobs == {"verify": native_receipt_provenance_job}
+}
+
+native_receipt_provenance_job := {
+	"name": "Native Chainguard Receipt Provenance",
+	"runs-on": "ubuntu-24.04",
+	"timeout-minutes": 20,
+	"permissions": {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"},
+	"steps": [
+		{
+			"name": "Check Out Trusted Base",
+			"uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505",
+			"with": {
+				"ref": "main",
+				"fetch-depth": 1,
+				"persist-credentials": false,
+			},
+		},
+		{
+			"name": "Revalidate Open Pull Requests Against Current Main",
+			"env": {"GH_TOKEN": "${{ github.token }}"},
+			"run": `set -euo pipefail
+umask 077
+base_sha="$(git rev-parse HEAD)"
+[[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
+token_file="$(mktemp)"
+pulls_file="$(mktemp)"
+heads_file="$(mktemp)"
+trap 'rm -f "$token_file" "$pulls_file" "$heads_file"' EXIT
+printf '%s' "$GH_TOKEN" >"$token_file"
+gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
+jq -r '.[].head.sha' "$pulls_file" >"$heads_file"
+pending_failed=0
+while IFS= read -r head_sha; do
+  [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+  marked=0
+  for attempt in 1 2 3; do
+    if gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
+      -f state=pending -f context='Native Chainguard Receipt Provenance' \
+      -f description='Rechecking receipt against current main' >/dev/null; then
+      marked=1
+      break
+    fi
+    [[ "$attempt" == 3 ]] || sleep 2
+  done
+  [[ "$marked" == 1 ]] || pending_failed=1
+done <"$heads_file"
+[[ "$pending_failed" == 0 ]] || exit 1
+[[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
+status_failed=0
+while IFS= read -r head_sha; do
+  if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
+    --base-sha "$base_sha" --head-sha "$head_sha" \
+    --token-file "$token_file" && \
+    [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]]; then
+    state=success
+  else
+    state=failure
+  fi
+  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
+  if ! gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
+    -f state="$state" -f context='Native Chainguard Receipt Provenance' \
+    -f description='Protected receipt state verification' >/dev/null; then
+    status_failed=1
+  fi
+done <"$heads_file"
+exit "$status_failed"
+`,
+		},
+	],
+}
 
 has_event(events, event) if {
 	events == event

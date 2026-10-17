@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:06206e950365f9fdaeedc685f8fb885fff7a444645cfc565847ecb9bf95aeb10",
+  "pageVersion": "sha256:722b6ed058eee4e743668deb0085510bb71399283bc8e441c373dc95b1e3afe5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -30,11 +30,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f29769c0c774e591fc9cd4915aedc3ab9466f96aefb71513093af1edf4280d49"
+          "version": "repo-file-v1:sha256:17dd1381594bafb51b963e3c8a03852b6cd645a95d669422392a3f4ebd9d9aea"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -290,21 +290,21 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         }
       ]
     },
     {
       "id": "claim_c41196c353124e3791747938c5a2c0a5",
-      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly one database relation. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
+      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly four parent/child database relations. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/build.sh",
@@ -312,11 +312,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         }
       ]
     },
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -344,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6a3d5d1dfa825868bd095dbcee61f8b9de131336827044529ccc4f70319e03f6"
+          "version": "repo-file-v1:sha256:a7d93f395f77372d29894103bc5e2ac85a22d6ee7aaed02e4baafb3c687d526a"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:f29769c0c774e591fc9cd4915aedc3ab9466f96aefb71513093af1edf4280d49"
+          "version": "repo-file-v1:sha256:17dd1381594bafb51b963e3c8a03852b6cd645a95d669422392a3f4ebd9d9aea"
         }
       ]
     },
@@ -502,7 +502,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -546,25 +546,67 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:6856b42a3b4628c15b62df3485fa139136ff69a3d992111ba80e0f603ac35ef0"
+          "version": "repo-file-v1:sha256:ff122f366f5b0a0ace1354ee5e47648b8c9b3e1adf354ffca5362dced872f920"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
-          "version": "repo-file-v1:sha256:890e7afcaacbaecf41fb216366272ee1dad0aaca799b6c9b077ea185acb863be"
+          "version": "repo-file-v1:sha256:8ef9538764d4c0253dea216e32fef158170a41839d138f0aaad4b52c979261fe"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6a3d5d1dfa825868bd095dbcee61f8b9de131336827044529ccc4f70319e03f6"
+          "version": "repo-file-v1:sha256:a7d93f395f77372d29894103bc5e2ac85a22d6ee7aaed02e4baafb3c687d526a"
+        }
+      ]
+    },
+    {
+      "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
+      "statement": "The trusted native receipt provenance workflow publishes verified status on PR head SHAs and revalidates all open main-targeted PRs, including forks, after main pushes or PR edits. One concurrency group serializes status writers; all collected heads become pending before sequential verification, individual status errors do not skip later heads, and main-SHA guards reject stale results. Static checks pin its trusted steps, status permission, and source hash; the required status activates only after a successful main run.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:a7d93f395f77372d29894103bc5e2ac85a22d6ee7aaed02e4baafb3c687d526a"
+        }
+      ]
+    },
+    {
+      "id": "claim_c1de3d4b8c824cd793a1b0c8016c0a28",
+      "statement": "Offline image coverage scans .yaml, .yml, and .json cluster resources, including inline and file-backed Kustomize patches and replacement-source literals. Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or exact verified digest.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-images-check-test.py",
+          "version": "repo-file-v1:sha256:0f768989b0ba04c14f12ed4ce04e4ec2e97646a37b3ad43a785c6160077b3810"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:925c66e99ae9be2f4149852eeff1b3ab097abf8d36cbf711dcb1c020db779b9f"
+        }
+      ]
+    },
+    {
+      "id": "claim_4b4d744a47ad4b9eaa60b7d07d11be39",
+      "statement": "The Rego pull_request_target exception accepts only the exact trusted native receipt provenance job shape, including edited-event revalidation of every PR under one global concurrency group. Its tests reject changed verifier, revalidation, or concurrency settings.",
+      "evidence": [
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:ff122f366f5b0a0ace1354ee5e47648b8c9b3e1adf354ffca5362dced872f920"
+        },
+        {
+          "resource": "repo://policy/workflows_test.rego",
+          "version": "repo-file-v1:sha256:28c0ace1a0e0900ed5a61ab5aa91d6981e9b2604cce3315f9dd219b78f9e50d4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:45:23.387Z"
+    "at": "2026-10-17T21:56:49.510Z"
   }
 }

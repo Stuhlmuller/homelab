@@ -27,11 +27,21 @@ DEFAULT_CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.jso
 EMBEDDED_IMAGE = re.compile(
     r'''(?m)^[ \t]*image:[ \t]*(?:"([^"\r\n]+)"|'([^'\r\n]+)'|([^ \t#\r\n]+))[ \t]*(?:#.*)?$'''
 )
+NATIVE_IMAGE = re.compile(
+    r"harbor\.stinkyboi\.com/homelab/chainguard(?:/|-)[A-Za-z0-9_./-]+"
+    r"(?:@[A-Za-z0-9_:+.-]+|:[A-Za-z0-9_.-]+)?"
+)
 NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
     "harbor_native_chainguard_receipt", Path(__file__).with_name("harbor-native-chainguard-receipt.py")
 )
 NATIVE_RECEIPT = importlib.util.module_from_spec(NATIVE_RECEIPT_SPEC)
 NATIVE_RECEIPT_SPEC.loader.exec_module(NATIVE_RECEIPT)
+NATIVE_RECEIPT_IMPORT_SPEC = importlib.util.spec_from_file_location(
+    "harbor_native_chainguard_receipt_import",
+    Path(__file__).with_name("harbor-native-chainguard-receipt-import.py"),
+)
+NATIVE_RECEIPT_IMPORT = importlib.util.module_from_spec(NATIVE_RECEIPT_IMPORT_SPEC)
+NATIVE_RECEIPT_IMPORT_SPEC.loader.exec_module(NATIVE_RECEIPT_IMPORT)
 
 
 def normalize(image):
@@ -56,6 +66,13 @@ def declared_images(value):
         image = value.get("image")
         if isinstance(image, str) and image and image != "auto" and not any(c.isspace() for c in image):
             images.add(image)
+        if isinstance(value.get("name"), str) and isinstance(value.get("newName"), str):
+            transformed = value["newName"]
+            if value.get("digest"):
+                transformed += "@" + str(value["digest"])
+            elif value.get("newTag"):
+                transformed += ":" + str(value["newTag"])
+            images.add(transformed)
         repository = value.get("repository")
         if isinstance(repository, str) and (value.get("tag") or value.get("digest")):
             image = repository
@@ -66,7 +83,9 @@ def declared_images(value):
             if value.get("digest"):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
             images.add(image)
-        for child in value.values():
+        for key, child in value.items():
+            if key in {"name", "newName", "repository", "destination"} and isinstance(child, str):
+                continue
             found, pinned = declared_images(child)
             images.update(found)
             digests.update(pinned)
@@ -76,6 +95,7 @@ def declared_images(value):
             images.update(found)
             digests.update(pinned)
     elif isinstance(value, str):
+        images.update(NATIVE_IMAGE.findall(value))
         # Also covers digest-only chart defaults and embedded Helm values blocks.
         digests.update(re.findall(r"sha256:[0-9a-f]{64}(?![0-9a-f])", value))
     return images, digests
@@ -86,6 +106,11 @@ def yaml_documents(paths):
         ["yq", "ea", "-o=json", "-I=0",
          '[., (.. | select(tag == "!!map" and has("helm")) | .helm.values | select(tag == "!!str") | from_yaml)]',
          *map(str, paths)], text=True))
+
+
+def manifest_paths():
+    return sorted(path for directory in (ROOT / "clusters", ROOT / ".talos/patches")
+                  for path in directory.rglob("*") if path.suffix in {".yaml", ".yml", ".json"})
 
 
 def rendered_fleet_images():
@@ -189,6 +214,22 @@ def embedded_yaml_images(value):
     return images
 
 
+def native_references_by_path(paths):
+    prefixes = ("harbor.stinkyboi.com/homelab/chainguard/",
+                "harbor.stinkyboi.com/homelab/chainguard-")
+    declared = {}
+    for path in paths:
+        content = path.read_text()
+        if "harbor.stinkyboi.com" not in content or "chainguard" not in content:
+            continue
+        source = yaml_documents([path])
+        references = {image for image in declared_images(source)[0] | embedded_yaml_images(source)
+                      if image.startswith(prefixes)}
+        if references:
+            declared["/" + str(path.relative_to(ROOT))] = references
+    return declared
+
+
 def native_receipt_plans(config):
     """Build the fixed native import contract once for all enrolled consumers."""
     return {
@@ -200,7 +241,7 @@ def native_receipt_plans(config):
     }
 
 
-def receipt_errors():
+def receipt_errors(declared_native=None):
     """Enrolled consumers require verified publication; native candidates need protected evidence."""
     if not AUTOMATION.exists() or not AUTOMATION_STATE.exists():
         return []
@@ -212,18 +253,45 @@ def receipt_errors():
     native_plans = None
     native_plan_error = False
     for consumer in config.get("consumers", []):
-        if consumer.get("automation_status") != "enrolled":
-            continue
         image_id = consumer.get("image_id")
+        native = isinstance(image_id, str) and image_id.startswith("chainguard-")
+        target_images = set()
+        if native:
+            target = ROOT / str(consumer.get("target", "")).lstrip("/")
+            if (not target.is_file() and consumer.get("automation_status") != "enrolled"
+                    and consumer.get("migration_status") != "migrated"):
+                continue
+            try:
+                target_images = consumer_target_images(consumer)
+            except (OSError, ValueError, subprocess.SubprocessError):
+                errors.append(f"Native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
+                continue
+        target_native_images = {
+            reference for reference in target_images
+            if reference.startswith(("harbor.stinkyboi.com/homelab/chainguard/",
+                                     "harbor.stinkyboi.com/homelab/chainguard-"))
+        }
+        if (consumer.get("automation_status") != "enrolled"
+                and not (native and consumer.get("migration_status") == "migrated")
+                and not target_native_images):
+            continue
+        if target_native_images and consumer.get("migration_status") != "migrated":
+            errors.append(f"Native Chainguard reference lacks migrated status: {consumer.get('consumer_id')}")
+            continue
         image = images.get(image_id)
         receipt = receipts.get(image_id)
-        if not image or not isinstance(receipt, dict):
+        if not image:
             errors.append(f"Enrolled image lacks publication receipt: {image_id}")
             continue
-        if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
-            errors.append(f"Enrolled image receipt lacks intended Harbor access: {image_id}")
+        if native and not isinstance(receipt, dict):
+            errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue
-        if not isinstance(image_id, str) or not image_id.startswith("chainguard-"):
+        if not isinstance(receipt, dict):
+            errors.append(f"Enrolled image lacks publication receipt: {image_id}")
+            continue
+        if not native:
+            if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
+                errors.append(f"Enrolled image receipt lacks intended Harbor access: {image_id}")
             continue
         if native_plans is None:
             try:
@@ -232,21 +300,35 @@ def receipt_errors():
                 native_plans = {}
                 native_plan_error = True
         plan = native_plans.get(image_id)
-        if native_plan_error or plan is None or not NATIVE_RECEIPT.verify_native_receipt(plan, receipt)[0]:
-            errors.append(f"Enrolled native Chainguard image lacks a verified receipt: {image_id}")
+        if native_plan_error or plan is None or not NATIVE_RECEIPT_IMPORT.verify_imported_receipt(plan, receipt)[0]:
+            errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue
-        expected = f'{plan["destination_repository"]}@{receipt["destination_digest"]}'
-        try:
-            target_images = consumer_target_images(consumer)
-        except (OSError, ValueError, subprocess.SubprocessError):
-            errors.append(f"Enrolled native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
-            continue
-        if expected not in target_images:
+        expected = f'{plan["destination_repository"]}@{plan["source_digest"]}'
+        if target_native_images != {expected}:
             errors.append(
                 f"Enrolled native Chainguard consumer lacks exact verified digest: {consumer.get('consumer_id')}"
             )
             continue
-        errors.append(f"Enrolled native Chainguard image requires protected workflow evidence: {image_id}")
+    if declared_native:
+        if native_plans is None:
+            try:
+                native_plans = native_receipt_plans(config)
+            except (OSError, ValueError):
+                native_plans = {}
+        expected = {f'{plan["destination_repository"]}@{plan["source_digest"]}': image_id
+                    for image_id, plan in native_plans.items()}
+        for path, references in sorted(declared_native.items()):
+            for reference in sorted(references):
+                image_id = expected.get(reference)
+                entry = receipts.get(image_id) if image_id else None
+                migrated = any(consumer.get("target") == path and consumer.get("image_id") == image_id
+                               and consumer.get("migration_status") == "migrated"
+                               for consumer in config.get("consumers", []))
+                if not migrated:
+                    errors.append(f"Declared native Chainguard reference lacks migrated consumer: {path}: {reference}")
+                if (image_id is None or not isinstance(entry, dict)
+                        or not NATIVE_RECEIPT_IMPORT.verify_imported_receipt(native_plans[image_id], entry)[0]):
+                    errors.append(f"Declared native Chainguard reference lacks verified receipt: {path}: {reference}")
     return errors
 
 
@@ -280,8 +362,10 @@ def check():
     # An unpinned declaration needs its reviewed tag as well as a copied digest.
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
                   if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1]}
-    paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
-    images, digests = declared_images(yaml_documents(paths))
+    paths = manifest_paths()
+    documents = yaml_documents(paths)
+    images, digests = declared_images(documents)
+    declared_native = native_references_by_path(paths)
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/")
                      and normalize(image) not in known | known_tags)
@@ -289,7 +373,7 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
-    errors.extend(receipt_errors())
+    errors.extend(receipt_errors(declared_native))
     errors.extend(ownership_errors())
     scope_counts = {}
     for name, path, required_images in (

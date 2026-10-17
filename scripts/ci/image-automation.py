@@ -120,9 +120,8 @@ def validate(config):
             fail(f"invalid consumer: {cid}")
         if consumer["migration_status"] not in {"candidate", "migrated", "exception"} or consumer["automation_status"] not in {"not-enrolled", "enrolled", "exception"}:
             fail(f"invalid consumer status: {cid}")
-        if (consumer["image_id"].startswith("chainguard-")
-                and consumer["automation_status"] == "enrolled"):
-            fail(f"native Chainguard enrollment requires protected workflow evidence: {cid}")
+        if consumer["image_id"].startswith("chainguard-") and consumer["automation_status"] == "enrolled":
+            fail(f"native consumer enrollment requires protected receipt-bound promotion: {cid}")
         if not isinstance(consumer["target"], str) or not consumer["target"].startswith("/") or ".." in Path(consumer["target"]).parts:
             fail(f"unsafe target: {cid}")
         consumer_ids.add(cid)
@@ -136,6 +135,10 @@ def validate(config):
         if any(next(c for c in config["consumers"] if c["consumer_id"] == cid)["application_id"] != aid
                for cid in app["consumer_ids"]):
             fail(f"application consumers are not coordinated: {aid}")
+        native = {next(c for c in config["consumers"] if c["consumer_id"] == cid)["image_id"].startswith("chainguard-")
+                  for cid in app["consumer_ids"]}
+        if len(native) > 1:
+            fail(f"native and alias-backed images cannot share an application: {aid}")
         for recipe in (app["preflight_recipe"], app["health_recipe"], app["recovery_recipe"]):
             if recipe not in KNOWN_RECIPES:
                 fail(f"unknown workload recipe: {recipe}")
@@ -152,7 +155,10 @@ def render(config):
     for app in sorted(config["applications"], key=lambda x: x["application_id"]):
         consumers = [next(c for c in config["consumers"] if c["consumer_id"] == cid) for cid in app["consumer_ids"]]
         if any(c["automation_status"] == "enrolled" for c in consumers):
-            entries.append({"application": app["application_id"], "images": sorted({c["image_id"] for c in consumers}), "platforms": sorted({p for i in config["images"] if i["image_id"] in {c["image_id"] for c in consumers} for p in i["required_platforms"]}), "strategy": "digest", "alias": "verified-stable", "write_back": "git:secret:github-app", "branch": "main:codex/image-updater-proposals", "poll_seconds": 120})
+            entry = {"application": app["application_id"], "images": sorted({c["image_id"] for c in consumers}), "platforms": sorted({p for i in config["images"] if i["image_id"] in {c["image_id"] for c in consumers} for p in i["required_platforms"]}), "strategy": "digest", "write_back": "git:secret:github-app", "branch": "main:codex/image-updater-proposals", "poll_seconds": 120}
+            if not any(c["image_id"].startswith("chainguard-") for c in consumers):
+                entry["alias"] = "verified-stable"
+            entries.append(entry)
     return {"apiVersion": "image-automation.homelab/v1", "kind": "ManagedImages", "spec": entries}
 
 

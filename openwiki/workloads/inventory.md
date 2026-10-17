@@ -14,8 +14,6 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/values.yaml
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
-  - id: openwiki-source-18a62bd8e6557f91a37822f4
-    resource: repo://clusters/homelab/apps/harbor/image-automation.json
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
@@ -46,10 +44,14 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+  - id: openwiki-source-b4ba5e3191f69df1237ac01d
+    resource: repo://scripts/ci/image-automation-test.py
+  - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
+    resource: repo://scripts/ci/image-automation.py
+generated: { by: "codex", at: "2026-10-17T21:40:54.253Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:45:23.387Z
+    at: 2026-10-17T21:40:54.253Z
 ---
 
 # Workload Inventory
@@ -225,6 +227,8 @@ The native Chainguard receipt applies only to the candidate Python and curl
 artifacts: it does not create a `verified-stable` alias, write updater state, or
 enroll either consumer. A later reviewed compatibility migration must first use
 an exact private Harbor digest reference and provide verifiable receipt evidence.
+Native updater enrollment remains rejected until candidate promotion binds its
+proposed digest to that protected receipt.
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were

@@ -52,10 +52,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+generated: { by: "codex", at: "2026-10-17T19:19:00.714Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:57:20.007Z
+    at: 2026-10-17T20:07:41.174Z
 ---
 
 # Secrets And Identity
@@ -737,7 +737,8 @@ the `mirror` project private.
 
 The protected native Chainguard receipt workflow is an exact-`main`, manual
 verification path. Its inline AWS session policy reads only the homelab pull and
-scan robot parameters. The pull identity is used only for authenticated OCI
+scan robot parameters after a private Traefik registry route passes its TLS
+challenge. The pull identity is used only for authenticated OCI
 pulls; the separate scan identity has only project-scoped `artifact:read` for
 the exact child-manifest scan queries. Both values are written to private files,
 never workflow environment, arguments, logs, JSON, or artifacts. The workflow

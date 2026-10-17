@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6b8bcf2eeeb4953aeb18ba3b30a4cd3513ab7bb505cabab76ffd26b3c5a13615",
+  "pageVersion": "sha256:ad970c69af67202360c8a51744c7177d93cfebcf3bf92ba1882d737383320884",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:bfb7150ee34056a9789d9f6e8fd107163ded2255e80deba005d9ae2e118462ab"
+          "version": "repo-file-v1:sha256:e74eda87d2b835d8eff01e7dd71a46683769ddf9b96934edc0140bbed448c7e8"
         }
       ]
     },
@@ -130,29 +130,25 @@
     },
     {
       "id": "claim_c12e09fee2904168a36dadc5c1771d1f",
-      "statement": "The staged Image Updater controller remains unregistered and scaled to zero. Its native Chainguard receipt is only evidence for the candidate Python and curl artifacts: it neither creates a verified-stable alias nor writes updater state or enrolls a consumer. Enrollment requires a later reviewed compatibility migration using an exact private Harbor digest and verifiable receipt evidence.",
+      "statement": "The staged Image Updater controller remains unregistered and scaled to zero. Its native Chainguard receipt is only evidence for candidate Python and curl artifacts: it neither creates a verified-stable alias nor writes updater state or enrolls a consumer. Enrollment requires a later reviewed compatibility migration using an exact private Harbor digest and verifiable receipt evidence, followed by candidate promotion that binds proposed digests to that protected receipt; current native enrollment is rejected.",
       "evidence": [
         {
-          "resource": "repo://IaC/stacks/argocd-image-updater/stack.hcl",
-          "version": "repo-file-v1:sha256:026a1c7562a1d4f1335f41c4285521aaa50b54da43592ca7a46a7926dd60b55e"
-        },
-        {
-          "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:a77a3e31fce084f6db2fb543b65428ed3e9d494de6235d4681e34e5aff285cc7"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/harbor/image-automation.json",
-          "version": "repo-file-v1:sha256:d6364d806f3ccc0257d837d5c3291c386a8101a409fcd3976e63f62b36040805"
-        },
-        {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:bfb7150ee34056a9789d9f6e8fd107163ded2255e80deba005d9ae2e118462ab"
+          "version": "repo-file-v1:sha256:e74eda87d2b835d8eff01e7dd71a46683769ddf9b96934edc0140bbed448c7e8"
+        },
+        {
+          "resource": "repo://scripts/ci/image-automation-test.py",
+          "version": "repo-file-v1:sha256:61152a33e62d7d59ad87967e60993e377cbc2263106fbbb014679dac73b953af"
+        },
+        {
+          "resource": "repo://scripts/ci/image-automation.py",
+          "version": "repo-file-v1:sha256:213eb79853933d253e75b52cd3d9832ba4da018b69cdc0564a97a2e8c5cc2fed"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:45:23.387Z"
+    "at": "2026-10-17T21:40:54.253Z"
   }
 }

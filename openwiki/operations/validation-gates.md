@@ -6,6 +6,8 @@ tags: ["operations", "validation"]
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-a1af3dbae268cb4278427934
     resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -52,6 +54,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-fdad4f74fd023e19134fcc88
+    resource: repo://policy/workflows_test.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -62,6 +66,10 @@ sources:
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -120,10 +128,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+generated: { by: "codex", at: "2026-10-17T21:56:49.510Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:45:23.387Z
+    at: 2026-10-17T21:56:49.510Z
 ---
 
 # Validation Gates
@@ -1557,6 +1565,26 @@ non-secret receipt when successful. Its result is evidence for a later reviewed
 compatibility migration, not authorization to change a consumer or enable a
 global Harbor-only pull policy.
 
+The separate trusted provenance workflow validates imported receipt state
+against the exact successful main run and publishes `Native Chainguard Receipt
+Provenance` on the PR head SHA. Main pushes and PR edits, including base-branch
+retargets, revalidate all open PR heads against current `main`. One concurrency
+group serializes status writers; a replacement pending event still checks every
+PR. The workflow marks every collected head pending before sequential verification,
+continues after individual status failures, and main-SHA guards reject stale results.
+The required status is enabled only
+after the workflow succeeds on main; static policy tests pin its trusted steps, status
+permission, and source hashes. The Rego `pull_request_target` exception accepts
+only that exact trusted job shape, including serialized all-PR revalidation.
+Neither a local fixture nor a copied receipt substitutes for this head-bound result.
+
+`harbor-images-check.py` reads native consumer targets even when status remains
+`candidate` and `not-enrolled`, and scans `.yaml`, `.yml`, and `.json` cluster
+resources, including inline and file-backed Kustomize patches and replacement-source literals, for private native Chainguard references. Every such reference needs an imported protected receipt
+and the exact verified digest in the declared path of a `migrated` consumer.
+The Harbor render fixture rejects undeclared native destinations.
+These checks prove declared source behavior, not a live pull or rollout.
+
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,
 retained original-manager baseline, hash mismatch refusal, unexpected archive
@@ -1603,8 +1631,9 @@ offline OCI fixture still verifies multi-platform and repeated-descriptor
 byte preservation with network transports rejected.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
-with exactly one database relation. Offline fixtures also validate the OCI
-payload hashes, reject upload locations outside the disposable endpoint, and
+with exactly four parent/child database relations. Offline fixtures also
+validate the OCI payload hashes, reject upload locations outside the disposable
+endpoint, and
 require no published host ports, internal networking and core health ordering.
 The registry client shares the proxy's network namespace and uses its loopback
 listener; this avoids publishing a port from an internal-only Docker bridge.
