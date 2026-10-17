@@ -2,6 +2,7 @@
 """Validate the unapplied NRI containerd fragment without live access."""
 
 import json
+import re
 import subprocess
 import tempfile
 import tomllib
@@ -15,7 +16,12 @@ NRI_FILE = "/etc/cri/conf.d/30-nri.part"
 def run(*args):
     result = subprocess.run(args, capture_output=True, text=True)
     if result.returncode:
-        raise RuntimeError("NRI preparation validation failed; generated configuration withheld")
+        stderr = re.sub(r"[A-Za-z0-9+/=_-]{48,}", "[redacted]", result.stderr.strip())
+        stderr = re.sub(r"(?i)\b((?:secret|token|password|privatekey)\s*[:=]\s*)\S+",
+                        r"\1[redacted]", stderr)
+        command = " ".join(map(str, args[:3]))
+        raise RuntimeError(f"{command} failed (exit {result.returncode}): "
+                           f"{stderr or 'no stderr'}; generated configuration withheld")
     return result.stdout
 
 
