@@ -38,6 +38,19 @@ def normalize(image):
     return repository + ("@" + digest if separator else ":" + tag)
 
 
+def catalog_reference(image):
+    """Compare a Harbor mirror ref with its reviewed upstream provenance."""
+    return normalize(image.removeprefix("harbor.stinkyboi.com/mirror/"))
+
+
+def mirror_reference(image):
+    """Keep the literal Harbor repository and digest; tags do not change either."""
+    repository, _, digest = image.partition("@")
+    if ":" in repository.rsplit("/", 1)[-1]:
+        repository = repository.rsplit(":", 1)[0]
+    return repository + "@" + digest
+
+
 def declared_images(value):
     """Walk manifests and chart image maps, including embedded Helm values."""
     images, digests = set(), set()
@@ -193,17 +206,24 @@ def ownership_errors():
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
+    known_mirrors = {mirror_reference("harbor.stinkyboi.com/mirror/" + item["source"])
+                     for item in catalog}
     known_digests = {item.rsplit("@", 1)[-1] for item in known if "@" in item}
     # An unpinned declaration needs its reviewed tag as well as a copied digest.
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
                   if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1]}
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
     images, digests = declared_images(yaml_documents(paths))
+    # Direct Harbor mirror references must retain the reviewed digest. Upstream
+    # provenance refs may use a reviewed tag because Talos resolves them through
+    # the strict Harbor mirror path.
     missing = sorted(normalize(image) for image in images
-                     if not image.startswith("harbor.stinkyboi.com/")
-                     and normalize(image) not in known | known_tags)
+                     if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and (mirror_reference(image) not in known_mirrors
+                          if image.startswith("harbor.stinkyboi.com/mirror/")
+                          else catalog_reference(image) not in known | known_tags))
     missing_digests = sorted(digests - known_digests - {
-        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
+        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
     errors.extend(receipt_errors())
@@ -218,7 +238,7 @@ def check():
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
-        required = {normalize(image) for image in required_images}
+        required = {catalog_reference(image) for image in required_images}
         errors.extend(f"{name} mirror scope missing required image: " + image
                       for image in sorted(required - known_scope))
         errors.extend(f"{name} mirror scope has unused image: " + image
