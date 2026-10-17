@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 
@@ -23,7 +24,7 @@ def main():
         try:
             workspace = APP.OFFSITE.backup.private_directory(Path(config['workspace']) / app)
             # Reserve room for preparation + verification + remote check copies.
-            if APP.shutil.disk_usage(workspace).free < 20 * 1024**3:
+            if shutil.disk_usage(workspace).free < 20 * 1024**3:
                 raise ValueError('insufficient private scratch capacity')
             candidates = sorted(p for p in Path(source_root).iterdir()
                                 if re.fullmatch(r'[0-9]{8}T[0-9]{6}Z', p.name) and p.is_dir() and not p.is_symlink())

@@ -10,11 +10,13 @@
   "pinDigests": true,
   "packageRules": [
     {
-      "description": "Keep OctoBot on the last image compatible with its retained config.",
+      "description": "Image Updater exclusively owns enrolled Chainguard Harbor targets.",
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["drakkarsoftware/octobot"],
-      "matchFileNames": ["clusters/homelab/apps/octobot/values.yaml"],
-      "allowedVersions": "2.1.1"
+      "matchPackageNames": [
+        "harbor.stinkyboi.com/homelab/chainguard-python",
+        "harbor.stinkyboi.com/homelab/chainguard-curl"
+      ],
+      "enabled": false
     }
   ],
   "lockFileMaintenance": {

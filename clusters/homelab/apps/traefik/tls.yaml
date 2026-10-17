@@ -1,0 +1,7 @@
+tls:
+  certificates:
+    - certFile: /etc/traefik/dynamic/tls.crt
+      keyFile: /etc/traefik/dynamic/tls.key
+  options:
+    default:
+      minVersion: VersionTLS12

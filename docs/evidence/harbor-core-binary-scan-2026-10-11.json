@@ -1,0 +1,58 @@
+{
+  "scope": "Local rebuilt Linux amd64 binary only; not final container or deployed-digest acceptance",
+  "upstream": "v2.15.4 / 0a6bf30d54e779962ad5b862fc67e3e9f6b010d8",
+  "compiler": "go1.27.2",
+  "binary_sha256": "93e703372402986b58dd9a9ef866b884498871aa48d2efdd1c3bba53decbf6d9",
+  "report_sha256": "8b6a23e829af614873151a96593cf6a8e8552c45f296c7555cc53503ec6adb74",
+  "scanner": {
+    "name": "grype",
+    "version": "0.112.0",
+    "timestamp": "2026-10-11T11:58:25.79433-07:00",
+    "db_built": "2026-10-11T06:30:42Z",
+    "valid": true
+  },
+  "matches": 5,
+  "severity_counts": {
+    "High": 2,
+    "Medium": 2,
+    "Unknown": 1
+  },
+  "fix_states": {
+    "not-fixed": 3,
+    "unknown": 2
+  },
+  "remaining": [
+    {
+      "id": "CVE-2026-35172",
+      "package": "github.com/distribution/distribution",
+      "version": "v2.8.2+incompatible",
+      "fix_state": "not-fixed"
+    },
+    {
+      "id": "CVE-2026-33540",
+      "package": "github.com/distribution/distribution",
+      "version": "v2.8.2+incompatible",
+      "fix_state": "not-fixed"
+    },
+    {
+      "id": "CVE-2025-24976",
+      "package": "github.com/distribution/distribution",
+      "version": "v2.8.2+incompatible",
+      "fix_state": "unknown"
+    },
+    {
+      "id": "CVE-2026-41888",
+      "package": "github.com/distribution/distribution",
+      "version": "v2.8.2+incompatible",
+      "fix_state": "not-fixed"
+    },
+    {
+      "id": "GO-2026-5932",
+      "package": "golang.org/x/crypto",
+      "version": "v0.58.0",
+      "fix_state": "unknown"
+    }
+  ],
+  "excluded_findings": 0,
+  "cve_clearance": false
+}

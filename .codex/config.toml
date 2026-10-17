@@ -1,0 +1,8 @@
+# OPENWIKI:MCP:START
+[mcp_servers.openwiki]
+command = "npx"
+args = ["--yes", "--package=openwiki@0.7.0", "openwiki", "mcp", "--host", "codex"]
+# OPENWIKI:MCP:END
+
+# Allow the pinned package download on a cold npm cache.
+startup_timeout_sec = 60

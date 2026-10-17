@@ -44,7 +44,7 @@ boundaries when adding or moving files:
   external dependencies such as DNS, object storage, IAM, and state backends.
 - `docs/` and top-level guides own learner-facing explanations, walkthroughs,
   diagrams, and runbooks.
-- `docs/knowledge-base/` owns the Obsidian vault for cross-cutting homelab
+- `openwiki/` owns the OpenWiki Markdown wiki for cross-cutting homelab
   context, architecture notes, inventories, build patterns, and durable
   decisions that need to be referenced across future changes.
 - `scripts/` owns repeatable operator commands and validation helpers.
@@ -102,14 +102,15 @@ base intentionally adopts them again and the documentation explains why.
 
 ## Default agent workflow
 
-1. Read the relevant docs, knowledge-base notes, and code before changing
-   behavior.
+1. Read `openwiki/quickstart.md`, choose its task route, and inspect the relevant
+   wiki sections and source before changing behavior. Use the repository
+   `homelab-knowledge-base` skill for context and `openwiki` for search/updates.
 2. Inspect current state with read-only commands when the task depends on live
    cluster reality.
 3. Run the repo validation gate when available, such as `nix run .#validate` or
    the documented replacement.
 4. Make the smallest code and documentation change that solves the request.
-5. Update affected knowledge-base notes under `docs/knowledge-base/` when the
+5. Update affected knowledge-base notes under `openwiki/` when the
    change creates, removes, renames, or materially changes an app, platform
    dependency, workflow, topology assumption, secret contract, storage
    requirement, validation gate, or build pattern.
@@ -122,7 +123,7 @@ base intentionally adopts them again and the documentation explains why.
 Treat security and reliability improvement as ongoing stewardship. When you
 notice a risk, drift, weak assumption, missing validation, or hardening
 opportunity, either fix it through the normal repository workflow or record it
-as an explicit finding in `docs/knowledge-base/` with source context and next
+as an explicit finding in `openwiki/` with source context and next
 steps. Do not leave important homelab observations only in chat history.
 
 If a checkout is intentionally incomplete and expected scripts or Nix targets
@@ -152,9 +153,9 @@ specific validation available, such as `talosctl validate`, `kubectl diff`,
   to roll it back.
 - Prefer diagrams and short explanations for architecture changes, but keep the
   source of truth in code.
-- Use `docs/knowledge-base/` for Obsidian-linked context that spans multiple
+- Use `openwiki/` for source-linked context that spans multiple
   runbooks or source directories. Keep notes concise, link to source files, and
-  update the vault in the same PR as the code or runbook change.
+  update the wiki in the same PR as the code or runbook change.
 
 ## Infrastructure-as-code conventions
 
@@ -211,8 +212,33 @@ with a newer runbook or live read-only inspection, update the docs in the same
 PR as the operational change.
 
 ## Active Technologies
-- Markdown Obsidian vault under `docs/knowledge-base` + project-local Codex
+
+- OpenWiki Markdown documentation under `openwiki` + project-local Codex
   skill `homelab-knowledge-base` for cross-change architecture notes,
   inventories, build patterns, and knowledge-base update workflow
 - HCL for Terragrunt/OpenTofu; Kubernetes YAML and Helm values for GitOps desired state + repository-local module `IaC/modules/argocd-application-kubernetes` for Argo CD Application CRDs; Argo CD; Helm/Kustomize-compatible application sources; AWS SSM Parameter Store through external-secrets
 - Kubernetes persistent volumes for stateful apps that require data retention: Prometheus, Grafana, n8n, Prowlarr, Radarr, Sonarr, Deluge, OpenClaw, and LiteLLM when configured with persistent state; no persistent storage expected for cert-manager, external-secrets, Istio, Tailscale, or descheduler except controller-managed runtime objects
+
+## Repository OpenWiki Policy
+
+No scheduled wiki workflow is installed. Update affected pages in the same PR
+as source changes. Read the quickstart task route before substantive work,
+then retrieve only the relevant sections. These repository rules take
+precedence over upstream OpenWiki defaults.
+
+<!-- OPENWIKI:START -->
+
+## OpenWiki
+
+This repository has a generated `openwiki/` evidence index. It is optional just-in-time context, not required startup reading.
+
+- Do not enumerate, preload, or search wikis at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
+- When those conditions apply and OpenWiki retrieval tools are available, use `openwiki_search` for just-in-time context and `openwiki_read` for the relevant complete sections. If search returns `workspace_required`, ask which listed workspace to use and retry with its ID.
+- Use `openwiki_list_workspaces` or `openwiki_list_wikis` when workspace membership itself needs to be discovered.
+- If the retrieval tools are unavailable, read `openwiki/quickstart.md` and follow its links to the relevant pages.
+- Treat source code and tests as authoritative. A brief's unknowns and review items are verification gaps, not automatic requirements.
+- Prefer the narrowest quiet validation that proves the changed behavior. Preserve complete failure output.
+
+The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+
+<!-- OPENWIKI:END -->

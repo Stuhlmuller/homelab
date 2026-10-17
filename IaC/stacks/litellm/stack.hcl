@@ -5,6 +5,11 @@ locals {
 inputs = {
   defaults     = local.shared.argocd_defaults
   dependencies = ["external-secrets", "cert-manager", "istio", "platform-storage", "langfuse"]
+  metadata = {
+    annotations = {
+      "argocd.argoproj.io/compare-options" = "ServerSideDiff=true"
+    }
+  }
   spec = {
     destination = {
       namespace = "ai"

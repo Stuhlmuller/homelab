@@ -6,7 +6,7 @@ verification remains pending. Talos remains `1.11.3`.
 
 ## Execution Record
 
-The [CoreDNS handoff](knowledge-base/operations/coredns-gitops-ownership.md)
+The [CoreDNS handoff](../openwiki/operations/coredns-gitops-ownership.md)
 completed before the upgrade: the no-reboot Talos patch applied at 05:21:39 UTC,
 and the post-handoff DNS gates passed at 05:23 UTC. All six resources remained
 Argo-owned, both updated DNS replicas were Ready, the Corefile and Service
@@ -71,7 +71,7 @@ The procedure below records the reviewed maintenance gates and command.
 control-plane target's five images: Sidero's kubelet plus Kubernetes API server, controller
 manager, scheduler, and kube-proxy at `v1.34.11`. Registry inspection confirmed
 `linux/amd64` manifests and image configurations for all five on 2026-09-07.
-The [selected release and collector fix](knowledge-base/operations/kubernetes-patch-maintenance-2026-09.md)
+The [selected release and collector fix](../openwiki/operations/kubernetes-patch-maintenance-2026-09.md)
 are compatible with the Talos 1.11 Kubernetes 1.34 support matrix.
 
 Use that patch only for the control-plane bootstrap config or offline target
@@ -109,7 +109,7 @@ preserve credentials, issuer, SANs, DNS ownership, disks,
 networking, and workload-specific patches. Keep configs and comparison output
 private. Do not apply these rendered version configs to live nodes: changing
 all images together bypasses component ordering. Fresh bootstrap still follows
-the [DNS bootstrap contract](knowledge-base/operations/coredns-gitops-ownership.md#bootstrap-and-rollback),
+the [DNS bootstrap contract](../openwiki/operations/coredns-gitops-ownership.md#bootstrap-and-rollback),
 which retains Talos DNS until GitOps adoption is ready.
 
 Pre-upgrade private validation on 2026-09-07 used the actual Talos `v1.11.3` client
@@ -129,7 +129,7 @@ upgrade were not executed by this validation.
    candidate in the documented no-reboot mode. Verify this value is active,
    Talos no longer exposes `11-core-dns` or `11-core-dns-svc`, and all six
    Kubernetes resources remain Argo-owned with two Ready DNS replicas. Follow
-   the [ordered handoff](knowledge-base/operations/coredns-gitops-ownership.md#ordered-takeover);
+   the [ordered handoff](../openwiki/operations/coredns-gitops-ownership.md#ordered-takeover);
    a merged declaration alone is insufficient.
 2. Finish OpenClaw recovery and verify current application backups through each
    workload's declared backup path. Inspect CronJob last-success times and

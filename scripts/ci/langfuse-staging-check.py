@@ -13,7 +13,8 @@ def yaml(path):
 
 litellm = yaml("clusters/homelab/apps/litellm/values.yaml")
 settings = litellm["proxy_config"]["general_settings"]
-assert settings["custom_auth"] == "/etc/litellm-hooks/app_identity.authenticate"
+assert "custom_auth" not in settings, "Custom auth bypasses native database revocation"
+assert (ROOT / "clusters/homelab/apps/litellm/native_keys.py").exists()
 assert litellm["proxy_config"]["litellm_settings"]["callbacks"] == [
     "/etc/litellm-hooks/app_identity.attribution",
     "/etc/litellm-hooks/app_identity.langfuse",

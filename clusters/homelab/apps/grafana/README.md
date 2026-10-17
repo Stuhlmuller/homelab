@@ -171,7 +171,7 @@ The provisioned rules cover:
   missing capacity metrics. Missing data enters Grafana's `Alerting` state;
   it does not prove disk exhaustion. NFS subdirectory claims share filesystem
   capacity rather than enforcing the requested PVC size. See
-  [storage metric recovery](../../../../docs/knowledge-base/operations/pvc-metrics-recovery.md).
+  [storage metric recovery](../../../../openwiki/operations/pvc-metrics-recovery.md).
 - Argo CD application metrics missing from Prometheus for 10 minutes.
 - Argo CD Applications not `Healthy` for 10 minutes.
 - Argo CD Applications remaining in `Progressing` for 30 minutes.
@@ -188,7 +188,7 @@ claim host filesystem, SMART, or full operating-system memory telemetry. Add a
 reviewed node-exporter path before adding those bare-metal alert families.
 
 The provisioning file also deletes the retired Octelium UPnP alert and the
-OctoBot- and Deluge-specific deployment availability rules. Explicit
+Deluge-specific deployment availability rules. Explicit
 `deleteRules` entries remove persisted rules from existing Grafana databases;
 removing them from `groups` alone leaves the old rules behind.
 

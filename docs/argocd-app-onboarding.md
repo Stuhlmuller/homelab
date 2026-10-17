@@ -56,7 +56,6 @@ destination, and resources.
 | n8n                   | requested                 | `automation`            | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                   | Yes           | external-secrets, cert-manager, istio, platform-storage, n8n-postgres                              |
 | nofx                  | requested                 | `nofx`                  | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                  | Yes           | external-secrets, istio, octelium, litellm, platform-storage                                       |
 | policy-bot            | requested                 | `automation`            | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`            | Yes           | external-secrets, cert-manager, istio                                                              |
-| octobot               | requested                 | `finance`               | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`               | Yes           | cert-manager, istio, platform-storage                                                              |
 
 ## Dependency Readiness
 
@@ -179,7 +178,7 @@ maps. Other fields replace their defaults; lists always replace, including
 
 Helm applications keep explicit chart repository, chart, pinned revision,
 release name, and values files in `spec.sources`; see
-[Helm chart organization](knowledge-base/patterns/helm-chart-organization.md).
+[Helm chart organization](../openwiki/patterns/helm-chart-organization.md).
 Dependencies are relative to the sibling application directory: use an app name
 for another Application and `../../aws-ssm-parameters` for that shared AWS unit.
 Bootstrap installs Argo CD before its CRDs exist. Argo's self-management, Cordium's bootstrap

@@ -5,7 +5,7 @@ description: Add, refactor, validate, or troubleshoot this homelab's explicit Te
 
 # Terragrunt Workflows
 
-Read [GitOps ownership](../../../docs/knowledge-base/architecture/gitops-flow.md)
+Read [GitOps ownership](../../../openwiki/architecture/gitops-flow.md)
 and only the affected source before editing. Ordinary app onboarding also uses
 [the focused app skill](../homelab-app-onboarding/SKILL.md).
 
@@ -88,7 +88,7 @@ nix develop --command terragrunt --working-dir IaC/live/argocd-apps/<app> \
 Backend-free unit validation requires `init -backend=false`
 followed by `run --no-auto-init -- validate`; otherwise Terragrunt may initialize
 the real backend. Before a real authenticated plan, reinitialize the intended
-backend. Use [validation gates](../../../docs/knowledge-base/operations/validation-gates.md)
+backend. Use [validation gates](../../../openwiki/operations/validation-gates.md)
 for the exact unit commands and known live prerequisites.
 
 Use `scripts/ci/terragrunt-plan.sh` for the reviewed PR planning scope; inspect

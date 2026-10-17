@@ -18,13 +18,13 @@ For private custom builds, also read the workload's image runbook, such as
    retaining all required architectures.
 2. Add public upstream artifacts to `scripts/config/harbor-images.json` in a
    prerequisite change. Keep upstream image provenance in workload manifests.
-   The public `mirror` project must not receive private custom artifacts;
+   The `mirror` project must not receive private custom artifacts;
    those belong in `homelab` through their existing protected build workflow.
 3. After protected merge, use the authorized `harbor-mirror.yml` dispatch with
    exact current `main` as `expected_sha`. Choose a scoped input only when the
    workflow and runbook explicitly support that scope.
 4. Require successful digest/platform-preserving copies, aliases and fresh
-   complete anonymous downloads. A manifest lookup, Harbor UI, successful build,
+   complete authenticated Harbor pulls. Public source reads remain anonymous. A manifest lookup, Harbor UI, successful build,
    or queued publication does not prove artifacts are available. Reuse an
    ancestor publication only under the runbook's exact bundle-equality rule.
 5. Merge consuming image/chart changes only after publication evidence exists:

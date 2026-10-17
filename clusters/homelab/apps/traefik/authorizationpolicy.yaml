@@ -1,0 +1,50 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: traefik-allow-ingress-proxies
+  namespace: traefik
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  action: ALLOW
+  rules:
+    # External access is controlled by Tailscale. NetworkPolicy is declarative
+    # intent only until the cluster installs an enforcing CNI.
+    - from:
+        - source:
+            notPrincipals: ["*"]
+      to:
+        - operation:
+            ports: ["8000", "8080", "8443"]
+    # Temporary: retain connector authentication until its final retirement.
+    - from:
+        - source:
+            principals: ["cluster.local/ns/octelium-client/sa/octelium-client"]
+      to:
+        - operation:
+            ports: ["8443"]
+    - from:
+        - source:
+            notPrincipals: ["*"]
+            # Host-to-Service SNAT uses cni0 locally or flannel.1 across nodes.
+            # Keep exact node/interface addresses; never permit whole Pod CIDRs.
+            ipBlocks:
+              - "10.1.0.199/32"
+              - "10.1.0.200/32"
+              - "10.1.0.201/32"
+              - "10.1.0.202/32"
+              - "10.244.1.1/32"
+              - "10.244.2.1/32"
+              - "10.244.3.1/32"
+              - "10.244.4.1/32"
+              - "10.244.1.0/32"
+              - "10.244.2.0/32"
+              - "10.244.3.0/32"
+              - "10.244.4.0/32"
+      to:
+        - operation:
+            ports: ["9443"]
+    - to:
+        - operation:
+            ports: ["9000"]

@@ -331,3 +331,48 @@ test_rejects_unlisted_harbor_secret if {
 	some msg in violations
 	contains(msg, "raw Kubernetes Secret")
 }
+
+reviewed_callback := {
+	"apiVersion": "networking.k8s.io/v1",
+	"kind": "Ingress",
+	"metadata": {
+		"name": "n8n-webhook",
+		"namespace": "traefik",
+		"annotations": {
+			"tailscale.com/funnel": "true",
+			"tailscale.com/tags": "tag:homelab-funnel",
+			"homelab.rst.io/access-plane": "tailscale",
+			"homelab.rst.io/public-callback": "true",
+			"homelab.rst.io/public-callback-reviewed": "true",
+			"homelab.rst.io/public-callback-purpose": "Path-limited n8n webhooks",
+		},
+	},
+	"spec": {
+		"ingressClassName": "tailscale",
+		"defaultBackend": {"service": {"name": "traefik-funnel", "port": {"number": 8080}}},
+		"tls": [{"hosts": ["n8n-webhook"]}],
+	},
+}
+
+test_allows_reviewed_funnel_callback if {
+	violations := deny with input as reviewed_callback
+	count(violations) == 0
+}
+
+test_rejects_funnel_to_private_entrypoint if {
+	resource := object.union(reviewed_callback, {"spec": object.union(reviewed_callback.spec, {
+		"defaultBackend": {"service": {"name": "traefik-private", "port": {"number": 443}}},
+	})})
+	violations := deny with input as resource
+	some msg in violations
+	contains(msg, "Funnel is restricted")
+}
+
+test_rejects_unreviewed_funnel_annotation if {
+	violations := deny with input as {
+		"kind": "Service",
+		"metadata": {"name": "fleet", "annotations": {"tailscale.com/funnel": "true"}},
+	}
+	some msg in violations
+	contains(msg, "Funnel is restricted")
+}

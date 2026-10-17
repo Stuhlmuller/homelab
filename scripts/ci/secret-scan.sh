@@ -244,11 +244,13 @@ fi
 
 scan_paths=(
   .agents
+  .codex
   .github
   .talos
   IaC
   clusters
   docs
+  openwiki
   policy
   scripts
   AGENTS.md

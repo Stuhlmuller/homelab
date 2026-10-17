@@ -50,12 +50,11 @@ authenticated Talos API calls through `.talos/talosconfig`.
 The old `10.1.0.216` control-plane address is stale. Do not use it as the
 canonical Kubernetes API endpoint or Talos endpoint for new work.
 
-The parent audit found that live Kubernetes service-account issuer discovery
-still reports `https://10.1.0.216:6443`. Treat that as control-plane machine
-configuration drift, not as a new endpoint. Use
-`docs/talos-control-plane-maintenance.md` and the repository-owned patch at
-`.talos/patches/controlplane-service-account-issuer.yaml` to align the issuer
-with `https://10.1.0.199:6443` through the desired Talos config path.
+Read-only discovery on 2026-10-10 confirmed the service-account issuer and
+JWKS URL use `https://10.1.0.199:6443`. Keep
+`.talos/patches/controlplane-service-account-issuer.yaml` in the desired Talos
+configuration so rebuilds preserve that endpoint. See
+`docs/talos-control-plane-maintenance.md` for verification and recovery.
 
 ## Remote Kubernetes Access
 
@@ -108,10 +107,10 @@ only safe references, encrypted values, templates, or contracts in git.
 
 ## Knowledge Base
 
-The project knowledge base lives in `docs/knowledge-base`. Open that directory
-as an Obsidian vault when you want graph navigation, backlinks, and linked
-architecture notes. The notes are committed as plain Markdown so they remain
-reviewable in pull requests.
+The project knowledge base lives in [OpenWiki](openwiki/quickstart.md). Start
+with its task routes, then read the relevant sections and linked source. The
+repository installs OpenWiki and homelab context skills for agent retrieval and
+maintenance; see [wiki maintenance](openwiki/operations/wiki-maintenance.md).
 
 Use the knowledge base for cross-cutting context that spans multiple runbooks or
 source directories: cluster topology, GitOps flow, workload inventory, storage

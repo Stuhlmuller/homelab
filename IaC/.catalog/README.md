@@ -20,7 +20,7 @@ The root `../terragrunt.stack.hcl` indexes unit identities and paths; shared
 Application defaults live in `../stack-defaults.hcl`. The template constructs
 the raw Application manifest. See the
 [onboarding example](../../docs/argocd-app-onboarding.md#register-with-shared-defaults)
-and [chart organization decision](../../docs/knowledge-base/patterns/helm-chart-organization.md).
+and [chart organization decision](../../openwiki/patterns/helm-chart-organization.md).
 
 The catalog's `terragrunt.values.hcl` is only a shape fixture for HCL validation.
 Stack generation replaces it with the real values. Never add production

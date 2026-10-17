@@ -11,6 +11,8 @@ client_secret_parameter="/homelab/octelium/entra/client-secret"
 issuer_url_parameter="/homelab/octelium/entra/issuer-url"
 admin_user_name=""
 admin_email=""
+admin_object_id=""
+dry_run=false
 
 usage() {
   cat <<'USAGE'
@@ -30,11 +32,19 @@ Options:
   --client-secret-parameter NAME     SSM parameter containing the client secret.
   --issuer-url-parameter NAME        SSM parameter containing the issuer URL.
   --admin-user-name NAME             Optional HUMAN user name to apply.
-  --admin-email EMAIL                Optional Entra identifier for the HUMAN user.
+  --admin-email EMAIL                New-user contact email; expected old identifier for migration.
+  --admin-object-id UUID             Immutable Entra object ID for the HUMAN user.
+  --dry-run                         Validate mappings without reading the client secret or writing.
   -h, --help                         Show this help.
 
-If --admin-user-name and --admin-email are both set, the script also applies a
-HUMAN user with an explicit Entra identity and the built-in allow-all policy.
+All three admin options must be supplied together. Existing HUMAN fields,
+including contact email and policies, are preserved; only a new user receives
+allow-all. Legacy email matching (including implicit email fallback) can migrate
+only the selected sole Entra user; --admin-email must match its old identifier.
+The migrated provider disables email fallback. Verify the object ID with Microsoft Graph first; Octelium cannot
+prove that an email and object ID belong to the same Entra account. Keep an
+independent authenticated operator session available: the user mapping and IdP update are not atomic.
+Verify fresh owner login before renaming or reusing any former email identifier.
 USAGE
 }
 
@@ -75,6 +85,14 @@ while [[ $# -gt 0 ]]; do
     --admin-email)
       admin_email="$2"
       shift 2
+      ;;
+    --admin-object-id)
+      admin_object_id="$2"
+      shift 2
+      ;;
+    --dry-run)
+      dry_run=true
+      shift
       ;;
     -h|--help)
       usage
@@ -125,7 +143,7 @@ read_parameter() {
 apply_identity_resources() {
   local apply_output
 
-  if ! apply_output="$(octeliumctl apply --domain "$domain" "$identity_file" 2>&1)"; then
+  if ! apply_output="$(octeliumctl apply --domain "$domain" "$1" 2>&1)"; then
     printf '%s\n' "$apply_output" >&2
     exit 1
   fi
@@ -140,6 +158,7 @@ apply_identity_resources() {
 
 require_command aws
 require_command octeliumctl
+require_command python3
 validate_name "$idp_name" "--idp-name"
 validate_name "$secret_name" "--secret-name"
 if [[ -n "$admin_user_name" ]]; then
@@ -148,79 +167,159 @@ fi
 if [[ -n "$admin_email" ]]; then
   validate_email "$admin_email"
 fi
-if [[ -n "$admin_user_name" && -z "$admin_email" ]] || [[ -z "$admin_user_name" && -n "$admin_email" ]]; then
-  echo "error: --admin-user-name and --admin-email must be supplied together" >&2
+if [[ -n "$admin_user_name$admin_email$admin_object_id" ]] &&
+   [[ -z "$admin_user_name" || -z "$admin_email" || -z "$admin_object_id" ]]; then
+  echo "error: all three --admin options must be supplied together" >&2
   exit 1
 fi
 
 client_id="$(read_parameter "$client_id_parameter")"
-client_secret="$(read_parameter "$client_secret_parameter")"
 issuer_url="$(read_parameter "$issuer_url_parameter")"
+identity_dir="$(mktemp -d "${TMPDIR:-/tmp}/octelium-entra-identity.XXXXXX")"
+chmod 700 "$identity_dir"
+trap 'test ! -d "$identity_dir" || rm -rf -- "$identity_dir"' EXIT
 
-for pair in \
-  "client ID:$client_id" \
-  "client secret:$client_secret" \
-  "issuer URL:$issuer_url"
-do
-  label="${pair%%:*}"
-  value="${pair#*:}"
-  if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
-    echo "error: SSM returned an empty or placeholder $label" >&2
-    exit 1
-  fi
-done
+# Read every Entra mapping before any mutation, including native Secret writes.
+python3 -I - "$domain" "$idp_name" "$admin_user_name" "$admin_email" \
+  "$admin_object_id" "$client_id" "$issuer_url" "$secret_name" \
+  "$idp_display_name" "$identity_dir" <<'PYTHON'
+import json
+import pathlib
+import re
+import subprocess
+import sys
+import uuid
 
-identity_file="$(mktemp "${TMPDIR:-/tmp}/octelium-entra-identity.XXXXXX.yaml")"
-chmod 600 "$identity_file"
-trap 'rm -f "$identity_file"' EXIT
+(domain, idp_name, user_name, email, object_id, client_id, issuer,
+ secret_name, display_name, directory) = sys.argv[1:]
+path = pathlib.Path(directory)
 
+
+def require(condition, message):
+    if not condition:
+        raise SystemExit("error: " + message)
+
+
+def is_uuid(value):
+    try:
+        parsed = uuid.UUID(value)
+        return parsed.int != 0 and str(parsed) == value.lower()
+    except (ValueError, AttributeError, TypeError):
+        return False
+
+
+def inventory(kind):
+    result = subprocess.run(["octeliumctl", "get", kind, "--domain", domain,
+                             "--items-per-page", "1000", "-o", "json"],
+                            capture_output=True, text=True, timeout=45)
+    require(result.returncode == 0, "could not read Octelium identity inventory")
+    empty = {"identityprovider": "No IdentityProviders found", "user": "No Users found"}
+    if result.stdout.strip() == empty[kind]:
+        return []
+    value = json.loads(result.stdout)
+    items = value["items"]
+    # ponytail: one complete page only; add pagination if the inventory exceeds it.
+    require(isinstance(items, list) and len(items) == int(value["listResponseMeta"]["totalCount"]),
+            "identity inventory is incomplete; refuse a partial migration")
+    require(len({item["metadata"]["name"] for item in items}) == len(items),
+            "duplicate resource names in identity inventory")
+    return items
+
+
+try:
+    require(not object_id or is_uuid(object_id), "--admin-object-id must be a nonzero UUID")
+    object_id = object_id.lower()
+    require(is_uuid(client_id), "SSM returned an invalid Entra client ID")
+    require(re.fullmatch(r"https://login\.microsoftonline\.com/[0-9a-fA-F-]{36}/v2\.0", issuer)
+            and is_uuid(issuer.split("/")[3]), "Entra issuer must identify one tenant")
+    providers = inventory("identityprovider")
+    users = inventory("user")
+    provider = next((item for item in providers if item["metadata"]["name"] == idp_name), None)
+    owner = next((item for item in users if item["metadata"]["name"] == user_name), None)
+    oidc = provider["spec"].get("oidc", {}) if provider else {}
+    claim = oidc.get("identifierClaim")
+    require(not provider or (claim in ("oid", "preferred_username")
+            and oidc.get("clientID") == client_id and oidc.get("issuerURL") == issuer),
+            "existing Entra provider claim, client or tenant differs from the reviewed configuration")
+    bindings = []
+    for user in users:
+        matches = [identity for identity in user["spec"].get("authentication", {}).get("identities", [])
+                   if identity.get("identityProvider") == idp_name]
+        require(len(matches) <= 1, "multiple Entra bindings on one user are unsupported")
+        if matches:
+            require(user["spec"]["type"] == "HUMAN", "Entra mapping belongs to a non-HUMAN user")
+            identifier = matches[0].get("identifier")
+            require(isinstance(identifier, str) and identifier, "invalid Entra user identifier")
+            bindings.append((user["metadata"]["name"], identifier))
+        elif (provider and not provider["spec"].get("disableEmailAsIdentity", False)
+              and user["spec"]["type"] == "HUMAN" and user["spec"].get("email")):
+            # Without an explicit match, Octelium also authenticates via spec.email.
+            # Count these users before changing the claim or disabling fallback.
+            require(isinstance(user["spec"]["email"], str), "invalid fallback email identifier")
+            bindings.append((user["metadata"]["name"], user["spec"]["email"]))
+    require(provider is not None or not bindings, "Entra mappings exist without their provider")
+    require(len({identifier.lower() for _, identifier in bindings}) == len(bindings),
+            "duplicate Entra user identifiers")
+    if claim == "preferred_username" and bindings:
+        require(bool(object_id) and len(bindings) == 1 and bindings[0][0] == user_name,
+                "legacy Entra mappings require explicit migration of the sole mapped HUMAN user")
+        require(bindings[0][1].lower() in (email.lower(), object_id),
+                "--admin-email must match the existing legacy Entra identifier")
+    for name, identifier in bindings:
+        require(claim != "oid" or is_uuid(identifier), "oid provider has a non-UUID user binding")
+        if name == user_name and is_uuid(identifier):
+            require(identifier.lower() == object_id, "refusing to replace an existing immutable user binding")
+        if name != user_name:
+            require(identifier.lower() != object_id, "object ID already belongs to another Octelium user")
+    if user_name:
+        require(not owner or owner["spec"]["type"] == "HUMAN", "selected administrator is not HUMAN")
+        owner = owner or {"metadata": {"name": user_name}, "spec": {
+            "type": "HUMAN", "email": email, "authorization": {"policies": ["allow-all"]}}}
+        authentication = owner["spec"].setdefault("authentication", {})
+        authentication["identities"] = [identity for identity in authentication.get("identities", [])
+                                        if identity.get("identityProvider") != idp_name] + [
+            {"identityProvider": idp_name, "identifier": object_id}]
+        (path / "user.json").write_text(json.dumps({"kind": "User", "metadata": owner["metadata"],
+                                                   "spec": owner["spec"]}))
+    provider = provider or {"metadata": {"name": idp_name, "displayName": "Microsoft Entra"},
+                            "spec": {"displayName": display_name, "oidc": {}}}
+    provider["spec"]["disableEmailAsIdentity"] = True
+    provider["spec"]["oidc"].update({"issuerURL": issuer, "clientID": client_id,
+        "clientSecret": {"fromSecret": secret_name}, "identifierClaim": "oid",
+        "scopes": ["openid", "email", "profile"]})
+    (path / "idp.json").write_text(json.dumps({"kind": "IdentityProvider", "metadata": provider["metadata"],
+                                             "spec": provider["spec"]}))
+    if claim == "preferred_username" and bindings:
+        (path / "user-first").touch()
+    print("Validated complete Entra inventory and immutable user bindings")
+except (KeyError, TypeError, ValueError, subprocess.SubprocessError):
+    raise SystemExit("error: invalid or unavailable Octelium identity inventory") from None
+PYTHON
+
+if "$dry_run"; then
+  echo "Dry run: no client-secret read or live changes. Retain an independent operator session for execution."
+  exit 0
+fi
+
+client_secret="$(read_parameter "$client_secret_parameter")"
+if [[ -z "$client_secret" || "$client_secret" == "REPLACE_ME" ]]; then
+  echo "error: SSM returned an empty or placeholder client secret" >&2
+  exit 1
+fi
 if octeliumctl get secret "$secret_name" --domain "$domain" >/dev/null 2>&1; then
   printf '%s' "$client_secret" | octeliumctl update secret "$secret_name" --domain "$domain" --file - >/dev/null
 else
   printf '%s' "$client_secret" | octeliumctl create secret "$secret_name" --domain "$domain" --file - >/dev/null
 fi
 
-cat >"$identity_file" <<YAML
-kind: IdentityProvider
-metadata:
-  name: ${idp_name}
-  displayName: Microsoft Entra
-spec:
-  displayName: ${idp_display_name}
-  oidc:
-    issuerURL: ${issuer_url}
-    clientID: ${client_id}
-    clientSecret:
-      fromSecret: ${secret_name}
-    identifierClaim: preferred_username
-    scopes:
-      - openid
-      - email
-      - profile
-YAML
-
-if [[ -n "$admin_user_name" ]]; then
-  cat >>"$identity_file" <<YAML
----
-kind: User
-metadata:
-  name: ${admin_user_name}
-spec:
-  type: HUMAN
-  email: ${admin_email}
-  authentication:
-    identities:
-      - identityProvider: ${idp_name}
-        identifier: ${admin_email}
-  authorization:
-    policies:
-      - allow-all
-YAML
+# Migrate the existing mapping before switching claims; never leave the new
+# oid provider pointing at a legacy email after a failed User apply.
+if [[ -f "$identity_dir/user-first" ]]; then
+  apply_identity_resources "$identity_dir/user.json"
+fi
+apply_identity_resources "$identity_dir/idp.json"
+if [[ -f "$identity_dir/user.json" && ! -f "$identity_dir/user-first" ]]; then
+  apply_identity_resources "$identity_dir/user.json"
 fi
 
-apply_identity_resources
-
-echo "Configured Octelium IdentityProvider ${idp_name} for ${domain}."
-if [[ -n "$admin_user_name" ]]; then
-  echo "Applied HUMAN user ${admin_user_name} with Entra identifier ${admin_email}."
-fi
+echo "Configured Octelium Entra oid matching; verify fresh owner login before reusing an email."

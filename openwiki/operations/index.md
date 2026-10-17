@@ -1,0 +1,28 @@
+# Files
+
+- [Agent Workflows](agent-workflows.md) - Focused homelab skills and Spec Kit planning, validation, and rollback.
+- [Homelab Audit — 2026-08-30](audit-2026-08-30.md) - August audit evidence for retirement safety, destroy-plan policy, cluster health, backup gaps, and queued remediation.
+- [Homelab Audit — 2026-09-02](audit-2026-09-02.md) - September 2 audit findings on DNS response validation, CI permissions, Talos preflight checks, and remaining live risks.
+- [Homelab Audit — 2026-09-04](audit-2026-09-04.md) - September audit and follow-ups covering Cloudflare native gRPC transport, Istio recovery, access logs, and workload health.
+- [Continuous Improvement](continuous-improvement.md) - Security and reliability stewardship, source-backed finding format, open operational risks, and concrete follow-up gates.
+- [CoreDNS GitOps Ownership](coredns-gitops-ownership.md) - Ordered CoreDNS handoff from Talos to Argo CD, preserving resolver and Octelium rewrite behavior during upgrades.
+- [Deluge CPU Audit — 2026-09-05](deluge-cpu-audit-2026-09-05.md) - Historical Gluetun CPU throttling, Deluge capacity evidence, and profiling gates required before changing the VPN CPU limit.
+- [Offline Etcd Restore Validation](etcd-offline-restore-validation.md) - Pinned etcdutl snapshot parsing and offline restoration, checksum preservation, and limits of database-only recovery proof.
+- [Manual Etcd Offsite Publication](etcd-offsite-publication.md) - Verified etcd snapshot publication to S3, exact-version retrieval, resumable receipts, and offsite freshness boundaries.
+- [Etcd Offsite Storage](etcd-offsite-storage.md) - Operator-owned S3 bucket for etcd backups, version retention, encryption, destruction guards, and separate publication gates.
+- [Etcd Scheduler Diagnostics](etcd-scheduler-diagnostics.md) - macOS etcd scheduler timestamps, failed-command classifications, retained backups, and limits of historical failure diagnosis.
+- [Existing-Node Control-Plane Feasibility](existing-node-control-plane-feasibility-2026-09-12.md) - Read-only assessment of three-member control-plane conversion, worker memory and disk limits, quorum, and workload capacity.
+- [Harbor Private OCI Registry](harbor-oci.md) - Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates.
+- [Kubernetes Patch Maintenance, September 2026](kubernetes-patch-maintenance-2026-09.md) - Kubernetes 1.34.11 maintenance evidence, missing PVC metrics, Talos dry-run side effects, and CoreDNS ownership prerequisites.
+- [Monitoring Resource Requests](monitoring-resource-requests.md) - Prometheus and Grafana memory reservations, observed scheduling headroom, and the September memory-overcommit alert incident.
+- [Octelium and Cordium capability research — 2026-09-05](octelium-capability-research-2026-09-05.md) - Octelium and Cordium version boundaries, audit-console and agent execution capabilities, and separate live acceptance gates.
+- [OpenClaw bootstrap batching](openclaw-bootstrap-batching.md) - OpenClaw slow startup measurements, typed configuration batches, progress-deadline limits, and bootstrap rollout checks.
+- [OpenClaw personal assistant](openclaw-personal-assistant.md) - OpenClaw GitHub installation-token exchange, model routing, managed assistant behavior, and remaining deployment acceptance.
+- [OpenClaw Runtime State](openclaw-runtime-state.md) - OpenClaw local SQLite and NFS ownership, Talos subPath mount failures, identity locks, backup checks, and recovery limits.
+- [QNAP Plex Recovery](plex-recovery-2026-10-05.md) - October QNAP Plex crash and bounded recovery evidence, slow playback diagnosis, ClickHouse repair, and deployment ordering.
+- [PVC Metrics Recovery](pvc-metrics-recovery.md) - Missing kubelet volume metrics, Kubernetes collector regression, Grafana alert guards, and unresolved notification verification.
+- [QNAP Block Storage Candidate For Monitoring](qnap-monitoring-block-storage-research-2026-09-12.md) - Unapplied QNAP iSCSI and CSI candidate for monitoring storage, capacity unknowns, provisioning gaps, and restore acceptance.
+- [October 2026 synthetic recovery exercise](recovery-exercise-2026-10-01.md) - October synthetic backup and restore checks, independent publication proposals, and unproven operational Octelium recovery.
+- [State Encryption](state-encryption.md) - Separate runtime SSM and OpenTofu encryption keys, S3 Bucket Keys ownership, and preservation of confidential recovery archives.
+- [Validation Gates](validation-gates.md) - Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor.
+- [OpenWiki Maintenance](wiki-maintenance.md) - Repository-scoped OpenWiki installation, focused retrieval, safe updates, validation, and rollback.

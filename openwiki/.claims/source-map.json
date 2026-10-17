@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:1b4e2db0f80f9f5fbde76c5048d64b3e7f9decb68df779cc63b6eba1adb0f981",
+  "claims": [
+    {
+      "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
+      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook are the canonical sources for immutable identity migration, private mail-only operator updates and Mac SSO acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+        },
+        {
+          "resource": "repo://scripts/octelium-entra-oidc.sh",
+          "version": "repo-file-v1:sha256:3b8a97cfcf69e9c7f91bf32cb87cc1fded8aeef5b9eca97d6c70851b2b3eeb80"
+        }
+      ]
+    },
+    {
+      "id": "claim_084f08c875f345e596a681682893423d",
+      "statement": "The Deluge daemon-status helper and workload README own the bounded authenticated daemon-health check and its operational verification.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/README.md#L295-L319",
+          "version": "repo-lines-v1:sha256:96815d421639dc75048e6c4788ba003cd0d53676952a93278b3bd49957721ba7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5MDE0NzUyYWY1MThmYWVjYTA2MDYzZmQ5MjIyODczNjMzYzAwMzk0Y2QxZWNkOTA3MTY0YmI2N2M3NTE3MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZTk5NmQ0NmZhMjU1YzA2YWMzNjJmYWYxYWQ5YjdlMDJjYjYyZjZhNTJlYTA5YjA2ZGFhNmNhODNjZmM0ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxMmFhZGY1ZGI3YTA1ZTFmY2YwMWRlOTMzNTlmNzgwMDEzMTk4YzBkMTZhZjE5YjVjMGYzYmIyN2Q4NTA0MTMifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/deluge/daemon-status.py",
+          "version": "repo-file-v1:sha256:4e0447410f1c132218fe77d21a0f32b298bbf91461f496c648b369ecf81bc25e"
+        }
+      ]
+    },
+    {
+      "id": "claim_8d503c93f9684f708a42cd045c5bdf97",
+      "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, interrupted-signature recovery, rotation and previous-authority retirement.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ci-configure.py",
+          "version": "repo-file-v1:sha256:0a277a4679653e6bf472506e7da1991fb51b9d15db6d9c7f9f6adabc73d774ea"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ingress-sign.py",
+          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-11T09:10:40.150Z"
+  }
+}

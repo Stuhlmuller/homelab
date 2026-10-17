@@ -24,12 +24,11 @@ SHA = "a" * 40
 
 
 def protection(environment):
-    rules = [{"type": "required_reviewers", "prevent_self_review": False,
-              "reviewers": [{"type": "User", "reviewer": {"id": 57728706}}]}]
+    rules = []
     policy = None
     if environment == "homelab-production":
         rules.append({"type": "branch_policy"})
-        policy = {"protected_branches": True, "custom_branch_policies": False}
+        policy = {"protected_branches": False, "custom_branch_policies": True}
     return {"name": environment, "can_admins_bypass": False,
             "deployment_branch_policy": policy, "protection_rules": rules}
 
@@ -38,6 +37,7 @@ class FakeCommands:
     def __init__(self):
         self.outputs = deepcopy(OUTPUTS)
         self.environments = {name: protection(name) for name in MODULE.ENVIRONMENTS.values()}
+        self.branch_policies = [{"name": "main", "type": "branch"}]
         self.names = {}
         self.dirty = ""
         self.main = {"sha": SHA, "commit": {"verification": {"verified": True}}}
@@ -57,6 +57,8 @@ class FakeCommands:
             path = args[-1]
             if path.endswith("/commits/main"):
                 return json.dumps(self.main)
+            if path.endswith("/deployment-branch-policies"):
+                return json.dumps({"branch_policies": self.branch_policies})
             if path.endswith("/branches/main"):
                 return json.dumps({"protected": self.protected})
             return json.dumps(self.environments[path.rsplit("/", 1)[1]])
@@ -87,7 +89,7 @@ class EntraCIConfigureTest(unittest.TestCase):
         self.assertEqual(fake.writes, [])
         self.assertIn("Dry run passed", output)
         self.assertEqual(set(fake.environments), {"homelab-plan", "homelab-production"})
-        self.assertEqual(len([args for args, _, _ in fake.calls if "api" in args]), 3)
+        self.assertEqual(len([args for args, _, _ in fake.calls if "api" in args]), 4)
 
     def test_execute_publishes_only_four_exact_settings_over_stdin(self):
         fake = FakeCommands()
@@ -122,23 +124,30 @@ class EntraCIConfigureTest(unittest.TestCase):
                 self.assertEqual(status, 1)
                 self.assertEqual(fake.writes, [])
 
+    def test_invalid_production_allowlist_never_publishes(self):
+        for policies in (None, "invalid", [None], [], [{"name": "*", "type": "branch"}],
+                         [{"name": "main", "type": "tag"}],
+                         [{"name": "main", "type": "branch"}, {"name": "v*", "type": "tag"}]):
+            with self.subTest(policies=policies):
+                fake = FakeCommands()
+                fake.branch_policies = policies
+                status, _ = self.run_script(fake, ["--execute"])
+                self.assertEqual(status, 1)
+                self.assertEqual(fake.writes, [])
+
     def test_invalid_environment_guards_never_publish(self):
         for environment in MODULE.ENVIRONMENTS.values():
             fixtures = []
             for key, value in (("can_admins_bypass", True), ("name", "wrong"),
-                               ("deployment_branch_policy", {}), ("protection_rules", [])):
+                               ("deployment_branch_policy", {}),
+                               ("protection_rules", [{"type": "required_reviewers"}])):
                 document = protection(environment)
                 document[key] = value
                 fixtures.append(document)
-            for key, value in (("prevent_self_review", True),
-                               ("reviewers", [{"type": "User", "reviewer": {"id": 1}}]),
-                               ("reviewers", [{"type": "Team", "reviewer": {"id": 57728706}}])):
+            if environment == "homelab-production":
                 document = protection(environment)
-                document["protection_rules"][0][key] = value
+                document["protection_rules"] = []
                 fixtures.append(document)
-            document = protection(environment)
-            document["protection_rules"].append(deepcopy(document["protection_rules"][0]))
-            fixtures.append(document)
             document = protection(environment)
             del document["can_admins_bypass"]
             fixtures.append(document)

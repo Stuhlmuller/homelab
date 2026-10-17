@@ -149,6 +149,14 @@ inputs = {
         prefix  = "Aa1"
       }
     }
+    "/homelab/harbor/mirror-robot-pull-password" = {
+      description = "Harbor mirror project read-only robot credential."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
     "/homelab/harbor/mirror-robot-push-password" = {
       description = "Harbor public mirror project publisher credential, independent of private images."
       generated = {
@@ -174,6 +182,11 @@ inputs = {
     "/homelab/argocd/oidc/client-secret" = {
       description   = "Argo CD OIDC client secret."
       initial_value = local.placeholder
+    }
+    "/homelab/entra/google-workspace-federation-metadata" = {
+      description   = "Google Workspace SAML metadata for the operator-owned Entra domain federation."
+      initial_value = local.placeholder
+      reader_access = false
     }
     "/homelab/argocd-image-updater/github-app/id" = {
       description   = "Retired Image Updater GitHub App ID retained as an IaC state tombstone; no workload consumes it."
@@ -305,6 +318,20 @@ inputs = {
         special = false
       }
       initial_value = local.placeholder
+    }
+    "/homelab/litellm/postgres-admin-password" = {
+      description = "LiteLLM dedicated PostgreSQL administrator password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/litellm/postgres-app-password" = {
+      description = "LiteLLM PostgreSQL database owner password."
+      generated = {
+        length  = 40
+        special = false
+      }
     }
     "/homelab/litellm/openai-api-key" = {
       description   = "LiteLLM OpenAI provider API key."

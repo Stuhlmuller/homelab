@@ -236,8 +236,6 @@ alerting:
       - orgId: 1
         uid: homelab-octelium-api-upnp-stale
       - orgId: 1
-        uid: homelab-octobot-deployment-unavailable
-      - orgId: 1
         uid: homelab-deluge-unavailable
       - orgId: 1
         uid: homelab-github-actions-run-failed
@@ -917,7 +915,7 @@ alerting:
             for: 5m
             annotations:
               summary: Deluge's VPN or daemon health probe is failing or missing.
-              description: The daemon-metrics sidecar could not reach Gluetun's health endpoint, could not query `deluge-console status`, or Prometheus is not scraping those metrics. Check Gluetun health, Deluge app logs, port-config logs, and the session.state recovery runbook.
+              description: The daemon-metrics sidecar could not reach Gluetun's health endpoint, could not query authenticated daemon RPC, or Prometheus is not scraping those metrics. Check Gluetun health, Deluge app logs, port-config logs, and the session.state recovery runbook.
               runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/deluge/README.md
             labels:
               severity: critical
@@ -995,7 +993,7 @@ alerting:
             annotations:
               summary: PVC filesystem usage exceeds 85 percent, or capacity metrics are unavailable.
               description: Missing metrics do not prove disk exhaustion. Check the PVC usage query and kubelet metrics before diagnosing capacity. NFS subdirectory claims report their shared backing filesystem, not individual claim quotas. See the storage metrics runbook for the Kubernetes 1.34.1 collector regression and post-upgrade checks.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/operations/pvc-metrics-recovery.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/operations/pvc-metrics-recovery.md
             labels:
               severity: critical
               managed_by: grafana-provisioning
@@ -1374,7 +1372,7 @@ alerting:
             annotations:
               summary: Prometheus cannot scrape kube-state-metrics.
               description: Node inventory, readiness, and pressure alerts require kube-state-metrics. Restore this scrape before interpreting those rules as healthy.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/architecture/cluster-topology.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/architecture/cluster-topology.md
             labels:
               severity: critical
               managed_by: grafana-provisioning
@@ -1458,7 +1456,7 @@ alerting:
             annotations:
               summary: Fewer than four expected homelab hardware nodes are present in kube-state-metrics.
               description: Expected nodes are acer, zimaboard-0, zimaboard-1, and zimaboard-2. Update this rule when the committed cluster topology changes.
-              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/docs/knowledge-base/architecture/cluster-topology.md
+              runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/openwiki/architecture/cluster-topology.md
             labels:
               severity: critical
               managed_by: grafana-provisioning

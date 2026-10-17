@@ -44,9 +44,9 @@ part of this change.
 2. Obtain separate authorization for publication. Follow
    [Harbor image mirroring](harbor-image-mirroring.md): dispatch the protected
    workflow for exact reviewed `main`, preserve every platform digest, verify
-   complete anonymous downloads and review scanning results. Record the run
+   complete authenticated Harbor pulls and review scanning results. Record the run
    and publication bundle revision. A passing coverage check proves none of
-   these operations. Retain existing signing requirements; public mirror
+   these operations. Retain existing signing requirements; mirror
    coverage does not assert private-image signature verification.
 3. Keep #1143 unmerged until publication and database acceptance gates pass.
    Incorporate the companion values correction into its existing branch;

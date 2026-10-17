@@ -2,21 +2,23 @@
 
 # Octelium Access Plane
 
-This repository uses Octelium for human access to homelab applications. App
-hostnames keep their existing `*.stinkyboi.com` names. Exact Cloudflare DNS
-records point those names at the public Cloudflare Tunnel, the tunnel forwards
-them to the Octelium public ingress, and Octelium `WEB` Services proxy to the
-existing Istio app routes. All app Services except AFFiNE enforce Octelium
-login. AFFiNE permits anonymous transport so its native client can delegate
-login to the application.
+Application and control hostnames retain their existing `*.stinkyboi.com`
+names while moving to private Traefik ingress on Tailscale. Only n8n and
+Policy Bot callbacks use public Funnel URLs. Follow the
+[ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md); DNS changes,
+Mac migration, and CI/native transport changes have separate acceptance gates.
 
-Human and Cordium Workspace Kubernetes access uses the private Octelium
-`kubernetes-api.homelab` Service. CI uses the separate public, workload-only
-`kubernetes-api-ci` Service. Tailscale remains deployed as a temporary
-LAN/egress fallback, but it is not required for normal app or Kubernetes API
-access.
+This guide retains the existing Octelium catalog, credentials, bootstrap, and
+carrier recovery procedures until replacement acceptance. Their presence does
+not authorize restoring public Tunnel DNS. Cordium and its required Octelium
+control plane remain; retiring other native resources is a separate change.
 
 ## Current Model
+
+The following catalog model describes the retained legacy resources during
+cutover. The [network guide](networking-tailnet-ingress.md) owns the target
+routing model; old clientless app routes stop receiving application DNS traffic
+after the private records converge.
 
 The Argo CD Application at `IaC/live/argocd-apps/octelium` installs the
 repo-owned Kubernetes manifests from `clusters/homelab/apps/octelium`.
@@ -99,7 +101,7 @@ They create:
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `bazarr`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
@@ -307,15 +309,22 @@ commit personal email addresses or Entra identifiers into this public repo:
 ```sh
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
-  --admin-email '<entra-user-principal-name>'
+  --admin-email '<contact-email>' \
+  --admin-object-id '<entra-object-id>'
 ```
 
 The script reads the generated SSM parameters, creates or updates the Octelium
 native Secret `entra-oidc-client-secret`, applies IdentityProvider `entra`, and,
-when both admin flags are supplied, applies a HUMAN user with an explicit Entra
-identity and the built-in `allow-all` policy. The IdentityProvider requests the
-`openid`, `email`, and `profile` OIDC scopes, and Octelium uses the Entra
-`preferred_username` claim as the login identifier. Microsoft Entra may omit
+when all three admin flags are supplied, creates or updates the HUMAN mapping.
+New administrators receive `allow-all`; existing users retain their fields,
+contact email and policies. `--admin-email` sets contact email only for a new
+user. The IdentityProvider requests the
+`openid`, `email`, and `profile` OIDC scopes and uses immutable Entra `oid` as
+the login identifier, with `spec.disableEmailAsIdentity: true` disabling email
+fallback. Email and `preferred_username` can change or be reassigned;
+they must not bind privileged access. Octelium's OIDC email fallback can use
+the token's separate `email` claim even when the selected identifier is `oid`,
+so changing the identifier alone is insufficient. Microsoft Entra may omit
 `email_verified`, so the IdentityProvider intentionally does not require that
 claim.
 
@@ -342,7 +351,44 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
+### Entra identity migration
+
+For an older `preferred_username` setup, keep an independent working operator
+session before changing the shared identity claim. Run the admin command above
+with `--dry-run` first, using the old login identifier for `--admin-email` and
+the owner's verified Entra object ID. This leaves the existing contact email
+unchanged, including retries after a partial migration. Preflight checks the
+complete live mapping inventory before reading the client secret or writing
+resources. It includes HUMAN users who rely on Octelium's default email fallback
+without an explicit Entra binding, and permits only the sole selected legacy
+user. Additional users require a separately reviewed migration. Never substitute
+a newly created user's object ID for the owner.
+An existing `oid` provider with email-only users also fails preflight; disabling
+their fallback requires a separately reviewed migration.
+
+The user mapping changes before the IdP claim, so the transition is not atomic.
+Retain private copies of the current User and IdentityProvider for recovery;
+do not close the independent session until a fresh owner browser login works.
+Verify that the complete mapping inventory binds only the original owner's
+`oid` to owner access, the IdP has `disableEmailAsIdentity: true`, and there is
+no pilot `oid` binding. Only then reuse the
+owner's former email. After the pilot completes its required initial password
+change and MFA setup, test actual fresh login denial; an interrupted password
+or MFA flow is not proof of authorization denial. Plain secret refreshes also run the
+preflight and cannot silently switch a legacy mapping.
+
+On October 7, 2026 UTC, the reviewed migration applied the original owner's
+`oid` binding and disabled email fallback. New owner sessions through Entra
+callbacks verified that same object ID and rendered the Services page, both
+before and after the separate directory-mail change. This verifies Octelium
+identity resolution and app access; the old SMTP alias remains reserved, so
+the [pilot rename remains blocked](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
+
 ## Cutover Gate
+
+The checks below describe the retained legacy ingress. They are not acceptance
+for the Traefik migration; use the ordered cutover and its per-application,
+callback, native API, and CI checks for that transition.
 
 Run the e2e gate before declaring any Octelium app route ready:
 
@@ -438,7 +484,8 @@ Then authenticate and set up the cluster resources:
 octelium login --domain stinkyboi.com
 scripts/octelium-entra-oidc.sh \
   --admin-user-name homelab-owner \
-  --admin-email '<entra-user-principal-name>'
+  --admin-email '<contact-email>' \
+  --admin-object-id '<entra-object-id>'
 octeliumctl apply --include ClusterConfig docs/examples/octelium/homelab-services.yaml
 octeliumctl apply docs/examples/octelium/homelab-services.yaml
 octeliumctl create cred \
@@ -467,22 +514,19 @@ and reconnect tests before treating this as a proven execution transport.
 An account policy requiring Cloudflare Access may add a separate login gate;
 the carrier does not grant Octelium authorization.
 
-After Argo CD loads the new `octelium-public` pod revision, run the protected
-workflow to reconcile Tunnel DNS:
+The public DNS-restoration workflow is removed before private DNS cutover.
+Use `scripts/tailscale-private-dns.sh --dry-run` and the
+[ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md), which requires
+verified peer addresses and a reviewed exact-main execute command. Keep the
+Tunnel Deployment and old carrier only until replacement acceptance. Reverting
+transport requires a reviewed desired-state change; do not restore public DNS
+through a historical workflow or an ad hoc command.
 
-```sh
-gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-nix develop --command python3 scripts/octelium-tunnel-check.py
-```
+### Retained carrier rollback
 
-The workflow uses the production AWS role to read the scoped DNS token and
-Tunnel UUID from SSM. API responses stay in a temporary private log. Retry after
-correcting declared inputs if a stage fails; DNS reconciliation is idempotent.
-The dedicated gateway and cluster split DNS serve in-cluster clients.
-
-For rollback, revert the Tunnel configuration and pod revision through a
-reviewed PR. Do not restore WAN DNS or port forwarding without a separately
-reviewed transport change. Preserve private cluster access during rollout.
+The following carrier procedure is only for pre-cutover access or reviewed
+rollback. After normal canonical DNS/API validation, native clients use
+Tailscale directly and must not recreate a loopback API override.
 
 Native clients need a local TCP carrier and a resolver mapping scoped to
 their execution environment. The pinned Octelium client calls the canonical
@@ -561,22 +605,16 @@ Secret name to match that SSM version, bump
 the connector pod annotations, sync the `octelium` Argo CD Application, then
 run `scripts/octelium-e2e-check.sh`.
 
-After the Octelium Gateways report public addresses, reconcile exact Cloudflare
-DNS records for their `_gw-*` hostnames when gateway hostnames are needed, then
-publish the control-plane, app, and external callback hostnames through the
-public Cloudflare Tunnel:
+Gateway `_gw-*` records remain a separate native transport concern. Private
+application/control DNS must follow the [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md):
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-gateway-dns.sh
-scripts/octelium-public-dns.sh --dry-run
-scripts/octelium-public-dns.sh
+scripts/tailscale-private-dns.sh --dry-run
 ```
 
-The public reconciler manages exact proxied CNAME records for all declared
-browser, API, transport, app, and callback hostnames. The gateway reconciler
-separately manages `_gw-*` records. Prefer the protected Tunnel workflow for
-public DNS changes so credentials stay in CI.
+The canonical helper reconciles only its fixed DNS-only A/AAAA inventory. It
+preserves old callback, CI, carrier, and unrelated records until retirement.
 
 ## Octelium Enterprise Package
 
@@ -611,10 +649,9 @@ outside git.
 During the August 2026 two-node dataplane outage,
 `clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` provides a
 bounded fallback on `acer`. It restores the ingress and shared authorization
-service, the Portal and API control paths, OctoBot, the CI Kubernetes API, and
-18 additional public WEB Services—19 public WEB fallbacks including
-OctoBot—without adding the control-plane node to the native dataplane pool. The
-fallback service Pods use only the primary
+service, the Portal and API control paths, the CI Kubernetes API, and
+18 public WEB Services without adding the control-plane node to the native
+dataplane pool. The fallback service Pods use only the primary
 Kubernetes network and reuse the existing generated Service selectors;
 `default.cordium` and `console.octelium` include their required managed
 sidecars. Refresh a fallback UID whenever Octelium recreates its Service.
@@ -622,7 +659,7 @@ sidecars. Refresh a fallback UID whenever Octelium recreates its Service.
 Do not remove the fallback after a single worker becomes Ready. Use the
 capacity, 24-hour native-fleet stability, direct native Pod probe, and public
 end-to-end gates in
-`docs/knowledge-base/architecture/cluster-topology.md`.
+`openwiki/architecture/cluster-topology.md`.
 
 The `octeliumee-logstore`, `octeliumee-metricstore`, and
 `octeliumee-rscstore` Deployments use `Recreate` because each store opens a
@@ -732,13 +769,13 @@ roll out instead of using Octelium's portal-authenticated wait mode. Existing
 Cluster upgrades therefore require `octeliumctl`, `jq`, and an Octelium admin
 login in addition to the Kubernetes access used by `octops`.
 
-Then reconcile public DNS:
+Then follow the private DNS acceptance order before executing DNS changes:
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-gateway-dns.sh
-scripts/octelium-public-dns.sh --dry-run
-scripts/octelium-public-dns.sh
+scripts/tailscale-private-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
 ```
 
 After `octops` completes, apply the service catalog and create the connector
@@ -775,7 +812,7 @@ kubectl kustomize clusters/homelab/apps/octelium-storage
 kubectl kustomize clusters/homelab/apps/istio
 kubectl kustomize clusters/homelab/platform/multus
 bash -n scripts/octelium-gateway-dns.sh
-bash -n scripts/octelium-public-dns.sh
+bash -n scripts/tailscale-private-dns.sh
 bash -n scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 scripts/octelium-enterprise-package.sh --help
@@ -797,7 +834,7 @@ kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/octelium-public-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
@@ -868,17 +905,12 @@ the parent Kustomization and sync `cordium` before deleting the parent
 Application. The child Application's foreground resources finalizer cascades
 its tracked bootstrap resources, preventing an orphaned genesis identity.
 
-Set the connector Deployment replicas to `0` and sync the `octelium` Argo CD
-Application. That stops the connector without restoring Tailscale Funnel.
-
-If the external resources are no longer wanted, delete the homelab Services,
-the `homelab-octelium-client` User, the `homelab-ci` User, and the
-homelab Policies
-from the Octelium Cluster with `octeliumctl`. Do not reintroduce Tailscale
-Funnel during rollback; external callback routes should either stay on
-`octelium-public` or be removed until a replacement is reviewed. The Tailscale
-LAN/exit-node utility is separate from the Octelium app, callback, VPN, and CI
-backbone.
+Do not retire the connector, application catalog, shared Kubernetes Secret, or
+Tunnel Deployment until the [replacement acceptance gate](../clusters/homelab/apps/traefik/CUTOVER.md#final-retirement)
+passes. Express rollback or retirement in reviewed repository desired state and
+use its declared operator path. Funnel remains the approved callback transport;
+private application DNS remains on Tailscale unless a reviewed rollback changes
+it. Keep Cordium state and its required native services.
 
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before
@@ -893,3 +925,41 @@ seconds for startup and 30 seconds of sustained failure after readiness, then
 reaps the client so launchd can restart it. Session expiration still requires
 login; the original client hang trigger remains unknown. The supervisor is
 copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
+
+## Retire an app Service
+
+Catalog apply does not prune removed Services. In a clean checkout of the
+reviewed current `main`, use the operator admin login:
+
+```sh
+python3 -I scripts/octelium-service-retire.py \
+  --service <removed-service> --homedir <private-admin-login-directory> \
+  --removal-sha <app-removal-commit>
+python3 -I scripts/octelium-service-retire.py \
+  --service <removed-service> --homedir <private-admin-login-directory> \
+  --removal-sha <app-removal-commit> --expected-sha <current-main-sha> --execute
+```
+
+The helper requires an ancestor removal commit whose parent catalog declares
+that public WEB Service, with no matching entry in current source. It also
+accepts `<app>.homelab` when the app directory remains removed and its prior
+README documents that exact legacy Service. Legacy retirement is limited to
+private TCP port 443 routed through the Istio ingress gateway. It verifies the
+pinned CLI, transport, live identity and contract, deletes that exact Service,
+and checks absence. Already absent succeeds.
+
+Retire its removed app DNS entry at the app-removal commit before other
+changes advance `main`:
+
+```sh
+scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> --dry-run
+scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> \
+  --execute --expected-sha <current-main-sha>
+```
+
+This deletes only A/AAAA/CNAME records for an active app hostname removed by
+the commit, preserves other records, and verifies absence. The retired
+CI/callback/carrier inventory remains excluded. Verify authoritative DNS
+and confirm the old URL no longer serves the app.
+Restore its catalog entry and apply the catalog to roll back; generated proxy
+UIDs must be refreshed after recreation.

@@ -28,6 +28,14 @@ configMapGenerator:
     namespace: harbor
     files:
       - vulnerability-exporter.py
+  - name: harbor-image-automation
+    namespace: harbor
+    files:
+      - image-automation.json
+  - name: harbor-chainguard-replication
+    namespace: harbor
+    files:
+      - chainguard-replication.json
 generatorOptions:
   disableNameSuffixHash: true
   annotations:
