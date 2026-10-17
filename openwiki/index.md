@@ -5,7 +5,7 @@ okf_version: "0.2"
 # Files
 
 - [Homelab OpenWiki](quickstart.md) - Task routes to homelab architecture, workload owners, bug diagnosis, validation, and agent skills.
-- [Source Map](source-map.md) - Maps wiki topics to canonical repository guides, operational runbooks, workload READMEs, and source ownership.
+- [Source Map](source-map.md) - Maps wiki topics to canonical guides, operational runbooks, workload READMEs and source ownership.
 
 # Directories
 
