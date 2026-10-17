@@ -58,11 +58,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
-      "pageVersion": "sha256:75fa9d6ef6a8ede6c2b6969d66e5bbe032cc3c964da212283ef42a237dce5b9c",
+      "pageVersion": "sha256:09d30e341ddda94b18392e92a584a45e35c6decf1b31c63759e2db67f83f1d2a",
       "completedBy": "codex",
-      "completedRunId": "83f629e9-faec-47aa-a368-5a19cd65186a",
-      "gitHead": "640ad5e953e2f052a2716d57b5d5149f1dc95612",
-      "sourceFingerprint": "sha256:0e87d594611d812c46b8e39e911c397ca28606a14d8262f2619aedc06c775811"
+      "completedRunId": "918704b1-cf52-402f-a7c9-f086ce78da02",
+      "gitHead": "9e141848b5a5d039060a32cb8db507f228d4837a",
+      "sourceFingerprint": "sha256:936f5b2fc24754cccbf6bf0586a41dbc9dd5eb21ee4b11fb10cde0f427f431f0"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "f97e1a9adf22e9854c3c8b02a15c2e053c212bbe",
@@ -72,11 +72,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:efe0d53c0e8330583a939aba44be3d53edae271229845d4e95572eb12759eb81",
+      "pageVersion": "sha256:e557fda3a0ef0526fc920aa7268e2a1bc03fa8849fffb1b1a1a29d71cf2e1a9f",
       "completedBy": "codex",
-      "completedRunId": "83f629e9-faec-47aa-a368-5a19cd65186a",
-      "gitHead": "640ad5e953e2f052a2716d57b5d5149f1dc95612",
-      "sourceFingerprint": "sha256:0e87d594611d812c46b8e39e911c397ca28606a14d8262f2619aedc06c775811"
+      "completedRunId": "918704b1-cf52-402f-a7c9-f086ce78da02",
+      "gitHead": "9e141848b5a5d039060a32cb8db507f228d4837a",
+      "sourceFingerprint": "sha256:936f5b2fc24754cccbf6bf0586a41dbc9dd5eb21ee4b11fb10cde0f427f431f0"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "902a0c25f1879c58b057ef6a7030bbf400908973",

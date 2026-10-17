@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:efe0d53c0e8330583a939aba44be3d53edae271229845d4e95572eb12759eb81",
+  "pageVersion": "sha256:e557fda3a0ef0526fc920aa7268e2a1bc03fa8849fffb1b1a1a29d71cf2e1a9f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -578,15 +578,15 @@
     },
     {
       "id": "claim_c1de3d4b8c824cd793a1b0c8016c0a28",
-      "statement": "Offline image coverage scans .yaml, .yml, and .json cluster resources and Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or exact verified digest.",
+      "statement": "Offline image coverage scans .yaml, .yml, and .json cluster resources, including inline and file-backed Kustomize patches. Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or exact verified digest.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:43496b631e1343f52d044ee3edcf4842b501fdcd79921cb9057eb08b1a895c28"
+          "version": "repo-file-v1:sha256:1eb03b9229eb2896101feeea7fc711756904865c2250ef276e112befd931e47f"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:aae30004a372ae998ec31a49fcc9a836e01b444f8aa3524c47f3437ff24c6b6d"
+          "version": "repo-file-v1:sha256:95aebc4e3cfdaf3b24e0d6932d18666e86872329beb30a3923cff141afb36d8c"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check.py",
@@ -611,6 +611,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:15:52.215Z"
+    "at": "2026-10-17T21:24:17.054Z"
   }
 }

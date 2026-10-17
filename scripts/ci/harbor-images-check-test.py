@@ -332,6 +332,17 @@ with tempfile.TemporaryDirectory() as directory:
             assert check.native_references_by_path([resource]) == {
                 f"/clusters/homelab/apps/other/{name}": {unrelated_native}
             }
+        for name, content in (("kustomization.yaml", "patches:\n- patch: |-\n    - op: replace\n"
+                               f"      path: /spec/template/spec/containers/0/image\n      value: {unrelated_native}\n"),
+                              ("image-patch.json", json.dumps([{
+                                  "op": "replace", "path": "/spec/template/spec/containers/0/image",
+                                  "value": unrelated_native
+                              }]))):
+            resource = other.with_name(name)
+            resource.write_text(content)
+            assert check.native_references_by_path([resource]) == {
+                f"/clusters/homelab/apps/other/{name}": {unrelated_native}
+            }
         check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
         consumer = next(item for item in config["consumers"]

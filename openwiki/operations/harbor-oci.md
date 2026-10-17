@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T21:15:52.215Z" }
+generated: { by: "codex", at: "2026-10-17T21:24:17.054Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:15:52.215Z
+    at: 2026-10-17T21:24:17.054Z
 ---
 
 # Harbor Private OCI Registry
@@ -773,7 +773,7 @@ run revision must equal the receipt-only PR's trusted base revision; older
 successful runs require a fresh exact-main dispatch.
 
 Offline image checks inspect each native consumer's declared target and scan
-repository `.yaml`, `.yml`, and `.json` workload resources, including Kustomize image transformations, for private native Chainguard references. Every
+repository `.yaml`, `.yml`, and `.json` workload resources, including Kustomize image transformations and inline or file-backed patches, for private native Chainguard references. Every
 such reference must appear in the declared path of a `migrated` consumer with
 an imported protected receipt and the exact verified index digest, even if
 automation enrollment is still disabled. The Image Updater's structural check

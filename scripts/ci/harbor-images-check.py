@@ -27,6 +27,9 @@ DEFAULT_CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.jso
 EMBEDDED_IMAGE = re.compile(
     r'''(?m)^[ \t]*image:[ \t]*(?:"([^"\r\n]+)"|'([^'\r\n]+)'|([^ \t#\r\n]+))[ \t]*(?:#.*)?$'''
 )
+NATIVE_IMAGE = re.compile(
+    r"harbor\.stinkyboi\.com/homelab/chainguard(?:/|-)[A-Za-z0-9_./-]+@sha256:[0-9a-f]{64}"
+)
 NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
     "harbor_native_chainguard_receipt", Path(__file__).with_name("harbor-native-chainguard-receipt.py")
 )
@@ -91,6 +94,7 @@ def declared_images(value):
     elif isinstance(value, str):
         # Also covers digest-only chart defaults and embedded Helm values blocks.
         digests.update(re.findall(r"sha256:[0-9a-f]{64}(?![0-9a-f])", value))
+        images.update(NATIVE_IMAGE.findall(value))
     return images, digests
 
 
