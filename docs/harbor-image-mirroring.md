@@ -380,6 +380,20 @@ digests when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
 
+## Harbor runtime patch update
+
+The chart remains 1.19.2 even though `apps/harbor/values.yaml` overrides all
+nine coupled Harbor components to 2.15.4. Keep every component and its catalog
+entry on that same digest-pinned runtime version; the offline component check
+rejects a mixed update.
+
+Harbor 2.15.4 includes migration `0181`. Treat the database as forward-only:
+never downgrade a Harbor schema in place. Accept the update only after a
+verified database-and-registry-blob backup, an isolated restore of that backup,
+and live authenticated registry/API and scan checks. The release still carries
+Distribution `v2.8.3-harbor.2`; Distribution-v2 CVE findings remain unresolved
+and the patch must not be described as CVE-clear.
+
 ## Bootstrap and recovery
 
 An in-cluster registry cannot cold-start from itself on empty nodes. Fresh

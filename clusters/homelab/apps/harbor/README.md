@@ -2,8 +2,9 @@
 
 Harbor hosts the homelab's private container images and OCI artifacts at
 `https://harbor.stinkyboi.com`. The upstream [Helm chart 1.19.2][chart-release]
-deploys Harbor **2.15.2** through the repository's Argo CD Application. Chart
-images and the separate PostgreSQL **18.6** image are pinned by digest.
+declares Harbor 2.15.2, while this application overrides all nine coupled
+Harbor runtime images to **2.15.4**. Chart images and the separate PostgreSQL
+**18.6** image are pinned by digest.
 
 ## Access and authentication
 
@@ -114,8 +115,8 @@ the object identified by the endpoint-scoped `Location` header and compares
 registry references by ID after Harbor expands them in readback responses.
 Omitted false flags are equivalent to false; an enabled deletion flag still
 fails verification.
-See the [Harbor replication API](https://github.com/goharbor/harbor/blob/v2.15.2/src/server/v2.0/handler/replication.go)
-and [schedule validation](https://github.com/goharbor/harbor/blob/v2.15.2/src/controller/replication/model/model.go).
+See the [Harbor replication API](https://github.com/goharbor/harbor/blob/v2.15.4/src/server/v2.0/handler/replication.go)
+and [schedule validation](https://github.com/goharbor/harbor/blob/v2.15.4/src/controller/replication/model/model.go).
 
 `harbor-secrets` is an `OnChange` ExternalSecret backed by these generated
 `/homelab/harbor/` SSM parameter suffixes:
@@ -221,14 +222,22 @@ instance. Cache/job-log claims do not replace these artifacts.
 
 This app does not yet contain an automated full restore overlay. That is a
 separate required code path before performing destructive recovery. Upstream
-[Harbor 2.15.2 release notes][harbor-release] call out its bundled PostgreSQL
-major upgrade; this deployment uses a separately managed PostgreSQL workload
-so future chart changes cannot silently upgrade its database engine.
+[Harbor 2.15.4 release notes][harbor-release] include migration `0181`. Treat
+the runtime update as forward-only: do not downgrade its schema in place. Its
+acceptance gate is a verified database-and-blob backup, an isolated restore of
+that backup, and live authenticated registry/API and scan checks after rollout.
+This deployment uses a separately managed PostgreSQL workload, so future chart
+changes cannot silently upgrade its database engine.
+
+Harbor 2.15.4 still bundles Distribution `v2.8.3-harbor.2`. Distribution-v2
+findings remain unresolved, so this is not a CVE-clear release. Require a
+fresh full-runtime scan before closing a Harbor CVE finding.
 
 ## Validation
 
 ```sh
 nix develop --command bash scripts/ci/harbor-check.sh
+python3 -I scripts/ci/harbor-images-check.py --harbor-components
 kubectl kustomize clusters/homelab/apps/harbor
 kubectl -n harbor get pods,pvc,externalsecret,certificate
 kubectl -n harbor get jobs -l app.kubernetes.io/component=bootstrap
@@ -245,5 +254,5 @@ backup and the ServiceMonitor target; do not infer success from manifest
 rendering or an Argo CD sync alone.
 
 [chart-release]: https://github.com/goharbor/harbor-helm/releases/tag/v1.19.2
-[harbor-release]: https://github.com/goharbor/harbor/releases/tag/v2.15.2
+[harbor-release]: https://github.com/goharbor/harbor/releases/tag/v2.15.4
 [limits]: https://developers.cloudflare.com/support/troubleshooting/http-status-codes/4xx-client-error/error-413/
