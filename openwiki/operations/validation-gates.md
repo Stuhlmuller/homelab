@@ -128,10 +128,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T19:44:54.134Z" }
+generated: { by: "codex", at: "2026-10-17T20:07:41.174Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:44:54.134Z
+    at: 2026-10-17T20:07:41.174Z
 ---
 
 # Validation Gates
@@ -1568,17 +1568,18 @@ global Harbor-only pull policy.
 The separate trusted provenance workflow validates imported receipt state
 against the exact successful main run and publishes `Native Chainguard Receipt
 Provenance` on the PR head SHA. Main pushes revalidate all open PR heads,
-including forks, against the new base. The required status is enabled only after
-the workflow succeeds on main; static policy tests pin its trusted steps, status
+including forks, against the new base. PR and push runs are serialized to keep
+older results from overwriting newer checks. The required status is enabled only
+after the workflow succeeds on main; static policy tests pin its trusted steps, status
 permission, and source hashes. The Rego `pull_request_target` exception accepts
-only that exact trusted job shape, including main-push revalidation. Neither a
-local fixture nor a copied receipt substitutes for this head-bound result.
+only that exact trusted job shape, including serialized main-push revalidation.
+Neither a local fixture nor a copied receipt substitutes for this head-bound result.
 
 `harbor-images-check.py` reads native consumer targets even when status remains
 `candidate` and `not-enrolled`, and scans workload manifests for private native
 Chainguard references. Every such reference needs an imported protected receipt
-and the exact verified digest; direct consumer targets also need `migrated`
-status. The Harbor render fixture rejects undeclared native destinations.
+and the exact verified digest in the declared path of a `migrated` consumer.
+The Harbor render fixture rejects undeclared native destinations.
 These checks prove declared source behavior, not a live pull or rollout.
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
