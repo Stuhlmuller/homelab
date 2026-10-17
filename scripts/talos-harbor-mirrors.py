@@ -314,6 +314,31 @@ def hosts_only(before, after, wanted):
         raise RuntimeError("Refusing changes outside machine.network.extraHostEntries")
 
 
+def active_harbor_mirrors(machine, wanted):
+    """Return whether active node config has the complete private mirror route."""
+    if not isinstance(machine, dict):
+        return False
+    registries = machine.get("registries", {})
+    if not isinstance(registries, dict) or registries.get("mirrors") != wanted:
+        return False
+    try:
+        if owned_registry_auth(registries) is None:
+            return False
+    except (KeyError, TypeError, RuntimeError):
+        return False
+    harbor = registries.get("config", {}).get(REGISTRY_HOST, {})
+    tls = harbor.get("tls", {}) if isinstance(harbor, dict) else None
+    if not isinstance(tls, dict) or tls.get("insecureSkipVerify", False) is not False:
+        return False
+    network = machine.get("network", {})
+    entries = network.get("extraHostEntries", []) if isinstance(network, dict) else []
+    if not isinstance(entries, list):
+        return False
+    matches = [entry for entry in entries if isinstance(entry, dict)
+               and isinstance(entry.get("aliases"), list) and REGISTRY_HOST in entry["aliases"]]
+    return matches == [PRIVATE_REGISTRY_HOST]
+
+
 def verify_registry_route():
     service = json.loads(run("kubectl", "-n", "traefik", "get", "service", "traefik-registry", "-o", "json"))
     config = service["spec"]
@@ -383,7 +408,12 @@ def talos_boot(client):
     return boot
 
 
-def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host_only=False, registry_auth_file=None):
+def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host_only=False, registry_auth_file=None,
+              audit=False):
+    if audit and (execute or rollback or registry_host_only or registry_auth_file is not None):
+        raise RuntimeError("Harbor mirror audit cannot combine with rollout options")
+    if audit:
+        verify_main(expected)
     if registry_auth_file is not None and registry_host_only:
         raise RuntimeError("Registry credentials cannot be combined with registry-host-only mode")
     if registry_auth_file is not None and rollback:
@@ -447,6 +477,15 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
                     raise RuntimeError("Active and persistent configurations differ; resolve staged or try changes first")
 
         capture(original)
+        if audit:
+            active = documents(original)
+            configs = [item for item in active if item.get("version") == "v1alpha1"]
+            machine = configs[0].get("machine") if len(configs) == 1 else None
+            if not active_harbor_mirrors(machine, wanted):
+                print(f"{NODES[node]}: active Harbor mirror configuration does not match declaration")
+                raise RuntimeError("Active Harbor mirror configuration does not match declaration")
+            print(f"{NODES[node]}: active Harbor mirror configuration matches declaration")
+            return
         # Normalize defaults with the same local parser, preserving every document.
         run("talosctl", "machineconfig", "patch", str(original), "--patch", "[]", "--output", str(normalized))
         before = documents(normalized)
@@ -515,6 +554,8 @@ def main():
                         help="Private Talos client config (default: repository .talos/talosconfig)")
     parser.add_argument("--talosctl", default="talosctl", help="Talos 1.11.3 executable (default: talosctl on PATH)")
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--audit", action="store_true",
+                        help="Read active Harbor mirror state without rendering or applying a patch")
     parser.add_argument("--expected-sha")
     parser.add_argument("--rollback", action="store_true")
     parser.add_argument("--registry-host-only", action="store_true",
@@ -526,7 +567,7 @@ def main():
     os.umask(0o077)
     signal.signal(signal.SIGTERM, lambda signum, _: sys.exit(128 + signum))
     reconcile(args.node, args.execute, args.expected_sha, args.rollback, args.talosconfig,
-              args.registry_host_only, args.registry_auth_file)
+              args.registry_host_only, args.registry_auth_file, args.audit)
 
 
 if __name__ == "__main__":
