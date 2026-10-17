@@ -31,6 +31,11 @@ filesystem headroom, and image download space. The node had approximately
 7.2 GiB free disk and 2.3 GiB available memory on 2026-10-11. Grow or move storage
 before consuming that headroom. A node reset or disk failure loses local data.
 
+The 2026-10-17 preflight found 421 MiB of unreserved memory on `zimaboard-0`.
+PostgreSQL (256 MiB), Redis (64 MiB), and the backup Job (64 MiB) reserve
+384 MiB together. Redis retains its 512 MiB limit; verify its actual memory use
+and recheck this scheduling budget before registration or adding workloads.
+
 A bounded root init container changes only the mounted directory's ownership;
 PostgreSQL and Redis run as UID/GID 65534. PostgreSQL initializes `pg_trgm` and
 `unaccent`, then removes superuser privileges from the application role.
