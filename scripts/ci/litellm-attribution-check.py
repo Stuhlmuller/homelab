@@ -1,5 +1,5 @@
-"""Run on Python 3.13 with litellm[proxy]==1.80.8, openai==2.8.0,
-httpx==0.28.1 and opentelemetry-sdk==1.25.0.
+"""Run on Python 3.13 with litellm[proxy]==1.104.2, openai==2.33.0,
+httpx==0.28.1 and opentelemetry-sdk==1.33.1.
 """
 
 import asyncio
@@ -10,6 +10,7 @@ from datetime import datetime
 from hashlib import sha256
 import importlib
 import importlib.util
+from importlib.metadata import version
 import json
 import os
 from pathlib import Path
@@ -49,7 +50,8 @@ fixture_key_directory = None
 sys.path.insert(0, str(ROOT / "clusters/homelab/apps/litellm"))
 gateway_launcher = importlib.import_module("gateway")
 native_keys = importlib.import_module("native_keys")
-assert "tag: main-v1.80.8-stable@" in (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text(), \
+assert version("litellm") == "1.104.2", "Test the reviewed gateway SDK"
+assert "tag: main-stable@sha256:5a9ff0fd7177372f2ccd8949cb121f67e281f4d13d026af51f9c096c0626f50a" in (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text(), \
     "Update the attribution check and CI dependency when changing the gateway version"
 values = yaml.safe_load((ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
 assert values["command"] == ["python", "/etc/litellm-hooks/gateway.py"], "Native CLI alone bypasses admission"
@@ -159,22 +161,23 @@ async def check_failure_telemetry():
         await asyncio.wait_for(finished.wait(), 5)
     await client.close()
     assert len(attempts) == 1
-    assert marker in str(original), "Do not alter the exception returned to the caller"
+    assert marker not in str(original) and "REDACTED" in str(original), "Candidate SDK must redact the provider credential before translation"
     assert captured["kwargs"]["exception"] is original
-    assert marker in captured["kwargs"]["standard_logging_object"]["error_information"]["error_message"]
-    logger.log_failure_event(**captured)  # Sync and async share the same protected path.
-    assert len(spans) == 2
+    assert marker not in captured["kwargs"]["standard_logging_object"]["error_information"]["error_message"], "Candidate native error metadata must exclude the provider credential"
+    assert len(spans) == 1, "Candidate must emit one native async failure span"
+    logger.log_failure_event(**captured)
+    assert len(spans) == 1, "Candidate sync failure path must deduplicate the same request"
     for span in spans:
         assert span.attributes["error.type"] == "BadRequestError"
         assert span.attributes["error.code"] == "400"
         assert "error.message" not in span.attributes and "error.stack_trace" not in span.attributes
         assert not span.exceptions
     await logger.async_post_call_failure_hook(
-        data, original, SimpleNamespace(parent_otel_span=Span()), traceback_str=marker,
+        data, original, SimpleNamespace(parent_otel_span=Span(), team_id=None, team_alias=None), traceback_str=marker,
     )
     assert spans[-1].attributes["exception"] == "BadRequestError 400"
     assert marker not in json.dumps([span.attributes for span in spans])
-    assert marker in str(original) and original.__traceback__ is not None
+    assert marker not in str(original) and original.__traceback__ is not None
     for status in (True, "400", 99, 600, None):
         error = Exception(marker)
         error.status_code = status
@@ -346,6 +349,9 @@ def check_launcher():
     @contextmanager
     def fixture_database_config(path):
         yield path
+    async def fixture_resolve_key(self, hashed_token):
+        return await fixture_key_object(hashed_token, check_cache_only=self._check_cache_only)
+
     auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
     with tempfile.TemporaryDirectory(dir="/tmp") as directory, \
             patch.dict(os.environ, {"NUM_WORKERS": "7", "WEB_CONCURRENCY": "8", "OPENAI_API_KEY": "unused"}, clear=True), \
@@ -357,7 +363,7 @@ def check_launcher():
             patch.object(proxy_server.proxy_config, "get_credentials", new=AsyncMock()) as cache_credentials, \
             patch.object(native_keys, "provider_api_key", new=AsyncMock(return_value=FIXTURE_PROVIDER)), \
             patch.object(identity, "provider_api_key", new=AsyncMock(return_value=FIXTURE_PROVIDER)), \
-            patch.object(auth, "get_key_object", side_effect=fixture_key_object), \
+            patch.object(auth.IdentityStore, "_resolve_key", new=fixture_resolve_key), \
             patch.object(LangfuseOtelLogger, "_init_otel_logger_on_litellm_proxy"), \
             patch.object(LangfuseOtelLogger, "__init__", new=initialize_logger), \
             patch.object(uvicorn, "run", side_effect=run_uvicorn) as serve:
@@ -455,6 +461,10 @@ async def check_openclaw_gateway():
         prisma_client=SimpleNamespace(), proxy_logging_obj=SimpleNamespace(post_call_failure_hook=AsyncMock()),
         user_api_key_cache=DualCache(), user_custom_auth=None, premium_user=False,
     )
+    native_proxy = importlib.import_module("litellm.proxy.proxy_server")
+    native_proxy.__dict__.update(vars(proxy))
+    proxy = native_proxy
+    proxy.proxy_logging_obj = ProxyLogging(proxy.user_api_key_cache)
     app = FastAPI()
     app.add_middleware(gateway_launcher.TelemetryAdmission)
     @app.exception_handler(ProxyException)
@@ -500,10 +510,13 @@ async def check_openclaw_gateway():
             return {"expected_failure": True}
         await asyncio.wait_for(finished.wait(), 5)
         return {"ok": True}
+    async def fixture_resolve_key(self, hashed_token):
+        return await fixture_key_object(hashed_token, check_cache_only=self._check_cache_only)
+
     try:
         with patch.dict(sys.modules, {"litellm.proxy.proxy_server": proxy}), \
                 patch.object(auth, "enterprise_custom_auth", None), \
-                patch.object(auth, "get_key_object", side_effect=fixture_key_object), \
+                patch.object(auth.IdentityStore, "_resolve_key", new=fixture_resolve_key), \
                 patch.object(auth.verbose_proxy_logger, "error") as auth_errors, \
                 patch.object(OpenAIChatCompletion, "_get_async_http_client", return_value=client), \
                 patch.object(litellm, "in_memory_llm_clients_cache", DualCache()), \
@@ -654,8 +667,8 @@ async def check_openclaw_gateway():
     assert any(span.attributes.get("error.type") == "BadRequestError" for span in spans)
     assert "Reply OK" in exported and "OK" in exported
     for data in prepared:
-        assert gateway not in json.dumps(data["metadata"], default=str)
-        assert provider not in json.dumps(data["proxy_server_request"], default=str)
+        assert gateway not in repr(data["metadata"])
+        assert provider not in repr(data["proxy_server_request"])
 
 
 async def check():
@@ -715,7 +728,7 @@ async def check():
                 with patch.dict(sys.modules, {"litellm.proxy.proxy_server": SimpleNamespace(
                         llm_router=None, premium_user=False, open_telemetry_logger=None)}):
                     data = await add_litellm_data_to_request(data, incoming, user, SimpleNamespace(), {}, "fixture")
-                assert data[metadata_key]["headers"]["x-litellm-api-key"] == token
+                assert "x-litellm-api-key" not in data[metadata_key]["headers"], "Candidate SDK must already strip the gateway token"
                 result = await identity.attribution.async_pre_call_hook(user, None, data, call_type)
                 metadata = result[metadata_key]
                 assert metadata["session_id"] == "session-1"

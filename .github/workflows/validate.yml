@@ -99,11 +99,104 @@ jobs:
         run: |
           python -m venv "${RUNNER_TEMP}/litellm-test"
           source "${RUNNER_TEMP}/litellm-test/bin/activate"
-          python -m pip install 'litellm[proxy]==1.80.8' 'litellm-proxy-extras==0.4.11' 'opentelemetry-sdk==1.25.0' 'openai==2.8.0' 'httpx==0.28.1' 'prisma==0.11.0' 'fastapi==0.120.1' 'starlette==0.49.1' 'uvicorn==0.31.1'
+          python -m pip install 'litellm[proxy]==1.104.2' 'litellm-proxy-extras==0.4.102.post1' 'opentelemetry-sdk==1.33.1' 'opentelemetry-exporter-otlp==1.33.1' 'openai==2.33.0' 'httpx==0.28.1' 'prisma==0.11.0' 'fastapi==0.136.3' 'starlette==1.3.1' 'uvicorn==0.51.0'
           python -m prisma generate --schema "$(python -c 'from pathlib import Path; import litellm; print(Path(litellm.__file__).parent / "proxy/schema.prisma")')"
           python scripts/ci/litellm-attribution-check.py
           python scripts/ci/litellm-native-auth-test.py
-          nix develop --command env -u PYTHONPATH "${VIRTUAL_ENV}/bin/python" scripts/ci/litellm-native-database-test.py
+          python -m pip download --no-deps --only-binary=:all: 'litellm-proxy-extras==0.4.11' --dest "${RUNNER_TEMP}/litellm-legacy"
+          legacy_wheel="${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl"
+          nix develop --command env -u PYTHONPATH "${VIRTUAL_ENV}/bin/python" scripts/ci/litellm-native-database-test.py "$legacy_wheel"
+
+      - name: Check pinned gateway image runtime
+        run: |
+          image="$(python - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          images = json.loads(Path('scripts/config/harbor-images.json').read_text())['images']
+          sources = [image['source'] for image in images if image['source'].startswith('ghcr.io/berriai/litellm-database:')]
+          assert len(sources) == 1
+          assert re.fullmatch(r'ghcr.io/berriai/litellm-database:[A-Za-z0-9_.-]+@sha256:[0-9a-f]{64}', sources[0])
+          dockerfile = Path('builds/litellm/Dockerfile').read_text()
+          base = 'FROM harbor.stinkyboi.com/mirror/' + sources[0]
+          assert dockerfile.splitlines()[0] == base, 'Build base must match the reviewed catalog digest'
+          Path(os.environ['RUNNER_TEMP'], 'litellm-ci.Dockerfile').write_text(dockerfile.replace(base, 'FROM ' + sources[0], 1))
+          print(sources[0])
+          PY
+          )"
+          pull_log="$(mktemp)"
+          trap 'rm -f "$pull_log"' EXIT
+          for attempt in 1 2 3; do
+            if docker pull "$image" >"$pull_log" 2>&1; then
+              cat "$pull_log"
+              break
+            fi
+            cat "$pull_log" >&2
+            if grep -Eqi 'unauthorized|denied|forbidden|manifest unknown|not found|invalid reference' "$pull_log" ||
+               ! grep -Eqi 'context deadline exceeded|TLS handshake timeout|i/o timeout|connection reset|unexpected EOF' "$pull_log" ||
+               [[ "$attempt" == 3 ]]; then
+              exit 1
+            fi
+            sleep 5
+          done
+          rm -f "$pull_log"
+          trap - EXIT
+          docker build --pull=false --file "${RUNNER_TEMP}/litellm-ci.Dockerfile" \
+            --tag fixture/litellm-remediated:local builds/litellm
+          image=fixture/litellm-remediated:local
+          for fixture in litellm-native-auth-test.py litellm-attribution-check.py; do
+            docker run --rm --network none --user 65532:65532 --read-only \
+              --cap-drop ALL --security-opt no-new-privileges \
+              --tmpfs /tmp:rw,noexec,nosuid,nodev,size=256m \
+              --mount "type=bind,source=$PWD/scripts/ci,target=/workspace/scripts/ci,readonly" \
+              --mount "type=bind,source=$PWD/clusters/homelab/apps/litellm,target=/workspace/clusters/homelab/apps/litellm,readonly" \
+              --workdir /workspace --entrypoint /app/.venv/bin/python "$image" "scripts/ci/$fixture"
+          done
+
+      - name: Check packaged gateway database
+        run: |
+          nix develop --command env -u PYTHONPATH "${RUNNER_TEMP}/litellm-test/bin/python" scripts/ci/litellm-native-database-test.py "${RUNNER_TEMP}/litellm-legacy/litellm_proxy_extras-0.4.11-py3-none-any.whl" fixture/litellm-remediated:local
+
+      - name: Prepare private runtime scan inputs
+        run: |
+          set -euo pipefail
+          python scripts/ci/litellm-scan-check-test.py
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          docker image inspect --format '{{.Id}}' fixture/litellm-remediated:local >"${RUNNER_TEMP}/litellm-scan-image-id"
+          docker save --output "${RUNNER_TEMP}/litellm-scan.tar" fixture/litellm-remediated:local
+          nix build --out-link "${RUNNER_TEMP}/litellm-grype" --impure --expr '(builtins.getFlake (toString ./.)).inputs.nixpkgs.legacyPackages.x86_64-linux.grype'
+          printf 'check-for-app-update: false\nmatch-upstream-kernel-headers: true\ndb:\n  cache-dir: %s/grype-db\n  auto-update: true\n' "$RUNNER_TEMP" >"${RUNNER_TEMP}/litellm-grype.yaml"
+          EOF
+          then
+            echo "::error::Scan input preparation failed; private output withheld."
+            exit 1
+          fi
+          echo "Scan input preparation passed; private output withheld."
+
+      - name: Generate private runtime vulnerability report
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          "${RUNNER_TEMP}/litellm-grype/bin/grype" --config "${RUNNER_TEMP}/litellm-grype.yaml" --by-cve --platform linux/amd64 -o json --file "${RUNNER_TEMP}/litellm-scan.json" "docker-archive:${RUNNER_TEMP}/litellm-scan.tar"
+          EOF
+          then
+            echo "::error::Private scanner execution failed; private output withheld."
+            exit 1
+          fi
+          echo "Private scanner execution passed; private output withheld."
+
+      - name: Check private runtime vulnerability report
+        run: |
+          set -euo pipefail
+          image_id="$(cat "${RUNNER_TEMP}/litellm-scan-image-id")"
+          python3 scripts/ci/litellm-scan-check.py "${RUNNER_TEMP}/litellm-scan.json" "$image_id"
 
       - name: Secret scan
         run: nix develop --command bash scripts/ci/secret-scan.sh

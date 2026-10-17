@@ -47,6 +47,10 @@ class SafeLangfuseLogger(LangfuseOtelLogger):
     def __init__(self):
         super().__init__(config=langfuse_config(), callback_name="langfuse_otel")
 
+    def get_tracer_to_use_for_request(self, kwargs):
+        # Collector endpoint and credentials belong to the operator, not callers.
+        return self.tracer
+
     def set_attributes(self, span, kwargs, response_obj):
         # Native auth failures can put the ORIGINAL bearer in a field named
         # user_api_key_hash. App attribution needs aliases, never this key field.
