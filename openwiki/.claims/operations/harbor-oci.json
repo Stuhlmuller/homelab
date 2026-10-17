@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9d2955e37efe60bef91cc297d6fcf928e30340af1d9b7174a01afd4ee67aabdc",
+  "pageVersion": "sha256:6f131c50bb1a08eeea8580d9c7c51909fdb574b2c07e9054cd298163318f2b84",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -474,7 +474,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:9aa4deac065cadf54e3765218b6a11d268a7ed13f5a80deb8aad4ef98bfd4317"
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py",
@@ -521,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:40:54.253Z"
+    "at": "2026-10-17T21:45:32.118Z"
   }
 }

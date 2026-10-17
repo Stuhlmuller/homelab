@@ -245,7 +245,7 @@ while IFS= read -r head_sha; do
       marked=1
       break
     fi
-    sleep 2
+    [[ "$attempt" == 3 ]] || sleep 2
   done
   [[ "$marked" == 1 ]] || pending_failed=1
 done <"$heads_file"

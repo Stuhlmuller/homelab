@@ -123,7 +123,7 @@ sources:
 generated: { by: "codex", at: "2026-10-17T21:40:54.253Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:40:54.253Z
+    at: 2026-10-17T21:45:32.118Z
 ---
 
 # Harbor Private OCI Registry

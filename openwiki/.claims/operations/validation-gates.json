@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6717ba8013b6125282ba77a3d89cc9ad7e6c01204e37767507d2f067d59ec0c7",
+  "pageVersion": "sha256:864e35c7ae8cd02c9948811160a5f34cb476114ae76dceced68eb8db07259749",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:63d3696a8cf25253beb58453d9437cfa58af6387c5c6e1a0ecb56d8974d15995"
+          "version": "repo-file-v1:sha256:a7d93f395f77372d29894103bc5e2ac85a22d6ee7aaed02e4baafb3c687d526a"
         }
       ]
     },
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:c82db5c71771884cb5d4a1b178273aa9243d79bf33fe2506afb5b102832b4220"
+          "version": "repo-file-v1:sha256:ff122f366f5b0a0ace1354ee5e47648b8c9b3e1adf354ffca5362dced872f920"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -558,7 +558,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:63d3696a8cf25253beb58453d9437cfa58af6387c5c6e1a0ecb56d8974d15995"
+          "version": "repo-file-v1:sha256:a7d93f395f77372d29894103bc5e2ac85a22d6ee7aaed02e4baafb3c687d526a"
         }
       ]
     },
@@ -568,11 +568,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:9aa4deac065cadf54e3765218b6a11d268a7ed13f5a80deb8aad4ef98bfd4317"
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:63d3696a8cf25253beb58453d9437cfa58af6387c5c6e1a0ecb56d8974d15995"
+          "version": "repo-file-v1:sha256:a7d93f395f77372d29894103bc5e2ac85a22d6ee7aaed02e4baafb3c687d526a"
         }
       ]
     },
@@ -600,7 +600,7 @@
       "evidence": [
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:c82db5c71771884cb5d4a1b178273aa9243d79bf33fe2506afb5b102832b4220"
+          "version": "repo-file-v1:sha256:ff122f366f5b0a0ace1354ee5e47648b8c9b3e1adf354ffca5362dced872f920"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
@@ -611,6 +611,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:40:54.253Z"
+    "at": "2026-10-17T21:45:32.118Z"
   }
 }
