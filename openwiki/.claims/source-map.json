@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a3ce70e54ba3484e3ce56fbe07116aae4b4e5369a7b7ba40cd7ebd458b54d1a2",
+  "pageVersion": "sha256:757f1a907275f8107acf3b22188435fa96144ee67e5190b11ce513fa90c72436",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
-      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook are the canonical sources for immutable identity migration, private mail-only operator updates and Mac SSO acceptance.",
+      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook own immutable identity migration, private mail-only history, supported Fleet baseline/SAML acceptance and the retired Fleet-only PSSO boundary.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -92,11 +92,11 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9c7a958d06b45338e0120bf0fe16023fda60fa46236c897fddbf789c3fa17c2f"
+          "version": "repo-file-v1:sha256:5026b61a8c5f09ddf553c497177b806f1b4cadbe350cf950332dbd9540d4990b"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
@@ -110,7 +110,7 @@
     },
     {
       "id": "claim_4fdc25d5799544a69025a0aaf3d128e8",
-      "statement": "The Google Workspace federation module runbook owns protected metadata ingestion and a separate private saved-plan operator apply; it does not replace the existing owner-mail migration or Mac acceptance runbooks.",
+      "statement": "The Google Workspace federation module runbook owns protected metadata ingestion and a separate private saved-plan operator apply; it does not replace owner-mail history or Fleet's supported baseline/SAML and retired PSSO boundaries.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-google-workspace-federation/README.md",
@@ -122,13 +122,13 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:16:04.839Z"
+    "at": "2026-10-17T18:29:04.432Z"
   }
 }

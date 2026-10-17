@@ -93,7 +93,14 @@ if grep -Eq '(^|[[:space:]])harbor[.]stinkyboi[.]com([[:space:]]|$)|# homelab-ha
 fi
 
 umask 077
+if [[ "$mode" == mirror ]]; then
+  rm -f -- "$RUNNER_TEMP/harbor-publication-error.gpg"
+fi
 scratch="$(mktemp -d "${RUNNER_TEMP}/harbor-publish.XXXXXX")"
+if [[ "$mode" == mirror ]]; then
+  # Capture setup stderr too; transfer commands replace it with their own buffer.
+  exec 2>"$scratch/mirror-error"
+fi
 forward_pid=""
 hosts_added=false
 kubeconfig_added=false
@@ -133,6 +140,20 @@ cleanup() {
   fi
   if "$kubeconfig_added"; then
     rm -f -- "$HOME/.kube/config" || result=1
+  fi
+  if [[ "$mode" == mirror && "$result" -ne 0 ]]; then
+    for diagnostic in port-forward.log readiness.log; do
+      if [[ -s "$scratch/$diagnostic" ]]; then
+        printf '\n%s:\n' "$diagnostic" >>"$scratch/mirror-error"
+        tail -c 65536 -- "$scratch/$diagnostic" >>"$scratch/mirror-error"
+      fi
+    done
+    if [[ -s "$scratch/mirror-error" ]]; then
+      if ! python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$scratch/mirror-error" \
+          "$RUNNER_TEMP/harbor-publication-error.gpg" >"$scratch/encryption-status" 2>&1; then
+        rm -f -- "$RUNNER_TEMP/harbor-publication-error.gpg"
+      fi
+    fi
   fi
   rm -rf -- "$scratch" || result=1
   if [[ "$mode" == mirror && "$result" -ne 0 ]]; then

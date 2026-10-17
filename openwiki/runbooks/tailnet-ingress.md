@@ -62,10 +62,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:16:04.839Z
+    at: 2026-10-17T18:40:16.143Z
 ---
 
 # Tailnet And App Ingress

@@ -30,10 +30,10 @@ sources:
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-12T03:17:35.648Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:16:04.839Z
+    at: 2026-10-17T18:40:16.143Z
 ---
 
 # GitOps Flow

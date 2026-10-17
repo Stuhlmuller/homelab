@@ -44,10 +44,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-11T06:23:22.000Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:16:04.839Z
+    at: 2026-10-17T18:29:04.432Z
 ---
 
 # Source Map
@@ -88,7 +88,7 @@ desired state.
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/modules/entra-owner-mail/README.md` | [Owner-mail migration boundary](architecture/secrets-and-identity.md) |
 | `IaC/modules/entra-google-workspace-federation/README.md` | [Operator federation boundary](architecture/secrets-and-identity.md#google-workspace-federation-boundary) |
-| `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Mac SSO recovery and acceptance](operations/validation-gates.md#entra-owner-mail-and-octelium-identity-checks) |
+| `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Fleet baseline, SAML and retired PSSO boundary](operations/validation-gates.md#entra-owner-mail-and-octelium-identity-checks) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
 | `docs/runtime-isolation.md` | [Runtime Isolation](runbooks/runtime-isolation.md) |
 | `docs/secrets-aws-ssm.md` | [AWS SSM Secret References](runbooks/secrets-aws-ssm.md) |

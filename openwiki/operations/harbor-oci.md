@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:16:04.839Z
+    at: 2026-10-17T18:40:16.143Z
 ---
 
 # Harbor Private OCI Registry

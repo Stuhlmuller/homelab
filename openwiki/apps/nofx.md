@@ -7,7 +7,7 @@ workload_status: active
 updated: 2026-09-29
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T02:42:57.879Z
+    at: 2026-10-17T18:40:16.143Z
 sources:
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
@@ -17,7 +17,7 @@ sources:
     resource: repo://docs/octelium-nofx-reconciliation.md
   - id: openwiki-source-ff63d9d82b2370adf56a5f28
     resource: repo://scripts/octelium-nofx-reconcile.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 ---
 
 # NOFX

@@ -109,7 +109,7 @@ with tempfile.TemporaryDirectory() as directory:
     sources = [prefix + digest for prefix in (
         "ghcr.io/mastodon/mastodon:v4.7.3@",
         "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
-        "docker.io/library/postgres:18.6-bookworm@",
+        "docker.io/library/postgres:18-bookworm@",
         "docker.io/library/redis:7.4.11-alpine@",
     )]
     check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in sources]}))

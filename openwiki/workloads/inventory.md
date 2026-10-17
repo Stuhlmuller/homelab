@@ -12,10 +12,14 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
+    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-9fa73338d241a64216558c54
     resource: repo://clusters/homelab/apps/nix-builder/namespace.yaml
   - id: openwiki-source-67d34f0f260c94a7dff4a12a
@@ -52,10 +56,12 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-13T04:33:12.797Z" }
+  - id: openwiki-source-6a90d887ebbab5a858408f90
+    resource: repo://scripts/fleet-free-setup.py
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T02:42:57.879Z
+    at: 2026-10-17T18:40:16.143Z
 ---
 
 # Workload Inventory
@@ -98,9 +104,10 @@ retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-separates native Microsoft Password Platform SSO from console SAML. Company
-Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
+separates supported Apple baseline and console SAML acceptance. The unsupported
+Fleet-only Company Portal/Platform SSO pilot is retired; its profile remains only
+for removal from the previously selected Mac. A repository operator script
+delivers supported Mac and iPhone/iPad profiles with host-scoped commands. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
@@ -111,7 +118,7 @@ before `mac-baseline-catalog --remove` deletes the old global entry; distinct
 identities prevent delayed catalog removals from erasing the replacement.
 The catalog action is removal-only and preserves other entries. New Macs need
 explicit installation; the baseline has no automatic assignment or drift repair.
-`mac-pilot` uses the new baseline with the existing Entra SSO profile.
+`mac-pilot --remove` removes only the retired pilot profile; it does not deploy PSSO.
 `ios-baseline --host-id` targets only one Fleet MDM-connected `ios`/`ipados`
 host and validates its Apple device identifier before delivering the stable
 iPhone/iPad passcode profile:
@@ -152,7 +159,8 @@ by the shared Terragrunt stack and managed through Kustomize. It uses the pinned
 Nix image, has no Service/ingress, host mounts, Kubernetes token or persistent
 volume, and accepts staged reviewed source through authenticated operator exec.
 Its amd64 worker affinity and `1Gi` request/limit bound scheduling and build
-memory. Registration, first full build and signed-cache reuse remain pending.
+memory. Source declaration is distinct from live registration, full-build and signed-cache
+acceptance; consult the dated receipts in [Validation Gates](../operations/validation-gates.md).
 
 Root and `SYS_ADMIN` support nested Nix sandboxes, making this a high-trust
 executor. Its NetworkPolicy expresses intended DNS/public-HTTPS egress and

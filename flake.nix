@@ -84,6 +84,7 @@
             findutils
             gh
             git
+            gnupg
             gitleaks
             gnugrep
             gnused
@@ -107,6 +108,7 @@
             prometheus.cli
             python3
             ripgrep
+            ruby
             shellcheck
             shfmt
             skopeo

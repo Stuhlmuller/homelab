@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0945cf843a4f62b6545ffc25d47a7e01cdfa253bbb4d603706483dd1004cfbbf",
+  "pageVersion": "sha256:587af0a41b0b7cf0de56eeb8aa8e40cb0a0d1ed59ac93b6cf24f376c16978068",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -149,10 +149,42 @@
           "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
         }
       ]
+    },
+    {
+      "id": "claim_5e1053675bdf49e7889b225c938d51a9",
+      "statement": "The declared Nix builder is an Argo-managed disposable executor with a 1Gi memory request/limit, no ingress, Kubernetes token, host mount or persistent volume; its elevated sandbox capabilities require a reviewed-source trust boundary and declared NetworkPolicy is not enforcement proof.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml",
+          "version": "repo-file-v1:sha256:c921ea0fd8a778d424bdc81a6163bb0cd82484f8596297d0c824673db02f6f92"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:91c246d41f236acaf4d79562ace304edb21dad61da51408e1d7492f16e04972d"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
+        }
+      ]
+    },
+    {
+      "id": "claim_19400c40a15a496c8be875f125560b24",
+      "statement": "Fleet's supported host-scoped Apple baselines and console SAML remain separate from the retired Fleet-only Company Portal/Platform SSO pilot; mac-pilot permits removal of the retained pilot profile rather than deploying it.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
+        },
+        {
+          "resource": "repo://scripts/fleet-free-setup.py",
+          "version": "repo-file-v1:sha256:b2ccf43e0f97a41c95f45256559b534a489dfa1eda7586453416f024646cc399"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T02:42:57.879Z"
+    "at": "2026-10-17T18:40:16.143Z"
   }
 }

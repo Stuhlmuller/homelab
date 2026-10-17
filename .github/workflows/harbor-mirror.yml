@@ -178,10 +178,20 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'053f201185b3b72f37b74294f37e1b0567264eae211d4614468e23c536149758  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
             exit 1
           fi
           echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."
+
+      - name: Retain Only Encrypted Failure Diagnostic
+        if: failure()
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harbor-publication-error.gpg
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: false

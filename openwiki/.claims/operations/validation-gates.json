@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d2a59443b2f6df4b96eb7dcadccd25d9665e1096324a031e6ad35892a9e709d",
+  "pageVersion": "sha256:6850e3d1e669a1fc8d9fac0e14d37656822e87b4464c76bea830f499426c62b2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,11 +16,11 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -30,11 +30,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
+          "version": "repo-file-v1:sha256:98792847ba92463055dffdd3ea02b71ec195bdba9f81567a72d6f1647cfdf606"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:a2e0499ea14397ae272d99576aea74db9a147953d5a5930e0a16e2270f25148a"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         }
       ]
     },
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -344,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         }
       ]
     },
@@ -388,15 +388,15 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
+          "version": "repo-file-v1:sha256:98792847ba92463055dffdd3ea02b71ec195bdba9f81567a72d6f1647cfdf606"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75"
+          "version": "repo-file-v1:sha256:053f201185b3b72f37b74294f37e1b0567264eae211d4614468e23c536149758"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9c7a958d06b45338e0120bf0fe16023fda60fa46236c897fddbf789c3fa17c2f"
+          "version": "repo-file-v1:sha256:5026b61a8c5f09ddf553c497177b806f1b4cadbe350cf950332dbd9540d4990b"
         }
       ]
     },
@@ -406,11 +406,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:113949cd52b8f38de46ae929cf7962c9192618f1bcf681d3c356ca3786a2ea15"
+          "version": "repo-file-v1:sha256:98792847ba92463055dffdd3ea02b71ec195bdba9f81567a72d6f1647cfdf606"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         }
       ]
     },
@@ -432,7 +432,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
         }
       ]
     },
@@ -450,7 +450,7 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
+          "version": "repo-file-v1:sha256:eb0536118a713dba1b7f667d3b8bc27a034ce549971ac018a45e019196241bb4"
         },
         {
           "resource": "repo://docs/nix-cache.md",
@@ -498,11 +498,11 @@
         },
         {
           "resource": "repo://docs/nix-builder-seccomp.md",
-          "version": "repo-file-v1:sha256:1af3cafa91996284c04e7cd234aa15aea07a8ad7d84ddd87d6d4eb2f197cb080"
+          "version": "repo-file-v1:sha256:eb0536118a713dba1b7f667d3b8bc27a034ce549971ac018a45e019196241bb4"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:e40c152e911400f08b83966b884c56c9e4777653664e677912fe292bfb20c18c"
+          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -528,7 +528,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9c7a958d06b45338e0120bf0fe16023fda60fa46236c897fddbf789c3fa17c2f"
+          "version": "repo-file-v1:sha256:5026b61a8c5f09ddf553c497177b806f1b4cadbe350cf950332dbd9540d4990b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
@@ -564,7 +564,7 @@
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:d853fdbec4cd9c3dd53c9639f9c7215eaa2260e4a8514a21d21a169f6882a4ba"
+          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig-test.py",
@@ -583,10 +583,46 @@
           "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
         }
       ]
+    },
+    {
+      "id": "claim_db848ce0e6504967b9527b11ec48b503",
+      "statement": "The dated runbook preserves the initial exact6dd7 rollout/headroom hold and subsequent successful bounded signed publication of both Linux checks, independent signature acceptance/rejections, cleanup and905MiB peak/noOOM. Exactmain warmCI38349343865 attempt2 repojob115167993774 copied both published outputs without rebuilding and passed remaining freshvalidation. Cache proof applies to exact6dd7 source; laterdocs change fingerprints. Separately freshplan-only38506080728 exactsigned12eaf629/base0a442055 livejob115665635536 and policygate passed APIproxychecks and Terraformplanning; independentclusterchecks found allfourReady/no pressure/originalbuilderReady1Gi/Argohealthyatbase. Migrationapply,retirement and furthercachepublication remainheld; docsmerge releases none.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-builder-seccomp.md",
+          "version": "repo-file-v1:sha256:eb0536118a713dba1b7f667d3b8bc27a034ce549971ac018a45e019196241bb4"
+        },
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+        },
+        {
+          "resource": "repo://scripts/ci/nix-checks.sh",
+          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+        },
+        {
+          "resource": "repo://scripts/nix-builder.py",
+          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
+        }
+      ]
+    },
+    {
+      "id": "claim_faccb0d772994472bcc86f05872af18a",
+      "statement": "Fleet's supported Apple baseline and console SAML retain separate acceptance gates, while the retired Fleet-only Platform SSO profile is removal-only and historical installation must not be treated as password synchronization.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md#L175-L234",
+          "version": "repo-lines-v1:sha256:ddb4b1f0587b206d14b5c468665309584ed0b835fd44d5f02733fed48c0f4464:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NTdhYjMyY2MxZTIyMGYxYzM0NDI3YTZmMjA2MDkxZTU0MGMwZjcyZGNlYTE1MTUyODk4YTVmMTlmMTIzMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MTE0ZDlhMDc4Y2U4NTUzMWZmYWE3MWNlNzI5N2Q3YzgyMGY5MzFiYTcxMDczZWFlZDc5YzM2YTU3ZTZkNTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2Yzc1OTBkMGE4ZGM4MzQ3ODQwMzVkODVjZTg1OTMwYjM0NTM5NGUyZTg2YWQ4YjJlYzU5NjRiNjM4M2IzOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1NzUyZDQxMTgzYmYzYzc2OTM3M2M2MTFkMDQ3NjY2ZjdhZGNjMGU5NzRhNmI0YTU1YTM2YTBiNzNiMTdiMTkifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/fleet-free-setup-test.py",
+          "version": "repo-file-v1:sha256:e3a18f6e1cc0a5c6c74d20b630aca51cbdad695f063983e3aeb2707270ee23af"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:20:08.279Z"
+    "at": "2026-10-17T18:40:16.143Z"
   }
 }

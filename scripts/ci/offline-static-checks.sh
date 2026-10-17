@@ -333,6 +333,45 @@ yq -e '
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"
 
+echo "::group::Kiali shell-free Prometheus readiness"
+kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e '
+    [
+      .cr.spec.deployment.additional_pod_init_containers_yaml[]
+      | select(.name == "wait-for-prometheus")
+    ] | (
+      length == 1 and
+      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      .[0].imagePullPolicy == "IfNotPresent" and
+      .[0].command == ["curl"] and
+      .[0].args == [
+        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
+        "--retry-delay", "5", "--retry-all-errors",
+        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
+      ] and
+      .[0].securityContext.runAsUser == 100 and
+      .[0].securityContext.runAsGroup == 101 and
+      .[0].securityContext.runAsNonRoot == true and
+      .[0].securityContext.allowPrivilegeEscalation == false and
+      .[0].securityContext.privileged == false and
+      .[0].securityContext.readOnlyRootFilesystem == true and
+      .[0].securityContext.capabilities.drop == ["ALL"] and
+      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
+    )
+  ' >/dev/null
+jq -e '
+  [
+    .consumers[]
+    | select(.consumer_id == "kiali-prometheus-readiness")
+  ] |
+  length == 1 and
+  .[0].image_id == "chainguard-curl" and
+  .[0].migration_status == "candidate" and
+  .[0].automation_status == "not-enrolled"
+' clusters/homelab/apps/harbor/image-automation.json >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -837,7 +876,7 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml e7c61ae727c8cceee7b63a8e972a51ce0fc36eac5fc629b500af26304fbb504d
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-mirror.yml 5a08ca9168b7cfd27e82dd1c94a5d53b4a6b381c88b04e528280c3848a47d56e
+.github/workflows/harbor-mirror.yml 90111f7537c2d08bd9880988340e9118f305a715b9f8fa7bc7462d180c56adb6
 .github/workflows/homelab-diagnostics.yml e906d9d2c0fc1c6101da7312365739b6270d8f0a3d78296c9147440ffe39f273
 .github/workflows/harbor-core-images.yml cd08aa4ef45b3272d2f0b159c90955731feec9f4632330c1f4c16f93288a042c
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9

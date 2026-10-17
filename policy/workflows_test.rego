@@ -396,7 +396,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "e4fc69ffc311e927d96c4dd00286a11e793312289ba734f6124ec6679b6e8f75", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "053f201185b3b72f37b74294f37e1b0567264eae211d4614468e23c536149758", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
@@ -700,4 +700,23 @@ test_authkey_join_does_not_need_github_oidc_permission if {
 	base := workflow_with_live_run(withheld_live_run)
 	job := object.union(base.jobs.test, {"permissions": {"contents": "read"}})
 	tailscale_join_before(job, 3)
+}
+
+test_encrypted_harbor_artifact_exception_is_exact if {
+	base := workflow_with_live_run(harbor_mirror_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [harbor_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"mirror": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(harbor_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"mirror": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
 }

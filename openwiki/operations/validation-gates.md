@@ -56,6 +56,8 @@ sources:
     resource: repo://scripts/ci/cordium-ci-transport-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-ae2336e6e599509b38bba4f1
+    resource: repo://scripts/ci/fleet-free-setup-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -130,10 +132,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T03:20:08.279Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:20:08.279Z
+    at: 2026-10-17T18:40:16.143Z
 ---
 
 # Validation Gates
@@ -191,6 +193,34 @@ RuntimeDefault at that receipt. Stage 2 still requires exact protected review,
 Argo rollout and actual OCI-profile verification. Retain sandboxing,
 signatures, the 1 GiB limit and fresh preflight before a separately released
 single bounded publication retry; any terminal failure consumes that attempt.
+
+The dated [post-rollout receipt](../../docs/nix-builder-seccomp.md#verified-rollout-publication-headroom-hold)
+records exact Argo revision `6dd7b02c`, a Ready replacement Pod and matching
+running OCI profile, capabilities, sandbox/signature settings and actual 1 GiB
+cgroup limit. At 2026-10-13 05:09 UTC, publication preflight still failed:
+the selected worker had 1243.4 MiB measured headroom against the 1536 MiB guard.
+No publication command or build attempt had run at that receipt; the newly
+approved retry was still unused. Wait for fresh natural headroom and a separate release, or obtain
+explicit approval for a concrete protected capacity change. Never lower the
+guard, alter other workloads, restart Pods or reclaim host caches ad hoc.
+That historical hold did not establish signed publication, warm-CI substitution
+or full-check capacity. The later [signed publication and warm CI receipt](../../docs/nix-builder-seccomp.md#signed-publication-and-warm-ci-receipt)
+records natural headroom recovery to 1589.9 MiB, fresh full preflight and a
+separately released bounded retry on exact main `6dd7b02c`. Both Linux checks
+completed, were signed and published, and passed independent fresh-store
+signature acceptance plus unknown-key/unsigned rejection. Original-Pod cleanup
+passed; peak memory was 905 MiB with no max/OOM/OOM-kill events. Main validation
+run `38349343865` attempt 2, repo job `115167993774`, copied both exact published
+outputs from the committed release URL without rebuilding either check and
+finished successfully with remaining validation fresh. Acceptance applies to
+that exact source tree; later tracked docs change the broad fingerprint. The separate fresh plan-only run `38506080728` completed successfully on signed
+PR #1277 head `12eaf629`, base `0a442055`. Live plan job `115665635536` and its
+policy gate passed fresh API-proxy checks and Terraform planning. Independent
+cluster checks found four Ready nodes without pressure and the original builder
+Ready with its 1GiB limit; Argo was Synced/Healthy/Succeeded at that base. Those
+live checks ran separately from cached offline receipts. Migration apply,
+retirement and further cache publication remain held; merging this docs receipt
+releases none of them.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
@@ -1440,15 +1470,15 @@ refresh works; require actual CI runs for both identities and fresh no-change
 plans. Keep private identity and authentication evidence out of public logs.
 
 The [Free Entra acceptance checklist](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-adds separate gates for Microsoft Password Platform SSO and console SAML. The
-profile operator is dry-run by default; its Fleet API validation uses
-`configuration_profiles/batch?dry_run=true`, without replacing global profiles.
-Require exact local Mac identity, correct platform-specific profile UUIDs,
-acknowledged installation, retained pre-existing profiles, and session revocation.
-The Entra app/user units require focused encrypted plans before protected apply.
-Browser SAML identity, device/user registration, actual Mac password sync,
-offline login, and FileVault unlock must each be verified independently. Record
-failed versus untested checks explicitly; Argo health is not their acceptance.
+separates console SAML and supported Apple baseline acceptance. The Fleet-only
+Company Portal/Platform SSO pilot is retired; its profile is retained only for
+removal from the previously selected Mac. Do not retry its registration or
+interpret historical profile installation as password synchronization.
+The profile operator defaults to read-only preview. Require exact local Mac
+identity, acknowledged supported-profile changes, retained unrelated profiles
+and session revocation. Entra app/user units still require focused encrypted
+plans before protected apply. Browser SAML identity, offline local login and
+FileVault unlock remain independent checks; Argo health is not their acceptance.
 Keep identity-specific acceptance evidence in a private operator report. Public
 documentation should describe the verification method without publishing account
 identifiers, credentials or detailed tenant security state from the test.

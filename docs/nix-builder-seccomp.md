@@ -88,3 +88,71 @@ canonical SHA256 `aa9efdab8100bee9695b8c72c107ddf338a740cff4190e0611893c31d455b7
 All four nodes remained Ready without pressure. The original builder remained
 RuntimeDefault with zero restarts at this receipt; container selection requires
 the separate protected runtime PR and Argo rollout. No publication retry ran.
+
+## Verified rollout; publication headroom hold
+
+Protected runtime PR #1301 merged as `6dd7b02c`. Natural Argo reconciliation
+reached that exact revision with Synced/Healthy/Succeeded and one Ready builder
+with zero restarts. Independent running-OCI readback matched the reviewed
+profile hash above. The effective/bounding capabilities retained NET_ADMIN,
+seccomp filtering was active, Nix reported sandbox=true and require-sigs=true
+with nixbld users, and the actual cgroup memory.max was 1073741824 bytes.
+Baseline memory peak was 24256512 bytes with zero max/OOM/OOM-kill events.
+These observations prove profile delivery, not successful sandbox builds.
+
+At 2026-10-13 05:09 UTC, fresh metrics showed 1243.4 MiB measured headroom
+on the selected worker and 978.4 MiB on the other eligible worker. All four
+nodes were Ready without pressure/network unavailability, with fresh leases;
+the repository preflight nevertheless rejected publication because the selected
+worker was below its required 1536 MiB headroom. No publication command or
+build attempt started at that receipt; the single newly authorized retry was
+still unused. No signed outputs or warm-CI substitution had been established.
+
+Keep the 1GiB limit and existing preflight threshold. Resume only after natural
+headroom recovery passes fresh full preflight and the separate coordinator
+publication release, or after a separately reviewed and explicitly approved
+capacity change. Do not restart Pods, reclaim host caches, move the workload,
+change other workloads, or lower the guard to manufacture acceptance. Keep
+actual publication, fresh signed substitutions and live checks as separate
+completion gates. This receipt is dated evidence; recheck live metrics.
+
+
+## Signed publication and warm CI receipt
+
+On 2026-10-13, natural selected-worker headroom reached 1589.9 MiB against the
+unchanged 1536 MiB guard. Fresh full preflight and exact source, Argo, original
+Pod UID, running OCI profile and runtime settings passed. After the separate
+coordinator release, immediate preflight passed and the one bounded publication
+attempt completed with exit 0 on main
+`6dd7b02ce43cefad2b62bc9ab2964b40c4b15dce`. The retry is consumed; this receipt
+releases no additional attempt. Sandboxing, signature checks and the 1GiB limit
+remained enabled. Both Linux checks completed and were signed and published:
+
+- `/nix/store/d2dgkznjybvd1n3y154pp25nxnbp4h5n-homelab-offline-tests`
+- `/nix/store/kwbm00csjqhcihb0kqlsgd0dzsqj8n5l-homelab-manifest-policy`
+
+Independent copies from the [published cache](https://github.com/Stuhlmuller/homelab/releases/tag/nix-cache)
+into fresh disposable stores accepted both outputs with the committed public
+key. Unknown-key and unsigned variants were rejected specifically by signature
+validation. The original Pod's owner lock and workspace were absent afterward,
+with no Nix/timeout process remaining. Peak memory was 948531200 bytes (905 MiB),
+with zero max/OOM/OOM-kill events; all four nodes remained Ready without pressure.
+
+The narrowly rerun [main validation job](https://github.com/Stuhlmuller/homelab/actions/runs/38349343865/job/115167993774)
+(attempt 2, exact `6dd7b02c`) finished successfully. Its 06:49:28 UTC log copied
+both exact outputs from the committed GitHub release URL without rebuilding
+either check. The protected-main trust policy and unchanged sandbox/signature
+wrapper were used; remaining validation ran fresh. This establishes cache
+acceptance for that exact source tree, not later fingerprints. Merging these
+docs changes the broad check inputs.
+
+The separate [fresh plan-only run](https://github.com/Stuhlmuller/homelab/actions/runs/38506080728)
+completed successfully on signed PR #1277 head
+`12eaf629c3d16c2348cebe058e576b3ce0582de1`, base
+`0a4420559c24733b0e05d58b8978eab81ed5f415`. Live plan job `115665635536`
+and its policy gate passed, including fresh API-proxy checks and Terraform
+planning. Independent current cluster checks found all four nodes Ready without
+pressure and the original builder Ready with its 1GiB limit; Argo was
+Synced/Healthy/Succeeded at that base. These live checks were run separately
+from cached offline receipts. Migration apply, retirement and further cache
+publication remain held; merging this docs receipt releases none of them.

@@ -56,6 +56,8 @@ sources:
     resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-6a90d887ebbab5a858408f90
+    resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-74dcbb88cca2d854985d0d67
     resource: repo://scripts/nix-cache.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -64,10 +66,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-14T02:42:57.879Z" }
+generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:23:14.118Z
+    at: 2026-10-17T18:40:16.143Z
 ---
 
 # Secrets And Identity
@@ -651,30 +653,30 @@ neither credential source. Omitting the option uses the initial administrator
 secret and works only while that password remains current.
 
 See the [Free Entra runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
-Native Microsoft Password Platform SSO uses Company Portal's extension and each
-person's Entra account. It preserves the existing local Mac account; no Fleet
-Premium password-sync or Intune enrollment is configured. Registration alone
-does not establish management or compliance. Password, offline login and
-FileVault acceptance require interactive tests.
+The Fleet-only Microsoft Platform SSO pilot is retired. Fleet no longer deploys
+its profile; the retained removal path targets only the previously selected Mac.
+Company Portal and Platform SSO require Intune enrollment and a licensed user,
+which this Fleet-only setup does not provide. Do not retry registration or add a
+Company Portal exception. Fleet retains its supported Apple baseline.
 
 Console SAML is a separate `azuread-applications/fleet` Terragrunt unit. Its
 single-tenant enterprise application requires individual assignment, selects a
 Microsoft-generated signing certificate declaratively, and exposes only sensitive
 runtime metadata outputs. The initial Fleet administrator remains a recovery
 account; only the authorized Entra identity is precreated as an SSO administrator.
-JIT/SCIM provisioning stays disabled. The public native-client route continues
+JIT/SCIM provisioning stays disabled. The private mesh native-client route continues
 without Octelium redirects; Fleet authenticates administrative requests.
 
 Read-only inspection found Entra Free and enabled Security Defaults. The existing
 tenant owner is an external Microsoft-account member, not an internal cloud
-password identity. Preserve it; use the separately authorized native pilot
-account for Mac Password SSO. Do not infer password support from `UserType=Member`
+password identity. Preserve it; the separate pilot account does not enable
+Fleet-only Platform SSO. Do not infer password support from `UserType=Member`
 alone, weaken MFA, or convert/reset the existing tenant administrator.
 The `azuread-applications/fleet-pilot-user` unit stays in the existing AzureAD
 CI collection despite owning a user. It grants no role, group or license, protects
 against destruction, and ignores later password changes. Its generated initial
 password remains in encrypted state and a private handoff file; it must be changed
-interactively before PSSO. Family identities beyond the pilot require explicit
+interactively before initial cloud-account use, independently of retired PSSO. Family identities beyond the pilot require explicit
 names and must not inherit console administrator access.
 
 The separate `operator/entra-stuhlmuller-domain` unit reads the existing
@@ -718,11 +720,9 @@ password-change timestamp. The owner's existing mail/SMTP proxy uses the
 requested address, making it the leading conflict candidate, but Entra's audit
 did not name the conflicting property. The pilot-rename approval does not cover
 clearing owner aliases or converting that administrator; a separate owner-address
-migration was subsequently approved. The pilot's initial password change must finish
-before native Password PSSO registration. Fleet MDM enrollment remained intact;
-successful organizational device/user registration and password synchronization
-still require interactive acceptance. The runbook retains the separate,
-unresolved token-endpoint profile warning from the same attempt.
+migration was subsequently approved. Fleet MDM enrollment remained intact. This historical registration failure did
+not establish password synchronization; the Fleet-only PSSO pilot is now retired,
+and these incident notes do not authorize repeating its registration procedure.
 
 The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
 applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external
