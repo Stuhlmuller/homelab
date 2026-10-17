@@ -24,9 +24,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ROOT / "clusters/homelab/apps/fleet/profiles"
 CONSOLE_USER = "rodman@stinkyboi.com"
-MAC_FILES = ("macos-security-baseline-host.mobileconfig", "macos-entra-platform-sso.mobileconfig")
+MAC_FILES = ("macos-security-baseline-host.mobileconfig",)
 IOS_FILES = ("ios-passcode-baseline.mobileconfig",)
 LEGACY_MAC_FILES = ("macos-security-baseline.mobileconfig",)  # Global assignment retired; removal only.
+RETIRED_MAC_FILES = ("macos-entra-platform-sso.mobileconfig",)  # Requires Intune enrollment; removal only.
 POLICY = {
     "name": "Family Mac FileVault enabled",
     "query": "SELECT 1 FROM disk_encryption WHERE user_uuid IS NOT '' AND filevault_status = 'on' LIMIT 1;",
@@ -248,6 +249,8 @@ def mac_baseline_catalog(api, token, remove=False):
 def execute(args):
     desired = (profiles(IOS_FILES, 1) if args.action == "ios-baseline"
                else profiles(MAC_FILES[:1] if args.action == "mac-baseline" else MAC_FILES, 5))
+    if args.action == "mac-pilot" and args.remove:
+        desired += profiles(RETIRED_MAC_FILES, 5)
     api = module("fleet_api", "fleet-download-apple-csr.py")
     mdm = module("fleet_mdm", "fleet-verify-apple-mdm.py")
     api.MAX_RESPONSE = 16 * 1024 * 1024
@@ -313,6 +316,7 @@ def main(argv=None):
         profiles(MAC_FILES, 5)
         profiles(IOS_FILES, 1)
         profiles(LEGACY_MAC_FILES, 5)
+        profiles(RETIRED_MAC_FILES, 5)
         if not args.execute:
             print("Dry run: profile files valid; no credentials or APIs accessed.\n"
                   "mac-pilot targets this exact Mac by serial AND hardware UUID.\n"
