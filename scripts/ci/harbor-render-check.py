@@ -18,6 +18,13 @@ MAX_INPUT_BYTES = 4 * 1024 * 1024
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 DEFAULT_STATE = ROOT / "scripts/config/image-automation-state.json"
+HARBOR_PULL_SECRET = "harbor-pull"
+HARBOR_PULL_PARAMETER = "/homelab/harbor/robot-pull-password"
+HARBOR_PULL_TEMPLATE = (
+    '{"auths":{"harbor.stinkyboi.com":{"username":"robot$homelab+pull",'
+    '"password":{{ .password | toJson }},"auth":"'
+    '{{ printf "robot$homelab+pull:%s" .password | b64enc }}"}}}'
+)
 
 
 def identity(resource):
@@ -156,6 +163,88 @@ def _images(value):
             yield from _images(child)
 
 
+def image_repository(image):
+    return image.split("@", 1)[0].rsplit(":", 1)[0]
+
+
+def harbor_pull_secret_errors(resources):
+    """Require the staged Harbor pull credential and exporter reference."""
+    providers = [resource for resource in resources
+                 if resource.get("kind") == "ExternalSecret"
+                 and identity(resource) == ("ExternalSecret", NAMESPACE, HARBOR_PULL_SECRET)]
+    consumers = [resource for resource in resources
+                 if resource.get("kind") in WORKLOADS and identity(resource)[1] == NAMESPACE
+                 and {"name": HARBOR_PULL_SECRET} in pod_spec(resource).get("imagePullSecrets", [])]
+    if not providers and not consumers:
+        return []
+    errors = []
+    if len(providers) != 1:
+        errors.append(f"expected one ExternalSecret {NAMESPACE}/{HARBOR_PULL_SECRET}")
+    else:
+        secret = providers[0]
+        spec = secret.get("spec", {})
+        revision = secret.get("metadata", {}).get("annotations", {}).get(
+            "homelab.stuhlmuller.dev/generated-secret-revision")
+        if spec.get("refreshPolicy") != "OnChange" or not revision:
+            errors.append("Harbor pull auth must retain its generated-secret revision refresh contract")
+        if spec.get("secretStoreRef") != {"kind": "ClusterSecretStore", "name": "aws-ssm"}:
+            errors.append("Harbor pull auth must use the aws-ssm ClusterSecretStore")
+        if spec.get("data") != [{"secretKey": "password", "remoteRef": {
+                "key": HARBOR_PULL_PARAMETER, "conversionStrategy": "Default",
+                "decodingStrategy": "None", "metadataPolicy": "None"}}] or spec.get("dataFrom"):
+            errors.append("Harbor pull auth must read only the Harbor pull-password parameter")
+        target = spec.get("target", {})
+        if (target.get("name") != HARBOR_PULL_SECRET or target.get("creationPolicy") != "Owner"
+                or target.get("deletionPolicy") != "Retain"):
+            errors.append("Harbor pull auth must own and retain its target Secret")
+        template = target.get("template", {})
+        if (template.get("engineVersion") != "v2" or template.get("mergePolicy", "Replace") != "Replace"
+                or template.get("type") != "kubernetes.io/dockerconfigjson"
+                or template.get("data") != {".dockerconfigjson": HARBOR_PULL_TEMPLATE}
+                or template.get("templateFrom")):
+            errors.append("Harbor pull auth must render only the read-only robot Docker config")
+        if sync_order(secret) != (PHASES["Sync"], -5):
+            errors.append("Harbor pull auth must precede Harbor workloads at sync wave -5")
+    exporters = [resource for resource in resources
+                 if resource.get("kind") == "Deployment"
+                 and identity(resource) == ("Deployment", NAMESPACE, "harbor-vulnerability-exporter")]
+    if len(exporters) != 1:
+        errors.append("expected one Harbor vulnerability exporter Deployment")
+    elif pod_spec(exporters[0]).get("imagePullSecrets") != [{"name": HARBOR_PULL_SECRET}]:
+        errors.append("Harbor vulnerability exporter must reference harbor-pull exactly")
+    for resource in resources:
+        if resource.get("kind") not in WORKLOADS or identity(resource)[1] != NAMESPACE:
+            continue
+        pod = pod_spec(resource)
+        for volume in pod.get("volumes", []):
+            refs = [volume.get("secret", {}).get("secretName")]
+            refs += [source.get("secret", {}).get("name")
+                     for source in volume.get("projected", {}).get("sources", [])]
+            if HARBOR_PULL_SECRET in refs:
+                errors.append(f"{label(identity(resource))} must not mount harbor-pull")
+        containers = pod.get("containers", []) + pod.get("initContainers", [])
+        containers += pod.get("ephemeralContainers", [])
+        for container in containers:
+            refs = [entry.get("secretRef", {}).get("name") for entry in container.get("envFrom", [])]
+            refs += [entry.get("valueFrom", {}).get("secretKeyRef", {}).get("name")
+                     for entry in container.get("env", [])]
+            if HARBOR_PULL_SECRET in refs:
+                errors.append(f"{label(identity(resource))} must not expose harbor-pull as environment")
+    return errors
+
+
+def native_harbor_pull_errors(resources, repositories):
+    errors = []
+    for resource in resources:
+        if resource.get("kind") not in WORKLOADS or identity(resource)[1] != NAMESPACE:
+            continue
+        pod = pod_spec(resource)
+        if any(image_repository(image) in repositories for image in _images(pod)) \
+                and pod.get("imagePullSecrets") != [{"name": HARBOR_PULL_SECRET}]:
+            errors.append(f"{label(identity(resource))} must pull native Harbor images using harbor-pull")
+    return errors
+
+
 def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT_STATE):
     """Require verified publication before an enrolled Harbor image renders."""
     if not config_path.exists() or not state_path.exists():
@@ -170,10 +259,17 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
     }
     rendered = set(_images(resources))
     errors = []
+    native_repositories = {
+        image_repository(image["destination"])
+        for image in enrolled.values()
+        if image.get("source", "").startswith("cgr.dev/chainguard/")
+        and image_repository(image["destination"]).startswith("harbor.stinkyboi.com/homelab/")
+    }
+    errors.extend(native_harbor_pull_errors(resources, native_repositories))
     for image_id, image in enrolled.items():
         destination = image["destination"]
-        repository = destination.split("@", 1)[0].rsplit(":", 1)[0]
-        if not any(ref.split("@", 1)[0].rsplit(":", 1)[0] == repository for ref in rendered):
+        repository = image_repository(destination)
+        if not any(image_repository(ref) == repository for ref in rendered):
             continue
         receipt = state.get("receipts", {}).get(image_id)
         if not isinstance(receipt, dict) or receipt.get("destination_ref") != destination \
@@ -193,6 +289,7 @@ def main():
         raise ValueError("combined render exceeds the 4 MiB input limit")
     resources = json.loads(source)
     errors = validate(resources)
+    errors.extend(harbor_pull_secret_errors(resources))
     errors.extend(receipt_errors(
         resources,
         Path(options.get("--automation-config", DEFAULT_AUTOMATION)),
