@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:764155da6756c5743ee1a56e48a1b5abffe6d028fdbc815508ddac542737d659",
+  "pageVersion": "sha256:f9af52792b19bacb2fc74b35cd4c3df37da4f7dcea02f8e499426a43b721a30e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -582,7 +582,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:4ddb69a711baabdfb3fb12a2704c244d4ec1551cd1e5a17ec4a721415864f884"
+          "version": "repo-file-v1:sha256:719a9f94103fd4f88eb226c8c6a07dfcdee45a4a2a426d89615cb4c15e46ae2b"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check-test.py",
@@ -611,6 +611,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:07:41.174Z"
+    "at": "2026-10-17T20:25:43.015Z"
   }
 }

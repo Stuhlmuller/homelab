@@ -122,10 +122,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:07:41.174Z" }
+generated: { by: "codex", at: "2026-10-17T20:25:43.015Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:07:41.174Z
+    at: 2026-10-17T20:25:43.015Z
 ---
 
 # Harbor Private OCI Registry
@@ -773,13 +773,15 @@ run revision must equal the receipt-only PR's trusted base revision; older
 successful runs require a fresh exact-main dispatch.
 
 Offline image checks inspect each native consumer's declared target and scan
-repository workload manifests for private native Chainguard references. Every
+repository workload manifests, including Kustomize image transformations, for private native Chainguard references. Every
 such reference must appear in the declared path of a `migrated` consumer with
 an imported protected receipt and the exact verified index digest, even if
 automation enrollment is still disabled. The Image Updater's structural check
 permits enrollment after the required repository Harbor image check validates
 that imported evidence. Native enrollment renders without the
 `verified-stable` alias, which receipt imports do not publish.
+The automation contract rejects applications mixing native Chainguard and
+alias-backed images, including a not-enrolled native candidate.
 The Harbor render check applies the same rule to rendered
 references and rejects undeclared native destinations.
 

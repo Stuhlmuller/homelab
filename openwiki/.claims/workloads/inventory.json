@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b40d2b214d1b3669fd45bfede978727bbb567ddb8bacd4bbe40c94667e233775",
+  "pageVersion": "sha256:d000d0e63c810084ef8dca8f5941a75b480dcedf381444d0fb9ec973b3616479",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -138,17 +138,17 @@
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
-          "version": "repo-file-v1:sha256:538bbe466d5c3c929f2d29459f431e47d3804a9dd9b49b911ab8d57dc497edc9"
+          "version": "repo-file-v1:sha256:d0ea574f67a6ce828babc3b6680cfb1455512bfabaa1270e0f513a1234682a4d"
         },
         {
           "resource": "repo://scripts/ci/image-automation.py",
-          "version": "repo-file-v1:sha256:24f7107c37b053971dfeb2483621f0eaac67075e665d8c6d7e965aa610b93a02"
+          "version": "repo-file-v1:sha256:b67448ee49bf0920b9294da503dcc73703dbce2941d4f028222d9768e07ff7ff"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:48:41.466Z"
+    "at": "2026-10-17T20:25:43.015Z"
   }
 }

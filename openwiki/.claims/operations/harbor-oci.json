@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:187fca970106e35467752a7791c487150342548d3894197490b90168ef2048bb",
+  "pageVersion": "sha256:31209b9b4f4137cb9b43ed931a0dc4b4ab168110dabaae0aed3e5a33f63f75fb",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -488,15 +488,15 @@
     },
     {
       "id": "claim_d41f4c87a08c43e4a9d9af999a8dca07",
-      "statement": "Offline image checks inspect native consumer targets and repository workload manifests; every private native Chainguard reference must occur in the declared path of a migrated consumer with imported protected receipt evidence and the exact verified digest. The Harbor render check rejects undeclared native destinations.",
+      "statement": "Offline image checks inspect native consumer targets and repository workload manifests, including Kustomize image transformations; every private native Chainguard reference must occur in the declared path of a migrated consumer with imported protected receipt evidence and the exact verified digest. The Harbor render check rejects undeclared native destinations.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:4ddb69a711baabdfb3fb12a2704c244d4ec1551cd1e5a17ec4a721415864f884"
+          "version": "repo-file-v1:sha256:719a9f94103fd4f88eb226c8c6a07dfcdee45a4a2a426d89615cb4c15e46ae2b"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:b1a0c0ea81f66b6fe66c42cd5ce1a1c3c8411d0543bf9bb25a830f46e2571f8f"
+          "version": "repo-file-v1:sha256:34d5b560df6575101c6835627ccbee81d87164ecaeaff0d355e44fc1355685db"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check.py",
@@ -506,25 +506,25 @@
     },
     {
       "id": "claim_0b1f16dd051d439ba841063309ef83ad",
-      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared digest. Native enrollment renders without the verified-stable alias, which receipt imports do not publish.",
+      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared digest. Native enrollment renders without the verified-stable alias; applications mixing native and alias-backed images, including not-enrolled native candidates, are rejected.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:b1a0c0ea81f66b6fe66c42cd5ce1a1c3c8411d0543bf9bb25a830f46e2571f8f"
+          "version": "repo-file-v1:sha256:34d5b560df6575101c6835627ccbee81d87164ecaeaff0d355e44fc1355685db"
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
-          "version": "repo-file-v1:sha256:538bbe466d5c3c929f2d29459f431e47d3804a9dd9b49b911ab8d57dc497edc9"
+          "version": "repo-file-v1:sha256:d0ea574f67a6ce828babc3b6680cfb1455512bfabaa1270e0f513a1234682a4d"
         },
         {
           "resource": "repo://scripts/ci/image-automation.py",
-          "version": "repo-file-v1:sha256:24f7107c37b053971dfeb2483621f0eaac67075e665d8c6d7e965aa610b93a02"
+          "version": "repo-file-v1:sha256:b67448ee49bf0920b9294da503dcc73703dbce2941d4f028222d9768e07ff7ff"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:07:41.174Z"
+    "at": "2026-10-17T20:25:43.015Z"
   }
 }

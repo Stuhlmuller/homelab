@@ -133,6 +133,10 @@ def validate(config):
         if any(next(c for c in config["consumers"] if c["consumer_id"] == cid)["application_id"] != aid
                for cid in app["consumer_ids"]):
             fail(f"application consumers are not coordinated: {aid}")
+        native = {next(c for c in config["consumers"] if c["consumer_id"] == cid)["image_id"].startswith("chainguard-")
+                  for cid in app["consumer_ids"]}
+        if len(native) > 1:
+            fail(f"native and alias-backed images cannot share an application: {aid}")
         for recipe in (app["preflight_recipe"], app["health_recipe"], app["recovery_recipe"]):
             if recipe not in KNOWN_RECIPES:
                 fail(f"unknown workload recipe: {recipe}")

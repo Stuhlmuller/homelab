@@ -101,6 +101,18 @@ native_enrollment["consumers"] = [{"consumer_id": "exporter", "application_id": 
 native_enrollment["applications"] = [{"application_id": "exporter", "consumer_ids": ["exporter"], "preflight_recipe": "python-workload-v1", "health_recipe": "python-workload-v1", "recovery_recipe": "stateless-recovery-v1", "deadline_minutes": 30}]
 assert automation.validate(native_enrollment)
 assert "alias" not in automation.render(native_enrollment)["spec"][0]
+mixed = json.loads(json.dumps(native_enrollment))
+mixed["consumers"][0]["automation_status"] = "not-enrolled"
+mixed["images"].append(dict(mixed["images"][0], image_id="pilot"))
+mixed["consumers"].append(dict(mixed["consumers"][0], consumer_id="pilot", image_id="pilot",
+                               automation_status="enrolled"))
+mixed["applications"][0]["consumer_ids"].append("pilot")
+try:
+    automation.validate(mixed)
+except SystemExit:
+    pass
+else:
+    raise AssertionError("mixed native and alias-backed application accepted")
 
 with tempfile.TemporaryDirectory() as directory:
     path = Path(directory) / "config.json"
