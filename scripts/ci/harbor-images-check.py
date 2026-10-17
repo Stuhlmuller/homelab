@@ -220,8 +220,28 @@ def receipt_errors():
     for consumer in config.get("consumers", []):
         image_id = consumer.get("image_id")
         native = isinstance(image_id, str) and image_id.startswith("chainguard-")
+        target_images = set()
+        if native:
+            target = ROOT / str(consumer.get("target", "")).lstrip("/")
+            if (not target.is_file() and consumer.get("automation_status") != "enrolled"
+                    and consumer.get("migration_status") != "migrated"):
+                continue
+            try:
+                target_images = consumer_target_images(consumer)
+            except (OSError, ValueError, subprocess.SubprocessError):
+                errors.append(f"Native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
+                continue
+        target_native_images = {
+            reference for reference in target_images
+            if reference.startswith(("harbor.stinkyboi.com/homelab/chainguard/",
+                                     "harbor.stinkyboi.com/homelab/chainguard-"))
+        }
         if (consumer.get("automation_status") != "enrolled"
-                and not (native and consumer.get("migration_status") == "migrated")):
+                and not (native and consumer.get("migration_status") == "migrated")
+                and not target_native_images):
+            continue
+        if target_native_images and consumer.get("migration_status") != "migrated":
+            errors.append(f"Native Chainguard reference lacks migrated status: {consumer.get('consumer_id')}")
             continue
         image = images.get(image_id)
         receipt = receipts.get(image_id)
@@ -249,15 +269,6 @@ def receipt_errors():
             errors.append(f"Native Chainguard consumer requires protected workflow evidence: {image_id}")
             continue
         expected = f'{plan["destination_repository"]}@{plan["source_digest"]}'
-        try:
-            target_images = consumer_target_images(consumer)
-        except (OSError, ValueError, subprocess.SubprocessError):
-            errors.append(f"Enrolled native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
-            continue
-        target_native_images = {
-            reference for reference in target_images
-            if reference.split("@", 1)[0].rsplit(":", 1)[0] == plan["destination_repository"]
-        }
         if target_native_images != {expected}:
             errors.append(
                 f"Enrolled native Chainguard consumer lacks exact verified digest: {consumer.get('consumer_id')}"

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:de2225b768d2a6d584e2af83362df1996651006b20cfa6d81089c277bfedcf50",
+  "pageVersion": "sha256:0e6c7d1991a6165fe32de8ea5ee33b70dcb04c61f56b4d8cc34ff468eae6beaf",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -142,7 +142,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/image-automation.json",
-          "version": "repo-file-v1:sha256:d6364d806f3ccc0257d837d5c3291c386a8101a409fcd3976e63f62b36040805"
+          "version": "repo-file-v1:sha256:b4db2711074a2a467805bd9a65d70b7534723c810b6a670978519227cef0e85c"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -153,6 +153,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:39:37.338Z"
+    "at": "2026-10-17T18:47:46.085Z"
   }
 }

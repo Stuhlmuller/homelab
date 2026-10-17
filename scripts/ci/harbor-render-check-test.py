@@ -182,6 +182,8 @@ class HarborRenderPrerequisites(unittest.TestCase):
             configured = json.loads(CHECK.DEFAULT_AUTOMATION.read_text())
             next(consumer for consumer in configured["consumers"]
                  if consumer["image_id"] == "chainguard-python")["automation_status"] = "enrolled"
+            next(consumer for consumer in configured["consumers"]
+                 if consumer["image_id"] == "chainguard-python")["migration_status"] = "migrated"
             config.write_text(json.dumps(configured))
             state.write_text(json.dumps({"receipts": {}}))
             self.assertTrue(CHECK.receipt_errors(resources, config, state))
@@ -232,6 +234,17 @@ class HarborRenderPrerequisites(unittest.TestCase):
                 "receipt": receipt, "provenance": provenance,
             }}}))
             self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
+
+            candidate = next(consumer for consumer in configured["consumers"]
+                             if consumer["image_id"] == "chainguard-python")
+            candidate["automation_status"] = "not-enrolled"
+            candidate["migration_status"] = "candidate"
+            config.write_text(json.dumps(configured))
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Native Chainguard reference lacks migrated status: chainguard-python"
+            ])
+            candidate["migration_status"] = "migrated"
+            config.write_text(json.dumps(configured))
 
             resources[0]["spec"]["template"]["spec"]["containers"].append({
                 "name": "unverified-copy",

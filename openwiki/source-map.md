@@ -25,7 +25,7 @@ sources:
 generated: { by: "codex", at: "2026-10-11T00:23:56.319Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T09:10:40.150Z
+    at: 2026-10-17T18:47:46.085Z
 ---
 
 # Source Map

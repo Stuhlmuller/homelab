@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:091f71eefa529a45f98ce96fe1670ab9ac154629da524cba3e4f3824295dd8b4",
+  "pageVersion": "sha256:e8b612344a34d71f6b906339e75be5c2615d0a9b74f89bfdf9e930a290af46e1",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -30,7 +30,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         },
         {
           "resource": "repo://docs/ci-cd.md",
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -344,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:991796e4814e909eb30541310631046af5a2eaeaf61c9f48758b4807c6b0c98e"
+          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6e987bd298795ab1281dcfb02e6d083d2109cc2691b75423267400f33b20a96f"
+          "version": "repo-file-v1:sha256:5f313417557a8cdfed0b3746ad10e0d1bc5a987f576bfd3b0058bc951109dea9"
         }
       ]
     },
@@ -550,7 +550,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
-          "version": "repo-file-v1:sha256:beeeb37a8a5c6633d318ce023b18481f5bd1ed6a9c91d341453b048c91ee2a35"
+          "version": "repo-file-v1:sha256:eacfcfce37622ab310d02e0b95d219971417a437d1d777e7d7ba9cd88e2f4697"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -558,7 +558,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6e987bd298795ab1281dcfb02e6d083d2109cc2691b75423267400f33b20a96f"
+          "version": "repo-file-v1:sha256:5f313417557a8cdfed0b3746ad10e0d1bc5a987f576bfd3b0058bc951109dea9"
         }
       ]
     },
@@ -576,13 +576,27 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6e987bd298795ab1281dcfb02e6d083d2109cc2691b75423267400f33b20a96f"
+          "version": "repo-file-v1:sha256:5f313417557a8cdfed0b3746ad10e0d1bc5a987f576bfd3b0058bc951109dea9"
+        }
+      ]
+    },
+    {
+      "id": "claim_c1de3d4b8c824cd793a1b0c8016c0a28",
+      "statement": "Offline image coverage and Harbor render regressions reject direct private native Chainguard references when status remains candidate, protected receipt evidence is absent, the destination is undeclared, or the digest differs from the verified index.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-images-check-test.py",
+          "version": "repo-file-v1:sha256:6bc100df5c154bad6826395813b5e494d8d7a87e875a7bb5a6b9fb1670f08ddf"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-render-check-test.py",
+          "version": "repo-file-v1:sha256:a3f72843d13a2deb0b47bab5bb9b901001ed12a5774760904322c9524523013e"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:39:37.338Z"
+    "at": "2026-10-17T18:47:46.085Z"
   }
 }

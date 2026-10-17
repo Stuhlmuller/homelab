@@ -176,16 +176,29 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
         return []
     config = json.loads(config_path.read_text())
     state = json.loads(state_path.read_text())
+    rendered = set(_images(resources))
     enrolled = {
         item["image_id"]: item for item in config.get("images", [])
-        if any(consumer.get("image_id") == item.get("image_id")
-               and (consumer.get("automation_status") == "enrolled"
-                    or (item.get("image_id", "").startswith("chainguard-")
-                        and consumer.get("migration_status") == "migrated"))
-               for consumer in config.get("consumers", []))
+        if (any(consumer.get("image_id") == item.get("image_id")
+                and (consumer.get("automation_status") == "enrolled"
+                     or (item.get("image_id", "").startswith("chainguard-")
+                         and consumer.get("migration_status") == "migrated"))
+                for consumer in config.get("consumers", []))
+            or (item.get("image_id", "").startswith("chainguard-")
+                and any(ref.split("@", 1)[0].rsplit(":", 1)[0]
+                        == item["destination"].split("@", 1)[0].rsplit(":", 1)[0]
+                        for ref in rendered)))
     }
-    rendered = set(_images(resources))
     errors = []
+    native_repositories = {
+        image["destination"].split("@", 1)[0].rsplit(":", 1)[0]
+        for image_id, image in enrolled.items() if image_id.startswith("chainguard-")
+    }
+    if any(ref.startswith(("harbor.stinkyboi.com/homelab/chainguard/",
+                           "harbor.stinkyboi.com/homelab/chainguard-"))
+           and ref.split("@", 1)[0].rsplit(":", 1)[0] not in native_repositories
+           for ref in rendered):
+        errors.append("Undeclared native Chainguard Harbor reference")
     native_plans = None
     for image_id, image in enrolled.items():
         destination = image["destination"]
@@ -198,6 +211,11 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
             continue
         receipt = state.get("receipts", {}).get(image_id)
         if image_id.startswith("chainguard-"):
+            if not any(consumer.get("image_id") == image_id
+                       and consumer.get("migration_status") == "migrated"
+                       for consumer in config.get("consumers", [])):
+                errors.append(f"Native Chainguard reference lacks migrated status: {image_id}")
+                continue
             if native_plans is None:
                 native_plans = {
                     plan["image_id"]: plan for plan in NATIVE_RECEIPT.build_plan(

@@ -308,6 +308,7 @@ with tempfile.TemporaryDirectory() as directory:
         consumer = next(item for item in config["consumers"]
                         if item["image_id"] == "chainguard-curl")
         consumer["automation_status"] = "enrolled"
+        consumer["migration_status"] = "migrated"
         check.AUTOMATION.write_text(json.dumps(config))
         plan = next(item for item in check.native_receipt_plans(config).values()
                     if item["image_id"] == "chainguard-curl")
@@ -359,6 +360,15 @@ with tempfile.TemporaryDirectory() as directory:
             "receipt": receipt, "provenance": provenance,
         }}}))
         assert check.receipt_errors() == []
+
+        consumer["automation_status"] = "not-enrolled"
+        consumer["migration_status"] = "candidate"
+        check.AUTOMATION.write_text(json.dumps(config))
+        assert check.receipt_errors() == [
+            "Native Chainguard reference lacks migrated status: kiali-prometheus-readiness"
+        ]
+        consumer["migration_status"] = "migrated"
+        check.AUTOMATION.write_text(json.dumps(config))
 
         declared.extend(container_fragment(plan["destination_ref"]))
         assert check.receipt_errors()

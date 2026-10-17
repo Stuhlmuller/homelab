@@ -90,6 +90,10 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-6044cd3de00b52da78c6cf44
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-import.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
@@ -98,6 +102,10 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-897b0dbd854eb91f395fe24b
+    resource: repo://scripts/ci/harbor-render-check-test.py
+  - id: openwiki-source-5f83ab015123e3adcb0c5808
+    resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-28fa6202184199322ab68bca
     resource: repo://scripts/ci/network-policy-inventory-test.py
   - id: openwiki-source-b5db2a15b5e0f805364647e7
@@ -110,10 +118,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T18:39:37.338Z" }
+generated: { by: "codex", at: "2026-10-17T18:47:46.085Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:39:37.338Z
+    at: 2026-10-17T18:47:46.085Z
 ---
 
 # Harbor Private OCI Registry
@@ -751,6 +759,12 @@ Its required status must be enabled only after the workflow succeeds on `main`.
 The private receipt is imported from a successful exact-main run before the
 state-change verifier is run; the import rejects a run path outside the
 configured workflow, including a different branch suffix.
+
+Offline image checks inspect each native consumer's declared target. A direct
+private Chainguard reference requires `migrated` status, an imported protected
+receipt, and the exact verified index digest even if automation enrollment is
+still disabled. The Harbor render check applies the same rule to rendered
+references and rejects undeclared native destinations.
 
 ## Historical Chainguard automation design
 
