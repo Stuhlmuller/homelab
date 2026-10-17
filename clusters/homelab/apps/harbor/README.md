@@ -242,7 +242,7 @@ fresh full-runtime scan before closing a Harbor CVE finding.
 
 ```sh
 nix develop --command bash scripts/ci/harbor-check.sh
-python3 -I scripts/ci/harbor-images-check.py --harbor-components
+nix develop --command python3 -I scripts/ci/harbor-images-check.py --harbor-components
 kubectl kustomize clusters/homelab/apps/harbor
 kubectl -n harbor get pods,pvc,externalsecret,certificate
 kubectl -n harbor get jobs -l app.kubernetes.io/component=bootstrap
