@@ -30,6 +30,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
@@ -44,6 +46,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -68,6 +72,8 @@ sources:
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-dce02546543e605cb2ccbb06
+    resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -124,10 +130,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T22:53:57.740Z" }
+generated: { by: "codex", at: "2026-10-17T23:07:04.882Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:53:57.740Z
+    at: 2026-10-17T23:07:04.882Z
 ---
 
 # Validation Gates
@@ -1556,6 +1562,16 @@ checks passed with that client. The exact edge rule was not identified or
 changed. If a device client receives 403, inspect edge events and capture any
 needed exception in desired state; this probe does not establish device
 enrollment compatibility.
+
+## Cordium workspace capacity gate
+
+The pinned Langfuse chart render requires one web replica with no explicit
+strategy, a 1280 MiB request, unchanged 2 GiB limit, and required Acer node
+affinity. This checks the declared rolling replacement path. A live Workspace
+still requires the new web Pod Ready on Acer, the old web Pod gone from
+`zimaboard-1`, recovered SQL/web behavior, and fresh node headroom and pressure
+readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+is a projection, not rollout acceptance.
 
 ## Harbor OCI rollout
 

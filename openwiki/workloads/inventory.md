@@ -14,6 +14,10 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/values.yaml
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-3ee445a5390585cab7a1edab
+    resource: repo://clusters/homelab/apps/langfuse/README.md
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-bb71538b4bc75dd401bfc1ec
     resource: repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml
   - id: openwiki-source-9909d58412f1a989bfab76c4
@@ -66,10 +70,10 @@ sources:
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:30:45.319Z
+    at: 2026-10-17T22:13:58.169Z
 ---
 
 # Workload Inventory
@@ -255,7 +259,9 @@ a rollout gate;
 see [AI observability](../architecture/ai-observability.md).
 
 Langfuse web allows ten minutes for database migrations before liveness checks
-begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
+begin. Its stateless Pod is pinned to Acer with a `1280Mi` request and unchanged
+`2Gi` limit, freeing its former 2 GiB reservation on Cordium-eligible
+`zimaboard-1`; worker and CPU budgets are unchanged.
 Web, worker and Valkey return to one replica after the October 10 offline AOF
 repair. A credential-free inspector was used for capture and approved promotion;
 Argo pruned it in a separate revision before this writer restart. The separate 1Gi

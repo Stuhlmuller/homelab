@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:24c7bdfba2cdd127024a44f79e6cd275a41d302ce15df7248b8bfc133c1a7fae",
+  "pageVersion": "sha256:e058ec9826c768a86d5f322606c9eaa794c7e51af6b4f4ee738ea24d9487bd82",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -193,10 +193,24 @@
           "version": "repo-lines-v1:sha256:a3db34e670a0261935bd108c1cac35de4c7fbcacff549f6d1297a6c118800257:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNDA1MTNkMzk3ZjZkMDExYjI2NDBlYjI2MDQ2MmNmZDA2YzNlN2UwMmMyOTFiZmJkYmZlMTVjYTNhMmI2OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzNzIyY2FkNjg4ZDI2MWRjMmU2MjMzZGUwNzkyNDM3NjcwOGIwY2FhYWE1MzdhZDk4ZDZkN2YwNmYxYjY3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkNmY5NmEyMWNhYmMyYmRhMTNlMDMwYzdjNTlmMDg3ZTk1OWRmMWNlNjIwNmVlMjUwMDEyMzEwYmY1ZWNhMWYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_558d8c79808d45099d6904e3b6819981",
+      "statement": "Langfuse web is a stateless Acer-pinned Pod with a 1280 MiB request and unchanged 2 GiB limit, freeing its former 2 GiB reservation on Cordium-eligible zimaboard-1; worker and CPU budgets are unchanged.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/README.md",
+          "version": "repo-file-v1:sha256:1a6a0ba669f51bc8ca6e78afcdfd9d9579c24ac17427b3b05b64acf1f65229d9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
+          "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:30:45.319Z"
+    "at": "2026-10-17T22:13:58.169Z"
   }
 }
