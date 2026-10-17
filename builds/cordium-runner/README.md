@@ -123,6 +123,8 @@ references a future explicit projected API token and CA at
 /var/run/cordium-runner-api; no token or certificate material is committed.
 Mount its config at the image user's default kubeconfig path when registering
 the published controller Deployment. These declarations are not applied live.
+Both runner manifests stay outside the active Cordium Kustomization until their
+SSM parameters exist and the reviewed activation change includes them.
 
 Dockerfile.controller packages the non-root entrypoint and pinned native clients,
 with kubectl 1.34.1 verified against its official SHA-256. It fetches only the
