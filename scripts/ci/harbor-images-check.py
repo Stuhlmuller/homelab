@@ -17,6 +17,7 @@ FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
+HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
@@ -229,12 +230,18 @@ def check():
     errors.extend(receipt_errors())
     errors.extend(ownership_errors())
     scope_counts = {}
+    harbor_runtime = {item["source"] for item in catalog
+                      if item["source"].startswith("docker.io/goharbor/")
+                      and ":v2.15.4@" in item["source"]}
+    if len(harbor_runtime) != 9:
+        errors.append("Harbor 2.15.4 runtime publication requires nine component digests")
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
         ("Mastodon", MASTODON_CATALOG, declared_mastodon_images()),
         ("Chainguard", CHAINGUARD_CATALOG,
          {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
+        ("Harbor", HARBOR_RUNTIME_CATALOG, harbor_runtime),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}

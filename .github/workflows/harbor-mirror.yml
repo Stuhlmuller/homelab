@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard inventories with unchanged destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor inventories with unchanged destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, mastodon, traefik, chainguard]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor]
 
 permissions: {}
 
@@ -105,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -157,11 +157,14 @@ jobs:
             traefik)
               bash scripts/ci/harbor-publish.sh mirror-traefik
               ;;
+            harbor)
+              bash scripts/ci/harbor-publish.sh mirror-harbor
+              ;;
             *) exit 2 ;;
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

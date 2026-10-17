@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:37:58.789Z
+    at: 2026-10-17T22:03:58.921Z
 sources:
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml

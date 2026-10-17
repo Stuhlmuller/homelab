@@ -1,0 +1,31 @@
+{
+  "images": [
+    {
+      "source": "docker.io/goharbor/harbor-core:v2.15.4@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-exporter:v2.15.4@sha256:9ffede33dc519b4be035596a72f00f354754a22a3769077731f81ee7d6852f4f"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-jobservice:v2.15.4@sha256:f143578ef30e2be5c48873298257ed0fca31545025958c534e536a06765d2b82"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-portal:v2.15.4@sha256:01edf478505b21dba23a83c095f6ecac0c1e705690093edbab41e9a4d6754a75"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-registryctl:v2.15.4@sha256:30bd1ace4e3bb390d75b84673f98ddb4a69fcc6d116932ea764391df01943fb7"
+    },
+    {
+      "source": "docker.io/goharbor/nginx-photon:v2.15.4@sha256:7eff0287d5ad0f35754e162c8481ced04bbde107153ce586cefb15ee74fa1311"
+    },
+    {
+      "source": "docker.io/goharbor/registry-photon:v2.15.4@sha256:dc0cb388a6445c69c8a0c406679290d2991c9698833d9e6e86a23bdfaf2f83c3"
+    },
+    {
+      "source": "docker.io/goharbor/trivy-adapter-photon:v2.15.4@sha256:813ca81b4a4ea0f44f5fa81cca2645eeb58d4b1f6c66b428df9d506174bb71d9"
+    },
+    {
+      "source": "docker.io/goharbor/valkey-photon:v2.15.4@sha256:bb022e8f236f56f53cee7bb1f609595e497da67d829048e0af2284f97e6eb54f"
+    }
+  ]
+}

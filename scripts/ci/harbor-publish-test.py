@@ -35,6 +35,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.bazarr_mirror_manifest = None
         self.mastodon_mirror_manifest = None
         self.traefik_mirror_manifest = None
+        self.harbor_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
@@ -89,6 +90,11 @@ class HarborPublicationGates(unittest.TestCase):
             chainguard_path.unlink(missing_ok=True)
         else:
             chainguard_path.write_text(json.dumps(self.chainguard_mirror_manifest))
+        harbor_path = self.root / "scripts/config/harbor-runtime-images.json"
+        if self.harbor_mirror_manifest is None:
+            harbor_path.unlink(missing_ok=True)
+        else:
+            harbor_path.write_text(json.dumps(self.harbor_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -626,6 +632,26 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
+
+    def test_harbor_runtime_scope_has_nine_reviewed_components(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+        self.assertEqual(len(selected), 9)
+        self.assertTrue(all(item in catalog and item["source"].startswith("docker.io/goharbor/")
+                            and ":v2.15.4@" in item["source"] for item in selected))
+
+    def test_harbor_runtime_scope_rejects_unreviewed_and_verifies_selected_pull(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.harbor_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-harbor")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([args for args in self.calls_for("skopeo") if args[0] == "copy"]), 4)
+        self.assert_cleaned()
+        self.calls.unlink()
+        self.harbor_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
+                                                   + "@sha256:" + "0" * 64}]}
+        self.rejected(mode="mirror-harbor")
 
     def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())

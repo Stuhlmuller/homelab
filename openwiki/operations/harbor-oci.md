@@ -96,14 +96,16 @@ sources:
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
+  - id: openwiki-source-8a05c67bc78632e51f4366db
+    resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:27:18.310Z" }
+generated: { by: "codex", at: "2026-10-17T22:03:58.921Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:37:58.789Z
+    at: 2026-10-17T22:03:58.921Z
 ---
 
 # Harbor Private OCI Registry
@@ -367,6 +369,17 @@ full-catalog incompatibility. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
+
+### Harbor 2.15.4 catalog prerequisite
+
+The [full image catalog](../../scripts/config/harbor-images.json) stages all nine
+Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
+no running Pod. Publish the fixed nine-image Harbor scope through the protected
+workflow and verify fresh complete authenticated Harbor pulls before merging
+the separate consumer upgrade. The scoped receipt does not prove full-catalog
+coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
+rolling update, so its existing Pod serves Harbor while the replacement pulls.
+See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 ### Identical-reference core repair candidate
 
