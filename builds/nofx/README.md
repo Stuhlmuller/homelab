@@ -65,6 +65,82 @@ run IDs include a safe strategy slug. Keep rounds uninterrupted: cold resume
 still does not reliably restore the selected strategy snapshot, so start fresh
 matched runs after a backend restart.
 
+## Chainguard toolchain compatibility
+
+The recipe pins the public Chainguard Go SDK and Node dev image selected by
+the Harbor publication prerequisite. Public imports are build sources;
+deployed NOFX artifacts remain private `harbor.stinkyboi.com/homelab` images.
+Do not merge deployment digest updates before protected publication and fresh
+scan/pull acceptance of the resulting artifacts.
+
+The backend reuses the existing `modernc.org/sqlite` driver through GORM's
+explicit driver selection. Patch `0022` updates production and SQLite fixtures;
+patch `0023` guards foreign keys, PRAGMAs, rollback, integrity and retained data.
+Builds and matching regressions disable CGO, removing the embedded libc archive.
+ELF checks reject an interpreter or shared-library dependency; build provenance
+requires `CGO_ENABLED=0` and the compiled import graph excludes `runtime/cgo`.
+The resulting binary runs in pinned Chainguard static. Native database/runtime
+acceptance must pass before deployment digest updates.
+The frontend uses the Node dev candidate with an explicit builder UID 0,
+preserving the old build identity; final artifacts still run as UID 10000.
+Its runtime now uses the pinned Chainguard nginx candidate. The upstream
+`nginx/nginx.conf` retains SPA fallback, cache behavior, `/health` and API
+proxying. The recipe-owned top-level config places PID/cache/temp writes on
+the existing writable mounts. Kubernetes retains its HTTP health probes;
+the runtime no longer assumes a shell or wget.
+
+`build.sh` runs `frontend-check.py` against the built image on a disposable
+internal Docker network. It checks UID 10000 with a read-only root and dropped
+capabilities, health, compiled static assets/cache, SPA fallback, and GET/POST
+proxy path/query/body plus synthetic Authorization and Cookie headers. No
+production API, credential or trading action is used. Live login, WebSocket,
+backtest and browser behavior still need acceptance after publication.
+
+`backend-check.py` starts the built backend as UID 10000 with a read-only root,
+synthetic file-backed crypto credentials and a disposable data volume on an
+internal Docker network. It verifies HTTP health, SQLite integrity and retained
+installation identity across a graceful restart. No production data, credentials
+or account/trading requests are involved. Production backup/restore, original
+application actions and fresh artifact scans remain separate rollout gates.
+The runtime includes `/usr/share/nofx/runtime-build.txt` with Go build/module
+metadata, including the enforced CGO setting. CVE assessment must include
+application dependencies; a clean static base alone cannot prove
+the resulting application is CVE-free. The pinned static base already provides
+the `America/Los_Angeles` timezone files used by the deployment.
+
+The existing `test.sh` and `build.sh` must pass on Linux with the exact image
+digests. Local Docker is unavailable; the draft's native NOFX CI job is the
+compatibility gate. Financial behavior and SQLite data format remain unchanged;
+the driver change requires the native contract and retained-state fixtures.
+After publication, verify application actions and active-image scan
+results before claiming CVE remediation; base/compiler replacement alone cannot
+prove the resulting application and embedded dependencies are CVE-free.
+Patch `0021` updates fixed Go dependency versions and their checksums, including
+coherent transitive versions selected by Go's module graph. Private module and
+package scans guide this change; raw reports stay outside git. Integrity,
+native regressions and the resulting binary still need
+separate verification before publication or a CVE-remediation claim.
+
+`build.sh` also runs pinned govulncheck binary analysis through the reviewed Go
+toolchain. The compiler records the exact tagged main import graph inside the
+same built image. The gate rejects affected compiled packages, incomplete
+scanner/advisory evidence, or module findings whose affected imports cannot be
+classified. A module-only advisory is accepted only when its reported package
+set is disjoint from that exact import inventory. Reports are private temporary
+files. The binary `SBOM` Go version must match the same image's compiler
+provenance; missing/empty/mismatched inventories fail the gate. Reports are
+never public workflow output or uploaded artifacts. Scanner failure
+fails the build. This Go gate does not assess other image components; fresh
+component-aware artifact scans remain required.
+The scanner's isolated `/tmp` explicitly permits executing the tool built by
+`go run`; the image and binary/import inputs remain read-only, with all
+capabilities dropped and privilege escalation disabled.
+The backend preserves symbol metadata and checks for `main.main`. Stripped
+binaries make govulncheck fall back to module-wide package assumptions; this
+recipe retains precise binary evidence instead of waiving those findings.
+`-trimpath` still removes local build paths. The binary is larger; production
+package/function findings continue to block publication.
+
 ## OKX US cash-spot competition
 
 Patch `0012` replaces this installation's OKX runtime construction with the

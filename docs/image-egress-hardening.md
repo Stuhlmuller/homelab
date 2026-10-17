@@ -42,21 +42,18 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
-## Read-only findings, 2026-10-10
+## Public source availability
 
-Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
-The 211 running Pods reference 122 distinct container/init images; image strings
-alone do not establish their transport. Every active public-origin reference
-is covered by the existing full mirror catalog; publication and actual node
-mirror enforcement still need verification. `zimaboard-2` is NotReady, and Flannel,
-Istio CNI and ztunnel each have only three ready instances out of four.
-A later read-only check during preparation found all four nodes Ready. Require
-fresh node/dataplane readiness before any cluster-wide networking rollout;
-transient recovery is not an egress acceptance test.
+The NOFX Node dev build base matches the index rechecked anonymously on
+2026-10-11 and staged in the publication prerequisite. Fresh native build,
+frontend/runtime and artifact-security checks must pass for this digest;
+earlier results do not cover it. No deployed runtime reference changes.
 
-The Harbor vulnerability exporter returned 147 critical findings for `homelab`
-and 345 for `mirror`. These are completed-scan artifact aggregates, including
-retained images, not unique CVEs or an active-workload-only assessment.
+Keep live image inventories, digest/namespace joins, vulnerability counts and
+scan timestamps outside git in private operator evidence. Public documentation
+records source compatibility and acceptance requirements only. Require fresh
+node/dataplane readiness, full catalog publication and actual private pulls
+before changing consumers or cluster-wide networking.
 
 Anonymous source probes confirmed Python, curl, BusyBox, Redis, Valkey,
 PostgreSQL, Cosign, kubectl and nginx indexes. kubectl is not included in the

@@ -1,36 +1,46 @@
-# Preserve the pinned release's runtime and already-built TA-Lib ABI.
-FROM ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7 AS runtime
+# checkov:skip=CKV_DOCKER_2: Kubernetes HTTP probes own runtime health; static runtime has no shell/wget and must pass native startup acceptance.
+FROM cgr.dev/chainguard/go:latest@sha256:9777674c18af3042ab4952fa5d8e70ebcc73f243748e4e2585c18ae69bcecd35 AS toolchain
 
-FROM golang:1.25.3-alpine3.22@sha256:aee43c3ccbf24fdffb7295693b6e33b21e01baec1b2a55acc351fde345e9ec34 AS dependencies
-RUN apk add --no-cache git build-base
-COPY --from=runtime /usr/local /usr/local
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e AS dependencies
+RUN apk add --no-cache git binutils
+# Reuse the existing modernc SQLite driver so no C library enters the runtime.
+COPY --from=toolchain /usr/lib/go /usr/lib/go
+RUN mkdir -p /usr/local/bin && ln -s /usr/lib/go/bin/go /usr/local/bin/go && go version
 WORKDIR /src
 COPY upstream/go.mod upstream/go.sum ./
 RUN go mod download
 COPY upstream/ ./
 
 FROM dependencies AS tests
-RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./api ./backtest ./market/okxhistory -count=1 && \
-    CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage|Spot)' -count=1 && \
-    CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./store -run '^Test(TraderCreatePreservesVisibility|Spot)' -count=1 && \
-    CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go test ./trader ./manager -run '^Test(OKX(Initialization|Leverage|RequestsUseUSRegion|Spot)|AutoTrader|Competition|Spot)' -count=1
+RUN CGO_ENABLED=0 \
+    go test -tags="netgo,osusergo" ./api ./backtest ./market/okxhistory -count=1 && \
+    CGO_ENABLED=0 \
+    go test -tags="netgo,osusergo" ./market ./kernel ./mcp -run '^Test(Historical|LiveLeverage|Spot)' -count=1 && \
+    CGO_ENABLED=0 \
+    go test -tags="netgo,osusergo" ./store -run '^Test(TraderCreatePreservesVisibility|Spot)' -count=1 && \
+    CGO_ENABLED=0 \
+    go test -tags="netgo,osusergo" ./trader ./manager -run '^Test(OKX(Initialization|Leverage|RequestsUseUSRegion|Spot)|AutoTrader|Competition|Spot)' -count=1
 
 FROM tests AS build
-RUN CGO_ENABLED=1 CGO_CFLAGS="-D_LARGEFILE64_SOURCE" \
-    go build -trimpath -ldflags="-s -w" -o /out/nofx .
+RUN CGO_ENABLED=0 \
+    go build -tags="netgo,osusergo" -trimpath -o /out/nofx . && \
+    readelf -l /out/nofx > /out/program-headers && ! grep -q INTERP /out/program-headers
+RUN readelf -d /out/nofx > /out/dynamic-headers && ! grep -q NEEDED /out/dynamic-headers
+RUN readelf -s --wide /out/nofx > /out/symbols && grep -q 'main\.main' /out/symbols
+RUN go version > /out/runtime-build.txt && \
+    go version -m /out/nofx >> /out/runtime-build.txt && \
+    grep -q "CGO_ENABLED=0" /out/runtime-build.txt
+RUN CGO_ENABLED=0 go list -deps -tags="netgo,osusergo" . > /out/runtime-imports.txt && \
+    ! grep -qx "runtime/cgo" /out/runtime-imports.txt
 
-FROM runtime AS final
+FROM cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327 AS final
 LABEL org.opencontainers.image.source="https://github.com/Stuhlmuller/homelab" \
       org.opencontainers.image.licenses="AGPL-3.0" \
       org.opencontainers.image.description="NOFX pinned release with owned OKX US cash-spot trading and historical simulation fixes"
 COPY --from=build /out/nofx /app/nofx
+COPY --from=build /out/runtime-build.txt /usr/share/nofx/runtime-build.txt
+COPY --from=build /out/runtime-imports.txt /usr/share/nofx/runtime-imports.txt
 COPY upstream/LICENSE /usr/share/licenses/nofx/LICENSE
 USER 10000:10000
 WORKDIR /app/data
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/health || exit 1
 CMD ["/app/nofx"]
