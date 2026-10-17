@@ -76,8 +76,6 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-5f83ab015123e3adcb0c5808
-    resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -130,10 +128,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T21:24:17.054Z" }
+generated: { by: "codex", at: "2026-10-17T21:56:49.510Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:45:32.118Z
+    at: 2026-10-17T21:56:49.510Z
 ---
 
 # Validation Gates
@@ -1582,7 +1580,7 @@ Neither a local fixture nor a copied receipt substitutes for this head-bound res
 
 `harbor-images-check.py` reads native consumer targets even when status remains
 `candidate` and `not-enrolled`, and scans `.yaml`, `.yml`, and `.json` cluster
-resources, including inline and file-backed Kustomize patches, for private native Chainguard references. Every such reference needs an imported protected receipt
+resources, including inline and file-backed Kustomize patches and replacement-source literals, for private native Chainguard references. Every such reference needs an imported protected receipt
 and the exact verified digest in the declared path of a `migrated` consumer.
 The Harbor render fixture rejects undeclared native destinations.
 These checks prove declared source behavior, not a live pull or rollout.

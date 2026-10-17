@@ -84,8 +84,8 @@ def declared_images(value):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
             images.add(image)
         for key, child in value.items():
-            if key in {"patch", "value"} and isinstance(child, str):
-                images.update(NATIVE_IMAGE.findall(child))
+            if key in {"name", "newName", "repository", "destination"} and isinstance(child, str):
+                continue
             found, pinned = declared_images(child)
             images.update(found)
             digests.update(pinned)
@@ -95,6 +95,7 @@ def declared_images(value):
             images.update(found)
             digests.update(pinned)
     elif isinstance(value, str):
+        images.update(NATIVE_IMAGE.findall(value))
         # Also covers digest-only chart defaults and embedded Helm values blocks.
         digests.update(re.findall(r"sha256:[0-9a-f]{64}(?![0-9a-f])", value))
     return images, digests

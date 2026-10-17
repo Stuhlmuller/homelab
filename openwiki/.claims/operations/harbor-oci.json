@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f131c50bb1a08eeea8580d9c7c51909fdb574b2c07e9054cd298163318f2b84",
+  "pageVersion": "sha256:a0a20f95eff1c7ac99b12fe5e64e56c8dd5cd75b73846637d5610ab0ca09a903",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -484,19 +484,15 @@
     },
     {
       "id": "claim_d41f4c87a08c43e4a9d9af999a8dca07",
-      "statement": "Offline image checks inspect native consumer targets and repository .yaml, .yml, and .json workload resources, including Kustomize image transformations and inline or file-backed patches. Every private native Chainguard reference must occur in the declared path of a migrated consumer with imported protected receipt evidence and the exact verified digest. The Harbor render check rejects undeclared native destinations.",
+      "statement": "Offline image checks inspect native consumer targets and repository .yaml, .yml, and .json workload resources, including Kustomize image transformations, inline or file-backed patches, and replacement-source literals. Every private native Chainguard reference must occur in the declared path of a migrated consumer with imported protected receipt evidence and the exact verified digest. The Harbor render check rejects undeclared native destinations.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:3dd74f3c6a5cd0e79ea4b3b9f1a697d9d5d43e80e3a292040b25b917f1026250"
+          "version": "repo-file-v1:sha256:0f768989b0ba04c14f12ed4ce04e4ec2e97646a37b3ad43a785c6160077b3810"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:bfb8fab557d03cb2f0eb4ac386869974b7ab33b81af5d23436e37455633631cb"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-render-check.py",
-          "version": "repo-file-v1:sha256:df9487244ac210af0e3402f9085ea29cf1d08d860425cf416da5f957013da967"
+          "version": "repo-file-v1:sha256:925c66e99ae9be2f4149852eeff1b3ab097abf8d36cbf711dcb1c020db779b9f"
         }
       ]
     },
@@ -506,7 +502,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:bfb8fab557d03cb2f0eb4ac386869974b7ab33b81af5d23436e37455633631cb"
+          "version": "repo-file-v1:sha256:925c66e99ae9be2f4149852eeff1b3ab097abf8d36cbf711dcb1c020db779b9f"
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
@@ -521,6 +517,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:45:32.118Z"
+    "at": "2026-10-17T21:56:49.510Z"
   }
 }

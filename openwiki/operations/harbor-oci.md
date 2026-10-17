@@ -102,8 +102,6 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-5f83ab015123e3adcb0c5808
-    resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-b4ba5e3191f69df1237ac01d
     resource: repo://scripts/ci/image-automation-test.py
   - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
@@ -120,10 +118,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T21:40:54.253Z" }
+generated: { by: "codex", at: "2026-10-17T21:56:49.510Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:45:32.118Z
+    at: 2026-10-17T21:56:49.510Z
 ---
 
 # Harbor Private OCI Registry
@@ -774,7 +772,7 @@ run revision must equal the receipt-only PR's trusted base revision; older
 successful runs require a fresh exact-main dispatch.
 
 Offline image checks inspect each native consumer's declared target and scan
-repository `.yaml`, `.yml`, and `.json` workload resources, including Kustomize image transformations and inline or file-backed patches, for private native Chainguard references. Every
+repository `.yaml`, `.yml`, and `.json` workload resources, including Kustomize image transformations, inline or file-backed patches, and replacement-source literals, for private native Chainguard references. Every
 such reference must appear in the declared path of a `migrated` consumer with
 an imported protected receipt and the exact verified index digest, even if
 automation enrollment is still disabled. The Image Updater rejects native

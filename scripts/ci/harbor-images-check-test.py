@@ -348,6 +348,18 @@ with tempfile.TemporaryDirectory() as directory:
             assert check.native_references_by_path([resource]) == {
                 f"/clusters/homelab/apps/other/{name}": {unpinned}
             }
+        replacement = other.with_name("kustomization.yaml")
+        replacement.write_text(
+            "configMapGenerator:\n- name: runtime\n  literals:\n"
+            f"  - RUNTIME_IMAGE={unrelated_native}\n"
+            "replacements:\n- source:\n    kind: ConfigMap\n"
+            "    name: runtime\n    fieldPath: data.RUNTIME_IMAGE\n"
+            "  targets:\n  - select:\n      kind: Deployment\n"
+            "    fieldPaths:\n    - spec.template.spec.containers.0.image\n"
+        )
+        assert check.native_references_by_path([replacement]) == {
+            "/clusters/homelab/apps/other/kustomization.yaml": {unrelated_native}
+        }
         check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
         consumer = next(item for item in config["consumers"]

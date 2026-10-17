@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:864e35c7ae8cd02c9948811160a5f34cb476114ae76dceced68eb8db07259749",
+  "pageVersion": "sha256:722b6ed058eee4e743668deb0085510bb71399283bc8e441c373dc95b1e3afe5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -578,19 +578,15 @@
     },
     {
       "id": "claim_c1de3d4b8c824cd793a1b0c8016c0a28",
-      "statement": "Offline image coverage scans .yaml, .yml, and .json cluster resources, including inline and file-backed Kustomize patches. Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or exact verified digest.",
+      "statement": "Offline image coverage scans .yaml, .yml, and .json cluster resources, including inline and file-backed Kustomize patches and replacement-source literals. Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or exact verified digest.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:3dd74f3c6a5cd0e79ea4b3b9f1a697d9d5d43e80e3a292040b25b917f1026250"
+          "version": "repo-file-v1:sha256:0f768989b0ba04c14f12ed4ce04e4ec2e97646a37b3ad43a785c6160077b3810"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:bfb8fab557d03cb2f0eb4ac386869974b7ab33b81af5d23436e37455633631cb"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-render-check.py",
-          "version": "repo-file-v1:sha256:df9487244ac210af0e3402f9085ea29cf1d08d860425cf416da5f957013da967"
+          "version": "repo-file-v1:sha256:925c66e99ae9be2f4149852eeff1b3ab097abf8d36cbf711dcb1c020db779b9f"
         }
       ]
     },
@@ -611,6 +607,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:45:32.118Z"
+    "at": "2026-10-17T21:56:49.510Z"
   }
 }
