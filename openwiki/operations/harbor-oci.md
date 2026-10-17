@@ -106,8 +106,12 @@ sources:
     resource: repo://scripts/ci/harbor-render-check-test.py
   - id: openwiki-source-5f83ab015123e3adcb0c5808
     resource: repo://scripts/ci/harbor-render-check.py
+  - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
+    resource: repo://scripts/ci/image-automation.py
   - id: openwiki-source-28fa6202184199322ab68bca
     resource: repo://scripts/ci/network-policy-inventory-test.py
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -118,10 +122,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T19:19:00.714Z" }
+generated: { by: "codex", at: "2026-10-17T19:22:30.114Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:19:00.714Z
+    at: 2026-10-17T19:22:30.114Z
 ---
 
 # Harbor Private OCI Registry
@@ -761,12 +765,16 @@ receipt, verifies its private source-run evidence against GitHub, and publishes
 Its required status must be enabled only after the workflow succeeds on `main`.
 The private receipt is imported from a successful exact-main run before the
 state-change verifier is run; the import rejects a run path outside the
-configured workflow, including a different branch suffix.
+configured workflow, including a different branch suffix. A changed receipt's
+run revision must equal the receipt-only PR's trusted base revision; older
+successful runs require a fresh exact-main dispatch.
 
 Offline image checks inspect each native consumer's declared target. A direct
 private Chainguard reference requires `migrated` status, an imported protected
 receipt, and the exact verified index digest even if automation enrollment is
-still disabled. The Harbor render check applies the same rule to rendered
+still disabled. The Image Updater's structural check permits enrollment after
+the required repository Harbor image check validates that imported evidence.
+The Harbor render check applies the same rule to rendered
 references and rejects undeclared native destinations.
 
 ## Historical Chainguard automation design

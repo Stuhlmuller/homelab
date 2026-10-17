@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2b85257660c726fc55110ece8de73012eded2d6d08807ea71b6805f1680e7590",
+  "pageVersion": "sha256:8c712b38f92faa8fdba548168a5876cf59499f910964fae3044f0e81ac757cd7",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:20584114c237653948421d0722f3f3a9f1317e0e1df322a11cf6fb678387d05d"
+          "version": "repo-file-v1:sha256:997c5674eaba32ed17c1f1ea0aa1764fa28e7a29c235e91b10eb08c97ed49b1a"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:20584114c237653948421d0722f3f3a9f1317e0e1df322a11cf6fb678387d05d"
+          "version": "repo-file-v1:sha256:997c5674eaba32ed17c1f1ea0aa1764fa28e7a29c235e91b10eb08c97ed49b1a"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:20584114c237653948421d0722f3f3a9f1317e0e1df322a11cf6fb678387d05d"
+          "version": "repo-file-v1:sha256:997c5674eaba32ed17c1f1ea0aa1764fa28e7a29c235e91b10eb08c97ed49b1a"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -101,7 +101,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L338-L349",
+          "resource": "repo://docs/harbor-image-mirroring.md#L339-L350",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:20584114c237653948421d0722f3f3a9f1317e0e1df322a11cf6fb678387d05d"
+          "version": "repo-file-v1:sha256:997c5674eaba32ed17c1f1ea0aa1764fa28e7a29c235e91b10eb08c97ed49b1a"
         }
       ]
     },
@@ -470,7 +470,7 @@
     },
     {
       "id": "claim_4fb8563dc6c840ac8608a6d5333b0b13",
-      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; the importer accepts only the configured workflow path on main, and the required status is activated after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; the importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA. The required status is activated after a successful main run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
@@ -478,11 +478,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:20584114c237653948421d0722f3f3a9f1317e0e1df322a11cf6fb678387d05d"
+          "version": "repo-file-v1:sha256:997c5674eaba32ed17c1f1ea0aa1764fa28e7a29c235e91b10eb08c97ed49b1a"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py",
-          "version": "repo-file-v1:sha256:e36c7e23a323dccc474964077e37f1968d92b3e8aafb065428b016e474969659"
+          "version": "repo-file-v1:sha256:c7a8b65baa2ae4a7a6f5afbd0b9b25a1e3f2638bdc5f8241e42590eef96e69d2"
         }
       ]
     },
@@ -507,10 +507,28 @@
           "version": "repo-file-v1:sha256:df9487244ac210af0e3402f9085ea29cf1d08d860425cf416da5f957013da967"
         }
       ]
+    },
+    {
+      "id": "claim_0b1f16dd051d439ba841063309ef83ad",
+      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared target digest.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:cb6528b74169e3af5315df6a470bbc95e9602cdedea5bb7a0b35d07ac6eb9a6a"
+        },
+        {
+          "resource": "repo://scripts/ci/image-automation.py",
+          "version": "repo-file-v1:sha256:05aee41cb2f9c6c3b8043ee3387547d15303497eff84006a1760220aa2b6be1d"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:19:00.714Z"
+    "at": "2026-10-17T19:22:30.114Z"
   }
 }
