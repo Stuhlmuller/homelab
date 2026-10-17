@@ -30,11 +30,11 @@
       "completedRunId": "628e6f95-defb-4617-af08-60ac09668989"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "pageVersion": "sha256:48d50a4356bd6258b7933ececbc33906b02c17fa3b54daadf50ac999a53cebe7",
+      "gitHead": "a1d9d85d9a8a13edca028b00e4d9c9b7506decf5",
+      "sourceFingerprint": "sha256:e1f4030a00b6627235d9c1fe99acb2847c3cc42eae6857a6d7e54299fd23a560",
+      "pageVersion": "sha256:fa48a7b7b21411d5bd4944a467eb926caf2b64d8f6ee46cb37636ee1a2ddfd1f",
       "completedBy": "codex",
-      "completedRunId": "3d09ce00-e9a5-43b4-8d7d-1da074b4e22e",
-      "gitHead": "db9240418794506286ee3f3264d4fcc3560d4e82",
-      "sourceFingerprint": "sha256:3e7b39788ae6acbacbaf16e4a115856aeebae4433e76c0286898705b96d05a97"
+      "completedRunId": "e7f5934c-f5be-47ab-81b2-5c2fb8148266"
     },
     "/openwiki/operations/continuous-improvement.md": {
       "gitHead": "86c9da5b44f0f651382687375dd946aeee88a0c1",
@@ -58,11 +58,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
-      "pageVersion": "sha256:05c1047d14a989fea84ee07e3fa488ff92bc3f0b55d9d7c269cbdf8b5ffa5be2",
+      "pageVersion": "sha256:eee19d5ece7904761d63565d81cc0a1db26ac08326a23e4ea82686be9d5883ed",
       "completedBy": "codex",
-      "completedRunId": "3d09ce00-e9a5-43b4-8d7d-1da074b4e22e",
-      "gitHead": "db9240418794506286ee3f3264d4fcc3560d4e82",
-      "sourceFingerprint": "sha256:3e7b39788ae6acbacbaf16e4a115856aeebae4433e76c0286898705b96d05a97"
+      "completedRunId": "4f180797-ca64-4df9-91ce-8c332a5080da",
+      "gitHead": "a1d9d85d9a8a13edca028b00e4d9c9b7506decf5",
+      "sourceFingerprint": "sha256:e1f4030a00b6627235d9c1fe99acb2847c3cc42eae6857a6d7e54299fd23a560"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "86c9da5b44f0f651382687375dd946aeee88a0c1",
@@ -72,11 +72,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:9c8cab31ed59c9e671cdc482c925f63b45c20393b4aa1103911f22ececb687dc",
+      "gitHead": "a1d9d85d9a8a13edca028b00e4d9c9b7506decf5",
+      "sourceFingerprint": "sha256:e1f4030a00b6627235d9c1fe99acb2847c3cc42eae6857a6d7e54299fd23a560",
+      "pageVersion": "sha256:536235ace53f1e1465c0762c77021a6c394d9ede70ba3873ffd724515ed61c41",
       "completedBy": "codex",
-      "completedRunId": "3d09ce00-e9a5-43b4-8d7d-1da074b4e22e",
-      "gitHead": "db9240418794506286ee3f3264d4fcc3560d4e82",
-      "sourceFingerprint": "sha256:3e7b39788ae6acbacbaf16e4a115856aeebae4433e76c0286898705b96d05a97"
+      "completedRunId": "e7f5934c-f5be-47ab-81b2-5c2fb8148266"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "902a0c25f1879c58b057ef6a7030bbf400908973",
@@ -109,7 +109,7 @@
     "/openwiki/runbooks/tailnet-ingress.md": {
       "gitHead": "998da9b801d811437a98d606836ce27740fbcc9c",
       "sourceFingerprint": "sha256:a01e680c57f1ff470b894bf22d4e5645c344e5d99f846aabbecd666d72e8abe0",
-      "pageVersion": "sha256:28834fc6e6a836939fb49d0d81119cda47bb93b7f6adfda2e39488f45b02cf3e",
+      "pageVersion": "sha256:6b920ba4ec164985d9f7c3d7108174583a47abc78baa0b298ba03de2b0260e2b",
       "completedBy": "codex",
       "completedRunId": "628e6f95-defb-4617-af08-60ac09668989"
     },
