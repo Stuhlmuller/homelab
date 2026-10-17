@@ -176,6 +176,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    done
    ```
 
+   Before step 5, complete the [private Talos registry route](#private-talos-registry-route):
+   validate and execute `--registry-host-only` on each node, workers first,
+   then verify the owned `/etc/hosts` mapping. Keep strict mirrors unapplied
+   until that route and its native pull check pass.
+
 5. Apply one node at a time, workers first and the sole control plane last:
 
    ```sh
