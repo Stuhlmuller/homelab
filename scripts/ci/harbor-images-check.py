@@ -28,7 +28,8 @@ EMBEDDED_IMAGE = re.compile(
     r'''(?m)^[ \t]*image:[ \t]*(?:"([^"\r\n]+)"|'([^'\r\n]+)'|([^ \t#\r\n]+))[ \t]*(?:#.*)?$'''
 )
 NATIVE_IMAGE = re.compile(
-    r"harbor\.stinkyboi\.com/homelab/chainguard(?:/|-)[A-Za-z0-9_./-]+@sha256:[0-9a-f]{64}"
+    r"harbor\.stinkyboi\.com/homelab/chainguard(?:/|-)[A-Za-z0-9_./-]+"
+    r"(?:@[A-Za-z0-9_:+.-]+|:[A-Za-z0-9_.-]+)?"
 )
 NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
     "harbor_native_chainguard_receipt", Path(__file__).with_name("harbor-native-chainguard-receipt.py")
@@ -82,7 +83,9 @@ def declared_images(value):
             if value.get("digest"):
                 image = image.split("@", 1)[0] + "@" + str(value["digest"])
             images.add(image)
-        for child in value.values():
+        for key, child in value.items():
+            if key in {"patch", "value"} and isinstance(child, str):
+                images.update(NATIVE_IMAGE.findall(child))
             found, pinned = declared_images(child)
             images.update(found)
             digests.update(pinned)
@@ -94,7 +97,6 @@ def declared_images(value):
     elif isinstance(value, str):
         # Also covers digest-only chart defaults and embedded Helm values blocks.
         digests.update(re.findall(r"sha256:[0-9a-f]{64}(?![0-9a-f])", value))
-        images.update(NATIVE_IMAGE.findall(value))
     return images, digests
 
 

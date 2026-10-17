@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:09d30e341ddda94b18392e92a584a45e35c6decf1b31c63759e2db67f83f1d2a",
+  "pageVersion": "sha256:f8dc7f26c1508bfe36fef6a8c867ade86bb7544c11b7506f4f409c00db0074dc",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -488,11 +488,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:1eb03b9229eb2896101feeea7fc711756904865c2250ef276e112befd931e47f"
+          "version": "repo-file-v1:sha256:3dd74f3c6a5cd0e79ea4b3b9f1a697d9d5d43e80e3a292040b25b917f1026250"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:95aebc4e3cfdaf3b24e0d6932d18666e86872329beb30a3923cff141afb36d8c"
+          "version": "repo-file-v1:sha256:bfb8fab557d03cb2f0eb4ac386869974b7ab33b81af5d23436e37455633631cb"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check.py",
@@ -506,7 +506,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:95aebc4e3cfdaf3b24e0d6932d18666e86872329beb30a3923cff141afb36d8c"
+          "version": "repo-file-v1:sha256:bfb8fab557d03cb2f0eb4ac386869974b7ab33b81af5d23436e37455633631cb"
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
@@ -521,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:24:17.054Z"
+    "at": "2026-10-17T21:27:58.500Z"
   }
 }

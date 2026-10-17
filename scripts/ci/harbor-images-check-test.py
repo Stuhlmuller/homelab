@@ -343,6 +343,11 @@ with tempfile.TemporaryDirectory() as directory:
             assert check.native_references_by_path([resource]) == {
                 f"/clusters/homelab/apps/other/{name}": {unrelated_native}
             }
+            unpinned = unrelated_native.split("@", 1)[0] + ":latest"
+            resource.write_text(content.replace(unrelated_native, unpinned))
+            assert check.native_references_by_path([resource]) == {
+                f"/clusters/homelab/apps/other/{name}": {unpinned}
+            }
         check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
         consumer = next(item for item in config["consumers"]
@@ -411,6 +416,8 @@ with tempfile.TemporaryDirectory() as directory:
             f"Declared native Chainguard reference lacks migrated consumer: {target_path}: {rogue_native}",
             f"Declared native Chainguard reference lacks verified receipt: {target_path}: {rogue_native}",
         ]
+        unpinned_native = plan["destination_repository"] + ":latest"
+        assert check.receipt_errors({target_path: {unpinned_native}})
         assert rogue_native in check.embedded_yaml_images(container_fragment(rogue_native))
 
         consumer["automation_status"] = "not-enrolled"

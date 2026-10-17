@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e557fda3a0ef0526fc920aa7268e2a1bc03fa8849fffb1b1a1a29d71cf2e1a9f",
+  "pageVersion": "sha256:a16ac539be71ba7f0a0e93209c6dc0a1f59936a9885574f4363b41440ca8cba2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -582,11 +582,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:1eb03b9229eb2896101feeea7fc711756904865c2250ef276e112befd931e47f"
+          "version": "repo-file-v1:sha256:3dd74f3c6a5cd0e79ea4b3b9f1a697d9d5d43e80e3a292040b25b917f1026250"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:95aebc4e3cfdaf3b24e0d6932d18666e86872329beb30a3923cff141afb36d8c"
+          "version": "repo-file-v1:sha256:bfb8fab557d03cb2f0eb4ac386869974b7ab33b81af5d23436e37455633631cb"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check.py",
@@ -611,6 +611,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:24:17.054Z"
+    "at": "2026-10-17T21:27:58.500Z"
   }
 }
