@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f9af52792b19bacb2fc74b35cd4c3df37da4f7dcea02f8e499426a43b721a30e",
+  "pageVersion": "sha256:c6f5bcad5d171e96d886c6c7d29246764923edac7684df7cd0f5548d4c823b33",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:16e6c50b4e97d73ae3e983ec4fc7c7315e5671a1932ffef9d311caf5bf3666b0"
+          "version": "repo-file-v1:sha256:cbc1c836c83bc0d3081a0030e7fd26e119f3a285e19d8574b12dd008025b0827"
         }
       ]
     },
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a433415c04c1df0d2f30855607e532965e0c5ed44621c8ebec5592b093f246c4"
+          "version": "repo-file-v1:sha256:d31db3a6c31bb947a04595839f57b7c3675dbd3e388d28b67823c4e0459d6c91"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -558,21 +558,21 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:16e6c50b4e97d73ae3e983ec4fc7c7315e5671a1932ffef9d311caf5bf3666b0"
+          "version": "repo-file-v1:sha256:cbc1c836c83bc0d3081a0030e7fd26e119f3a285e19d8574b12dd008025b0827"
         }
       ]
     },
     {
       "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
-      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA and revalidates all open PR heads, including forks, after main moves; PR and push runs are serialized so older results cannot overwrite newer checks. Static checks pin its reviewed steps, status permission, and source hashes. Its required status is activated after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA and revalidates all open PR heads, including forks, after main moves or PR edits. Separate main and per-PR concurrency groups prevent a PR event from discarding pending all-PR checks, while main-SHA guards reject stale results. Static checks pin its reviewed steps, status permission, and source hashes. Its required status is activated after a successful main run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:d096100c283d82fceaed34514261d781ce3eb72cf07dea74aea149200112eec3"
+          "version": "repo-file-v1:sha256:5f1eb89739c932a361e497583c57ba86ec25587541a13bbeb81b45b2563c6f29"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:16e6c50b4e97d73ae3e983ec4fc7c7315e5671a1932ffef9d311caf5bf3666b0"
+          "version": "repo-file-v1:sha256:cbc1c836c83bc0d3081a0030e7fd26e119f3a285e19d8574b12dd008025b0827"
         }
       ]
     },
@@ -592,25 +592,21 @@
     },
     {
       "id": "claim_4b4d744a47ad4b9eaa60b7d07d11be39",
-      "statement": "The Rego pull_request_target exception accepts only the exact trusted native receipt provenance job shape, including serialized main-push revalidation, and its tests reject changed verifier, revalidation, or concurrency settings.",
+      "statement": "The Rego pull_request_target exception accepts only the exact trusted native receipt provenance job shape, including edited-event verification and separate main/per-PR concurrency groups, and its tests reject changed verifier, revalidation, or concurrency settings.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:d096100c283d82fceaed34514261d781ce3eb72cf07dea74aea149200112eec3"
-        },
-        {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a433415c04c1df0d2f30855607e532965e0c5ed44621c8ebec5592b093f246c4"
+          "version": "repo-file-v1:sha256:d31db3a6c31bb947a04595839f57b7c3675dbd3e388d28b67823c4e0459d6c91"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:a69c29be0479305404b176a70699d1f33f199b5d6813a5b3f15b14d2d56d7979"
+          "version": "repo-file-v1:sha256:6111313cc3d08f67a96b23e37239af757f16441186535c24a84dcd072697a0ba"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:25:43.015Z"
+    "at": "2026-10-17T20:50:08.915Z"
   }
 }

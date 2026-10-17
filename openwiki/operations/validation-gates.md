@@ -128,10 +128,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T20:07:41.174Z" }
+generated: { by: "codex", at: "2026-10-17T20:47:14.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:25:43.015Z
+    at: 2026-10-17T20:50:08.915Z
 ---
 
 # Validation Gates
@@ -1568,8 +1568,10 @@ global Harbor-only pull policy.
 The separate trusted provenance workflow validates imported receipt state
 against the exact successful main run and publishes `Native Chainguard Receipt
 Provenance` on the PR head SHA. Main pushes revalidate all open PR heads,
-including forks, against the new base. PR and push runs are serialized to keep
-older results from overwriting newer checks. The required status is enabled only
+including forks, against the new base. PR edits, including base-branch retargets,
+also revalidate. Separate main and per-PR concurrency groups prevent PR events
+from discarding pending all-PR checks; main-SHA guards reject stale results.
+The required status is enabled only
 after the workflow succeeds on main; static policy tests pin its trusted steps, status
 permission, and source hashes. The Rego `pull_request_target` exception accepts
 only that exact trusted job shape, including serialized main-push revalidation.

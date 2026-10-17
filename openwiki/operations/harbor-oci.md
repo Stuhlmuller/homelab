@@ -88,8 +88,6 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-1882ca1e6f216149daf718a1
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
-  - id: openwiki-source-8853fb993dc68b93d8f20498
-    resource: repo://policy/workflows.rego
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-fb4f4b5b36278b2db27610f2
@@ -122,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:25:43.015Z" }
+generated: { by: "codex", at: "2026-10-17T20:47:14.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:25:43.015Z
+    at: 2026-10-17T20:50:08.915Z
 ---
 
 # Harbor Private OCI Registry
@@ -763,8 +761,10 @@ The trusted `pull_request_target` provenance job reads only the committed
 receipt, verifies its private source-run evidence against GitHub, and publishes
 `Native Chainguard Receipt Provenance` as a commit status on the PR head SHA.
 On each `main` push, the trusted job rechecks all open PR heads, including forks,
-against the new base and refreshes that status. PR and push runs are serialized
-to prevent an older result from overwriting a newer base check. Its required
+against the new base and refreshes that status. PR edits, including base-branch
+retargets, also trigger verification. Main pushes and individual PRs use separate
+concurrency groups so a PR event cannot discard pending all-PR revalidation;
+the main-SHA guards reject stale results. Its required
 status must be enabled only after the workflow succeeds on `main`.
 The private receipt is imported from a successful exact-main run before the
 state-change verifier is run; the import rejects a run path outside the

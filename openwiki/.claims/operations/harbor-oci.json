@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:31209b9b4f4137cb9b43ed931a0dc4b4ab168110dabaae0aed3e5a33f63f75fb",
+  "pageVersion": "sha256:47fd6a6d1a592869e1ea93369fca4415d983528c2feb6c2481ccafbf7ff17ba2",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -470,15 +470,11 @@
     },
     {
       "id": "claim_4fb8563dc6c840ac8608a6d5333b0b13",
-      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; main pushes revalidate all open PR heads, including forks, against the new base, and PR/push runs are serialized so older results cannot overwrite newer base checks. The importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA.",
+      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA. Main pushes revalidate all open PR heads, including forks, against the new base; PR edits also trigger verification. Separate main and per-PR concurrency groups prevent a PR event from discarding pending all-PR revalidation, while main-SHA guards reject stale results. The importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:d096100c283d82fceaed34514261d781ce3eb72cf07dea74aea149200112eec3"
-        },
-        {
-          "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:a433415c04c1df0d2f30855607e532965e0c5ed44621c8ebec5592b093f246c4"
+          "version": "repo-file-v1:sha256:5f1eb89739c932a361e497583c57ba86ec25587541a13bbeb81b45b2563c6f29"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py",
@@ -525,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:25:43.015Z"
+    "at": "2026-10-17T20:50:08.915Z"
   }
 }

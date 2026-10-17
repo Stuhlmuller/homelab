@@ -884,7 +884,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
 .github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml b2fdb935c3839fcaa8cdba4f31b82de0f7bcdfecbcad86bf025d8d19d6a673f2
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml b9d64247704f634eb1621ab6b6e9efe6e176cbffcf4005817f8a7f53be814331
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
@@ -971,9 +971,9 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     .name == "Verify Native Chainguard Receipt Provenance" and
     (.on | keys | sort) == ["pull_request_target", "push"] and
     .on.push == {"branches": ["main"]} and
-    .on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]} and
+	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
     .permissions == {} and
-    .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
+	.concurrency == {"group": "native-chainguard-receipt-provenance-${{ github.event_name == \u0027push\u0027 && \u0027main\u0027 || github.event.pull_request.number }}", "cancel-in-progress": false} and
     .env == null and
     (.jobs | keys) == ["verify"] and
     .jobs.verify.name == "Native Chainguard Receipt Provenance" and

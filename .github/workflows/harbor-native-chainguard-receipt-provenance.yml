@@ -6,12 +6,12 @@ on:
   # zizmor: ignore[dangerous-triggers] Trusted base code reads the PR state only as bounded API data.
   pull_request_target:
     branches: [main]
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened, synchronize, edited]
 
 permissions: {}
 
 concurrency:
-  group: native-chainguard-receipt-provenance
+  group: native-chainguard-receipt-provenance-${{ github.event_name == 'push' && 'main' || github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:

@@ -195,10 +195,10 @@ workflow_events := object.get(input, "on", object.get(input, "true", object.get(
 native_receipt_provenance_workflow if {
 	count(input) == 5
 	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
-	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false}
+	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance-${{ github.event_name == 'push' && 'main' || github.event.pull_request.number }}", "cancel-in-progress": false}
 	workflow_events == {
 		"push": {"branches": ["main"]},
-		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]},
+		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
 	}
 	object.get(input, "permissions", {}) == {}
 	jobs := object.get(input, "jobs", {})
