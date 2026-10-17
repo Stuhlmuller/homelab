@@ -188,26 +188,56 @@ deny contains msg if {
 	msg := sprintf("Octelium catalog workflow job %q step %d must use its one-use catalog credential", [job_name, index])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
 # This checker runs only trusted base-branch code and reads a receipt-only PR
 # as bounded API data. Any shape change must also update the exact workflow hash.
 native_receipt_provenance_workflow if {
+	count(input) == 4
 	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
 	workflow_events == {
 		"push": {"branches": ["main"]},
 		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]},
 	}
 	object.get(input, "permissions", {}) == {}
-	object.get(input, "env", null) == null
 	jobs := object.get(input, "jobs", {})
-	count(jobs) == 1
-	job := jobs["verify"]
-	job["runs-on"] == "ubuntu-24.04"
-	job["timeout-minutes"] == 10
-	object.get(job, "permissions", {}) == {"actions": "read", "contents": "read"}
-	object.get(job, "environment", null) == null
-	object.get(job, "env", null) == null
+	jobs == {"verify": native_receipt_provenance_job}
+}
+
+native_receipt_provenance_job := {
+	"name": "Native Chainguard Receipt Provenance",
+	"runs-on": "ubuntu-24.04",
+	"timeout-minutes": 10,
+	"permissions": {"actions": "read", "contents": "read"},
+	"steps": [
+		{
+			"name": "Check Out Trusted Base",
+			"uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505",
+			"with": {
+				"ref": "${{ github.event.pull_request.base.sha || github.sha }}",
+				"fetch-depth": 1,
+				"persist-credentials": false,
+			},
+		},
+		{
+			"name": "Verify Changed Native Receipt State",
+			"if": "github.event_name == 'pull_request_target'",
+			"env": {
+				"BASE_SHA": "${{ github.event.pull_request.base.sha }}",
+				"HEAD_SHA": "${{ github.event.pull_request.head.sha }}",
+				"GH_TOKEN": "${{ github.token }}",
+			},
+			"run": `set -euo pipefail
+umask 077
+token_file="$(mktemp)"
+trap 'rm -f "$token_file"' EXIT
+printf '%s' "$GH_TOKEN" >"$token_file"
+python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
+  --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" \
+  --token-file "$token_file"
+`,
+		},
+	],
 }
 
 has_event(events, event) if {

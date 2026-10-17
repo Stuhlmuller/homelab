@@ -344,8 +344,44 @@ with tempfile.TemporaryDirectory() as directory:
         assert check.receipt_errors()
         declared[:] = container_fragment(f'{plan["destination_repository"]}@{receipt["destination_digest"]}')
         assert check.receipt_errors() == [
-            "Enrolled native Chainguard image requires protected workflow evidence: chainguard-curl"
+            "Native Chainguard consumer requires protected workflow evidence: chainguard-curl"
         ]
+
+        provenance = {
+            "repository": "Stuhlmuller/homelab",
+            "workflow_path": ".github/workflows/harbor-native-chainguard-receipt.yml",
+            "workflow_id": 1,
+            "run_id": 2,
+            "artifact_id": 3,
+            "artifact_sha256": "sha256:" + "c" * 64,
+        }
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
+            "receipt": receipt, "provenance": provenance,
+        }}}))
+        assert check.receipt_errors() == []
+
+        declared.extend(container_fragment(plan["destination_ref"]))
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@{receipt["destination_digest"]}')
+
+        provenance["artifact_id"] = "invalid"
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
+            "receipt": receipt, "provenance": provenance,
+        }}}))
+        assert check.receipt_errors()
+        provenance["artifact_id"] = 3
+
+        consumer["automation_status"] = "not-enrolled"
+        consumer["migration_status"] = "migrated"
+        check.AUTOMATION.write_text(json.dumps(config))
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {}}))
+        assert check.receipt_errors() == [
+            "Native Chainguard consumer requires protected workflow evidence: chainguard-curl"
+        ]
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
+            "receipt": receipt, "provenance": provenance,
+        }}}))
+        assert check.receipt_errors() == []
 
         target.unlink()
         assert check.receipt_errors()
