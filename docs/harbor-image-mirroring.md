@@ -189,7 +189,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
        --token-file "$token_file" --output /path/to/private/native-state.json
      python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-state-change \
        --base-state scripts/config/image-automation-state.json \
-       --state /path/to/private/native-state.json --token-file "$token_file"
+       --state /path/to/private/native-state.json --expected-sha "$reviewed_sha" \
+       --token-file "$token_file"
    )
    ```
 

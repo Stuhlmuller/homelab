@@ -295,9 +295,10 @@ def imported_state(state, receipts, provenance):
     return result
 
 
-def verify_state_change(config, base_state, state, client):
+def verify_state_change(config, base_state, state, client, expected_sha):
     require(isinstance(base_state, dict) and isinstance(base_state.get("receipts"), dict)
-            and isinstance(state, dict) and isinstance(state.get("receipts"), dict),
+            and isinstance(state, dict) and isinstance(state.get("receipts"), dict)
+            and isinstance(expected_sha, str) and SHA.fullmatch(expected_sha) is not None,
             "image automation state is malformed")
     plans = native_plans(config)
     changed = []
@@ -310,6 +311,8 @@ def verify_state_change(config, base_state, state, client):
         valid, reason = verify_imported_receipt(plan, entry)
         require(valid, reason)
         if entry != base_state["receipts"].get(image_id):
+            require(entry["receipt"]["repository_sha"] == expected_sha,
+                    "changed native receipt was produced for a different base revision")
             changed.append((image_id, entry))
     cached = {}
     for image_id, entry in changed:
@@ -357,7 +360,7 @@ def verify_pull_request(config, client, base_sha, head_sha):
     require(all(base_receipts.get(image_id) == state_receipts.get(image_id)
                 for image_id in set(base_receipts) | set(state_receipts) if image_id not in plans),
             "native receipt import may not change non-native receipts")
-    verify_state_change(config, base_state, state, client)
+    verify_state_change(config, base_state, state, client, base_sha)
     return sorted(changed)
 
 
@@ -395,8 +398,10 @@ def main():
         write_json(args.output, imported_state(read_json(args.state), receipts, provenance))
         print("Native Chainguard receipt import candidate verified")
     elif args.command == "verify-state-change":
-        require(args.base_state is not None, "verify-state-change requires --base-state")
-        changed = verify_state_change(config, read_json(args.base_state), read_json(args.state), client)
+        require(args.base_state is not None and args.expected_sha is not None,
+                "verify-state-change requires --base-state and --expected-sha")
+        changed = verify_state_change(config, read_json(args.base_state), read_json(args.state),
+                                      client, args.expected_sha)
         print("Native Chainguard receipt changes verified: " + ", ".join(sorted(changed) or ["none"]))
     else:
         require(args.base_sha is not None and args.head_sha is not None,

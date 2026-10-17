@@ -160,10 +160,10 @@ class ReceiptImportTests(unittest.TestCase):
         entry = state["receipts"]["chainguard-python"]
         self.assertTrue(IMPORT.verify_imported_receipt(self.plans["chainguard-python"], entry)[0])
         self.assertEqual(
-            IMPORT.verify_state_change(self.config, {"receipts": {}}, state, self.api()),
+            IMPORT.verify_state_change(self.config, {"receipts": {}}, state, self.api(), SHA),
             ["chainguard-python"],
         )
-        self.assertEqual(IMPORT.verify_state_change(self.config, state, state, NoNetwork()), [])
+        self.assertEqual(IMPORT.verify_state_change(self.config, state, state, NoNetwork(), SHA), [])
 
     def test_wrong_run_artifact_or_archive_is_rejected(self):
         cases = []
@@ -187,13 +187,13 @@ class ReceiptImportTests(unittest.TestCase):
         state = IMPORT.imported_state({"schema_version": 1, "receipts": {}}, receipts, provenance)
         state["receipts"]["chainguard-python"]["receipt"]["consumer_access"] = False
         with self.assertRaises(IMPORT.ImportError):
-            IMPORT.verify_state_change(self.config, {"receipts": {}}, state, self.api())
+            IMPORT.verify_state_change(self.config, {"receipts": {}}, state, self.api(), SHA)
 
     def test_pull_request_verifier_reads_state_as_data_and_rejects_bundled_changes(self):
         receipts, provenance = IMPORT.verify_artifact(self.api(), IMPORT.REPOSITORY, RUN_ID, SHA, self.plans)
         base = {"schema_version": 1, "receipts": {}, "applications": {}, "rejected_digests": {}}
         state = IMPORT.imported_state(base, receipts, provenance)
-        base_sha, head_sha = "b" * 40, "c" * 40
+        base_sha, head_sha = SHA, "c" * 40
         self.assertEqual(
             IMPORT.verify_pull_request(
                 self.config, self.api({base_sha: base, head_sha: state}, {IMPORT.STATE_PATH}),
@@ -201,6 +201,11 @@ class ReceiptImportTests(unittest.TestCase):
             ),
             ["chainguard-python"],
         )
+        with self.assertRaisesRegex(IMPORT.ImportError, "different base revision"):
+            IMPORT.verify_pull_request(
+                self.config, self.api({"b" * 40: base, head_sha: state}, {IMPORT.STATE_PATH}),
+                "b" * 40, head_sha,
+            )
         with self.assertRaises(IMPORT.ImportError):
             IMPORT.verify_pull_request(
                 self.config, self.api({base_sha: base, head_sha: state}, {IMPORT.STATE_PATH, "docs/extra.md"}),
@@ -212,7 +217,7 @@ class ReceiptImportTests(unittest.TestCase):
         imported = IMPORT.imported_state({"schema_version": 1, "receipts": {}}, receipts, provenance)
         removed = {"schema_version": 1, "receipts": {}}
         with self.assertRaises(IMPORT.ImportError):
-            IMPORT.verify_state_change(self.config, imported, removed, NoNetwork())
+            IMPORT.verify_state_change(self.config, imported, removed, NoNetwork(), SHA)
         base_sha, head_sha = "b" * 40, "c" * 40
         with self.assertRaises(IMPORT.ImportError):
             IMPORT.verify_pull_request(

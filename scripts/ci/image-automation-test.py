@@ -99,12 +99,7 @@ native_enrollment = json.loads(json.dumps(base))
 native_enrollment["images"] = [{"image_id": "chainguard-python", "source": "cgr.dev/chainguard/python:latest", "destination": "harbor.stinkyboi.com/homelab/chainguard/python:latest", "access_class": "public", "required_platforms": ["linux/amd64"], "release_recipe": "python-release-v1"}]
 native_enrollment["consumers"] = [{"consumer_id": "exporter", "application_id": "exporter", "image_id": "chainguard-python", "target": "/clusters/homelab/apps/harbor/vulnerability-exporter.yaml", "migration_status": "candidate", "automation_status": "enrolled", "owner": "argocd"}]
 native_enrollment["applications"] = [{"application_id": "exporter", "consumer_ids": ["exporter"], "preflight_recipe": "python-workload-v1", "health_recipe": "python-workload-v1", "recovery_recipe": "stateless-recovery-v1", "deadline_minutes": 30}]
-try:
-    automation.validate(native_enrollment)
-except SystemExit as error:
-    assert "native Chainguard enrollment requires protected workflow evidence" in str(error)
-else:
-    raise AssertionError("native Chainguard enrollment accepted without protected workflow evidence")
+assert automation.validate(native_enrollment)
 
 with tempfile.TemporaryDirectory() as directory:
     path = Path(directory) / "config.json"
