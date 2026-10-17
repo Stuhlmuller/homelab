@@ -161,6 +161,14 @@ health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt
 A render or healthy rollout proves neither full-check memory sufficiency nor
 signed cache publication; verify actual substitution in fresh CI separately.
 
+The bounded attempt on `af18e0e6` passed private loopback setup but failed at
+Nix sandbox `pivot_root` before either offline check ran. No signed outputs
+were published; independent inspection found the lock and workspaces gone,
+four Ready nodes, and a 1,012 MiB memory peak below the 1 GiB limit without
+OOM events. The failure identified the operation, not its enforcement cause.
+That attempt release was exhausted before the separately approved profile
+recovery below. See the [dated incident](../../docs/nix-cache.md).
+
 The [dedicated builder seccomp profile](../../docs/nix-builder-seccomp.md)
 is declared separately from container selection. It preserves the captured
 containerd 2.1.4 amd64 builder rules and adds only `pivot_root` while retaining
