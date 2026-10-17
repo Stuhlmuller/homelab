@@ -1,0 +1,44 @@
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: mastodon-strict
+  namespace: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  mtls:
+    mode: STRICT
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: mastodon-default-deny
+  namespace: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec: {}
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: mastodon-services
+  namespace: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/istio-system/sa/istio-ingressgateway
+      to:
+        - operation:
+            ports: ["3000", "4000"]
+    - from:
+        - source:
+            principals:
+              - cluster.local/ns/mastodon/sa/mastodon
+      to:
+        - operation:
+            ports: ["3000", "4000", "5432", "6379"]

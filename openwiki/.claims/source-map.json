@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3699331d93baad57c4e8ad1f070862125c16dcd77664c4baeb8c020c0f6c67d9",
+  "pageVersion": "sha256:7d4a263511741915fdc60cb1e7895d6a55e12721277e373466a34525851fd110",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
-      "statement": "The Octelium Entra bootstrap and owner-mail module runbook remain canonical for immutable identity migration and private mail-only operator updates. Fleet Free Entra documents Fleet enrollment and historical Mac SSO evidence; Fleet-only Company Portal and Platform SSO remain retired.",
+      "statement": "The Octelium Entra bootstrap and owner-mail module runbook remain canonical for immutable identity migration and private mail-only operator updates; Fleet's Free Entra runbook now records the retired Company Portal/Platform SSO boundary and historical incidents.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
           "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
         },
         {
-          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md#L175-L203",
+          "version": "repo-lines-v1:sha256:ebcd975b2527fbd798ab07ea382200048b3d65e169af54d1d07740544ebc867d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1NTdhYjMyY2MxZTIyMGYxYzM0NDI3YTZmMjA2MDkxZTU0MGMwZjcyZGNlYTE1MTUyODk4YTVmMTlmMTIzMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjZDU3MjZmZGJiNDc4YWZhY2RlNDQ0MDgxOGUwZTVjMjJkMzAxNDY2NmUyZmI4NmY4ZDg2ZmFjMDY5OTVkZGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2Yzc1OTBkMGE4ZGM4MzQ3ODQwMzVkODVjZTg1OTMwYjM0NTM5NGUyZTg2YWQ4YjJlYzU5NjRiNjM4M2IzOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjNDU2YmI3MGQ4N2I2YmViODhjYTYwY2RiNDU5MGNjY2IxYzNhNTE3MmYxNWRjZTEwZTBhMmYzODkzYzVmMzIifQ"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -55,10 +55,32 @@
           "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
+    },
+    {
+      "id": "claim_98e5ba802ab443f3881f65ce87e2919e",
+      "statement": "Mastodon's workload runbook, stack inputs, shared SSM catalog and dedicated SMTP/DNS workflows own its runtime, registration, credential and public access contracts.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
+          "version": "repo-file-v1:sha256:5ec8b9c13900f72075c89c9c5b9393087daf14fc62c6244a07b9ba36012fe9fc"
+        },
+        {
+          "resource": "repo://.github/workflows/mastodon-smtp-credential.yml",
+          "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
+        },
+        {
+          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md",
+          "version": "repo-file-v1:sha256:a0331bac5e9511c98b347ae880104224a1eec206508e9bc0f54ae871514c6892"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:21:59.355Z"
+    "at": "2026-10-17T04:52:40.970Z"
   }
 }

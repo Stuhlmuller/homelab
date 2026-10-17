@@ -1,11 +1,16 @@
 ---
 type: operation
 title: "Validation Gates"
-description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
-tags: ["operations", "validation"]
+description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
+tags: [operations, validation]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -28,6 +33,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
@@ -114,10 +121,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T18:21:59.355Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T18:21:59.355Z
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 ---
 
 # Validation Gates
@@ -1396,6 +1400,10 @@ See [the operator path](../../docs/octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
 
+Fleet-only Company Portal and Platform SSO acceptance is retired. The dated
+pilot records below do not authorize repeating that unsupported enrollment.
+Use the current [Fleet boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
+
 The [WireGuard/AirVPN workflow](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 adds `python3 -I scripts/ci/fleet-airvpn-setup-test.py` to static checks. Its
 synthetic tests cover private-file handling, current-password file validation,
@@ -1558,11 +1566,8 @@ audit receipts and final-container/component scans are still required.
 The Linux job runs the checker and private runtime-audit command for the exact
 Docker-saved candidate. Offline regressions refuse wrong image/config identity,
 platform/distro, stale or invalid databases, filters/exclusions, and available
-fixes, while retaining unresolved findings in the evidence-only CI audit. A
-privacy case requires sanitized receipts to omit raw image metadata and
-explicitly deny CVE clearance. Protected publication reruns that exact-runtime
-scan with `--require-zero-matches` before registry credentials; any finding
-fails the gate. The offline test covers the switch and workflow ordering.
+fixes, while retaining unresolved findings unchanged. A privacy case requires
+sanitized receipts to omit raw image metadata and explicitly deny CVE clearance.
 Full registry and runtime acceptance still needs fresh Linux CI evidence.
 Core publication regression cases additionally require one fixed subject,
 dedicated workflow/current-main binding, complete private pulls before signing,
@@ -1631,3 +1636,21 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Mastodon activation gates
+
+The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,
+idempotent owner bootstrap, routes, fixed SMTP injection and conflict-safe public
+DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
+the DNS job installs Nix and runs both kubeconfig setup and publication inside
+the pinned shell. These fixtures do not contact SMTP or publish DNS.
+
+Before activation, require current-head protected checks and live Terragrunt
+plan, complete fixed-image publication, worker capacity, ready upstream
+Applications and declared SSM credentials. Register only the Mastodon target
+through the saved-plan apply path. Then verify actual Argo revision/health,
+migrations, owner login, loaded JSON gem, SMTP delivery and public HTTP,
+WebFinger, media and streaming. The DNS workflow requires Mastodon and the
+shared connector Synced/Healthy at its reviewed revision. Preserve data and
+stable keys through recovery; prove backups and isolated restore separately.
+See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).

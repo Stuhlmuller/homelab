@@ -2,8 +2,13 @@
 type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
-tags: ["architecture", "secrets", "identity"]
+tags: [architecture, secrets, identity]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T04:52:40.970Z
 sources:
+  - id: openwiki-source-23ac5bc03d1cee79a72b06af
+    resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
@@ -18,6 +23,10 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-bc26cfab2973077898d9ec21
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-8547ae9691c6849e109e322b
+    resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -26,10 +35,10 @@ sources:
     resource: repo://docs/octelium.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-cf9e058040b1a15ca636bb42
+    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
   - id: openwiki-source-77d110fdd1547564be86e611
@@ -46,10 +55,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T18:21:59.355Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T18:21:59.355Z
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 ---
 
 # Secrets And Identity
@@ -534,6 +540,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   callback helper after Funnel routing and negative-path preflights pass;
   require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
+
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`
@@ -567,6 +574,11 @@ the temporary native transport changes no saved host or client settings.
 See [NOFX reconciliation](../../docs/octelium-nofx-reconciliation.md).
 
 ## Fleet Free identity boundaries
+
+The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
+and owner-address details below are dated history, not a procedure to repeat
+or authorization to modify owner identities. See the current
+[retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 The [WireGuard/AirVPN operator](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 accepts private owner-supplied client exports from outside git, separately per
@@ -633,6 +645,11 @@ pilot change cannot trigger legacy-user reconciliation.
 
 ## Google Workspace federation boundary
 
+The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
+and owner-address details below are dated history, not a procedure to repeat
+or authorization to modify owner identities. See the current
+[retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
+
 `operator/entra-google-workspace-federation` owns the Entra Graph federation
 configuration for `stuhlmuller.net`. Its Google SAML metadata is an
 operator-only SSM SecureString and never appears in Git. Google Workspace
@@ -640,11 +657,21 @@ auto-provisioning creates the matching Entra users; the Entra federation only
 authenticates those users. CI provider identities do not receive domain-write
 permissions, so the unit remains an independently reviewed operator apply.
 
-The [registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
-and [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
-are historical identity evidence, not a Fleet-only Company Portal or Platform
-SSO procedure. The live federation routes to Google; Fleet-only Company
-Portal/PSSO remains unsupported and retired.
+The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+found a deployed pilot UPN mismatch: the Mac attempted personal-account device
+registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
+Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only
+change required a focused apply. The approved apply failed with
+`DirectoryUniquenessException`; the pilot retained its old UPN, nickname and
+password-change timestamp. The owner's existing mail/SMTP proxy uses the
+requested address, making it the leading conflict candidate, but Entra's audit
+did not name the conflicting property. The pilot-rename approval does not cover
+clearing owner aliases or converting that administrator; a separate owner-address
+migration was subsequently approved. The pilot's initial password change must finish
+before native Password PSSO registration. Fleet MDM enrollment remained intact;
+successful organizational device/user registration and password synchronization
+still require interactive acceptance. The runbook retains the separate,
+unresolved token-endpoint profile warning from the same attempt.
 
 The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
 applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external
@@ -749,3 +776,21 @@ values, identities or permissions were created. Preserve app encryption/signing
 keys and password-free-dump role credentials through the existing private vault.
 Archive restore has no cloud credentials or production access and remains gated
 on enforced containment.
+
+## Mastodon credential boundary
+
+The [Mastodon declaration](../../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+adds nine exact `/homelab/mastodon/` parameters and namespace-scoped External
+Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
+owner password are generated in encrypted state. The external SMTP slot starts
+with a rejected placeholder; the protected
+[SMTP workflow](../../.github/workflows/mastodon-smtp-credential.yml) injects
+only that fixed SecureString from `MASTODON_SMTP_PASSWORD`.
+
+The [runtime template](../../clusters/homelab/apps/mastodon/runtime-externalsecret.yaml)
+mounts configuration, VAPID and SMTP as files. Only the owner-bootstrap Job
+mounts the generated administrator password; repeat bootstrap preserves the
+existing account. `OnChange` and subPath consumers need declared secret/runtime
+revisions after rotation. Preserve stable keys with the database. Source
+registration and credential storage do not prove deployment, owner login or
+email delivery; see the [workload runbook](../../clusters/homelab/apps/mastodon/README.md).
