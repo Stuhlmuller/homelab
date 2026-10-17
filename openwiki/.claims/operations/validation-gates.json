@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bf87ebfe71fbee1c2ef7b333ca90fcbdbc2e1e3406892a3969ce8f252ef1d9c8",
+  "pageVersion": "sha256:1fd4c840bf8d4d4c5123cb0b7fc4848e560c89a674783a9fbcb15f2c09831ee5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -599,10 +599,28 @@
           "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
+    },
+    {
+      "id": "claim_6e39de9c9b824735be78de6faf23287b",
+      "statement": "The pinned Langfuse chart render requires one web replica with no explicit strategy, a 1280 MiB request, unchanged 2 GiB limit, and required Acer affinity. The capacity receipt is a projection; live acceptance requires the replacement web Pod Ready on Acer, the old Pod gone from zimaboard-1, recovered SQL/web behavior, and fresh node headroom and pressure readback.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
+          "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
+        },
+        {
+          "resource": "repo://docs/evidence/acer-cordium-capacity-2026-10-17.json",
+          "version": "repo-file-v1:sha256:4bc47ef2f8b66ef0c2327b7b186c9486f8b3ae9ec641e37409f7062ffde7a863"
+        },
+        {
+          "resource": "repo://scripts/ci/langfuse-startup-check.sh",
+          "version": "repo-file-v1:sha256:433674897aa0b397b0fad38a18cf7958934f76cecf4f7eaa1694c2938998cf05"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T22:53:57.740Z"
+    "at": "2026-10-17T23:07:04.882Z"
   }
 }
