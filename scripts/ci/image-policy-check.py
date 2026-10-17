@@ -59,7 +59,7 @@ def wait_for(description, check):
     raise AssertionError(f"{description} did not converge: {last}")
 
 
-def pod(name="proof", namespace="image-policy-test"):
+def pod(name="admission-proof", namespace="image-policy-test"):
     return {
         "apiVersion": "v1",
         "kind": "Pod",
@@ -164,7 +164,7 @@ def main():
             expect_warning(create(kube_system))
             cases += 1
 
-            run(*kubectl, "create", "-f", "-", input=json.dumps(pod()))
+            run(*kubectl, "create", "-f", "-", input=json.dumps(pod(name="proof")))
             update = invoke(*kubectl, "-n", "image-policy-test", "patch", "pod", "proof",
                             "--type=json", "--patch", json.dumps([{
                                 "op": "replace", "path": "/spec/containers/0/image",
