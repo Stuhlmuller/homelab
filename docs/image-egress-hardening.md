@@ -77,6 +77,17 @@ restricts inbound traffic for selected meshed workloads; it does not deny all
 outbound traffic. `Sidecar` resources do not configure ambient workloads, and
 `outboundTrafficPolicy: REGISTRY_ONLY` is not a security boundary.
 
+The source-only [NRI fragment](../.talos/patches/nri-containerd.yaml) prepares
+an isolated CRI configuration part, but no node has received it and no NRI
+plugin or policy-enforcing dataplane is deployed. It has no rollout helper or
+node target. The offline gate proves strict machine-config validity only; a
+future canary must reject a pre-existing `30-nri.part`, read the rendered CRI
+configuration and NRI socket, and restore a complete desired machine config
+without that owned entry before treating rollback as complete. Apply only with
+a dedicated tainted canary worker and readback contract; enabling the runtime
+socket on a shared worker would create a privileged control path before those
+safeguards exist.
+
 A complete rollout needs a repository-owned policy-enforcing dataplane plus
 Istio egress waypoints/gateways and narrow destination policies. Do not activate
 an enforcing engine before reviewing all existing placeholder policies: they

@@ -14,6 +14,15 @@ Phase 2b switches CI and shared native operator transport only after canonical
 DNS/API acceptance. Old native catalog resources, credentials, callback names,
 and the Tunnel Deployment remain until the final retirement gate.
 
+## Mastodon declaration
+
+The Mastodon draft intentionally declares a public federation website at
+`mastodon.stinkyboi.com`, separate from the private application inventory.
+Its fixed-host publication workflow uses the retained Cloudflare Tunnel and
+application-owned authentication. The declaration is not live acceptance;
+retiring that connector requires a replacement Mastodon transport first.
+See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md).
+
 ## DNS Model
 
 `scripts/tailscale-private-dns.sh` owns a fixed inventory of DNS-only A/AAAA

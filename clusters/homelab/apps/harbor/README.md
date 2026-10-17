@@ -76,6 +76,10 @@ credential out of process arguments and environment variables. Harbor omits
 zero-valued severity buckets, so a completed scan without a `Critical` bucket
 correctly contributes zero rather than failing collection.
 
+The Deployment references the namespace-local `harbor-pull` Docker-config Secret
+for its staged internal image migration. Kubelet uses it only when its image
+needs Harbor authentication; the credential is never mounted in the exporter.
+
 The ServiceMonitor is scraped every minute. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
 responds slowly. Initial collection returns unavailable until totals exist.
