@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T21:24:17.054Z" }
+generated: { by: "codex", at: "2026-10-17T21:40:54.253Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:27:58.500Z
+    at: 2026-10-17T21:40:54.253Z
 ---
 
 # Harbor Private OCI Registry
@@ -763,7 +763,8 @@ receipt, verifies its private source-run evidence against GitHub, and publishes
 On each `main` push or PR edit, including base-branch retargets, the trusted job
 rechecks all open PR heads, including forks, against the current `main` and
 refreshes their statuses. One concurrency group serializes status writers; any
-replacement pending event still rechecks every PR. Main-SHA guards reject
+replacement pending event still rechecks every PR. The job marks all collected
+heads pending before verifying them and continues after individual status errors. Main-SHA guards reject
 stale results. Its required
 status must be enabled only after the workflow succeeds on `main`.
 The private receipt is imported from a successful exact-main run before the
@@ -776,10 +777,9 @@ Offline image checks inspect each native consumer's declared target and scan
 repository `.yaml`, `.yml`, and `.json` workload resources, including Kustomize image transformations and inline or file-backed patches, for private native Chainguard references. Every
 such reference must appear in the declared path of a `migrated` consumer with
 an imported protected receipt and the exact verified index digest, even if
-automation enrollment is still disabled. The Image Updater's structural check
-permits enrollment after the required repository Harbor image check validates
-that imported evidence. Native enrollment renders without the
-`verified-stable` alias, which receipt imports do not publish.
+automation enrollment is still disabled. The Image Updater rejects native
+enrollment until candidate promotion binds proposed digests to protected
+receipt evidence; imported evidence alone does not authorize automation.
 The automation contract rejects applications mixing native Chainguard and
 alias-backed images, including a not-enrolled native candidate.
 The Harbor render check applies the same rule to rendered

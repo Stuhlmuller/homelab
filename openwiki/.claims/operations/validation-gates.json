@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a16ac539be71ba7f0a0e93209c6dc0a1f59936a9885574f4363b41440ca8cba2",
+  "pageVersion": "sha256:6717ba8013b6125282ba77a3d89cc9ad7e6c01204e37767507d2f067d59ec0c7",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3d803c20aeb5b5351d920affd9d1e1d81707673bf7175df841de429c35bea542"
+          "version": "repo-file-v1:sha256:63d3696a8cf25253beb58453d9437cfa58af6387c5c6e1a0ecb56d8974d15995"
         }
       ]
     },
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:66421ab76ef6163e73c89a7c9b944c4e1efe42bc36dd569b3786bce0f19ae39a"
+          "version": "repo-file-v1:sha256:c82db5c71771884cb5d4a1b178273aa9243d79bf33fe2506afb5b102832b4220"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -558,21 +558,21 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3d803c20aeb5b5351d920affd9d1e1d81707673bf7175df841de429c35bea542"
+          "version": "repo-file-v1:sha256:63d3696a8cf25253beb58453d9437cfa58af6387c5c6e1a0ecb56d8974d15995"
         }
       ]
     },
     {
       "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
-      "statement": "The trusted native receipt provenance workflow publishes verified status on PR head SHAs and revalidates all open main-targeted PRs, including forks, after main pushes or PR edits. One concurrency group serializes status writers, replacement pending events still recheck all PRs, and main-SHA guards reject stale results. Static checks pin its trusted steps, status permission, and source hash; the required status activates only after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow publishes verified status on PR head SHAs and revalidates all open main-targeted PRs, including forks, after main pushes or PR edits. One concurrency group serializes status writers; all collected heads become pending before sequential verification, individual status errors do not skip later heads, and main-SHA guards reject stale results. Static checks pin its trusted steps, status permission, and source hash; the required status activates only after a successful main run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:fe2536b1a38ef22b2a6ad20b3e43968a1af0f8b4efd5cea765c189a3dba8f8ac"
+          "version": "repo-file-v1:sha256:9aa4deac065cadf54e3765218b6a11d268a7ed13f5a80deb8aad4ef98bfd4317"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3d803c20aeb5b5351d920affd9d1e1d81707673bf7175df841de429c35bea542"
+          "version": "repo-file-v1:sha256:63d3696a8cf25253beb58453d9437cfa58af6387c5c6e1a0ecb56d8974d15995"
         }
       ]
     },
@@ -600,7 +600,7 @@
       "evidence": [
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:66421ab76ef6163e73c89a7c9b944c4e1efe42bc36dd569b3786bce0f19ae39a"
+          "version": "repo-file-v1:sha256:c82db5c71771884cb5d4a1b178273aa9243d79bf33fe2506afb5b102832b4220"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
@@ -611,6 +611,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:27:58.500Z"
+    "at": "2026-10-17T21:40:54.253Z"
   }
 }

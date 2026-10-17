@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f8dc7f26c1508bfe36fef6a8c867ade86bb7544c11b7506f4f409c00db0074dc",
+  "pageVersion": "sha256:9d2955e37efe60bef91cc297d6fcf928e30340af1d9b7174a01afd4ee67aabdc",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -470,11 +470,11 @@
     },
     {
       "id": "claim_4fb8563dc6c840ac8608a6d5333b0b13",
-      "statement": "The trusted native receipt provenance workflow checks out current main, verifies private run evidence, and publishes Native Chainguard Receipt Provenance on PR head SHAs. Main pushes and PR edits revalidate every open main-targeted PR, including forks. One concurrency group serializes status writers, any replacement pending event still rechecks all PRs, and main-SHA guards reject stale results. The importer requires each changed receipt's run revision to equal the verified base SHA.",
+      "statement": "The trusted native receipt provenance workflow checks out current main, verifies private run evidence, and publishes Native Chainguard Receipt Provenance on PR head SHAs. Main pushes and PR edits revalidate every open main-targeted PR, including forks. One concurrency group serializes status writers; all collected heads become pending before sequential verification, individual status errors do not skip later heads, and main-SHA guards reject stale results. The importer requires each changed receipt's run revision to equal the verified base SHA.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:fe2536b1a38ef22b2a6ad20b3e43968a1af0f8b4efd5cea765c189a3dba8f8ac"
+          "version": "repo-file-v1:sha256:9aa4deac065cadf54e3765218b6a11d268a7ed13f5a80deb8aad4ef98bfd4317"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py",
@@ -502,7 +502,7 @@
     },
     {
       "id": "claim_0b1f16dd051d439ba841063309ef83ad",
-      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared digest. Native enrollment renders without the verified-stable alias; applications mixing native and alias-backed images, including not-enrolled native candidates, are rejected.",
+      "statement": "Image Updater rejects native Chainguard enrollment until candidate promotion binds proposed digests to protected receipt evidence. The repository Harbor image check still verifies imported receipt evidence and exact declared digests; applications mixing native and alias-backed images, including not-enrolled native candidates, are rejected.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -510,17 +510,17 @@
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
-          "version": "repo-file-v1:sha256:d0ea574f67a6ce828babc3b6680cfb1455512bfabaa1270e0f513a1234682a4d"
+          "version": "repo-file-v1:sha256:61152a33e62d7d59ad87967e60993e377cbc2263106fbbb014679dac73b953af"
         },
         {
           "resource": "repo://scripts/ci/image-automation.py",
-          "version": "repo-file-v1:sha256:b67448ee49bf0920b9294da503dcc73703dbce2941d4f028222d9768e07ff7ff"
+          "version": "repo-file-v1:sha256:213eb79853933d253e75b52cd3d9832ba4da018b69cdc0564a97a2e8c5cc2fed"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:27:58.500Z"
+    "at": "2026-10-17T21:40:54.253Z"
   }
 }

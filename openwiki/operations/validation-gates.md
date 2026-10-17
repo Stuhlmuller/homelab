@@ -133,7 +133,7 @@ sources:
 generated: { by: "codex", at: "2026-10-17T21:24:17.054Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:27:58.500Z
+    at: 2026-10-17T21:40:54.253Z
 ---
 
 # Validation Gates
@@ -1572,7 +1572,8 @@ against the exact successful main run and publishes `Native Chainguard Receipt
 Provenance` on the PR head SHA. Main pushes and PR edits, including base-branch
 retargets, revalidate all open PR heads against current `main`. One concurrency
 group serializes status writers; a replacement pending event still checks every
-PR, and main-SHA guards reject stale results.
+PR. The workflow marks every collected head pending before sequential verification,
+continues after individual status failures, and main-SHA guards reject stale results.
 The required status is enabled only
 after the workflow succeeds on main; static policy tests pin its trusted steps, status
 permission, and source hashes. The Rego `pull_request_target` exception accepts

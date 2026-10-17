@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c4fc89b3648ce0d8cbb476fbdb4c9b79c55cf8ba6a6c02a407f9948ce5c3317d",
+  "pageVersion": "sha256:ad970c69af67202360c8a51744c7177d93cfebcf3bf92ba1882d737383320884",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -130,7 +130,7 @@
     },
     {
       "id": "claim_c12e09fee2904168a36dadc5c1771d1f",
-      "statement": "The staged Image Updater controller remains unregistered and scaled to zero. Its native Chainguard receipt is only evidence for the candidate Python and curl artifacts: it neither creates a verified-stable alias nor writes updater state or enrolls a consumer. Enrollment requires a later reviewed compatibility migration using an exact private Harbor digest and verifiable receipt evidence; native enrollment metadata omits the absent alias.",
+      "statement": "The staged Image Updater controller remains unregistered and scaled to zero. Its native Chainguard receipt is only evidence for candidate Python and curl artifacts: it neither creates a verified-stable alias nor writes updater state or enrolls a consumer. Enrollment requires a later reviewed compatibility migration using an exact private Harbor digest and verifiable receipt evidence, followed by candidate promotion that binds proposed digests to that protected receipt; current native enrollment is rejected.",
       "evidence": [
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -138,17 +138,17 @@
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
-          "version": "repo-file-v1:sha256:d0ea574f67a6ce828babc3b6680cfb1455512bfabaa1270e0f513a1234682a4d"
+          "version": "repo-file-v1:sha256:61152a33e62d7d59ad87967e60993e377cbc2263106fbbb014679dac73b953af"
         },
         {
           "resource": "repo://scripts/ci/image-automation.py",
-          "version": "repo-file-v1:sha256:b67448ee49bf0920b9294da503dcc73703dbce2941d4f028222d9768e07ff7ff"
+          "version": "repo-file-v1:sha256:213eb79853933d253e75b52cd3d9832ba4da018b69cdc0564a97a2e8c5cc2fed"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:35:29.078Z"
+    "at": "2026-10-17T21:40:54.253Z"
   }
 }

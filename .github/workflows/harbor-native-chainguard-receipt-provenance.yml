@@ -42,16 +42,30 @@ jobs:
           [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
           token_file="$(mktemp)"
           pulls_file="$(mktemp)"
-          trap 'rm -f "$token_file" "$pulls_file"' EXIT
+          heads_file="$(mktemp)"
+          trap 'rm -f "$token_file" "$pulls_file" "$heads_file"' EXIT
           printf '%s' "$GH_TOKEN" >"$token_file"
           gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
-          jq -r '.[].head.sha' "$pulls_file" |
+          jq -r '.[].head.sha' "$pulls_file" >"$heads_file"
+          pending_failed=0
           while IFS= read -r head_sha; do
             [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
-            [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
-              -f state=pending -f context='Native Chainguard Receipt Provenance' \
-              -f description='Rechecking receipt against current main' >/dev/null
+            marked=0
+            for attempt in 1 2 3; do
+              if gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
+                -f state=pending -f context='Native Chainguard Receipt Provenance' \
+                -f description='Rechecking receipt against current main' >/dev/null; then
+                marked=1
+                break
+              fi
+              sleep 2
+            done
+            [[ "$marked" == 1 ]] || pending_failed=1
+          done <"$heads_file"
+          [[ "$pending_failed" == 0 ]] || exit 1
+          [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
+          status_failed=0
+          while IFS= read -r head_sha; do
             if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
               --base-sha "$base_sha" --head-sha "$head_sha" \
               --token-file "$token_file" && \
@@ -61,7 +75,10 @@ jobs:
               state=failure
             fi
             [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
-            gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
+            if ! gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
               -f state="$state" -f context='Native Chainguard Receipt Provenance' \
-              -f description='Protected receipt state verification' >/dev/null
-          done
+              -f description='Protected receipt state verification' >/dev/null; then
+              status_failed=1
+            fi
+          done <"$heads_file"
+          exit "$status_failed"

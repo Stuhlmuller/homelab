@@ -48,10 +48,10 @@ sources:
     resource: repo://scripts/ci/image-automation-test.py
   - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
     resource: repo://scripts/ci/image-automation.py
-generated: { by: "codex", at: "2026-10-17T19:48:41.466Z" }
+generated: { by: "codex", at: "2026-10-17T21:40:54.253Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:35:29.078Z
+    at: 2026-10-17T21:40:54.253Z
 ---
 
 # Workload Inventory
@@ -227,7 +227,8 @@ The native Chainguard receipt applies only to the candidate Python and curl
 artifacts: it does not create a `verified-stable` alias, write updater state, or
 enroll either consumer. A later reviewed compatibility migration must first use
 an exact private Harbor digest reference and provide verifiable receipt evidence.
-Native enrollment metadata omits the absent `verified-stable` alias.
+Native updater enrollment remains rejected until candidate promotion binds its
+proposed digest to that protected receipt.
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were
