@@ -179,6 +179,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    done
    ```
 
+   Before step 5, complete the [private Talos registry route](#private-talos-registry-route):
+   validate and execute `--registry-host-only` on each node, workers first,
+   then verify the owned `/etc/hosts` mapping. Keep strict mirrors unapplied
+   until that route and its native pull check pass.
+
 5. Apply one node at a time, workers first and the sole control plane last:
 
    ```sh
@@ -198,7 +203,23 @@ retain registry blobs together with Harbor database/encryption-key backups.
    captured configuration already has valid `robot$mirror+pull` auth.
    Rollback and dry-run do not pull images. It never drains, restarts or deletes
    workloads.
-6. Verify every node's `registryconfigs` resource contains the committed
+6. Audit every active node after strict-mirror rollout. The audit requires the
+   full reviewed SHA and Talos client 1.11.3, and exits nonzero unless the
+   strict mirror declaration, private Harbor hostname mapping, and
+   `robot$mirror+pull` credential shape all match. It prints no configuration
+   values or credentials and does not prove Harbor availability or a fresh pull.
+   `set -e` makes a failure on any node stop the fleet check.
+
+   ```sh
+   set -e
+   for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
+     python3 -I scripts/talos-harbor-mirrors.py --node "$node" --audit \
+       --expected-sha "$reviewed_sha" \
+       --talosconfig /path/to/private/talosconfig
+   done
+   ```
+
+7. Verify every node's `registryconfigs` resource contains the committed
    endpoints, `skipFallback: true`, and only the owned Harbor reader auth.
    Keep `mirror` public until all node readbacks and native pulls pass. Then make
    its project metadata private through a separate reviewed bootstrap change;
@@ -244,11 +265,13 @@ dashboard and management API paths return 404. No LAN or public listener is adde
 The URL, TLS certificate name, Authorization header and bearer-token realm remain
 `harbor.stinkyboi.com`.
 
-The same inspection found no configured mirrors or extra host entries on any
-of the four Talos nodes. This DNS cutover must preserve that state: it does
+Do not infer mirror state from the DNS cutover. Run the active-node audit after
+strict-mirror rollout. This DNS cutover does
 **not** activate the strict mirror patch. The helper preserves unrelated host
 aliases, refuses a conflicting existing Harbor mapping, and validates that
 the complete machine configuration changes only `extraHostEntries`.
+Normal strict-mirror execution refuses to run until that exact per-node mapping
+is active; public DNS for the Harbor hostname is never an accepted fallback.
 
 Talos 1.11.3 can expose only the active `v1alpha1` machine-config resource after
 loading configuration from STATE at boot; `persistent` is populated by later
