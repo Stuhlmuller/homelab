@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d000d0e63c810084ef8dca8f5941a75b480dcedf381444d0fb9ec973b3616479",
+  "pageVersion": "sha256:c4fc89b3648ce0d8cbb476fbdb4c9b79c55cf8ba6a6c02a407f9948ce5c3317d",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:b0d5166b5eb40a036b3c39c75a583bf734153c1ec3d62a3d2a6e06b03ac238e0"
+          "version": "repo-file-v1:sha256:e74eda87d2b835d8eff01e7dd71a46683769ddf9b96934edc0140bbed448c7e8"
         }
       ]
     },
@@ -134,7 +134,7 @@
       "evidence": [
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:b0d5166b5eb40a036b3c39c75a583bf734153c1ec3d62a3d2a6e06b03ac238e0"
+          "version": "repo-file-v1:sha256:e74eda87d2b835d8eff01e7dd71a46683769ddf9b96934edc0140bbed448c7e8"
         },
         {
           "resource": "repo://scripts/ci/image-automation-test.py",
@@ -149,6 +149,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:25:43.015Z"
+    "at": "2026-10-17T20:35:29.078Z"
   }
 }
