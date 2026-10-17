@@ -82,6 +82,10 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -96,10 +100,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
+generated: { by: "codex", at: "2026-10-17T18:45:31.449Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:40:16.143Z
+    at: 2026-10-17T18:45:31.449Z
 ---
 
 # Harbor Private OCI Registry
@@ -367,6 +371,12 @@ avoid coupling deployment to the full historical mirror audit. This does not
 establish full-inventory mirror completion.
 
 ## Image Publication
+
+The coverage gate maps direct `harbor.stinkyboi.com/mirror/` references to the
+reviewed upstream catalog and requires the exact published repository and digest.
+Digestless mirror tags, unreviewed repositories and unpublished shorthand aliases
+fail; the separate `homelab` project remains reserved for custom builds. These
+source checks do not establish publication or live pull acceptance.
 
 ### October 11 duplicate-index failure
 
