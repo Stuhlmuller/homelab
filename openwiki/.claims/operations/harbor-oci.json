@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6262f311537d5dbba401be805829b73a116959ca0c66d009dee839f15ee58665",
+  "pageVersion": "sha256:c1397a3f89db01aa74a6a050d7cf0588fdf8ff7e2e07cb49eecebb57b9c3ab23",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:5f49827ae07c13d6a09c6f5a5efc8ec8694622c441068a5b6b69447b43ee9214"
+          "version": "repo-file-v1:sha256:72fc7f6354d6deb9008c653db449cf95e378df4ece21e31cf3db2b994c0da66d"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -364,11 +364,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
+          "version": "repo-file-v1:sha256:38b2361e65de1d499bc379dc042e82eb72bdee9aea2a5e5cb556fe463a454e85"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         }
       ]
     },
@@ -404,7 +404,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         }
       ]
     },
@@ -448,17 +448,31 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
           "version": "repo-file-v1:sha256:eafc73e89544447f62da24153683cebd3c4876bbd03e29453f23dcc93a903b02"
         }
       ]
+    },
+    {
+      "id": "claim_26e35e77bced4b28a2e6109acc41659b",
+      "statement": "Hosted Harbor publication CI forwards the disposable runner to traefik/traefik-private over a bounded Kubernetes port-forward with the Octelium CI credential, maps the Harbor hostname to loopback, and retains TLS verification.",
+      "evidence": [
+        {
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:a9d60d632ca5423307f23dad0419cb5480d2026960b9518db24d2b43d24410b1"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:13:59.415Z"
+    "at": "2026-10-17T20:27:18.310Z"
   }
 }

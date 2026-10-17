@@ -181,8 +181,8 @@ forward_timeout=2400
 [[ "$mode" != mirror ]] || forward_timeout=19800
 timeout --signal=TERM --kill-after=5s "$forward_timeout" \
   "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
-  --namespace istio-system port-forward --address 127.0.0.1 \
-  service/istio-ingressgateway 443:443 >"$scratch/port-forward.log" 2>&1 &
+  --namespace traefik port-forward --address 127.0.0.1 \
+  service/traefik-private 443:443 >"$scratch/port-forward.log" 2>&1 &
 forward_pid=$!
 hosts_added=true
 printf '%s\n' '127.0.0.1 harbor.stinkyboi.com # homelab-harbor-ci' |
