@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ea9d80d92dd49dd7b110958bd266dfde4186b0c63c4c387e0972579d34063730",
+  "pageVersion": "sha256:1f5f2b4621bb6c479507ceeaf4f24404eca3d6280d22cd6b077df1c76ca0a44e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -168,7 +168,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -274,7 +274,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -346,7 +346,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:6f5045180b8569ea94dd9e693998337aa85953b767cc54d7858533597306f67c"
+          "version": "repo-file-v1:sha256:76c34b3dc37e4f83f69beba615a25174eadc3390728a177cc69f6180e85305eb"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -378,7 +378,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:6f5045180b8569ea94dd9e693998337aa85953b767cc54d7858533597306f67c"
+          "version": "repo-file-v1:sha256:76c34b3dc37e4f83f69beba615a25174eadc3390728a177cc69f6180e85305eb"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -487,6 +487,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:11:07.708Z"
+    "at": "2026-10-17T21:21:43.631Z"
   }
 }
