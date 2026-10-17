@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e8b612344a34d71f6b906339e75be5c2615d0a9b74f89bfdf9e930a290af46e1",
+  "pageVersion": "sha256:f1b3d416795318cbf8ad564ffb848dfd5c2de0640d974dfbecd519eaeabbf039",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:b9b8964a82d5797decddf4cee185f8a8c5606e2da163b9b817233e41b60d4f0c"
+          "version": "repo-file-v1:sha256:8c7e65fcd8c16d6b3202ed21b7bbaceaea07f8c1ad474c7d38617593ce441079"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -572,7 +572,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:b9b8964a82d5797decddf4cee185f8a8c5606e2da163b9b817233e41b60d4f0c"
+          "version": "repo-file-v1:sha256:8c7e65fcd8c16d6b3202ed21b7bbaceaea07f8c1ad474c7d38617593ce441079"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -597,6 +597,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:47:46.085Z"
+    "at": "2026-10-17T19:07:19.170Z"
   }
 }
