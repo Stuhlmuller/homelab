@@ -7,7 +7,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 import io
 import tempfile
 
@@ -16,6 +16,8 @@ scan = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scan)
 CONFIG = json.dumps({"os": "linux", "architecture": "amd64"}).encode()
 IMAGE = "sha256:" + hashlib.sha256(CONFIG).hexdigest()
+CORE_PUBLICATION_WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/harbor-core-images.yml"
+SCAN_SCRIPT = Path(__file__).resolve().parents[2] / "builds/harbor-core/scan.sh"
 
 
 class ScanTests(unittest.TestCase):
@@ -45,6 +47,31 @@ class ScanTests(unittest.TestCase):
             report["matches"] = [{"vulnerability": {"severity": "Unknown", "fix": fix}}]
             with self.assertRaisesRegex(AssertionError, "remediation"):
                 scan.verify(report, IMAGE)
+
+    def test_publication_clearance_requires_zero_matches(self):
+        scan.verify(self.report(), IMAGE, require_zero_matches=True)
+        report = self.report()
+        report["matches"] = [{"vulnerability": {"severity": "Unknown", "fix": {"state": "unknown", "versions": []}}}]
+        with self.assertRaisesRegex(AssertionError, "clearance"):
+            scan.verify(report, IMAGE, require_zero_matches=True)
+
+    def test_publication_switch_requires_zero_matches(self):
+        report = self.report()
+        report["matches"] = [{"vulnerability": {"severity": "Unknown", "fix": {"state": "unknown", "versions": []}}}]
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "report.json"
+            path.write_text(json.dumps(report))
+            error = io.StringIO()
+            with redirect_stderr(error):
+                self.assertEqual(scan.main([str(path), IMAGE, "--require-zero-matches"]), 1)
+        self.assertIn("clearance", error.getvalue())
+
+    def test_protected_publication_wires_the_zero_match_gate(self):
+        workflow = CORE_PUBLICATION_WORKFLOW.read_text()
+        self.assertIn("bash builds/harbor-core/scan.sh --require-zero-matches", workflow)
+        self.assertLess(workflow.index("bash builds/harbor-core/scan.sh --require-zero-matches"),
+                        workflow.index("Configure AWS Credentials"))
+        self.assertIn('"$@"', SCAN_SCRIPT.read_text())
 
     def test_refuses_wrong_or_filtered_or_stale_reports(self):
         changes = [

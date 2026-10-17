@@ -74,8 +74,6 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
@@ -100,10 +98,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:20:01.784Z" }
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:20:01.784Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Harbor Private OCI Registry
@@ -128,8 +126,8 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
-with the existing Octelium CI credential. Only its disposable runner maps
+Hosted CI still establishes a bounded Kubernetes port-forward to Istio with
+the existing Octelium CI credential until phase 2b. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
 retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
 
@@ -499,6 +497,10 @@ destination verification against the enrolled public-key fingerprint.
 Failures withhold the output digest; success produces a pinned-reference artifact.
 Core signing Pods use only the pinned Harbor Cosign mirror, whose publication
 must be verified before dispatch. NOFX's two-subject behavior remains intact.
+The protected publisher additionally requires zero matches in the exact
+full-container Grype report before registry credentials are available. The
+ordinary audit retains unresolved counts for review; neither mode clears other
+Harbor components or proves a live rollout.
 Before registry credentials, the [Linux compatibility fixture](../../builds/harbor-core/signer-test.sh)
 tests the pinned public Chainguard Cosign candidate for P-256 import/public-key
 identity and signing flags. The protected publisher then replaces every core

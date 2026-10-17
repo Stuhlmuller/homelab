@@ -64,8 +64,6 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
-  - id: openwiki-source-d9d387d4c8e269e62340179d
-    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -118,10 +116,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:20:01.784Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Validation Gates
@@ -1575,6 +1573,9 @@ the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
 pull/digest/signature failures. The credentialed job inventory and canonical
 workflow hash enroll both the publisher and pinned-reference reporting job;
 dispatch verification precedes checkout and repeats before credentials.
+The protected publisher also requires zero matches in the exact full-container
+Grype report before registry credentials; ordinary audit fixtures continue to
+retain unresolved findings for review.
 No publication workflow has been dispatched as part of these source tests.
 The Harbor Core publication workflow runs the pinned public Chainguard signer
 fixture before AWS credential configuration, and `validate` runs the same fixture.
