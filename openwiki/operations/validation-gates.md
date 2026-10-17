@@ -3,9 +3,6 @@ type: operation
 title: "Validation Gates"
 description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
 tags: [operations, validation]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
@@ -122,6 +119,9 @@ sources:
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
 generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T20:22:12.175Z
 ---
 
 # Validation Gates

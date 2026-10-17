@@ -3,9 +3,6 @@ type: workload
 title: "Workload Inventory"
 description: "Application namespaces, GitOps paths, dependencies, state contracts and runtime readiness boundaries."
 tags: [workloads, argocd, inventory]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
@@ -70,6 +67,9 @@ sources:
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
 generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T20:22:12.175Z
 ---
 
 # Workload Inventory

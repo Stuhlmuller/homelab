@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:19e6940e6f472f89e8dce3e0f610c59dff2d42839413982f04ea2283f7313a5a",
+  "pageVersion": "sha256:af8e9a26101834d3ea27355c73a1ee2c18d28eb54765840fb04fe04b64612992",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
+          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -151,11 +151,11 @@
       "statement": "Mastodon retains local PostgreSQL and AOF Redis volumes on zimaboard-0, NAS media and checked nightly database backups with 14-day retention; shared NAS storage is not independent disaster recovery and recovery must preserve stable application keys.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L20-L43",
-          "version": "repo-lines-v1:sha256:77794a009be40344c6f67b37fec9920906150d14d19dc19053618a10ff1446c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYmY4NDZjOTFmZjkxNjczZTBmZjdkMTdkMzAzMDc3NTIwNjQ4Mjg2Nzc1NGI3MTA2ZmE0YmU3OGIxMGMxY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyMGRkOGM2YzcyYmViY2MzY2YzZTNkMzUxMzRmYzQyZjI0YzIwNDMxYmZkM2Y1MTU5MDRmYjE5NWI3MjE2ZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFlZjFjYTA2YzBhYzNhNGFiMTYwMzQ1Yzg5ODM5OGYwMjcyODA3NmQwNjQ3MWY4OGVhZjdlYmE5OThlOGE0ZTUifQ"
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L20-L48",
+          "version": "repo-lines-v1:sha256:6397e8272811a35def289adb221db9fc4a86bc57e7856b9c6cd6dbcb550d231d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYmY4NDZjOTFmZjkxNjczZTBmZjdkMTdkMzAzMDc3NTIwNjQ4Mjg2Nzc1NGI3MTA2ZmE0YmU3OGIxMGMxY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyMGRkOGM2YzcyYmViY2MzY2YzZTNkMzUxMzRmYzQyZjI0YzIwNDMxYmZkM2Y1MTU5MDRmYjE5NWI3MjE2ZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFlZjFjYTA2YzBhYzNhNGFiMTYwMzQ1Yzg5ODM5OGYwMjcyODA3NmQwNjQ3MWY4OGVhZjdlYmE5OThlOGE0ZTUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L96-L113",
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L101-L118",
           "version": "repo-lines-v1:sha256:2de48697e019c73ddaaa5820abd76d7e6507891d927aa667555008ff3ba151c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjYTMwODNkZGYxYWI3Nzg2MmRlZjg0ZWQzNDU0MmNjYjllMTFiNWRiMjVjZThjYzA0NTc1NzlkYzJlNGFhOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkNTZkYzE5MmI2YjQxZWQyYmEwNDNjYzA5ZDA1ODEzYzdiZTdlMDNmZjllYTk2MDU2MzFlYmY3MGFjYThjYzcifQ"
         },
         {
@@ -164,7 +164,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/storage.yaml",
-          "version": "repo-file-v1:sha256:edcafe9e2c56676a437c361fc633e648a6018bb644e49c2ae275db6cb2ef3276"
+          "version": "repo-file-v1:sha256:0b379e40513af1e7685edb35accac30f72f1fba226661bc25351d1ac4bf993ba"
         }
       ]
     },
@@ -197,6 +197,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T04:52:40.970Z"
+    "at": "2026-10-17T20:22:12.175Z"
   }
 }

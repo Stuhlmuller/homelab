@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c42e6aca0dcd69b110c23e66637889cca49057f85001b4b3cce835ab541d5084",
+  "pageVersion": "sha256:0ccdb8b3490de025c9fd8acb1c20236f62fb1e03ead273c82fb6d3599abd7179",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,11 +16,11 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
+          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
+          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
         }
       ]
     },
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
+          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         }
       ]
     },
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
+          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -344,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
+          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:dc7c238bd696a353227aa9b59bb21cd707e8cddba0ef4a968a72e844b0591ed3"
+          "version": "repo-file-v1:sha256:4da362dae0a8326c299a9c1cddba470f37e93934dc03df790732344a2d74279a"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         }
       ]
     },
@@ -502,7 +502,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
+          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:a0331bac5e9511c98b347ae880104224a1eec206508e9bc0f54ae871514c6892"
+          "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh#L6-L13",
@@ -557,6 +557,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T04:52:40.970Z"
+    "at": "2026-10-17T20:22:12.175Z"
   }
 }
