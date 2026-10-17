@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f1b3d416795318cbf8ad564ffb848dfd5c2de0640d974dfbecd519eaeabbf039",
+  "pageVersion": "sha256:1c262728bdd8824280d229dae1652182c3737ac994217aed838b66903c764cda",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -294,7 +294,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:2f0aa776d49a8c6c04567573e0c12b1d29c9609a4773455352e723940099133a"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -304,7 +304,7 @@
     },
     {
       "id": "claim_c41196c353124e3791747938c5a2c0a5",
-      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly one database relation. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
+      "statement": "The Harbor candidate build runs isolated pinned Harbor/PostgreSQL services and a client sharing the proxy network namespace to verify unchanged repeated-index and complete blob push/pull with exactly four parent/child database relations. Offline fixtures validate payload hashes, refuse upload locations outside the loopback endpoint and require no published host ports, internal networking and core health ordering.",
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/build.sh",
@@ -312,11 +312,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:ec2fd0a31011e43321f1c223456b22e9ac8520315568c7a04b052e7a8be446a8"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:2f0aa776d49a8c6c04567573e0c12b1d29c9609a4773455352e723940099133a"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         }
       ]
     },
@@ -550,7 +550,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
-          "version": "repo-file-v1:sha256:eacfcfce37622ab310d02e0b95d219971417a437d1d777e7d7ba9cd88e2f4697"
+          "version": "repo-file-v1:sha256:8ef9538764d4c0253dea216e32fef158170a41839d138f0aaad4b52c979261fe"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -597,6 +597,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:07:19.170Z"
+    "at": "2026-10-17T19:19:00.714Z"
   }
 }

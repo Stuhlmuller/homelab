@@ -118,10 +118,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T18:47:46.085Z" }
+generated: { by: "codex", at: "2026-10-17T19:19:00.714Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:47:46.085Z
+    at: 2026-10-17T19:19:00.714Z
 ---
 
 # Harbor Private OCI Registry
@@ -418,7 +418,8 @@ the proxy's network namespace and uses `127.0.0.1:8080`. Proxy and jobservice
 startup waits for the candidate core's health check. Eight
 identical OCI child descriptors must survive a push and complete pull unchanged,
 including the child manifest and both blobs. The PostgreSQL query requires one
-parent/child relation. Temporary credentials, containers, network and data are
+parent/child relations for the four unique child digests. Temporary credentials,
+containers, network and data are
 fixture-owned and removed on exit. This gate uses no production inputs; passing
 it remains separate from original full-catalog and live publication acceptance.
 
@@ -429,7 +430,7 @@ flowchart TD
     Repair --> Compile["Pass manager tests and compile core"]
     Compile --> Candidate["Build held runtime candidate"]
     Candidate --> Registry["Push and pull unchanged repeated index in disposable Harbor"]
-    Registry --> Database["Require one PostgreSQL child relation"]
+    Registry --> Database["Require four PostgreSQL child relations"]
 ```
 
 The candidate's build gate checks original failure and repaired behavior before
@@ -446,6 +447,8 @@ On 2026-10-11, [candidate CI at `e3f58417`](https://github.com/Stuhlmuller/homel
 passed Linux build and the isolated registry/PostgreSQL fixture: eight index
 descriptors, child manifest and both blobs remained unchanged, with one database
 relation. This is fixture acceptance, not full-catalog publication or deployment.
+The current fixture requires four relations; the dated receipt does not prove
+that tightened gate passed.
 The [sanitized fixture receipt](../../docs/evidence/harbor-core-registry-fixture-2026-10-11.json)
 retains the job/head/index identities and log hash without runtime credentials.
 

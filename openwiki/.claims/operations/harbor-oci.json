@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:78b909d929fc1a93566f2c18abeaa0d10836c9cec2b558a24be0b88907bc9bad",
+  "pageVersion": "sha256:2b85257660c726fc55110ece8de73012eded2d6d08807ea71b6805f1680e7590",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -182,7 +182,7 @@
     },
     {
       "id": "claim_33f0785e94cc44d1b38d2bcc1a07ca0a",
-      "statement": "The candidate build invokes a disposable pinned Harbor v2.15.4 stack without host ports on an internal service network. Its test client shares the proxy network namespace and uses loopback, while proxy and jobservice await core health. It requires unchanged push/pull of an eight-descriptor repeated OCI index and all child content plus exactly one PostgreSQL relation, then cleans fixture-owned credentials and resources without production inputs.",
+      "statement": "The candidate build invokes a disposable pinned Harbor v2.15.4 stack without host ports on an internal service network. Its test client shares the proxy network namespace and uses loopback, while proxy and jobservice await core health. It requires unchanged push/pull of an eight-descriptor repeated OCI index and all child content plus exactly four PostgreSQL parent/child relations, then cleans fixture-owned credentials and resources without production inputs.",
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/build.sh",
@@ -190,7 +190,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:ec2fd0a31011e43321f1c223456b22e9ac8520315568c7a04b052e7a8be446a8"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         }
       ]
     },
@@ -210,11 +210,11 @@
     },
     {
       "id": "claim_5af1526905384439aca41e79c4964956",
-      "statement": "The sanitized 2026-10-11 registry fixture receipt records successful candidate CI at e3f58417, including Linux image build, original failure and repaired manager tests, unchanged registry push/pull of eight descriptors plus child manifest and every blob, and one PostgreSQL parent/child relation. It retains the job URL, source head, index digest and log hash while denying publication, deployment and CVE-clearance acceptance.",
+      "statement": "The sanitized 2026-10-11 registry fixture receipt records successful candidate CI at e3f58417, including Linux image build, original failure and repaired manager tests, unchanged registry push/pull of eight descriptors plus child manifest and every blob, and one PostgreSQL relation. That dated receipt does not prove the current tightened four-relation fixture passed; it also denies publication, deployment and CVE-clearance acceptance.",
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:ec2fd0a31011e43321f1c223456b22e9ac8520315568c7a04b052e7a8be446a8"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json",
@@ -511,6 +511,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:47:46.085Z"
+    "at": "2026-10-17T19:19:00.714Z"
   }
 }

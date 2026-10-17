@@ -126,10 +126,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T18:47:46.085Z" }
+generated: { by: "codex", at: "2026-10-17T19:19:00.714Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:07:19.170Z
+    at: 2026-10-17T19:19:00.714Z
 ---
 
 # Validation Gates
@@ -1623,8 +1623,9 @@ offline OCI fixture still verifies multi-platform and repeated-descriptor
 byte preservation with network transports rejected.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
-with exactly one database relation. Offline fixtures also validate the OCI
-payload hashes, reject upload locations outside the disposable endpoint, and
+with exactly four parent/child database relations. Offline fixtures also
+validate the OCI payload hashes, reject upload locations outside the disposable
+endpoint, and
 require no published host ports, internal networking and core health ordering.
 The registry client shares the proxy's network namespace and uses its loopback
 listener; this avoids publishing a port from an internal-only Docker bridge.
