@@ -11,6 +11,7 @@ from pathlib import Path
 spec = importlib.util.spec_from_file_location("check", Path(__file__).with_name("harbor-images-check.py"))
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
+real_yaml_documents = check.yaml_documents
 # Shared stack defaults and sparse sources must not hide chart upgrades from
 # the image inventory gate. A chart needs no Helm overrides to deploy.
 with tempfile.TemporaryDirectory() as directory:
@@ -304,6 +305,20 @@ with tempfile.TemporaryDirectory() as directory:
         target = root / "clusters/homelab/apps/kiali/values.yaml"
         target.parent.mkdir(parents=True)
         target.write_text("image: fixture\n")
+        other = root / "clusters/homelab/apps/other/values.yaml"
+        other.parent.mkdir(parents=True)
+        unrelated_native = f'harbor.stinkyboi.com/homelab/chainguard/python@sha256:{"a" * 64}'
+        other.write_text(f'image: {unrelated_native}\n')
+        check.yaml_documents = real_yaml_documents
+        assert check.native_references_by_path([target, other]) == {
+            "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
+        }
+        other.write_text(f'image:\n  registry: harbor.stinkyboi.com\n'
+                         f'  repository: homelab/chainguard/python\n  digest: sha256:{"a" * 64}\n')
+        assert check.native_references_by_path([other]) == {
+            "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
+        }
+        check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
         consumer = next(item for item in config["consumers"]
                         if item["image_id"] == "chainguard-curl")
@@ -361,10 +376,15 @@ with tempfile.TemporaryDirectory() as directory:
         }}}))
         assert check.receipt_errors() == []
         exact_native = f'{plan["destination_repository"]}@{receipt["destination_digest"]}'
-        assert check.receipt_errors({exact_native}) == []
+        target_path = consumer["target"]
+        assert check.receipt_errors({target_path: {exact_native}}) == []
+        assert check.receipt_errors({"/clusters/homelab/apps/other/values.yaml": {exact_native}}) == [
+            f"Declared native Chainguard reference lacks migrated consumer: /clusters/homelab/apps/other/values.yaml: {exact_native}"
+        ]
         rogue_native = f'{plan["destination_repository"]}@sha256:{"0" * 64}'
-        assert check.receipt_errors({rogue_native}) == [
-            f"Declared native Chainguard reference lacks verified receipt: {rogue_native}"
+        assert check.receipt_errors({target_path: {rogue_native}}) == [
+            f"Declared native Chainguard reference lacks migrated consumer: {target_path}: {rogue_native}",
+            f"Declared native Chainguard reference lacks verified receipt: {target_path}: {rogue_native}",
         ]
         assert rogue_native in check.embedded_yaml_images(container_fragment(rogue_native))
 

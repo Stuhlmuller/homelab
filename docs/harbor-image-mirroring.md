@@ -49,6 +49,8 @@ consumer. A later reviewed migration must add namespace pull authorization,
 compatibility evidence, imported protected receipt state, and a direct,
 digest-pinned private reference such as
 `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
+The image gate requires that reference in the declared target of a migrated
+consumer, with the exact receipt-backed digest.
 Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.
@@ -165,8 +167,10 @@ retain registry blobs together with Harbor database/encryption-key backups.
    bounded receipt artifact. Import it only through a receipt-state-only pull
    request. The trusted provenance workflow rechecks each changed entry against
    the exact protected Actions artifact and records its provenance; it does not
-   migrate a consumer or deploy a workload. An unchanged historic entry remains
-   valid if its artifact later expires, but changing it requires a fresh
+   migrate a consumer or deploy a workload. Its PR and main-push checks run
+   serially so an older result cannot overwrite a newer base check. Unchanged
+   historic entries remain valid if their artifacts later expire, but changing
+   one requires a fresh
    verifiable artifact. First let the provenance context run on `main` and add
    it as a required production ruleset check; do not import receipt state or
    migrate a consumer before that enforcement is live.

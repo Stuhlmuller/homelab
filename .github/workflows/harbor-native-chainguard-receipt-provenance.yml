@@ -10,6 +10,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: native-chainguard-receipt-provenance
+  cancel-in-progress: false
+
 jobs:
   verify:
     name: Native Chainguard Receipt Provenance

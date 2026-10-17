@@ -195,6 +195,22 @@ def embedded_yaml_images(value):
     return images
 
 
+def native_references_by_path(paths):
+    prefixes = ("harbor.stinkyboi.com/homelab/chainguard/",
+                "harbor.stinkyboi.com/homelab/chainguard-")
+    declared = {}
+    for path in paths:
+        content = path.read_text()
+        if "harbor.stinkyboi.com" not in content or "chainguard" not in content:
+            continue
+        source = yaml_documents([path])
+        references = {image for image in declared_images(source)[0] | embedded_yaml_images(source)
+                      if image.startswith(prefixes)}
+        if references:
+            declared["/" + str(path.relative_to(ROOT))] = references
+    return declared
+
+
 def native_receipt_plans(config):
     """Build the fixed native import contract once for all enrolled consumers."""
     return {
@@ -206,7 +222,7 @@ def native_receipt_plans(config):
     }
 
 
-def receipt_errors(declared_native=()):
+def receipt_errors(declared_native=None):
     """Enrolled consumers require verified publication; native candidates need protected evidence."""
     if not AUTOMATION.exists() or not AUTOMATION_STATE.exists():
         return []
@@ -282,12 +298,18 @@ def receipt_errors(declared_native=()):
                 native_plans = {}
         expected = {f'{plan["destination_repository"]}@{plan["source_digest"]}': image_id
                     for image_id, plan in native_plans.items()}
-        for reference in sorted(declared_native):
-            image_id = expected.get(reference)
-            entry = receipts.get(image_id) if image_id else None
-            if (image_id is None or not isinstance(entry, dict)
-                    or not NATIVE_RECEIPT_IMPORT.verify_imported_receipt(native_plans[image_id], entry)[0]):
-                errors.append(f"Declared native Chainguard reference lacks verified receipt: {reference}")
+        for path, references in sorted(declared_native.items()):
+            for reference in sorted(references):
+                image_id = expected.get(reference)
+                entry = receipts.get(image_id) if image_id else None
+                migrated = any(consumer.get("target") == path and consumer.get("image_id") == image_id
+                               and consumer.get("migration_status") == "migrated"
+                               for consumer in config.get("consumers", []))
+                if not migrated:
+                    errors.append(f"Declared native Chainguard reference lacks migrated consumer: {path}: {reference}")
+                if (image_id is None or not isinstance(entry, dict)
+                        or not NATIVE_RECEIPT_IMPORT.verify_imported_receipt(native_plans[image_id], entry)[0]):
+                    errors.append(f"Declared native Chainguard reference lacks verified receipt: {path}: {reference}")
     return errors
 
 
@@ -324,10 +346,7 @@ def check():
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
     documents = yaml_documents(paths)
     images, digests = declared_images(documents)
-    native_prefixes = ("harbor.stinkyboi.com/homelab/chainguard/",
-                       "harbor.stinkyboi.com/homelab/chainguard-")
-    declared_native = {image for image in images | embedded_yaml_images(documents)
-                       if image.startswith(native_prefixes)}
+    declared_native = native_references_by_path(paths)
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/")
                      and normalize(image) not in known | known_tags)

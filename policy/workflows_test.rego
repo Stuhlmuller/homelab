@@ -53,6 +53,13 @@ test_allows_exact_native_receipt_provenance_workflow if {
 	count(violations) == 0
 }
 
+test_rejects_native_receipt_provenance_without_serialization if {
+	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": true}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
 test_rejects_native_receipt_provenance_with_write_permission if {
 	base := native_receipt_provenance_fixture
 	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {
@@ -641,6 +648,7 @@ workflow_with_images(docker_action, job_container, service_image) := {
 
 native_receipt_provenance_fixture := {
 	"name": "Verify Native Chainguard Receipt Provenance",
+	"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false},
 	"true": {
 		"push": {"branches": ["main"]},
 		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]},

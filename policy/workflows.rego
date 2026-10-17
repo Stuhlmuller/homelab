@@ -193,8 +193,9 @@ workflow_events := object.get(input, "on", object.get(input, "true", object.get(
 # This checker runs only trusted base-branch code and reads a receipt-only PR
 # as bounded API data. Any shape change must also update the exact workflow hash.
 native_receipt_provenance_workflow if {
-	count(input) == 4
+	count(input) == 5
 	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
+	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false}
 	workflow_events == {
 		"push": {"branches": ["main"]},
 		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize"]},
