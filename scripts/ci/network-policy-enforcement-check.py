@@ -236,12 +236,17 @@ def main():
                         connection.kill()
                         connection.communicate(timeout=10)
             worker_agent = next(agent for agent in agents if agent["spec"]["nodeName"] == CLUSTER + "-worker")
-            daemonset = json.loads(run(*kubectl, "-n", "kube-system", "get", "daemonset", "kube-network-policies", "-o", "json"))
-            daemonset["spec"]["template"]["spec"]["nodeSelector"] = {"kubernetes.io/hostname": CLUSTER + "-control-plane"}
-            run(*kubectl, "-n", "kube-system", "apply", "-f", "-", input=json.dumps(daemonset))
-            run(*kubectl, "-n", "kube-system", "wait", "--for=delete", "pod/" + worker_agent["metadata"]["name"], "--timeout=120s")
-            for address in targets["blocked"]:
-                assert probe(address, 9090).returncode == 7, "Selected flow bypassed policy after worker enforcer stopped"
+            agent_state = json.loads(run(*kubectl, "-n", "kube-system", "get", "pod", worker_agent["metadata"]["name"], "-o", "json"))
+            container_id = agent_state["status"]["containerStatuses"][0]["containerID"].removeprefix("containerd://")
+            node = CLUSTER + "-worker"
+            pid = json.loads(run("docker", "exec", node, "crictl", "inspect", container_id))["info"]["pid"]
+            assert isinstance(pid, int) and pid > 1, "Worker enforcer PID unavailable"
+            run("docker", "exec", node, "kill", "-STOP", str(pid))
+            try:
+                for address in targets["blocked"]:
+                    assert probe(address, 9090).returncode == 7, "Selected flow bypassed policy while worker enforcer stopped"
+            finally:
+                run("docker", "exec", node, "kill", "-CONT", str(pid))
             print(f"Passed {count} dual-stack destination/port/protocol checks, Service/DNS access, first-packet isolation, established-connection revocation and agent-loss denial", flush=True)
         except Exception:
             for args in (("get", "pods", "-A", "-o", "wide"),

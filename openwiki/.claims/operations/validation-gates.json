@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b5e53604554350e0f9376cf63b0346fa2ecbd5c64aa1c6fd9d6e4b02b8b358fb",
+  "pageVersion": "sha256:9beebb3572c523c08e9e9f3ea67ea13a8e9cde64e32db87f1b1be83f759af0f5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -556,7 +556,7 @@
     },
     {
       "id": "claim_3bcacc817cdd496c9ffc824a7a01b5ca",
-      "statement": "The validate workflow runs a 30-minute disposable dual-stack Kind network-policy job on pull requests and main pushes. It checks unrestricted baseline traffic, NRI registration, denied startup connections, allowed Service/DNS access, established-connection revocation, and denial after the worker enforcer stops. Passing proves only the fixture behavior, not production Flannel enforcement or rollout acceptance.",
+      "statement": "The validate workflow runs a 30-minute disposable dual-stack Kind network-policy job on pull requests and main pushes. It checks unrestricted baseline traffic, NRI registration, denied startup connections, allowed Service/DNS access, established-connection revocation, and denial while the worker enforcer process is paused without cleanup. Passing proves only the fixture behavior, not production Flannel enforcement or rollout acceptance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -568,13 +568,13 @@
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
-          "version": "repo-file-v1:sha256:b6be54c7cef217ddcdeede5dbc156342f2ed01c9822a9cca8c056f47a19360ed"
+          "version": "repo-file-v1:sha256:7c609cc0163c4147695ba37c6f752fe5a1785d09277da9de7392aaaa436f16d4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:17:54.523Z"
+    "at": "2026-10-17T20:24:37.970Z"
   }
 }

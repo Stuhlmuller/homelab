@@ -122,10 +122,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T20:17:54.523Z" }
+generated: { by: "codex", at: "2026-10-17T20:24:37.970Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:17:54.523Z
+    at: 2026-10-17T20:24:37.970Z
 ---
 
 # Validation Gates
@@ -409,8 +409,8 @@ runs a 30-minute disposable dual-stack Kind
 [enforcement check](../../scripts/ci/network-policy-enforcement-check.py) on
 pull requests and `main` pushes. It checks that unrestricted baseline traffic
 works, then tests NRI registration, denied first connections, allowed Service
-and DNS traffic, established-connection revocation, and denial after the worker
-enforcer stops. A failed job blocks its validation result; a passing fixture
+and DNS traffic, established-connection revocation, and denial while the worker
+enforcer process is paused without cleanup. A failed job blocks its validation result; a passing fixture
 does not establish production Flannel enforcement or approve a worker rollout.
 
 The additive cutover utilities have focused static tests for fixed DNS ownership,
