@@ -1,0 +1,10 @@
+# Source-only prerequisite for a future isolated policy-enforcement canary.
+# Do not apply this fragment to a shared worker.
+machine:
+  files:
+    - path: /etc/cri/conf.d/30-nri.part
+      op: create
+      permissions: 0o644
+      content: |
+        [plugins."io.containerd.nri.v1.nri"]
+          disable = false
