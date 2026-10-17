@@ -7,9 +7,8 @@ import importlib.util
 import json
 import sys
 import tempfile
-import unittest
 from pathlib import Path
-from unittest import mock
+from unittest import TestCase, main, mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,7 +61,7 @@ def scan_receipt(plan):
             "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"}}
 
 
-class VerificationTests(unittest.TestCase):
+class VerificationTests(TestCase):
     def setUp(self):
         self.raw = index()
         self.config, self.replication, self.catalog = configuration(self.raw)
@@ -121,7 +120,7 @@ def artifact(digest, platform, counts=None, status="Success"):
                               "summary": {"summary": counts if counts is not None else {"Critical": 0, "High": 0}}}}}
 
 
-class ScanReceiptTests(unittest.TestCase):
+class ScanReceiptTests(TestCase):
     def setUp(self):
         self.config, self.replication, self.catalog = configuration(index())
         self.plan = VERIFY.selected_plan(self.config, self.replication, self.catalog, "chainguard-python")
@@ -263,4 +262,4 @@ class ScanReceiptTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
