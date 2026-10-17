@@ -34,10 +34,10 @@ CHAINGUARD_REPLICATION = {
     "paused": False,
     "rules": (
         {"repository": "chainguard/python", "source_tag": "latest",
-         "destination": "homelab/chainguard-python", "override": True,
+         "destination": "homelab/chainguard/python", "override": True,
          "delete": False, "flatten": False, "access_class": "public"},
         {"repository": "chainguard/curl", "source_tag": "latest",
-         "destination": "homelab/chainguard-curl", "override": True,
+         "destination": "homelab/chainguard/curl", "override": True,
          "delete": False, "flatten": False, "access_class": "public"},
     ),
 }
@@ -88,6 +88,8 @@ def validate_replication_policy(policy=CHAINGUARD_REPLICATION):
             raise BootstrapError("Chainguard replication rule fields are not explicit")
         if not re.fullmatch(r"chainguard/[a-z0-9][a-z0-9.-]*", rule["repository"]):
             raise BootstrapError("Chainguard replication repository is not exact")
+        if rule["destination"] != "homelab/" + rule["repository"]:
+            raise BootstrapError("Chainguard destination must preserve the source path")
         if rule["repository"] in repositories or rule["destination"] in destinations:
             raise BootstrapError("Chainguard replication rules must be unique")
         repositories.add(rule["repository"])

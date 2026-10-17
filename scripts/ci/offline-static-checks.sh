@@ -333,6 +333,45 @@ yq -e '
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"
 
+echo "::group::Kiali shell-free Prometheus readiness"
+kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e '
+    [
+      .cr.spec.deployment.additional_pod_init_containers_yaml[]
+      | select(.name == "wait-for-prometheus")
+    ] | (
+      length == 1 and
+      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      .[0].imagePullPolicy == "IfNotPresent" and
+      .[0].command == ["curl"] and
+      .[0].args == [
+        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
+        "--retry-delay", "5", "--retry-all-errors",
+        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
+      ] and
+      .[0].securityContext.runAsUser == 100 and
+      .[0].securityContext.runAsGroup == 101 and
+      .[0].securityContext.runAsNonRoot == true and
+      .[0].securityContext.allowPrivilegeEscalation == false and
+      .[0].securityContext.privileged == false and
+      .[0].securityContext.readOnlyRootFilesystem == true and
+      .[0].securityContext.capabilities.drop == ["ALL"] and
+      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
+    )
+  ' >/dev/null
+jq -e '
+  [
+    .consumers[]
+    | select(.consumer_id == "kiali-prometheus-readiness")
+  ] |
+  length == 1 and
+  .[0].image_id == "chainguard-curl" and
+  .[0].migration_status == "candidate" and
+  .[0].automation_status == "not-enrolled"
+' clusters/homelab/apps/harbor/image-automation.json >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -989,7 +1028,7 @@ while read -r source expected_hash; do
   }
 done <<'EOF'
 scripts/ci/harbor-native-chainguard-receipt-import.py e36c7e23a323dccc474964077e37f1968d92b3e8aafb065428b016e474969659
-scripts/ci/harbor-native-chainguard-receipt.py 87dec41a885f95e6ab430909f314b767882cf93b748393f56d0bb7a0cb32dfc1
+scripts/ci/harbor-native-chainguard-receipt.py eee7fc668f177daf4e88291d947fca7fa87aeb00a4b3af70f664b524467ea4dc
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '

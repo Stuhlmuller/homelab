@@ -13,8 +13,8 @@ consumer to the public `mirror` project.
 
 Native Harbor replication is currently limited to
 `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest`, which
-it imports into private `homelab/chainguard-python:latest` and
-`homelab/chainguard-curl:latest` repositories. After bootstrap has reconciled
+it imports into private `homelab/chainguard/python:latest` and
+`homelab/chainguard/curl:latest` repositories. After bootstrap has reconciled
 those rules, the protected
 `harbor-native-chainguard-receipt.yml` workflow must run from exact current
 `main`. Its receipt is bound to the per-image native import contract: the
@@ -48,7 +48,7 @@ artifact. This importer design does not deploy a workload or migrate a
 consumer. A later reviewed migration must add namespace pull authorization,
 compatibility evidence, imported protected receipt state, and a direct,
 digest-pinned private reference such as
-`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+`harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 Before any receipt-state import or migration, the provenance context must first
 run successfully on `main` and be required by the production GitHub ruleset.
 The bootstrap workflow alone does not unlock a consumer.
@@ -150,7 +150,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    No application consumes these `mirror` copies. Python and curl need a
    successfully imported protected native receipt before a reviewed
    compatibility migration may reference a private direct digest such as
-   `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+   `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 
    After that public source copy and Harbor's native Python/curl replication
    have both completed, verify the private imports from exact reviewed current
