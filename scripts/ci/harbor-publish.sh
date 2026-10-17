@@ -2,19 +2,27 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon' >&2
+[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == publish-cordium-nocturne || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|publish-cordium-nocturne|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon' >&2
   exit 2
 }
 mode="$1"
-core_publication=false
+single_publication=false
 publish_names=(homelab-nofx-backend homelab-nofx-frontend)
 if [[ "$mode" == publish-harbor-core ]]; then
-  core_publication=true
+  single_publication=true
   mode=publish
   publish_names=(homelab-harbor-core)
+  publication_output=core
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
+elif [[ "$mode" == publish-cordium-nocturne ]]; then
+  single_publication=true
+  mode=publish
+  publish_names=(homelab-cordium-nocturne)
+  publication_output=nocturne
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/cordium-nocturne-publish.yml@refs/heads/main ]]
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
@@ -350,7 +358,7 @@ if [[ "$mode" == publish ]]; then
     jq --argjson subjects "$signing_subjects" \
       'del(.metadata.name) | .metadata.generateName = "harbor-sign-" |
        .spec.template.spec.initContainers[1].args += $subjects' >"$scratch/signing-job.json"
-  if "$core_publication"; then
+  if "$single_publication"; then
     signer_image=harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18
     jq --arg image "$signer_image" \
       '.spec.template.spec.initContainers |= map(.image = $image) |
@@ -385,10 +393,10 @@ fi
 # Publish only allowlisted references after transfer and required acceptance pass.
 if [[ "$mode" == publish ]]; then
   mapfile -t published_refs <"$scratch/verified-digests"
-  if "$core_publication"; then
+  if "$single_publication"; then
     [[ "${#published_refs[@]}" -eq 1 ]]
-    [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-harbor-core:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-    printf 'core=%s\n' "${published_refs[0]}" >>"$GITHUB_OUTPUT"
+    [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[0]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    printf '%s=%s\n' "$publication_output" "${published_refs[0]}" >>"$GITHUB_OUTPUT"
   else
   [[ "${#published_refs[@]}" -eq 2 ]]
   [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]

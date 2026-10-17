@@ -52,3 +52,30 @@ configuration through the guarded [control-plane workflow](../../docs/talos-cont
 adding `--patch @.talos/patches/controlplane-cordium-user-namespaces.yaml`, validate
 with `talosctl validate --mode metal --strict`, and review its dry-run diff.
 Never apply the teaching configuration.
+
+The pinned Supervisor creates UID/GID 543210 and allocates 65536 subordinate IDs
+starting at 543211 (ending at 608746). Kubernetes defaults to only 65536 IDs per
+Pod, which cannot represent that range. Both Cordium Talos patches therefore set
+`machine.kubelet.extraConfig.userNamespaces.idsPerPod: 1048576`. Kubernetes 1.34
+[supports this setting](https://v1-34.docs.kubernetes.io/docs/concepts/workloads/pods/user-namespaces/#id-count-for-each-of-pods).
+Apply and verify this configuration on every eligible node before rolling out
+`hostUsers: false`; changing the sysctl alone is insufficient. Existing running
+Pods keep their mappings. Requiring a larger ID range preserves the Supervisor's
+UID and existing volume ownership; do not renumber users or chown original PVCs.
+
+## Protected publication
+
+After source merge and successful Linux build validation, dispatch
+`cordium-nocturne-publish.yml` with `expected_sha` equal to exact current `main`.
+The workflow builds before receiving credentials and rechecks main before the
+existing production credential lane. `publish-cordium-nocturne` accepts only that
+workflow on main and publishes only
+`harbor.stinkyboi.com/homelab/homelab-cordium-nocturne:homelab-<SHA>`.
+It verifies a complete authenticated pull, signs inside the cluster, verifies the
+enrolled public-key fingerprint/signature, and emits the validated immutable
+reference as a public artifact. No private signing key is exported to CI.
+
+Keep the consuming Deployment change separate until that artifact exists.
+A successful diagnostic build alone is not a publication or runtime acceptance.
+This publication uses the existing Octelium CI transport until its replacement
+passes its own acceptance gates. It neither retires routes nor changes credentials.
