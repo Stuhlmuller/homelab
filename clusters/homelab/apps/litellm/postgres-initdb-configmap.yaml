@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-postgres-initdb
+  namespace: ai
+data:
+  00-create-litellm-database.sh: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    app_password="$(cat /run/secrets/litellm-postgres/POSTGRES_APP_PASSWORD)"
+
+    psql \
+      -v ON_ERROR_STOP=1 \
+      -v app_password="$app_password" \
+      --username "$POSTGRES_USER" \
+      --dbname "$POSTGRES_DB" <<'SQL'
+    CREATE USER litellm WITH PASSWORD :'app_password';
+    CREATE DATABASE litellm OWNER litellm;
+    GRANT ALL PRIVILEGES ON DATABASE litellm TO litellm;
+    \connect litellm
+    GRANT ALL ON SCHEMA public TO litellm;
+    ALTER SCHEMA public OWNER TO litellm;
+    SQL

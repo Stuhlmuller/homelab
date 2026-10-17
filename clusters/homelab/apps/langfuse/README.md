@@ -31,6 +31,8 @@ Treat state recovery as unverified until a restore procedure and drill exist.
 ## Web memory
 
 Web memory request and limit are both `2Gi`; CPU and worker resources are unchanged.
+The worker cannot schedule on `zimaboard-2`: its 1 GiB limit can overwhelm that
+worker's 1.28 GiB allocatable memory alongside node services and PostgreSQL.
 The pinned image uses Node 24 with no runtime heap override. Reserve the full
 container budget so scheduling accounts for memory beyond the JavaScript heap.
 The pinned-chart check verifies both rendered web memory values.
@@ -51,6 +53,11 @@ The web container applies database schema upgrades before starting HTTP. Chart
 withholds traffic until the app is ready. The pinned-chart regression verifies
 this allowance and rendered replica counts.
 
+The worker chart has no startup or readiness probe. On `zimaboard-0`, its
+default 20-second liveness delay killed the process before port 3030 opened.
+Allow 180 seconds before liveness checks; verify `/api/health` and stable restart
+count after rollout because Pod readiness alone does not prove worker startup.
+
 `recovery-pvc.yaml` retains the `langfuse-migration-recovery` claim with
 `Prune=false,Delete=false`. Its private artifacts contain database DDL and
 schema history; do not remove this claim during workload cleanup. It is on the
@@ -66,6 +73,98 @@ schema versions, or replay historical recovery commands against live data.
 nix develop --command bash scripts/ci/langfuse-startup-check.sh
 kubectl -n langfuse get pvc langfuse-migration-recovery
 ```
+
+## Valkey offline capture and candidate inspection
+
+On October 10, 2026, the pinned Valkey 8.0.11 process rejected
+`appendonly.aof.4.incr.aof` as malformed after loading its base RDB. The worker
+restarted repeatedly. HTTP readiness of the web service does not prove event
+ingestion while the queue is unavailable.
+
+[`scripts/langfuse-valkey-recovery.py`](../../../../scripts/langfuse-valkey-recovery.py)
+supports separate capture and explicitly approved promotion modes. Capture
+required a read-only inspector; promotion used a writable inspector while web,
+worker and Valkey replicas stayed at zero. The inspector had no credentials,
+API token or network access; its image root was read-only. The prior revision
+pruned it before this writer restart. PostgreSQL, ClickHouse and all retained
+claims are unchanged. UI and ingestion need live verification after restoration.
+
+For the completed inspection, build the matching checker from the official
+Valkey 8.0.11 source at commit
+`4bf1df6441949d70b38e748ffe39daaca9f6f89c`, using
+`make -j4 MALLOC=libc BUILD_TLS=no valkey-check-aof`. Capture ran from a clean
+checkout of the exact merged read-only-inspector revision after both PVC and
+volume-mount `readOnly` fields were true and all three writers had stopped.
+The following capture command is historical; without that inspected revision
+and Pod it cannot run against current `main`.
+
+```sh
+python3 -I scripts/langfuse-valkey-recovery.py \
+  --capture-cluster --expected-sha '<merged-main-sha>' \
+  --destination /private/durable-off-nas/new-valkey-inspection \
+  --checker /private/valkey-8.0.11/src/valkey-check-aof
+```
+
+The destination must not exist; its parent must exist on durable private
+off-NAS storage with room for five copies plus 64 MiB. Do not use an ephemeral
+temporary directory. The helper checks the canonical cluster endpoint, stopped
+Deployments, absence of writer Pods, and the inspector's read-only mount before
+capture. It streams `original.tar` locally and verifies source hashes and Pod
+identity again afterward. The private (0700) directory retains that archive,
+its SHA-256 digest, extracted `source`, and `inspection/` containing an
+unmodified `original`, separately repaired `candidate`, checker logs and
+`report.json`. Source changes, unsafe archive/manifest paths, reused destinations,
+checker errors and invalid candidates fail closed. Only the candidate is ever
+passed to `--fix`. The report measures discarded bytes, not lost event count;
+inspect it privately before requesting approval for a live replacement. Keep a
+separate off-NAS backup: a directory on the same NAS is not disaster recovery.
+
+On October 10, the operator approved the verified prefix repair: only
+`appendonlydir/appendonly.aof.4.incr.aof` changes, from 10,328,329 to
+9,987,809 bytes (340,520 bytes discarded). This does not quantify lost events.
+The following command was run from the clean, exact merged promotion revision
+while the writable inspector was present. It cannot be rerun from current
+`main` because the inspector was removed:
+
+```sh
+python3 -I scripts/langfuse-valkey-recovery.py \
+  --promote-cluster /private/durable-off-nas/existing-valkey-inspection \
+  --expected-sha '<merged-main-sha>' --approved-discarded-bytes 340520
+```
+
+Promotion verifies the archive checksum and contents, unchanged original,
+candidate hashes, one prefix-only truncation and exact approved byte loss.
+It requires all writers stopped, the expected PVC/image and a writable
+inspector without credentials. It uploads a private staging file, rechecks
+Pod identity and original/staged hashes, then atomically renames that one file.
+It never runs `--fix` against live data and never starts writers. A retry
+accepts an exact already-promoted set; drift or unexpected staging files stop
+recovery. Keep writers stopped on failure and inspect retained files before
+retrying. Do not restore the corrupt original and restart it as rollback.
+
+On October 10, the approved candidate was installed and its live hashes
+verified. The first GitOps follow-up removed the inspector while all writers
+remained stopped. Argo observed merged `836e7f0f`, pruned the inspector, and
+reported Synced/Healthy at 22:05 UTC; no Pod mounted
+`langfuse-valkey-data`. PR #1261 then restored global/web/worker and Valkey
+replicas to one. Valkey loaded both the base RDB and repaired incremental AOF,
+reported Ready, and stayed restart-free; web and worker reached 1/1 Ready, with
+Argo Synced/Healthy at `ee807517`. Four fresh service-key generations appeared
+in Langfuse with correct caller attribution, route and usage. Preserve the
+private original and all PVCs until an independent restore drill; the 340,520
+discarded bytes cannot be translated to an event count. Native caller actions
+and browser UI remain separate acceptance gates. Safety tests cover offline
+guards and candidate
+isolation. Run the native checker fixture with
+`python3 -I scripts/ci/langfuse-valkey-recovery-test.py --checker <checker-path>`;
+synthetic corruption tests do not establish production recovery.
+
+The recovered worker still logs a periodic `V4LegacyApiUsageJob` error because
+its `system.query_log` query targets a table detached by the diagnostic
+quarantine below. Fresh generation ingestion succeeded; repair that job's
+compatibility separately before treating worker logs as clean.
+
+Source: [Valkey persistence and AOF corruption](https://valkey.io/topics/persistence/).
 
 ## ClickHouse diagnostic quarantine
 
@@ -190,20 +289,25 @@ scripts/octelium-e2e-check.sh
 
 ## Caller activation
 
-This change stages Langfuse and its credentials first. Existing OpenClaw and
-LiteLLM runtime configuration stays unchanged: an asynchronous protected
+This section records the original staged activation. Current gateway routing,
+credentials, and acceptance checks are documented in the
+[LiteLLM runbook](../litellm/README.md#validation-and-rollout).
+
+The initial rollout staged Langfuse and its credentials first. OpenClaw and
+LiteLLM runtime configuration stayed unchanged: an asynchronous protected
 apply must not race a caller restart requiring credentials that do not exist.
-The old OpenClaw gateway token still aliases the operator master key; the new
-`/homelab/openclaw/litellm-app-token` is provisioned independently. Do not rotate
-the old parameter during staging.
+At that stage, the old OpenClaw gateway token aliased the operator master key;
+`/homelab/openclaw/litellm-app-token` was provisioned independently. The staging
+procedure preserved the old parameter.
 
 Before a follow-up activation PR:
 
 1. Complete the protected full `Terragrunt Apply` or its dependency-aware
    `argocd_app=langfuse` dispatch described above. Both plan/policy-check and
    apply SSM/S3 producers before registering Langfuse.
-2. Reconcile the separate Octelium Service and public DNS paths. Terragrunt does
-   not apply either. The existing `homelab-human-web-access` Policy must already
+2. Follow the [private ingress cutover](../traefik/CUTOVER.md) for the canonical
+   Langfuse hostname. The following native Service command is retained legacy
+   recovery only; Terragrunt does not apply it. The `homelab-human-web-access` Policy must already
    exist. Install the pinned client through `scripts/install-octeliumctl.sh` and
    use an existing native operator login. Preview from a trusted checkout:
 
@@ -236,23 +340,17 @@ Before a follow-up activation PR:
    CLI errors reported with exit zero. Do not add `--prune`. Repair or roll back
    the declared Service through a reviewed PR and rerun the helper; removing
    the helper does not remove the live Service or bypass its human policy.
-   Wait for Argo CD's `octelium-public` Application to be
-   Synced/Healthy with the new tunnel pod revision before dispatching DNS:
-
-   ```sh
-   gh workflow run octelium-public-tunnel.yml --ref main -f expected_sha='<reviewed-main-sha>'
-   ```
-
-   Obtain normal `homelab-production` approval and require that exact run to
-   succeed. If `main` changed, review the new commit before redispatching; do
-   not bypass SHA or environment gates or edit DNS in the provider console.
+   The old public DNS writer and restoration workflow are removed. Use the
+   staged DNS helper after Traefik, signed mesh peers and backend readiness pass;
+   preserve legacy runtime routes until replacement acceptance. Never recreate
+   public app CNAMEs or edit DNS directly in a provider console.
 3. Verify the Langfuse Application is Synced/Healthy, datastore and retained
    recovery PVCs are Bound, the project is initialized, and the authenticated
-   UI opens through Octelium.
+   UI opens from the mesh through Traefik with Langfuse authentication.
    Verify `langfuse-secrets` and `litellm-app-keys`
    ExternalSecrets are Ready without printing their values.
-   Run `nix develop --command python3 scripts/octelium-tunnel-check.py` and
-   `scripts/octelium-e2e-check.sh`; DNS/catalog/backend or login failures block
+   Run the staged canonical DNS/TLS and application checks; the old Tunnel/e2e
+   probes describe legacy recovery only. DNS/backend or login failures block
    caller activation. An unauthenticated redirect alone is not UI acceptance.
 4. Implement caller activation in a separate PR. This foundation intentionally
    contains no activation patch or gateway callback implementation: the prior
@@ -269,7 +367,8 @@ Before a follow-up activation PR:
 5. After activation, verify one real OpenClaw free-model turn and gateway request
    produce correlated traces with expected provider/model, content and available
    usage. Preserve `openrouter/free` for interactive turns, heartbeat and
-   schedules, along with the retained Astra OAuth recovery metadata. Complete
+   schedules; keep retired OpenAI/Codex plugins disabled and private historical
+   credentials intact. Complete
    the separate n8n migration through its managed OpenAI credential and verify
    its own correlated generation.
 6. Activate NOFX separately using its

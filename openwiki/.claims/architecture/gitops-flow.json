@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f8f00b9d1c9bb47787af6b91409a12ce38dc881537463b440e7b0054581d5776",
+  "claims": [
+    {
+      "id": "claim_0f406983655244d4a8a09171533840a5",
+      "statement": "The Tailscale ingress foundation registers Traefik through Argo CD while the operator-only Tailscale unit owns full-policy adoption and three scoped CI auth keys with committed rotation generations; Tailnet Lock remains enabled and dormant federated identities stay protected until final migration retirement.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+        },
+        {
+          "resource": "repo://IaC/modules/tailscale-access/main.tf",
+          "version": "repo-file-v1:sha256:a252bd4eb32ef86b5c10c3d33be6db8357b054e3e03f990e6d7387154f3d0512"
+        },
+        {
+          "resource": "repo://IaC/stacks/traefik/stack.hcl",
+          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+        }
+      ]
+    },
+    {
+      "id": "claim_13c1af9e06dd426eac92f015b7032888",
+      "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
+          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-14T03:46:52.296Z"
+  }
+}

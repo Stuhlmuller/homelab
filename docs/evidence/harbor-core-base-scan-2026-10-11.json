@@ -1,0 +1,51 @@
+{
+  "scope": "Upstream runtime base only; not the rebuilt candidate or deployed workloads",
+  "source": "docker.io/goharbor/harbor-core@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112",
+  "image_config": "sha256:aa7b8abe41a00de78284c4218a68864950699658147581a67e68422ad703e74f",
+  "all_source_blobs_verified": true,
+  "scan_report_sha256": "4685515786b77a68773ea212648a2046037ffb2d537b27a44b8bc9fa476ca84d",
+  "scanner": {
+    "name": "grype",
+    "version": "0.112.0",
+    "timestamp": "2026-10-11T11:40:03.094277-07:00",
+    "db_built": "2026-10-11T06:30:42Z",
+    "db_valid": true
+  },
+  "distro": {
+    "name": "photon",
+    "version": "5.0",
+    "idLike": []
+  },
+  "filters": {
+    "scope": "squashed",
+    "only_fixed": false,
+    "only_notfixed": false,
+    "ignored_matches": 0,
+    "ignored_rules": 0,
+    "excludes": 0,
+    "vex_documents": 0
+  },
+  "matches": 32,
+  "distinct_advisory_ids": 26,
+  "severity_counts": {
+    "Medium": 6,
+    "Critical": 3,
+    "High": 15,
+    "Unknown": 6,
+    "Low": 2
+  },
+  "fix_state_counts": {
+    "fixed": 26,
+    "not-fixed": 4,
+    "unknown": 2
+  },
+  "package_types": {
+    "go-module": 32
+  },
+  "cve_clearance": false,
+  "next_steps": [
+    "Remediate reported Go compiler/dependency issues and validate application compatibility.",
+    "Inspect unfixed/unknown advisories against affected source and reachability.",
+    "Scan exact rebuilt Linux candidate before protected publication; this base audit is not acceptance."
+  ]
+}

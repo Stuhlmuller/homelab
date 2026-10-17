@@ -1,0 +1,157 @@
+{
+  "tagOwners": {
+    "tag:k8s-operator": [],
+    "tag:k8s": [
+      "tag:k8s-operator"
+    ],
+    "tag:ci": [
+      "autogroup:admin"
+    ],
+    "tag:homelab-ingress": [
+      "tag:k8s-operator"
+    ],
+    "tag:homelab-funnel": [
+      "tag:k8s-operator"
+    ],
+    "tag:homelab-ci-plan": [
+      "autogroup:admin"
+    ],
+    "tag:homelab-ci-apply": [
+      "autogroup:admin"
+    ],
+    "tag:homelab-ci-cordium": [
+      "autogroup:admin"
+    ]
+  },
+  "acls": [],
+  "ssh": [
+    {
+      "action": "check",
+      "src": [
+        "autogroup:member"
+      ],
+      "dst": [
+        "autogroup:self"
+      ],
+      "users": [
+        "autogroup:nonroot",
+        "root"
+      ]
+    }
+  ],
+  "autoApprovers": {
+    "routes": {
+      "10.1.0.0/24": [
+        "tag:k8s",
+        "tag:ci"
+      ]
+    },
+    "exitNode": [
+      "tag:k8s",
+      "tag:ci"
+    ],
+    "services": {
+      "tag:ci": [
+        "tag:ci"
+      ]
+    }
+  },
+  "nodeAttrs": [
+    {
+      "target": [
+        "100.119.126.81"
+      ],
+      "attr": [
+        "funnel"
+      ]
+    },
+    {
+      "target": [
+        "tag:homelab-funnel"
+      ],
+      "attr": [
+        "funnel"
+      ]
+    }
+  ],
+  "grants": [
+    {
+      "src": [
+        "autogroup:member",
+        "tag:k8s",
+        "tag:k8s-operator",
+        "tag:ci"
+      ],
+      "dst": [
+        "*"
+      ],
+      "ip": [
+        "*"
+      ]
+    },
+    {
+      "src": [
+        "autogroup:member"
+      ],
+      "dst": [
+        "tag:homelab-ingress"
+      ],
+      "ip": [
+        "tcp:443"
+      ]
+    },
+    {
+      "src": [
+        "tag:homelab-ci-plan",
+        "tag:homelab-ci-apply"
+      ],
+      "dst": [
+        "tag:k8s-operator"
+      ],
+      "ip": [
+        "tcp:443"
+      ]
+    },
+    {
+      "src": [
+        "tag:homelab-ci-apply",
+        "tag:homelab-ci-cordium"
+      ],
+      "dst": [
+        "tag:homelab-ingress"
+      ],
+      "ip": [
+        "tcp:443"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "src": "tag:homelab-ci-plan",
+      "accept": [
+        "tag:k8s-operator:443"
+      ],
+      "deny": [
+        "10.1.0.199:6443",
+        "tag:homelab-ingress:443"
+      ]
+    },
+    {
+      "src": "tag:homelab-ci-apply",
+      "accept": [
+        "tag:k8s-operator:443",
+        "tag:homelab-ingress:443"
+      ]
+    },
+    {
+      "src": "tag:homelab-ci-cordium",
+      "accept": [
+        "tag:homelab-ingress:443"
+      ],
+      "deny": [
+        "tag:k8s-operator:443",
+        "10.1.0.199:6443"
+      ]
+    }
+  ]
+}

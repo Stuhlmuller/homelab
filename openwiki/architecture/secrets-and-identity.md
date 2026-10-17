@@ -3,6 +3,53 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: ["architecture", "secrets", "identity"]
+sources:
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-c9627a5536c3972ce48bf57a
+    resource: repo://clusters/homelab/apps/harbor/bootstrap.py
+  - id: openwiki-source-64bca48d4f10b0676e24742b
+    resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-9749edd762a130f624e47007
+    resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-1635b3ffa6091ee664a713ee
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
+  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-bc26cfab2973077898d9ec21
+    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-ce0cca7cf82efeb87c709d2b
+    resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-785c903805cb6f5a9ea9ae91
+    resource: repo://docs/octelium.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-aef98a0b80c0ff330c310ed1
+    resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-f8736ea9671721c61be0c639
+    resource: repo://IaC/modules/entra-verified-family-user/main.tf
+  - id: openwiki-source-77d110fdd1547564be86e611
+    resource: repo://IaC/modules/tailscale-access/main.tf
+  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+    resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-43b94de29b6b12121d020dc6
+    resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-87a43c568d1aa897dc611cdf
+    resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-6f8ea3753bc76b21d99fe402
+    resource: repo://scripts/tailscale-ci-configure.py
+  - id: openwiki-source-43db0977cfa60875fd0350f6
+    resource: repo://scripts/talos-harbor-mirror-credential.py
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+generated: { by: "codex", at: "2026-10-12T06:35:49.067Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-14T04:07:45.942Z
 ---
 
 # Secrets And Identity
@@ -25,6 +72,76 @@ by `runtime_kms_key_id` in `IaC/root.hcl`. The OpenTofu client-side state key
 remains `alias/homelab-opentofu` in `us-east-1`. See
 [State Encryption](../operations/state-encryption.md) for state-bucket ownership and confidential
 recovery archive retention.
+
+## Tailscale provider foundation
+
+The staged ingress migration uses `tailscale/tailscale` 0.29.2 in the operator-only
+[`tailscale-access` module](../../IaC/modules/tailscale-access/README.md).
+It adopts the complete existing policy before changing it; applying an additive
+fragment would overwrite unrelated access. The committed policy preserves legacy
+users, tags, SSH and route approvals while giving new CI tags only explicit grants.
+Funnel permission is scoped to `tag:homelab-funnel` rather than every operator proxy.
+
+The local provider reads a private administrator token file. The temporary
+bootstrap token must be revoked after setup; it is never a CI secret. Encrypted
+S3 state and private encrypted saved plans retain the existing KMS boundary.
+Three reusable, ephemeral, preauthorized CI auth keys carry separate plan, apply
+and Cordium tags and expire after 90 days. The committed generation drives
+rotation every 60 days; an invalid key is not silently recreated. Tailnet Lock
+requires signatures in addition to enrollment. The unused federated identities
+remain protected until final migration retirement after signed-key acceptance.
+
+The fixed publisher reads sensitive encrypted-state outputs privately, verifies
+the trusted Mac's online homelab profile, signs via `file:/dev/stdin`, and
+publishes `TAILSCALE_AUTH_KEY` to each protected plan/production environment plus
+repository `TAILSCALE_CORDIUM_AUTH_KEY`. GitHub secret values are not readable;
+metadata confirmation must be followed by protected CI acceptance. Only after
+all three writes and metadata checks succeed does it delete the corresponding
+three unused client-ID variables. Exact-main and trusted-PR workflow gates still
+matter: these credentials do not encode GitHub OIDC subject claims. Raw signing
+keys stay out of arguments and temporary files; stdin avoids the macOS app
+sandbox refusing access to the private config directory.
+
+Wrapped keys contain a delegated private node-signing key, separate from the
+trusted credential authority's private voting key. The publisher requires exactly
+one new authority with matching auth-key metadata after signing, with every prior
+trust mapping unchanged. Before post-sign readback, it durably saves a private
+pending receipt containing the validated wrapper. Bounded polling tolerates local
+status lag; a timeout retains the receipt so retry verifies the same signature
+before signing another key. File and directory fsync precede receipt retirement.
+Its private `0600` cache records that separate public
+authority identity with the wrapper; reuse and retirement require a unique
+metadata match. Delegated node-signing capability exceeds normal tag enrollment
+permissions. Auth-key expiry or revocation does not remove that authority;
+after replacement CI acceptance, the explicit `--retire-previous` operation
+removes only cached older-generation authorities while preserving unrelated
+signers. Preview and execution validate every cached current signature and all
+previous authority metadata before any removal. Execution rechecks each target;
+an already-absent previous authority remains safe to retry. Preview never signs,
+publishes or changes cache contents. Keep an encrypted private cache backup and use the
+[module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
+recovery. If an older publisher lost the wrapper before saving a receipt, the
+separate orphan-recovery mode requires the exact current provider identity,
+unique authority, this Mac's signer metadata and a timestamp within one day.
+It refuses any pending receipt, matching cache entry or published fixed CI secret,
+and requires the official read-only affected-signature query to return empty.
+Only that authority can be removed, without re-signing; recovery never signs or
+publishes. The query is a snapshot, so pause other signing/join activity through
+recovery. The operator OAuth SSM contract remains separate and unchanged.
+
+The Tailscale operator API proxy maps node tags to Kubernetes groups. Plan can
+read resources, including Helm release Secrets, and submit Argo Application
+dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
+Apply retains cluster administration for existing bootstrap and RBAC ownership;
+Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
+until authenticated plan/apply and denial checks succeed over the new proxy.
+
+Phase 2a removes the old public DNS writer and restoration workflow while
+retaining Tunnel credentials, existing Octelium identities, and native carrier
+recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
+token to write only its fixed mesh A/AAAA inventory from reviewed current main.
+Credential retirement follows application, callback, CI, and Cordium acceptance;
+changing DNS alone does not authorize deleting those credentials.
 
 ## AWS SSM Pattern
 
@@ -237,15 +354,13 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/octelium/cloudflare-tunnel-credentials-json` and
   `/homelab/octelium/cloudflare-tunnel-id`. The Cloudflare Tunnel credential
   JSON and UUID are created outside git with `cloudflared tunnel create
-homelab-octelium-public`. The same tunnel is the external callback backbone
-  for `n8n-webhook.stinkyboi.com` and `policy-bot-hook.stinkyboi.com`; those
-  routes remain unauthenticated at Octelium but path-limited in Istio and
-  validated by the receiving application credentials or signatures.
-  The public API DNS reconciler reuses the cert-manager Cloudflare DNS token.
-  The protected, exact-main-SHA `octelium-public-tunnel.yml` workflow uses the
-  production AWS role for SSM reads and the SSM-backed DNS token. Native TLS
-  gRPC uses the separate Tunnel TCP carrier. Token values never enter git or
-  workflow output.
+homelab-octelium-public`. This retained tunnel supports legacy callers only
+  until the staged replacement gates pass. Its public DNS writer and restoration
+  workflow are removed. The canonical mesh DNS helper reuses the scoped
+  cert-manager token; n8n and Policy Bot external registrations move to Funnel
+  through their fixed helpers, preserving credentials and requiring fresh signed
+  delivery receipts. Native carrier and CI secrets remain until separate
+  acceptance. Token values never enter git or workflow output.
   Octelium portal login uses Microsoft Entra OIDC. The Entra application is
   managed by `IaC/live/azuread-applications/octelium` and writes generated
   client material to `/homelab/octelium/entra/*`; these values are copied into
@@ -350,6 +465,16 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   permission. Future Langfuse IAM lifecycle or credential-rotation changes
   remain operator-owned through the same saved-plan path.
 - LiteLLM caller keys are generated separately for NOFX, Multica and n8n at
+  dedicated SSM paths. The prepared database-key migration adds separate
+  `/homelab/litellm/postgres-{admin,app}-password` parameters: admin is database
+  only; the client Secret exposes just the nonsuperuser database-owner password.
+  The native cutover imports existing caller values once in a locked database
+  transaction, with a durable `homelab-native-key-import-v1` marker. Native
+  authentication replaces the file-only bypass; startup does not recreate
+  deleted keys or undo UI blocks. Subsequent rotation must coordinate the
+  database value and the caller's SSM refresh. Live UI/revocation acceptance
+  remains pending until deployed and exercised.
+  Existing caller paths remain
   `/homelab/<app>/litellm-token`; OpenClaw uses
   `/homelab/openclaw/litellm-app-token`. The prior OpenClaw `litellm-token`
   remains a retired master-key alias with no workload consumer. LiteLLM alone
@@ -405,14 +530,10 @@ homelab-octelium-public`. The same tunnel is the external callback backbone
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure
   the GitHub App webhook URL to
-  `https://policy-bot-hook.stinkyboi.com/api/github/hook` after the
-  `octelium-public` DNS/tunnel route is live; keep the webhook secret in
+  `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through the guarded
+  callback helper after Funnel routing and negative-path preflights pass;
+  require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
-- OctoBot currently has no repository-owned SSM contract. Its first-run setup,
-  exchange credentials, tentacles, and strategy state live on the finance
-  namespace PVCs and are summarized in [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and
-  [Application Notes](../workloads/application-notes.md).
-
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`
@@ -510,6 +631,66 @@ separate from the legacy AzureAD user module, and the AzureAD workflow selects
 that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
 
+## Google Workspace federation boundary
+
+`operator/entra-google-workspace-federation` owns the Entra Graph federation
+configuration for `stuhlmuller.net`. Its Google SAML metadata is an
+operator-only SSM SecureString and never appears in Git. Google Workspace
+auto-provisioning creates the matching Entra users; the Entra federation only
+authenticates those users. CI provider identities do not receive domain-write
+permissions, so the unit remains an independently reviewed operator apply.
+
+The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+found a deployed pilot UPN mismatch: the Mac attempted personal-account device
+registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
+Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only
+change required a focused apply. The approved apply failed with
+`DirectoryUniquenessException`; the pilot retained its old UPN, nickname and
+password-change timestamp. The owner's existing mail/SMTP proxy uses the
+requested address, making it the leading conflict candidate, but Entra's audit
+did not name the conflicting property. The pilot-rename approval does not cover
+clearing owner aliases or converting that administrator; a separate owner-address
+migration was subsequently approved. The pilot's initial password change must finish
+before native Password PSSO registration. Fleet MDM enrollment remained intact;
+successful organizational device/user registration and password synchronization
+still require interactive acceptance. The runbook retains the separate,
+unresolved token-endpoint profile warning from the same attempt.
+
+The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
+applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external
+authentication. The owner was the only active Global Administrator found.
+Octelium's previous email-based HUMAN mapping was affected by address reuse;
+application assignment is not required and the OIDC scopes have tenant-wide consent.
+The [bootstrap](../../scripts/octelium-entra-oidc.sh) now uses immutable Entra
+`oid` with `disableEmailAsIdentity: true`, checks the complete live inventory
+including implicit email-fallback users, and permits a guarded transition of
+the sole selected legacy HUMAN mapping. Changing the claim alone does not
+prevent fallback through the separate OIDC email claim. Existing user fields,
+contact email, policies and other identity-provider bindings remain intact,
+including partial retries. Complete-inventory preflight and the live migration
+passed. New owner Octelium sessions through Entra callbacks matched the original
+`oid` and rendered the Services page before and after the mail change; these
+checks did not exercise a new password or MFA challenge. Test actual pilot login
+denial after its initial password change and MFA setup; an interrupted
+authentication flow is not proof of denial. Keep actual HUMAN identifiers private.
+
+The [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
+owns only a mail PATCH on the existing owner. A private `-var-file` supplies the
+replacement address, object ID, current-mail and full identity baselines; guards
+refuse a changed or missing current mail and retain the enabled accepted external
+member and its UPN before and after the write. The
+private encrypted plan passed the mail-only scope check and applied. Readback
+preserved the owner identity, enabled state, password-change timestamp, roles,
+grants and application ownership. The replacement became the primary SMTP
+address, but the old address remains a secondary alias. Address release failed,
+so the pilot rename was not retried. A supported repository-owned alias-release
+path is still required; changing mail did not release the requested pilot address.
+On October 7, 2026 UTC, authenticated Exchange Online lookups for this exact
+owner returned HTTP 404 `ManagementObjectNotFoundException`, including
+soft-deleted recipients. No mail-enabled recipient target exists in those
+results for `Set-MailUser`; Microsoft-supported remediation is required while
+preserving the identity. No Exchange write or additional permission grant occurred.
+
 ## Harbor registry identities
 
 [Harbor](../operations/harbor-oci.md) uses generated SSM secrets under
@@ -517,11 +698,47 @@ pilot change cannot trigger legacy-user reconciliation.
 separate project robots for pull and publication. NOFX receives only the pull
 credential through `/homelab/nofx/harbor-pull-password`. Octelium passes native
 Authorization headers; Harbor authenticates OCI clients. Registration is
-disabled and project creation is admin-only. Public upstream copies use the
-separate public-read `mirror` project; `robot$mirror+publisher` uses its own generated
-`/homelab/harbor/mirror-robot-push-password` and is scoped only to that project. Nodes need no new secret.
-Bootstrap and Harbor recovery use the reviewed upstream transport rollback;
-see [the image mirror runbook](../../docs/harbor-image-mirroring.md).
+disabled and project creation is admin-only. Public upstream copies remain in
+the public-read `mirror` project until node authentication succeeds. Its
+`robot$mirror+publisher` is scoped to writes and its separate
+`robot$mirror+pull` to authenticated publication receipts and the later Talos
+registry-auth candidate; workloads do not receive either credential. Bootstrap
+and Harbor recovery use the reviewed upstream transport rollback; see [the image
+mirror runbook](../../docs/harbor-image-mirroring.md).
+
+The reviewed Stage A saved plan created and metadata-verified the generated
+`/homelab/harbor/mirror-robot-pull-password` without reading its value. The
+Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
+to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+Secrets materializes the target Secret, that Job can reconcile the separate
+read-only robot during execution; require successful PostSync completion before
+accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
+creation alone does not create a Harbor robot, grant workload registry access,
+enable receipt reads, or change a node. Do not substitute periodic refresh: it
+would regenerate Harbor's salted bcrypt registry password hash. Shared Terraform
+dependency changes remain separately reviewed and approved. The project stays
+public until the separate reviewed Talos path has validated every node; the
+later privacy flip must prove uncached authenticated pulls continue to work.
+
+The operator materializer checks the reviewed `main` revision before and after
+reading that one SSM value, then writes the fixed reader-auth JSON outside the
+checkout in an owner-only `0700` directory with mode `0600`. An ordinary executable
+Talos mirror rollout requires that file unless the captured configuration already
+has valid `robot$mirror+pull` registry auth; otherwise it stops before it creates
+a candidate or applies a machine configuration. Rollback and `--registry-host-only`
+execution intentionally do not use reader auth. This rollout gate does not make
+the `mirror` project private.
+
+The excluded
+[private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages `harbor/harbor-pull` from the existing
+`/homelab/harbor/robot-pull-password`. Its only consumer reference is the
+ServiceAccount's kubelet image-pull list; no app-container mount, producer,
+reader grant or namespace allowlist expansion is added. The active Harbor
+Kustomization excludes this directory. Activation requires publication/scans,
+recovery clearance and ExternalSecret readiness; an `OnChange` annotation
+advance is required after a future credential rotation. The existing bootstrap
+Secret needs its own declared refresh, and upstream cold recovery remains.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

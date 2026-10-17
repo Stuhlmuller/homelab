@@ -3,6 +3,21 @@ type: operation
 title: "CoreDNS GitOps Ownership"
 description: "Ordered CoreDNS handoff from Talos to Argo CD, preserving resolver and Octelium rewrite behavior during upgrades."
 tags: ["homelab", "navigation"]
+sources:
+  - id: openwiki-source-1ab63006818d653aed251f6d
+    resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
+  - id: openwiki-source-ac4e5166b14da067a9c57d03
+    resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
+  - id: openwiki-source-c071f0a75793c76e7f880496
+    resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-e20ef91bfc85ec57d6b2e621
+    resource: repo://clusters/homelab/platform/dns/README.md
+  - id: openwiki-source-c5bae48eacfc2b48af15ad5a
+    resource: repo://scripts/ci/traefik-routes-test.py
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:43:46.551Z
 ---
 
 # CoreDNS GitOps Ownership
@@ -12,6 +27,29 @@ owns all six CoreDNS resources while preserving DNS behavior and pinning the
 running image content. New clusters still require the ordered takeover below;
 the declaration alone does not complete it. Source and DNS checks are in the
 [platform DNS runbook](../../clusters/homelab/platform/dns/README.md).
+
+## Traefik Routing Change
+
+Phase 2a preserves this ownership handoff and changes only the two internal
+hostname rewrites: `octelium-api.stinkyboi.com` and `harbor.stinkyboi.com` now
+point to `traefik-private.traefik.svc.cluster.local`. Clients retain the original
+TLS name and SNI. Public forwarding remains `1.1.1.1` and `1.0.0.1`.
+
+Converge Traefik, its certificate and upstream routes before this Corefile.
+The retained ambient connector uses the authenticated principal
+`cluster.local/ns/octelium-client/sa/octelium-client`. Traefik temporarily allows
+only that identity on private TLS port 8443; an unauthenticated-source rule does
+not admit it. The matching NetworkPolicy names its exact namespace and two Pod
+labels, but Flannel does not enforce that policy. Remove these temporary rules
+with the connector only after final retirement acceptance. Before and after DNS
+reconciliation, require connector readiness and authenticated API access.
+Require the expected Service IP plus working native Cordium API requests and
+Harbor pulls; name resolution alone is insufficient. Talos hosts use the separate
+registry-only Service through their guarded host mapping, not this Pod DNS
+rewrite. External DNS and callbacks follow the
+[ordered cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
+This prepared source is not evidence of live DNS acceptance. The dated takeover
+and upgrade checks below retain their original historical context.
 
 ## Why The Handoff Is Required
 

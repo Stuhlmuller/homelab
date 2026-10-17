@@ -9,7 +9,8 @@ Authoritative SQLite state and native threads use `openclaw-runtime-local`.
 
 `assistant/` owns Claw's homelab personality, operating agreement, tool notes,
 heartbeat checklist, model configuration, and scheduled work. Interactive
-turns, heartbeat, and managed jobs use OpenRouter's `openrouter/free` router,
+turns, heartbeat, and managed jobs use `openrouter/free` through the
+[LiteLLM gateway](../litellm/README.md),
 with medium reasoning and no silent fallback. `free` is the selection alias. The router
 chooses a currently available free model that supports each request. Account
 access must be verified with an actual turn; configuration validation alone
@@ -26,61 +27,47 @@ If the deadline is reached, inspect completed work before retrying; the timeout
 does not undo earlier actions. Roll back the default and bundle digest together
 through GitOps.
 
-OpenRouter authentication is stored in OpenClaw's PVC-backed auth profile; no
-OpenRouter key belongs in git. The existing explicit OpenAI provider and Codex
-OAuth profile remain available as an operator-selected recovery route, but are
-not a default or fallback.
+OpenClaw authenticates to LiteLLM with the dedicated
+`/homelab/openclaw/litellm-app-token`, exposed through a private file SecretRef.
+LiteLLM owns upstream OpenRouter authentication. The
+[assistant bootstrap](assistant/bootstrap.py) replaces provider/model maps,
+limits every configured agent to the free router, disables OpenAI/Codex plugins,
+and removes their active allowlist and auth-profile references. Private
+credential files, original configuration, and recovery archives remain intact;
+Astra/Codex is not an available inference or fallback route in current desired
+state. Current [Helm values](values.yaml) install neither the Codex CLI nor its
+code-mode host.
 
-The toolbox pins Codex `0.153.2` from OpenAI's release assets, verifies each
-architecture's SHA-256 for both the CLI and its code-mode host, and exposes
-`/toolbox/codex/codex` to the existing
-OpenClaw Codex plugin. The sibling `codex-code-mode-host` executable is required
-for native tool execution; text-only inference does not test its presence. OpenClaw `2026.8.2` bundles `0.151.0`; Astra support was
-added in [Codex 0.153.1](https://github.com/openai/codex/releases/tag/rust-v0.153.1).
-OpenClaw is pinned to `2026.9.5`, retaining hidden models when discovering
-the Codex catalog. This matters because Astra's initial catalog entry is hidden
-from the interactive picker. Bootstrap takes a verified offline
-`pre-2026.9.5` archive before applying runtime configuration. The explicit app-server command preserves the existing OAuth
-account and
-per-agent runtime home. Roll back the pin and command together through GitOps;
-the bundled version cannot satisfy the Astra requirement. The official Codex
-plugin is installed and checked at the exact gateway version during bootstrap.
+OpenClaw is pinned to `2026.9.5`. Bootstrap installs and verifies the external
+Discord plugin at that exact version and takes a verified offline
+`pre-2026.9.5` archive before applying runtime configuration. The retained
+2026.9.2 checkpoint still protects the original local-storage cutover; preserve
+both. A reviewed rollback to the historical 2026.9.2 configuration must restore
+its matching image, plugin settings, and assistant checksum together through
+GitOps. If state migration prevents the old runtime from starting, restore the
+verified pre-2026.9.5 archive while stopped; an image revert alone does not undo
+state migrations.
 
-The [2026.9.5 release](https://github.com/openclaw/openclaw/releases/tag/v2026.9.5)
-includes Doctor/history and Codex startup fixes. Bootstrap pins both external
-Discord and Codex plugins to the gateway version; the config check rejects
-plugin or backup-version drift. The retained 2026.9.2 checkpoint still protects
-the original local-storage cutover, while this upgrade creates its own full
-archive. Preserve both. For rollback, restore the 2026.9.2 image, Codex plugin
-pin, and assistant checksum through GitOps. If state migration prevents the old
-runtime from starting, restore the verified pre-2026.9.5 archive while stopped;
-an image revert alone does not undo state migrations.
-
-The pinned container's config and plugin schemas were checked with the retained
-Astra recovery model, 3600-second interactive timeout, gateway, and hook
-configuration. Its exact
-compiled auth-store, cooldown, and provider-reprobe exports were reviewed for
-the subscription helper; async probe failures remain bounded and fail closed.
-After sync, verify plugin versions, readiness, a real Discord turn routed through
+After sync, verify the Discord plugin version, readiness, a real Discord turn routed through
 `openrouter/free`, and scheduled-job completion. Local validation cannot prove
 account access.
 
-### Deferred Langfuse integration
+### LiteLLM routing and Langfuse acceptance
 
-This foundation leaves OpenClaw runtime and credentials unchanged. Its desired
-default is `openrouter/free`; Astra OAuth remains available for recovery.
-Follow the [caller activation gates](../langfuse/README.md#caller-activation)
-before implementing a gateway route. Preserve the PVC-backed OpenRouter key
-and use the distinct `/homelab/openclaw/litellm-app-token` only for gateway
-authentication. Do not migrate the OpenRouter key into SSM.
+The [managed provider configuration](assistant/config.json) sends
+`openrouter/free` to `http://litellm.ai.svc.cluster.local:4000/v1` using the
+dedicated gateway key. Preserve private historical OpenRouter/OAuth credentials;
+they do not enable a direct-provider recovery route. Follow
+[LiteLLM validation](../litellm/README.md#validation-and-rollout) for current
+gateway authentication and inference acceptance.
 
 Use Langfuse export at the gateway as the sole token-accounting source for
 routed inference. The native OpenClaw plugin emits both per-call and run-total
 usage, so enabling both would risk double counting. Gateway-only capture does
-not cover direct Astra recovery or native agent/tool lifecycle spans. The
-activation PR must prove real free-model streaming usage and document rollback
-of PVC-persisted routing settings. No direct OTLP Secret or activation template
-is included in this foundation.
+not cover native agent/tool lifecycle spans. Verify a real free-model turn and
+its correlated Langfuse generation before claiming end-to-end tracing. Changes
+to routing must document rollback of PVC-persisted settings. Native OTEL export
+remains disabled in the managed configuration.
 
 ### Assistant behavior
 
@@ -105,8 +92,8 @@ The fixed-name ConfigMap mounts only in bootstrap and the app. Its content
 digest in the Pod template triggers replacement when the bundle changes.
 Bootstrap adds managed sections to SOUL.md, AGENTS.md, TOOLS.md, and
 HEARTBEAT.md while preserving text outside those sections. It preserves IDENTITY.md, USER.md, MEMORY.md, daily notes,
-existing tool additions, credentials, and unrelated config. It extends any
-restricted model policy to allow the OpenRouter free router. The first
+existing tool additions, credentials, and unrelated config. It restricts managed
+model policies to the free router instead of extending old provider allowlists. The first
 pre-change files and config
 are retained privately under `/data/openclaw/assistant-backups/v1`; this is a
 same-volume rollback checkpoint, not an independent backup.
@@ -132,7 +119,16 @@ Existing alert hooks remain enabled.
 See [OpenClaw automations](https://docs.openclaw.ai/automation/cron-jobs) and
 [heartbeat behavior](https://docs.openclaw.ai/gateway/heartbeat).
 
-### Stale subscription limit recovery
+### Historical subscription recovery (rollback only)
+
+The retained helper below supports the former subscription configuration on
+OpenClaw `2026.9.5`. It does not repair the current LiteLLM free-router path.
+The chart does not mount this repository script; the commands below stream it
+from the checkout to the container through stdin.
+These steps apply only after a separately reviewed rollback restores the
+matching provider/plugin configuration and an existing OpenAI OAuth profile.
+Preserve the private credentials and backups; current bootstrap deliberately
+removes their active configuration references.
 
 If an operator-selected Astra recovery session reports `agent-runner-failure`
 and gateway logs say its auth profile is temporarily unavailable, inspect
@@ -240,8 +236,8 @@ and containerd; raise it only after the memory growth is fixed and 48 hours of
 healthy measurements show node headroom. The CPU limit throttles rare bursts
 before they can starve a four-core worker. It requests
 `8Gi` and limits `10Gi` of ephemeral storage: the shared
-Nix store uses about `2.7Gi`, while the separately capped Codex runtime can use
-up to `2Gi`. A 2026.9.5 rollout exceeded the previous `6Gi` aggregate limit
+Nix store measured about `2.7Gi`; the now-retired toolbox Codex runtime had a
+separate `2Gi` cap. That 2026.9.5 rollout exceeded the previous `6Gi` aggregate limit
 after initialization and was evicted; the larger request covers the observed
 footprint while the limit retains node protection. The `operator-toolbox` init
 container requests `1` CPU and `2Gi` memory and limits `1500m` CPU and `3Gi`
@@ -329,7 +325,7 @@ spawning probe processes inside the containers while requiring the proxy to
 connect to the gateway and relay a successful HTTP response.
 
 The app container also owns startup and liveness probes. Startup allows up to
-six minutes for the gateway to load persisted state, plugins, and channels.
+15 minutes for the gateway to load persisted state, plugins, and channels.
 After startup,
 36 consecutive failed liveness checks restart only the app container after
 about six minutes without an HTTP response through the proxy. Readiness removes
@@ -495,16 +491,19 @@ Rollback by reverting the wrapper, PATH, Git helper, and assistant bundle digest
 through GitOps. Live acceptance remains pending until the new pod passes these
 authenticated reads.
 
-## OpenRouter Free And Codex Recovery
+## OpenRouter Free Through LiteLLM
 
 Do not store OpenRouter keys, ChatGPT passwords, browser cookies, or OpenAI API
-keys in this repo. Authenticate OpenRouter through its OAuth flow; OpenClaw
-stores the issued credential on the persistent volume.
+keys in this repo. The [ExternalSecret](externalsecret.yaml) supplies the
+dedicated LiteLLM caller key; bootstrap writes its private file for the managed
+provider SecretRef. Upstream OpenRouter credentials are managed by
+[LiteLLM](../litellm/README.md#ui-managed-openrouter-credential).
 
 The pod startup bootstrap sets `openrouter/free` as the default and
-keeps fallbacks empty. Existing sessions pinned to another model remain pinned
-until the owner selects the default. The bundled `codex` plugin, explicit Astra
-metadata, and retained ChatGPT OAuth profile remain for manual recovery only.
+keeps fallbacks empty. It removes subscription provider/model configuration and
+disables the OpenAI/Codex plugins. Historical session records and private OAuth
+files may remain; their presence does not establish an active recovery route.
+Inspect effective session routing without rewriting history.
 
 The pinned release uses four concurrent runs. Before applying configuration,
 the stopped gateway's bootstrap verifies its release-specific offline archive
@@ -539,17 +538,9 @@ reused; missing or mismatched packages get four bounded registry attempts.
 Bootstrap pins `gateway.mode` to `local`; external-supervisor mode makes
 Kubernetes the lifecycle and image-update authority.
 
-After connecting through Octelium and exporting the kubeconfig generated by
-`octelium config kubernetes-api.homelab`, authenticate OpenRouter:
-
-Bootstrap enables the bundled OpenRouter provider plugin before login.
-
-```sh
-kubectl -n ai exec -it deploy/openclaw -c app -- \
-  openclaw models auth login --provider openrouter --method oauth
-```
-
-Then verify the default model and direct provider route:
+Bootstrap enables the bundled OpenRouter provider plugin with the managed
+LiteLLM base URL. After connecting through Octelium, verify the configured
+default and model discovery through that gateway:
 
 ```sh
 kubectl -n ai exec deploy/openclaw -c app -- \
@@ -559,14 +550,16 @@ kubectl -n ai exec deploy/openclaw -c app -- \
   openclaw models list --provider openrouter
 ```
 
-The issued credential persists on `/data/openclaw` and should not be copied into
-SSM. If the PVC is replaced, repeat the OpenRouter login. Use the separately
-documented OpenAI login only when intentionally restoring the Codex recovery
-route.
+Require an actual free-model turn to verify inference; model discovery alone
+does not prove it. Restore lost persistent state from a verified archive and
+let the declared secret/configuration path restore gateway authentication.
+Historical OpenRouter/OAuth files remain private recovery material, not active
+provider configuration.
 
 ## Durable runtime state and recovery
 
-Heartbeat uses the same bounded 600-second budget as the agent. The scheduler's
+Heartbeat retains a 600-second budget; the interactive agent default is 3600
+seconds. The scheduler's
 heartbeat watchdog includes waiting for existing replies/background jobs and
 its 60-second idle retry grace, not only model execution. A 120-second budget
 produced a failed receipt after about 80 seconds of scheduling delay plus a
@@ -607,7 +600,8 @@ files before running any OpenClaw command.
 The mounts at `/data/openclaw/state` and `/data/openclaw/agents/main/agent` let OpenClaw
 select WAL on a local filesystem. Its network-filesystem policy keeps NFS in
 rollback-journal mode, where long readers can block write commits. The native
-Codex home now persists under the same local agent tree. Workspace, identity/configuration files, and existing archives remain
+Codex home from the retired subscription runtime is retained under the same
+local agent tree. Workspace, identity/configuration files, and existing archives remain
 on the original NAS claim. The pre-upgrade archive explicitly includes the two
 local mount roots despite `tar --one-file-system`. If a rollout interrupts archive creation, bootstrap preserves the unpublished partial directory with an `interrupted-<UTC timestamp>` suffix and rebuilds from the still-stopped state. A corrupt published backup still blocks startup; it is never replaced automatically.
 
@@ -616,7 +610,7 @@ SQLite's backup API, verifies them, records hashes, and retains seven completed
 snapshots on the NAS at `/data/openclaw-runtime-snapshots`. Source databases mount
 read-only; committed WAL data is included. These are authoritative database
 snapshots, not full-machine backups: workspace/configuration already live on the
-NAS, and native Codex indexes can be rebuilt from canonical history. Snapshot
+NAS, and retained Codex indexes belong to historical recovery state. Snapshot
 artifacts contain credentials and private history; keep their permissions private.
 
 After sync, verify integrity-check logs, WAL mode for both authoritative databases,

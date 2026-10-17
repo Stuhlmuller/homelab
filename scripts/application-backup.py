@@ -305,10 +305,10 @@ def metrics(path, app, success, stamp=0):
     data = (f'homelab_application_backup_check_success{{app="{app}"}} {int(success)}\n'
             f'homelab_application_backup_capture_timestamp_seconds{{app="{app}"}} {stamp}\n'
             f'homelab_application_backup_check_timestamp_seconds{{app="{app}"}} {now()}\n')
-    temporary = path.with_name(path.name + '.partial')
-    # Single scheduler invocation required; no blind overwrite of partial files.
-    write(temporary, data.encode())
-    temporary.replace(path)
+    with tempfile.TemporaryDirectory(prefix='.' + path.name + '-', dir=path.parent) as directory:
+        temporary = Path(directory) / path.name
+        write(temporary, data.encode())
+        temporary.replace(path)
     OFFSITE.backup.sync_directory(path.parent)
 
 

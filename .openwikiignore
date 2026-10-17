@@ -41,5 +41,3 @@ id_ed25519
 token.txt
 *.token
 *.log
-# Navigation compatibility pages, not a second source of documentation.
-docs/knowledge-base/

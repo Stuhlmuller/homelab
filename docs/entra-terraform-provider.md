@@ -48,6 +48,16 @@ created, converted, assigned, or forced to use Entra. See the
 [domain module](../IaC/modules/entra-domain-verification/README.md) for the
 saved-plan sequence.
 
+## Google Workspace federation
+
+`IaC/operator/entra-google-workspace-federation` is a separate, human-operated
+Terraform unit. It creates the Graph `internalDomainFederation` only after the
+Google Workspace Microsoft Office 365 SAML app has supplied validated metadata
+through the operator-only SSM contract. Google Workspace auto-provisioning must
+create matching Entra users for every enabled Google address; federation
+authenticates those users but does not create them. The CI identities retain no
+domain-write permission.
+
 The plan identity's claims-assignment refresh is a live acceptance gate:
 Microsoft's documented least permissions for that read include
 `Application.ReadWrite.OwnedBy`. Test the narrower read grants first. A denied
@@ -84,8 +94,8 @@ switch the provider identity.
 3. Merge signed, reviewed code before applying the saved plan through the
    operator unit. Then review and apply each application's ownership transition
    from the same merged tree. Retain the human administrator and existing state.
-4. Ensure both GitHub environments have their declared reviewer protection with
-   administrator bypass disabled. Production must allow only protected branches.
+4. Ensure both GitHub environments have no required reviewers and administrator
+   bypass disabled. Production must allow only the exact `main` branch, no tags.
    These settings belong to `Stuhlmuller/github-iac`, not a duplicate homelab
    resource. Use that repository's documented environment-only saved-plan path
    to reconcile drift before activating federation.
@@ -135,9 +145,10 @@ and retain the declared human owner. Application/service-principal destruction
 is guarded by `prevent_destroy` and is not routine rollback.
 
 An Entra-only verification does not advance the full homelab apply checkpoint.
-The outstanding full infrastructure range still needs its own reviewed plan and
-successful full apply. Native Mac Platform SSO, password sync and offline login
-remain separate acceptance tests in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+The successful [full apply run 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+advanced it to signed `main` commit `f47cf006e1108f2c1d13f7d002b0611fcdfc22df`.
+Native Mac Platform SSO, password sync and offline login remain separate
+acceptance tests in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 References:
 

@@ -3,6 +3,17 @@ type: workload
 title: "Application Notes"
 description: "Shared workload access and ownership rules, app-specific failure context, OpenClaw state, and Zimaboard resource constraints."
 tags: ["workloads", "apps", "platform"]
+sources:
+  - id: openwiki-source-1a1a01e3db3c30a111cb3145
+    resource: repo://clusters/homelab/apps/openclaw/assistant/config.json
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-b26876230e53fd853d7bcbea
+    resource: repo://clusters/homelab/apps/openclaw/values.yaml
+generated: { by: "codex", at: "2026-10-10T23:00:00.726Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:10:58.872Z
 ---
 
 # Application Notes
@@ -150,10 +161,26 @@ Nginx permits only QNAP `10.1.0.2`, GET/HEAD and bounded M3U/XMLTV, HDHR,
 stream-UUID and logo-cache paths. It rejects arbitrary queries and overwrites
 forwarded headers; administrative access remains behind Octelium. This avoids
 relying on unenforced NetworkPolicies or exposing the app's full `9191` port.
-The endpoint has no failover while `acer` is unavailable. Route rollout and
-Plex/Jellyfin playback remain acceptance gates; Jellyfin remains deliberately
-stopped until the operator requests otherwise. See the workload README for
-the test and rollback path.
+The endpoint has no failover while `acer` is unavailable. See the workload README
+for the test and rollback path.
+
+PR #1218 merged as `a4d5dc78`; Argo automatically reconciled at October 7, 2026
+03:57:57 UTC and reached `Synced/Healthy`. The new app Pod was 3/3 Ready on
+`acer`; both 20 GiB PVCs remained `Bound`. QNAP probes verified canonical URLs,
+65-channel M3U/HDHR, 1,170 XMLTV placeholders and channel 1168 transport playback
+(8,955,380 bytes in 20 seconds, valid MPEG-TS alignment). Negative probes blocked
+admin paths, POST, direct upstream export, and non-NAS requests with forged
+forwarded headers.
+
+Plex native setup saved the Sports tuner and `IPTV-org Sports` guide with all
+65 channels mapped. CBS Sports Golazo (1168) played in Plex Web at decoded
+1920x1080, with playback advancing beyond 34 seconds; the test player was closed.
+The different Golazo Network (889) feed returned upstream HTTP 403 from its
+playlist redirector. Use 1168 and review 889 after a source refresh; no fallback
+or all-feed reliability is claimed. Live ffmpeg also logged upstream timestamp
+corrections while 1168 played; the sample does not prove long-session stability.
+Jellyfin remains deliberately disabled (`Enable=FALSE`) until the operator
+requests otherwise; its connection and playback remain pending.
 
 Generated or adopted upstream resources must still have one declared owner.
 Keep package capture and bootstrap commands in the workload README, and keep
@@ -161,17 +188,19 @@ steady-state resources under Argo CD wherever the upstream lifecycle permits.
 
 ## OpenClaw
 
-The `2026.9.5` upgrade pins the external Codex and Discord plugins to the gateway
-release and creates a new verified `pre-2026.9.5` archive. Keep the earlier
-local-storage migration checkpoint. The pinned container's configuration and
-plugin schemas, managed one-hour timeout, and compiled subscription-recovery
-exports were checked; account-backed Discord/OpenRouter and scheduler acceptance
-remain post-sync checks. See the app README for state-aware rollback.
+The `2026.9.5` configuration pins the external Discord plugin to the gateway
+release and creates a verified `pre-2026.9.5` archive. Keep the earlier
+local-storage migration checkpoint. OpenAI/Codex plugins and active subscription
+auth references are disabled; historical credentials and state remain private
+rollback material. Verify the managed one-hour timeout, Discord, a real turn
+through LiteLLM, and scheduler readiness after sync. See the app README for
+state-aware rollback.
 
 On September 27, the upgraded gateway entered a 47-restart loop: it bound HTTP
 after 87 seconds but remained event-loop-blocked while starting Discord, so the
 two-minute startup probe terminated it before startup settled. The startup
-budget is now six minutes; readiness still removes an unresponsive pod quickly,
+budget was then raised to six minutes; current values allow 15 minutes.
+Readiness still removes an unresponsive pod quickly,
 and the existing six-minute liveness budget still bounds a later hang.
 The recovered pod then exceeded its `6Gi` aggregate ephemeral-storage limit and
 was evicted. Desired state now requests `8Gi` and limits `10Gi`; the worker had
@@ -196,7 +225,8 @@ Bootstrap retains original files privately and
 preserves personal memory. The Pod annotation hashes the full bundle so GitOps
 changes take effect on restart. See the app README for validation and rollback;
 configured `openrouter/free` is not proof of account access until a real turn
-succeeds. Astra via Codex OAuth remains an operator-selected recovery route.
+succeeds. The managed provider uses LiteLLM and its dedicated file-backed key;
+Astra/Codex is not an active recovery route.
 
 OpenClaw persists runtime state on the `openclaw` PVC under `/data/openclaw`.
 The `operator-toolbox` init container installs the operator command set with

@@ -101,11 +101,35 @@ documents = [{"initContainers": [{"image": "busybox:1.38@" + digest}],
 images, digests = check.declared_images(documents)
 assert images == {"busybox:1.38@" + digest, "quay.io/example/operator:v1@" + digest}
 assert digests == {digest}
+# Before its consumer lands, the Mastodon scope still requires all four tags.
+with tempfile.TemporaryDirectory() as directory:
+    root, catalog_path = check.ROOT, check.CATALOG
+    check.ROOT = Path(directory)
+    check.CATALOG = check.ROOT / "mastodon-full.json"
+    sources = [prefix + digest for prefix in (
+        "ghcr.io/mastodon/mastodon:v4.7.3@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "docker.io/library/postgres:18-bookworm@",
+        "docker.io/library/redis:7.4.11-alpine@",
+    )]
+    check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in sources]}))
+    assert check.declared_mastodon_images() == set(sources)
+    check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in sources[:-1]]}))
+    try:
+        check.declared_mastodon_images()
+        raise AssertionError("Incomplete Mastodon prerequisite passed")
+    except RuntimeError:
+        pass
+    check.ROOT, check.CATALOG = root, catalog_path
+
 with tempfile.TemporaryDirectory() as directory:
     check.ROOT = Path(directory)
     check.CATALOG = check.ROOT / "images.json"
     check.FLEET_CATALOG = check.ROOT / "fleet-images.json"
     check.BAZARR_CATALOG = check.ROOT / "bazarr-images.json"
+    check.MASTODON_CATALOG = check.ROOT / "mastodon-images.json"
+    check.CHAINGUARD_CATALOG = check.ROOT / "chainguard-images.json"
+    check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     check.CHARTS = check.ROOT / "charts.json"
     catalog = {"images": [
         {"source": "docker.io/library/busybox@" + digest},
@@ -113,18 +137,43 @@ with tempfile.TemporaryDirectory() as directory:
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(catalog))
     check.BAZARR_CATALOG.write_text(json.dumps(catalog))
+    check.MASTODON_CATALOG.write_text(json.dumps(catalog))
+    check.declared_mastodon_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images
     check.CHARTS.write_text("[]")
     mirrors = {registry: {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
                           "overridePath": True, "skipFallback": True}
                for registry in ("docker.io", "quay.io")}
+    mirror_patch = {"machine": {"registries": {"mirrors": mirrors}}}
     check.yaml_documents = lambda paths: (
-        [{"machine": {"registries": {"mirrors": mirrors}}}]
-        if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
+        [mirror_patch] if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    check.MASTODON_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
+    try:
+        check.check()
+        raise AssertionError("Mastodon scope missing a required image passed")
+    except SystemExit as error:
+        assert "Mastodon mirror scope missing required image: " in str(error)
+    check.MASTODON_CATALOG.write_text(json.dumps({"images": [*catalog["images"],
+        {"source": "docker.io/library/busybox@sha256:" + "b" * 64}]}))
+    try:
+        check.check()
+        raise AssertionError("Mastodon scope included an unused/unreviewed image")
+    except SystemExit as error:
+        assert "Mastodon mirror scope has unused image: " in str(error)
+        assert "Mastodon mirror scope source absent from full catalog: " in str(error)
+    check.MASTODON_CATALOG.write_text(json.dumps(catalog))
+    mirror_patch["machine"]["registries"]["config"] = {}
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Talos Harbor mirror patch must not contain registry authentication" in str(error)
+    else:
+        raise AssertionError("committed Talos registry config passed")
+    mirror_patch["machine"]["registries"].pop("config")
     check.FLEET_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
     try:
         check.check()
@@ -175,6 +224,15 @@ with tempfile.TemporaryDirectory() as directory:
     else:
         raise AssertionError("Bazarr scope source absent from the full catalog passed")
     check.BAZARR_CATALOG.write_text(json.dumps(catalog))
+    unreviewed = {"source": "cgr.dev/chainguard/python:latest@sha256:" + "c" * 64}
+    check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": [unreviewed]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Chainguard mirror scope source absent from full catalog" in str(error)
+    else:
+        raise AssertionError("Unreviewed Chainguard publication scope passed")
+    check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     documents[0]["initContainers"][0]["image"] = "busybox:missing"
     try:
         check.check()

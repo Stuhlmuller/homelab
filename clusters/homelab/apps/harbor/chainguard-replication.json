@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "paused": false,
-  "schedule": "0 * * * *",
+  "schedule": "0 0 * * * *",
   "source_registry": "cgr.dev",
   "rules": [
     {

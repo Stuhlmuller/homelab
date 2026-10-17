@@ -139,7 +139,7 @@ October 5 playback around 21:10–21:14 PDT, read-only checks found:
   was effectively idle; `zimaboard-1` had writes without metadata churn.
   Acer's 12 mounts exposed identical shared counters, so deduplicated totals
   identify the client node but cannot identify the responsible PVC. Its NFS
-  consumers include ClickHouse, Harbor components, Octobot, Grafana/Alertmanager,
+  consumers include ClickHouse, Harbor components, Grafana/Alertmanager,
   Multica uploads, and the provisioner. Do not attribute the traffic to one app
   without additional evidence.
 

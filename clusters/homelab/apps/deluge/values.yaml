@@ -23,6 +23,7 @@ controllers:
         homelab.rst.io/wireguard-address-mode: "ipv4-only"
         homelab.rst.io/wireguard-profile-renderer-revision: "strip-ipv6-routes-v1"
         homelab.rst.io/wireguard-profile-ssm-version: "4"
+        homelab.rst.io/catalog-recovery-script-revision: "reject-parent-paths-v1"
     strategy: Recreate
     initContainers:
       download-dirs:
@@ -236,7 +237,7 @@ controllers:
                 command:
                   - /bin/sh
                   - -c
-                  - timeout 25s deluge-console -c /config status >/dev/null 2>&1
+                  - timeout 25s python3 -B /scripts/daemon-status.py >/dev/null 2>&1
               failureThreshold: 180
               periodSeconds: 10
               timeoutSeconds: 30
@@ -260,7 +261,7 @@ controllers:
                 command:
                   - /bin/sh
                   - -c
-                  - timeout 25s deluge-console -c /config status >/dev/null 2>&1
+                  - timeout 25s python3 -B /scripts/daemon-status.py >/dev/null 2>&1
               failureThreshold: 60
               initialDelaySeconds: 60
               periodSeconds: 30
@@ -372,7 +373,7 @@ controllers:
             def deluge_status():
                 try:
                     result = subprocess.run(
-                        ["deluge-console", "-c", "/config", "status"],
+                        ["python3", "-B", "/scripts/daemon-status.py"],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         universal_newlines=True,
@@ -410,7 +411,7 @@ controllers:
                         return
                     healthy, vpn, total, errors = cached_metrics
                     body = textwrap.dedent(f"""\
-                        # HELP deluge_daemon_rpc_healthy Whether deluge-console can query the Deluge daemon.
+                        # HELP deluge_daemon_rpc_healthy Whether authenticated RPC can query the Deluge daemon.
                         # TYPE deluge_daemon_rpc_healthy gauge
                         deluge_daemon_rpc_healthy {healthy}
                         # HELP deluge_vpn_healthy Whether the Gluetun VPN health endpoint is healthy.
@@ -499,6 +500,9 @@ persistence:
     advancedMounts:
       deluge:
         app:
+          - path: /scripts
+            readOnly: true
+        daemon-metrics:
           - path: /scripts
             readOnly: true
   tun:
