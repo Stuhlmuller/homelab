@@ -416,6 +416,27 @@ consuming upgrade must verify that the singleton nginx
 Deployment retains a rolling update that keeps Harbor reachable during its
 replacement image pull.
 
+The chart uses `Recreate` for the registry Deployment. Before merging the
+consumer, pre-pull its 2.15.4 registry and registryctl images onto every Talos
+node so replacement does not need the registry being stopped. Complete the
+fixed Harbor publisher and fresh authenticated pulls first. On reviewed
+`main`, use the repository-owned operator command with a private Talos client
+config and the exact full `main` SHA:
+
+```sh
+for node in 10.1.0.199 10.1.0.200 10.1.0.201 10.1.0.202; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --talosconfig ~/.talos/config --prepull-registry-runtime \
+    --execute --expected-sha '<reviewed-main-sha>'
+done
+```
+
+The command pulls only the two reviewed digest pins into each CRI cache and
+checks the cache alias after each pull. Re-run it without `--execute` just
+before the consumer merge; all four nodes must report both pins cached.
+Re-pull a missing pin before proceeding. Cache verification does not establish
+rollout health.
+
 ## Bootstrap and recovery
 
 An in-cluster registry cannot cold-start from itself on empty nodes. Fresh
