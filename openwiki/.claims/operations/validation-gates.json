@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3a33f506df6738c662c10bb4dd2e888021fa7ae937d111055f861c4b47801f62",
+  "pageVersion": "sha256:bf87ebfe71fbee1c2ef7b333ca90fcbdbc2e1e3406892a3969ce8f252ef1d9c8",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
+          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
         }
       ]
     },
@@ -220,10 +220,10 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
+          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L447-L477",
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L473-L503",
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
@@ -468,7 +468,7 @@
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
+          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirror-credential.py",
@@ -476,7 +476,7 @@
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:2d7487fd6f55bd03bbb63404e496993448e50b05664b25d5aed0c61078439d3e"
+          "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
     },
@@ -581,10 +581,28 @@
           "version": "repo-file-v1:sha256:e69efee20a05e1b789cd7ee0d3915bf3e7686997e292d2de7b9051ad57b9a466"
         }
       ]
+    },
+    {
+      "id": "claim_f4cf876229e746bf92f11a6c4d69198a",
+      "statement": "The registry pre-pull fixture checks that dry-run mode avoids mutation, execution verifies exact reviewed main, cached digests are skipped, changed scope is rejected, and a pull without the expected cache alias fails. Live acceptance still requires both reviewed registry pins cached on all four Talos nodes immediately before the Harbor consumer merge.",
+      "evidence": [
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
+        },
+        {
+          "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
+          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T22:24:11.962Z"
+    "at": "2026-10-17T22:53:57.740Z"
   }
 }

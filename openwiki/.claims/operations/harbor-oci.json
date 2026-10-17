@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:54424f52260c5fe17fe18a0df6232197ac6f6f06241e778cf4e1c4bee23a0b34",
+  "pageVersion": "sha256:bec3c39df869b8489af17a16ea0c171c0c102328d935517feaf4366c2ab4b9a4",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,11 +12,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:2d7487fd6f55bd03bbb63404e496993448e50b05664b25d5aed0c61078439d3e"
+          "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
     },
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,15 +48,15 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:f8b6bd2b158c13a97ed46410e388357c7e6d9da69f583abd9f666b5d5955fc11"
+          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:2d7487fd6f55bd03bbb63404e496993448e50b05664b25d5aed0c61078439d3e"
+          "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
     },
@@ -92,7 +92,7 @@
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
-          "version": "repo-file-v1:sha256:2d7487fd6f55bd03bbb63404e496993448e50b05664b25d5aed0c61078439d3e"
+          "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
     },
@@ -105,7 +105,7 @@
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
-          "resource": "repo://scripts/talos-harbor-mirrors.py#L447-L477",
+          "resource": "repo://scripts/talos-harbor-mirrors.py#L473-L503",
           "version": "repo-lines-v1:sha256:f5c050a89d0b4959f37b0242b94964fafdee8192c0e324580bb96113f813e222:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkM2UyNjc3NTZkMjM0NjMyMzU2YjU3YmUwZTAyYjc5MmVjZmMwMGI0ZmFlNTgzNGYzMWE3YWRjMmIzMzBiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0ZTY1MDg1MDc0Y2NjNTQzMTZjNTZiODhlNzgwNzIyMWI2ZjJlYjZiZjNhNjNjNWZmYzU0ZThhNzQ0NGY4YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyMzQ4ZjA2MmU4NGVmMzNmNGEwNmEyOGNhMTEyOTkxMTkxOTUzMjQ0OTdjZjczYTA5YTcxMDBjYjYzNThjMDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYjVhZWYxOGJiYzY3NDY5NjQ3MjFjN2JjYmFjYzg0NGNiYzBhMDFiMWMxNDc3MTZlNGUyMmI3OTRmODQ1YmIifQ"
         }
       ]
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         }
       ]
     },
@@ -430,7 +430,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -490,7 +490,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:995d7b4546d06f09d7f63fca9c3eecb0f148428b4b6886958c3983385b38b18f"
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -515,10 +515,28 @@
           "version": "repo-file-v1:sha256:49b2d1db65736a9b10539e4dd24a7dcc45b34f3d4f63c204e89df1bc86444f88"
         }
       ]
+    },
+    {
+      "id": "claim_e239e8dfa2ed4d3d89b7ce6e7fd79df3",
+      "statement": "Harbor registry uses Recreate, so the 2.15.4 registry and registryctl container images must be cached on every node before the consumer merge. The repository-owned Talos operator selects exactly two reviewed pins, requires exact current main for execution, verifies CRI cache aliases after pull, and supports read-only cache audit. Cache proof does not establish live rollout health.",
+      "evidence": [
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-runtime-images.json",
+          "version": "repo-file-v1:sha256:e69efee20a05e1b789cd7ee0d3915bf3e7686997e292d2de7b9051ad57b9a466"
+        },
+        {
+          "resource": "repo://scripts/talos-harbor-mirrors.py",
+          "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T22:24:11.962Z"
+    "at": "2026-10-17T22:53:57.740Z"
   }
 }

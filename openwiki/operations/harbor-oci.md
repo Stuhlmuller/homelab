@@ -102,10 +102,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T22:24:11.962Z" }
+generated: { by: "codex", at: "2026-10-17T22:53:57.740Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:24:11.962Z
+    at: 2026-10-17T22:53:57.740Z
 ---
 
 # Harbor Private OCI Registry
@@ -386,6 +386,14 @@ the separate consumer upgrade. The scoped receipt does not prove full-catalog
 coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
+
+The registry Deployment uses `Recreate`, so its two 2.15.4 container images
+must be cached before the old Pod stops. After protected publication, the
+[Talos operator](../../scripts/talos-harbor-mirrors.py) can pre-pull exactly
+the reviewed registry and registryctl pins into each node's CRI cache from
+exact reviewed `main`; it verifies cache aliases after each pull. Audit all
+four node caches again immediately before the consumer merge. This cache gate
+does not establish rollout health. See the [operator steps](../../docs/harbor-image-mirroring.md).
 
 ### Identical-reference core repair candidate
 
