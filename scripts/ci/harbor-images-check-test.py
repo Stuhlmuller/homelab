@@ -360,6 +360,13 @@ with tempfile.TemporaryDirectory() as directory:
             "receipt": receipt, "provenance": provenance,
         }}}))
         assert check.receipt_errors() == []
+        exact_native = f'{plan["destination_repository"]}@{receipt["destination_digest"]}'
+        assert check.receipt_errors({exact_native}) == []
+        rogue_native = f'{plan["destination_repository"]}@sha256:{"0" * 64}'
+        assert check.receipt_errors({rogue_native}) == [
+            f"Declared native Chainguard reference lacks verified receipt: {rogue_native}"
+        ]
+        assert rogue_native in check.embedded_yaml_images(container_fragment(rogue_native))
 
         consumer["automation_status"] = "not-enrolled"
         consumer["migration_status"] = "candidate"

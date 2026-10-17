@@ -884,7 +884,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
 .github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml 113771bdc0005aa08f6e61424b5c804b7615bebac7559cc926abc5d316fac328
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 051309a0e6913ac0eb79ca097c21cd101ce9960fd1c35e567b4716e1b7449d54
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
@@ -967,6 +967,7 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
   jq -e '
     [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
     [.jobs.verify.steps[] | select(.name == "Verify Changed Native Receipt State")] as $verify |
+    [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests After Main Moves")] as $revalidate |
     .name == "Verify Native Chainguard Receipt Provenance" and
     (.on | keys | sort) == ["pull_request_target", "push"] and
     .on.push == {"branches": ["main"]} and
@@ -976,11 +977,11 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     (.jobs | keys) == ["verify"] and
     .jobs.verify.name == "Native Chainguard Receipt Provenance" and
     .jobs.verify["runs-on"] == "ubuntu-24.04" and
-    .jobs.verify["timeout-minutes"] == 10 and
-    .jobs.verify.permissions == {"actions": "read", "contents": "read", "statuses": "write"} and
+    .jobs.verify["timeout-minutes"] == 20 and
+    .jobs.verify.permissions == {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"} and
     .jobs.verify.environment == null and
     .jobs.verify.env == null and
-    (.jobs.verify.steps | length) == 2 and
+    (.jobs.verify.steps | length) == 3 and
     ($checkout | length) == 1 and
     $checkout[0].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505" and
     $checkout[0].with == {
@@ -1005,7 +1006,17 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
       contains("repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}") and
       contains("report_status pending") and
       contains("report_status success") and
-      contains("report_status failure"))
+      contains("report_status failure") and
+      contains("repos/${GITHUB_REPOSITORY}/commits/main")) and
+    ($revalidate | length) == 1 and
+    $revalidate[0].if == "github.event_name == '\''push'\''" and
+    $revalidate[0].env == {"GH_TOKEN": "${{ github.token }}"} and
+    ($revalidate[0].run |
+      contains("set -euo pipefail") and
+      contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
+      contains("--base-sha \"$GITHUB_SHA\" --head-sha \"$head_sha\"") and
+      contains("repos/${GITHUB_REPOSITORY}/commits/main") and
+      contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null
 fixture_env=""
 if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
@@ -1027,7 +1038,7 @@ while read -r source expected_hash; do
     exit 1
   }
 done <<'EOF'
-scripts/ci/harbor-native-chainguard-receipt-import.py e36c7e23a323dccc474964077e37f1968d92b3e8aafb065428b016e474969659
+scripts/ci/harbor-native-chainguard-receipt-import.py c7a8b65baa2ae4a7a6f5afbd0b9b25a1e3f2638bdc5f8241e42590eef96e69d2
 scripts/ci/harbor-native-chainguard-receipt.py eee7fc668f177daf4e88291d947fca7fa87aeb00a4b3af70f664b524467ea4dc
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |

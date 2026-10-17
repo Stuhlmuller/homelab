@@ -206,7 +206,7 @@ def native_receipt_plans(config):
     }
 
 
-def receipt_errors():
+def receipt_errors(declared_native=()):
     """Enrolled consumers require verified publication; native candidates need protected evidence."""
     if not AUTOMATION.exists() or not AUTOMATION_STATE.exists():
         return []
@@ -274,6 +274,20 @@ def receipt_errors():
                 f"Enrolled native Chainguard consumer lacks exact verified digest: {consumer.get('consumer_id')}"
             )
             continue
+    if declared_native:
+        if native_plans is None:
+            try:
+                native_plans = native_receipt_plans(config)
+            except (OSError, ValueError):
+                native_plans = {}
+        expected = {f'{plan["destination_repository"]}@{plan["source_digest"]}': image_id
+                    for image_id, plan in native_plans.items()}
+        for reference in sorted(declared_native):
+            image_id = expected.get(reference)
+            entry = receipts.get(image_id) if image_id else None
+            if (image_id is None or not isinstance(entry, dict)
+                    or not NATIVE_RECEIPT_IMPORT.verify_imported_receipt(native_plans[image_id], entry)[0]):
+                errors.append(f"Declared native Chainguard reference lacks verified receipt: {reference}")
     return errors
 
 
@@ -308,7 +322,12 @@ def check():
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
                   if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1]}
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
-    images, digests = declared_images(yaml_documents(paths))
+    documents = yaml_documents(paths)
+    images, digests = declared_images(documents)
+    native_prefixes = ("harbor.stinkyboi.com/homelab/chainguard/",
+                       "harbor.stinkyboi.com/homelab/chainguard-")
+    declared_native = {image for image in images | embedded_yaml_images(documents)
+                       if image.startswith(native_prefixes)}
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/")
                      and normalize(image) not in known | known_tags)
@@ -316,7 +335,7 @@ def check():
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
-    errors.extend(receipt_errors())
+    errors.extend(receipt_errors(declared_native))
     errors.extend(ownership_errors())
     scope_counts = {}
     for name, path, required_images in (
