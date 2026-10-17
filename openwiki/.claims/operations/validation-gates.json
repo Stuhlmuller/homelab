@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:530ccb2d960f499d947fd914aea3997530e3339a34e3bdd4780ad0239545d153",
+  "pageVersion": "sha256:1fe445930d5101766af96337bfd4f250d7aff1af13f0f6c5d1dbd371ddeee598",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e5c36c51a8ab9808f11b04f6d14bcc1a209204100934ee2b62592e5c044643d2"
+          "version": "repo-file-v1:sha256:7a09fcd906c4b9ce0bddf73c21cc7319ba073b86b2900454ac5be24f9807fd49"
         }
       ]
     },
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:efe2d6e6955505b7fec6391e5420f6e43dce034d85837e60314c2099eef3cef5"
+          "version": "repo-file-v1:sha256:ebacd39e72ac0d8afcca7dd7d10487bd34ebafa8c4d60038807f12751c5f0a11"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -558,21 +558,21 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e5c36c51a8ab9808f11b04f6d14bcc1a209204100934ee2b62592e5c044643d2"
+          "version": "repo-file-v1:sha256:7a09fcd906c4b9ce0bddf73c21cc7319ba073b86b2900454ac5be24f9807fd49"
         }
       ]
     },
     {
       "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
-      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA and revalidates open same-repository PRs after main moves; static checks pin its reviewed steps, status permission, and source hashes. Its required status is activated after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA and revalidates all open PR heads, including forks, after main moves; static checks pin its reviewed steps, status permission, and source hashes. Its required status is activated after a successful main run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:f2b9fe6e6bcd637bce063908105d48e27c5f57ff8f571cb549f0f86700de677d"
+          "version": "repo-file-v1:sha256:676263ba9ec372d250d385f464537909c8561a377ecca3cacea933c3f329b706"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e5c36c51a8ab9808f11b04f6d14bcc1a209204100934ee2b62592e5c044643d2"
+          "version": "repo-file-v1:sha256:7a09fcd906c4b9ce0bddf73c21cc7319ba073b86b2900454ac5be24f9807fd49"
         }
       ]
     },
@@ -596,11 +596,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:f2b9fe6e6bcd637bce063908105d48e27c5f57ff8f571cb549f0f86700de677d"
+          "version": "repo-file-v1:sha256:676263ba9ec372d250d385f464537909c8561a377ecca3cacea933c3f329b706"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:efe2d6e6955505b7fec6391e5420f6e43dce034d85837e60314c2099eef3cef5"
+          "version": "repo-file-v1:sha256:ebacd39e72ac0d8afcca7dd7d10487bd34ebafa8c4d60038807f12751c5f0a11"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
@@ -611,6 +611,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:40:53.989Z"
+    "at": "2026-10-17T19:44:54.134Z"
   }
 }

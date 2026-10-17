@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T19:37:24.843Z" }
+generated: { by: "codex", at: "2026-10-17T19:44:54.134Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:37:24.843Z
+    at: 2026-10-17T19:44:54.134Z
 ---
 
 # Harbor Private OCI Registry
@@ -760,7 +760,7 @@ migration, global Harbor-only pulls, nor live egress enforcement.
 The trusted `pull_request_target` provenance job reads only the committed
 receipt, verifies its private source-run evidence against GitHub, and publishes
 `Native Chainguard Receipt Provenance` as a commit status on the PR head SHA.
-On each `main` push, the trusted job rechecks open same-repository PR heads
+On each `main` push, the trusted job rechecks all open PR heads, including forks,
 against the new base and refreshes that status. Its required status must be
 enabled only after the workflow succeeds on `main`.
 The private receipt is imported from a successful exact-main run before the

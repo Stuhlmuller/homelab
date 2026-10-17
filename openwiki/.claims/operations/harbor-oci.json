@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:afe9d2c55e1974a4c4e259b166cddb3f5b80d05e6b3e745db2854b9a4c9a4baa",
+  "pageVersion": "sha256:38d773d02e96c80e9e7da234531fcf7830e451a7ffad2aba5386ecb5cb753265",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -470,11 +470,11 @@
     },
     {
       "id": "claim_4fb8563dc6c840ac8608a6d5333b0b13",
-      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; main pushes revalidate open same-repository PR heads against the new base. The importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA.",
+      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; main pushes revalidate all open PR heads, including forks, against the new base. The importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:f2b9fe6e6bcd637bce063908105d48e27c5f57ff8f571cb549f0f86700de677d"
+          "version": "repo-file-v1:sha256:676263ba9ec372d250d385f464537909c8561a377ecca3cacea933c3f329b706"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py",
@@ -521,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:37:24.843Z"
+    "at": "2026-10-17T19:44:54.134Z"
   }
 }
