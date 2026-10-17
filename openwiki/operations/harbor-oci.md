@@ -3,9 +3,6 @@ type: operations
 title: "Harbor OCI"
 description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
 tags: [harbor, images, registry, security]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
@@ -43,16 +40,14 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-caccd49b346c867666da5f50
+    resource: repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
-  - id: openwiki-source-1635b3ffa6091ee664a713ee
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
-  - id: openwiki-source-4284f84c777b5f9b078e069d
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-bc26cfab2973077898d9ec21
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-6d89464fbd512a9fe7a09d90
+    resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -79,6 +74,8 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-bef786188ec490a342373148
+    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
@@ -103,7 +100,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+generated: { by: "codex", at: "2026-10-17T20:20:01.784Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T20:20:01.784Z
 ---
 
 # Harbor Private OCI Registry
@@ -128,8 +128,8 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI still establishes a bounded Kubernetes port-forward to Istio with
-the existing Octelium CI credential until phase 2b. Only its disposable runner maps
+Hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
+with the existing Octelium CI credential. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
 retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
 
@@ -479,14 +479,14 @@ records successful Linux audit CI at `279092e6`, with exact image/config identit
 `06e82a8d...09ef9` and five retained matches (two high, two medium, one unknown).
 The available-fix gate passed; CVE clearance remains explicitly false.
 
-The [excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-renders a namespace-local Docker-config ExternalSecret and ServiceAccount pull
-reference from the already-declared `/homelab/harbor/robot-pull-password`.
-Harbor is already permitted by the store and exact reader policy. No app-container
-mount, new IAM/SSM declaration or credential rotation is added. Active Harbor
-resources exclude this directory. Move its secret and merge the pull reference
-into the existing ServiceAccount only with reviewed publication/scans, recovery
-clearance and ExternalSecret readiness; preserve cold-bootstrap/rollback access.
+The active Harbor Kustomization renders a namespace-local Docker-config
+ExternalSecret from the already-declared `/homelab/harbor/robot-pull-password`.
+The vulnerability exporter references it only for kubelet pulls. The
+[excluded private-core pull candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+holds the ServiceAccount pull reference. No app-container mount, new IAM/SSM
+declaration or credential rotation is added. Merge the held pull reference
+only with reviewed publication/scans, recovery clearance and ExternalSecret
+readiness; preserve cold-bootstrap/rollback access.
 
 The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-core-images.yml)
 prepares a protected publication path for one fixed

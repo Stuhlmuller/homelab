@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fae9084677911ad9df3510ffd7f372f3410b56ce150f895b3956dbee00e5f49e",
+  "pageVersion": "sha256:da13a80e3dd4791a5890034d96d7b0d9122f0da303f1df7b499bd59aa7ed736e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:be10f35973425dd3a5e27c1569f11b2ec6ac0aba6d7fdc8b7e36125baea82b2d"
+          "version": "repo-file-v1:sha256:ab4254a43232a2bb9b412f85d2cf14b191f521a89e80f92b576ac3664536ef99"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -26,15 +26,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:5f49827ae07c13d6a09c6f5a5efc8ec8694622c441068a5b6b69447b43ee9214"
+          "version": "repo-file-v1:sha256:72fc7f6354d6deb9008c653db449cf95e378df4ece21e31cf3db2b994c0da66d"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:be10f35973425dd3a5e27c1569f11b2ec6ac0aba6d7fdc8b7e36125baea82b2d"
+          "version": "repo-file-v1:sha256:ab4254a43232a2bb9b412f85d2cf14b191f521a89e80f92b576ac3664536ef99"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:be10f35973425dd3a5e27c1569f11b2ec6ac0aba6d7fdc8b7e36125baea82b2d"
+          "version": "repo-file-v1:sha256:ab4254a43232a2bb9b412f85d2cf14b191f521a89e80f92b576ac3664536ef99"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -101,7 +101,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L249-L260",
+          "resource": "repo://docs/harbor-image-mirroring.md#L252-L263",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:be10f35973425dd3a5e27c1569f11b2ec6ac0aba6d7fdc8b7e36125baea82b2d"
+          "version": "repo-file-v1:sha256:ab4254a43232a2bb9b412f85d2cf14b191f521a89e80f92b576ac3664536ef99"
         }
       ]
     },
@@ -154,7 +154,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
+          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
         },
         {
           "resource": "repo://builds/harbor-core/prepare-source.py",
@@ -176,7 +176,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
-          "version": "repo-file-v1:sha256:b5625bc137fac9e35c719e7750efa833cec33b52a6f2c2750cd68e66224338ca"
+          "version": "repo-file-v1:sha256:21785f2fa650b81f20b37673f8789128ed480fed9eb4c3c603ca72999794a69e"
         }
       ]
     },
@@ -200,7 +200,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
+          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
@@ -256,7 +256,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:065109e01e7c29e4ce189346a06858fbeca204190b6223b345c7d505a9f46742"
+          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -298,27 +298,23 @@
     },
     {
       "id": "claim_a6434f50ff3543fdb91030087a459c4f",
-      "statement": "The excluded Harbor private-core directory stages a namespace-local Docker-config ExternalSecret and kubelet-only ServiceAccount pull reference using the existing read-only robot parameter, without new IAM/SSM declarations or rotation. Active Harbor Kustomization excludes it and activation retains publication/scan/recovery/readiness and cold-bootstrap safeguards.",
+      "statement": "The active Harbor Kustomization stages a namespace-local Docker-config ExternalSecret from the existing read-only robot parameter, referenced by the vulnerability exporter only for kubelet image pulls. The excluded private-core candidate holds a ServiceAccount pull reference. No new IAM/SSM declaration or credential rotation is added; core activation still requires reviewed publication/scans, recovery clearance, ExternalSecret readiness, and cold-bootstrap safeguards.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/harbor/kustomization.yaml",
-          "version": "repo-file-v1:sha256:6656afa97408bd0c8eb4a3ae4fbc08d7193731e46d4fcf00c63835c065cef1ed"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
-          "version": "repo-file-v1:sha256:b5625bc137fac9e35c719e7750efa833cec33b52a6f2c2750cd68e66224338ca"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml",
+          "resource": "repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml",
           "version": "repo-file-v1:sha256:b8f1f26e96e3b59a15b693270fa7d156fda4ca1c79d9dbec9b10dc61db3ca438"
         },
         {
-          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/kustomization.yaml",
-          "version": "repo-file-v1:sha256:e8efc8d40b9652c1bd3ac81b90fa1d1e1c27ae16250c90d1492b168c05e9c5de"
+          "resource": "repo://clusters/homelab/apps/harbor/kustomization.yaml",
+          "version": "repo-file-v1:sha256:a74477ea066d8642de97e34df1fceb67b955216d8fd7721730070ff3427ad88e"
         },
         {
-          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml",
-          "version": "repo-file-v1:sha256:5a032b0a5d00158f851b147fae5ffbd0b52209c7082db49ee0f08fea1fd97308"
+          "resource": "repo://clusters/homelab/apps/harbor/private-core-candidate/README.md",
+          "version": "repo-file-v1:sha256:21785f2fa650b81f20b37673f8789128ed480fed9eb4c3c603ca72999794a69e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml",
+          "version": "repo-file-v1:sha256:f2573d67759228f40a265af1bc61a0d8063d696fe9cd173dab36c14193045a01"
         }
       ]
     },
@@ -336,11 +332,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
+          "version": "repo-file-v1:sha256:38b2361e65de1d499bc379dc042e82eb72bdee9aea2a5e5cb556fe463a454e85"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         }
       ]
     },
@@ -350,7 +346,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:36dc8dc3ac7e15b5b938259da9d0312e21bfb2ca18bfc7be98d0007466b691c1"
+          "version": "repo-file-v1:sha256:6f5045180b8569ea94dd9e693998337aa85953b767cc54d7858533597306f67c"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -368,11 +364,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
+          "version": "repo-file-v1:sha256:38b2361e65de1d499bc379dc042e82eb72bdee9aea2a5e5cb556fe463a454e85"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         }
       ]
     },
@@ -382,7 +378,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:36dc8dc3ac7e15b5b938259da9d0312e21bfb2ca18bfc7be98d0007466b691c1"
+          "version": "repo-file-v1:sha256:6f5045180b8569ea94dd9e693998337aa85953b767cc54d7858533597306f67c"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -408,7 +404,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         }
       ]
     },
@@ -434,11 +430,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:be10f35973425dd3a5e27c1569f11b2ec6ac0aba6d7fdc8b7e36125baea82b2d"
+          "version": "repo-file-v1:sha256:ab4254a43232a2bb9b412f85d2cf14b191f521a89e80f92b576ac3664536ef99"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:900340bb478a0e8cfaafa98ae73693a159808a36c257f640d85f0f4a313355c1"
+          "version": "repo-file-v1:sha256:e2e82b2ebeb748d08642c81309d7178084f4b6247c3e6acf90563951c0684694"
         }
       ]
     },
@@ -447,22 +443,36 @@
       "statement": "Mastodon's fixed four-image publication scope uses its separate PostgreSQL 18-bookworm security candidate without changing Harbor's existing database pin, and requires all-platform digest copies, aliases and complete authenticated Harbor pulls before consuming references merge.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L190-L238",
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L195-L243",
           "version": "repo-lines-v1:sha256:6552dc2ef5813acd9c0e305cd75a437c63dd3a34b7dc6c1062e28610a6547925:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiYjI4ZmZhMDgwOTI2ZTI1ZWYwM2Q0ZDEyMmY2YjQxZGY2NmVmYjEzNDdkODllNjJhNjZhOWViZmZlMjYzNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzYjYzMzQzOWViZDE2YWUwNmYxOGRjZWUxYWEzZDE2NzQzMjNjOGQ1MjVjYWM1ZGZlZTVmN2U3NmYwYjc5MWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhMDVmYTk1MzJhYWQ4MmRiYTBjMzhmOWEwNmQ5ZDIwNDRkNDUwNzVlNzVhMTFmM2JkNzAxMzRkODA1MzUxYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2NThlMGRjNmMxY2Q3ZDVhYTg0ZmFkZmYxNmU2YmQ4Y2U3YjRhMzFhOTdmZTgxMzlmNDU2MzZiMzQzYzIwZTIifQ"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
           "version": "repo-file-v1:sha256:eafc73e89544447f62da24153683cebd3c4876bbd03e29453f23dcc93a903b02"
         }
       ]
+    },
+    {
+      "id": "claim_0ca1e737d45c40c3a7c393f55a7cbf25",
+      "statement": "Hosted Harbor publication CI forwards the disposable runner to traefik/traefik-private over a bounded Kubernetes port-forward with the Octelium CI credential, maps the Harbor hostname to loopback, and retains TLS verification.",
+      "evidence": [
+        {
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:a9d60d632ca5423307f23dad0419cb5480d2026960b9518db24d2b43d24410b1"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:8df46a28ee4269ef40f4ce8cae53a421703318d063dd0e8819cc03b6e72354c9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T04:52:40.970Z"
+    "at": "2026-10-17T20:20:01.784Z"
   }
 }
