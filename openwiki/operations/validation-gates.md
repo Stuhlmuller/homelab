@@ -46,8 +46,6 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
-  - id: openwiki-source-e6fd9160ab2341143a5d45c8
-    resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -123,7 +121,7 @@ sources:
 generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:07:34.573Z
+    at: 2026-10-17T21:21:43.631Z
 ---
 
 # Validation Gates

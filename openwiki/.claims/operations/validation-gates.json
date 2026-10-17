@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:64ee8050135246c5a58593c897de4d6e8397052fc75348dc1fb345ab345b0f3b",
+  "pageVersion": "sha256:5bb0924b7496392f1ec2ffa584a0223978c7a934419c2250bd21fa8c154a89b7",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -551,16 +551,12 @@
       ]
     },
     {
-      "id": "claim_8e444bbb8b114f29a2f36db207f2c8e2",
+      "id": "claim_248c462ddf6541d5b73a72beb0979e84",
       "statement": "The validate workflow runs a 30-minute disposable dual-stack Kind network-policy job on pull requests and main pushes. It checks unrestricted baseline traffic, NRI registration, denied startup connections, allowed Service/DNS access, established-connection revocation, and denial while the worker enforcer process is paused without cleanup. Passing proves fixture behavior, not production Flannel enforcement or rollout acceptance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
           "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
-        },
-        {
-          "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:76c34b3dc37e4f83f69beba615a25174eadc3390728a177cc69f6180e85305eb"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
@@ -571,6 +567,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:07:34.573Z"
+    "at": "2026-10-17T21:21:43.631Z"
   }
 }

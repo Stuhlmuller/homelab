@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1f8e7a951c34c3ad4fd5ed319684808f3c3e9e8eb27c2986493b1167389e645a",
+  "pageVersion": "sha256:1f5f2b4621bb6c479507ceeaf4f24404eca3d6280d22cd6b077df1c76ca0a44e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -350,11 +350,11 @@
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
-          "version": "repo-file-v1:sha256:036493a69c2343e6ac9eea79feeb88ff28b9b17c32a4f070f452cdb010238836"
+          "version": "repo-file-v1:sha256:e89c7229d1ffb9b53cd601fcb9c7d12c9d0ef02f4a0ed0300f6ea7736fd56627"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:0fb1b36bb43f6c64246006e906b77df753d7471d712a3512c9d098006ede5e98"
+          "version": "repo-file-v1:sha256:b3cbb5997b15412317bfbf5648f5cc70549d7818ba05d5a8fc56f9b6d41f9e3a"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:0fb1b36bb43f6c64246006e906b77df753d7471d712a3512c9d098006ede5e98"
+          "version": "repo-file-v1:sha256:b3cbb5997b15412317bfbf5648f5cc70549d7818ba05d5a8fc56f9b6d41f9e3a"
         }
       ]
     },
@@ -480,13 +480,13 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:0fb1b36bb43f6c64246006e906b77df753d7471d712a3512c9d098006ede5e98"
+          "version": "repo-file-v1:sha256:b3cbb5997b15412317bfbf5648f5cc70549d7818ba05d5a8fc56f9b6d41f9e3a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:07:34.573Z"
+    "at": "2026-10-17T21:21:43.631Z"
   }
 }
