@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:99283ac8191c937e5331786846d9817a395fb9a05d3f95136198772624a081f2",
+  "pageVersion": "sha256:530ccb2d960f499d947fd914aea3997530e3339a34e3bdd4780ad0239545d153",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:8c7e65fcd8c16d6b3202ed21b7bbaceaea07f8c1ad474c7d38617593ce441079"
+          "version": "repo-file-v1:sha256:efe2d6e6955505b7fec6391e5420f6e43dce034d85837e60314c2099eef3cef5"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -589,10 +589,28 @@
           "version": "repo-file-v1:sha256:a3f72843d13a2deb0b47bab5bb9b901001ed12a5774760904322c9524523013e"
         }
       ]
+    },
+    {
+      "id": "claim_4b4d744a47ad4b9eaa60b7d07d11be39",
+      "statement": "The Rego pull_request_target exception accepts only the exact trusted native receipt provenance job shape, including main-push revalidation, and its tests reject changed verifier or revalidation steps.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:f2b9fe6e6bcd637bce063908105d48e27c5f57ff8f571cb549f0f86700de677d"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:efe2d6e6955505b7fec6391e5420f6e43dce034d85837e60314c2099eef3cef5"
+        },
+        {
+          "resource": "repo://policy/workflows_test.rego",
+          "version": "repo-file-v1:sha256:a6c1be507c3d90bfd30e4ebf47cbeef9c6afc77237bd5a6f9aaab31dccbdf6b4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:37:24.843Z"
+    "at": "2026-10-17T19:40:53.989Z"
   }
 }

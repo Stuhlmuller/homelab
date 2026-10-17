@@ -54,6 +54,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-fdad4f74fd023e19134fcc88
+    resource: repo://policy/workflows_test.rego
   - id: openwiki-source-8853fb993dc68b93d8f20498
     resource: repo://policy/workflows.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -126,10 +128,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T19:37:24.843Z" }
+generated: { by: "codex", at: "2026-10-17T19:40:53.989Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:37:24.843Z
+    at: 2026-10-17T19:40:53.989Z
 ---
 
 # Validation Gates
@@ -1568,8 +1570,9 @@ against the exact successful main run and publishes `Native Chainguard Receipt
 Provenance` on the PR head SHA. Main pushes revalidate open same-repository PR
 heads against the new base. The required status is enabled only after the
 workflow succeeds on main; static policy tests pin its trusted steps, status
-permission, and source hashes. Neither a local fixture nor a copied receipt
-substitutes for this head-bound result.
+permission, and source hashes. The Rego `pull_request_target` exception accepts
+only that exact trusted job shape, including main-push revalidation. Neither a
+local fixture nor a copied receipt substitutes for this head-bound result.
 
 `harbor-images-check.py` reads native consumer targets even when status remains
 `candidate` and `not-enrolled`, and scans workload manifests for private native
