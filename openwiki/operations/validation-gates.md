@@ -1,11 +1,13 @@
 ---
 type: operation
 title: "Validation Gates"
-description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
-tags: ["operations", "validation"]
+description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
+tags: [operations, validation]
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -28,6 +30,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
@@ -60,8 +64,6 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
-  - id: openwiki-source-d9d387d4c8e269e62340179d
-    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -114,10 +116,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T03:46:52.296Z" }
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Validation Gates
@@ -1396,6 +1398,10 @@ See [the operator path](../../docs/octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
 
+Fleet-only Company Portal and Platform SSO acceptance is retired. The dated
+pilot records below do not authorize repeating that unsupported enrollment.
+Use the current [Fleet boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
+
 The [WireGuard/AirVPN workflow](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 adds `python3 -I scripts/ci/fleet-airvpn-setup-test.py` to static checks. Its
 synthetic tests cover private-file handling, current-password file validation,
@@ -1567,6 +1573,9 @@ the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
 pull/digest/signature failures. The credentialed job inventory and canonical
 workflow hash enroll both the publisher and pinned-reference reporting job;
 dispatch verification precedes checkout and repeats before credentials.
+The protected publisher also requires zero matches in the exact full-container
+Grype report before registry credentials; ordinary audit fixtures continue to
+retain unresolved findings for review.
 No publication workflow has been dispatched as part of these source tests.
 The Harbor Core publication workflow runs the pinned public Chainguard signer
 fixture before AWS credential configuration, and `validate` runs the same fixture.
@@ -1628,3 +1637,21 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Mastodon activation gates
+
+The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,
+idempotent owner bootstrap, routes, fixed SMTP injection and conflict-safe public
+DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
+the DNS job installs Nix and runs both kubeconfig setup and publication inside
+the pinned shell. These fixtures do not contact SMTP or publish DNS.
+
+Before activation, require current-head protected checks and live Terragrunt
+plan, complete fixed-image publication, worker capacity, ready upstream
+Applications and declared SSM credentials. Register only the Mastodon target
+through the saved-plan apply path. Then verify actual Argo revision/health,
+migrations, owner login, loaded JSON gem, SMTP delivery and public HTTP,
+WebFinger, media and streaming. The DNS workflow requires Mastodon and the
+shared connector Synced/Healthy at its reviewed revision. Preserve data and
+stable keys through recovery; prove backups and isolated restore separately.
+See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).

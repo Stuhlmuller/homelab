@@ -376,3 +376,24 @@ test_rejects_unreviewed_funnel_annotation if {
 	some msg in violations
 	contains(msg, "Funnel is restricted")
 }
+
+mastodon_secret(key) := {
+	"apiVersion": "external-secrets.io/v1",
+	"kind": "ExternalSecret",
+	"metadata": {"name": "mastodon-datastores", "namespace": "mastodon"},
+	"spec": {
+		"secretStoreRef": {"kind": "ClusterSecretStore", "name": "aws-ssm"},
+		"data": [{"secretKey": "password", "remoteRef": {"key": key}}],
+	},
+}
+
+test_allows_mastodon_owned_credentials if {
+	violations := deny with input as mastodon_secret("/homelab/mastodon/postgres-password")
+	count(violations) == 0
+}
+
+test_rejects_mastodon_reading_another_workload_secret if {
+	violations := deny with input as mastodon_secret("/homelab/fleet/mysql-root-password")
+	some msg in violations
+	contains(msg, "outside its allowed application prefixes")
+}
