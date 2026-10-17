@@ -316,5 +316,6 @@ nix develop --command ruby scripts/ci/mastodon-launch-test.rb
 ```
 
 Rollback before registration is removal of this preparation. After registration,
-revert the Application/workload change through protected `main`; retained PVs,
-PVCs, SSM keys, and backups must remain available for recovery.
+revert the Application/workload change through protected `main`. The namespace,
+local StorageClasses, PVs, and PVCs carry `Prune=false,Delete=false` so deleting
+the Application retains claims for recovery. Preserve SSM keys and backups too.

@@ -3,6 +3,7 @@ kind: StorageClass
 metadata:
   name: mastodon-postgres-local
   annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/sync-wave: '-2'
 provisioner: kubernetes.io/no-provisioner
 reclaimPolicy: Retain
@@ -13,7 +14,7 @@ kind: PersistentVolume
 metadata:
   name: mastodon-postgres-local
   annotations:
-    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/sync-wave: '-2'
   labels:
     app.kubernetes.io/name: mastodon-postgres
@@ -48,7 +49,7 @@ metadata:
   name: mastodon-postgres-local
   namespace: mastodon
   annotations:
-    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/sync-wave: '-2'
   labels:
     app.kubernetes.io/name: mastodon-postgres
@@ -69,6 +70,7 @@ kind: StorageClass
 metadata:
   name: mastodon-redis-local
   annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/sync-wave: '-2'
 provisioner: kubernetes.io/no-provisioner
 reclaimPolicy: Retain
@@ -79,7 +81,7 @@ kind: PersistentVolume
 metadata:
   name: mastodon-redis-local
   annotations:
-    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/sync-wave: '-2'
   labels:
     app.kubernetes.io/name: mastodon-redis
@@ -114,7 +116,7 @@ metadata:
   name: mastodon-redis-local
   namespace: mastodon
   annotations:
-    argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
     argocd.argoproj.io/sync-wave: '-2'
   labels:
     app.kubernetes.io/name: mastodon-redis
