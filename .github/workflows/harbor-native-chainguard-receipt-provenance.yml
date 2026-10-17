@@ -69,8 +69,7 @@ jobs:
           trap 'rm -f "$token_file" "$pulls_file"' EXIT
           printf '%s' "$GH_TOKEN" >"$token_file"
           gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
-          jq -r --arg repo "$GITHUB_REPOSITORY" \
-            '.[] | select(.head.repo.full_name == $repo) | .head.sha' "$pulls_file" |
+          jq -r '.[].head.sha' "$pulls_file" |
           while IFS= read -r head_sha; do
             [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
             [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$GITHUB_SHA" ]] || exit 0
