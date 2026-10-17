@@ -168,6 +168,22 @@ class GoogleLoginTest(unittest.TestCase):
         logout_path = "/api/v1/fleet/logout"
         api.request.assert_called_with("POST", logout_path, token="test-session")
 
+    def test_profile_uses_private_current_admin_password(self):
+        setup, api, mdm, private = Mock(), Mock(), Mock(), Mock()
+        api.request.return_value = {"token": "test-session"}
+        setup.mac_host.return_value = "host-uuid"
+        private.read_password.return_value = "current-password"
+        path = Path("/private/password-file")
+        with patch.object(helper, "module", side_effect=[setup, api, mdm, private]):
+            with patch.object(helper, "read_credential", return_value=VALUE):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    helper.apply_profile(host_id=7, password_file=path)
+        private.read_password.assert_called_once_with(path)
+        api.initial_password.assert_not_called()
+        api.request.assert_any_call("POST", "/api/v1/fleet/login", {
+            "email": api.ADMIN_EMAIL, "password": "current-password",
+        })
+
 
 if __name__ == "__main__":
     unittest.main()

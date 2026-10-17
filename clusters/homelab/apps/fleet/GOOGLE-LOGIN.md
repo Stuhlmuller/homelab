@@ -101,7 +101,8 @@ python3 -I scripts/ci/fleet-google-login-test.py
 python3 -I scripts/fleet-google-login.py validate
 python3 -I scripts/fleet-google-login.py store \
   --credential-file /absolute/private/google-oauth.json --execute
-python3 -I scripts/fleet-google-login.py install-profile --execute
+python3 -I scripts/fleet-google-login.py install-profile \
+  --password-file /absolute/private/fleet-admin-password --execute
 python3 -I scripts/fleet-google-login.py install-software \
   --package-file /absolute/private/XCreds-5.9.1-9157.pkg --execute
 ```
@@ -114,6 +115,10 @@ remote Mac delivery from the trusted operator machine; the existing Fleet
 platform/enrollment guard rejects non-Macs and unenrolled hosts. Never copy
 operator AWS or Kubernetes credentials onto another user's Mac. It preserves
 unrelated profiles and requires Apple acknowledgement and matching profile UUID.
+The current Fleet administrator password comes from an owner-only file outside
+the checkout; omit `--password-file` only before the bootstrap password has
+been changed. The operator uses the existing private-file validation and never
+prints the password.
 The credential is present on the managed Mac for OIDC token exchange; root on
 that Mac can read it. Rotate SSM and reinstall the profile on every managed Mac
 after a provider-secret rotation; there is no controller refreshing it for you.
@@ -162,7 +167,8 @@ rollback, then run the operator from the trusted machine:
 
 ```sh
 python3 -I scripts/fleet-google-login.py remove-profile \
-  --host-id <Fleet-Mac-ID> --native-login-restored --execute
+  --host-id <Fleet-Mac-ID> --native-login-restored \
+  --password-file /absolute/private/fleet-admin-password --execute
 ```
 
 The explicit attestation is required because the operator cannot inspect a remote

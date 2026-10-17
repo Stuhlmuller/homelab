@@ -130,7 +130,7 @@ def profile(value):
     return plistlib.dumps(result), result
 
 
-def apply_profile(remove=False, host_id=None, native_login_restored=False):
+def apply_profile(remove=False, host_id=None, native_login_restored=False, password_file=None):
     setup = module("fleet-free-setup.py")
     api = module("fleet-download-apple-csr.py")
     mdm = module("fleet-verify-apple-mdm.py")
@@ -147,8 +147,10 @@ def apply_profile(remove=False, host_id=None, native_login_restored=False):
     else:
         desired = [profile(read_credential())]
     api.MAX_RESPONSE = 16 * 1024 * 1024
+    password = (module("fleet-airvpn-setup.py").read_password(password_file)
+                if password_file else api.initial_password())
     token = api.request("POST", "/api/v1/fleet/login", {
-        "email": api.ADMIN_EMAIL, "password": api.initial_password(),
+        "email": api.ADMIN_EMAIL, "password": password,
     }).get("token")
     if not isinstance(token, str) or not token:
         raise Failure("Fleet login did not return a session")
@@ -198,6 +200,7 @@ def main(argv=None):
     parser.add_argument("--credential-file", type=Path)
     parser.add_argument("--package-file", type=Path)
     parser.add_argument("--host-id", type=int, help="Explicit enrolled Fleet Mac ID for profile delivery or removal")
+    parser.add_argument("--password-file", type=Path, help="Owner-only file with the current Fleet administrator password")
     parser.add_argument("--native-login-restored", action="store_true", help="Attest native login was verified on the selected remote Mac before profile removal")
     parser.add_argument("--execute", action="store_true")
     args = parser.parse_args(argv)
@@ -209,6 +212,8 @@ def main(argv=None):
         parser.error("Profile delivery and removal require a positive Fleet Mac ID")
     if args.native_login_restored and (args.action != "remove-profile" or args.host_id is None):
         parser.error("--native-login-restored applies only to remote profile removal")
+    if args.password_file is not None and args.action not in ("install-profile", "remove-profile"):
+        parser.error("--password-file applies only to profile delivery or removal")
     try:
         json.loads(PREFERENCES.read_text())
         if not args.execute:
@@ -224,7 +229,8 @@ def main(argv=None):
             install_software(args.package_file)
         else:
             apply_profile(remove=args.action == "remove-profile", host_id=args.host_id,
-                          native_login_restored=args.native_login_restored)
+                          native_login_restored=args.native_login_restored,
+                          password_file=args.password_file)
         return 0
     except Exception:  # noqa: BLE001 - credential-bearing transport and parser failures must be redacted.
         print("Google login setup failed or is incomplete; private details withheld.", file=sys.stderr)
