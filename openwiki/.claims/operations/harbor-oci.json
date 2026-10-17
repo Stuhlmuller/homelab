@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6262f311537d5dbba401be805829b73a116959ca0c66d009dee839f15ee58665",
+  "pageVersion": "sha256:15a7b8921fca291f1a6d233c62ceda53a99e89a9dc3fc7286cf5e3f2f27e3093",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -414,7 +414,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:fde9b3c95c94f8f2a9537140322516b84b644510a113a2687ab3e135b79fe24e"
+          "version": "repo-file-v1:sha256:7526cdab269b8e55a465fbec5c45bfdd9a86b69d786dddc6c518825c160f4774"
         },
         {
           "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:e2e82b2ebeb748d08642c81309d7178084f4b6247c3e6acf90563951c0684694"
+          "version": "repo-file-v1:sha256:f26f911a1b29675ea400f07fbbe950cdb29c0421f402f8b95b5b42b7a59a0914"
         }
       ]
     },
@@ -459,6 +459,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:13:59.415Z"
+    "at": "2026-10-17T20:30:45.319Z"
   }
 }

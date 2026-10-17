@@ -5,12 +5,14 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:13:59.415Z
+    at: 2026-10-17T20:30:45.319Z
 sources:
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
+    resource: repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -47,13 +49,15 @@ sources:
     resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-45a27dbbec11da74be9f5497
+    resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
+generated: { by: "codex", at: "2026-10-17T20:30:45.319Z" }
 ---
 
 # Secrets And Identity
@@ -206,6 +210,17 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   certificate metadata, and revokes its session. Certificate renewal remains
   the documented Fleet UI flow using the same Apple account. APNs material
   stays encrypted in MySQL and outside git.
+
+- Fleet-managed Mac Google login stages a separate operator-only
+  `/homelab/fleet/google-oauth` SecureString. It is excluded from External
+  Secrets: the [XCreds operator](../../scripts/fleet-google-login.py) reads the
+  dedicated OAuth client privately and delivers a host-scoped MDM profile only
+  after protected merge and deployment. The current Fleet administrator
+  password comes from an owner-only file after bootstrap rotation. Email-claim
+  username mapping, local login fallback, and FileVault acceptance are explicit
+  pilot checks. Remote profile removal requires verified native login and an
+  explicit operator attestation; see the
+  [Google login runbook](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
