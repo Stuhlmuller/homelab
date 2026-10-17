@@ -318,6 +318,12 @@ with tempfile.TemporaryDirectory() as directory:
         assert check.native_references_by_path([other]) == {
             "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
         }
+        other.write_text(f'images:\n- name: cgr.dev/chainguard/python\n'
+                         f'  newName: harbor.stinkyboi.com/homelab/chainguard/python\n'
+                         f'  digest: sha256:{"a" * 64}\n')
+        assert check.native_references_by_path([other]) == {
+            "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
+        }
         check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
         consumer = next(item for item in config["consumers"]
