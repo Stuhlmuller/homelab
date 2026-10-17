@@ -3,9 +3,6 @@ type: operation
 title: "Validation Gates"
 description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
 tags: [operations, validation]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
@@ -49,6 +46,8 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-e6fd9160ab2341143a5d45c8
+    resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -73,6 +72,8 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-263c9c13d476aa142f8ebd42
+    resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -121,7 +122,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+generated: { by: "codex", at: "2026-10-17T20:17:54.523Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T20:17:54.523Z
 ---
 
 # Validation Gates
@@ -399,6 +403,15 @@ manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/modules/tailscale-access/README.md).
+
+The `network-policy` job in [validate](../../.github/workflows/validate.yml)
+runs a 30-minute disposable dual-stack Kind
+[enforcement check](../../scripts/ci/network-policy-enforcement-check.py) on
+pull requests and `main` pushes. It checks that unrestricted baseline traffic
+works, then tests NRI registration, denied first connections, allowed Service
+and DNS traffic, established-connection revocation, and denial after the worker
+enforcer stops. A failed job blocks its validation result; a passing fixture
+does not establish production Flannel enforcement or approve a worker rollout.
 
 The additive cutover utilities have focused static tests for fixed DNS ownership,
 Mac credential/profile preservation, bounded same-profile reconnect and carrier

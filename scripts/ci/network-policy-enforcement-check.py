@@ -63,9 +63,9 @@ FIRST_PACKET = """import socket,sys
 for address,allowed in zip(sys.argv[1:],(False,True)):
  try:
   with socket.create_connection((address,8080),timeout=2) as s:
+   assert allowed, 'Init-container connected to denied target'
    s.sendall(b'fixture\\n'); assert s.recv(128)==b'fixture\\n'
  except OSError: assert not allowed, 'Required init-container request was dropped'
- else: assert allowed, 'Init-container bypassed egress denial'
 """
 
 
@@ -235,7 +235,14 @@ def main():
                     if connection.poll() is None:
                         connection.kill()
                         connection.communicate(timeout=10)
-            print(f"Passed {count} dual-stack destination/port/protocol checks, Service/DNS access, first-packet isolation and established-connection revocation", flush=True)
+            worker_agent = next(agent for agent in agents if agent["spec"]["nodeName"] == CLUSTER + "-worker")
+            daemonset = json.loads(run(*kubectl, "-n", "kube-system", "get", "daemonset", "kube-network-policies", "-o", "json"))
+            daemonset["spec"]["template"]["spec"]["nodeSelector"] = {"kubernetes.io/hostname": CLUSTER + "-control-plane"}
+            run(*kubectl, "-n", "kube-system", "apply", "-f", "-", input=json.dumps(daemonset))
+            run(*kubectl, "-n", "kube-system", "wait", "--for=delete", "pod/" + worker_agent["metadata"]["name"], "--timeout=120s")
+            for address in targets["blocked"]:
+                assert probe(address, 9090).returncode == 7, "Selected flow bypassed policy after worker enforcer stopped"
+            print(f"Passed {count} dual-stack destination/port/protocol checks, Service/DNS access, first-packet isolation, established-connection revocation and agent-loss denial", flush=True)
         except Exception:
             for args in (("get", "pods", "-A", "-o", "wide"),
                          ("get", "events", "-A", "--sort-by=.lastTimestamp"),

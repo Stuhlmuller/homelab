@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T04:52:40.970Z
+    at: 2026-10-17T20:17:54.523Z
 sources:
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
@@ -15,14 +15,12 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-caccd49b346c867666da5f50
+    resource: repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
-  - id: openwiki-source-1635b3ffa6091ee664a713ee
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/harbor-pull-secret.yaml
-  - id: openwiki-source-2ebca2ea8b0df35457e8eb47
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-bc26cfab2973077898d9ec21
-    resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-6d89464fbd512a9fe7a09d90
+    resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
@@ -55,7 +53,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+generated: { by: "codex", at: "2026-10-17T20:17:54.523Z" }
 ---
 
 # Secrets And Identity
@@ -746,16 +744,14 @@ a candidate or applies a machine configuration. Rollback and `--registry-host-on
 execution intentionally do not use reader auth. This rollout gate does not make
 the `mirror` project private.
 
-The excluded
+The active Harbor Kustomization stages `harbor/harbor-pull` from the existing
+`/homelab/harbor/robot-pull-password`. The vulnerability exporter references
+it only for kubelet image pulls, without an app-container mount. The held
 [private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-stages `harbor/harbor-pull` from the existing
-`/homelab/harbor/robot-pull-password`. Its only consumer reference is the
-ServiceAccount's kubelet image-pull list; no app-container mount, producer,
-reader grant or namespace allowlist expansion is added. The active Harbor
-Kustomization excludes this directory. Activation requires publication/scans,
-recovery clearance and ExternalSecret readiness; an `OnChange` annotation
-advance is required after a future credential rotation. The existing bootstrap
-Secret needs its own declared refresh, and upstream cold recovery remains.
+uses the same prerequisite. No new SSM parameter or IAM grant is added.
+Native-image activation waits for publication/scans, recovery clearance and
+ExternalSecret readiness. An `OnChange` annotation advance is required after
+credential rotation; upstream cold recovery remains.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during
