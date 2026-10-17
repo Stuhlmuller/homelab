@@ -79,3 +79,18 @@ Keep the consuming Deployment change separate until that artifact exists.
 A successful diagnostic build alone is not a publication or runtime acceptance.
 This publication uses the existing Octelium CI transport until its replacement
 passes its own acceptance gates. It neither retires routes nor changes credentials.
+
+The excluded `octelium/cordium-nocturne-pull` ExternalSecret renders a Docker-config
+Secret from `/homelab/cordium/nocturne-harbor-pull-password`, a declared generated
+copy of the existing `/homelab/harbor/robot-pull-password` (`robot$homelab+pull`).
+The namespace-specific alias preserves the approved application-prefix policy.
+Its exact-parameter reader grant and generated copy require a reviewed private
+saved plan/apply and metadata verification before adding this manifest to the
+Cordium kustomization. It is currently excluded to avoid a missing-parameter
+ExternalSecret rollout. No password value or rotation is supplied by an operator.
+
+The future consuming Pod references the Secret through `imagePullSecrets`;
+never mount it or expose it as an application env var. The contract uses OnChange
+revision v1: after an approved producer rotation, reconcile the generated copy,
+advance its revision, wait for readiness, and verify a fresh image pull. Secret
+materialization alone activates no controller image or runner pool.

@@ -230,6 +230,12 @@ inputs = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
       initial_value = local.placeholder
     }
+    "/homelab/cordium/nocturne-harbor-pull-password" = {
+      description = "Cordium namespace copy of the read-only Harbor homelab project robot credential."
+      generated = {
+        source_parameter = "/homelab/harbor/robot-pull-password"
+      }
+    }
     "/homelab/cordium/agent-auth-token" = {
       description   = "Octelium authentication token used to apply the Cordium ClusterConfig."
       initial_value = local.placeholder

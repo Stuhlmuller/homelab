@@ -530,3 +530,21 @@ The candidate itself adds no further SSM parameter, IAM permission or rotation.
 Activation waits
 for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
 `OnChange` refresh requires a declared annotation revision after rotation.
+
+### Cordium Nocturne custom controller pull
+
+The catalog declares `/homelab/cordium/nocturne-harbor-pull-password` as a generated
+copy of `/homelab/harbor/robot-pull-password`. Its exact-ARN reader permission and
+copy require a reviewed private saved plan/apply; reject unrelated shared-unit
+changes. Verify SSM metadata without printing the value. No new robot, plaintext
+input, broad prefix grant, or producer rotation is required.
+
+The excluded `clusters/homelab/apps/cordium/nocturne-pull-secret.yaml` declares
+`octelium/cordium-nocturne-pull` from that alias, within the existing approved
+Cordium SSM prefix and ClusterSecretStore namespace. Add it to the kustomization
+only after the parameter/read grant exist. The eventual Pod consumes the
+read-only `robot$homelab+pull` Docker-config Secret through `imagePullSecrets`,
+without a credential mount or env injection. `OnChange` revision v1 requires
+copy reconciliation and a revision bump after approved producer rotation, Secret
+readiness, and a fresh authenticated pull. Materialization enables no controller
+image or runner pool by itself.
