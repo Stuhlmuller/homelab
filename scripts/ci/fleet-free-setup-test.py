@@ -27,8 +27,17 @@ MDM_SPEC.loader.exec_module(mdm_helper)
 CREDENTIAL_SPEC = importlib.util.spec_from_file_location("fleet_credentials", ROOT / "scripts/fleet-entra-pilot-credentials.py")
 credentials = importlib.util.module_from_spec(CREDENTIAL_SPEC)
 CREDENTIAL_SPEC.loader.exec_module(credentials)
+CSR_SPEC = importlib.util.spec_from_file_location("fleet_csr_identity", ROOT / "scripts/fleet-download-apple-csr.py")
+csr = importlib.util.module_from_spec(CSR_SPEC)
+CSR_SPEC.loader.exec_module(csr)
+BOOTSTRAP_SPEC = importlib.util.spec_from_file_location(
+    "fleet_bootstrap_identity", ROOT / "clusters/homelab/apps/fleet/bootstrap.py"
+)
+bootstrap = importlib.util.module_from_spec(BOOTSTRAP_SPEC)
+BOOTSTRAP_SPEC.loader.exec_module(bootstrap)
 PASSWORD = "PRIVATE_PASSWORD_DO_NOT_PRINT"
 TOKEN = "PRIVATE_SESSION_DO_NOT_PRINT"
+RECOVERY_TOKEN = "PRIVATE_RECOVERY_SESSION_DO_NOT_PRINT"
 PRIVATE = "PRIVATE_SERVER_OR_DEVICE_DETAIL_DO_NOT_PRINT"
 LOCAL_UUID = "11111111-1111-4111-8111-111111111111"
 IOS_UUID = "00008110-0123456789ABCDEF"
@@ -50,7 +59,10 @@ class FakeAPI:
         self.calls = []
         self.errors = {}
         self.config = {"license": {"tier": "free"}, "sso_settings": {"enable_sso": False}}
-        self.users = [{"email": self.ADMIN_EMAIL, "sso_enabled": False, "global_role": "admin"}]
+        self.users = [{"id": 1, "email": self.ADMIN_EMAIL, "sso_enabled": False, "global_role": "admin"}]
+        self.credentials = {self.ADMIN_EMAIL: PASSWORD}
+        self.sessions = {}
+        self.login_failures = set()
         self.host = {"id": 2, "platform": "ios", "uuid": IOS_UUID,
                      "mdm": {"connected_to_fleet": True}}
         self.policies = []
@@ -58,29 +70,104 @@ class FakeAPI:
         self.catalog_has_next = False
         self.catalog_drop_unrelated = False
         self.catalog_refuse_delete = False
+        self.config_refuse_sso_update = False
+        self.create_user_drop = False
+        self.commit_then_errors = {}
         self.initial_password = Mock(return_value=PASSWORD)
+        self.password_login = Mock(side_effect=self.login_with_password)
+
+    def login_with_password(self, password=None):
+        password = self.initial_password() if password is None else password
+        return self.request("POST", "/api/v1/fleet/login", {
+            "email": self.ADMIN_EMAIL, "password": password,
+        }).get("token")
+
+    def console_topology(self, final=False):
+        self.ADMIN_EMAIL = helper.RECOVERY_USER
+        self.users = [
+            {"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": final, "global_role": "admin"},
+            {"id": 2, "email": helper.RECOVERY_USER, "sso_enabled": not final, "global_role": "admin"},
+        ]
+        self.credentials = ({helper.RECOVERY_USER: PASSWORD} if final
+                            else {helper.CONSOLE_USER: PASSWORD})
+
+    def clean_console_topology(self):
+        self.ADMIN_EMAIL = helper.RECOVERY_USER
+        self.users = [{"id": 1, "email": helper.RECOVERY_USER, "sso_enabled": False, "global_role": "admin"}]
+        self.credentials = {helper.RECOVERY_USER: PASSWORD}
+
+    def legacy_target_topology(self, password=PASSWORD):
+        self.ADMIN_EMAIL = helper.CONSOLE_USER
+        self.users = [{"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": False, "global_role": "admin"}]
+        self.credentials = {helper.CONSOLE_USER: password}
+
+    def user(self, email):
+        return next((user for user in self.users if user.get("email") == email), None)
 
     def request(self, method, path, body=None, token=None, content_type="application/json", accepted_status=200):
         self.calls.append((method, path, copy.deepcopy(body), token))
         if (method, path) in self.errors:
             raise self.errors[method, path]
         if path == "/api/v1/fleet/login":
-            if method != "POST" or body != {"email": self.ADMIN_EMAIL, "password": PASSWORD}:
+            if method != "POST" or not isinstance(body, dict):
                 raise AssertionError("Unexpected login")
-            return {"token": TOKEN}
-        if token != TOKEN:
+            email, password = body.get("email"), body.get("password")
+            if email in self.login_failures or self.credentials.get(email) != password:
+                return {}
+            session = RECOVERY_TOKEN if email == helper.RECOVERY_USER else TOKEN
+            self.sessions[session] = email
+            return {"token": session}
+        if token not in self.sessions:
             raise AssertionError("Unauthenticated API call")
         if path == "/api/v1/fleet/logout" and method == "POST":
+            self.sessions.pop(token, None)
             return {}
+        if path == "/api/v1/fleet/me" and method == "GET":
+            user = self.user(self.sessions[token])
+            if user is None:
+                raise AssertionError("Session user missing")
+            return {"user": copy.deepcopy(user)}
         if path == "/api/v1/fleet/config":
             if method == "PATCH":
-                self.config.update(copy.deepcopy(body))
+                if not self.config_refuse_sso_update:
+                    self.config.update(copy.deepcopy(body))
             return copy.deepcopy(self.config)
         if path == "/api/v1/fleet/users?per_page=100" and method == "GET":
             return {"users": copy.deepcopy(self.users)}
         if path == "/api/v1/fleet/users/admin" and method == "POST":
-            self.users.append(copy.deepcopy(body))
+            if not isinstance(body, dict):
+                raise AssertionError("Invalid user creation")
+            user = dict(copy.deepcopy(body), id=max(user["id"] for user in self.users) + 1)
+            password = user.pop("password", None)
+            if user.get("sso_enabled") is False:
+                if not isinstance(password, str):
+                    raise AssertionError("Local administrator requires a password")
+                self.credentials[user["email"]] = password
+            elif password is not None:
+                raise AssertionError("SSO administrator must not have a password")
+            if not self.create_user_drop:
+                self.users.append(user)
             return {}
+        if path.startswith("/api/v1/fleet/users/") and method == "PATCH":
+            try:
+                user_id = int(path.rsplit("/", 1)[1])
+            except ValueError:
+                raise AssertionError("Invalid user update route") from None
+            user = next((item for item in self.users if item.get("id") == user_id), None)
+            if user is None or not isinstance(body, dict):
+                raise AssertionError("Unknown user update")
+            if body == {"sso_enabled": False, "new_password": PASSWORD}:
+                user["sso_enabled"] = False
+                self.credentials[user["email"]] = PASSWORD
+                return {}
+            if body == {"sso_enabled": True}:
+                user["sso_enabled"] = True
+                self.credentials.pop(user["email"], None)
+                error = self.commit_then_errors.pop((method, path), None)
+                if error is not None:
+                    raise error
+                return {}
+            raise AssertionError("Unexpected user update")
         if path == "/api/v1/fleet/hosts/2" and method == "GET":
             return {"host": copy.deepcopy(self.host)}
         if path == "/api/v1/fleet/global/policies?per_page=100" and method == "GET":
@@ -156,6 +243,8 @@ class FleetFreeTest(unittest.TestCase):
         for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.IOS_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
+        self.private_input = Mock()
+        self.private_input.read_password.return_value = PASSWORD
 
     def run_command(self, argv):
         output = io.StringIO()
@@ -165,6 +254,8 @@ class FleetFreeTest(unittest.TestCase):
                 return self.api
             if filename == "fleet-verify-apple-mdm.py":
                 return self.mdm
+            if filename == "fleet-airvpn-setup.py":
+                return self.private_input
             raise AssertionError("Unexpected module load")
 
         with patch.object(helper, "PROFILES", self.profiles), \
@@ -174,13 +265,14 @@ class FleetFreeTest(unittest.TestCase):
                 contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             status = helper.main(argv)
         text = output.getvalue()
-        for secret in (PASSWORD, TOKEN, PRIVATE, LOCAL_UUID, IOS_UUID):
+        for secret in (PASSWORD, TOKEN, RECOVERY_TOKEN, PRIVATE, LOCAL_UUID, IOS_UUID):
             self.assertNotIn(secret, text)
         self.assertNotIn("Traceback", text)
         return status, text, loader
 
     def assert_logged_out(self):
-        self.assertEqual(self.api.calls[-1], ("POST", "/api/v1/fleet/logout", None, TOKEN))
+        self.assertEqual(self.api.calls[-1][0:3], ("POST", "/api/v1/fleet/logout", None))
+        self.assertIn(self.api.calls[-1][3], (TOKEN, RECOVERY_TOKEN))
 
     def assert_no_setup_mutations(self):
         self.assertEqual(self.mdm.calls, [])
@@ -204,20 +296,45 @@ class FleetFreeTest(unittest.TestCase):
         self.api.catalog.append(entry)
         return entry
 
+    @staticmethod
+    def sso_settings():
+        return {
+            "enable_sso": True, "idp_name": "Microsoft Entra ID", "entity_id": FakeAPI.FLEET_URL,
+            "issuer_uri": "", "metadata_url": METADATA, "metadata": "",
+            "enable_jit_provisioning": False, "enable_sso_idp_login": False,
+        }
+
+    def console_migration(self):
+        return self.run_command([
+            "console-sso", "--current-password-file", "/private/current-fleet-password", "--execute",
+        ])
+
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
-        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
+        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "mac-psso", "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
             with self.subTest(action=action):
                 args = [action]
-                if action in ("mac-baseline", "ios-baseline"):
+                if action in ("mac-baseline", "mac-psso", "ios-baseline"):
                     args += ["--host-id", "2"]
                 if action == "mac-baseline-catalog":
                     args += ["--remove"]
-                status, _, loader = self.run_command(args)
+                status, output, loader = self.run_command(args)
                 self.assertEqual(status, 0)
                 loader.assert_not_called()
                 self.api.initial_password.assert_not_called()
                 self.assertEqual(self.api.calls, [])
                 self.assertEqual(self.mdm.calls, [])
+                if action == "mac-psso":
+                    self.assertIn("mac-psso targets only the selected Fleet-enrolled Mac", output)
+                if action == "console-sso":
+                    self.assertIn("--current-password-file is legacy-only", output)
+
+    def test_current_password_file_is_rejected_outside_console_sso(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output), self.assertRaises(SystemExit) as error:
+            helper.main(["reporting", "--current-password-file", "/private/current-fleet-password", "--execute"])
+        self.assertEqual(error.exception.code, 2)
+        self.assertNotIn("/private/current-fleet-password", output.getvalue())
+        self.assertEqual(self.api.calls, [])
 
     def test_wrong_platform_and_boolean_platform_fail_before_login(self):
         for filename, value in ((helper.MAC_FILES[0], 1), (helper.MAC_FILES[0], 2),
@@ -245,11 +362,22 @@ class FleetFreeTest(unittest.TestCase):
                 (self.profiles / filename).write_bytes(original)
 
     def test_mac_uses_exact_identity_guard_and_preserves_other_profiles(self):
-        self.assertEqual(self.run_command(["mac-pilot", "--execute"])[0], 0)
+        baseline, psso = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
+        self.mdm.installed += [baseline, psso]
+        status, output, _ = self.run_command(["mac-pilot", "--execute"])
+        self.assertEqual(status, 0)
         self.mdm.local_host.assert_called_once_with(self.api, TOKEN)
         self.assertTrue(all(host == LOCAL_UUID for host, _ in self.mdm.calls))
         self.assertIn(UNRELATED, self.mdm.installed)
-        self.assertNotIn("RemoveProfile", [command["RequestType"] for _, command in self.mdm.calls])
+        self.assertEqual([command["RequestType"] for _, command in self.mdm.calls], [
+            "ProfileList", "RemoveProfile", "ProfileList", "ProfileList",
+            "InstallProfile", "InstallProfile", "ProfileList",
+        ])
+        removals = [command["Identifier"] for _, command in self.mdm.calls
+                    if command["RequestType"] == "RemoveProfile"]
+        self.assertEqual(removals, [psso["PayloadIdentifier"]])
+        self.assertEqual(self.mdm.installed, [UNRELATED, baseline, psso])
+        self.assertIn("Existing Platform SSO profile absence and baseline/unrelated-profile retention: verified", output)
         self.assert_logged_out()
 
     def test_individual_mac_baseline_preserves_settings_with_distinct_profile_identities(self):
@@ -302,6 +430,18 @@ class FleetFreeTest(unittest.TestCase):
                 self.mdm.local_host.assert_not_called()
                 self.assert_logged_out()
 
+    def test_mac_psso_rejects_wrong_identity_platform_or_disconnected_mdm(self):
+        connected = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
+                     "mdm": {"connected_to_fleet": True}}
+        for field, value in (("platform", "ios"), ("id", 3),
+                             ("mdm", {"connected_to_fleet": False})):
+            with self.subTest(field=field, value=value):
+                self.api.host = dict(connected, **{field: value})
+                self.assertEqual(self.run_command(["mac-psso", "--host-id", "2", "--execute"])[0], 1)
+                self.assert_no_setup_mutations()
+                self.mdm.local_host.assert_not_called()
+                self.assert_logged_out()
+
     def test_mac_baseline_removes_only_individual_profile_and_is_idempotent(self):
         self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
                          "mdm": {"connected_to_fleet": True}}
@@ -323,6 +463,32 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual(self.run_command(args)[0], 0)
         self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
         self.assertEqual(self.mdm.installed, [UNRELATED, entra, legacy])
+
+    def test_mac_psso_targets_only_selected_mac_and_preserves_baseline_on_removal(self):
+        self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
+                         "mdm": {"connected_to_fleet": True}}
+        baseline, entra = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
+        self.assertIn("Microsoft Authenticator", entra["PayloadDescription"])
+        self.mdm.installed.append(baseline)
+        args = ["mac-psso", "--host-id", "2", "--execute"]
+        self.assertEqual(self.run_command(args)[0], 0)
+        self.assertTrue(all(host == LOCAL_UUID for host, _ in self.mdm.calls))
+        self.assertEqual([command["RequestType"] for _, command in self.mdm.calls],
+                         ["ProfileList", "InstallProfile", "ProfileList"])
+        self.assertEqual(self.mdm.installed, [UNRELATED, baseline, entra])
+        self.mdm.local_host.assert_not_called()
+        self.assert_logged_out()
+
+        self.mdm.calls.clear()
+        self.assertEqual(self.run_command(args[:-1] + ["--remove", "--execute"])[0], 0)
+        self.assertEqual([command for _, command in self.mdm.calls], [
+            {"RequestType": "ProfileList"},
+            {"RequestType": "RemoveProfile", "Identifier": entra["PayloadIdentifier"]},
+            {"RequestType": "ProfileList"},
+        ])
+        self.assertEqual(self.mdm.installed, [UNRELATED, baseline])
+        self.mdm.local_host.assert_not_called()
+        self.assert_logged_out()
 
     def test_ios_baseline_targets_only_selected_device_and_reports_security_info(self):
         for platform in ("ios", "ipados"):
@@ -397,7 +563,7 @@ class FleetFreeTest(unittest.TestCase):
                 self.mdm = FakeMDM()
 
     def test_selected_device_actions_require_positive_host_ids_before_loading_credentials(self):
-        for action in ("mac-baseline", "ios-baseline"):
+        for action in ("mac-baseline", "mac-psso", "ios-baseline"):
             for host_args in ([], ["--host-id", "0"], ["--host-id", "-1"]):
                 with self.subTest(action=action, host_args=host_args), \
                         patch.object(helper, "module") as loader, \
@@ -527,7 +693,7 @@ class FleetFreeTest(unittest.TestCase):
         self.mdm.install_error = TimeoutError(PRIVATE)
         self.assertEqual(self.run_command(["mac-pilot", "--execute"])[0], 1)
         self.assertEqual([command["RequestType"] for _, command in self.mdm.calls],
-                         ["ProfileList", "InstallProfile"])
+                         ["ProfileList", "ProfileList", "ProfileList", "InstallProfile"])
         self.assert_logged_out()
 
     def test_non_free_and_unknown_license_prevent_all_setup_writes(self):
@@ -539,35 +705,213 @@ class FleetFreeTest(unittest.TestCase):
                 self.assert_logged_out()
 
     def test_conflicting_sso_provider_is_not_replaced(self):
+        self.api.console_topology()
         self.api.config["sso_settings"] = {"enable_sso": True, "metadata_url": "https://other.example.test/metadata"}
-        self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 1)
+        self.assertEqual(self.console_migration()[0], 1)
         self.assert_no_setup_mutations()
         self.assert_logged_out()
 
     def test_conflicting_or_duplicate_console_users_are_not_converted(self):
+        self.api.console_topology()
         users = [
-            [{"email": helper.CONSOLE_USER, "sso_enabled": False, "global_role": "admin"}],
-            [{"email": helper.CONSOLE_USER, "sso_enabled": True, "global_role": "observer"}],
-            [{"email": helper.CONSOLE_USER, "sso_enabled": True, "global_role": "admin"}] * 2,
+            [{"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": True, "global_role": "admin"}],
+            [{"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": True, "global_role": "admin"},
+             {"id": 2, "email": helper.RECOVERY_USER, "sso_enabled": True, "global_role": "admin"}],
+            [{"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": False, "global_role": "admin"},
+             {"id": 2, "email": helper.RECOVERY_USER, "sso_enabled": True, "global_role": "observer"}],
+            [{"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": False, "global_role": "admin"},
+             {"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": False, "global_role": "admin"},
+             {"id": 2, "email": helper.RECOVERY_USER, "sso_enabled": True, "global_role": "admin"}],
+            [{"id": 1, "email": helper.CONSOLE_USER, "sso_enabled": False, "global_role": "admin"},
+             {"id": 2, "email": helper.RECOVERY_USER, "sso_enabled": True, "global_role": "admin"},
+             {"id": 3, "email": "other@example.test", "sso_enabled": False, "global_role": "admin"}],
         ]
         for existing in users:
             with self.subTest(users=existing):
                 self.api.users = copy.deepcopy(existing)
-                self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 1)
+                self.assertEqual(self.console_migration()[0], 1)
                 self.assert_no_setup_mutations()
                 self.assertEqual(self.api.users, existing)
                 self.assert_logged_out()
+                self.api.calls.clear()
 
-    def test_console_setup_preserves_recovery_and_is_idempotent_without_jit(self):
-        recovery = copy.deepcopy(self.api.users[0])
-        self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 0)
-        self.assertIn(recovery, self.api.users)
-        self.assertEqual(len(self.api.users), 2)
-        self.assertFalse(self.api.config["sso_settings"]["enable_jit_provisioning"])
+    def test_console_migration_verifies_local_recovery_before_switching_target_to_sso(self):
+        self.api.console_topology()
+        self.assertEqual(self.console_migration()[0], 0)
+        self.private_input.read_password.assert_called_once_with(Path("/private/current-fleet-password"))
+        self.assertEqual(self.api.initial_password.call_count, 1)
+        self.assertTrue(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.assertEqual(self.api.credentials, {helper.RECOVERY_USER: PASSWORD})
+        self.assertEqual(self.api.config["sso_settings"], self.sso_settings())
+        routes = [(method, path) for method, path, _, _ in self.api.calls]
+        recovery_update = routes.index(("PATCH", "/api/v1/fleet/users/2"))
+        recovery_login = [index for index, route in enumerate(routes) if route == ("POST", "/api/v1/fleet/login")][1]
+        recovery_logout = next(index for index, call in enumerate(self.api.calls)
+                               if call == ("POST", "/api/v1/fleet/logout", None, RECOVERY_TOKEN))
+        config_update = routes.index(("PATCH", "/api/v1/fleet/config"))
+        target_update = routes.index(("PATCH", "/api/v1/fleet/users/1"))
+        self.assertLess(recovery_update, recovery_login)
+        self.assertLess(recovery_login, recovery_logout)
+        self.assertLess(recovery_logout, config_update)
+        self.assertLess(config_update, target_update)
+        self.assert_logged_out()
+
+    def test_legacy_single_target_creates_and_verifies_recovery_before_sso(self):
+        self.api.legacy_target_topology(PRIVATE)
+        self.private_input.read_password.return_value = PRIVATE
+        self.assertEqual(self.console_migration()[0], 0)
+        recovery = {
+            "email": helper.RECOVERY_USER, "name": "Rodman", "password": PASSWORD,
+            "sso_enabled": False, "global_role": "admin", "admin_forced_password_reset": False,
+        }
+        self.assertIn(("POST", "/api/v1/fleet/users/admin", recovery, TOKEN), self.api.calls)
+        self.assertTrue(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.assertEqual(self.api.credentials, {helper.RECOVERY_USER: PASSWORD})
+        routes = [(method, path) for method, path, _, _ in self.api.calls]
+        recovery_create = routes.index(("POST", "/api/v1/fleet/users/admin"))
+        recovery_login = next(index for index, call in enumerate(self.api.calls)
+                              if call[:2] == ("POST", "/api/v1/fleet/login")
+                              and call[2]["email"] == helper.RECOVERY_USER)
+        recovery_logout = next(index for index, call in enumerate(self.api.calls)
+                               if call == ("POST", "/api/v1/fleet/logout", None, RECOVERY_TOKEN))
+        config_update = routes.index(("PATCH", "/api/v1/fleet/config"))
+        target_update = routes.index(("PATCH", "/api/v1/fleet/users/1"))
+        self.assertLess(recovery_create, recovery_login)
+        self.assertLess(recovery_login, recovery_logout)
+        self.assertLess(recovery_logout, config_update)
+        self.assertLess(config_update, target_update)
+        self.assert_logged_out()
+
+    def test_final_console_sso_verification_is_idempotent_without_password_file(self):
+        self.api.console_topology(final=True)
+        self.api.config["sso_settings"] = self.sso_settings()
+        status, _, loader = self.run_command(["console-sso", "--execute"])
+        self.assertEqual(status, 0)
+        self.assertFalse(any(method == "PATCH" for method, _, _, _ in self.api.calls))
+        self.assertNotIn("fleet-airvpn-setup.py", [call.args[1] for call in loader.call_args_list])
+        self.assert_logged_out()
+
+    def test_clean_recovery_bootstrap_configures_sso_before_creating_target_administrator(self):
+        self.api.clean_console_topology()
+        status, _, loader = self.run_command(["console-sso", "--execute"])
+        self.assertEqual(status, 0)
+        self.assertEqual(self.api.config["sso_settings"], self.sso_settings())
+        self.assertTrue(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.assertNotIn("fleet-airvpn-setup.py", [call.args[1] for call in loader.call_args_list])
+        routes = [(method, path) for method, path, _, _ in self.api.calls]
+        config_update = routes.index(("PATCH", "/api/v1/fleet/config"))
+        target_create = routes.index(("POST", "/api/v1/fleet/users/admin"))
+        self.assertEqual(routes[config_update + 1], ("GET", "/api/v1/fleet/config"))
+        self.assertLess(config_update, target_create)
+        self.assert_logged_out()
+
+    def test_clean_console_setup_refuses_unexpected_user_topology(self):
+        self.api.clean_console_topology()
+        self.api.users.append({"id": 2, "email": "other@example.test", "sso_enabled": False, "global_role": "admin"})
+        self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 1)
+        self.assert_no_setup_mutations()
+        self.assert_logged_out()
+
+    def test_legacy_single_target_does_not_touch_sso_or_target_until_recovery_login_is_verified(self):
+        self.api.legacy_target_topology()
+        self.api.login_failures.add(helper.RECOVERY_USER)
+        self.assertEqual(self.console_migration()[0], 1)
+        self.assertFalse(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        routes = [(method, path) for method, path, _, _ in self.api.calls]
+        self.assertNotIn(("PATCH", "/api/v1/fleet/config"), routes)
+        self.assertNotIn(("PATCH", "/api/v1/fleet/users/1"), routes)
+        self.assert_logged_out()
+
+    def test_console_migration_configures_matching_entra_sso_only_after_recovery_verification(self):
+        self.api.console_topology()
+        self.api.config["sso_settings"] = self.sso_settings()
+        self.assertEqual(self.console_migration()[0], 0)
+        self.assertNotIn(("PATCH", "/api/v1/fleet/config"),
+                         [(method, path) for method, path, _, _ in self.api.calls])
         self.api.calls.clear()
         self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 0)
-        self.assertNotIn("/api/v1/fleet/users/admin", [path for _, path, _, _ in self.api.calls])
+        self.assertFalse(any(method == "PATCH" for method, _, _, _ in self.api.calls))
         self.assert_logged_out()
+
+    def test_legacy_single_target_does_not_switch_target_when_recovery_creation_fails(self):
+        self.api.legacy_target_topology()
+        self.api.errors["POST", "/api/v1/fleet/users/admin"] = RuntimeError(PRIVATE)
+        self.assertEqual(self.console_migration()[0], 1)
+        self.assertIsNone(self.api.user(helper.RECOVERY_USER))
+        self.assertFalse(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        routes = [(method, path) for method, path, _, _ in self.api.calls]
+        self.assertNotIn(("PATCH", "/api/v1/fleet/config"), routes)
+        self.assertNotIn(("PATCH", "/api/v1/fleet/users/1"), routes)
+        self.assert_logged_out()
+
+    def test_legacy_single_target_requires_recovery_readback_before_sso(self):
+        self.api.legacy_target_topology()
+        self.api.create_user_drop = True
+        self.assertEqual(self.console_migration()[0], 1)
+        self.assertIsNone(self.api.user(helper.RECOVERY_USER))
+        self.assertFalse(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        routes = [(method, path) for method, path, _, _ in self.api.calls]
+        self.assertNotIn(("PATCH", "/api/v1/fleet/config"), routes)
+        self.assertNotIn(("PATCH", "/api/v1/fleet/users/1"), routes)
+        self.assert_logged_out()
+
+    def test_console_migration_failure_after_recovery_verification_keeps_local_recovery(self):
+        self.api.console_topology()
+        self.api.errors["PATCH", "/api/v1/fleet/users/1"] = RuntimeError(PRIVATE)
+        self.assertEqual(self.console_migration()[0], 1)
+        self.assertFalse(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.assertEqual(sum(method == "PATCH" and path == "/api/v1/fleet/users/1"
+                             for method, path, _, _ in self.api.calls), 1)
+        self.assert_logged_out()
+
+    def test_console_migration_resumes_after_recovery_was_made_local(self):
+        self.api.console_topology()
+        self.api.errors["PATCH", "/api/v1/fleet/users/1"] = RuntimeError(PRIVATE)
+        self.assertEqual(self.console_migration()[0], 1)
+        self.api.errors.clear()
+        self.api.calls.clear()
+        self.assertEqual(self.console_migration()[0], 0)
+        self.assertTrue(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.assertNotIn(("PATCH", "/api/v1/fleet/users/2"),
+                         [(method, path) for method, path, _, _ in self.api.calls])
+        self.assert_logged_out()
+
+    def test_final_verifier_recovers_from_an_ambiguous_target_sso_update(self):
+        self.api.console_topology()
+        self.api.commit_then_errors["PATCH", "/api/v1/fleet/users/1"] = RuntimeError(PRIVATE)
+        self.assertEqual(self.console_migration()[0], 1)
+        self.assertTrue(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.api.calls.clear()
+        self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 0)
+        self.assertFalse(any(method == "PATCH" for method, _, _, _ in self.api.calls))
+        self.assert_logged_out()
+
+    def test_console_migration_does_not_switch_target_when_sso_config_readback_fails(self):
+        self.api.console_topology()
+        self.api.config_refuse_sso_update = True
+        self.assertEqual(self.console_migration()[0], 1)
+        self.assertFalse(self.api.user(helper.CONSOLE_USER)["sso_enabled"])
+        self.assertFalse(self.api.user(helper.RECOVERY_USER)["sso_enabled"])
+        self.assertNotIn(("PATCH", "/api/v1/fleet/users/1"),
+                         [(method, path) for method, path, _, _ in self.api.calls])
+        self.assert_logged_out()
+
+    def test_final_console_sso_drift_is_not_repaired_without_migration_input(self):
+        self.api.console_topology(final=True)
+        self.assertEqual(self.run_command(["console-sso", "--execute"])[0], 1)
+        self.assert_no_setup_mutations()
+        self.assert_logged_out()
+
+    def test_steady_state_fleet_operators_use_the_local_recovery_administrator(self):
+        self.assertEqual(csr.ADMIN_EMAIL, helper.RECOVERY_USER)
+        self.assertEqual(bootstrap.ADMIN_EMAIL, helper.RECOVERY_USER)
 
     def test_incomplete_user_and_policy_pages_block_mutations(self):
         self.api.users *= 100
@@ -800,13 +1144,15 @@ class CredentialExportTest(unittest.TestCase):
     def test_success_writes_secret_only_to_owner_private_file(self):
         status, process = self.run_export()
         self.assertEqual(status, 0)
-        self.assertIn(self.password, self.destination.read_text())
+        content = self.destination.read_text()
+        self.assertIn(self.password, content)
+        self.assertIn("Microsoft Authenticator", content)
         self.assertEqual(stat.S_IMODE(self.destination.stat().st_mode), 0o600)
         process.assert_called_once()
         self.assertIn("IaC/live/azuread-applications/fleet-pilot-user", str(process.call_args))
 
     def test_stuhlmuller_pilot_requires_explicit_selection(self):
-        self.values["user_principal_name"]["value"] = "rodman@stuhlmuller.net"
+        self.values["user_principal_name"]["value"] = "rodman.mac@stuhlmuller.net"
         status, process = self.run_export(pilot="stuhlmuller")
         self.assertEqual(status, 0)
         self.assertIn("IaC/operator/entra-stuhlmuller-pilot-user", str(process.call_args))

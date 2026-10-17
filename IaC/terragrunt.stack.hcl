@@ -419,6 +419,12 @@ unit "operator_entra_google_workspace_federation" {
   no_dot_terragrunt_stack = true
 }
 
+unit "operator_entra_emergency_global_admin" {
+  source                  = "./.catalog/units/operator/entra-emergency-global-admin"
+  path                    = "operator/entra-emergency-global-admin"
+  no_dot_terragrunt_stack = true
+}
+
 unit "operator_entra_owner_mail" {
   source                  = "./.catalog/units/operator/entra-owner-mail"
   path                    = "operator/entra-owner-mail"

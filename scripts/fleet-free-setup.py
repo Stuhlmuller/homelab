@@ -23,8 +23,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ROOT / "clusters/homelab/apps/fleet/profiles"
-CONSOLE_USER = "rodman@stinkyboi.com"
+CONSOLE_USER = "rodman@stuhlmuller.net"
+RECOVERY_USER = "rodman@stinkyboi.com"
 MAC_FILES = ("macos-security-baseline-host.mobileconfig", "macos-entra-platform-sso.mobileconfig")
+MAC_BASELINE_FILES = (MAC_FILES[0],)
+MAC_PSSO_FILES = (MAC_FILES[1],)
 IOS_FILES = ("ios-passcode-baseline.mobileconfig",)
 LEGACY_MAC_FILES = ("macos-security-baseline.mobileconfig",)  # Global assignment retired; removal only.
 POLICY = {
@@ -157,7 +160,54 @@ def validate_metadata(api, url, tenant, thumbprint):
     raise SetupError("Entra metadata tenant or SAML signing key did not match")
 
 
-def console_sso(api, token):
+def console_users(api, token):
+    users = api.request("GET", "/api/v1/fleet/users?per_page=100", token=token)["users"]
+    if not isinstance(users, list) or len(users) >= 100 or not all(isinstance(user, dict) for user in users):
+        raise SetupError("Fleet user listing is incomplete")
+    return users
+
+
+def console_account(users, email, sso_enabled):
+    matches = [user for user in users if user.get("email") == email]
+    if len(matches) != 1:
+        raise SetupError("Fleet console account topology differs from the reviewed migration")
+    user = matches[0]
+    if (type(user.get("id")) is not int or user["id"] < 1
+            or user.get("global_role") != "admin" or user.get("sso_enabled") is not sso_enabled):
+        raise SetupError("Fleet console account topology differs from the reviewed migration")
+    return user
+
+
+def console_accounts(users, target_sso, recovery_sso):
+    if len(users) != 2:
+        raise SetupError("Fleet console account topology differs from the reviewed migration")
+    target = console_account(users, CONSOLE_USER, target_sso)
+    recovery = console_account(users, RECOVERY_USER, recovery_sso)
+    if target["id"] == recovery["id"]:
+        raise SetupError("Fleet console account topology differs from the reviewed migration")
+    return target, recovery
+
+
+def console_session(api, token, email):
+    response = api.request("GET", "/api/v1/fleet/me", token=token)
+    account = response.get("user") if isinstance(response, dict) else None
+    if not isinstance(account, dict) or account.get("email") != email or account.get("global_role") != "admin":
+        raise SetupError("Fleet operator session does not match the reviewed administrator")
+
+
+def configure_console_sso(api, token, current, desired):
+    if any(current.get(key) != value for key, value in desired.items()):
+        api.request("PATCH", "/api/v1/fleet/config", {"sso_settings": desired}, token)
+    config = api.request("GET", "/api/v1/fleet/config", token=token)
+    actual = config.get("sso_settings", {}) if isinstance(config, dict) else None
+    if not isinstance(actual, dict) or any(actual.get(key) != value for key, value in desired.items()):
+        raise SetupError("Fleet console SSO configuration readback failed")
+
+
+def console_sso(api, token, current_password=None, recovery_password=None):
+    migrating = current_password is not None
+    if migrating != (recovery_password is not None):
+        raise SetupError("Fleet console migration password handling is incomplete")
     url, tenant, thumbprint = saml_outputs()
     validate_metadata(api, url, tenant, thumbprint)
     desired = {
@@ -165,30 +215,74 @@ def console_sso(api, token):
         "issuer_uri": "", "metadata_url": url, "metadata": "",
         "enable_jit_provisioning": False, "enable_sso_idp_login": False,
     }
-    current = api.request("GET", "/api/v1/fleet/config", token=token).get("sso_settings", {})
+    config = api.request("GET", "/api/v1/fleet/config", token=token)
+    current = config.get("sso_settings", {}) if isinstance(config, dict) else None
+    if not isinstance(current, dict):
+        raise SetupError("Fleet console SSO settings are invalid")
     if current.get("enable_sso") and current.get("metadata_url") != url:
         raise SetupError("A different SSO provider is enabled; refusing replacement")
-    users = api.request("GET", "/api/v1/fleet/users?per_page=100", token=token)["users"]
-    if len(users) >= 100:
-        raise SetupError("Fleet user listing is incomplete")
-    matches = [user for user in users if user["email"] == CONSOLE_USER]
-    if len(matches) > 1 or (matches and (not matches[0].get("sso_enabled")
-                                        or matches[0].get("global_role") != "admin")):
-        raise SetupError("Existing console user conflicts with the reviewed SSO administrator")
-    api.request("PATCH", "/api/v1/fleet/config", {"sso_settings": desired}, token)
-    if not matches:
+    users = console_users(api, token)
+    if not migrating:
+        console_session(api, token, RECOVERY_USER)
+        if not any(user.get("email") == CONSOLE_USER for user in users):
+            if len(users) != 1:
+                raise SetupError("Fleet console account topology differs from the reviewed migration")
+            console_account(users, RECOVERY_USER, sso_enabled=False)
+            configure_console_sso(api, token, current, desired)
+            api.request("POST", "/api/v1/fleet/users/admin", {
+                "email": CONSOLE_USER, "name": "Rodman", "sso_enabled": True,
+                "global_role": "admin", "admin_forced_password_reset": False,
+            }, token)
+            console_accounts(console_users(api, token), target_sso=True, recovery_sso=False)
+            print("Console SAML settings and staged administrator migration: verified; interactive login still untested")
+            return
+        console_accounts(users, target_sso=True, recovery_sso=False)
+        if any(current.get(key) != value for key, value in desired.items()):
+            raise SetupError("Fleet console SSO configuration is not in the reviewed final state")
+        print("Console SAML settings and staged administrator migration: verified; interactive login still untested")
+        return
+
+    console_session(api, token, CONSOLE_USER)
+    if len(users) == 1:
+        target = console_account(users, CONSOLE_USER, sso_enabled=False)
         api.request("POST", "/api/v1/fleet/users/admin", {
-            "email": CONSOLE_USER, "name": "Rodman", "sso_enabled": True,
-            "global_role": "admin", "admin_forced_password_reset": False,
+            "email": RECOVERY_USER, "name": "Rodman", "password": recovery_password,
+            "sso_enabled": False, "global_role": "admin", "admin_forced_password_reset": False,
         }, token)
-    actual = api.request("GET", "/api/v1/fleet/config", token=token)["sso_settings"]
-    if any(actual.get(key) != value for key, value in desired.items()):
-        raise SetupError("Fleet console SSO configuration readback failed")
-    users = api.request("GET", "/api/v1/fleet/users?per_page=100", token=token)["users"]
-    if not any(user["email"] == CONSOLE_USER and user.get("sso_enabled")
-               and user.get("global_role") == "admin" for user in users):
-        raise SetupError("Precreated SSO administrator readback failed")
-    print("Console SAML settings and precreated administrator: verified; interactive login still untested")
+        target_after, recovery = console_accounts(console_users(api, token), target_sso=False,
+                                                   recovery_sso=False)
+        if target_after["id"] != target["id"]:
+            raise SetupError("Fleet console account identity changed during migration")
+        target = target_after
+    else:
+        try:
+            target, recovery = console_accounts(users, target_sso=False, recovery_sso=True)
+        except SetupError:
+            target, recovery = console_accounts(users, target_sso=False, recovery_sso=False)
+        else:
+            api.request("PATCH", f"/api/v1/fleet/users/{recovery['id']}", {
+                "sso_enabled": False, "new_password": recovery_password,
+            }, token)
+            users = console_users(api, token)
+            target_after, recovery_after = console_accounts(users, target_sso=False, recovery_sso=False)
+            if target_after["id"] != target["id"] or recovery_after["id"] != recovery["id"]:
+                raise SetupError("Fleet console account identity changed during migration")
+    recovery_token = api.request("POST", "/api/v1/fleet/login", {
+        "email": RECOVERY_USER, "password": recovery_password,
+    }).get("token")
+    if not isinstance(recovery_token, str) or not recovery_token:
+        raise SetupError("Fleet recovery login did not return a session")
+    try:
+        console_session(api, recovery_token, RECOVERY_USER)
+    finally:
+        api.request("POST", "/api/v1/fleet/logout", token=recovery_token)
+    configure_console_sso(api, token, current, desired)
+    api.request("PATCH", f"/api/v1/fleet/users/{target['id']}", {"sso_enabled": True}, token)
+    users = console_users(api, token)
+    target_after, recovery_after = console_accounts(users, target_sso=True, recovery_sso=False)
+    if target_after["id"] != target["id"] or recovery_after["id"] != recovery["id"]:
+        raise SetupError("Fleet console account identity changed during migration")
+    print("Console SAML settings and staged administrator migration: verified; interactive login still untested")
 
 
 def reporting(api, token):
@@ -247,13 +341,22 @@ def mac_baseline_catalog(api, token, remove=False):
 
 def execute(args):
     desired = (profiles(IOS_FILES, 1) if args.action == "ios-baseline"
-               else profiles(MAC_FILES[:1] if args.action == "mac-baseline" else MAC_FILES, 5))
+               else profiles(MAC_BASELINE_FILES if args.action == "mac-baseline"
+                             else MAC_PSSO_FILES if args.action == "mac-psso" else MAC_FILES, 5))
     api = module("fleet_api", "fleet-download-apple-csr.py")
     mdm = module("fleet_mdm", "fleet-verify-apple-mdm.py")
     api.MAX_RESPONSE = 16 * 1024 * 1024
-    token = api.request("POST", "/api/v1/fleet/login", {
-        "email": api.ADMIN_EMAIL, "password": api.initial_password(),
-    }).get("token")
+    current_password = recovery_password = None
+    if args.action == "console-sso" and args.current_password_file is not None:
+        private_input = module("fleet_private_input", "fleet-airvpn-setup.py")
+        current_password = private_input.read_password(args.current_password_file)
+        # Keep the existing secret as the sole local-recovery password after SSO takes over the target account.
+        recovery_password = api.initial_password()
+        token = api.request("POST", "/api/v1/fleet/login", {
+            "email": CONSOLE_USER, "password": current_password,
+        }).get("token")
+    else:
+        token = api.password_login()
     if not isinstance(token, str) or not token:
         raise SetupError("Fleet login did not return a session")
     try:
@@ -261,7 +364,7 @@ def execute(args):
         if config.get("license", {}).get("tier") != "free":
             raise SetupError("Expected Fleet Free; refusing an unverified license contract")
         if args.action == "console-sso":
-            console_sso(api, token)
+            console_sso(api, token, current_password, recovery_password)
         elif args.action == "reporting":
             reporting(api, token)
         elif args.action == "mac-baseline-catalog":
@@ -274,8 +377,11 @@ def execute(args):
             print("Fleet Free profile validation passed; no profiles assigned")
         else:
             host = (ios_host(api, mdm, token, args.host_id) if args.action == "ios-baseline"
-                    else mac_host(api, mdm, token, args.host_id) if args.action == "mac-baseline"
+                    else mac_host(api, mdm, token, args.host_id) if args.action in ("mac-baseline", "mac-psso")
                     else mdm.local_host(api, token))
+            if args.action == "mac-pilot" and not args.remove:
+                apply_profiles(api, mdm, token, host, profiles(MAC_PSSO_FILES, 5), remove=True)
+                print("Existing Platform SSO profile absence and baseline/unrelated-profile retention: verified")
             apply_profiles(api, mdm, token, host, desired, remove=args.remove)
             if args.action == "ios-baseline" and not args.remove:
                 info = mdm.command(api, token, host, {"RequestType": "SecurityInfo"}).get(
@@ -294,19 +400,23 @@ def execute(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline",
-                                            "mac-baseline-catalog", "console-sso", "reporting"))
+    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline", "mac-psso",
+                                            "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"))
     parser.add_argument("--host-id", type=int,
-                        help="Explicit enrolled Fleet ID; required for mac-baseline or ios-baseline")
+                        help="Explicit enrolled Fleet ID; required for mac-baseline, mac-psso, or ios-baseline")
     parser.add_argument("--remove", action="store_true",
                         help="Remove only the selected repository profiles; does not restore old passwords")
+    parser.add_argument("--current-password-file", type=Path,
+                        help="Private current target-local Fleet password file for a legacy console SSO migration")
     parser.add_argument("--execute", action="store_true", help="Apply through the authenticated Fleet API")
     args = parser.parse_args(argv)
-    if ((args.action in ("mac-baseline", "ios-baseline")) != (args.host_id is not None)
+    if ((args.action in ("mac-baseline", "mac-psso", "ios-baseline")) != (args.host_id is not None)
             or (args.host_id is not None and args.host_id < 1)):
-        parser.error("Only mac-baseline and ios-baseline require --host-id with a positive Fleet host ID")
-    if args.remove and args.action not in ("mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog"):
+        parser.error("Only mac-baseline, mac-psso, and ios-baseline require --host-id with a positive Fleet host ID")
+    if args.remove and args.action not in ("mac-pilot", "mac-baseline", "mac-psso", "ios-baseline", "mac-baseline-catalog"):
         parser.error("--remove applies only to device profiles")
+    if args.current_password_file is not None and args.action != "console-sso":
+        parser.error("--current-password-file applies only to console-sso")
     try:
         if args.action == "mac-baseline-catalog" and not args.remove:
             raise SetupError("Global Mac baseline assignment is retired; mac-baseline-catalog requires --remove")
@@ -318,9 +428,11 @@ def main(argv=None):
                   "mac-pilot targets this exact Mac by serial AND hardware UUID.\n"
                   "Profile writes replace only stable repository identifiers, preserve other profiles, and never auto-retry.\n"
                   "mac-baseline targets only the selected Fleet-enrolled Mac; future Macs require an explicit install.\n"
+                  "mac-psso targets only the selected Fleet-enrolled Mac and installs or removes only Platform SSO.\n"
                   "ios-baseline targets only the selected iPhone or iPad; install and removal never use a global catalog.\n"
                   "mac-baseline-catalog --remove retires the old global assignment after host-scoped Mac installs.\n"
-                  "console-sso uses the managed Entra unit outputs, precreates only the authorized SSO admin, and keeps recovery login.\n"
+                  "console-sso stages or verifies the SSO/recovery topology from local recovery; "
+                  "--current-password-file is legacy-only.\n"
                   "reporting adds a macOS-only FileVault SQL policy without automatic remediation.")
             return 0
         execute(args)
