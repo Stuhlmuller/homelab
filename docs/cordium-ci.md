@@ -293,3 +293,45 @@ on success, failure, or SIGTERM. Keep the helper until retirement is verified.
 Restore previous Cordium capacity limits through Argo CD only if reverting that
 capacity decision is intended. OpenClaw execution uses a separate future
 identity and is not enabled by this CI workflow.
+
+## October 17 startup failure and Acer staging
+
+The [bounded diagnostic receipt](evidence/cordium-startup-capacity-2026-10-17.json)
+records a failed startup and complete cleanup: all six original stopped workspaces
+were preserved. The workspace requested 5 MiB / 10m despite limits of 2 GiB / 2 CPU.
+The worker temporarily lost CRI/PLEG health and recovered without a manual restart.
+The nested image-pull stall's exact cause remains unproven.
+
+The [pinned Nocturne patch and build](../builds/cordium-nocturne/README.md) reserve
+workspace limits and set `hostUsers: false`. The real generator test failed before
+the patch and passed afterward; the patched binary cross-compiles for Linux amd64.
+These results do not establish a deployed image or successful workspace execution.
+
+Acer is the selected capacity target. Its observed allocatable memory was
+15,260.7 MiB, with 14,483 MiB requested: only 777.7 MiB remained. A 2 GiB workspace
+therefore needs at least another 1,270.3 MiB of unreserved capacity, plus controller,
+DaemonSet and rollout overhead. Do not shrink workspace requests or move existing
+local PVs to bypass this gate. Other nodes were already under substantial memory
+pressure; relocating unrelated apps has not been approved as a capacity plan.
+
+Storage topology and node-path coverage now include Acer, while the existing
+worker path remains. Acer's Cordium role stays disabled. Before enabling it:
+
+1. Establish enough schedulable capacity for one 2 GiB / 2 CPU workspace and
+   measured controller/DaemonSet overhead; account for rollout surge and control-plane
+   reserve. Final Octelium retirement requires Cordium acceptance itself, so do not
+   assume that retirement can bootstrap this capacity.
+2. Publish the tested controller through the protected image path and declare its
+   consuming digest/ownership in repository code. No custom digest exists yet.
+3. Render and validate Acer's current private Talos config with the staged sysctl
+   patch; prove container runtime, filesystem idmap, and local-PV support for Pod
+   user namespaces. A schema check or API dry run does not prove runtime isolation.
+4. Establish the runner network-isolation prerequisite, then enable the reviewed
+   role through the declared node-label path. Preserve the six original PV/PVC
+   identities and node affinities.
+5. Repeat a bounded cold-start smoke, real command execution and exact-SHA check,
+   then verify native and Kubernetes cleanup before runner canaries or selector cutover.
+
+No controller rollout, Acer role change, unrelated workload relocation, or runner
+selector cutover was performed for this preparation. Restore the prior source to
+roll back dormant prerequisites; never delete existing workspace storage.
