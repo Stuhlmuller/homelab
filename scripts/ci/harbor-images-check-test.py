@@ -160,6 +160,14 @@ with tempfile.TemporaryDirectory() as directory:
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
     documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/busybox:1.38@" + digest)
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Unpublished Docker Hub shorthand mirror path passed")
+    documents[0]["initContainers"][0]["image"] = (
         "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38")
     try:
         check.check()

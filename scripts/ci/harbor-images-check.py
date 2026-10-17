@@ -198,6 +198,7 @@ def ownership_errors():
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
+    known_mirrors = {"harbor.stinkyboi.com/mirror/" + item["source"] for item in catalog}
     known_digests = {item.rsplit("@", 1)[-1] for item in known if "@" in item}
     # An unpinned declaration needs its reviewed tag as well as a copied digest.
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
@@ -209,9 +210,8 @@ def check():
     # the strict Harbor mirror path.
     missing = sorted(normalize(image) for image in images
                      if not image.startswith("harbor.stinkyboi.com/homelab/")
-                     and catalog_reference(image) not in (
-                         known if image.startswith("harbor.stinkyboi.com/mirror/")
-                         else known | known_tags))
+                     and (image not in known_mirrors if image.startswith("harbor.stinkyboi.com/mirror/")
+                          else catalog_reference(image) not in known | known_tags))
     missing_digests = sorted(digests - known_digests - {
         image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
