@@ -31,6 +31,12 @@ bootstrap Job to the API, and monitoring to metrics. PostgreSQL accepts only
 Harbor core/exporter and its backup Job. The namespace does not opt into Istio
 ambient until that additional traffic path is validated.
 
+Chart 1.19.2 renders the singleton `harbor-nginx` Deployment without a strategy;
+Kubernetes defaults it to RollingUpdate. Its one-replica defaults allow one
+surge Pod and zero unavailable Pods, keeping the old registry entry point
+available while the replacement image pulls. `harbor-check.sh` locks that
+rendered shape; verify the live rollout before treating the upgrade as accepted.
+
 Self-registration is disabled and only administrators can create projects.
 The PostSync bootstrap creates the private `homelab` project and reconciles:
 

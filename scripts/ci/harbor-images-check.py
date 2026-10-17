@@ -256,7 +256,7 @@ def harbor_component_errors(values, catalog):
             errors.append(f"Harbor component {repository} must use {HARBOR_RUNTIME_VERSION}@sha256:<digest>")
             continue
         expected = f"{repository}:{tag}"
-        if cataloged[repository] != [expected]:
+        if expected not in cataloged[repository]:
             errors.append(f"Harbor catalog must contain the same {HARBOR_RUNTIME_VERSION} source as values for {repository}")
     return errors
 

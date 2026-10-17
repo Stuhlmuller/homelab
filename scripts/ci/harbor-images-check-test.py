@@ -114,6 +114,11 @@ harbor_catalog = [
     for repository in sorted(check.HARBOR_COMPONENTS)
 ]
 assert check.harbor_component_errors(harbor_values, harbor_catalog) == []
+rollback_catalog = [*harbor_catalog, *(
+    {"source": f"{repository}:v2.15.2@{digest}"}
+    for repository in sorted(check.HARBOR_COMPONENTS)
+)]
+assert check.harbor_component_errors(harbor_values, rollback_catalog) == []
 mixed_values = {"images": [*harbor_values["images"]]}
 mixed_values["images"][0] = {**mixed_values["images"][0], "tag": "v2.15.2@" + digest}
 assert any("must use v2.15.4" in error

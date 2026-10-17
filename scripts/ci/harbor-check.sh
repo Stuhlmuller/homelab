@@ -9,6 +9,12 @@ for render in first second; do
     --values clusters/homelab/apps/harbor/values.yaml >"$rendered_dir/${render}.yaml"
 done
 cmp "$rendered_dir/first.yaml" "$rendered_dir/second.yaml"
+yq ea -o=json -I=0 '[. | select(.kind == "Deployment" and .metadata.name == "harbor-nginx")]' \
+  "$rendered_dir/first.yaml" |
+  jq -e 'length == 1 and .[0].spec.replicas == 1 and .[0].spec.strategy == null' >/dev/null || {
+    echo "Harbor nginx rollout strategy changed; recheck self-mirror availability" >&2
+    exit 1
+  }
 {
   kubectl kustomize clusters/homelab/apps/harbor
   printf '\n---\n'

@@ -430,6 +430,12 @@ and live authenticated registry/API and scan checks. The release still carries
 Distribution `v2.8.3-harbor.2`; Distribution-v2 CVE findings remain unresolved
 and the patch must not be described as CVE-clear.
 
+Chart 1.19.2 renders `harbor-nginx` as a one-replica Deployment without an
+explicit strategy, so Kubernetes uses RollingUpdate with one surge and zero
+unavailable Pods. The old nginx remains available while its replacement pulls
+through Harbor. The repository Harbor render check asserts this shape; recheck
+it and the live nginx Pod during the upgrade.
+
 ## Bootstrap and recovery
 
 An in-cluster registry cannot cold-start from itself on empty nodes. Fresh
