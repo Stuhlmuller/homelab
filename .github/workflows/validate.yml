@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   harbor-core-compatibility:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 30
     steps:
       - name: Checkout
@@ -42,7 +42,7 @@ jobs:
           grep -F 'Complete private runtime audit passed;' "$private_log"
           grep -F 'Runtime audit receipt: ' "$private_log"
   repo:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     steps:
       - name: Checkout
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1

@@ -738,6 +738,16 @@ workflow_sha256() {
     cut -d' ' -f1
 }
 
+# Every local job must use the homelab pool; reusable workflows own their jobs.
+while IFS= read -r -d '' workflow; do
+  yq -o=json '.' "$workflow" |
+    jq -e 'all(.jobs[]; has("uses") or
+      .["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"])' >/dev/null || {
+    echo "Workflow must use the Cordium runner pool: $workflow" >&2
+    exit 1
+  }
+done < <(find .github/workflows -maxdepth 1 -type f \( -name '*.yml' -o -name '*.yaml' \) -print0)
+
 credentialed_job_inventory="$({
   while IFS= read -r -d '' workflow; do
     yq -o=json '.' "$workflow" |
@@ -836,22 +846,22 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml 7cc3d5576e39f314a6d8269b7c6d80ef293685d3aa63a99c7b22c1677cd17d57
-.github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
-.github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
-.github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
-.github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
-.github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
-.github/workflows/nofx-images.yml f65aca30f463f0dfb1891d5551e8a5f4f0f898c85b029b9995f6db0fa0b87115
-.github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
-.github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
-.github/workflows/octelium-private-kubernetes-apply.yml 5bccd9e772bb094397f69697a4153c754513e3c0dbb392c231b2f57dc748e5e1
-.github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
-.github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml c458a1b2fa7f3a458b4d78f43258ea814406db4f7fce281c5b6485667e1b2fb2
-.github/workflows/terragrunt-plan.yml 4a5776ff31a91a45af8db3a80cf77a048676327b3f4bdcaba0b0d2ef7cb3f8ac
+.github/workflows/cordium-check.yml d1454835d4624eb6ef33ed9fed3b6d632669cf8a95f22b455c2bb18b77783edb
+.github/workflows/cordium-login-denial.yml cf60d3f37d16525049fc650db155e8533619194d58071f0cc393a450d4f2aa26
+.github/workflows/entra-oidc-verify.yml e940fa49f69c08e61332744d8e51f942aad63fd3ce1d257f28cd36e5367c2ce6
+.github/workflows/codeql.yml 929e9aee59a60419c07150a220007622908ca5d66645e481f82a05ca98a40b16
+.github/workflows/harbor-core-images.yml 3885ec975c20436b201365d723d0ff89afbd7164d6a85ecf39a79a97a5d1ee06
+.github/workflows/harbor-mirror.yml 7747616fc21732214fde323a3d16f096441e8ab182e5bdda26e46cb081d03006
+.github/workflows/homelab-diagnostics.yml 7df5d687810ead79250219b19e53b9b158078a9d25b72b1dfc2ad36affad4540
+.github/workflows/lint.yml 6d0de48c44f2d04133ac5894e679defe616b606de306f070dda7b9f3fc33f0d5
+.github/workflows/nofx-images.yml 4668b524ebfd82ecf8eab1f15c71755aab8c9a656602231c2a1ecc8848c0437e
+.github/workflows/nofx-registry-credential.yml 9589f2e8ac2db4e10a5a6100d4d648353b98f9c70dbf25a3511be2a62788bccc
+.github/workflows/litellm-provider-credential.yml eb58d0d1b6b13f3a3e317adaa10fad764757d894c5a98b1d5a6d1bfadd6d62b8
+.github/workflows/octelium-private-kubernetes-apply.yml 6e9e2b645e267584327bf7a7b48f29dc84130a2d3d6f949cb56a545e3928165d
+.github/workflows/release.yml 745016f1b7d32e2bc936c2d2eee04a65688257e28c211f5e17314031d626e773
+.github/workflows/terragrunt-apply-request.yml 96a4cfbb5aff491edb353514d20edfb891a90ac515b9ca2696b66100af8ccbda
+.github/workflows/terragrunt-apply.yml bf0b9172a1734ffadedbf86e8a7965bb58aab4e4478b1ba4c126823fd7085a61
+.github/workflows/terragrunt-plan.yml 84caa7bc0ef1d9f2eb1e74c074d6e3736e11e58c07f03cf0007fc30777d2fb3d
 EOF
 echo "::endgroup::"
 

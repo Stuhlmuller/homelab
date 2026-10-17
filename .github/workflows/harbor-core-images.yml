@@ -15,7 +15,7 @@ jobs:
   publish:
     name: Publish Reviewed Private Core
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 45
     concurrency:
       group: harbor-packages-production
@@ -118,7 +118,7 @@ jobs:
   published-digest:
     name: Report Published Core Digest
     needs: [publish]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 5
     permissions: {}
     steps:

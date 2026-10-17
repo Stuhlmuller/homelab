@@ -40,7 +40,7 @@ concurrency:
 jobs:
   test-build:
     name: Test And Build NOFX Images
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 45
     permissions:
       contents: read
@@ -73,7 +73,7 @@ jobs:
     name: Publish Reviewed Main Images
     needs: [test-build]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 45
     concurrency:
       group: harbor-packages-production
@@ -163,7 +163,7 @@ jobs:
   published-digests:
     name: Report Published NOFX Digests
     needs: [publish]
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 5
     permissions: {}
     steps:

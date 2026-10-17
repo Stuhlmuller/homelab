@@ -9,7 +9,7 @@ concurrency:
 jobs:
   build:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: read
       statuses: write

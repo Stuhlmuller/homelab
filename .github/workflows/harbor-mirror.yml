@@ -21,7 +21,7 @@ permissions: {}
 jobs:
   static-policy:
     name: Validate Harbor Mirror
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 30
     permissions:
       contents: read
@@ -68,7 +68,7 @@ jobs:
     name: Copy Reviewed Public Images
     needs: [static-policy]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 360
     concurrency:
       # Mirror runs share mutable aliases only within the public mirror project.

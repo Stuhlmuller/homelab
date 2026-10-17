@@ -4,6 +4,9 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+All local jobs select the Cordium self-hosted pool. Provisioning, compatibility,
+and the activation hold are documented in [Cordium runners](cordium-runners.md).
+
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
   with advisory status reporting. It is the shared lightweight lint signal for
   every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
