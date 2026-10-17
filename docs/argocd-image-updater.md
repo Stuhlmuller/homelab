@@ -23,7 +23,7 @@ Harbor pull, and zero reported scan findings. It does not advance
 `verified-stable`, write updater state, or enroll a consumer. A checked-in
 receipt cannot enroll a consumer until a verifiable artifact-attestation
 importer exists. A later compatibility migration must add a direct
-digest-pinned `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<digest>`
+digest-pinned `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<digest>`
 reference before updater enrollment can be reviewed.
 
 Renovate continues to own unrelated image and chart updates. Enrolled Harbor

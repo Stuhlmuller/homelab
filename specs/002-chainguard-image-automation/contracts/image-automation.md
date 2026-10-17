@@ -47,7 +47,7 @@ root index or its required platform children.
 - No current native Chainguard candidate is enrolled in Image Updater. A future
   enrollment is blocked until a verifiable artifact-attestation importer exists;
   a checked-in native receipt is insufficient. It must then write a direct
-  `harbor.stinkyboi.com/homelab/chainguard-python@sha256:...` reference;
+  `harbor.stinkyboi.com/homelab/chainguard/python@sha256:...` reference;
   `verified-stable` is not part of this native import path.
 - Git write-back uses `--git-commit-method=api`, GitHub App credentials and
   `main:codex/image-updater-proposals`. Poll every two minutes by default.
