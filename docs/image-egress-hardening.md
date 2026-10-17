@@ -92,6 +92,13 @@ Harbor publisher/replication/scanner workflows. Privileged/host-network pods,
 VPN/UDP workloads and non-meshed namespaces need explicit controls; they cannot
 be declared isolated solely by enrolling ordinary TCP workloads in Istio.
 
+The NOFX frontend has no service-account token, probes its local `/health`
+endpoint in-container, and permits only CoreDNS TCP/UDP 53 plus its backend on
+TCP 8080/15008. Its declared policy contains no Harbor or public-registry
+egress. It is not enforced until the NRI enforcer canary proves the same allow
+and deny paths. The backend admits ambient TCP 15008; its Istio
+AuthorizationPolicy still limits the decrypted request to the frontend identity.
+
 Acceptance must demonstrate allowed requests succeed and undeclared domains,
 direct IPs, alternate ports, IPv6 and gateway bypass fail. Preserve DNS,
 controller/webhook calls, storage mounts and the human/CI recovery route.
