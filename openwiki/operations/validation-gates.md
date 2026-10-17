@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T20:29:29.496Z" }
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:29:29.496Z
+    at: 2026-10-17T21:07:34.573Z
 ---
 
 # Validation Gates

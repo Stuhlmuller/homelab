@@ -74,6 +74,8 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-bef786188ec490a342373148
+    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
@@ -98,10 +100,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
+generated: { by: "codex", at: "2026-10-17T20:27:18.310Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:29:29.496Z
+    at: 2026-10-17T21:07:34.573Z
 ---
 
 # Harbor Private OCI Registry
@@ -126,8 +128,8 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI still establishes a bounded Kubernetes port-forward to Istio with
-the existing Octelium CI credential until phase 2b. Only its disposable runner maps
+Hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
+with the existing Octelium CI credential. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
 retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
 
@@ -660,6 +662,12 @@ additions to the original seven-image scope. Earlier seven-image receipts exclud
 those additions, so expanded publication requires protected approval and complete
 authenticated Harbor-pull acceptance before a consuming change. Public sources belong
 in the catalog; application runtime references must use Harbor.
+
+The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
+`3db21366…` digests while retaining prior digest-only references for rollback.
+The `latest` and `stable` aliases move only after protected publication verifies
+complete Harbor pulls. Their consuming Renovate PRs remain held until that
+publication and pull acceptance finish.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms

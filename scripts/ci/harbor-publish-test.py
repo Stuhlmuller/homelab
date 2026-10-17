@@ -1132,6 +1132,20 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse(self.calls_for("aws"))
         self.assert_cleaned()
 
+    def test_publisher_uses_private_traefik_transport(self):
+        self.transport_mocks()
+        result = self.run_helper()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        forwards = [args for args in self.calls_for("kubectl") if "port-forward" in args]
+        self.assertEqual(len(forwards), 1)
+        self.assertIn("--namespace", forwards[0])
+        self.assertEqual(forwards[0][forwards[0].index("--namespace") + 1], "traefik")
+        self.assertIn("service/traefik-private", forwards[0])
+        self.assertEqual(forwards[0][forwards[0].index("--address") + 1], "127.0.0.1")
+        self.assertIn("443:443", forwards[0])
+        self.assertNotIn("istio-ingressgateway", forwards[0])
+        self.assert_cleaned()
+
 
 class PublishedDigestReport(unittest.TestCase):
     @classmethod
