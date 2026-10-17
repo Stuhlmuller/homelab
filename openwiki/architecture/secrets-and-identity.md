@@ -2,14 +2,15 @@
 type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
-tags: ["architecture", "secrets", "identity"]
+tags: [architecture, secrets, identity]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T04:52:40.970Z
 sources:
+  - id: openwiki-source-23ac5bc03d1cee79a72b06af
+    resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
-  - id: openwiki-source-1c4223daf7221e61506a8824
-    resource: repo://clusters/homelab/apps/fleet/google-login-preferences.json
-  - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
-    resource: repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -22,6 +23,10 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-bc26cfab2973077898d9ec21
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-8547ae9691c6849e109e322b
+    resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -34,8 +39,6 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-f8736ea9671721c61be0c639
     resource: repo://IaC/modules/entra-verified-family-user/main.tf
   - id: openwiki-source-77d110fdd1547564be86e611
@@ -46,18 +49,13 @@ sources:
     resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
-  - id: openwiki-source-45a27dbbec11da74be9f5497
-    resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T19:16:46.436Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T19:16:46.436Z
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 ---
 
 # Secrets And Identity
@@ -210,17 +208,6 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   certificate metadata, and revokes its session. Certificate renewal remains
   the documented Fleet UI flow using the same Apple account. APNs material
   stays encrypted in MySQL and outside git.
-
-- Fleet-managed Mac Google login stages a separate operator-only
-  `/homelab/fleet/google-oauth` SecureString. It is excluded from External
-  Secrets: the [XCreds operator](../../scripts/fleet-google-login.py) reads the
-  dedicated OAuth client privately and delivers a host-scoped MDM profile only
-  after protected merge and deployment. The current Fleet administrator
-  password comes from an owner-only file after bootstrap rotation. Email-claim
-  username mapping, local login fallback, and FileVault acceptance are explicit
-  pilot checks. Remote profile removal requires verified native login and an
-  explicit operator attestation; see the
-  [Google login runbook](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
@@ -553,6 +540,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   callback helper after Funnel routing and negative-path preflights pass;
   require a fresh signed delivery before retiring the legacy route. Keep the webhook secret in
   `/homelab/policy-bot/github-app/webhook-secret`.
+
 ## Source Files
 
 - `docs/secrets-aws-ssm.md`
@@ -586,6 +574,11 @@ the temporary native transport changes no saved host or client settings.
 See [NOFX reconciliation](../../docs/octelium-nofx-reconciliation.md).
 
 ## Fleet Free identity boundaries
+
+The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
+and owner-address details below are dated history, not a procedure to repeat
+or authorization to modify owner identities. See the current
+[retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 The [WireGuard/AirVPN operator](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 accepts private owner-supplied client exports from outside git, separately per
@@ -651,6 +644,11 @@ that collection only when its own source or plan inputs change; an operator-only
 pilot change cannot trigger legacy-user reconciliation.
 
 ## Google Workspace federation boundary
+
+The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
+and owner-address details below are dated history, not a procedure to repeat
+or authorization to modify owner identities. See the current
+[retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 `operator/entra-google-workspace-federation` owns the Entra Graph federation
 configuration for `stuhlmuller.net`. Its Google SAML metadata is an
@@ -778,3 +776,21 @@ values, identities or permissions were created. Preserve app encryption/signing
 keys and password-free-dump role credentials through the existing private vault.
 Archive restore has no cloud credentials or production access and remains gated
 on enforced containment.
+
+## Mastodon credential boundary
+
+The [Mastodon declaration](../../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+adds nine exact `/homelab/mastodon/` parameters and namespace-scoped External
+Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
+owner password are generated in encrypted state. The external SMTP slot starts
+with a rejected placeholder; the protected
+[SMTP workflow](../../.github/workflows/mastodon-smtp-credential.yml) injects
+only that fixed SecureString from `MASTODON_SMTP_PASSWORD`.
+
+The [runtime template](../../clusters/homelab/apps/mastodon/runtime-externalsecret.yaml)
+mounts configuration, VAPID and SMTP as files. Only the owner-bootstrap Job
+mounts the generated administrator password; repeat bootstrap preserves the
+existing account. `OnChange` and subPath consumers need declared secret/runtime
+revisions after rotation. Preserve stable keys with the database. Source
+registration and credential storage do not prove deployment, owner login or
+email delivery; see the [workload runbook](../../clusters/homelab/apps/mastodon/README.md).

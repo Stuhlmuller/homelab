@@ -1,8 +1,11 @@
 ---
-type: operation
-title: "Harbor Private OCI Registry"
-description: "Harbor authentication, private OCI publication and signing, robot identities, scanning, Talos image mirrors, and rollout gates."
-tags: ["harbor", "oci", "packages", "gitops"]
+type: operations
+title: "Harbor OCI"
+description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
+tags: [harbor, images, registry, security]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
@@ -50,6 +53,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-bc26cfab2973077898d9ec21
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/serviceaccount.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -92,14 +97,13 @@ sources:
     resource: repo://scripts/config/harbor-chainguard-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
+  - id: openwiki-source-0a19fa5d8cf9ed1986095969
+    resource: repo://scripts/config/harbor-mastodon-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:18:51.612Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T19:12:05.022Z
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 ---
 
 # Harbor Private OCI Registry
@@ -303,7 +307,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, or `traefik`.
+`bazarr`, `mastodon`, or `traefik`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -363,7 +367,6 @@ full-catalog incompatibility. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
-
 
 ### Identical-reference core repair candidate
 
@@ -562,6 +565,7 @@ desired references. Later source builds require a separate functional rollout.
 first verify copies and read-only pulls, then preserve that consumer's exact
 digest while changing its registry through GitOps. The later cluster-wide
 mirror rollout below extends this to third-party images.
+
 ## Rollout And Acceptance
 
 1. Validate static checks, rendered chart/manifests and Terragrunt plan. Merge
@@ -916,3 +920,15 @@ PR merges. See [compatibility, validation and rollback gates](../../docs/pgvecto
 Registry metadata verifies PostgreSQL 17.11 on both images and pgvector
 0.8.6 → 0.8.7 in build history; runtime extension and restore acceptance
 remain unverified. Catalog coverage is desired-state evidence only.
+
+## Mastodon publication boundary
+
+The fixed [Mastodon scope](../../scripts/config/harbor-mastodon-images.json)
+selects PostgreSQL, Redis, web and streaming digests from the full catalog.
+Publication verifies all-platform copies, aliases and complete authenticated
+Harbor pulls before consuming manifests merge. The dedicated PostgreSQL
+`18-bookworm` candidate preserves PostgreSQL 18 and its data directory; it does
+not change Harbor's existing database image. The
+[workload runbook](../../clusters/homelab/apps/mastodon/README.md#scan-acceptance-evidence)
+retains scan findings and source-based applicability evidence. Publication and
+scans do not prove runtime compatibility or live acceptance.

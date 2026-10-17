@@ -1,8 +1,11 @@
 ---
 type: workload
 title: "Workload Inventory"
-description: "Application and platform namespaces, GitOps paths, dependencies, resource and state contracts, and runtime readiness boundaries."
-tags: ["workloads", "argocd", "inventory"]
+description: "Application namespaces, GitOps paths, dependencies, state contracts and runtime readiness boundaries."
+tags: [workloads, argocd, inventory]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
@@ -12,14 +15,28 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
-  - id: openwiki-source-58caddf8069d72479935ea1e
-    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
-  - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
-    resource: repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-bb71538b4bc75dd401bfc1ec
+    resource: repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml
+  - id: openwiki-source-9909d58412f1a989bfab76c4
+    resource: repo://clusters/homelab/apps/mastodon/bootstrap-job.yaml
+  - id: openwiki-source-76c52b92a6019fb5db7199cb
+    resource: repo://clusters/homelab/apps/mastodon/launch.rb
+  - id: openwiki-source-dbeb78c2adb5040b8afe8540
+    resource: repo://clusters/homelab/apps/mastodon/migration.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-4301bd0984ddefae9a3aa9e4
+    resource: repo://clusters/homelab/apps/mastodon/storage.yaml
+  - id: openwiki-source-f63af960991dc66477879fc8
+    resource: repo://clusters/homelab/apps/mastodon/virtualservice.yaml
+  - id: openwiki-source-b7405e9378d7ba0db53f8842
+    resource: repo://clusters/homelab/apps/mastodon/workloads.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-eb9ba8868bbd263b0cd40e71
+    resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
@@ -40,24 +57,19 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-65bc6c080b599d8e6d572a31
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
     resource: repo://IaC/stacks/cert-manager/stack.hcl
+  - id: openwiki-source-8144ee95f00e2d4721210fcf
+    resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-  - id: openwiki-source-6a90d887ebbab5a858408f90
-    resource: repo://scripts/fleet-free-setup.py
-  - id: openwiki-source-45a27dbbec11da74be9f5497
-    resource: repo://scripts/fleet-google-login.py
-generated: { by: "codex", at: "2026-10-17T19:12:05.022Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T19:16:46.436Z
+  - id: openwiki-source-87efd56c37d4fbd91671cd82
+    resource: repo://scripts/mastodon-public-dns.py
+generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
 ---
 
 # Workload Inventory
@@ -100,10 +112,9 @@ retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-retains Fleet console SAML for administrators but retires Fleet-only Microsoft
-Platform SSO: Company Portal registration requires Intune MDM and licensed
-users. Fleet remains the sole Mac MDM. A repository operator delivers Mac and
-iPhone/iPad baseline profiles with host-scoped commands. The
+separates native Microsoft Password Platform SSO from console SAML. Company
+Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
+script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
@@ -114,8 +125,7 @@ before `mac-baseline-catalog --remove` deletes the old global entry; distinct
 identities prevent delayed catalog removals from erasing the replacement.
 The catalog action is removal-only and preserves other entries. New Macs need
 explicit installation; the baseline has no automatic assignment or drift repair.
-`mac-pilot` uses the host baseline and removes the retired PSSO profile only
-when called with `--remove`.
+`mac-pilot` uses the new baseline with the existing Entra SSO profile.
 `ios-baseline --host-id` targets only one Fleet MDM-connected `ios`/`ipados`
 host and validates its Apple device identifier before delivering the stable
 iPhone/iPad passcode profile:
@@ -129,15 +139,6 @@ The console enterprise app permits only an individually assigned, precreated
 administrator. No Fleet Premium, Intune enrollment, Conditional Access, or paid
 Entra device-compliance integration is enabled. iOS uses MDM inventory/security
 evidence; Fleet 4.92.2 SQL policies support macOS/Linux, not iOS.
-
-The [Google login pilot](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md)
-stages a dedicated XCreds OAuth client in an operator-only SSM SecureString.
-The repository operator delivers a profile to one enrolled Mac and maps the
-local username from Google's email claim; profile delivery and package
-verification do not prove interactive login or FileVault acceptance. Remote
-profile removal requires native login restoration on that Mac and an explicit
-operator attestation. No credential or Mac activation is established by source
-merge alone.
 
 Fleet's [WireGuard/AirVPN catalog](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 adds official app downloads for Mac and iPhone/iPad, a Mac installation-reporting
@@ -424,3 +425,58 @@ automatic capture. Candidate off-NAS publication and checks are not active.
 No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
 n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
 application behavior, not only a checksum or successful backup Job.
+
+## Mastodon
+
+The [Mastodon stack](../../IaC/stacks/mastodon/stack.hcl) registers namespace
+`mastodon` from `clusters/homelab/apps/mastodon`, following `main`. Dependencies
+are SSM, External Secrets, cert-manager, Istio, the retained public connector
+and platform storage. This is prepared source, not evidence of a live server.
+The instance and account domain are `mastodon.stinkyboi.com`; the private apex
+portal is preserved. The owner bootstrap declares `rodman`, with the existing
+repository owner email, and preserves an existing matching account.
+
+```mermaid
+flowchart TD
+  Client[Public Mastodon client] --> Edge[Cloudflare Tunnel]
+  Edge --> Gateway[Shared Istio gateway]
+  Gateway --> Web[Web on port 3000]
+  Gateway --> Streaming[Streaming on port 4000]
+  Web --> Database[Private PostgreSQL]
+  Streaming --> Database
+  Web --> Redis[Private Redis]
+  Streaming --> Redis
+  Worker[Sidekiq] --> Database
+  Worker --> Redis
+  Web --> Media[Retained NAS media]
+  Worker --> Media
+```
+
+The declared public connector and Istio route split website and streaming traffic.
+
+PostgreSQL 18 uses a retained 3 GiB local claim on `zimaboard-0`; Redis uses a
+separate retained 1 GiB local claim with AOF. These hostPath capacities are not
+quotas. Media uses a retained 50 GiB NAS claim, while checked nightly database
+dumps use a separate 30 GiB NAS claim with 14-day retention. NAS media and
+backups share a failure domain; they are not independent disaster recovery.
+Preserve the database, media and stable encryption/signing keys during rollback.
+
+SSM generates internal credentials and the bootstrap-only owner password.
+Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
+files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
+and runtime revisions after rotation. The launcher refuses SMTP placeholders.
+Schema preparation precedes owner bootstrap and application Deployments.
+
+The targeted Terragrunt saved-plan path checks upstream health, storage and
+secret-store permissions before SSM declarations and registration. The separate
+DNS workflow writes only the owned instance CNAME after Mastodon and the public
+connector are Synced/Healthy at its reviewed revision. STRICT mTLS and
+default-deny authorization/NetworkPolicy constrain the private backends.
+
+See the [workload runbook](../../clusters/homelab/apps/mastodon/README.md),
+[secret boundary](../architecture/secrets-and-identity.md#mastodon-credential-boundary),
+[publication boundary](../operations/harbor-oci.md#mastodon-publication-boundary)
+and [activation gates](../operations/validation-gates.md#mastodon-activation-gates).
+Merge, actual rollout, loaded-library checks, owner login, SMTP receipt,
+public website/media/streaming/federation and backup/isolated-restore acceptance
+remain distinct milestones.

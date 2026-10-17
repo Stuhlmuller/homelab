@@ -6,6 +6,11 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+ruby scripts/ci/mastodon-launch-test.rb
+ruby scripts/ci/mastodon-bootstrap-test.rb
+python3 -I scripts/ci/mastodon-routes-test.py
+python3 -I scripts/ci/mastodon-smtp-credential-test.py
+python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
@@ -61,6 +66,8 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
+python3 -I scripts/ci/talos-nri-preparation-check-test.py
+python3 -I scripts/ci/talos-nri-preparation-check.py
 python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py

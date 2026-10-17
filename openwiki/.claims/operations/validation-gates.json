@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bbfd48c6d2432cc1457c7273feae237b414889dfc43cc33b625526e70d62e074",
+  "pageVersion": "sha256:c42e6aca0dcd69b110c23e66637889cca49057f85001b4b3cce835ab541d5084",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,11 +16,11 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -80,7 +80,7 @@
         },
         {
           "resource": "repo://policy/kubernetes.rego",
-          "version": "repo-file-v1:sha256:5ab9ee2b8f5500fef4376258bea3883bdf998ad1481f84865039cb0ad5f87c79"
+          "version": "repo-file-v1:sha256:de6442432c68042ea4b3372707099ae9d591519aac4752811fd3b2de9517106d"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:beb4af1e79234e480f5992c4679f24ded1b01e271e8d3c20b5aef40c61c4cb32"
+          "version": "repo-file-v1:sha256:dc7c238bd696a353227aa9b59bb21cd707e8cddba0ef4a968a72e844b0591ed3"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         }
       ]
     },
@@ -502,7 +502,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:fd87919eadaf51bf298ab2afa7e61283b27db6bbc60b66e5bc709f4b29d53b46"
+          "version": "repo-file-v1:sha256:5ae83e6fe791f7d970fdc98d1ff6d21488d86d8cd5385945113a26838970d1eb"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -535,10 +535,28 @@
           "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
         }
       ]
+    },
+    {
+      "id": "claim_7dd1873c17a944c19006f458e2fcc60a",
+      "statement": "Mastodon offline fixtures cover launcher, owner bootstrap, routing, SMTP injection and DNS conflict handling, while protected live activation additionally requires declared registration, real workload health, provider delivery and public behavior; the DNS lane installs and uses its pinned Nix shell.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml#L106-L133",
+          "version": "repo-lines-v1:sha256:be19aaca48ffa7909adbc09812c510f62edbe7e904f5c0271b94174d32d4ecce:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjYTkwZTdiYmQ2MmI5ZDA1YTAwMjRiZGVmNjcxNjE3YzU0M2M5NGM1ODEwNzQ1ZjNhMjA0NzliNGQ0YmMyMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjZjQyMzU3Y2FkZDlmY2U2ZDZhMzU3MjdiMjg3NDkzODZiZjVkYmJkYjk1N2ExOWQxODRmZjA0NWUxODFlYTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md",
+          "version": "repo-file-v1:sha256:a0331bac5e9511c98b347ae880104224a1eec206508e9bc0f54ae871514c6892"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh#L6-L13",
+          "version": "repo-lines-v1:sha256:5195894c7328c3c60862e3324dcf3d6fa968e27d58c446b79619dd967714fa1b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiNGJkZDAwNjMxZWI0NjkyZDk3NzRlZDNiYmJjMjIyNTQ0NTJkYTA3MmY0Y2Q5MmNkOWFlOGYzZjA0Y2JjMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY4ZDYzYjhlODlhNTYzNzI2NDk4OTBhZjU1ZDlkMTkyMDk3NjYyYmU1ZjFiMjc0ZTY4N2Y1ZjlhYzQ2YTgzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNThhZjIxMTcxOTMxYmQzMDRhMmQ3Y2E2NmMzYjZlYjZiNGRkZmVjZDIyMzQ1ZmM1ZWFkNzM5NDljMmUzMWZmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODY1YmZkMTVmMjYwZjQxOGYxNzZkYmIyNmZhNjBlMjdkY2JlY2E3MTZlMTQzN2RjODNmZGE1ZmQyZTA0NTA0YSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:12:05.022Z"
+    "at": "2026-10-17T04:52:40.970Z"
   }
 }

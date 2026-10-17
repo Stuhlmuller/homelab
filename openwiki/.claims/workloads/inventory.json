@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:14c93a667c4e8709f922bceea6fcc64cec63973c7a5dd5c769dcda4e0fce46f9",
+  "pageVersion": "sha256:19e6940e6f472f89e8dce3e0f610c59dff2d42839413982f04ea2283f7313a5a",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:a77a3e31fce084f6db2fb543b65428ed3e9d494de6235d4681e34e5aff285cc7"
+          "version": "repo-file-v1:sha256:4be4a9c5c9c20ce210c324d3351d1df15576eedfd8cffd252335ba2f00709d75"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
+          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -129,40 +129,74 @@
       ]
     },
     {
-      "id": "claim_6f14df34a6544c658769ccad2b0f22e6",
-      "statement": "Fleet Free retains console SAML but retires Fleet-only Microsoft Platform SSO; host-scoped Mac and iPhone/iPad baseline delivery remains repository-owned.",
+      "id": "claim_cc4545c330f04f4dabce546e874ee17a",
+      "statement": "Mastodon follows main through its shared Application stack, depends on SSM, External Secrets, cert-manager, Istio, public connector and platform storage, and routes its instance hostname to web port 3000 and streaming port 4000 while preserving the private apex portal.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
+          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
         },
         {
-          "resource": "repo://scripts/fleet-free-setup.py",
-          "version": "repo-file-v1:sha256:b2ccf43e0f97a41c95f45256559b534a489dfa1eda7586453416f024646cc399"
+          "resource": "repo://clusters/homelab/apps/mastodon/virtualservice.yaml",
+          "version": "repo-file-v1:sha256:ae4da97c540a55b79d2195916313133df28df3f503dd4df2b773dad203a3aa06"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
+          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
         }
       ]
     },
     {
-      "id": "claim_d0efafe7bf69441d9e7e3d41404e410c",
-      "statement": "The staged Fleet Google login pilot uses an operator-only OAuth SecureString and a host-scoped XCreds profile; interactive Google and FileVault acceptance remains separate, and remote profile removal requires native-login attestation.",
+      "id": "claim_bbfe3bc5163448b29e7b9c8edc6623cb",
+      "statement": "Mastodon retains local PostgreSQL and AOF Redis volumes on zimaboard-0, NAS media and checked nightly database backups with 14-day retention; shared NAS storage is not independent disaster recovery and recovery must preserve stable application keys.",
       "evidence": [
         {
-          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:ae2714f02f7e3c47f894daf68fbdfaf4f03b53937aaf15875637580157d31658"
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L20-L43",
+          "version": "repo-lines-v1:sha256:77794a009be40344c6f67b37fec9920906150d14d19dc19053618a10ff1446c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYmY4NDZjOTFmZjkxNjczZTBmZjdkMTdkMzAzMDc3NTIwNjQ4Mjg2Nzc1NGI3MTA2ZmE0YmU3OGIxMGMxY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyMGRkOGM2YzcyYmViY2MzY2YzZTNkMzUxMzRmYzQyZjI0YzIwNDMxYmZkM2Y1MTU5MDRmYjE5NWI3MjE2ZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFlZjFjYTA2YzBhYzNhNGFiMTYwMzQ1Yzg5ODM5OGYwMjcyODA3NmQwNjQ3MWY4OGVhZjdlYmE5OThlOGE0ZTUifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md",
-          "version": "repo-file-v1:sha256:d47e55ca8014a968c383503fdc279ee128c2cc60d0a8dce15b6750739eba0814"
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L96-L113",
+          "version": "repo-lines-v1:sha256:2de48697e019c73ddaaa5820abd76d7e6507891d927aa667555008ff3ba151c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjYTMwODNkZGYxYWI3Nzg2MmRlZjg0ZWQzNDU0MmNjYjllMTFiNWRiMjVjZThjYzA0NTc1NzlkYzJlNGFhOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkNTZkYzE5MmI2YjQxZWQyYmEwNDNjYzA5ZDA1ODEzYzdiZTdlMDNmZjllYTk2MDU2MzFlYmY3MGFjYThjYzcifQ"
         },
         {
-          "resource": "repo://scripts/fleet-google-login.py",
-          "version": "repo-file-v1:sha256:36871dd7ad1effb4c7be503f9f01ea3d035de2acd79bb8f06b5cff35290a72ed"
+          "resource": "repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml",
+          "version": "repo-file-v1:sha256:4967c5caa133d7adc0747aad6cf6c1d4243363864d84cb34259c58a862ed2b0b"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/storage.yaml",
+          "version": "repo-file-v1:sha256:edcafe9e2c56676a437c361fc633e648a6018bb644e49c2ae275db6cb2ef3276"
+        }
+      ]
+    },
+    {
+      "id": "claim_6be4193694b64ff2842f394e7c033599",
+      "statement": "Mastodon orders schema preparation before idempotent owner bootstrap and Deployments, refuses SMTP placeholders, and separates declared registration from public DNS publication, which requires both Applications healthy at the reviewed revision.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/bootstrap-job.yaml",
+          "version": "repo-file-v1:sha256:b2fa88e328e2398d618be3668e49fc010bedd85a7f78ee509cac4a3b2c477816"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/launch.rb",
+          "version": "repo-file-v1:sha256:7b52882c4fda2a58d36c7c43c0bb05419833aa6fe9e8e5fc4e570ddb5be473c2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/migration.yaml",
+          "version": "repo-file-v1:sha256:b814d01d46c4606064443b4fe8a805a40694b3b44c623032f0c0f3993034620f"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/workloads.yaml",
+          "version": "repo-file-v1:sha256:6babb30ba9d79f334204db361b90fc4ae9a3817d16e2adf70a24b8fbf4964287"
+        },
+        {
+          "resource": "repo://scripts/mastodon-public-dns.py#L51-L65",
+          "version": "repo-lines-v1:sha256:a3db34e670a0261935bd108c1cac35de4c7fbcacff549f6d1297a6c118800257:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNDA1MTNkMzk3ZjZkMDExYjI2NDBlYjI2MDQ2MmNmZDA2YzNlN2UwMmMyOTFiZmJkYmZlMTVjYTNhMmI2OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzNzIyY2FkNjg4ZDI2MWRjMmU2MjMzZGUwNzkyNDM3NjcwOGIwY2FhYWE1MzdhZDk4ZDZkN2YwNmYxYjY3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkNmY5NmEyMWNhYmMyYmRhMTNlMDMwYzdjNTlmMDg3ZTk1OWRmMWNlNjIwNmVlMjUwMDEyMzEwYmY1ZWNhMWYifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:16:46.436Z"
+    "at": "2026-10-17T04:52:40.970Z"
   }
 }
