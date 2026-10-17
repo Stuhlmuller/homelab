@@ -1,0 +1,20 @@
+name: Cordium Nocturne
+on:
+  pull_request:
+    paths:
+      - builds/cordium-nocturne/**
+      - .github/workflows/cordium-nocturne.yml
+permissions: {}
+jobs:
+  requests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+      - name: Reproduce pinned Pod resource reservations
+        run: bash builds/cordium-nocturne/check.sh

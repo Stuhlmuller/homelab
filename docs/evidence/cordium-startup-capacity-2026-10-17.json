@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-17",
+  "checkout": "1a5b27489b22c83a73c6737a37da25b894698f64",
+  "attempts": 1,
+  "tasks_passed": false,
+  "cleanup_verified": true,
+  "original_workspaces_preserved": 6,
+  "raw_kubernetes_delete_performed": false,
+  "native_deletion_retried_after_exact_uid_match": true,
+  "workspace_limits": {
+    "memory": "2Gi",
+    "cpu": "2"
+  },
+  "workspace_requests": {
+    "memory": "5Mi",
+    "cpu": "10m"
+  },
+  "worker": {
+    "name": "zimaboard-1",
+    "node_not_ready": true,
+    "runtime_down_and_pleg_unhealthy": true,
+    "cri_recovered_without_manual_restart": true,
+    "existing_memory_requests_mib": 6571,
+    "available_memory_mib": 824,
+    "memory_psi_some_avg300": 25.95,
+    "io_psi_some_avg300": 48.27
+  },
+  "acer": {
+    "existing_memory_requests_mib": 14483,
+    "requires_capacity_plan_before_2gib_reservation": true
+  },
+  "health_comparison": {
+    "both_service_and_pod_ip_serving_on_repeats": true,
+    "not_exact_sdk_latency_measurement": true
+  },
+  "root_cause_of_nested_pull_stall_proven": false,
+  "historical_oom_nfs_events_not_attributed_to_attempt": true,
+  "capacity_direction": "prepare Acer control-plane capacity; preserve existing PV bindings",
+  "runner_migration_complete": false
+}
