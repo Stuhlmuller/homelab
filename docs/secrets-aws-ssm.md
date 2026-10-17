@@ -77,6 +77,16 @@ administrator credentials out of Fleet server Pods. Preserve the encryption key
 with MySQL backups. Platform APNs/WSTEP identities are additional enrollment
 prerequisites; see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 
+`/homelab/fleet/google-oauth` is a separate operator-only SecureString for the
+dedicated Google Workspace XCreds Web client JSON. It is excluded from External
+Secrets readers and has no Kubernetes consumer. After protected declaration and
+apply, `scripts/fleet-google-login.py store` validates an owner-only private
+JSON file and replaces the placeholder from clean, signed, current `main`.
+The same operator renders the device profile privately and sends it through
+Fleet to the exact local Mac. Rotation requires reapplying that profile on each
+configured Mac; SSM updates do not automatically refresh device profiles.
+See the [Google login runbook](../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
+
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `fleet`, `media`, `monitoring`, `octelium-client`, `octelium-public`,

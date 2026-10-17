@@ -40,6 +40,11 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/fleet/google-oauth" = {
+      description   = "Dedicated Google OAuth Web client JSON for Fleet-managed XCreds Mac login; operator-only."
+      initial_value = local.placeholder
+      reader_access = false
+    }
     "/homelab/mastodon/admin-password" = {
       description = "Mastodon initial owner password; bootstrap only, never overwrite an existing account."
       generated = {
