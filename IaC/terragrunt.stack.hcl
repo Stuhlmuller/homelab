@@ -262,6 +262,14 @@ unit "argocd_apps_platform_multus" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/platform-multus/stack.hcl").inputs
 }
 
+unit "argocd_apps_platform_gateway_api" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-gateway-api"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/platform-gateway-api/stack.hcl").inputs
+}
+
 unit "argocd_apps_platform_storage" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/platform-storage"
