@@ -333,6 +333,45 @@ yq -e '
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"
 
+echo "::group::Kiali shell-free Prometheus readiness"
+kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e '
+    [
+      .cr.spec.deployment.additional_pod_init_containers_yaml[]
+      | select(.name == "wait-for-prometheus")
+    ] | (
+      length == 1 and
+      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      .[0].imagePullPolicy == "IfNotPresent" and
+      .[0].command == ["curl"] and
+      .[0].args == [
+        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
+        "--retry-delay", "5", "--retry-all-errors",
+        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
+      ] and
+      .[0].securityContext.runAsUser == 100 and
+      .[0].securityContext.runAsGroup == 101 and
+      .[0].securityContext.runAsNonRoot == true and
+      .[0].securityContext.allowPrivilegeEscalation == false and
+      .[0].securityContext.privileged == false and
+      .[0].securityContext.readOnlyRootFilesystem == true and
+      .[0].securityContext.capabilities.drop == ["ALL"] and
+      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
+    )
+  ' >/dev/null
+jq -e '
+  [
+    .consumers[]
+    | select(.consumer_id == "kiali-prometheus-readiness")
+  ] |
+  length == 1 and
+  .[0].image_id == "chainguard-curl" and
+  .[0].migration_status == "candidate" and
+  .[0].automation_status == "not-enrolled"
+' clusters/homelab/apps/harbor/image-automation.json >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
