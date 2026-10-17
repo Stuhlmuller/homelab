@@ -153,7 +153,7 @@ class FleetFreeTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.profiles = Path(self.directory.name)
-        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.IOS_FILES:
+        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.RETIRED_MAC_FILES + helper.IOS_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
 
@@ -305,7 +305,8 @@ class FleetFreeTest(unittest.TestCase):
     def test_mac_baseline_removes_only_individual_profile_and_is_idempotent(self):
         self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
                          "mdm": {"connected_to_fleet": True}}
-        baseline, entra = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
+        baseline = plistlib.loads((self.profiles / helper.MAC_FILES[0]).read_bytes())
+        entra = plistlib.loads((self.profiles / helper.RETIRED_MAC_FILES[0]).read_bytes())
         legacy = plistlib.loads((self.profiles / helper.LEGACY_MAC_FILES[0]).read_bytes())
         self.mdm.installed += [baseline, entra, legacy]
         args = ["mac-baseline", "--host-id", "2", "--remove", "--execute"]
@@ -420,7 +421,7 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual([profile["PayloadIdentifier"] for profile in submitted],
                          [profile["PayloadIdentifier"] for _, profile in
                           helper.profiles(helper.MAC_FILES, 5) + helper.profiles(helper.IOS_FILES, 1)])
-        self.assertEqual([profile["TargetDeviceType"] for profile in submitted], [5, 5, 1])
+        self.assertEqual([profile["TargetDeviceType"] for profile in submitted], [5, 1])
         self.assertEqual(self.mdm.calls, [])
         self.assert_logged_out()
 
@@ -505,7 +506,7 @@ class FleetFreeTest(unittest.TestCase):
         self.assert_logged_out()
 
     def test_remove_is_idempotent_and_never_removes_another_profile(self):
-        for name in helper.MAC_FILES:
+        for name in helper.MAC_FILES + helper.RETIRED_MAC_FILES:
             self.mdm.installed.append(plistlib.loads((self.profiles / name).read_bytes()))
         self.assertEqual(self.run_command(["mac-pilot", "--remove", "--execute"])[0], 0)
         removals = [command["Identifier"] for _, command in self.mdm.calls

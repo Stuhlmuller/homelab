@@ -64,9 +64,11 @@ the operator's additional-container and security-context override flags; the
 reviewed container retains a read-only filesystem, no capabilities, and an
 explicit non-root UID. No new cluster permissions or secret access are added.
 An unavailable Prometheus keeps new Kiali pods in initialization rather than
-silently serving a metrics-disabled UI. Inspect `wait-for-prometheus` logs if
-initialization stalls. A failure between the readiness check and server startup
-is still possible; the live check below detects that case.
+silently serving a metrics-disabled UI. The init container invokes `curl`
+directly, retries 60 times with a five-second delay, then exits nonzero so
+Kubernetes restarts it. Inspect `wait-for-prometheus` logs if initialization
+stalls. A failure between the readiness check and server startup is still
+possible; the live check below detects that case.
 
 ## Validation
 
