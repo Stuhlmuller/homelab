@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0ccdb8b3490de025c9fd8acb1c20236f62fb1e03ead273c82fb6d3599abd7179",
+  "pageVersion": "sha256:d068aad68c811e00171635578809d7228c8ee6cc0c25f4b1ba5213521d3e522c",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,11 +16,11 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
+          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         }
       ]
     },
@@ -366,37 +366,33 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
-          "version": "repo-file-v1:sha256:b6ce625b0640378fba7908d9255f74c3088aa871cae9379bf256bbbd7b0d73fd"
+          "version": "repo-file-v1:sha256:39af9123dd7e174967fb8890ba97655e4996bcb035279c718c09bdf68c6b160e"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check.py",
-          "version": "repo-file-v1:sha256:5f2e019c160d4c87637b2cc36c762522f4e2ad549051ae44f272f7bacedb4d48"
+          "version": "repo-file-v1:sha256:5fa0403fb952fc4d2a5e8f5a62f4375630c1a5d599b48481f3d8bd027e3f3a81"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         }
       ]
     },
     {
       "id": "claim_6bbbb12ce316403bb6c6bf0305f520b8",
-      "statement": "Core publication fixtures enforce one fixed subject, dedicated workflow/current-main binding, full private pull/digest verification before signing, enrolled-key verification, Harbor-only signer images and withheld outputs on failure. Static credential-job inventory and canonical workflow hashes enroll the publisher/reporting jobs, including dispatch checks before checkout and credentials; these source tests do not dispatch publication.",
+      "statement": "Core publication fixtures enforce one fixed subject, dedicated workflow/current-main binding, full private pull/digest verification before signing, enrolled-key verification, Harbor-only signer images, and withheld outputs on failure. The protected publisher requires zero matches in the exact full-container Grype report before registry credentials; ordinary audit fixtures retain unresolved findings. Static credential-job inventory and canonical workflow hashes enroll the publisher/reporting jobs; these source tests do not dispatch publication.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:28fb773251eb9dadbc6ea58fd3532523e62be73ab8c1bb8c6527cf3e5c552470"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3"
+          "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
+          "version": "repo-file-v1:sha256:39af9123dd7e174967fb8890ba97655e4996bcb035279c718c09bdf68c6b160e"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:4da362dae0a8326c299a9c1cddba470f37e93934dc03df790732344a2d74279a"
+          "version": "repo-file-v1:sha256:87ac1759fd8b2230e50558a5570b5f536a888fb410c8ddd1d1d9bb0a8a4e1d41"
         }
       ]
     },
@@ -410,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         }
       ]
     },
@@ -420,7 +416,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:575dc9a4da09e2e09683a84d2ee4b55d3c07c87a490b1747b064b03b66cda00a"
+          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -502,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:0e9251b888c8557e9b504fda0a0ccf8ab1ea64fd34c63eaab08e5bc1bb0468f0"
+          "version": "repo-file-v1:sha256:be91c4c26903762be21fdb0b5dc8f8a940a231352149ffefa9f3ad8be534eda6"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -557,6 +553,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:22:12.175Z"
+    "at": "2026-10-17T20:13:59.415Z"
   }
 }

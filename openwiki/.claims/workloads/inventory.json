@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:af8e9a26101834d3ea27355c73a1ee2c18d28eb54765840fb04fe04b64612992",
+  "pageVersion": "sha256:ccac55d2350fd4ed25df0cb4a38ced0e3cddabb5f03fd5ae2a9e394ff61b4b35",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
+          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -197,6 +197,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:22:12.175Z"
+    "at": "2026-10-17T20:13:59.415Z"
   }
 }
