@@ -120,6 +120,9 @@ def validate(config):
             fail(f"invalid consumer: {cid}")
         if consumer["migration_status"] not in {"candidate", "migrated", "exception"} or consumer["automation_status"] not in {"not-enrolled", "enrolled", "exception"}:
             fail(f"invalid consumer status: {cid}")
+        if (consumer["image_id"].startswith("chainguard-")
+                and consumer["automation_status"] == "enrolled"):
+            fail(f"native Chainguard enrollment requires protected workflow evidence: {cid}")
         if not isinstance(consumer["target"], str) or not consumer["target"].startswith("/") or ".." in Path(consumer["target"]).parts:
             fail(f"unsafe target: {cid}")
         consumer_ids.add(cid)

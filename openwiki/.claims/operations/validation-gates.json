@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7960b732894bf6614da8a505868c9e6ba0bc419b8da997b630ef3437853f2731",
+  "pageVersion": "sha256:06206e950365f9fdaeedc685f8fb885fff7a444645cfc565847ecb9bf95aeb10",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         }
       ]
     },
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:43c95d2825d5cad63dcff4de642e134279c19215fa96b3dd7da08b49d8a0cb54"
+          "version": "repo-file-v1:sha256:6a3d5d1dfa825868bd095dbcee61f8b9de131336827044529ccc4f70319e03f6"
         }
       ]
     },
@@ -410,7 +410,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         }
       ]
     },
@@ -502,7 +502,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:00b67468fa63735a0f573ade4c87535bae60552838877484ed445b95fcc6db41"
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -535,10 +535,36 @@
           "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
         }
       ]
+    },
+    {
+      "id": "claim_2c47c03195db4b26b61a3c2b4e29b95e",
+      "statement": "The native Chainguard receipt has two separate validation boundaries. Offline fixture and static-policy checks validate its plan, exact workflow shape, restricted credential access, and sole bounded non-secret artifact without contacting Harbor, SSM, or Kubernetes. Only the protected manual exact-current-main workflow can perform authenticated private Harbor pulls and scan checks; a successful receipt remains migration evidence, not a publication, consumer-change, or egress-enforcement result.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:6856b42a3b4628c15b62df3485fa139136ff69a3d992111ba80e0f603ac35ef0"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
+          "version": "repo-file-v1:sha256:890e7afcaacbaecf41fb216366272ee1dad0aaca799b6c9b077ea185acb863be"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:27c05e6bd93e1d01f6bbb578e8f546e5ff72a0a6ecb9bf63ac447e8ea31945b4"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:6a3d5d1dfa825868bd095dbcee61f8b9de131336827044529ccc4f70319e03f6"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:07:45.942Z"
+    "at": "2026-10-14T04:45:23.387Z"
   }
 }

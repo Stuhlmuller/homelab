@@ -16,6 +16,16 @@ workload compatibility. Recovery binds the originating failure and retained
 known-good digest; unsafe or unknown current data pauses and alerts without data
 restore. Enable replicas only through a reviewed change after recovery readiness.
 
+The native Chainguard receipt is protected-workflow evidence, not an Image
+Updater release. For the current Python and curl candidates it proves the
+catalog-pinned root index, required platform children, authenticated private
+Harbor pull, and zero reported scan findings. It does not advance
+`verified-stable`, write updater state, or enroll a consumer. A checked-in
+receipt cannot enroll a consumer until a verifiable artifact-attestation
+importer exists. A later compatibility migration must add a direct
+digest-pinned `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<digest>`
+reference before updater enrollment can be reviewed.
+
 Renovate continues to own unrelated image and chart updates. Enrolled Harbor
 targets transfer ownership only after their `automation_status` becomes
 `enrolled`; the checked-in pilot is still `not-enrolled` while publication and
@@ -31,6 +41,8 @@ readiness is accepted.
 ```sh
 python3 -I scripts/ci/image-automation.py check
 python3 -I scripts/ci/image-automation.py render-check
+python3 -I scripts/ci/harbor-native-chainguard-receipt.py plan
+python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py
 nix develop --command bash scripts/ci/static-checks.sh
 ```
 

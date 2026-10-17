@@ -24,7 +24,7 @@ SECRET_DIRECTORY = Path("/secrets")
 REPLICATION_FILE = Path("/replication/chainguard-replication.json")
 PREFIX = "robot$"
 PROJECTS = {
-    "homelab": {"metadata": {"public": "false", "auto_scan": "true"}, "robots": ("pull", "publisher")},
+    "homelab": {"metadata": {"public": "false", "auto_scan": "true"}, "robots": ("pull", "publisher", "scan")},
     "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("pull", "publisher")},
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
@@ -48,10 +48,15 @@ CHAINGUARD_REGISTRY = {
     "insecure": False,
     "credential": {"type": "basic", "access_key": "", "access_secret": ""},
 }
-ROBOTS = {"pull": ("pull",), "publisher": ("pull", "push")}
+ROBOTS = {
+    "pull": (("repository", "pull"),),
+    "publisher": (("repository", "pull"), ("repository", "push")),
+    "scan": (("artifact", "read"),),
+}
 SECRET_FILES = {
     ("homelab", "pull"): "robot-pull-password",
     ("homelab", "publisher"): "robot-push-password",
+    ("homelab", "scan"): "robot-scan-password",
     ("mirror", "pull"): "mirror-robot-pull-password",
     ("mirror", "publisher"): "mirror-robot-push-password",
 }
@@ -397,8 +402,8 @@ def backfill_scans(client):
 
 def permissions(name, project_name):
     return [{"kind": "project", "namespace": project_name,
-             "access": [{"resource": "repository", "action": action, "effect": "allow"}
-                        for action in ROBOTS[name]]}]
+             "access": [{"resource": resource, "action": action, "effect": "allow"}
+                        for resource, action in ROBOTS[name]]}]
 
 
 def validate_robot(robot, name, project_name, identifier=None):

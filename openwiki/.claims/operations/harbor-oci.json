@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f54c71b077724f7fa087dd5bd437444f69281dc6cbf18150ed2e3743528d4011",
+  "pageVersion": "sha256:927d07aab00b3caa5dfe89d0361920c7be0c9ea8251b1660f8fe12f090a4db88",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:684a17230b1c902b956c59d0a6234ff51ef073c8a9be6fae9ee5073b6495e312"
+          "version": "repo-file-v1:sha256:19eb2b20834ed9cadadba67bdd21fedb6ac3ecee4728e688da5d023d75f16390"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:684a17230b1c902b956c59d0a6234ff51ef073c8a9be6fae9ee5073b6495e312"
+          "version": "repo-file-v1:sha256:19eb2b20834ed9cadadba67bdd21fedb6ac3ecee4728e688da5d023d75f16390"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:684a17230b1c902b956c59d0a6234ff51ef073c8a9be6fae9ee5073b6495e312"
+          "version": "repo-file-v1:sha256:19eb2b20834ed9cadadba67bdd21fedb6ac3ecee4728e688da5d023d75f16390"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -101,7 +101,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L241-L252",
+          "resource": "repo://docs/harbor-image-mirroring.md#L283-L294",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:684a17230b1c902b956c59d0a6234ff51ef073c8a9be6fae9ee5073b6495e312"
+          "version": "repo-file-v1:sha256:19eb2b20834ed9cadadba67bdd21fedb6ac3ecee4728e688da5d023d75f16390"
         }
       ]
     },
@@ -350,7 +350,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:36dc8dc3ac7e15b5b938259da9d0312e21bfb2ca18bfc7be98d0007466b691c1"
+          "version": "repo-file-v1:sha256:afdbc355598793d053357dabbe102c186970e633e29a5b411ceb7596a989a665"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -378,11 +378,19 @@
     },
     {
       "id": "claim_d6f10f15d9864661a1f9c69dcbbf71f6",
-      "statement": "The full catalog contains digest-pinned kube-network-policies v1.1.2 and paused Argo CD Image Updater v1.3.0. Cataloging activates no enforcer; activation requires repository-owned Talos NRI configuration, live socket/plugin registration, negative startup/bypass tests, NetworkPolicy review, and a fail-closed strict-mode worker canary.",
+      "statement": "The full catalog contains digest-pinned kube-network-policies v1.1.2 and paused Argo CD Image Updater v1.3.0. Cataloging activates no enforcer; Flannel does not enforce the existing NetworkPolicies. An NRI/enforcer rollout requires a dedicated tainted canary worker with explicit hardware, scheduling, and storage constraints, repository-owned Talos configuration, real socket/plugin and negative bypass evidence, NetworkPolicy review, and fail-closed strict-mode traffic denial.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:36dc8dc3ac7e15b5b938259da9d0312e21bfb2ca18bfc7be98d0007466b691c1"
+          "version": "repo-file-v1:sha256:afdbc355598793d053357dabbe102c186970e633e29a5b411ceb7596a989a665"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py",
+          "version": "repo-file-v1:sha256:fe5d5912c9c103367f5c1720f97f6e978e631ca03f1f88cfef9a1af1f34d68bf"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -414,11 +422,11 @@
     },
     {
       "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
-      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v3 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
+      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. Stage B advances harbor-secrets' OnChange revision to v4 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot. ExternalSecret Ready and successful PostSync remain prerequisites, and Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance while mirror stays public until authenticated node pulls pass.",
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:3a7bae96a8f1ee8443e54a4eaa8dfeb5aa2674c67d2f715752af9f2375420c28"
+          "version": "repo-file-v1:sha256:ce9825efb6a74bceaacf026613707de404def607366a74136e6ef45c2fc67376"
         },
         {
           "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
@@ -426,25 +434,43 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
-          "version": "repo-file-v1:sha256:80bd33b3381ff93b92fecedbcb53a591d7a4b88654d8828f7cf174cc61688a4d"
+          "version": "repo-file-v1:sha256:3fa7cf2457815123745cde8bc61c780433fc2b391da23de7a75d3c21c416f4c2"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
-          "version": "repo-file-v1:sha256:354a0de92d62d1147f2cb6b38945a2190ee62c74b2e3d187637a901b2ffe39c9"
-        },
-        {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:684a17230b1c902b956c59d0a6234ff51ef073c8a9be6fae9ee5073b6495e312"
+          "version": "repo-file-v1:sha256:25f0156151755f74055bc5520f47a5c896d833c1cb3ae3247f88ed778ed859a9"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:d5ac3138ee83943714e96b06764418917aa6154fe42bf2d9c6a47137da07ff7d"
+          "version": "repo-file-v1:sha256:8a473ee9d73e3931356359a34f5afee5c97b69f7c58bdda1a2144625605cdb88"
+        }
+      ]
+    },
+    {
+      "id": "claim_7dfbfa4c621a49fb99949895d31addea",
+      "statement": "Native Harbor receipt desired state names only Chainguard Python and curl. Their exporter and Kiali consumers remain candidate and not-enrolled. The protected manual workflow verifies the committed configuration and replication contract, byte-identical source, destination, and authenticated-pull indexes, linux/amd64 and linux/arm64 children, and exact artifact-read Harbor scan summaries with successful zero-CVE counts; it writes only a bounded non-secret receipt. That evidence neither publishes images nor migrates, enrolls, or grants Harbor access to a workload.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
+          "version": "repo-file-v1:sha256:3fa7cf2457815123745cde8bc61c780433fc2b391da23de7a75d3c21c416f4c2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/image-automation.json",
+          "version": "repo-file-v1:sha256:d6364d806f3ccc0257d837d5c3291c386a8101a409fcd3976e63f62b36040805"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt.py",
+          "version": "repo-file-v1:sha256:9aaa597bcb0a8d7c77dee21aad1ad573182dfbc8ff881fe4f1922976b66fdbdb"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:07:45.942Z"
+    "at": "2026-10-14T04:57:20.007Z"
   }
 }

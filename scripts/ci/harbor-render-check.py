@@ -5,6 +5,7 @@ Read a JSON array from stdin. This checks declared availability and Argo sync
 ordering; controller readiness and registry acceptance still need live checks.
 """
 
+import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -18,6 +19,13 @@ MAX_INPUT_BYTES = 4 * 1024 * 1024
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 DEFAULT_STATE = ROOT / "scripts/config/image-automation-state.json"
+DEFAULT_CHAINGUARD_REPLICATION = ROOT / "clusters/homelab/apps/harbor/chainguard-replication.json"
+DEFAULT_CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
+NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
+    "harbor_native_chainguard_receipt", Path(__file__).with_name("harbor-native-chainguard-receipt.py")
+)
+NATIVE_RECEIPT = importlib.util.module_from_spec(NATIVE_RECEIPT_SPEC)
+NATIVE_RECEIPT_SPEC.loader.exec_module(NATIVE_RECEIPT)
 
 
 def identity(resource):
@@ -157,7 +165,7 @@ def _images(value):
 
 
 def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT_STATE):
-    """Require verified publication before an enrolled Harbor image renders."""
+    """Require verified publication and native protected evidence before a consumer renders."""
     if not config_path.exists() or not state_path.exists():
         return []
     config = json.loads(config_path.read_text())
@@ -170,14 +178,33 @@ def receipt_errors(resources, config_path=DEFAULT_AUTOMATION, state_path=DEFAULT
     }
     rendered = set(_images(resources))
     errors = []
+    native_plans = None
     for image_id, image in enrolled.items():
         destination = image["destination"]
         repository = destination.split("@", 1)[0].rsplit(":", 1)[0]
         if not any(ref.split("@", 1)[0].rsplit(":", 1)[0] == repository for ref in rendered):
             continue
         receipt = state.get("receipts", {}).get(image_id)
-        if not isinstance(receipt, dict) or receipt.get("destination_ref") != destination \
-                or receipt.get("consumer_access") is not True:
+        if image_id.startswith("chainguard-"):
+            if native_plans is None:
+                native_plans = {
+                    plan["image_id"]: plan for plan in NATIVE_RECEIPT.build_plan(
+                        config,
+                        NATIVE_RECEIPT.read_json(DEFAULT_CHAINGUARD_REPLICATION),
+                        NATIVE_RECEIPT.read_json(DEFAULT_CHAINGUARD_CATALOG),
+                    )
+                }
+            plan = native_plans.get(image_id)
+            verified = (plan is not None and NATIVE_RECEIPT.verify_native_receipt(plan, receipt)[0]
+                        and f'{plan["destination_repository"]}@{plan["source_digest"]}' in rendered)
+            if verified:
+                errors.append(f"Enrolled native Chainguard image requires protected workflow evidence: {image_id}")
+            else:
+                errors.append(f"Enrolled Harbor image lacks verified receipt: {image_id}")
+            continue
+        verified = isinstance(receipt, dict) and receipt.get("destination_ref") == destination \
+            and receipt.get("consumer_access") is True
+        if not verified:
             errors.append(f"Enrolled Harbor image lacks verified receipt: {image_id}")
     return errors
 

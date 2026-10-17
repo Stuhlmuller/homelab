@@ -63,16 +63,34 @@ def fixture_payloads():
     with tarfile.open(fileobj=raw_layer, mode="w"):
         pass
     layer = gzip.compress(raw_layer.getvalue(), mtime=0)
-    config = encoded({"architecture": "amd64", "os": "linux", "config": {},
-                      "rootfs": {"type": "layers", "diff_ids": [digest(raw_layer.getvalue())]}})
-    child = encoded({"schemaVersion": 2, "mediaType": OCI + "manifest.v1+json",
-                     "config": {"mediaType": OCI + "config.v1+json", "digest": digest(config), "size": len(config)},
-                     "layers": [{"mediaType": OCI + "layer.v1.tar+gzip", "digest": digest(layer), "size": len(layer)}]})
-    descriptor = {"mediaType": OCI + "manifest.v1+json", "digest": digest(child), "size": len(child),
-                  "platform": {"architecture": "amd64", "os": "linux"},
-                  "annotations": {"org.opencontainers.image.title": "repeated-λ"}}
-    index = encoded({"schemaVersion": 2, "mediaType": OCI + "index.v1+json", "manifests": [descriptor] * 8})
-    return config, layer, child, index
+    children = []
+    descriptors = []
+
+    def add_child(name, platform, annotations=None):
+        config = encoded({"architecture": platform["architecture"], "os": platform["os"],
+                          "config": {"Labels": {"fixture": name}},
+                          "rootfs": {"type": "layers", "diff_ids": [digest(raw_layer.getvalue())]}})
+        child = encoded({"schemaVersion": 2, "mediaType": OCI + "manifest.v1+json",
+                         "config": {"mediaType": OCI + "config.v1+json", "digest": digest(config), "size": len(config)},
+                         "layers": [{"mediaType": OCI + "layer.v1.tar+gzip", "digest": digest(layer), "size": len(layer)}]})
+        descriptor = {"mediaType": OCI + "manifest.v1+json", "digest": digest(child), "size": len(child),
+                      "platform": platform}
+        if annotations:
+            descriptor["annotations"] = annotations
+        children.append((config, layer, child))
+        descriptors.extend((descriptor, descriptor))
+        return digest(child)
+
+    amd64 = add_child("amd64", {"architecture": "amd64", "os": "linux"})
+    arm64 = add_child("arm64", {"architecture": "arm64", "os": "linux"})
+    unknown = {"architecture": "unknown", "os": "unknown"}
+    for architecture, subject in (("amd64", amd64), ("arm64", arm64)):
+        add_child(architecture + "-attestation", unknown, {
+            "vnd.docker.reference.digest": subject,
+            "vnd.docker.reference.type": "attestation-manifest",
+        })
+    index = encoded({"schemaVersion": 2, "mediaType": OCI + "index.v1+json", "manifests": descriptors})
+    return children, index
 
 
 def fixture_config(template, work, password):
@@ -123,21 +141,26 @@ def acceptance(password):
     token, _ = request("GET", "/service/token?service=harbor-registry&scope=repository:library/repeated:pull,push",
                        Authorization=basic)
     auth = {"Authorization": "Bearer " + json.loads(token)["token"]}
-    config, layer, child, index = fixture_payloads()
-    for blob in (config, layer):
+    children, index = fixture_payloads()
+    blobs = {digest(blob): blob for config, layer, _ in children for blob in (config, layer)}
+    for blob in blobs.values():
         _, headers = request("POST", "/v2/library/repeated/blobs/uploads/", b"", **auth)
         location = headers["Location"]
         separator = "&" if "?" in location else "?"
         request("PUT", location + separator + urllib.parse.urlencode({"digest": digest(blob)}), blob,
                 **auth, **{"Content-Type": "application/octet-stream"})
-    for reference, manifest, media in ((digest(child), child, "manifest"), ("repeated", index, "index")):
-        request("PUT", "/v2/library/repeated/manifests/" + reference, manifest,
-                **auth, **{"Content-Type": OCI + media + ".v1+json"})
-    for reference, expected, media in ((digest(index), index, "index"), (digest(child), child, "manifest")):
+    for _, _, child in children:
+        request("PUT", "/v2/library/repeated/manifests/" + digest(child), child,
+                **auth, **{"Content-Type": OCI + "manifest.v1+json"})
+    request("PUT", "/v2/library/repeated/manifests/repeated", index,
+            **auth, **{"Content-Type": OCI + "index.v1+json"})
+    manifests = [(digest(index), index, "index")]
+    manifests.extend((digest(child), child, "manifest") for _, _, child in children)
+    for reference, expected, media in manifests:
         pulled, headers = request("GET", "/v2/library/repeated/manifests/" + reference,
                                   **auth, Accept=OCI + media + ".v1+json")
         assert pulled == expected and headers["Docker-Content-Digest"] == digest(expected)
-    for blob in (config, layer):
+    for blob in blobs.values():
         pulled, _ = request("GET", "/v2/library/repeated/blobs/" + digest(blob), **auth)
         assert pulled == blob
     return digest(index)
@@ -186,8 +209,8 @@ def main():
         sql = ("SELECT count(*) FROM artifact_reference r JOIN artifact a ON a.id=r.parent_id "
                f"WHERE a.digest='{reference}';")
         count = command(*compose, "exec", "-T", "postgresql", "psql", "-U", "postgres", "-d", "registry", "-Atc", sql)
-        assert count.strip() == "1", count
-        print(f"Registry acceptance passed: eight unchanged descriptors, one PostgreSQL relation, {reference}")
+        assert count.strip() == "4", count
+        print(f"Registry acceptance passed: eight unchanged descriptors, four PostgreSQL relations, {reference}")
     except Exception:
         if (work / "fixture.json").exists():
             print(command(*compose, "logs", "--no-color", "--tail", "100"), file=sys.stderr)

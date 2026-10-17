@@ -10,27 +10,33 @@ index af434d7..8ed9506 100644
  	"testing"
  	"time"
  
-@@ -295,3 +296,40 @@ func (m *managerTestSuite) TestDeleteReference() {
+@@ -295,3 +296,46 @@ func (m *managerTestSuite) TestDeleteReference() {
  func TestManager(t *testing.T) {
  	suite.Run(t, &managerTestSuite{})
  }
 +
 +func (m *managerTestSuite) TestCreateIdenticalRepeatedChild() {
 +	m.dao.On("Create", mock.Anything).Return(1, nil)
-+	m.dao.On("CreateReference").Return(1, nil).Once()
++	m.dao.On("CreateReference").Return(1, nil).Times(4)
 +	m.dao.On("CreateReference").Return(0, errors.New("duplicate key violates unique_reference")).Maybe()
-+	ref := &Reference{ChildID: 2, ChildDigest: "sha256:fixture", Platform: &v1.Platform{OS: "linux", Architecture: "amd64"}, Annotations: map[string]string{"fixture": "same"}}
-+	duplicate := *ref
-+	duplicate.Platform = &v1.Platform{OS: "linux", Architecture: "amd64"}
-+	duplicate.Annotations = map[string]string{"fixture": "same"}
-+	art := &Artifact{Digest: "sha256:original-index", References: []*Reference{ref, &duplicate}}
++	var references []*Reference
++	for _, childID := range []int64{2, 3, 4, 5} {
++		ref := &Reference{ChildID: childID, ChildDigest: "sha256:fixture", Platform: &v1.Platform{OS: "linux", Architecture: "amd64"}, Annotations: map[string]string{"fixture": "same"}}
++		duplicate := *ref
++		duplicate.Platform = &v1.Platform{OS: "linux", Architecture: "amd64"}
++		duplicate.Annotations = map[string]string{"fixture": "same"}
++		references = append(references, ref, &duplicate)
++	}
++	art := &Artifact{Digest: "sha256:original-index", References: references}
 +	id, err := m.mgr.Create(nil, art)
 +	m.Require().NoError(err)
 +	m.Equal(int64(1), id)
 +	m.Equal("sha256:original-index", art.Digest)
-+	m.Len(art.References, 2)
-+	m.Equal(int64(1), duplicate.ParentID)
-+	m.dao.AssertNumberOfCalls(m.T(), "CreateReference", 1)
++	m.Len(art.References, 8)
++	for _, reference := range art.References {
++		m.Equal(int64(1), reference.ParentID)
++	}
++	m.dao.AssertNumberOfCalls(m.T(), "CreateReference", 4)
 +}
 +
 +func (m *managerTestSuite) TestCreateConflictingRepeatedChild() {

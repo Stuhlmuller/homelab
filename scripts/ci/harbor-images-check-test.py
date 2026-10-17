@@ -288,4 +288,70 @@ with tempfile.TemporaryDirectory() as directory:
     check.AUTOMATION = original_automation
     check.AUTOMATION_STATE = original_state
     check.RENOVATE = original_renovate
+
+# A config-bound direct-digest native receipt remains untrusted until protected
+# workflow evidence has an explicit importer.
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    original_root = check.ROOT
+    original_automation = check.AUTOMATION
+    original_state = check.AUTOMATION_STATE
+    original_yaml_documents = check.yaml_documents
+    try:
+        check.ROOT = root
+        check.AUTOMATION = root / "image-automation.json"
+        check.AUTOMATION_STATE = root / "image-automation-state.json"
+        target = root / "clusters/homelab/apps/kiali/values.yaml"
+        target.parent.mkdir(parents=True)
+        target.write_text("image: fixture\n")
+        config = json.loads(original_automation.read_text())
+        consumer = next(item for item in config["consumers"]
+                        if item["image_id"] == "chainguard-curl")
+        consumer["automation_status"] = "enrolled"
+        check.AUTOMATION.write_text(json.dumps(config))
+        plan = next(item for item in check.native_receipt_plans(config).values()
+                    if item["image_id"] == "chainguard-curl")
+        receipt = {
+            "schema_version": 1,
+            "kind": "native-chainguard-v1",
+            "repository_sha": "a" * 40,
+            "config_digest": plan["config_digest"],
+            "image_id": plan["image_id"],
+            "source_ref": plan["source_ref"],
+            "source_digest": plan["source_digest"],
+            "destination_ref": plan["destination_ref"],
+            "destination_digest": plan["source_digest"],
+            "platforms": {"linux/amd64": "sha256:" + "a" * 64,
+                          "linux/arm64": "sha256:" + "b" * 64},
+            "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
+            "consumer_access": True,
+        }
+        def container_fragment(image):
+            return [{"cr": {"spec": {"deployment": {
+                "additional_pod_init_containers_yaml": f"- name: wait\n  image: {image}\n"
+            }}}}]
+
+        declared = container_fragment(plan["destination_ref"])
+        check.yaml_documents = lambda paths: declared
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {
+            "chainguard-curl": {"destination_ref": plan["destination_ref"], "consumer_access": True}
+        }}))
+        assert check.receipt_errors()
+
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": receipt}}))
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@sha256:{"0" * 64}')
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@{receipt["destination_digest"]}')
+        assert check.receipt_errors() == [
+            "Enrolled native Chainguard image requires protected workflow evidence: chainguard-curl"
+        ]
+
+        target.unlink()
+        assert check.receipt_errors()
+    finally:
+        check.ROOT = original_root
+        check.AUTOMATION = original_automation
+        check.AUTOMATION_STATE = original_state
+        check.yaml_documents = original_yaml_documents
 print("Harbor image coverage regression check passed")

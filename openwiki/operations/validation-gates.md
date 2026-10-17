@@ -6,6 +6,8 @@ tags: ["operations", "validation"]
 sources:
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -50,6 +52,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
@@ -58,6 +62,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -114,10 +120,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T03:46:52.296Z" }
+generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-14T04:45:23.387Z
 ---
 
 # Validation Gates
@@ -1535,6 +1541,21 @@ needed exception in desired state; this probe does not establish device
 enrollment compatibility.
 
 ## Harbor OCI rollout
+
+`offline-checks.sh` runs the native Chainguard receipt fixtures and plan
+validation without Harbor, SSM, or a cluster. `offline-static-checks.sh` pins the
+manual workflow shape, exact-main guard, private credential scope, and its sole
+bounded receipt artifact; Rego permits that artifact only with the reviewed
+private command. These source checks prove the contract and reject unsafe
+changes, but do not copy an image, read a production credential, publish an
+artifact, migrate a workload, or establish a live receipt.
+
+The protected manual receipt workflow can execute only for the exact current
+`main` revision in the production environment. It performs authenticated private
+Harbor index, platform, scan, and pull verification and uploads the bounded
+non-secret receipt when successful. Its result is evidence for a later reviewed
+compatibility migration, not authorization to change a consumer or enable a
+global Harbor-only pull policy.
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,

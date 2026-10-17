@@ -788,6 +788,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
+    '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
+    '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/image-automation.yml:fallback-pr' \
     '.github/workflows/image-automation.yml:image-update-gate' \
@@ -842,6 +844,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
 .github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
+.github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
 .github/workflows/nofx-images.yml f65aca30f463f0dfb1891d5551e8a5f4f0f898c85b029b9995f6db0fa0b87115
@@ -862,6 +865,7 @@ for workflow_job in \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
+  '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
@@ -881,6 +885,43 @@ for workflow_job in \
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done
+yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt.yml |
+  jq -e '
+    (.on | keys) == ["workflow_dispatch"] and
+    .on.workflow_dispatch.inputs == {
+      "expected_sha": {
+        "description": "Exact current main commit containing the reviewed native Chainguard contract",
+        "required": true,
+        "type": "string"
+      }
+    } and
+    .permissions == {} and
+    .env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"} and
+    (.jobs | keys | sort) == ["receipt", "static-policy"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs.receipt.needs == ["static-policy"] and
+    .jobs.receipt.environment == {"name": "homelab-production"} and
+    .jobs.receipt.permissions == {"contents": "read", "id-token": "write"} and
+    .jobs.receipt.concurrency == {"group": "harbor-native-chainguard-receipt", "cancel-in-progress": false} and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")] | length) == 1 and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")][0].uses ==
+      "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508") and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")][0].with["inline-session-policy"] |
+      contains("parameter/homelab/harbor/robot-pull-password") and
+      contains("parameter/homelab/harbor/robot-scan-password") and
+      contains("ssm:GetParameter") and contains("kms:ViaService")) and
+    ([.jobs.receipt.steps[] | select(.name == "Verify Native Imports Without Exposing Transport Output")][0].env == {
+      "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    }) and
+    ([.jobs.receipt.steps[] | select(.name == "Upload Native Receipt")][0].with == {
+      "name": "harbor-native-chainguard-receipt-${{ github.sha }}",
+      "path": "${{ runner.temp }}/harbor-native-chainguard-receipt.json",
+      "if-no-files-found": "error",
+      "retention-days": 30,
+      "include-hidden-files": false
+    })
+  ' >/dev/null
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '
     (.on | keys) == ["push"] and

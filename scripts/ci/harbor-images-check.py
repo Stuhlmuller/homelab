@@ -5,6 +5,7 @@ Chart defaults and operator-generated images require the separate rendered/live
 inventory. A chart version change deliberately requires refreshing that inventory.
 """
 
+import importlib.util
 import json
 import re
 import subprocess
@@ -21,6 +22,16 @@ CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
 RENOVATE = ROOT / "renovate.json"
+DEFAULT_CHAINGUARD_REPLICATION = ROOT / "clusters/homelab/apps/harbor/chainguard-replication.json"
+DEFAULT_CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
+EMBEDDED_IMAGE = re.compile(
+    r'''(?m)^[ \t]*image:[ \t]*(?:"([^"\r\n]+)"|'([^'\r\n]+)'|([^ \t#\r\n]+))[ \t]*(?:#.*)?$'''
+)
+NATIVE_RECEIPT_SPEC = importlib.util.spec_from_file_location(
+    "harbor_native_chainguard_receipt", Path(__file__).with_name("harbor-native-chainguard-receipt.py")
+)
+NATIVE_RECEIPT = importlib.util.module_from_spec(NATIVE_RECEIPT_SPEC)
+NATIVE_RECEIPT_SPEC.loader.exec_module(NATIVE_RECEIPT)
 
 
 def normalize(image):
@@ -145,8 +156,52 @@ def chart_sources():
     return [json.loads(item) for item in sorted({json.dumps(item, sort_keys=True) for item in charts})]
 
 
+def consumer_target_images(consumer):
+    """Return image references declared by one enrolled consumer's source."""
+    target = consumer.get("target")
+    if not isinstance(target, str) or not target.startswith("/") or target.startswith("//"):
+        raise ValueError("consumer target is unsafe")
+    relative = Path(target[1:])
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("consumer target escapes the repository")
+    path = ROOT / relative
+    if not path.is_file() or not path.resolve().is_relative_to(ROOT.resolve()):
+        raise ValueError("consumer target does not exist")
+    documents = yaml_documents([path])
+    images = declared_images(documents)[0]
+    images.update(embedded_yaml_images(documents))
+    return images
+
+
+def embedded_yaml_images(value):
+    """Find container image fields in controller values stored as YAML strings."""
+    images = set()
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if isinstance(key, str) and key.endswith("_yaml") and isinstance(child, str):
+                for match in EMBEDDED_IMAGE.finditer(child):
+                    images.add(next(group for group in match.groups() if group is not None))
+            else:
+                images.update(embedded_yaml_images(child))
+    elif isinstance(value, list):
+        for child in value:
+            images.update(embedded_yaml_images(child))
+    return images
+
+
+def native_receipt_plans(config):
+    """Build the fixed native import contract once for all enrolled consumers."""
+    return {
+        plan["image_id"]: plan for plan in NATIVE_RECEIPT.build_plan(
+            config,
+            NATIVE_RECEIPT.read_json(DEFAULT_CHAINGUARD_REPLICATION),
+            NATIVE_RECEIPT.read_json(DEFAULT_CHAINGUARD_CATALOG),
+        )
+    }
+
+
 def receipt_errors():
-    """Enrolled Harbor consumers require an immutable verified publication receipt."""
+    """Enrolled consumers require verified publication; native candidates need protected evidence."""
     if not AUTOMATION.exists() or not AUTOMATION_STATE.exists():
         return []
     config = json.loads(AUTOMATION.read_text())
@@ -154,16 +209,44 @@ def receipt_errors():
     images = {item["image_id"]: item for item in config.get("images", [])}
     receipts = state.get("receipts", {})
     errors = []
+    native_plans = None
+    native_plan_error = False
     for consumer in config.get("consumers", []):
         if consumer.get("automation_status") != "enrolled":
             continue
-        image = images.get(consumer.get("image_id"))
-        receipt = receipts.get(consumer.get("image_id"))
+        image_id = consumer.get("image_id")
+        image = images.get(image_id)
+        receipt = receipts.get(image_id)
         if not image or not isinstance(receipt, dict):
-            errors.append(f"Enrolled image lacks publication receipt: {consumer.get('image_id')}")
+            errors.append(f"Enrolled image lacks publication receipt: {image_id}")
             continue
         if receipt.get("destination_ref") != image["destination"] or receipt.get("consumer_access") is not True:
-            errors.append(f"Enrolled image receipt lacks intended Harbor access: {consumer['image_id']}")
+            errors.append(f"Enrolled image receipt lacks intended Harbor access: {image_id}")
+            continue
+        if not isinstance(image_id, str) or not image_id.startswith("chainguard-"):
+            continue
+        if native_plans is None:
+            try:
+                native_plans = native_receipt_plans(config)
+            except (OSError, ValueError):
+                native_plans = {}
+                native_plan_error = True
+        plan = native_plans.get(image_id)
+        if native_plan_error or plan is None or not NATIVE_RECEIPT.verify_native_receipt(plan, receipt)[0]:
+            errors.append(f"Enrolled native Chainguard image lacks a verified receipt: {image_id}")
+            continue
+        expected = f'{plan["destination_repository"]}@{receipt["destination_digest"]}'
+        try:
+            target_images = consumer_target_images(consumer)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            errors.append(f"Enrolled native Chainguard consumer has no readable target: {consumer.get('consumer_id')}")
+            continue
+        if expected not in target_images:
+            errors.append(
+                f"Enrolled native Chainguard consumer lacks exact verified digest: {consumer.get('consumer_id')}"
+            )
+            continue
+        errors.append(f"Enrolled native Chainguard image requires protected workflow evidence: {image_id}")
     return errors
 
 

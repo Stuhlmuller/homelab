@@ -171,6 +171,78 @@ class HarborRenderPrerequisites(unittest.TestCase):
             }}}))
             self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
 
+    def test_enrolled_native_chainguard_image_requires_protected_evidence(self):
+        resources = [workload(pod={"containers": [{
+            "name": "app", "image": "harbor.stinkyboi.com/homelab/chainguard-python:latest"
+        }]})]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "config.json"
+            state = root / "state.json"
+            configured = json.loads(CHECK.DEFAULT_AUTOMATION.read_text())
+            next(consumer for consumer in configured["consumers"]
+                 if consumer["image_id"] == "chainguard-python")["automation_status"] = "enrolled"
+            config.write_text(json.dumps(configured))
+            state.write_text(json.dumps({"receipts": {}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "destination_ref": "harbor.stinkyboi.com/homelab/chainguard-python:latest",
+                "consumer_access": True,
+            }}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            plan = next(plan for plan in CHECK.NATIVE_RECEIPT.build_plan(
+                configured,
+                CHECK.NATIVE_RECEIPT.read_json(CHECK.DEFAULT_CHAINGUARD_REPLICATION),
+                CHECK.NATIVE_RECEIPT.read_json(CHECK.DEFAULT_CHAINGUARD_CATALOG),
+            ) if plan["image_id"] == "chainguard-python")
+            receipt = {
+                "schema_version": 1,
+                "kind": "native-chainguard-v1",
+                "repository_sha": "a" * 40,
+                "config_digest": plan["config_digest"],
+                "image_id": plan["image_id"],
+                "source_ref": plan["source_ref"],
+                "source_digest": plan["source_digest"],
+                "destination_ref": plan["destination_ref"],
+                "destination_digest": plan["source_digest"],
+                "platforms": {"linux/amd64": "sha256:" + "a" * 64,
+                              "linux/arm64": "sha256:" + "b" * 64},
+                "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
+                "consumer_access": True,
+            }
+            state.write_text(json.dumps({"receipts": {"chainguard-python": receipt}}))
+            resources = [workload(pod={"containers": [{
+                "name": "app",
+                "image": f'{plan["destination_repository"]}@{plan["source_digest"]}',
+            }]})]
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Enrolled native Chainguard image requires protected workflow evidence: chainguard-python"
+            ])
+
+            resources = [workload(pod={"containers": [{
+                "name": "app", "image": plan["destination_ref"],
+            }]})]
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            resources = [workload(pod={"containers": [{
+                "name": "app", "image": f'{plan["destination_repository"]}@sha256:{"0" * 64}',
+            }]})]
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            resources = [workload(pod={"containers": [{
+                "name": "app",
+                "image": f'{plan["destination_repository"]}@{plan["source_digest"]}',
+            }]})]
+            receipt["config_digest"] = "sha256:" + "0" * 64
+            state.write_text(json.dumps({"receipts": {"chainguard-python": receipt}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            receipt["config_digest"] = plan["config_digest"]
+            receipt["source_digest"] = "sha256:" + "0" * 64
+            state.write_text(json.dumps({"receipts": {"chainguard-python": receipt}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
 
 if __name__ == "__main__":
     unittest.main()
