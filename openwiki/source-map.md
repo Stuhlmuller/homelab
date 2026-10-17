@@ -3,9 +3,6 @@ type: overview
 title: "Source Map"
 description: "Maps wiki topics to canonical guides, operational runbooks, workload READMEs and source ownership."
 tags: [knowledge-base, source-map]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T04:52:40.970Z
 sources:
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
@@ -34,6 +31,9 @@ sources:
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
 generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Source Map
