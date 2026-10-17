@@ -68,6 +68,8 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-263c9c13d476aa142f8ebd42
+    resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -119,7 +121,7 @@ sources:
 generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:22:44.530Z
+    at: 2026-10-17T21:37:58.789Z
 ---
 
 # Validation Gates
@@ -397,6 +399,15 @@ manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/modules/tailscale-access/README.md).
+
+The `network-policy` job in [validate](../../.github/workflows/validate.yml)
+runs a 30-minute disposable dual-stack Kind
+[enforcement check](../../scripts/ci/network-policy-enforcement-check.py) on
+pull requests and `main` pushes. It checks unrestricted baseline traffic,
+NRI registration, denied startup connections, allowed Service and DNS traffic,
+established-connection revocation, and denial while the worker enforcer process
+is paused without cleanup. A passing fixture does not establish production
+Flannel enforcement or approve a worker rollout.
 
 The additive cutover utilities have focused static tests for fixed DNS ownership,
 Mac credential/profile preservation, bounded same-profile reconnect and carrier

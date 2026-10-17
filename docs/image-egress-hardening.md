@@ -178,6 +178,12 @@ behavior, not Harbor publication or a signature accessory.
 
 ## Policy-enforcing dataplane prerequisite
 
+`scripts/ci/network-policy-enforcement-check.py` is a CI-only, disposable
+dual-stack Kind proof. Its public Kind, CNI, enforcer and Python images are test
+fixtures, never homelab workload or node inputs. Passing it proves strict NRI
+enforcement behavior only; production still needs the reviewed Harbor image,
+dedicated worker, active NRI readback and application-specific egress canary.
+
 The current Kubernetes SIG Network userspace enforcer release is v1.1.2
 (2026-09-28). Its reviewed index is cataloged for Harbor publication, including
 Linux amd64/arm64/s390x and source attestations; no DaemonSet is activated here.

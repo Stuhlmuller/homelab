@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:779c93c3a780d714e07359bb6e93e8f99d9db11104a9c749a63b36d9f80810bd",
+  "pageVersion": "sha256:e983a322dd8871e82a0f25226e31a612b5bc0039ca5d7a5f86b19e3af6a38918",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -362,7 +362,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:75e90b46a63370ed10dded45b0d215463c68515dfd1ea16929683a3ede564924"
+          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -549,10 +549,24 @@
           "version": "repo-lines-v1:sha256:5195894c7328c3c60862e3324dcf3d6fa968e27d58c446b79619dd967714fa1b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiNGJkZDAwNjMxZWI0NjkyZDk3NzRlZDNiYmJjMjIyNTQ0NTJkYTA3MmY0Y2Q5MmNkOWFlOGYzZjA0Y2JjMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY4ZDYzYjhlODlhNTYzNzI2NDk4OTBhZjU1ZDlkMTkyMDk3NjYyYmU1ZjFiMjc0ZTY4N2Y1ZjlhYzQ2YTgzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNThhZjIxMTcxOTMxYmQzMDRhMmQ3Y2E2NmMzYjZlYjZiNGRkZmVjZDIyMzQ1ZmM1ZWFkNzM5NDljMmUzMWZmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODY1YmZkMTVmMjYwZjQxOGYxNzZkYmIyNmZhNjBlMjdkY2JlY2E3MTZlMTQzN2RjODNmZGE1ZmQyZTA0NTA0YSJ9"
         }
       ]
+    },
+    {
+      "id": "claim_248c462ddf6541d5b73a72beb0979e84",
+      "statement": "The validate workflow runs a 30-minute disposable dual-stack Kind network-policy job on pull requests and main pushes. It checks unrestricted baseline traffic, NRI registration, denied startup connections, allowed Service/DNS access, established-connection revocation, and denial while the worker enforcer process is paused without cleanup. Passing proves fixture behavior, not production Flannel enforcement or rollout acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
+          "version": "repo-file-v1:sha256:7c609cc0163c4147695ba37c6f752fe5a1785d09277da9de7392aaaa436f16d4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:22:44.530Z"
+    "at": "2026-10-17T21:37:58.789Z"
   }
 }
