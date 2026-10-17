@@ -96,7 +96,7 @@ rejects(lambda value: value["consumers"][0].update(application_id="other-app"))
 rejects(lambda value: value["images"].append(value["images"][0].copy()))
 
 native_enrollment = json.loads(json.dumps(base))
-native_enrollment["images"] = [{"image_id": "chainguard-python", "source": "cgr.dev/chainguard/python:latest", "destination": "harbor.stinkyboi.com/homelab/chainguard-python:latest", "access_class": "public", "required_platforms": ["linux/amd64"], "release_recipe": "python-release-v1"}]
+native_enrollment["images"] = [{"image_id": "chainguard-python", "source": "cgr.dev/chainguard/python:latest", "destination": "harbor.stinkyboi.com/homelab/chainguard/python:latest", "access_class": "public", "required_platforms": ["linux/amd64"], "release_recipe": "python-release-v1"}]
 native_enrollment["consumers"] = [{"consumer_id": "exporter", "application_id": "exporter", "image_id": "chainguard-python", "target": "/clusters/homelab/apps/harbor/vulnerability-exporter.yaml", "migration_status": "candidate", "automation_status": "enrolled", "owner": "argocd"}]
 native_enrollment["applications"] = [{"application_id": "exporter", "consumer_ids": ["exporter"], "preflight_recipe": "python-workload-v1", "health_recipe": "python-workload-v1", "recovery_recipe": "stateless-recovery-v1", "deadline_minutes": 30}]
 try:

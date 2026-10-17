@@ -43,12 +43,12 @@ def configuration(raw):
     digest = VERIFY.bytes_digest(raw)
     config = {"schema_version": 1, "images": [{
         "image_id": "chainguard-python", "source": "cgr.dev/chainguard/python:latest",
-        "destination": "harbor.stinkyboi.com/homelab/chainguard-python:latest", "access_class": "public",
+        "destination": "harbor.stinkyboi.com/homelab/chainguard/python:latest", "access_class": "public",
         "required_platforms": ["linux/amd64", "linux/arm64"], "release_recipe": "python-release-v1",
     }]}
     replication = {"schema_version": 1, "paused": False, "schedule": "0 0 * * * *", "source_registry": "cgr.dev",
                    "rules": [{"repository": "chainguard/python", "source_tag": "latest",
-                              "destination": "homelab/chainguard-python", "override": True,
+                              "destination": "homelab/chainguard/python", "override": True,
                               "delete": False, "flatten": False, "access_class": "public"}]}
     catalog = {"images": [{"source": f"cgr.dev/chainguard/python:latest@{digest}"}]}
     return config, replication, catalog
@@ -232,10 +232,10 @@ class ScanReceiptTests(TestCase):
         opener.artifact = self.artifacts[AMD64]
         client = VERIFY.HarborScanClient("not-a-real-secret")
         client.opener = opener
-        self.assertEqual(client.artifact("chainguard-python", AMD64), self.artifacts[AMD64])
+        self.assertEqual(client.artifact("chainguard/python", AMD64), self.artifacts[AMD64])
         self.assertEqual(
             opener.request.full_url,
-            f"https://harbor.stinkyboi.com/api/v2.0/projects/homelab/repositories/chainguard-python/artifacts/{AMD64}?with_scan_overview=true",
+            f"https://harbor.stinkyboi.com/api/v2.0/projects/homelab/repositories/chainguard%252Fpython/artifacts/{AMD64}?with_scan_overview=true",
         )
         self.assertEqual(opener.timeout, 15)
         authorization = opener.request.get_header("Authorization")

@@ -13,8 +13,8 @@ consumer to the public `mirror` project.
 
 Native Harbor replication is currently limited to
 `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest`, which
-it imports into private `homelab/chainguard-python:latest` and
-`homelab/chainguard-curl:latest` repositories. After bootstrap has reconciled
+it imports into private `homelab/chainguard/python:latest` and
+`homelab/chainguard/curl:latest` repositories. After bootstrap has reconciled
 those rules, the protected
 `harbor-native-chainguard-receipt.yml` workflow must run from exact current
 `main`. Its receipt is bound to the automation configuration, replication
@@ -36,7 +36,7 @@ workload. A checked-in receipt cannot enroll a consumer until a verifiable
 artifact-attestation importer exists. A later reviewed migration must add
 namespace pull authorization, compatibility evidence, and a direct,
 digest-pinned private reference such as
-`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+`harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 
 Talos/containerd redirects upstream image pulls to the normal Harbor `mirror`
 project. Repository and Pod image names retain upstream provenance; their bytes
@@ -135,7 +135,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    No application consumes these `mirror` copies. Python and curl need a
    successful native receipt from the separate protected workflow before a
    reviewed compatibility migration may reference a private direct digest such
-   as `harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`.
+   as `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
 
    After that public source copy and Harbor's native Python/curl replication
    have both completed, verify the private imports from exact reviewed current

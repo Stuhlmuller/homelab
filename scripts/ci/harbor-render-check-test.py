@@ -173,7 +173,7 @@ class HarborRenderPrerequisites(unittest.TestCase):
 
     def test_enrolled_native_chainguard_image_requires_protected_evidence(self):
         resources = [workload(pod={"containers": [{
-            "name": "app", "image": "harbor.stinkyboi.com/homelab/chainguard-python:latest"
+            "name": "app", "image": "harbor.stinkyboi.com/homelab/chainguard/python:latest"
         }]})]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -186,7 +186,7 @@ class HarborRenderPrerequisites(unittest.TestCase):
             state.write_text(json.dumps({"receipts": {}}))
             self.assertTrue(CHECK.receipt_errors(resources, config, state))
             state.write_text(json.dumps({"receipts": {"chainguard-python": {
-                "destination_ref": "harbor.stinkyboi.com/homelab/chainguard-python:latest",
+                "destination_ref": "harbor.stinkyboi.com/homelab/chainguard/python:latest",
                 "consumer_access": True,
             }}}))
             self.assertTrue(CHECK.receipt_errors(resources, config, state))

@@ -68,8 +68,8 @@ setting and scan submission, not successful database downloads or completed scan
 
 Harbor replication imports only the catalog-pinned public
 `cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest` sources
-into private `homelab/chainguard-python:latest` and
-`homelab/chainguard-curl:latest` repositories. The import rule itself does not
+into private `homelab/chainguard/python:latest` and
+`homelab/chainguard/curl:latest` repositories. The import rule itself does not
 make an image eligible for a workload. The protected
 `harbor-native-chainguard-receipt.yml` workflow runs from exact current `main`
 and verifies the source root index, private root index, and a complete
@@ -89,7 +89,7 @@ Receipt success is protected-workflow evidence only. It creates no digest tag,
 receipt cannot enroll a consumer until a verifiable artifact-attestation
 importer exists. A later application migration needs its own compatibility
 evidence, namespace pull authorization, and a direct digest-pinned
-`harbor.stinkyboi.com/homelab/chainguard-python@sha256:<verified-index-digest>`
+`harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`
 reference.
 
 ## Critical CVE alerting
