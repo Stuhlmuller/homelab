@@ -54,10 +54,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T19:12:05.022Z" }
+generated: { by: "codex", at: "2026-10-17T19:16:46.436Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:12:05.022Z
+    at: 2026-10-17T19:16:46.436Z
 ---
 
 # Secrets And Identity
@@ -215,10 +215,12 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `/homelab/fleet/google-oauth` SecureString. It is excluded from External
   Secrets: the [XCreds operator](../../scripts/fleet-google-login.py) reads the
   dedicated OAuth client privately and delivers a host-scoped MDM profile only
-  after protected merge and deployment. Email-claim username mapping, local
-  login fallback, and FileVault acceptance are explicit pilot checks. Remote
-  profile removal requires verified native login and an explicit operator
-  attestation; see the [Google login runbook](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
+  after protected merge and deployment. The current Fleet administrator
+  password comes from an owner-only file after bootstrap rotation. Email-claim
+  username mapping, local login fallback, and FileVault acceptance are explicit
+  pilot checks. Remote profile removal requires verified native login and an
+  explicit operator attestation; see the
+  [Google login runbook](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the

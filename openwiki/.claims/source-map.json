@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e158823e29a9e8175ea8e62f80c59e8744f8e32b4e6cbc9d450169ee3b5a1854",
+  "pageVersion": "sha256:4d784ba152ac09edeae36ac87e0c412b5c3560ff838e8433da1e55501f15c202",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -62,17 +62,17 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md",
-          "version": "repo-file-v1:sha256:e990aed4f33b785fed40d039767df60dcc1dfc0b885783201781a443dec0e7b2"
+          "version": "repo-file-v1:sha256:d47e55ca8014a968c383503fdc279ee128c2cc60d0a8dce15b6750739eba0814"
         },
         {
           "resource": "repo://scripts/fleet-google-login.py",
-          "version": "repo-file-v1:sha256:10a8431899ca65f9feb84e1c61666571bb2146b2f5dadad0cd944fe1ee5fe5fa"
+          "version": "repo-file-v1:sha256:36871dd7ad1effb4c7be503f9f01ea3d035de2acd79bb8f06b5cff35290a72ed"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:12:05.022Z"
+    "at": "2026-10-17T19:16:46.436Z"
   }
 }
