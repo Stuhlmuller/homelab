@@ -101,6 +101,11 @@ def yaml_documents(paths):
          *map(str, paths)], text=True))
 
 
+def manifest_paths():
+    return sorted(path for directory in (ROOT / "clusters", ROOT / ".talos/patches")
+                  for path in directory.rglob("*") if path.suffix in {".yaml", ".yml", ".json"})
+
+
 def rendered_fleet_images():
     manifests = subprocess.check_output(
         ["kubectl", "kustomize", str(ROOT / "clusters/homelab/apps/fleet")], text=True)
@@ -350,7 +355,7 @@ def check():
     # An unpinned declaration needs its reviewed tag as well as a copied digest.
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
                   if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1]}
-    paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
+    paths = manifest_paths()
     documents = yaml_documents(paths)
     images, digests = declared_images(documents)
     declared_native = native_references_by_path(paths)

@@ -68,14 +68,16 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-fb4f4b5b36278b2db27610f2
     resource: repo://scripts/ci/harbor-images-check-test.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-897b0dbd854eb91f395fe24b
-    resource: repo://scripts/ci/harbor-render-check-test.py
+  - id: openwiki-source-5f83ab015123e3adcb0c5808
+    resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -128,10 +130,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T20:47:14.770Z" }
+generated: { by: "codex", at: "2026-10-17T21:15:52.215Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:50:08.915Z
+    at: 2026-10-17T21:15:52.215Z
 ---
 
 # Validation Gates
@@ -1567,19 +1569,19 @@ global Harbor-only pull policy.
 
 The separate trusted provenance workflow validates imported receipt state
 against the exact successful main run and publishes `Native Chainguard Receipt
-Provenance` on the PR head SHA. Main pushes revalidate all open PR heads,
-including forks, against the new base. PR edits, including base-branch retargets,
-also revalidate. Separate main and per-PR concurrency groups prevent PR events
-from discarding pending all-PR checks; main-SHA guards reject stale results.
+Provenance` on the PR head SHA. Main pushes and PR edits, including base-branch
+retargets, revalidate all open PR heads against current `main`. One concurrency
+group serializes status writers; a replacement pending event still checks every
+PR, and main-SHA guards reject stale results.
 The required status is enabled only
 after the workflow succeeds on main; static policy tests pin its trusted steps, status
 permission, and source hashes. The Rego `pull_request_target` exception accepts
-only that exact trusted job shape, including serialized main-push revalidation.
+only that exact trusted job shape, including serialized all-PR revalidation.
 Neither a local fixture nor a copied receipt substitutes for this head-bound result.
 
 `harbor-images-check.py` reads native consumer targets even when status remains
-`candidate` and `not-enrolled`, and scans workload manifests for private native
-Chainguard references. Every such reference needs an imported protected receipt
+`candidate` and `not-enrolled`, and scans `.yaml`, `.yml`, and `.json` cluster
+resources for private native Chainguard references. Every such reference needs an imported protected receipt
 and the exact verified digest in the declared path of a `migrated` consumer.
 The Harbor render fixture rejects undeclared native destinations.
 These checks prove declared source behavior, not a live pull or rollout.

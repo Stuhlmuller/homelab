@@ -884,7 +884,7 @@ done <<'EOF'
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 5cee1cdbb6f38cb943844f75d690345f9c27a69d8051f5544bd38f543ec10cd0
 .github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
-.github/workflows/harbor-native-chainguard-receipt-provenance.yml b9d64247704f634eb1621ab6b6e9efe6e176cbffcf4005817f8a7f53be814331
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml dea144ba942f046ce1bb23ebeaf9cad42a3d9997c5aa436372ec8d521f5124ec
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
@@ -966,14 +966,13 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt.yml |
 yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml |
   jq -e '
     [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
-    [.jobs.verify.steps[] | select(.name == "Verify Changed Native Receipt State")] as $verify |
-    [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests After Main Moves")] as $revalidate |
+    [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
     .name == "Verify Native Chainguard Receipt Provenance" and
     (.on | keys | sort) == ["pull_request_target", "push"] and
     .on.push == {"branches": ["main"]} and
 	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
     .permissions == {} and
-	.concurrency == {"group": "native-chainguard-receipt-provenance-${{ github.event_name == \u0027push\u0027 && \u0027main\u0027 || github.event.pull_request.number }}", "cancel-in-progress": false} and
+    .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
     .env == null and
     (.jobs | keys) == ["verify"] and
     .jobs.verify.name == "Native Chainguard Receipt Provenance" and
@@ -982,41 +981,24 @@ yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml
     .jobs.verify.permissions == {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"} and
     .jobs.verify.environment == null and
     .jobs.verify.env == null and
-    (.jobs.verify.steps | length) == 3 and
+    (.jobs.verify.steps | length) == 2 and
     ($checkout | length) == 1 and
     $checkout[0].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505" and
     $checkout[0].with == {
-      "ref": "${{ github.event.pull_request.base.sha || github.sha }}",
+      "ref": "main",
       "fetch-depth": 1,
       "persist-credentials": false
     } and
-    ($verify | length) == 1 and
-    $verify[0].if == "github.event_name == '\''pull_request_target'\''" and
-    $verify[0].env == {
-      "BASE_SHA": "${{ github.event.pull_request.base.sha }}",
-      "HEAD_SHA": "${{ github.event.pull_request.head.sha }}",
-      "GH_TOKEN": "${{ github.token }}"
-    } and
-    ($verify[0].run |
-      contains("set -euo pipefail") and
-      contains("umask 077") and
-      contains("printf '\''%s'\'' \"$GH_TOKEN\" >\"$token_file\"") and
-      contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
-      contains("--base-sha \"$BASE_SHA\" --head-sha \"$HEAD_SHA\"") and
-      contains("--token-file \"$token_file\"") and
-      contains("repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}") and
-      contains("report_status pending") and
-      contains("report_status success") and
-      contains("report_status failure") and
-      contains("repos/${GITHUB_REPOSITORY}/commits/main")) and
     ($revalidate | length) == 1 and
-    $revalidate[0].if == "github.event_name == '\''push'\''" and
+    $revalidate[0].if == null and
     $revalidate[0].env == {"GH_TOKEN": "${{ github.token }}"} and
     ($revalidate[0].run |
       contains("set -euo pipefail") and
+      contains("base_sha=\"$(git rev-parse HEAD)\"") and
       contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
       contains("jq -r '\''.[].head.sha'\''") and
-      contains("--base-sha \"$GITHUB_SHA\" --head-sha \"$head_sha\"") and
+      contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
+      contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
       contains("repos/${GITHUB_REPOSITORY}/commits/main") and
       contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
   ' >/dev/null

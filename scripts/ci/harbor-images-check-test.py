@@ -324,6 +324,14 @@ with tempfile.TemporaryDirectory() as directory:
         assert check.native_references_by_path([other]) == {
             "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
         }
+        for name, content in (("deployment.yml", f"image: {unrelated_native}\n"),
+                              ("deployment.json", json.dumps({"image": unrelated_native}))):
+            resource = other.with_name(name)
+            resource.write_text(content)
+            assert resource in check.manifest_paths()
+            assert check.native_references_by_path([resource]) == {
+                f"/clusters/homelab/apps/other/{name}": {unrelated_native}
+            }
         check.yaml_documents = original_yaml_documents
         config = json.loads(original_automation.read_text())
         consumer = next(item for item in config["consumers"]

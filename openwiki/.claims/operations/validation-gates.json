@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c6f5bcad5d171e96d886c6c7d29246764923edac7684df7cd0f5548d4c823b33",
+  "pageVersion": "sha256:efe0d53c0e8330583a939aba44be3d53edae271229845d4e95572eb12759eb81",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:cbc1c836c83bc0d3081a0030e7fd26e119f3a285e19d8574b12dd008025b0827"
+          "version": "repo-file-v1:sha256:3d803c20aeb5b5351d920affd9d1e1d81707673bf7175df841de429c35bea542"
         }
       ]
     },
@@ -546,7 +546,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:d31db3a6c31bb947a04595839f57b7c3675dbd3e388d28b67823c4e0459d6c91"
+          "version": "repo-file-v1:sha256:66421ab76ef6163e73c89a7c9b944c4e1efe42bc36dd569b3786bce0f19ae39a"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -558,55 +558,59 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:cbc1c836c83bc0d3081a0030e7fd26e119f3a285e19d8574b12dd008025b0827"
+          "version": "repo-file-v1:sha256:3d803c20aeb5b5351d920affd9d1e1d81707673bf7175df841de429c35bea542"
         }
       ]
     },
     {
       "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
-      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA and revalidates all open PR heads, including forks, after main moves or PR edits. Separate main and per-PR concurrency groups prevent a PR event from discarding pending all-PR checks, while main-SHA guards reject stale results. Static checks pin its reviewed steps, status permission, and source hashes. Its required status is activated after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow publishes verified status on PR head SHAs and revalidates all open main-targeted PRs, including forks, after main pushes or PR edits. One concurrency group serializes status writers, replacement pending events still recheck all PRs, and main-SHA guards reject stale results. Static checks pin its trusted steps, status permission, and source hash; the required status activates only after a successful main run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:5f1eb89739c932a361e497583c57ba86ec25587541a13bbeb81b45b2563c6f29"
+          "version": "repo-file-v1:sha256:fe2536b1a38ef22b2a6ad20b3e43968a1af0f8b4efd5cea765c189a3dba8f8ac"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:cbc1c836c83bc0d3081a0030e7fd26e119f3a285e19d8574b12dd008025b0827"
+          "version": "repo-file-v1:sha256:3d803c20aeb5b5351d920affd9d1e1d81707673bf7175df841de429c35bea542"
         }
       ]
     },
     {
       "id": "claim_c1de3d4b8c824cd793a1b0c8016c0a28",
-      "statement": "Offline image coverage and Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or the verified digest.",
+      "statement": "Offline image coverage scans .yaml, .yml, and .json cluster resources and Harbor render regressions reject private native Chainguard references lacking a migrated consumer at the source path, imported protected receipt evidence, declared destination, or exact verified digest.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:719a9f94103fd4f88eb226c8c6a07dfcdee45a4a2a426d89615cb4c15e46ae2b"
+          "version": "repo-file-v1:sha256:43496b631e1343f52d044ee3edcf4842b501fdcd79921cb9057eb08b1a895c28"
         },
         {
-          "resource": "repo://scripts/ci/harbor-render-check-test.py",
-          "version": "repo-file-v1:sha256:a3f72843d13a2deb0b47bab5bb9b901001ed12a5774760904322c9524523013e"
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:aae30004a372ae998ec31a49fcc9a836e01b444f8aa3524c47f3437ff24c6b6d"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-render-check.py",
+          "version": "repo-file-v1:sha256:df9487244ac210af0e3402f9085ea29cf1d08d860425cf416da5f957013da967"
         }
       ]
     },
     {
       "id": "claim_4b4d744a47ad4b9eaa60b7d07d11be39",
-      "statement": "The Rego pull_request_target exception accepts only the exact trusted native receipt provenance job shape, including edited-event verification and separate main/per-PR concurrency groups, and its tests reject changed verifier, revalidation, or concurrency settings.",
+      "statement": "The Rego pull_request_target exception accepts only the exact trusted native receipt provenance job shape, including edited-event revalidation of every PR under one global concurrency group. Its tests reject changed verifier, revalidation, or concurrency settings.",
       "evidence": [
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:d31db3a6c31bb947a04595839f57b7c3675dbd3e388d28b67823c4e0459d6c91"
+          "version": "repo-file-v1:sha256:66421ab76ef6163e73c89a7c9b944c4e1efe42bc36dd569b3786bce0f19ae39a"
         },
         {
           "resource": "repo://policy/workflows_test.rego",
-          "version": "repo-file-v1:sha256:6111313cc3d08f67a96b23e37239af757f16441186535c24a84dcd072697a0ba"
+          "version": "repo-file-v1:sha256:28c0ace1a0e0900ed5a61ab5aa91d6981e9b2604cce3315f9dd219b78f9e50d4"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:50:08.915Z"
+    "at": "2026-10-17T21:15:52.215Z"
   }
 }

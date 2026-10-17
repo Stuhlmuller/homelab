@@ -195,7 +195,7 @@ workflow_events := object.get(input, "on", object.get(input, "true", object.get(
 native_receipt_provenance_workflow if {
 	count(input) == 5
 	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
-	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance-${{ github.event_name == 'push' && 'main' || github.event.pull_request.number }}", "cancel-in-progress": false}
+	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false}
 	workflow_events == {
 		"push": {"branches": ["main"]},
 		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
@@ -215,48 +215,18 @@ native_receipt_provenance_job := {
 			"name": "Check Out Trusted Base",
 			"uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505",
 			"with": {
-				"ref": "${{ github.event.pull_request.base.sha || github.sha }}",
+				"ref": "main",
 				"fetch-depth": 1,
 				"persist-credentials": false,
 			},
 		},
 		{
-			"name": "Verify Changed Native Receipt State",
-			"if": "github.event_name == 'pull_request_target'",
-			"env": {
-				"BASE_SHA": "${{ github.event.pull_request.base.sha }}",
-				"HEAD_SHA": "${{ github.event.pull_request.head.sha }}",
-				"GH_TOKEN": "${{ github.token }}",
-			},
-			"run": `set -euo pipefail
-umask 077
-token_file="$(mktemp)"
-trap 'rm -f "$token_file"' EXIT
-printf '%s' "$GH_TOKEN" >"$token_file"
-report_status() {
-  gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${HEAD_SHA}" \
-    -f state="$1" -f context='Native Chainguard Receipt Provenance' \
-    -f description='Protected receipt state verification' >/dev/null
-}
-report_status pending
-if [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$BASE_SHA" ]] && \
-  python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
-  --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA" \
-  --token-file "$token_file" && \
-  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$BASE_SHA" ]]; then
-  report_status success
-else
-  report_status failure
-  exit 1
-fi
-`,
-		},
-		{
-			"name": "Revalidate Open Pull Requests After Main Moves",
-			"if": "github.event_name == 'push'",
+			"name": "Revalidate Open Pull Requests Against Current Main",
 			"env": {"GH_TOKEN": "${{ github.token }}"},
 			"run": `set -euo pipefail
 umask 077
+base_sha="$(git rev-parse HEAD)"
+[[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
 token_file="$(mktemp)"
 pulls_file="$(mktemp)"
 trap 'rm -f "$token_file" "$pulls_file"' EXIT
@@ -265,19 +235,19 @@ gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_pag
 jq -r '.[].head.sha' "$pulls_file" |
 while IFS= read -r head_sha; do
   [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
-  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$GITHUB_SHA" ]] || exit 0
+  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
   gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
     -f state=pending -f context='Native Chainguard Receipt Provenance' \
     -f description='Rechecking receipt against current main' >/dev/null
   if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
-    --base-sha "$GITHUB_SHA" --head-sha "$head_sha" \
+    --base-sha "$base_sha" --head-sha "$head_sha" \
     --token-file "$token_file" && \
-    [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$GITHUB_SHA" ]]; then
+    [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]]; then
     state=success
   else
     state=failure
   fi
-  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$GITHUB_SHA" ]] || exit 0
+  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
   gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
     -f state="$state" -f context='Native Chainguard Receipt Provenance' \
     -f description='Protected receipt state verification' >/dev/null

@@ -54,7 +54,7 @@ test_allows_exact_native_receipt_provenance_workflow if {
 }
 
 test_rejects_native_receipt_provenance_with_canceling_concurrency if {
-	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance-${{ github.event_name == 'push' && 'main' || github.event.pull_request.number }}", "cancel-in-progress": true}})
+	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": true}})
 	violations := deny with input as workflow
 	some msg in violations
 	contains(msg, "must not use pull_request_target")
@@ -75,20 +75,6 @@ test_rejects_native_receipt_provenance_with_changed_verifier_step if {
 	steps := [
 		base.jobs.verify.steps[0],
 		object.union(base.jobs.verify.steps[1], {"run": "echo \"$GH_TOKEN\""}),
-		base.jobs.verify.steps[2],
-	]
-	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
-	violations := deny with input as workflow
-	some msg in violations
-	contains(msg, "must not use pull_request_target")
-}
-
-test_rejects_native_receipt_provenance_with_changed_revalidation if {
-	base := native_receipt_provenance_fixture
-	steps := [
-		base.jobs.verify.steps[0],
-		base.jobs.verify.steps[1],
-		object.union(base.jobs.verify.steps[2], {"run": "echo skip-revalidation"}),
 	]
 	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
 	violations := deny with input as workflow
@@ -113,7 +99,7 @@ test_rejects_native_receipt_provenance_with_head_checkout if {
 	)})
 	workflow := object.union(base, {"jobs": {"verify": object.union(
 		base.jobs.verify,
-		{"steps": [checkout, base.jobs.verify.steps[1], base.jobs.verify.steps[2]]},
+		{"steps": [checkout, base.jobs.verify.steps[1]]},
 	)}})
 	violations := deny with input as workflow
 	some msg in violations
@@ -648,7 +634,7 @@ workflow_with_images(docker_action, job_container, service_image) := {
 
 native_receipt_provenance_fixture := {
 	"name": "Verify Native Chainguard Receipt Provenance",
-	"concurrency": {"group": "native-chainguard-receipt-provenance-${{ github.event_name == 'push' && 'main' || github.event.pull_request.number }}", "cancel-in-progress": false},
+	"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false},
 	"true": {
 		"push": {"branches": ["main"]},
 		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
