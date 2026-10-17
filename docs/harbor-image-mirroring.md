@@ -406,6 +406,13 @@ digests when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
 
+The Harbor 2.15.4 prerequisite adds all nine coupled component digests while
+retaining the active 2.15.2 entries. Publish the full catalog with
+`image_scope=all` and require fresh authenticated pulls of the nine new digests
+before merging a Harbor 2.15.4 consumer. This catalog change does not alter
+running Pods. The singleton nginx replacement also needs a separate rollout
+path that keeps Harbor reachable for its own image pull.
+
 ## Bootstrap and recovery
 
 An in-cluster registry cannot cold-start from itself on empty nodes. Fresh
