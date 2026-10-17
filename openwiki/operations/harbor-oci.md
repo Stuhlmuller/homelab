@@ -104,12 +104,12 @@ sources:
     resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-5f83ab015123e3adcb0c5808
     resource: repo://scripts/ci/harbor-render-check.py
+  - id: openwiki-source-b4ba5e3191f69df1237ac01d
+    resource: repo://scripts/ci/image-automation-test.py
   - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
     resource: repo://scripts/ci/image-automation.py
   - id: openwiki-source-28fa6202184199322ab68bca
     resource: repo://scripts/ci/network-policy-inventory-test.py
-  - id: openwiki-source-c7852b586f8f1a45684f7ab4
-    resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T19:44:54.134Z" }
+generated: { by: "codex", at: "2026-10-17T19:48:41.466Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:44:54.134Z
+    at: 2026-10-17T19:48:41.466Z
 ---
 
 # Harbor Private OCI Registry
@@ -775,7 +775,8 @@ such reference requires an imported protected receipt and the exact verified
 index digest; direct consumer targets also require `migrated` status even if
 automation enrollment is still disabled. The Image Updater's structural check
 permits enrollment after the required repository Harbor image check validates
-that imported evidence.
+that imported evidence. Native enrollment renders without the
+`verified-stable` alias, which receipt imports do not publish.
 The Harbor render check applies the same rule to rendered
 references and rejects undeclared native destinations.
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:38d773d02e96c80e9e7da234531fcf7830e451a7ffad2aba5386ecb5cb753265",
+  "pageVersion": "sha256:8a40573aceb0aded69b43d5efdb2f172007b4962d34e2aab1a416a9617e06ac2",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -502,25 +502,25 @@
     },
     {
       "id": "claim_0b1f16dd051d439ba841063309ef83ad",
-      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared digest.",
+      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared digest. Native enrollment renders without the verified-stable alias, which receipt imports do not publish.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
           "version": "repo-file-v1:sha256:74b7fce2917760e385e34af3a3154d735bba9a22e6ddd1822656bf261326b0af"
         },
         {
-          "resource": "repo://scripts/ci/image-automation.py",
-          "version": "repo-file-v1:sha256:05aee41cb2f9c6c3b8043ee3387547d15303497eff84006a1760220aa2b6be1d"
+          "resource": "repo://scripts/ci/image-automation-test.py",
+          "version": "repo-file-v1:sha256:538bbe466d5c3c929f2d29459f431e47d3804a9dd9b49b911ab8d57dc497edc9"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:710b1c8bc6e20914aa076978e24a303b2ac6450ec912cf673762f58c46bb477b"
+          "resource": "repo://scripts/ci/image-automation.py",
+          "version": "repo-file-v1:sha256:24f7107c37b053971dfeb2483621f0eaac67075e665d8c6d7e965aa610b93a02"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:44:54.134Z"
+    "at": "2026-10-17T19:48:41.466Z"
   }
 }
