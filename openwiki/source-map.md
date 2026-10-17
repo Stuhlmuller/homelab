@@ -4,10 +4,16 @@ title: "Source Map"
 description: "Maps wiki topics to canonical guides, operational runbooks, workload READMEs and source ownership."
 tags: [knowledge-base, source-map]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
@@ -30,10 +36,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-17T04:52:40.970Z" }
+generated: { by: "codex", at: "2026-10-17T23:19:59.804Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:13:59.415Z
+    at: 2026-10-17T23:19:59.804Z
 ---
 
 # Source Map
@@ -58,6 +64,7 @@ desired state.
 | `docs/argocd-app-onboarding.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 | `docs/image-automation.md` | [Image Automation](runbooks/image-automation.md) |
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
+| `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
 | `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |

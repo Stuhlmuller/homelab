@@ -4,8 +4,14 @@ title: "Workload Inventory"
 description: "Application namespaces, GitOps paths, dependencies, state contracts and runtime readiness boundaries."
 tags: [workloads, argocd, inventory]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
+  - id: openwiki-source-89de10646bdbebfd3e1ed075
+    resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-812216982d0b6a887bf09651
     resource: repo://clusters/homelab/apps/cordium/networkpolicy.yaml
   - id: openwiki-source-efd15335758af38c6e6af9ab
@@ -398,6 +404,15 @@ and `.cordium/workspace.yaml` to execute repository checks remotely. Workspace
 data is disposable node-local state. Cluster limits allow four stored and one
 active workspace per user, including interactive users. Live execution and
 negative-policy acceptance remain pending; see [Cordium CI](../../docs/cordium-ci.md).
+
+The Actions runner pool and controller are staged separately. The pool remains
+disabled, no controller Deployment is registered, and no runner image has been
+published for consumption. The proposed controller uses `cordium-runners`
+credentials and per-Workspace UID isolation while verifying deletion of each
+runner, Workspace, Pod, PVC, and NetworkPolicy after one job. Existing hosted
+runner selectors remain in place until production enforcement, private image
+pulls, canary modes, and cleanup pass. See the
+[runner bootstrap](../../builds/cordium-runner/README.md).
 
 ### OpenClaw runtime readiness
 

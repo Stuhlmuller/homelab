@@ -12,6 +12,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -60,6 +62,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-714484b73b4ba165201cb06d
+    resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
@@ -1326,6 +1330,17 @@ proves an untracked `scripts/json.py` cannot run before these helper guards.
 Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
 format as well as raw gRPC stderr errors. Already-absent resources are skipped;
 other native failures remain errors.
+
+The staged Cordium runner path has separate source checks for the fixed
+runner/controller builds, one-job JIT provisioning, credential refresh,
+per-Workspace UID network policy, controller access, and independently verified
+cleanup. Protected publication must build before credentials, completely pull
+both fixed Harbor digests, and verify signatures. The canary has success,
+intentional failure, and session-renewal modes. These fixtures establish the
+declared contract only: live NRI enforcement, denied traffic, credential
+refresh, cold pulls, canary cleanup, and workflow execution remain acceptance
+gates before enabling registration or changing job selectors. See the
+[runner source contract](../../builds/cordium-runner/README.md).
 
 ## OpenClaw bootstrap gates
 

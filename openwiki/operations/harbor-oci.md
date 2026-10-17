@@ -4,6 +4,8 @@ title: "Harbor OCI"
 description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
 tags: [harbor, images, registry, security]
 sources:
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
@@ -12,6 +14,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -102,10 +106,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T22:53:57.740Z" }
+generated: { by: "codex", at: "2026-10-17T23:19:59.804Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:53:57.740Z
+    at: 2026-10-17T23:19:59.804Z
 ---
 
 # Harbor Private OCI Registry
@@ -682,6 +686,16 @@ Two rollout failures refined validation: ESO 2.0.1 requires an explicit
 Static rendering did not catch either runtime validation issue.
 
 ## Expanded publication and egress prerequisites
+
+The staged Cordium Actions runner has a fixed runner/controller image pair.
+`cordium-runner-publish.yml` accepts only an exact-current-main manual dispatch,
+builds and smoke-tests both images before registry credentials, then publishes
+only their private `homelab` references through the shared Harbor signer.
+The helper requires complete authenticated destination pulls and verified
+signatures before emitting immutable digests. Neither image has been
+published or cold-pulled for a consuming controller;
+registration and selector cutover remain disabled. See the
+[runner publication contract](../../builds/cordium-runner/README.md#protected-private-publication).
 
 Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*`
 sources. Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six

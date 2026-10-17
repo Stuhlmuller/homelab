@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bec3c39df869b8489af17a16ea0c171c0c102328d935517feaf4366c2ab4b9a4",
+  "pageVersion": "sha256:9823a8faac7577136a909c9f0f2514f0391374aae51cd62319154b50cc113020",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:5922e3bd005ff9dace08abab6afafac76aceecdb4c25e951235c19fc7edc20d7"
+          "version": "repo-file-v1:sha256:40c4717a191b80cd54fca813c730c6ef8f0f373e20536e47975ad445c5152a4a"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa"
+          "version": "repo-file-v1:sha256:c7a101ebf9d37ba3cf584d60c31104e11123ed0da6ed8a4b13cc6504809869ef"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -354,7 +354,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:73396eca73af64273ef6c024f89c41507b6b85fd4e00c6740f23a5fc0b18c729"
+          "version": "repo-file-v1:sha256:224f4c4b69c35ab5c1c31b727ac765fb9fb10f023d99ea9b838717b7ec4e4d6e"
         }
       ]
     },
@@ -364,11 +364,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:acb2de43f7587ac919446b22bd8ba14da1b2e40416e45da134c284331d424641"
+          "version": "repo-file-v1:sha256:13dfebe44bb70b24b7e4aa9337abe92fe250a0134ec1f3063f524db4eb33a2af"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa"
+          "version": "repo-file-v1:sha256:c7a101ebf9d37ba3cf584d60c31104e11123ed0da6ed8a4b13cc6504809869ef"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:73396eca73af64273ef6c024f89c41507b6b85fd4e00c6740f23a5fc0b18c729"
+          "version": "repo-file-v1:sha256:224f4c4b69c35ab5c1c31b727ac765fb9fb10f023d99ea9b838717b7ec4e4d6e"
         }
       ]
     },
@@ -404,7 +404,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa"
+          "version": "repo-file-v1:sha256:c7a101ebf9d37ba3cf584d60c31104e11123ed0da6ed8a4b13cc6504809869ef"
         }
       ]
     },
@@ -414,7 +414,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:a85a13f89e08eae029e53bbc486dee1d4a742f2ed5c4c155a732f145a155a9b8"
+          "version": "repo-file-v1:sha256:2372399898e585179f5c62816daf4c5eef9545e3db9b5a76c437936f2a105d87"
         },
         {
           "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:49b2d1db65736a9b10539e4dd24a7dcc45b34f3d4f63c204e89df1bc86444f88"
+          "version": "repo-file-v1:sha256:88c96e834857a3889b40b54a4765f8f69d6b72aeb56994dfb5c848140bb7af54"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa"
+          "version": "repo-file-v1:sha256:c7a101ebf9d37ba3cf584d60c31104e11123ed0da6ed8a4b13cc6504809869ef"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
@@ -466,7 +466,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:7a92efbc6efb4b42ebedc2140e9343be652785c56b71e4aecacdae7fa51787fa"
+          "version": "repo-file-v1:sha256:c7a101ebf9d37ba3cf584d60c31104e11123ed0da6ed8a4b13cc6504809869ef"
         }
       ]
     },
@@ -480,7 +480,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:73396eca73af64273ef6c024f89c41507b6b85fd4e00c6740f23a5fc0b18c729"
+          "version": "repo-file-v1:sha256:224f4c4b69c35ab5c1c31b727ac765fb9fb10f023d99ea9b838717b7ec4e4d6e"
         }
       ]
     },
@@ -494,7 +494,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:73396eca73af64273ef6c024f89c41507b6b85fd4e00c6740f23a5fc0b18c729"
+          "version": "repo-file-v1:sha256:224f4c4b69c35ab5c1c31b727ac765fb9fb10f023d99ea9b838717b7ec4e4d6e"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -508,11 +508,11 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:a85a13f89e08eae029e53bbc486dee1d4a742f2ed5c4c155a732f145a155a9b8"
+          "version": "repo-file-v1:sha256:2372399898e585179f5c62816daf4c5eef9545e3db9b5a76c437936f2a105d87"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:49b2d1db65736a9b10539e4dd24a7dcc45b34f3d4f63c204e89df1bc86444f88"
+          "version": "repo-file-v1:sha256:88c96e834857a3889b40b54a4765f8f69d6b72aeb56994dfb5c848140bb7af54"
         }
       ]
     },
@@ -533,10 +533,28 @@
           "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
+    },
+    {
+      "id": "claim_0d5addf3d0924c8f9e5a4befb03f5a62",
+      "statement": "The staged Cordium runner publisher uses an exact-main manual dispatch for a fixed runner/controller pair and requires authenticated Harbor pulls and signatures before emitting immutable digests; live publication and cold-pull acceptance remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:cac5135b47d625ece5a311a0425039dbeb1be6bf174cbaa6524c831ad96fae4d"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:c7a101ebf9d37ba3cf584d60c31104e11123ed0da6ed8a4b13cc6504809869ef"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T22:53:57.740Z"
+    "at": "2026-10-17T23:19:59.804Z"
   }
 }
