@@ -285,16 +285,19 @@ profile and leave the Mac baseline enforced.
    source-controlled recovery literal true, apply the guarded unit, verify the
    independent cloud-only Global Administrator can sign in, then restore the
    literal to false in a signed change.
-2. Stage the Fleet SAML configuration and precreate the authorized SSO
-   administrator while the local recovery account is still usable:
+2. The deployed Fleet instance has a target-local administrator. Stage its SAML
+   transition with that account's password in a private mode-0600 file; the
+   command creates and verifies the local recovery administrator before SSO:
 
    ```sh
-   nix develop --command python3 -I scripts/fleet-free-setup.py console-sso --execute
+   nix develop --command python3 -I scripts/fleet-free-setup.py \
+     console-sso --current-password-file <PRIVATE_FILE_OUTSIDE_REPO> --execute
    ```
 
    This must report the reviewed staged topology. It does not prove an
    interactive SAML login and must not be substituted with a target password
-   login.
+   login. The no-file command is for a fresh bootstrap or post-migration
+   verification; remove the private file after migration.
 3. From clean, signed current `main`, sign Azure CLI into the independently
    tested cloud-only recovery administrator, then create the private conversion
    receipt. The directory must already be mode `0700` and outside every Git
