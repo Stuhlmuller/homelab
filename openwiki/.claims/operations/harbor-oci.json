@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8c712b38f92faa8fdba548168a5876cf59499f910964fae3044f0e81ac757cd7",
+  "pageVersion": "sha256:afe9d2c55e1974a4c4e259b166cddb3f5b80d05e6b3e745db2854b9a4c9a4baa",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -470,15 +470,11 @@
     },
     {
       "id": "claim_4fb8563dc6c840ac8608a6d5333b0b13",
-      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; the importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA. The required status is activated after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow verifies private run evidence and publishes Native Chainguard Receipt Provenance on the PR head SHA; main pushes revalidate open same-repository PR heads against the new base. The importer accepts only the configured workflow path on main and requires each changed receipt's run revision to equal the PR base SHA.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:5675e5775a7032d71877d865a0f9bf44ccff1327bc32eab736082987de3e9295"
-        },
-        {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:997c5674eaba32ed17c1f1ea0aa1764fa28e7a29c235e91b10eb08c97ed49b1a"
+          "version": "repo-file-v1:sha256:f2b9fe6e6bcd637bce063908105d48e27c5f57ff8f571cb549f0f86700de677d"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import.py",
@@ -488,19 +484,15 @@
     },
     {
       "id": "claim_d41f4c87a08c43e4a9d9af999a8dca07",
-      "statement": "Offline image checks inspect native consumer targets regardless of status metadata; a direct private Chainguard reference requires migrated status, imported protected receipt evidence and the exact verified digest, while the Harbor render check rejects undeclared native destinations.",
+      "statement": "Offline image checks inspect native consumer targets and repository workload manifests; every private native Chainguard reference requires imported protected receipt evidence and the exact verified digest, while direct consumer targets additionally require migrated status. The Harbor render check rejects undeclared native destinations.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:6bc100df5c154bad6826395813b5e494d8d7a87e875a7bb5a6b9fb1670f08ddf"
+          "version": "repo-file-v1:sha256:2a5b677e625f1cbef68bc6c4faf7971d83cd9aa767b2d8a81d07911dda26ed34"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:cb6528b74169e3af5315df6a470bbc95e9602cdedea5bb7a0b35d07ac6eb9a6a"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-render-check-test.py",
-          "version": "repo-file-v1:sha256:a3f72843d13a2deb0b47bab5bb9b901001ed12a5774760904322c9524523013e"
+          "version": "repo-file-v1:sha256:74b7fce2917760e385e34af3a3154d735bba9a22e6ddd1822656bf261326b0af"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check.py",
@@ -510,11 +502,11 @@
     },
     {
       "id": "claim_0b1f16dd051d439ba841063309ef83ad",
-      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared target digest.",
+      "statement": "Native Chainguard automation enrollment is structurally accepted by Image Updater and gated by the required repository Harbor image check, which verifies imported receipt evidence and the exact declared digest.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:cb6528b74169e3af5315df6a470bbc95e9602cdedea5bb7a0b35d07ac6eb9a6a"
+          "version": "repo-file-v1:sha256:74b7fce2917760e385e34af3a3154d735bba9a22e6ddd1822656bf261326b0af"
         },
         {
           "resource": "repo://scripts/ci/image-automation.py",
@@ -529,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:22:30.114Z"
+    "at": "2026-10-17T19:37:24.843Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1c262728bdd8824280d229dae1652182c3737ac994217aed838b66903c764cda",
+  "pageVersion": "sha256:99283ac8191c937e5331786846d9817a395fb9a05d3f95136198772624a081f2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -396,7 +396,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5f313417557a8cdfed0b3746ad10e0d1bc5a987f576bfd3b0058bc951109dea9"
+          "version": "repo-file-v1:sha256:e5c36c51a8ab9808f11b04f6d14bcc1a209204100934ee2b62592e5c044643d2"
         }
       ]
     },
@@ -558,35 +558,31 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5f313417557a8cdfed0b3746ad10e0d1bc5a987f576bfd3b0058bc951109dea9"
+          "version": "repo-file-v1:sha256:e5c36c51a8ab9808f11b04f6d14bcc1a209204100934ee2b62592e5c044643d2"
         }
       ]
     },
     {
       "id": "claim_57201fa66a1145cd88bc6e0192749a9c",
-      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA, while static policy fixtures pin its reviewed steps and status permission; its required status is activated after a successful main run.",
+      "statement": "The trusted native receipt provenance workflow publishes a verified status on the exact PR head SHA and revalidates open same-repository PRs after main moves; static checks pin its reviewed steps, status permission, and source hashes. Its required status is activated after a successful main run.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
-          "version": "repo-file-v1:sha256:5675e5775a7032d71877d865a0f9bf44ccff1327bc32eab736082987de3e9295"
-        },
-        {
-          "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:8c7e65fcd8c16d6b3202ed21b7bbaceaea07f8c1ad474c7d38617593ce441079"
+          "version": "repo-file-v1:sha256:f2b9fe6e6bcd637bce063908105d48e27c5f57ff8f571cb549f0f86700de677d"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5f313417557a8cdfed0b3746ad10e0d1bc5a987f576bfd3b0058bc951109dea9"
+          "version": "repo-file-v1:sha256:e5c36c51a8ab9808f11b04f6d14bcc1a209204100934ee2b62592e5c044643d2"
         }
       ]
     },
     {
       "id": "claim_c1de3d4b8c824cd793a1b0c8016c0a28",
-      "statement": "Offline image coverage and Harbor render regressions reject direct private native Chainguard references when status remains candidate, protected receipt evidence is absent, the destination is undeclared, or the digest differs from the verified index.",
+      "statement": "Offline image coverage and Harbor render regressions reject private native Chainguard references lacking imported protected receipt evidence, declared destination, or the verified digest; direct consumer targets also require migrated status.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:6bc100df5c154bad6826395813b5e494d8d7a87e875a7bb5a6b9fb1670f08ddf"
+          "version": "repo-file-v1:sha256:2a5b677e625f1cbef68bc6c4faf7971d83cd9aa767b2d8a81d07911dda26ed34"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check-test.py",
@@ -597,6 +593,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T19:19:00.714Z"
+    "at": "2026-10-17T19:37:24.843Z"
   }
 }

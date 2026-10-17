@@ -102,8 +102,6 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-897b0dbd854eb91f395fe24b
-    resource: repo://scripts/ci/harbor-render-check-test.py
   - id: openwiki-source-5f83ab015123e3adcb0c5808
     resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-3dddf7e38f5993d9c5de8e2f
@@ -122,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T19:22:30.114Z" }
+generated: { by: "codex", at: "2026-10-17T19:37:24.843Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:22:30.114Z
+    at: 2026-10-17T19:37:24.843Z
 ---
 
 # Harbor Private OCI Registry
@@ -762,18 +760,22 @@ migration, global Harbor-only pulls, nor live egress enforcement.
 The trusted `pull_request_target` provenance job reads only the committed
 receipt, verifies its private source-run evidence against GitHub, and publishes
 `Native Chainguard Receipt Provenance` as a commit status on the PR head SHA.
-Its required status must be enabled only after the workflow succeeds on `main`.
+On each `main` push, the trusted job rechecks open same-repository PR heads
+against the new base and refreshes that status. Its required status must be
+enabled only after the workflow succeeds on `main`.
 The private receipt is imported from a successful exact-main run before the
 state-change verifier is run; the import rejects a run path outside the
 configured workflow, including a different branch suffix. A changed receipt's
 run revision must equal the receipt-only PR's trusted base revision; older
 successful runs require a fresh exact-main dispatch.
 
-Offline image checks inspect each native consumer's declared target. A direct
-private Chainguard reference requires `migrated` status, an imported protected
-receipt, and the exact verified index digest even if automation enrollment is
-still disabled. The Image Updater's structural check permits enrollment after
-the required repository Harbor image check validates that imported evidence.
+Offline image checks inspect each native consumer's declared target and scan
+repository workload manifests for private native Chainguard references. Every
+such reference requires an imported protected receipt and the exact verified
+index digest; direct consumer targets also require `migrated` status even if
+automation enrollment is still disabled. The Image Updater's structural check
+permits enrollment after the required repository Harbor image check validates
+that imported evidence.
 The Harbor render check applies the same rule to rendered
 references and rejects undeclared native destinations.
 

@@ -126,10 +126,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T19:19:00.714Z" }
+generated: { by: "codex", at: "2026-10-17T19:37:24.843Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T19:19:00.714Z
+    at: 2026-10-17T19:37:24.843Z
 ---
 
 # Validation Gates
@@ -1565,17 +1565,18 @@ global Harbor-only pull policy.
 
 The separate trusted provenance workflow validates imported receipt state
 against the exact successful main run and publishes `Native Chainguard Receipt
-Provenance` on the PR head SHA. The required status is enabled only after that
-workflow succeeds on main; static policy tests pin its trusted steps and status
-permission. Neither a local fixture nor a copied receipt substitutes for this
-head-bound result.
+Provenance` on the PR head SHA. Main pushes revalidate open same-repository PR
+heads against the new base. The required status is enabled only after the
+workflow succeeds on main; static policy tests pin its trusted steps, status
+permission, and source hashes. Neither a local fixture nor a copied receipt
+substitutes for this head-bound result.
 
 `harbor-images-check.py` reads native consumer targets even when status remains
-`candidate` and `not-enrolled`; a direct private Chainguard reference without
-`migrated` status or an imported protected receipt fails. The Harbor render
-fixture also rejects undeclared native destinations and a digest different
-from the verified index. These checks prove declared source behavior, not a
-live pull or rollout.
+`candidate` and `not-enrolled`, and scans workload manifests for private native
+Chainguard references. Every such reference needs an imported protected receipt
+and the exact verified digest; direct consumer targets also need `migrated`
+status. The Harbor render fixture rejects undeclared native destinations.
+These checks prove declared source behavior, not a live pull or rollout.
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,
