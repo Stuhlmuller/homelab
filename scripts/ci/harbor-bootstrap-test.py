@@ -293,6 +293,7 @@ class BootstrapTest(unittest.TestCase):
         self.assertFalse(policy["replicate_deletion"])
         self.assertTrue(policy["override"])
         self.assertFalse(policy["filters"][0].get("flatten", False))
+        self.assertEqual(policy["dest_namespace"], "homelab")
         client.calls.clear()
         bootstrap.reconcile_replication(client, bootstrap.CHAINGUARD_REPLICATION)
         self.assertFalse(any(method in {"POST", "PUT", "DELETE"} for method, _, _ in client.calls))

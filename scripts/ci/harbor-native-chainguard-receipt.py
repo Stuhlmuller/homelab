@@ -26,7 +26,7 @@ IMAGE_ID = re.compile(r"^chainguard-[a-z0-9][a-z0-9-]{0,62}$")
 PLATFORM = re.compile(r"^linux/(amd64|arm64)$")
 SOURCE = re.compile(r"^cgr\.dev/(chainguard/[a-z0-9][a-z0-9.-]*):latest$")
 CATALOG_SOURCE = re.compile(r"^cgr\.dev/chainguard/[a-z0-9][a-z0-9.-]*:[A-Za-z0-9][A-Za-z0-9.-]*$")
-DESTINATION = re.compile(r"^harbor\.stinkyboi\.com/homelab/(chainguard-[a-z0-9][a-z0-9-]*):latest$")
+DESTINATION = re.compile(r"^harbor\.stinkyboi\.com/homelab/chainguard/([a-z0-9][a-z0-9.-]*):latest$")
 INDEX_MEDIA_TYPES = {
     "application/vnd.oci.image.index.v1+json",
     "application/vnd.docker.distribution.manifest.list.v2+json",
@@ -135,7 +135,7 @@ def config_images(config):
                 "native source or destination is not fixed")
         repository = source_match.group(1)
         image_name = repository.rsplit("/", 1)[1]
-        require(image_id == f"chainguard-{image_name}" and destination_match.group(1) == image_id,
+        require(image_id == f"chainguard-{image_name}" and destination_match.group(1) == image_name,
                 "native source and destination do not agree")
         platforms = image["required_platforms"]
         require(isinstance(platforms, list) and platforms and len(platforms) == len(set(platforms))
@@ -186,7 +186,7 @@ def replication_rules(replication):
         destination = rule["destination"]
         require(isinstance(repository, str) and isinstance(destination, str)
                 and SOURCE.fullmatch(f"cgr.dev/{repository}:latest") is not None
-                and re.fullmatch(r"homelab/chainguard-[a-z0-9][a-z0-9-]*", destination) is not None
+                and destination == "homelab/" + repository
                 and rule["source_tag"] == "latest" and rule["override"] is True
                 and rule["delete"] is False and rule["flatten"] is False
                 and rule["access_class"] == "public" and repository not in result,
@@ -210,7 +210,7 @@ def build_plan(config, replication, catalog):
     plan = []
     for image_id, image in sorted(images.items()):
         require(image["source_ref"] in catalogs, "native source is not in the reviewed Chainguard catalog")
-        expected_destination = "homelab/" + image_id
+        expected_destination = "homelab/" + image["repository"]
         rule = rules.get(image["repository"])
         require(rule is not None and rule["destination"] == expected_destination,
                 "native replication rule does not match automation configuration")
