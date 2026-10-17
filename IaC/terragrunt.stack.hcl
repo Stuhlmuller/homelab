@@ -158,6 +158,14 @@ unit "argocd_apps_multica" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/multica/stack.hcl").inputs
 }
 
+unit "argocd_apps_nix_builder" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/nix-builder"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/nix-builder/stack.hcl").inputs
+}
+
 unit "argocd_apps_nofx" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/nofx"
@@ -220,14 +228,6 @@ unit "argocd_apps_octelium_storage" {
   no_dot_terragrunt_stack = true
 
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/octelium-storage/stack.hcl").inputs
-}
-
-unit "argocd_apps_octobot" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/octobot"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/octobot/stack.hcl").inputs
 }
 
 unit "argocd_apps_openclaw" {
@@ -318,6 +318,14 @@ unit "argocd_apps_tailscale" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailscale/stack.hcl").inputs
 }
 
+unit "argocd_apps_traefik" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/traefik"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/traefik/stack.hcl").inputs
+}
+
 unit "aws_ssm_parameters" {
   source                  = "./.catalog/units/live/aws-ssm-parameters"
   path                    = "live/aws-ssm-parameters"
@@ -402,5 +410,23 @@ unit "operator_entra_stuhlmuller_domain" {
 unit "operator_entra_stuhlmuller_pilot_user" {
   source                  = "./.catalog/units/operator/entra-stuhlmuller-pilot-user"
   path                    = "operator/entra-stuhlmuller-pilot-user"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_entra_google_workspace_federation" {
+  source                  = "./.catalog/units/operator/entra-google-workspace-federation"
+  path                    = "operator/entra-google-workspace-federation"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_entra_owner_mail" {
+  source                  = "./.catalog/units/operator/entra-owner-mail"
+  path                    = "operator/entra-owner-mail"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_tailscale_access" {
+  source                  = "./.catalog/units/operator/tailscale-access"
+  path                    = "operator/tailscale-access"
   no_dot_terragrunt_stack = true
 }

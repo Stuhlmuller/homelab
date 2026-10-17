@@ -21,6 +21,7 @@ spec:
         - source:
             principals:
               - cluster.local/ns/istio-system/sa/istio-ingressgateway
+              - cluster.local/ns/traefik/sa/traefik
               - cluster.local/ns/ai/sa/litellm
       to:
         - operation:

@@ -25,11 +25,11 @@ REPLICATION_FILE = Path("/replication/chainguard-replication.json")
 PREFIX = "robot$"
 PROJECTS = {
     "homelab": {"metadata": {"public": "false", "auto_scan": "true"}, "robots": ("pull", "publisher")},
-    "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("publisher",)},
+    "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("pull", "publisher")},
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
 CHAINGUARD_REPLICATION = {
-    "schedule": "0 * * * *",
+    "schedule": "0 0 * * * *",
     "source_registry": "cgr.dev",
     "paused": False,
     "rules": (
@@ -52,6 +52,7 @@ ROBOTS = {"pull": ("pull",), "publisher": ("pull", "push")}
 SECRET_FILES = {
     ("homelab", "pull"): "robot-pull-password",
     ("homelab", "publisher"): "robot-push-password",
+    ("mirror", "pull"): "mirror-robot-pull-password",
     ("mirror", "publisher"): "mirror-robot-push-password",
 }
 MAX_RESPONSE_BYTES = 1024 * 1024
@@ -69,7 +70,7 @@ class APIError(BootstrapError):
 
 def validate_replication_policy(policy=CHAINGUARD_REPLICATION):
     """Validate exact-name, non-destructive Chainguard replication intent."""
-    if policy.get("source_registry") != "cgr.dev" or policy.get("schedule") != "0 * * * *":
+    if policy.get("source_registry") != "cgr.dev" or policy.get("schedule") != "0 0 * * * *":
         raise BootstrapError("Chainguard replication schedule/source changed")
     if type(policy.get("paused")) is not bool or not isinstance(policy.get("rules"), (list, tuple)):
         raise BootstrapError("Chainguard replication policy is malformed")
@@ -108,7 +109,7 @@ def desired_replication_policy(rule, source_registry_id, paused=None):
         "dest_namespace": rule["destination"].split("/", 1)[0],
         "dest_registry": {"id": 0},
         "src_registry": {"id": source_registry_id},
-        "trigger": {"type": "scheduled", "trigger_settings": {"cron": "0 * * * *"}},
+        "trigger": {"type": "scheduled", "trigger_settings": {"cron": "0 0 * * * *"}},
         "enabled": not paused,
         "replicate_deletion": False,
         "override": True,
@@ -133,6 +134,19 @@ def desired_registry(name):
     return CHAINGUARD_REGISTRY
 
 
+def registry_matches(actual, desired):
+    """Compare Harbor registry fields after its null-to-default normalization."""
+    for key, value in desired.items():
+        if key == "credential":
+            continue
+        actual_value = actual.get(key)
+        if key == "insecure" and actual_value is None:
+            actual_value = False
+        if actual_value != value:
+            return False
+    return True
+
+
 def reconcile_registry(client, name):
     desired = desired_registry(name)
     query = urllib.parse.urlencode({"name": name})
@@ -140,25 +154,28 @@ def reconcile_registry(client, name):
     if not isinstance(registries, list) or len(registries) > 1:
         raise BootstrapError("Chainguard source registry is ambiguous")
     if not registries:
-        registry, _ = client.request("POST", "/registries", desired, expected=(201,))
-        if not isinstance(registry, dict):
-            raise BootstrapError("Harbor created an invalid source registry")
+        _, headers = client.request("POST", "/registries", desired, expected=(201,), json_response=False)
+        registry = {"id": created_id(headers, "/registries")}
     else:
         registry = registries[0]
         if not isinstance(registry, dict) or registry.get("name") != name:
             raise BootstrapError("Harbor returned the wrong source registry")
         identifier = positive_id(registry.get("id"))
-        if any(registry.get(key) != value for key, value in desired.items() if key != "credential"):
+        if not registry_matches(registry, desired):
             client.request("PUT", f"/registries/{identifier}", desired, json_response=False)
     identifier = positive_id(registry.get("id"))
     verified, _ = client.request("GET", f"/registries/{identifier}")
-    if not isinstance(verified, dict) or any(verified.get(key) != value for key, value in desired.items() if key != "credential"):
+    if not isinstance(verified, dict) or not registry_matches(verified, desired):
         raise BootstrapError("Harbor source registry verification failed")
     return verified
 
 
 def replication_matches(actual, desired):
-    return all(actual.get(key) == value for key, value in desired.items())
+    # Harbor omits false policy flags from its JSON readback.
+    return all((actual.get(key) or {}).get("id", 0) == value["id"]
+               if key in {"src_registry", "dest_registry"}
+               else (actual.get(key) == value or (value is False and actual.get(key) is None))
+               for key, value in desired.items())
 
 
 def reconcile_replication(client, policy):
@@ -172,10 +189,9 @@ def reconcile_replication(client, policy):
         if not isinstance(policies, list) or len(policies) > 1:
             raise BootstrapError("Chainguard replication policy is missing or ambiguous")
         if not policies:
-            created, _ = client.request("POST", "/replication/policies", desired, expected=(201,))
-            if not isinstance(created, dict):
-                raise BootstrapError("Harbor created an invalid replication policy")
-            identifier = positive_id(created.get("id"))
+            _, headers = client.request("POST", "/replication/policies", desired,
+                                        expected=(201,), json_response=False)
+            identifier = created_id(headers, "/replication/policies")
         else:
             current = policies[0]
             identifier = positive_id(current.get("id"))
@@ -236,6 +252,14 @@ def positive_id(value):
     if type(value) is not int or value <= 0:
         raise BootstrapError("Harbor returned an invalid object ID")
     return value
+
+
+def created_id(headers, path):
+    # Harbor returns an empty 201 body; Location identifies the object to verify.
+    match = re.fullmatch(re.escape("/api/v2.0" + path) + r"/([1-9][0-9]*)", headers.get("Location", ""))
+    if not match:
+        raise BootstrapError("Harbor create response lacks a valid object location")
+    return int(match[1])
 
 
 def config_values(document):
@@ -496,8 +520,8 @@ def main():
         read_replication_policy()
         admin_password = read_secret("admin-password")
         passwords = {name: read_secret(filename) for name, filename in SECRET_FILES.items()}
-        if passwords[("homelab", "publisher")] == passwords[("mirror", "publisher")]:
-            raise BootstrapError("Harbor publishers require separate credentials")
+        if len(set(passwords.values())) != len(passwords):
+            raise BootstrapError("Harbor robots require separate credentials")
         client = Client(admin_password)
         # Retry only transient reads. Auth/schema/write failures never trigger a
         # fallback identity or a retry that might duplicate a created resource.

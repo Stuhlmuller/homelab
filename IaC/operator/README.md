@@ -22,6 +22,13 @@ credential-selector publication and real CI acceptance.
 
 ## Entra `stuhlmuller.net` pilot
 
+The separate `entra-owner-mail` unit can update only the existing tenant owner's
+directory `mail`, guarded against identity changes. Its baseline and replacement
+address come from a private `-var-file`, never public stack inputs. Complete the
+Octelium immutable-identity migration first; mail updates may retain the old
+SMTP alias. Follow the [module's review and recovery contract](../modules/entra-owner-mail/README.md)
+before applying or retrying the pilot rename.
+
 `entra-stuhlmuller-domain` reads the existing Entra domain through the
 Microsoft Graph provider, reads the Microsoft-generated TXT verification record,
 and verifies it only after the DNS owner has published that record. It is

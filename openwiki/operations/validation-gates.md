@@ -3,6 +3,121 @@ type: operation
 title: "Validation Gates"
 description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
 tags: ["operations", "validation"]
+sources:
+  - id: openwiki-source-5639384dcb82d59768eb1132
+    resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-7f1128611d8d832ea8e26c38
+    resource: repo://.github/workflows/validate.yml
+  - id: openwiki-source-55e66a93073b222af31dbd6b
+    resource: repo://.talos/patches/nix-builder-seccomp.yaml
+  - id: openwiki-source-d776ebf3a4d179a97fb3c239
+    resource: repo://builds/harbor-core/build.sh
+  - id: openwiki-source-5a4bc495baa769b6a5e9cae2
+    resource: repo://builds/harbor-core/csrf-compat_test.go
+  - id: openwiki-source-8ab7fab142e4f564e8f17f97
+    resource: repo://builds/harbor-core/Dockerfile
+  - id: openwiki-source-06f6e19e20cbeda12ce6f3b0
+    resource: repo://builds/harbor-core/patches/0003-security-dependencies.patch
+  - id: openwiki-source-4809fcf6b821691d424ca089
+    resource: repo://builds/harbor-core/registry-test.py
+  - id: openwiki-source-ce77d7835e45f7370160e6c6
+    resource: repo://builds/harbor-core/signer-test.sh
+  - id: openwiki-source-db4fcfb731a7d9f94926969c
+    resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-9f4d1b63d947cd42e3af68b2
+    resource: repo://clusters/homelab/apps/deluge/README.md
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
+    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
+  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
+    resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-a11878298975bc4bd3bbaf7d
+    resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-f7b4195d4d622f91da5cc07b
+    resource: repo://clusters/homelab/apps/traefik/funnel.yaml
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-2d23b8001d89196fa1eba48a
+    resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-e081ebe342fc946979516883
+    resource: repo://docs/nix-builder-seccomp.md
+  - id: openwiki-source-1247eded2dab9841fec2a345
+    resource: repo://docs/nix-cache.md
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-a3ec8939cc4b10401bd16cd8
+    resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-ebb70c48f85bc6100b070f01
+    resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
+    resource: repo://scripts/ci/harbor-core-scan-check-test.py
+  - id: openwiki-source-6bf00c52458ec78a0c3b6077
+    resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-faf0c71b216725764a045c19
+    resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-0e4e3673c8be0ce1ef65beca
+    resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-9572753e0a38126e57fa7042
+    resource: repo://scripts/ci/multica-desktop-connect-test.py
+  - id: openwiki-source-3b37d159fd7aec286d251f6b
+    resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-47792446a9e092544c3c1857
+    resource: repo://scripts/ci/nix-checks.sh
+  - id: openwiki-source-f6fba8ad33526ba318c4d722
+    resource: repo://scripts/ci/octelium-api-response-test.py
+  - id: openwiki-source-9d1513ec6ffec6dad14a5d87
+    resource: repo://scripts/ci/octelium-entra-oidc-test.py
+  - id: openwiki-source-c7852b586f8f1a45684f7ab4
+    resource: repo://scripts/ci/offline-checks.sh
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-54912e76b9bc176f1d28ff87
+    resource: repo://scripts/ci/policy-bot-webhook-test.py
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
+  - id: openwiki-source-2ec3653fcc5fbc3a0f24c7a1
+    resource: repo://scripts/ci/tailscale-access-check-test.py
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
+  - id: openwiki-source-fc269dae2f6a8501f0c0fb75
+    resource: repo://scripts/ci/tailscale-ci-configure-test.py
+  - id: openwiki-source-4ac432ebb03e57e6e256a336
+    resource: repo://scripts/ci/tailscale-ingress-sign-test.py
+  - id: openwiki-source-511191e55632b55651ad4318
+    resource: repo://scripts/ci/tailscale-private-dns-test.py
+  - id: openwiki-source-bd3e0276a60a943533e8286a
+    resource: repo://scripts/ci/talos-harbor-mirror-credential-test.py
+  - id: openwiki-source-b5db2a15b5e0f805364647e7
+    resource: repo://scripts/ci/talos-harbor-mirrors-test.py
+  - id: openwiki-source-c65516e351b2fe2cbdfc5a79
+    resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
+  - id: openwiki-source-c5bae48eacfc2b48af15ad5a
+    resource: repo://scripts/ci/traefik-routes-test.py
+  - id: openwiki-source-c78947a32d84fb4e618c32da
+    resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-4bbfe00c406fec8a213babcb
+    resource: repo://scripts/nix-builder.py
+  - id: openwiki-source-b4247f9b4622fc86c02f0ce3
+    resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-3a59e2e385041c09f8b021a1
+    resource: repo://scripts/policy-bot-webhook.py
+  - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
+    resource: repo://scripts/tailscale-private-dns-check.py
+  - id: openwiki-source-43db0977cfa60875fd0350f6
+    resource: repo://scripts/talos-harbor-mirror-credential.py
+  - id: openwiki-source-b4d9581a96236cc288a1836f
+    resource: repo://scripts/talos-harbor-mirrors.py
+  - id: openwiki-source-1c2e8ef619584eb7386e226a
+    resource: repo://scripts/talos-nix-builder-seccomp.py
+generated: { by: "codex", at: "2026-10-14T03:46:52.296Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-14T04:07:45.942Z
 ---
 
 # Validation Gates
@@ -11,6 +126,82 @@ tags: ["operations", "validation"]
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
+
+The static wrapper verifies source-bound offline fixture and manifest-policy
+Nix outputs, then runs remaining provider, network and security checks fresh.
+Fixture calls live in `scripts/ci/offline-checks.sh`; source contracts live in
+`offline-static-checks.sh`. CI uses protected-main cache trust with signatures
+and sandboxing. Cache reuse does not replace live plans or runtime acceptance.
+See [signed offline validation](../../docs/nix-cache.md).
+
+The [Linux builder](../../clusters/homelab/apps/nix-builder/README.md) uses
+`NET_ADMIN` to raise loopback in each private Nix network namespace when
+Talos disables user namespaces. That capability also permits Pod networking
+changes; reviewed homelab source remains the trust boundary. Keep strict
+sandbox/signature checks, Pod RuntimeDefault and the dedicated container
+Localhost profile, the 1 GiB reservation/limit,
+serial substitutions and original-Pod/attempt-ID cancellation. Fresh node
+health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt.
+A render or healthy rollout proves neither full-check memory sufficiency nor
+signed cache publication; verify actual substitution in fresh CI separately.
+
+The [dedicated builder seccomp profile](../../docs/nix-builder-seccomp.md)
+is declared separately from container selection. It preserves the captured
+containerd 2.1.4 amd64 builder rules and adds only `pivot_root` while retaining
+the deny-by-default action. Stage 1 installs the named profile on the two
+eligible workers through `talos-nix-builder-seccomp.py`, after protected merge
+and explicit release. The helper requires matching active/persistent configs,
+preserves other profiles, rejects configuration/boot drift, validates strictly,
+and uses a no-reboot apply with bounded exact profile readback, waiting
+for asynchronous controller convergence without repeating apply. Stage 2 may select
+Localhost only for the builder container after both node files are verified.
+The current manifest declares that container-only selection and retains Pod
+RuntimeDefault. Source/render validation proves neither applied OCI rules nor
+successful publication. Offline validation
+runs nine focused profile tests, including the exact one-syscall baseline
+hash, idempotence, conflicting-profile refusal, configuration races and
+refusal to remove a profile still selected by a Pod, delayed readback,
+wrong content and deadline expiry. Rollback must verify actual file absence;
+authentication or transport failures cannot establish deletion. Read the pinned
+Talos 1.11.3 host path `/var/lib/kubelet/seccomp/profiles`; Kubernetes selection
+stays relative to kubelet as `profiles/<name>`. The initial worker-0 helper
+installed the approved file but stopped at a legacy-path readback. Worker-1
+installation and all selection/publication were held at that failure. After
+the protected path repair, worker 0 was verified read-only and worker 1's first
+released helper completed. Both node files matched the reviewed profile with
+active/persistent agreement and unchanged boots; the original builder remained
+RuntimeDefault at that receipt. Stage 2 still requires exact protected review,
+Argo rollout and actual OCI-profile verification. Retain sandboxing,
+signatures, the 1 GiB limit and fresh preflight before a separately released
+single bounded publication retry; any terminal failure consumes that attempt.
+
+The dated [post-rollout receipt](../../docs/nix-builder-seccomp.md#verified-rollout-publication-headroom-hold)
+records exact Argo revision `6dd7b02c`, a Ready replacement Pod and matching
+running OCI profile, capabilities, sandbox/signature settings and actual 1 GiB
+cgroup limit. At 2026-10-13 05:09 UTC, publication preflight still failed:
+the selected worker had 1243.4 MiB measured headroom against the 1536 MiB guard.
+No publication command or build attempt had run at that receipt; the newly
+approved retry was still unused. Wait for fresh natural headroom and a separate release, or obtain
+explicit approval for a concrete protected capacity change. Never lower the
+guard, alter other workloads, restart Pods or reclaim host caches ad hoc.
+That historical hold did not establish signed publication, warm-CI substitution
+or full-check capacity. The later [signed publication and warm CI receipt](../../docs/nix-builder-seccomp.md#signed-publication-and-warm-ci-receipt)
+records natural headroom recovery to 1589.9 MiB, fresh full preflight and a
+separately released bounded retry on exact main `6dd7b02c`. Both Linux checks
+completed, were signed and published, and passed independent fresh-store
+signature acceptance plus unknown-key/unsigned rejection. Original-Pod cleanup
+passed; peak memory was 905 MiB with no max/OOM/OOM-kill events. Main validation
+run `38349343865` attempt 2, repo job `115167993774`, copied both exact published
+outputs from the committed release URL without rebuilding either check and
+finished successfully with remaining validation fresh. Acceptance applies to
+that exact source tree; later tracked docs change the broad fingerprint. The separate fresh plan-only run `38506080728` completed successfully on signed
+PR #1277 head `12eaf629`, base `0a442055`. Live plan job `115665635536` and its
+policy gate passed fresh API-proxy checks and Terraform planning. Independent
+cluster checks found four Ready nodes without pressure and the original builder
+Ready with its 1GiB limit; Argo was Synced/Healthy/Succeeded at that base. Those
+live checks ran separately from cached offline receipts. Migration apply,
+retirement and further cache publication remain held; merging this docs receipt
+releases none of them.
 
 Deleted-unit cleanup is limited to deployed units under `IaC/bootstrap` and
 `IaC/live`, including removals from the explicit stack. Catalog templates and
@@ -94,6 +285,155 @@ the permissions that protect the workflow from self-administration.
 Keep `--no-auto-init` on the backend-free validation and test commands;
 otherwise Terragrunt can initialize the real S3 backend before running them.
 
+## Tailscale and Traefik foundation
+
+Offline validation runs `traefik-routes-test.py` and
+`install-kubeconfig-test.py`. The first checks the fixed private inventory,
+callback/registry boundaries, Fleet setup denial, and the exact four LAN, four
+bridge, and four overlay `/32` sources for registry port 9443 in both ingress
+policies. Adjacent LAN addresses and ordinary Pod addresses remain outside that
+source boundary. The second checks tokenless API-proxy configuration and
+plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
+and run Conftest on all declared routing resources.
+
+Separately invoke `traefik-runtime-check.py --binary /absolute/path/to/traefik`
+with the declared version to exercise the actual proxy on loopback. It downloads
+nothing and checks Host/path isolation, encoded path rejection, WebSockets, h2c,
+console upstream TLS/SNI, Harbor Authorization preservation, and projected
+certificate reload. Test certificate verification bypasses are confined to this
+local harness. Neither fixture replaces live ingress acceptance.
+
+Private DNS readiness uses the transport-neutral `octelium-api-response.py`
+parser. It checks only the final HTTP/2 response, retains duplicate fields for
+rejection, accepts native `+proto` and gRPC-Web trailer frames, and requires one
+unambiguous unauthenticated status. Focused tests reject conflicting statuses,
+earlier-response confusion, and malformed bodies before DNS can change.
+
+Validate and test the Tailscale provider module, compare the complete live policy,
+and import the existing ACL before the private authenticated saved plan. Do not
+apply a plan that replaces the existing ACL. After foundation adoption, the
+Tailnet Lock addition must create exactly three scoped CI auth keys and preserve
+the ACL and dormant federated identities. Keep state, tokens and saved plans
+private. Generation rotation must replace keys, not merely update a description.
+
+Offline validation also runs the fixed ingress signer and CI publisher tests. They
+reject wrong proxy ownership/identity, wrong tailnet or signing profile, stale or
+unsigned main, misplaced secrets, invalid provider keys, and unsafe private cache
+permissions. Signer fixtures also cover the CLI's null empty peer classes before
+any proxy is visible and after every proxy is signed. Publisher fixtures use
+distinct delegated and trusted signer keys. They reject missing, ambiguous or
+unrelated trust changes after signing, and mismatched cached authority identities
+or metadata. Publication tests require all three secret writes and metadata
+checks before deleting the old variables, reuse cached signatures on retry, and
+restrict authority retirement to previous generations. Retirement regressions
+corrupt each current or previous record, including later list positions, and
+require both preview and execution to fail with zero removals, unchanged cache,
+and no signing/publication. They also cover target drift after preflight and
+already-absent previous authority retries. Pending-receipt regressions cover
+lagging readback, timeout/retry without re-signing, durable cache replay after a
+partial write, and preview/retirement refusal while a receipt remains. Narrow
+orphan-recovery fixtures require exact provider/Mac/time metadata, no published
+fixed secrets and an empty binary affected-signature lookup; malformed, populated
+or failed lookups and unrelated trust drift stop removal. Mock provider tests cover
+tag, expiry and explicit-rotation contracts; real provider planning remains the
+proof of replacement behavior.
+
+Before mesh acceptance, run `tailscale-ingress-sign.py` in preview mode, then
+execute only from reviewed current main. Each proxy's public node and rotation
+keys must match the exact controller-owned Kubernetes resource and local lock
+peer. Tailnet approval and a Ready Pod alone do not prove a valid signature.
+
+Before traffic cutover, verify observed Argo revision and health, certificate
+readiness, real mesh application access, Fleet device check-in, native Cordium
+execution/reconnection, and an uncached Talos registry pull from every node.
+Converge the exact LAN/bridge/overlay source policies before host-only node migration;
+a successful mapping or loopback preflight does not prove the node's SNAT path.
+Prove callback
+admin/root rejection off mesh and actual signed webhook delivery. Run protected
+CI plan/apply through the operator API proxy, with a denied real plan-identity
+write. Local tests and HTTP health alone do not satisfy these gates.
+
+The retained ambient `octelium-client` is an authenticated principal, so the
+private TLS listener temporarily permits its exact service account on 8443.
+The focused regression rejects wrong namespace/account identities and callback
+or registry ports, and requires the matching exact Pod/namespace NetworkPolicy
+selector. Require connector readiness and authenticated native API access after
+CoreDNS reconciliation; offline assertions do not prove live authorization.
+
+The Talos helper regression covers full active/persistent resource capture,
+additional-document divergence, a normal STATE-only boot with active version 1,
+missing persistent after a later active change, duplicate resources, read failure,
+and missing active config. Those checks repeat before and after apply while
+preserving the node identity, configuration-scope and no-reboot gates.
+
+The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
+the repository and live Deployment explicitly declare zero replicas and no
+live replicas remain. This accounts for Traefik's static ClusterIP backend
+while AFFiNE is suspended. All other application 5xx responses fail; this
+exception does not establish AFFiNE runtime health.
+
+The DNS regression includes a dual-address peer whose LoadBalancer Service
+publishes only IPv4: it must produce A records and no AAAA. Probe each published
+address, never synthesize application endpoints from the peer's other family.
+PolicyBot's safe GET probe requires hook HTTP 404 with one valid 20-character
+backend `X-Request-ID`, and root HTTP 404 without that header. Tests reject wrong
+statuses, missing/malformed/duplicate IDs and a root forwarded to the backend.
+This proves routing only; fresh successful signed GitHub delivery proves the
+callback path after cutover. No webhook POST or redelivery is part of preflight.
+The CI publisher test separately requires all three raw signing keys on stdin,
+never arguments or temporary files, with private captured command failures.
+
+Phase 2a removes the public DNS restoration workflow and helper, changes internal
+CoreDNS routing, and advertises n8n's Funnel URL. Confirm Funnel readiness before
+n8n rolls out because it can register hooks on startup. External DNS execution,
+Mac hosts migration, old-TTL expiry and normal canonical DNS/API verification
+remain ordered steps; callback receipts require fresh natural deliveries. Old
+CI and native operator transport stay until their later acceptance stage.
+
+The current Flannel CNI does not enforce NetworkPolicy. Do not count those
+manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
+listener path boundaries and application authentication through their real paths.
+See [ingress](../runbooks/tailnet-ingress.md) and the
+[provider runbook](../../IaC/modules/tailscale-access/README.md).
+
+The additive cutover utilities have focused static tests for fixed DNS ownership,
+Mac credential/profile preservation, bounded same-profile reconnect and carrier
+rollback, non-executing webhook
+preflights, and fresh delivery receipts. DNS API readback is separate from normal
+OS resolution: migrate the owned Mac hosts override, wait the previous DNS TTL,
+then run `tailscale-private-dns-check.py --verify-dns`. The
+[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) retains old access
+until replacement acceptance.
+
+The CI boundary helper is
+`scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated
+tag, permits an empty server-side dry-run patch and requires the identical real
+empty patch to receive the specific admission denial. Its `apply` mode verifies
+the protected tag's administration permission without changing resources.
+
+## Entra owner-mail and Octelium identity checks
+
+Offline validation runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
+native APIs. Static validation separately runs the plan-only tests in
+`IaC/modules/entra-owner-mail`. Together they cover disabled email fallback,
+implicit fallback-user inventory, native empty lists, partial migration retry,
+preserved contact fields, mail-only PATCH scope, current-mail and identity drift,
+and rollback.
+
+Before live work, run `scripts/octelium-entra-oidc.sh --dry-run` with the three
+privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-identity-migration)
+and retain an independent session. Verify immutable owner binding and disabled
+email fallback before email reuse. The owner operator unit requires a private
+`-var-file` with current-mail and identity baselines and an encrypted saved plan;
+inspect that plan privately for exactly one
+`msgraph_update_resource.mail` PATCH containing only `mail`. Follow the
+[module contract](../../IaC/modules/entra-owner-mail/README.md), then verify
+unchanged owner identity, fresh owner access and actual SMTP proxy release.
+Offline tests and a valid plan do not prove Graph alias recalculation, owner
+access, SMTP proxy release, or Mac SSO. The
+[Fleet acceptance checks](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#platform-differences-and-acceptance)
+remain required after the pilot rename.
+
 ## GitHub Workflow Checks
 
 A September 26 protected squash was blocked by an unsigned ancestor despite a
@@ -165,14 +505,15 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
-The live plan's sole diagnostic exception checks the classifier's SHA-256 pinned
-inside the hashed workflow before reading private output. A changed or missing
-helper is not executed; only the fixed withheld error remains. The verified helper
-reports a fixed last-recognized-stage label and the first recognized error hint
-(`aws-auth`, `kubernetes-auth`, `network`, `provider`, `policy`, or `unknown`).
-These are not verified causes: misleading private text can change a label but
-cannot expose its text. Raw output, plans, and credentials remain withheld and
-deleted.
+The live-plan and protected-apply diagnostic exceptions check a classifier's
+SHA-256 inside the hashed workflow before reading private output. A changed or
+missing helper is not executed; only the fixed withheld error remains. The
+live-plan classifier reports a fixed last-recognized-stage label and the first
+recognized error hint (`aws-auth`, `kubernetes-auth`, `network`, `provider`,
+`policy`, or `unknown`); the apply classifier reports only its fixed phase
+label. These are not verified causes: misleading private text can change a
+label but cannot expose its text. Raw output, plans, and credentials remain
+withheld and deleted.
 
 On September 26, PR #970 head `a51a820d` against base `ad91327d` passed the local
 declared read-only plan: bootstrap, all 39 app registrations, and plan policies;
@@ -180,6 +521,22 @@ AzureAD was skipped without local credentials. Protected CI run `36272981407`
 failed at the app stage. Its cause remains unknown; the fixed hints improve the
 next failure report without changing plan behavior or proving a CI fix. Local
 operator credentials, transport, and provider cache differ from CI.
+
+On October 7, 2026 UTC, PR #1219's live plan failed at the application stage.
+A private reproduction identified Harbor's Kubernetes provider `spec.sources`
+tuple reconciliation as the sole application failure. Stored, desired, and live
+source counts were all three; the resource was not tainted, so the existing
+untaint path is inapplicable. The operator-stack addition selects all application
+plans and exposed this blocker. The subsequent protected plan
+[37580800923](https://github.com/Stuhlmuller/homelab/actions/runs/37580800923)
+passed on `861fb9d7` against `427b01ad`, including the aggregate gate, without
+a Harbor repair by this investigation. Keep the required gate intact; if the
+error recurs, follow the [recorded recovery finding](../../docs/ci-cd.md#harbor-provider-plan-blocker-observed-october-7-2026-utc).
+The separate reviewed owner operator plan later applied, with fresh owner
+Octelium sessions verified before and after the mail change. The old SMTP alias
+remained secondary, so the pilot rename was not retried. This operator execution
+does not satisfy or bypass the protected CI plan gate; see the
+[dated migration outcome](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
 
 The Tunnel DNS workflow is also bound to an explicit reviewed main SHA and
 included in that closed credentialed-workflow inventory. It uses only the
@@ -236,8 +593,24 @@ rg -n \
 
 ## Kubernetes Source Checks
 
+`scripts/ci/langfuse-valkey-recovery-test.py` checks stopped-writer guards,
+backup integrity and candidate-only AOF repair. Its optional `--checker` runs
+a synthetic corrupt tail through the matching Valkey 8.0.11 executable.
+The [capture runbook](../../clusters/homelab/apps/langfuse/README.md#valkey-offline-capture-and-candidate-inspection)
+requires offline live guards, off-NAS hashes and measured loss before requesting
+live replacement; fixture success alone is not production recovery.
+
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
+`scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
+dependencies and exercises native key lookup, blocking/deletion, model and
+route restrictions against an in-memory store. It does not prove database
+import, UI revocation or cache invalidation in production.
+`scripts/ci/litellm-native-database-test.py` runs pinned native migrations in
+disposable PostgreSQL as a nonsuperuser owner, then tests concurrent atomic
+import, collision rollback, private file-backed config and persistence of key
+blocks/deletions across repeat startup. The attribution gate now invokes its
+previously uncalled streaming fixture with native auth and isolated SDK caches.
 `scripts/ci/langfuse-staging-check.py` preserves current runtime secret/provider
 contracts and verifies that the incomplete activation hook/template is absent.
 It must pass again after overlapping caller changes. The separate activation
@@ -287,7 +660,7 @@ kubectl kustomize clusters/homelab/apps/octelium-cluster
 kubectl kustomize clusters/homelab/apps/octelium-public
 bash -n \
   scripts/octelium-gateway-dns.sh \
-  scripts/octelium-public-dns.sh \
+  scripts/tailscale-private-dns.sh \
   scripts/octelium-entra-oidc.sh
 scripts/octelium-cluster-bootstrap.sh --help
 ```
@@ -351,16 +724,16 @@ still require authenticated `octeliumctl` with a configured native transport
 or the existing private route. Also verify authenticated console rendering,
 audit queries, and real Cordium execution/reconnects before declaring recovery.
 
-Before treating Tailscale as unnecessary for Kubernetes access, validate both
-human paths from outside the homelab. On the operator workstation, run
+For retained native Cordium access, validate the existing human and Workspace
+paths from outside the homelab. On the operator workstation, run
 `octelium connect -d`, generate the client kubeconfig with `octelium config
 kubernetes-api.homelab`, run its printed export, set the file to mode `0600`,
 and require `kubectl --request-timeout=15s get nodes` to succeed. Repeat the
 config, mode, and `kubectl` check inside a Cordium Workspace, whose client
 session is created automatically. Also require Secret reads and a server-side
 dry-run create to be denied there; Cordium has restricted read-only access.
-Keep the Tailscale fallback until both pass; Talos transport is a separate
-retirement gate.
+Keep Tailscale for private applications and remote Talos/LAN access. These legacy
+checks do not replace the staged Traefik DNS and CI acceptance gates above.
 
 Pass `--octelium-context` and `--homelab-context` when the Octelium control
 plane and homelab connector live in different Kubernetes clusters.
@@ -380,7 +753,7 @@ resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
 secret, or OIDC permission and prints the exact dispatch command plus active
 apply links. Production is restricted to `main`, without reviewer approval;
-PR plans retain their reviewer gate. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
+Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
 match before credentials or live commands.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. Main-only diagnostics use the same production environment.
@@ -419,10 +792,11 @@ Bot webhook probe must use the POST shape GitHub sends and require the app-level
 HTTP 400 webhook validation response, not just any non-404 response.
 
 Rendered Kubernetes policy also enforces the access contract:
-`policy/kubernetes.rego` rejects Tailscale Funnel and classifies every
+`policy/kubernetes.rego` rejects unreviewed Tailscale Funnel and classifies every
 gateway-attached `VirtualService`, every `Gateway`, and every `Ingress` except
 the explicit `compass-discovery` class as externally reachable by default.
-Those resources must declare `homelab.rst.io/access-plane: octelium`; only
+Legacy resources must declare `homelab.rst.io/access-plane: octelium`; the two
+reviewed Traefik-backed Tailscale callback Ingresses are explicitly allowed. Only
 gatewayless or mesh-only `VirtualService` resources and Compass discovery
 entries are exempt. The policy also requires reviewed
 `homelab.rst.io/public-callback-*` annotations for unauthenticated callback
@@ -792,15 +1166,12 @@ apply cannot become the new successful checkpoint while skipping an unknown
 deleted-unit range. Manual-dispatch secret scans cover `HEAD^..HEAD`; the
 working-tree Gitleaks scan still covers the complete checkout.
 
-On October 3, the latest successful full checkpoint remained
-[`82ebd734` / run 33680144179](https://github.com/Stuhlmuller/homelab/actions/runs/33680144179).
-The pre-Fleet-identity `main` revision `58ecf587` already changed the
-Grafana/Octelium AzureAD catalog inputs and shared root since that checkpoint;
-the Azure provider contract and outstanding range therefore need verification
-before the next full apply. The focused Fleet identity operator path and Entra
-OIDC verification do not advance this checkpoint. Recovery requires a reviewed
-successful full apply across the outstanding range; never relabel a
-targeted run or manually skip the unapplied range. See the
+On October 7, [full apply run 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+succeeded at signed `main` commit `f47cf006e1108f2c1d13f7d002b0611fcdfc22df`.
+That revision is now the checkpoint. The focused Fleet identity operator path
+and Entra OIDC verification do not advance this checkpoint. Later recovery
+still requires a reviewed successful full apply across its outstanding range;
+never relabel a targeted run or manually skip an unapplied range. See the
 [Fleet Free identity runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#repository-operator-workflow).
 
 GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
@@ -827,6 +1198,24 @@ with the risk. Desired state must be represented in the repo before applying it.
 
 - `docs/validation-runbook.md`
 - `.agents/skills/terragrunt-workflows/SKILL.md`
+
+## Deluge daemon health
+
+Run `nix develop --command python3 -I scripts/ci/deluge-daemon-status-test.py`
+for aggregate counts, missing/malformed credentials, RPC failure and timeout,
+malformed replies, and disconnect failures. These offline coroutine tests mock
+Deluge/Twisted; they do not prove reactor behavior in the deployed image.
+Render app-template 4.4.0 and the Deluge Kustomization, verifying that app and
+daemon-metrics both mount `/scripts/daemon-status.py` and retain their existing
+timeouts and VPN gating.
+
+After reviewed Argo reconciliation, run
+`kubectl -n media exec deploy/deluge -c app -- timeout 25s python3 -B /scripts/daemon-status.py`.
+Require zero exit status, expected torrent count, healthy cached RPC/VPN
+metrics, a serving Service endpoint and successful access through the original
+route. A direct loopback check alone does not prove browser access. See the
+[Deluge runbook](../../clusters/homelab/apps/deluge/README.md#troubleshooting)
+and [October incident](deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure).
 
 ## Gluetun CPU capture
 
@@ -1063,8 +1452,8 @@ server and dump client both permit 512 MiB packets for stored MDM packages.
 The targeted protected apply validates existing platform readiness before shared
 SSM/IAM reconciliation and Fleet registration. The fixed Fleet mirror inventory
 must match the application's rendered images exactly and remain a subset of the
-full reviewed inventory; scoped publication retains digest and complete anonymous
-pull verification. Require published Harbor digests,
+full reviewed inventory; scoped publication retains digest and complete authenticated
+Harbor-pull verification. Require published Harbor digests,
 ready workloads and secrets, Bound claims, the pinned public version, blocked
 setup aliases, authenticated administrator access and the PostSync backup's
 verified-publication log. Nightly recurrence, offsite recovery, actual device
@@ -1147,12 +1536,92 @@ enrollment compatibility.
 
 ## Harbor OCI rollout
 
+The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
+to offline fixtures. It checks verified source preparation, patch validation,
+retained original-manager baseline, hash mismatch refusal, unexpected archive
+roots, escaping symlinks and nonempty-context refusal without network access.
+The Linux `harbor-core-compatibility` job declares read-only contents and uses a
+checkout without persisted credentials. It builds the pinned candidate: original
+repeated-child failure must precede repaired manager tests, upstream API generation,
+and complete core compilation. Networking is disabled for tests/build after
+dependency download. No production inputs are mounted.
+The candidate also runs the complete CSRF middleware suite and ten browser/session
+compatibility cases against the replacement library. They require valid same-origin
+requests and legacy response headers, reject cross-site/same-site browser requests,
+and retain the non-session API exemption. The middleware unit tests use in-memory
+configuration; their unused PostgreSQL bootstrap is removed.
+The native suite also accepts a trusted JWK and rejects attacker key material
+using its key ID. A compiled-package graph guard fails if core introduces
+OpenPGP or Distribution proxy/storage/handler server packages. These are
+specific prerequisite checks; unfiltered module-level findings remain in the
+audit receipts and final-container/component scans are still required.
+The Linux job runs the checker and private runtime-audit command for the exact
+Docker-saved candidate. Offline regressions refuse wrong image/config identity,
+platform/distro, stale or invalid databases, filters/exclusions, and available
+fixes, while retaining unresolved findings unchanged. A privacy case requires
+sanitized receipts to omit raw image metadata and explicitly deny CVE clearance.
+Full registry and runtime acceptance still needs fresh Linux CI evidence.
+Core publication regression cases additionally require one fixed subject,
+dedicated workflow/current-main binding, complete private pulls before signing,
+the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
+pull/digest/signature failures. The credentialed job inventory and canonical
+workflow hash enroll both the publisher and pinned-reference reporting job;
+dispatch verification precedes checkout and repeats before credentials.
+No publication workflow has been dispatched as part of these source tests.
+The Harbor Core publication workflow runs the pinned public Chainguard signer
+fixture before AWS credential configuration, and `validate` runs the same fixture.
+It imports a disposable P-256 key, requires the emitted public key to equal
+OpenSSL's output, and checks the signing API flags used by the producer. A
+dated 2026-10-11 read-only check found a production reviewer, but the current
+source contract now declares automatic plan/production environments, with
+production restricted to the exact `main` branch. Recheck live settings before
+dispatch; source configuration alone is not live acceptance.
+The merged publisher suite retains current-main anonymous source staging and
+reader-authenticated destination-pull checks alongside the fixed-core cases. Its native
+offline OCI fixture still verifies multi-platform and repeated-descriptor
+byte preservation with network transports rejected.
+The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
+unchanged registry push/pull of eight repeated child descriptors and all blobs,
+with exactly one database relation. Offline fixtures also validate the OCI
+payload hashes, reject upload locations outside the disposable endpoint, and
+require no published host ports, internal networking and core health ordering.
+The registry client shares the proxy's network namespace and uses its loopback
+listener; this avoids publishing a port from an internal-only Docker bridge.
+Passing this fixture does not prove full-catalog or CVE-free publication;
+see the [candidate gates](../../builds/harbor-core/README.md).
+
 Harbor requires chart/Kustomize rendering, bootstrap and transport regression
 tests, policy checks, and a state-backed Terragrunt plan. Live acceptance adds
 verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
+publication gates. Its native staging test uses generated local OCI fixtures
+and actual Skopeo, rejecting network transports and requiring exact root and
+both architecture-child manifest digests through `dir:` staging and a second
+copy. The fixture retains repeated child descriptors; omitting all-platform
+copying fails the original-index digest assertion. This gate requires Skopeo,
+not Docker or production credentials. It proves local staging behavior;
+complete Harbor pulls, destination signatures, scans and live consumers still
+require separate acceptance.
+
+`talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
+profile names, inherited AWS credentials and proxies, stale main, and leaked
+values while exercising the owner-only credential materializer. The Talos
+regression then limits the auth patch to `robot$mirror+pull`, rejects unrelated
+Harbor auth, and verifies rollback removes only that owned entry. An executable
+ordinary mirror rollout requires supplied reader auth unless its captured config already has the
+owned reader auth. The missing-reader fixture reaches neither Harbor receipt
+checks nor candidate machine-config rendering or `apply-config`. These fixtures
+do not read SSM or change a node.
+
+The fixed Traefik publication scope retains all-platform digest, tag alias and
+fresh complete authenticated Harbor-pull checks. The Talos regression rejects scoped,
+untitled and mismatched-revision run receipts as full-catalog evidence before
+provenance or registry access; cluster-wide mirror verification requires
+`Mirror all @ <run head SHA>` and the unchanged publication bundle.
 
 The full Harbor chart is rendered twice to reject randomly generated state,
 then combined with the owned manifests to validate prerequisite references and

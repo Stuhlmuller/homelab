@@ -6,6 +6,7 @@ import contextlib
 import copy
 import importlib.util
 import io
+from itertools import combinations
 import json
 import tempfile
 import threading
@@ -23,6 +24,7 @@ SPEC.loader.exec_module(bootstrap)
 ADMIN = "TestAdmin1-do-not-log"
 PASSWORDS = {("homelab", "pull"): "TestPull1-do-not-log",
              ("homelab", "publisher"): "TestPush1-do-not-log",
+             ("mirror", "pull"): "TestMirrorPull1-do-not-log",
              ("mirror", "publisher"): "TestMirrorPush1-do-not-log"}
 
 
@@ -70,15 +72,17 @@ class HarborAPI:
         if path == "/registries" and method == "POST":
             identifier = max((item["id"] for item in self.registries.values()), default=0) + 1
             self.registries[body["name"]] = {**copy.deepcopy(body), "id": identifier}
-            return 201, self.registries[body["name"]], {}
+            return 201, b"", {"Location": f"/api/v2.0/registries/{identifier}"}
         if path.startswith("/replication/policies?"):
             query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
             policy = self.replication_policies.get(query.get("name", [""])[0])
             return 200, ([policy] if policy else []), {}
         if path == "/replication/policies" and method == "POST":
+            if len(body["trigger"]["trigger_settings"]["cron"].split()) != 6:
+                return 400, {"error": "invalid cron string"}, {}
             identifier = max(self.replication_policies.values(), key=lambda item: item["id"], default={"id": 0})["id"] + 1
             self.replication_policies[body["name"]] = {**copy.deepcopy(body), "id": identifier}
-            return 201, self.replication_policies[body["name"]], {}
+            return 201, b"", {"Location": f"/api/v2.0/replication/policies/{identifier}"}
         if path.startswith("/replication/policies/"):
             identifier = int(path.rsplit("/", 1)[1])
             policy = next((item for item in self.replication_policies.values() if item["id"] == identifier), None)
@@ -196,7 +200,7 @@ class BootstrapTest(unittest.TestCase):
         self.assertTrue(bootstrap.validate_replication_policy())
         desired = bootstrap.desired_replication_policy(bootstrap.CHAINGUARD_REPLICATION["rules"][0], 42)
         self.assertEqual(desired["src_registry"], {"id": 42})
-        self.assertEqual(desired["trigger"]["trigger_settings"], {"cron": "0 * * * *"})
+        self.assertEqual(desired["trigger"]["trigger_settings"], {"cron": "0 0 * * * *"})
         self.assertFalse(desired["replicate_deletion"])
         self.assertTrue(desired["override"])
         self.assertTrue(desired["enabled"])
@@ -209,6 +213,24 @@ class BootstrapTest(unittest.TestCase):
         rule = bootstrap.CHAINGUARD_REPLICATION["rules"][0]
         desired = bootstrap.desired_replication_policy(rule, 42, paused=True)
         self.assertFalse(desired["enabled"])
+
+    def test_native_policy_omits_false_replication_flag(self):
+        desired = bootstrap.desired_replication_policy(bootstrap.CHAINGUARD_REPLICATION["rules"][0], 42)
+        actual = copy.deepcopy(desired)
+        actual.pop("replicate_deletion")
+        self.assertTrue(bootstrap.replication_matches(actual, desired))
+        actual["replicate_deletion"] = None
+        self.assertTrue(bootstrap.replication_matches(actual, desired))
+        actual["replicate_deletion"] = True
+        self.assertFalse(bootstrap.replication_matches(actual, desired))
+
+    def test_creation_location_is_scoped_to_the_requested_endpoint(self):
+        self.assertEqual(bootstrap.created_id({"Location": "/api/v2.0/registries/42"}, "/registries"), 42)
+        for location in ("", "/api/v2.0/registries/0", "/api/v2.0/robots/42",
+                         "https://example.invalid/api/v2.0/registries/42",
+                         "/api/v2.0/registries/42?redirect=true"):
+            with self.subTest(location=location), self.assertRaises(bootstrap.BootstrapError):
+                bootstrap.created_id({"Location": location}, "/registries")
 
     def test_empty_or_duplicate_replication_rules_are_rejected(self):
         empty = copy.deepcopy(bootstrap.CHAINGUARD_REPLICATION)
@@ -238,12 +260,19 @@ class BootstrapTest(unittest.TestCase):
                     name = path.split("=", 1)[1]
                     return ([self.policies[name]] if name in self.policies else []), {}
                 if path == "/replication/policies" and method == "POST":
+                    if len(body["trigger"]["trigger_settings"]["cron"].split()) != 6:
+                        raise bootstrap.APIError(400)
+                    assert json_response is False
                     policy = {**body, "id": 7 + len(self.policies)}
                     self.policies[body["name"]] = policy
-                    return policy, {}
+                    return None, {"Location": f"/api/v2.0/replication/policies/{policy['id']}"}
                 if path.startswith("/replication/policies/") and method == "GET":
                     identifier = int(path.rsplit("/", 1)[1])
-                    return next(policy for policy in self.policies.values() if policy["id"] == identifier), {}
+                    policy = next(policy for policy in self.policies.values() if policy["id"] == identifier)
+                    response = {**policy, "src_registry": {**policy["src_registry"], "name": "cgr.dev"},
+                                "dest_registry": None}
+                    response.pop("replicate_deletion")
+                    return response, {}
                 raise AssertionError((method, path))
 
         client = Client()
@@ -259,7 +288,7 @@ class BootstrapTest(unittest.TestCase):
             ("GET", "/replication/policies/8"),
         ])
         policy = client.policies["chainguard-python"]
-        self.assertEqual(policy["trigger"]["trigger_settings"], {"cron": "0 * * * *"})
+        self.assertEqual(policy["trigger"]["trigger_settings"], {"cron": "0 0 * * * *"})
         self.assertFalse(policy["replicate_deletion"])
         self.assertTrue(policy["override"])
         self.assertFalse(policy["filters"][0].get("flatten", False))
@@ -279,8 +308,9 @@ class BootstrapTest(unittest.TestCase):
                 if path == "/registries?name=cgr.dev":
                     return ([] if self.registry is None else [self.registry]), {}
                 if path == "/registries" and method == "POST":
+                    assert json_response is False
                     self.registry = {**body, "id": 42}
-                    return self.registry, {}
+                    return None, {"Location": "/api/v2.0/registries/42"}
                 if path == "/registries/42":
                     return self.registry, {}
                 raise AssertionError((method, path))
@@ -293,6 +323,19 @@ class BootstrapTest(unittest.TestCase):
             ("POST", "/registries"),
             ("GET", "/registries/42"),
         ])
+
+    def test_harbor_null_insecure_registry_field_matches_false(self):
+        class Client:
+            def request(self, method, path, body=None, expected=(200,), json_response=True):
+                registry = {"id": 42, "name": "cgr.dev", "url": "https://cgr.dev",
+                            "type": "docker-registry", "insecure": None,
+                            "credential": None}
+                if path == "/registries?name=cgr.dev" or path == "/registries/42":
+                    return ([registry] if "?" in path else registry), {}
+                raise AssertionError((method, path))
+
+        registry = bootstrap.reconcile_registry(Client(), "cgr.dev")
+        self.assertIsNone(registry["insecure"])
 
     def tearDown(self):
         self.server.shutdown()
@@ -335,7 +378,7 @@ class BootstrapTest(unittest.TestCase):
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
-        self.assertEqual(len(original), 3)
+        self.assertEqual(len(original), 4)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
         for project_name, settings in bootstrap.PROJECTS.items():
             for name in settings["robots"]:
@@ -343,12 +386,13 @@ class BootstrapTest(unittest.TestCase):
                              if robot["name"] == bootstrap.robot_name(name, project_name))
                 self.assertEqual(robot["permissions"], bootstrap.permissions(name, project_name))
                 self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[(project_name, name)])
-        self.assertNotEqual(self.api.passwords[2], self.api.passwords[3])
+        self.assertEqual(len(set(self.api.passwords.values())), len(self.api.passwords))
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots, original)
         self.assertEqual([(method, path) for method, path, _ in self.mutations()],
-                         [("PATCH", "/robots/1"), ("PATCH", "/robots/2"), ("PATCH", "/robots/3")])
+                         [("PATCH", "/robots/1"), ("PATCH", "/robots/2"),
+                          ("PATCH", "/robots/3"), ("PATCH", "/robots/4")])
 
     def test_reconciles_public_project_and_robot_drift_without_touching_other_robots(self):
         self.reconcile()
@@ -376,12 +420,16 @@ class BootstrapTest(unittest.TestCase):
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
         self.assertEqual(self.api.projects["homelab"], homelab)
         self.assertEqual({key: self.api.robots[key] for key in (1, 2)}, private_robots)
-        mirror_robot = self.api.robots[3]
-        self.assertEqual(mirror_robot["name"], "robot$mirror+publisher")
-        self.assertEqual(mirror_robot["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
+        mirror_pull = self.api.robots[3]
+        self.assertEqual(mirror_pull["name"], "robot$mirror+pull")
+        self.assertEqual(mirror_pull["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
+            {"resource": "repository", "action": "pull", "effect": "allow"}]}])
+        mirror_publisher = self.api.robots[4]
+        self.assertEqual(mirror_publisher["name"], "robot$mirror+publisher")
+        self.assertEqual(mirror_publisher["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
             {"resource": "repository", "action": "pull", "effect": "allow"},
             {"resource": "repository", "action": "push", "effect": "allow"}]}])
-        mirror_robot["permissions"][0]["namespace"] = "homelab"
+        mirror_publisher["permissions"][0]["namespace"] = "homelab"
         self.api.requests.clear()
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.mutations(), [])
@@ -553,9 +601,10 @@ class BootstrapTest(unittest.TestCase):
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.robots, {})
 
-    def test_shared_publisher_secret_fails_before_network(self):
-        with patch.dict(PASSWORDS, {("mirror", "publisher"): PASSWORDS[("homelab", "publisher")]}):
-            self.assertEqual(self.main()[0], 1)
+    def test_shared_robot_secret_fails_before_network(self):
+        for first, second in combinations(PASSWORDS, 2):
+            with self.subTest(first=first, second=second), patch.dict(PASSWORDS, {second: PASSWORDS[first]}):
+                self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.requests, [])
 
     def test_invalid_secret_fails_without_network_or_leak(self):

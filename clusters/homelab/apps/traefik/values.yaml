@@ -1,0 +1,106 @@
+serviceAccount:
+  traefik: {}
+controllers:
+  traefik:
+    serviceAccount:
+      identifier: traefik
+    pod:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsUser: 65532
+        runAsGroup: 65532
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+    containers:
+      app:
+        image:
+          repository: docker.io/library/traefik
+          tag: v3.7.14@sha256:575fa15b135078fe5e50aa847987d96dbddd7b093c172429618404df73f3fa7c
+        args:
+          - --global.checknewversion=false
+          - --global.sendanonymoususage=false
+          - --providers.file.directory=/etc/traefik/dynamic
+          - --providers.file.watch=true
+          - --entrypoints.web.address=:8000
+          - --entrypoints.web.http.redirections.entrypoint.to=:443
+          - --entrypoints.web.http.redirections.entrypoint.scheme=https
+          - --entrypoints.websecure.address=:8443
+          - --entrypoints.websecure.transport.respondingtimeouts.readtimeout=0
+          - --entrypoints.funnel.address=:8080
+          - --entrypoints.funnel.forwardedheaders.trustedips=10.244.0.0/16
+          - --entrypoints.registry.address=:9443
+          - --entrypoints.health.address=:9000
+          - --ping=true
+          - --ping.entrypoint=health
+          - --log.format=json
+          - --accesslog=true
+          - --accesslog.format=json
+          - --accesslog.fields.headers.defaultmode=drop
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [ALL]
+        probes:
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet: {path: /ping, port: 9000}
+              periodSeconds: 10
+              timeoutSeconds: 3
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet: {path: /ping, port: 9000}
+              periodSeconds: 30
+              timeoutSeconds: 3
+service:
+  private:
+    controller: traefik
+    primary: true
+    type: LoadBalancer
+    loadBalancerClass: tailscale
+    annotations:
+      tailscale.com/hostname: homelab-ingress
+      tailscale.com/tags: tag:homelab-ingress
+      homelab.rst.io/access-plane: tailscale
+    ports:
+      http: {port: 80, targetPort: 8000}
+      https: {port: 443, targetPort: 8443}
+  funnel:
+    controller: traefik
+    type: ClusterIP
+    ports:
+      http: {port: 8080, targetPort: 8080}
+  registry:
+    controller: traefik
+    type: ClusterIP
+    clusterIP: 10.96.0.50
+    ports:
+      https: {port: 443, targetPort: 9443}
+persistence:
+  dynamic:
+    type: custom
+    volumeSpec:
+      projected:
+        defaultMode: 0444
+        sources:
+          - configMap:
+              name: traefik-routes
+          - secret:
+              name: traefik-tls
+    globalMounts:
+      - path: /etc/traefik/dynamic
+        readOnly: true
+  tmp:
+    type: emptyDir

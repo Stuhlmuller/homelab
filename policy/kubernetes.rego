@@ -100,12 +100,32 @@ deny contains msg if {
 }
 
 deny contains msg if {
-	metadata := object.get(input, "metadata", {})
-	annotations := object.get(metadata, "annotations", {})
+	funnel_enabled
+	not reviewed_funnel_ingress
+	msg := "Tailscale Funnel is restricted to the two reviewed Traefik callback Ingresses"
+}
+
+funnel_enabled if {
+	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
+	truthy(object.get(annotations, "tailscale.com/funnel", "false"))
+}
+
+funnel_enabled if {
+	annotations := object.get(object.get(input, "metadata", {}), "annotations", {})
 	truthy(object.get(annotations, "homelab.rst.io/public-funnel", "false"))
-	kind := object.get(input, "kind", "<unknown>")
-	name := object.get(metadata, "name", "<unknown>")
-	msg := sprintf("%s %q enables Tailscale Funnel; external callbacks must use the Octelium public connector path instead", [kind, name])
+}
+
+reviewed_funnel_ingress if {
+	input.kind == "Ingress"
+	input.metadata.namespace == "traefik"
+	input.metadata.name in {"n8n-webhook", "policy-bot-hook"}
+	input.metadata.annotations["homelab.rst.io/access-plane"] == "tailscale"
+	input.metadata.annotations["homelab.rst.io/public-callback"] == "true"
+	input.metadata.annotations["tailscale.com/tags"] == "tag:homelab-funnel"
+	input.spec.ingressClassName == "tailscale"
+	input.spec.defaultBackend == {"service": {"name": "traefik-funnel", "port": {"number": 8080}}}
+	input.spec.tls == [{"hosts": [input.metadata.name]}]
+	object.get(input.spec, "rules", []) == []
 }
 
 deny contains msg if {
@@ -131,6 +151,7 @@ deny contains msg if {
 deny contains msg if {
 	public_external_route
 	not octelium_access_plane
+	not reviewed_funnel_ingress
 	kind := object.get(input, "kind", "<unknown>")
 	name := object.get(object.get(input, "metadata", {}), "name", "<unknown>")
 	msg := sprintf("%s %q exposes a public route and must declare homelab.rst.io/access-plane=octelium", [kind, name])

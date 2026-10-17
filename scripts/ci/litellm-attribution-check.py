@@ -5,6 +5,7 @@ httpx==0.28.1 and opentelemetry-sdk==1.25.0.
 import asyncio
 import base64
 from contextvars import ContextVar
+from contextlib import contextmanager
 from datetime import datetime
 from hashlib import sha256
 import importlib
@@ -32,6 +33,8 @@ from litellm.litellm_core_utils.litellm_logging import StandardLoggingPayloadSet
 from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
 from litellm.llms.openai.openai import OpenAIChatCompletion
 from litellm.proxy._types import ProxyException
+from litellm.proxy._types import UserAPIKeyAuth
+from litellm.caching.caching import DualCache
 from litellm.proxy.common_utils.http_parsing_utils import _read_request_body
 from litellm.proxy.litellm_pre_call_utils import add_litellm_data_to_request
 from litellm.proxy.types_utils.utils import get_instance_fn
@@ -41,13 +44,18 @@ from litellm.utils import get_optional_params
 from opentelemetry.sdk.trace import TracerProvider
 
 ROOT = Path(__file__).resolve().parents[2]
+FIXTURE_PROVIDER = "sk" + "-or-" + "p" * 48
+fixture_key_directory = None
 sys.path.insert(0, str(ROOT / "clusters/homelab/apps/litellm"))
 gateway_launcher = importlib.import_module("gateway")
+native_keys = importlib.import_module("native_keys")
 assert "tag: main-v1.80.8-stable@" in (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text(), \
     "Update the attribution check and CI dependency when changing the gateway version"
 values = yaml.safe_load((ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
 assert values["command"] == ["python", "/etc/litellm-hooks/gateway.py"], "Native CLI alone bypasses admission"
 assert values["numWorkers"] == 1, "Guarded gateway scales Pods, not worker processes"
+assert values["proxy_config"]["general_settings"]["store_model_in_db"] is True, "UI provider credentials require the native database cache"
+assert values["proxy_config"]["general_settings"]["supported_db_objects"] == [], "Keep model and non-LLM routing in Git"
 kustomization = yaml.safe_load((ROOT / "clusters/homelab/apps/litellm/kustomization.yaml").read_text())
 hook_map = next(item for item in kustomization["configMapGenerator"] if item["name"] == "litellm-app-identity")
 assert {"gateway.py", "app_identity.py"} <= set(hook_map["files"]), "Mount launcher and callback together"
@@ -83,6 +91,17 @@ with patch.object(LangfuseOtelLogger, "_init_otel_logger_on_litellm_proxy"):
         config=OpenTelemetryConfig(headers=fixture_config.headers), tracer_provider=TracerProvider())
 
 
+async def fixture_key_object(hashed_token, check_cache_only=False, **kwargs):
+    if check_cache_only:
+        return None
+    for app in identity.APPS:
+        key = (fixture_key_directory / app).read_text().strip()
+        if sha256(key.encode()).hexdigest() == hashed_token:
+            return UserAPIKeyAuth(api_key=hashed_token, key_alias=app,
+                                  models=["openrouter/free"], allowed_routes=native_keys.ALLOWED_ROUTES)
+    raise ProxyException(message="Invalid fixture key", type="auth_error", param=None, code=401)
+
+
 class Span:
     def __init__(self):
         self.attributes = {}
@@ -98,11 +117,11 @@ class Span:
 
 
 async def check_failure_telemetry():
-    marker = "test-provider-key-must-not-be-exported"
+    marker = FIXTURE_PROVIDER
     data = {"api_key": marker, "metadata": {}, "proxy_server_request": {
         "headers": {"authorization": marker}, "body": {"api_key": marker},
     }}
-    await identity.attribution.async_pre_call_hook(SimpleNamespace(key_alias="nofx"), None, data, "acompletion")
+    await identity.attribution.async_pre_call_hook(UserAPIKeyAuth(key_alias="nofx"), None, data, "acompletion")
     spans, attempts, captured = [], [], {}
     finished = asyncio.Event()
     logger = identity.langfuse
@@ -183,19 +202,20 @@ async def check_admission():
     """Pure ASGI admission preserves raw bodies, context and response streaming."""
     state = ContextVar("admission_fixture", default="outside")
     reached, outgoing = [], []
+    expected_body = b'{"model":"openrouter/free"}'
     async def downstream(scope, receive, send):
         reached.append(scope["type"])
         state.set("inside")
         if scope["type"] != "http":
             return
         frame = await receive()
-        assert frame["body"] == b'{"model":"fixture"}' and frame["more_body"] is False
+        assert frame["body"] == expected_body and frame["more_body"] is False
         assert await receive() == {"type": "http.disconnect"}
         await send({"type": "http.response.start", "status": 200, "headers": []})
         await send({"type": "http.response.body", "body": b"data: first\n\n", "more_body": True})
         await send({"type": "http.response.body", "body": b"data: [DONE]\n\n"})
     guard = gateway_launcher.TelemetryAdmission(downstream)
-    async def invoke(raw, cached=None, content_type=b"application/json", path="/v1/chat/completions", root_path=""):
+    async def invoke(raw, cached=None, content_type=b"application/json", path="/v1/chat/completions", root_path="", method="POST"):
         frames = iter(({"type": "http.request", "body": raw[:4], "more_body": True},
                        {"type": "http.request", "body": raw[4:], "more_body": False},
                        {"type": "http.disconnect"}))
@@ -205,6 +225,7 @@ async def check_admission():
             outgoing.append(message)
         scope = dict(request().scope)
         scope["path"] = path
+        scope["method"] = method
         scope["root_path"] = root_path
         scope["headers"] = [(b"content-type", content_type), (b"content-length", b"1")]
         if cached is not None:
@@ -212,7 +233,7 @@ async def check_admission():
         outgoing.clear()
         await guard(scope, receive, send)
         return outgoing[0]["status"]
-    assert await invoke(b'{"model":"fixture"}') == 200
+    assert await invoke(b'{"model":"openrouter/free"}') == 200
     assert state.get() == "inside"
     assert outgoing[1]["more_body"] and outgoing[1]["body"] == b"data: first\n\n"
     for raw, cache, content_type in (
@@ -223,8 +244,11 @@ async def check_admission():
         assert await invoke(raw, cache, content_type) == 400
     assert reached == ["http"]
     for path in ("/v1beta/models/fixture:generateContent", "/guardrails/apply_guardrail",
-                 "/openai/v1/chat/completions", "/openai/deployments/fixture/chat/completions"):
+                 "/openai/v1/chat/completions", "/openai/deployments/fixture/chat/completions",
+                 "/key/generate", "/key/update", "/user/new"):
         assert await invoke(b'{"callbacks":[]}', path=path) == 400
+        assert await invoke(b"callbacks=langfuse_otel", content_type=b"application/x-www-form-urlencoded", path=path) == 400
+        assert await invoke(b"{}", cached={"langfuse_host": "https://untrusted.invalid"}, path=path) == 400
     assert await invoke(b'{"callbacks":[]}', path="/gateway/v1/chat/completions", root_path="/gateway") == 400
     with patch.object(gateway_launcher, "MAX_BODY_BYTES", 16):
         assert await invoke(b'{"model":"fixture"}') == 413, "Count bytes, not the misleading Content-Length"
@@ -236,6 +260,10 @@ async def check_admission():
     assert reached == ["http"]
     await guard({"type": "lifespan"}, None, None)
     assert reached == ["http", "lifespan"]
+    assert await invoke(b'{"model":"openrouter/free","litellm_credential_name":"untrusted"}') == 400
+    expected_body = b'{"credential_name":"openrouter","credential_values":{"api_key":"fixture"}}'
+    for path, method in (("/credentials", "POST"), ("/credentials/openrouter", "PATCH")):
+        assert await invoke(expected_body, path=path, method=method) == 200
 
 
 def check_launcher():
@@ -251,12 +279,15 @@ def check_launcher():
         kwargs["tracer_provider"] = TracerProvider()
         native_init(self, *args, **kwargs)
     async def exercise(kwargs):
+        global fixture_key_directory
         lifespan = LifespanOn(uvicorn.Config(**kwargs, lifespan="on"))
         await lifespan.startup()
         assert not lifespan.should_exit, "Native proxy startup failed"
         try:
-            proxy_server.user_custom_auth.__globals__["KEY_DIRECTORY"] = Path(directory)
-            assert proxy_server.general_settings["custom_auth"] == fixture_auth
+            fixture_key_directory = Path(directory)
+            proxy_server.prisma_client = SimpleNamespace()
+            assert proxy_server.user_custom_auth is None
+            assert "custom_auth" not in proxy_server.general_settings
             assert len(proxy_server.llm_router.model_list) == 1
             logger = next(callback for callback in litellm.callbacks
                           if isinstance(callback, LangfuseOtelLogger))
@@ -298,12 +329,13 @@ def check_launcher():
             assert fixture_key not in str([span.attributes for span in spans])
             assert "fixture-upstream" not in str([span.attributes for span in spans])
         finally:
+            proxy_server.prisma_client = None
             await lifespan.shutdown()
             assert not lifespan.should_exit, "Native proxy shutdown failed"
     def run_uvicorn(**kwargs):
         assert kwargs["workers"] == 1 and kwargs["port"] == 4888
         assert import_from_string(kwargs["app"]) is native_app
-        assert native_app.router.lifespan_context is native_lifespan
+        assert native_app.router.lifespan_context is not native_lifespan
         assert native_app.user_middleware[0].cls is gateway_launcher.TelemetryAdmission
         async def exercise_all():
             await exercise(kwargs)
@@ -311,27 +343,38 @@ def check_launcher():
             # production; keep the remaining SDK fixtures in that same loop.
             await check()
         asyncio.run(exercise_all())
+    @contextmanager
+    def fixture_database_config(path):
+        yield path
+    auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
     with tempfile.TemporaryDirectory(dir="/tmp") as directory, \
             patch.dict(os.environ, {"NUM_WORKERS": "7", "WEB_CONCURRENCY": "8", "OPENAI_API_KEY": "unused"}, clear=True), \
             patch.object(socket.socket, "connect", side_effect=AssertionError("Network forbidden")), \
             patch.object(gateway_launcher, "langfuse_config", return_value=fixture_config), \
+            patch.object(gateway_launcher, "database_config", side_effect=fixture_database_config), \
+            patch.object(gateway_launcher, "import_service_keys", new=AsyncMock()), \
+            patch.object(gateway_launcher, "import_provider_credential", new=AsyncMock()) as import_provider, \
+            patch.object(proxy_server.proxy_config, "get_credentials", new=AsyncMock()) as cache_credentials, \
+            patch.object(native_keys, "provider_api_key", new=AsyncMock(return_value=FIXTURE_PROVIDER)), \
+            patch.object(identity, "provider_api_key", new=AsyncMock(return_value=FIXTURE_PROVIDER)), \
+            patch.object(auth, "get_key_object", side_effect=fixture_key_object), \
             patch.object(LangfuseOtelLogger, "_init_otel_logger_on_litellm_proxy"), \
             patch.object(LangfuseOtelLogger, "__init__", new=initialize_logger), \
             patch.object(uvicorn, "run", side_effect=run_uvicorn) as serve:
         fixture_key = "sk" + "-openclaw-" + "x" * 48
         for name in (*identity.APPS, "operator"):
             (Path(directory) / name).write_text(fixture_key if name == "openclaw" else "sk-other-" + name + "x" * 48)
-        (Path(directory) / "openrouter").write_text("sk" + "-or-" + "p" * 48)
         shutil.copyfile(identity.__file__, Path(directory) / "app_identity.py")
         config = yaml.safe_load((ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())["proxy_config"]
-        fixture_auth = str(Path(directory) / "app_identity") + ".authenticate"
-        config["general_settings"]["custom_auth"] = fixture_auth
+        config["general_settings"]["master_key"] = (Path(directory) / "operator").read_text()
         config["litellm_settings"]["callbacks"] = [str(Path(directory) / "app_identity") + suffix
                                                     for suffix in (".attribution", ".langfuse")]
         config_path = Path(directory) / "config.yaml"
         config_path.write_text(yaml.safe_dump(config))
         gateway_launcher.main(["--config", str(config_path), "--port", "4888", "--num_workers", "3"])
         serve.assert_called_once()
+        import_provider.assert_awaited_once()
+        cache_credentials.assert_awaited_once()
         config = json.loads(os.environ["WORKER_CONFIG"])
         assert config["config"] == str(config_path)
         for flag in ("--run_gunicorn", "--run_hypercorn", "--local"):
@@ -348,9 +391,8 @@ def check_launcher():
 async def check_openclaw_gateway():
     """Real SDK auth, preprocessing, Router and streaming; inert HTTP/exporter."""
     auth = importlib.import_module("litellm.proxy.auth.user_api_key_auth")
-    gateway = (identity.KEY_DIRECTORY / "openclaw").read_text()
-    provider = "sk" + "-or-test-openrouter-provider-key"
-    (identity.KEY_DIRECTORY / "openrouter").write_text(provider)
+    gateway = (fixture_key_directory / "openclaw").read_text()
+    provider = FIXTURE_PROVIDER
     model = "openrouter/free"
     spans, attempts, prepared, logging_setups = [], [], [], []
     finished = asyncio.Event()
@@ -410,8 +452,8 @@ async def check_openclaw_gateway():
     proxy = SimpleNamespace(
         general_settings={}, jwt_handler=None, litellm_proxy_admin_name="operator", llm_model_list=router.model_list,
         llm_router=router, master_key="unused", model_max_budget_limiter=None, open_telemetry_logger=None,
-        prisma_client=None, proxy_logging_obj=SimpleNamespace(post_call_failure_hook=AsyncMock()),
-        user_api_key_cache=None, user_custom_auth=identity.authenticate, premium_user=False,
+        prisma_client=SimpleNamespace(), proxy_logging_obj=SimpleNamespace(post_call_failure_hook=AsyncMock()),
+        user_api_key_cache=DualCache(), user_custom_auth=None, premium_user=False,
     )
     app = FastAPI()
     app.add_middleware(gateway_launcher.TelemetryAdmission)
@@ -461,8 +503,10 @@ async def check_openclaw_gateway():
     try:
         with patch.dict(sys.modules, {"litellm.proxy.proxy_server": proxy}), \
                 patch.object(auth, "enterprise_custom_auth", None), \
+                patch.object(auth, "get_key_object", side_effect=fixture_key_object), \
                 patch.object(auth.verbose_proxy_logger, "error") as auth_errors, \
                 patch.object(OpenAIChatCompletion, "_get_async_http_client", return_value=client), \
+                patch.object(litellm, "in_memory_llm_clients_cache", DualCache()), \
                 patch.object(litellm, "callbacks", [logger]), \
                 patch.object(socket.socket, "connect", side_effect=AssertionError("Network forbidden")), \
                 patch.object(logger, "async_log_success_event", side_effect=success), \
@@ -495,8 +539,8 @@ async def check_openclaw_gateway():
                     # Ordinary auth errors still use the native failure pipeline;
                     # even an echoed provider credential must not reach spans.
                     for credentials, extra, expected in (
-                        ({"Authorization": "Bearer wrong"}, {"api_key": provider}, 401),
-                        ({}, {"api_key": provider}, 401), (headers, {"api_base": "https://untrusted.invalid"}, 401),
+                        ({"Authorization": "Bearer wrong"}, {}, 401),
+                        ({}, {}, 401),
                     ):
                         rejected.clear()
                         result = await gateway_client.post("/v1/chat/completions", headers=credentials,
@@ -512,7 +556,7 @@ async def check_openclaw_gateway():
                     for path in ("/v1/chat/completions", "/v1/completions", "/v1/responses", "/v1/embeddings"):
                         for override in controls:
                             result = await gateway_client.post(path, headers={
-                                **headers, "x-litellm-api-key": (identity.KEY_DIRECTORY / caller).read_text()},
+                                **headers, "x-litellm-api-key": (fixture_key_directory / caller).read_text()},
                                 json={**body, **override})
                             assert result.status_code == 400, f"{caller} accepted logging override; collector redirected={dynamic_tracer.called}"
                             assert not logging_setups, "Reject before function_setup extracts callback controls"
@@ -534,8 +578,8 @@ async def check_openclaw_gateway():
                     assert result.status_code == 400, result.text
                 for invalid_headers, invalid_body, status in (
                     ({"x-litellm-api-key": "wrong", "Authorization": f"Bearer {gateway}"}, {}, 401),
-                    ({"Authorization": ""}, {}, 400), ({"Authorization": f"Basic {provider}"}, {}, 400),
-                    ({"Authorization": "Bearer malformed token"}, {}, 400),
+                    ({"Authorization": ""}, {}, 401), ({"Authorization": f"Basic {provider}"}, {}, 401),
+                    ({"Authorization": "Bearer malformed token"}, {}, 401),
                     ({}, {"model": "openai-default"}, 400), ({}, {"api_key": provider}, 400),
                     ({}, {"headers": {"Authorization": "override"}}, 400),
                     ({}, {"extra_headers": {"Authorization": "override"}}, 400),
@@ -546,17 +590,21 @@ async def check_openclaw_gateway():
                     ({}, {"mock_response": "synthetic"}, 400), ({}, {"mock_timeout": True}, 400),
                     ({}, {"mock_tool_calls": []}, 400), ({}, {"ssl_verify": False}, 400),
                     ({}, {"provider_specific_header": {"Authorization": "override"}}, 400),
-                    ({}, {"api_base": "http://untrusted.invalid"}, 401),
+                    ({}, {"api_base": "http://untrusted.invalid"}, 400),
+                    ({}, {"litellm_credential_name": "untrusted"}, 400),
                 ):
-                    result = await gateway_client.post("/v1/chat/completions", headers={**headers, **invalid_headers},
+                    request_headers = {**headers, **invalid_headers}
+                    if "Authorization" in invalid_headers and "x-litellm-api-key" not in invalid_headers:
+                        request_headers.pop("x-litellm-api-key")
+                    result = await gateway_client.post("/v1/chat/completions", headers=request_headers,
                                                        json={**body, **invalid_body})
-                    assert result.status_code == status, result.text
+                    assert result.status_code == status, (invalid_headers, invalid_body, status, result.text)
                 result = await gateway_client.post("/v1/chat/completions", headers={
-                    "x-litellm-api-key": (identity.KEY_DIRECTORY / "nofx").read_text()}, json=body)
+                    "x-litellm-api-key": (fixture_key_directory / "nofx").read_text()}, json=body)
                 assert result.status_code == 200 and result.json() == {"ok": True}
                 assert len(attempts) == 7
                 result = await gateway_client.post("/v1/chat/completions", headers={
-                    "Authorization": "Bearer " + (identity.KEY_DIRECTORY / "nofx").read_text()}, json={
+                    "Authorization": "Bearer " + (fixture_key_directory / "nofx").read_text()}, json={
                         **body, "api_key": provider, "messages": [{"role": "user", "content": "NOFX strict fixture"}],
                         "response_format": {"type": "json_schema", "json_schema": {
                             "name": "decision", "strict": True, "schema": {"type": "object"}}},
@@ -564,7 +612,7 @@ async def check_openclaw_gateway():
                     })
                 assert result.status_code == 400, result.text
                 assert len(attempts) == 7
-                multica_key = (identity.KEY_DIRECTORY / "multica").read_text()
+                multica_key = (fixture_key_directory / "multica").read_text()
                 multica_headers = {"Authorization": "Bearer " + multica_key}
                 for stream in (False, True):
                     result = await gateway_client.post("/v1/chat/completions", headers=multica_headers,
@@ -573,15 +621,16 @@ async def check_openclaw_gateway():
                 assert len(attempts) == 9
                 for override in ({"api_key": "attacker"}, {"base_url": "https://untrusted.invalid"},
                                  {"model": "openai-default"}, {"extra_body": {}}, {"mock_response": "fake"},
-                                 {"fallbacks": ["openai-default"]}):
+                                 {"fallbacks": ["openai-default"]}, {"litellm_credential_name": "untrusted"}):
                     result = await gateway_client.post("/v1/chat/completions", headers=multica_headers,
                                                        json={**body, **override})
-                    assert result.status_code == (401 if "base_url" in override else 400), result.text
+                    assert result.status_code == 400, result.text
                 for path in ("/v1/responses", "/v1/embeddings"):
                     result = await gateway_client.post(path, headers=multica_headers, json=body)
                     assert result.status_code == 400
-                (identity.KEY_DIRECTORY / "openrouter").write_text("REPLACE_ME")
-                result = await gateway_client.post("/v1/chat/completions", headers=multica_headers, json=body)
+                with patch.object(identity, "provider_api_key", new=AsyncMock(
+                        side_effect=HTTPException(status_code=503, detail="OpenRouter credential is unavailable"))):
+                    result = await gateway_client.post("/v1/chat/completions", headers=multica_headers, json=body)
                 assert result.status_code == 503 and len(attempts) == 9
                 assert multica_key not in str([span.attributes for span in spans])
                 assert any(span.attributes.get("user.id") == "multica" for span in spans)
@@ -610,6 +659,7 @@ async def check_openclaw_gateway():
 
 
 async def check():
+    global fixture_key_directory
     # Real SDK spans cap attributes at 128; OpenClaw advertises 47 tools.
     tracer = TracerProvider().get_tracer("tool-heavy-generation")
     with tracer.start_as_current_span("generation") as span:
@@ -639,20 +689,15 @@ async def check():
         module_path = str(Path(directory) / "app_identity")
         with patch.object(gateway_launcher, "langfuse_config", return_value=fixture_config), \
                 patch.object(LangfuseOtelLogger, "__init__", return_value=None):
-            assert callable(get_instance_fn(module_path + ".authenticate", config_file_path="/etc/litellm/config.yaml"))
             assert hasattr(get_instance_fn(module_path + ".attribution", config_file_path="/etc/litellm/config.yaml"), "async_pre_call_hook")
             assert isinstance(get_instance_fn(module_path + ".langfuse", config_file_path="/etc/litellm/config.yaml"), LangfuseOtelLogger)
-        identity.KEY_DIRECTORY = Path(directory)
+        fixture_key_directory = Path(directory)
         for app in (*identity.APPS, "operator"):
-            (identity.KEY_DIRECTORY / app).write_text(f"sk-{app}-" + "x" * 48)
+            (fixture_key_directory / app).write_text(f"sk-{app}-" + "x" * 48)
+        trusted_provider = FIXTURE_PROVIDER
         for app in identity.APPS:
-            token = (identity.KEY_DIRECTORY / app).read_text()
-            user = await identity.authenticate(request("/models", "GET"), token)
-            assert user.key_alias == app and user.user_id == app
-            assert user.api_key == sha256(token.encode()).hexdigest()
-            for path in ("/key/generate", "/config/update", "/user/new"):
-                await denied(identity.authenticate(request(path), token), 403)
-            await denied(identity.authenticate(request("/v1/models", "DELETE"), token), 403)
+            token = (fixture_key_directory / app).read_text()
+            user = UserAPIKeyAuth(api_key=sha256(token.encode()).hexdigest(), key_alias=app, user_id=app)
             for call_type, metadata_key in (("acompletion", "metadata"), ("aresponses", "litellm_metadata")):
                 marker = "test-provider-key-must-not-be-exported"
                 data = {
@@ -682,7 +727,7 @@ async def check():
                 assert exported["trace_user_id"] == app
                 assert exported["trace_metadata"] == {"app": app}
                 assert exported["tags"] == [f"app:{app}"]
-                assert result["api_key"] == marker, "Provider auth must survive for inference"
+                assert result["api_key"] == trusted_provider, "Only the gateway supplies provider authentication"
                 assert marker not in json.dumps(result["proxy_server_request"], default=str)
                 span = Span()
                 response = {"choices": [{"message": {"role": "assistant", "content": "OK"}}],
@@ -703,24 +748,9 @@ async def check():
                 assert span.attributes["llm.token_count.completion"] == 1
                 assert not span.exceptions
             await denied(identity.attribution.async_pre_call_hook(user, None, {"no-log": True}, "acompletion"), 400)
-        await denied(identity.authenticate(request(), "wrong"), 401)
-        await denied(identity.authenticate(request(), None), 401)
-        await identity.authenticate(request("/health/readiness", "GET"), None)
-        # LiteLLM hashes only sk-/JWT keys itself. Arbitrary rotated keys must
-        # still remain absent from the returned auth object and log metadata.
-        unprefixed = "operator-fixture-" + "z" * 48
-        (identity.KEY_DIRECTORY / "operator").write_text(unprefixed)
-        operator = await identity.authenticate(request(), unprefixed)
-        assert operator.api_key == sha256(unprefixed.encode()).hexdigest()
-        assert unprefixed not in operator.model_dump_json()
-        # Secret volume rotation takes effect without restarting the gateway.
-        old = (identity.KEY_DIRECTORY / "openclaw").read_text()
-        (identity.KEY_DIRECTORY / "openclaw").write_text("sk-rotated-" + "y" * 48)
-        await denied(identity.authenticate(request(), old), 401)
-        (identity.KEY_DIRECTORY / "openclaw").write_text("REPLACE_ME")
-        await denied(identity.authenticate(request(), old), 503)
-    await check_failure_telemetry()
-    print("LiteLLM app authentication, rotation, route isolation and safe Langfuse success/failure telemetry passed")
+        await check_openclaw_gateway()
+        await check_failure_telemetry()
+    print("LiteLLM native authentication, route isolation and safe Langfuse success/failure telemetry passed")
 
 
 if __name__ == "__main__":

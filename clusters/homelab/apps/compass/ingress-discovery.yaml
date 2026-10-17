@@ -319,34 +319,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: compass-discovery-octobot
-  namespace: monitoring
-  labels:
-    compass.adinhodovic.com/enabled: "true"
-  annotations:
-    compass.adinhodovic.com/name: OctoBot
-    compass.adinhodovic.com/urls: "OctoBot=https://octobot.stinkyboi.com"
-    compass.adinhodovic.com/description: Finance bot UI for reviewed trading experiments.
-    compass.adinhodovic.com/icon: selfhst:octobot
-    compass.adinhodovic.com/primary-tag: kubernetes
-    compass.adinhodovic.com/tags: finance
-spec:
-  ingressClassName: compass-discovery
-  rules:
-    - host: octobot.stinkyboi.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: compass
-                port:
-                  number: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
   name: compass-discovery-openclaw
   namespace: monitoring
   labels:

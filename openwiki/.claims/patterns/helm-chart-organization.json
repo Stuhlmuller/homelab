@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3edcc2a214e27b49e5e814eaa8235683b9d5cfbb7843097cd32346d54594f69b",
+  "claims": [
+    {
+      "id": "claim_f813a679b7d145dfbfc81a595d98b9e8",
+      "statement": "Application chart inputs and Git values remain owned by per-app stack files while the shared Terragrunt template generates Argo CD Application metadata and defaults.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/.catalog/units/live/argocd-app/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:313856c605fe5fc327dde5822787950afaf615c29472f627bb51e2346855f764"
+        },
+        {
+          "resource": "repo://IaC/stacks/traefik/stack.hcl",
+          "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-10T19:05:45.723Z"
+  }
+}

@@ -297,8 +297,20 @@ test_allows_exact_plan_stage_classifier if {
 	count(violations) == 0
 }
 
+test_allows_exact_apply_stage_classifier if {
+	violations := deny with input as workflow_with_live_run(classified_apply_run)
+	count(violations) == 0
+}
+
 test_rejects_unverified_plan_stage_classifier if {
 	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [plan_stage_call]))
+	violations := deny with input as workflow_with_live_run(run)
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
+test_rejects_unverified_apply_stage_classifier if {
+	run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n", [apply_stage_call]))
 	violations := deny with input as workflow_with_live_run(run)
 	some msg in violations
 	contains(msg, "withhold sensitive command output")
@@ -345,6 +357,47 @@ test_rejects_modified_plan_stage_classifier if {
 	}
 }
 
+test_rejects_modified_apply_stage_guard if {
+	every replacement in [
+		replace(apply_stage_guard, "a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(apply_stage_guard, "sha256sum --check --status", "true"),
+		replace(apply_stage_guard, "sha256sum", "shasum"),
+		replace(apply_stage_guard, "if sha256sum", "if ! sha256sum"),
+		replace(apply_stage_guard, " --check", ""),
+		replace(apply_stage_guard, " --status", ""),
+		replace(apply_stage_guard, "stage.sh", "other.sh"),
+		replace(apply_stage_guard, " 2>/dev/null", ""),
+		replace(apply_stage_guard, "; then", " || true; then"),
+		sprintf("%s\n  echo extra", [apply_stage_guard]),
+	] {
+		run := replace(classified_apply_run, apply_stage_guard, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_apply_stage_classifier if {
+	every replacement in [
+		`sh scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
+		`bash scripts/ci/other.sh <"$private_log"`,
+		`bash ./scripts/ci/terragrunt-apply-stage.sh <"$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh --verbose <"$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh "$private_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$other_log"`,
+		`bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"; cat "$private_log"`,
+		`cat "$private_log"`,
+		`echo "$private_log details withheld"`,
+		`echo "$line details withheld"`,
+		sprintf("%s\n  echo extra", [apply_stage_call]),
+	] {
+		run := replace(classified_apply_run, apply_stage_call, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_allows_exact_harbor_mirror_status if {
 	violations := deny with input as workflow_with_live_run(harbor_mirror_private_run)
 	count(violations) == 0
@@ -359,7 +412,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "7c925c8f9a41207b63a485f7a27d666623ba777f8c40fdebd20bdbfe4b655bdc", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
@@ -460,6 +513,12 @@ plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3e
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
 
+apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
+
+apply_stage_guard := `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
+
+classified_apply_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [apply_stage_guard, apply_stage_call]))
+
 withheld_catalog_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
@@ -516,4 +575,23 @@ workflow_with_catalog_credential_on_different_step := {
 			{"run": "true", "env": {"OCTELIUM_CATALOG_AUTH_TOKEN": "test"}},
 		],
 	}},
+}
+
+test_encrypted_harbor_artifact_exception_is_exact if {
+	base := workflow_with_live_run(harbor_mirror_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [harbor_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"mirror": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(harbor_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"mirror": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
 }

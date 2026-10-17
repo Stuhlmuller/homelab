@@ -3,6 +3,13 @@ type: operation
 title: "Continuous Improvement"
 description: "Security and reliability stewardship, source-backed finding format, open operational risks, and concrete follow-up gates."
 tags: ["operations", "security", "reliability", "stewardship"]
+sources:
+  - id: openwiki-source-e84e79af70aa76ff1e5928ad
+    resource: repo://docs/argocd-node-pressure-2026-10-10.md
+generated: { by: "codex", at: "2026-10-10T22:45:18.562Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:10:58.872Z
 ---
 
 # Continuous Improvement
@@ -66,6 +73,21 @@ while Dependabot automated fixes stay disabled to avoid duplicate PRs. The
 organization-policy blocker is tracked below.
 
 ## Open Findings
+
+- **Status:** recovered; capacity follow-up open
+- **Area:** Talos / Argo CD reconciliation, 2026-10-10
+- **Evidence:** [Dated incident record](../../docs/argocd-node-pressure-2026-10-10.md).
+  `zimaboard-2` lost kubelet health; its Argo controller stopped reconciling.
+  Automatic eviction and replacement restored reconciliation by 22:38:34 UTC,
+  without manual mutation. Low available memory and high memory/I/O PSI
+  suggest a resource stall; the exact cause remains unproven.
+- **Risk:** Worker capacity remains unresolved. Stale `Healthy`/`Synced` status
+  hid the unobserved merge until revision and reconciliation timestamps were
+  checked. The node hosted a PostgreSQL PVC writer, so force-deletion would
+  have risked concurrent writers.
+- **Next step:** Measure sustained pressure and NFS latency; review controller
+  placement, workload budgets, and stale-reconciliation alerts through reviewed
+  desired state. Preserve database writer fencing during any recovery.
 
 - **Area:** OpenClaw assistant scheduling
 - **Finding:** Before the cleanup rollout, Gateway readiness and SQLite mount
@@ -609,7 +631,7 @@ observations below retain their original dates.
   fault to the gateway-to-wired-segment path rather than the operator host.
   The August 2026 recovery manifest now declares bounded, primary-network
   fallbacks on `acer` for the Octelium control paths, CI API, and 18 additional
-  public WEB Services—19 including OctoBot; it does not grant `acer` the native
+  public WEB Services; it does not grant `acer` the native
   dataplane label.
 - **Risk:** traffic that crosses between the router/Wi-Fi side and the wired
   homelab appears to hang even when the NAS and wired switch fabric are healthy.
@@ -874,7 +896,7 @@ observations below retain their original dates.
   `audit`/`warn` Pod Security labels. The fixes keep required
   `enforce: privileged` exceptions for Deluge VPN, Istio ingress, Octelium,
   Octelium client, Tailscale, and the host-networked GitHub Actions runner,
-  keep baseline enforcement for `finance`, and require repo-owned namespaces to
+  and require repo-owned namespaces to
   set `audit` and `warn` to `restricted` through Conftest.
 - **Risk:** privileged audit/warn labels hide workloads that could run under a
   tighter profile or accidentally expand the exception blast radius.

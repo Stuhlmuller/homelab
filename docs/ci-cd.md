@@ -24,7 +24,7 @@ This repository uses GitHub Actions for the review and rollout path:
   or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
-  main-only `homelab-production` environment without reviewer approval, then
+  main-only `homelab-production` environment, then
   verifies `main` again before referencing
   environment credentials or running live commands. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
@@ -32,6 +32,8 @@ This repository uses GitHub Actions for the review and rollout path:
   They compare against the latest successful historical push apply or full
   dispatch so failed or deferred changes remain in the next affected range;
   targeted Argo reconciliations never advance that checkpoint.
+  Production jobs enter the environment automatically without reviewer approval;
+  `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
   production branch gates, never prunes, and proves a second apply has no
@@ -57,6 +59,20 @@ contract for Grafana.
 
 ## Security Model
 
+The pinned development shell includes Ruby for Mastodon launch and owner-bootstrap
+validation. Enroll shared toolchain dependencies before the final Harbor
+publication receipt; receipt reuse requires byte-identical publication inputs,
+including the Nix flake.
+
+GitHub Actions static validation allows 60 seconds per OpenTofu registry metadata
+request after repeated provider authentication-checksum download timeouts.
+This transport setting changes no infrastructure inputs, provider pins or
+checksum/signature verification. Existing retry and job limits still apply.
+
+Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache.md).
+Static jobs verify cache signatures or build on a miss; live plans and cluster
+checks remain fresh.
+
 - Workflows use `pull_request` and `push`; they do not use
   `pull_request_target`.
 - The lint workflow is a lightweight changed-file gate that preserves the
@@ -79,11 +95,9 @@ contract for Grafana.
   force pushes. The required checks are `policy-bot: main`, `Lint`, `repo`,
   `Analyze (python)`, `analyze-actions`, `release-dry-run`, and
   `Terragrunt Gate`, confirmed in active ruleset `14700233` on 2026-08-30.
-- The Terragrunt plan and apply workflows restore and save a GitHub Actions
-  cache for the Nix store after Nix is installed and before the first
-  `nix develop --command ...` step. The cache key is derived from the runner OS,
-  `flake.nix`, and `flake.lock`, with an OS-scoped fallback so dependency
-  updates can still reuse the nearest previous dev shell closure.
+- Live Terragrunt plan and apply jobs retain their Actions development-shell
+  cache. Static jobs use the signed binary cache instead of restoring an
+  arbitrary Nix store; see [cache trust and freshness](nix-cache.md#ci-trust-and-freshness).
 - GitHub token permissions default to none. Jobs opt in to `contents: read`,
   and live Terragrunt jobs request `id-token: write`. No credentialed plan job
   can write to pull requests or another public GitHub surface.
@@ -124,12 +138,18 @@ contract for Grafana.
   diagnostic, and Cloudflare reconciliation output is also withheld from public
   Actions logs; reproduce failures from an approved local operator session.
   Workflow policy
-  rejects direct live CLI output or reading the private log after the wrapper,
-  and live credentials exist only on the exact step that consumes them. Static
+  rejects direct live CLI output or reading the private log after the wrapper.
+  On a protected apply failure, a reviewed classifier may print one fixed
+  phase label after verifying its SHA-256; raw output remains withheld.
+  Live credentials exist only on the exact step that consumes them. Static
   checks reject any new environment-, secret-, token-, or write-permission job
   until its complete normalized definition is reviewed and hashed. The
   pre-commit scan rejects plan/state filenames plus binary plans or JSON
   plan/state exports hidden behind arbitrary names.
+  Renovate action upgrades also need their exact test pins and normalized
+  workflow security hashes updated in the same PR after review. PR #1233's
+  artifact-action update failed the Terragrunt static gate because those
+  companion updates were missing; rerunning an unchanged PR cannot fix it.
 - Automatic PR plans intentionally skip `IaC/live/aws-ssm-parameters` because
   that unit refreshes managed KMS, IAM, and SSM resources that require the
   protected production apply role. They also skip `IaC/live/kubernetes-secrets`
@@ -216,23 +236,24 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. Require a
-  reviewer and approve only after reviewing the exact pull request diff; the
-  job checks out pull request code before using live write-capable identities.
+- `homelab-plan`: used by same-repository pull request plans. No required
+  reviewers. PR code executes automatically with live write-capable identities;
+  the same-repository workflow trust check remains required.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
   No required reviewers; allow only the exact `main` branch (no tags).
-  Other branches use `homelab-plan` and retain required reviewer approval.
 
 The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
-in [github-iac](https://github.com/Stuhlmuller/github-iac). Its
-`reconcile-homelab-production.sh` checks the existing main-only branch policy
-and PR-plan reviewers before removing the production reviewer requirement.
+in [github-iac](https://github.com/Stuhlmuller/github-iac). Apply its documented
+environment-only saved plan; the ruleset-only deployment workflow does not
+reconcile environments. Restore reviewers through HCL and a saved plan to
+roll back approval behavior, retaining the exact `main` production allowlist.
 
 Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
 operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
-only after approval and production credentials only to `main`; do not keep
+automatically for same-repository PRs and production credentials only to
+`main`; do not keep
 duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |
@@ -748,12 +769,36 @@ therefore keeps the full unapplied range instead of considering only the newest
 commit. Targeted Argo dispatches do not move that checkpoint.
 
 The protected `argocd_app=fleet` dispatch checks the existing AppProject,
-External Secrets namespace allowlist, healthy platform/public-tunnel apps,
+External Secrets namespace allowlist, healthy platform/Traefik apps,
 CRDs and storage before writing state. It applies the shared SSM/IAM saved plan
 through Conftest, then only the Fleet Application saved plan. This provisions
 Fleet's generated credentials without reconciling AzureAD, Langfuse storage,
 bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
-reviewed images with `harbor-mirror.yml` first and reconcile public DNS with
-`octelium-public-tunnel.yml` afterward, following the
+reviewed images with `harbor-mirror.yml` first and reconcile private DNS with
+`scripts/tailscale-private-dns.sh` in the ordered cutover, following the
 [Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
+
+### Harbor provider-plan blocker observed October 7, 2026 UTC
+
+[PR #1219's live plan](https://github.com/Stuhlmuller/homelab/actions/runs/37571659846)
+failed at the application stage. A private read-only reproduction at head
+`0ee6cf1e` against base `b8b8b677` identified Harbor as the sole application
+failure: provider `hashicorp/kubernetes` 3.2.1 reported
+`Failed to update proposed state from prior state` for `spec.sources`, with
+incompatible tuple arities. Stored manifest/object, rendered desired state,
+and live Application each contained three sources. The resource was untainted;
+the existing untaint-only recovery does not apply.
+
+An operator-unit addition triggers all application plans through the shared
+stack filter, so the failure also blocked the identity PR's aggregate gate.
+The later [protected plan](https://github.com/Stuhlmuller/homelab/actions/runs/37580800923)
+passed on head `861fb9d7` against base `427b01ad`, including the aggregate gate;
+the Harbor error did not recur. This investigation applied no Harbor repair.
+If it recurs, reproduce a focused Harbor plan and investigate the provider's computed-field
+transformation against the saved state types. Keep state and logs private;
+do not skip Harbor, widen computed fields, or mutate state without a verified
+repository-owned repair.
+The separately reviewed owner-mail operator plan later applied, but the old
+SMTP alias remains reserved; see the
+[migration outcome](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).

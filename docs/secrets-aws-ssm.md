@@ -39,6 +39,13 @@ Microsoft Entra SSO parameters are managed by the
 tenant URLs, and generated client secrets come from the managed application
 registrations.
 
+`/homelab/entra/google-workspace-federation-metadata` is an operator-only
+SecureString. It holds the Google Workspace SAML issuer, redirect endpoint and
+signing certificate used by the Entra federation operator module. It has no
+Kubernetes consumer and is not granted to External Secrets readers. Populate it
+only with `scripts/entra-google-workspace-federation-metadata.py` from clean,
+signed current `main` after downloading Google Workspace metadata.
+
 The `IaC/live/aws-ssm-parameters` stack also attaches the existing
 `external-secrets_aws-ssm-auth` user to the
 `homelab-ssm-parameter-readers` IAM group. Deterministic customer-managed
@@ -76,10 +83,35 @@ repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `octelium-storage`, `langfuse`, and `tailscale`. Add a namespace to that allow-list in the
 same PR that adds its first ExternalSecret.
 
+## Tailscale CI signing contract
+
+The administrator-only `IaC/operator/tailscale-access` unit owns three Tailscale
+CI auth keys in encrypted OpenTofu state. These are not SSM parameters and are
+not available to External Secrets or application Pods. The operator OAuth SSM
+parameters in the matrix remain unchanged.
+
+`scripts/tailscale-ci-configure.py` signs the provider keys on the trusted Mac,
+then publishes only `TAILSCALE_AUTH_KEY` in each of `homelab-plan` and
+`homelab-production`, plus repository `TAILSCALE_CORDIUM_AUTH_KEY`. The first two
+retain owner-review environment protection; Cordium's separate tag has no
+Kubernetes RBAC. No private kubeconfig or Tailscale administrator token is copied
+to GitHub. The three old client-ID variables are retired only after all secret
+writes and metadata checks succeed. Dormant provider OIDC identities remain
+protected pending separate retirement.
+
+Tailnet Lock remains enabled. Wrapped keys include a delegated private
+node-signing key, not the trusted authority's private voting key. Protect the
+publisher's `0600` cache, including its separate public authority identities,
+outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
+expiry), then explicitly retire old cached signing authorities after CI
+acceptance. Expiring an auth key alone does not remove that authority. The
+[module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
+acceptance, rotation, and recovery commands.
+
 ## AI gateway contract
 
-Use the `LiteLLM Provider Credential` workflow to populate or rotate the
-external OpenRouter slot. Temporarily store the key in the `homelab-production`
+Use the `LiteLLM Provider Credential` workflow to populate or refresh the
+OpenRouter bootstrap/recovery slot. Temporarily store the key in the `homelab-production`
 environment secret `LITELLM_OPENROUTER_API_KEY`, then dispatch
 `litellm-provider-credential.yml` on `main` with its exact current commit as
 `expected_sha`. The workflow validates provider authentication without a
@@ -90,9 +122,15 @@ after successful transfer. Never pass the key as a workflow input or argument.
 
 After the write succeeds, advance the committed `litellm-app-keys`
 `generated-secret-revision` annotation and let Argo reconcile its `OnChange`
-ExternalSecret. Verify one gateway generation and the attributed Langfuse
-trace. Reverting manifests does not restore an old external credential; use
-this workflow again with a valid replacement when rollback requires one.
+ExternalSecret. The native gateway imports that value only once into the
+encrypted `openrouter` credential shown under **Models → LLM Credentials**.
+After `homelab-provider-credential-import-v1` exists, rotate the active key in
+LiteLLM's UI/API; neither SSM edits nor Pod restarts overwrite it or restore a
+deleted credential. Enter a complete replacement key in the pinned UI edit
+form, not its prefilled mask. Verify one gateway generation and the attributed
+Langfuse trace. Restore the database for rollback; never revert to file-backed
+inference, which would bypass UI changes. See the
+[gateway recovery contract](../clusters/homelab/apps/litellm/README.md#ui-managed-openrouter-credential).
 
 `/homelab/litellm/openai-api-key` is an existing operator-supplied OpenRouter
 provider credential. LiteLLM is its only Kubernetes consumer. Generated caller
@@ -101,6 +139,19 @@ keys at `/homelab/openclaw/litellm-app-token` and
 to the in-cluster gateway; none grants direct provider access. Do not read,
 copy or place any of these values in Git, workflow exports or application
 configuration.
+
+LiteLLM's database-key migration adds generated
+`/homelab/litellm/postgres-{admin,app}-password` parameters.
+`ai/litellm-postgres-auth` supplies both only to PostgreSQL;
+`ai/litellm-postgres-client` exposes only the file-mounted app password to the
+gateway. Both use `OnChange`. The gateway imports existing caller values once
+into native database keys, atomically with `homelab-native-key-import-v1`.
+After import, SSM edits alone do not rotate keys; coordinate the database key
+and caller refresh. Restarts never recreate deleted keys or undo UI blocks.
+The provider row uses native encryption with the existing master key; preserve
+that key with the database and re-encrypt before any master-key rotation.
+Preserve initialized role passwords, the database and both import markers together
+during recovery. Live cutover acceptance remains separate from source checks.
 
 ## External Secrets AWS Auth Bootstrap
 
@@ -322,35 +373,30 @@ client material to `/homelab/octelium/entra/*`. Those parameters are not
 materialized by External Secrets. Run `scripts/octelium-entra-oidc.sh` after
 the Entra unit applies so the client secret is copied into the Octelium native
 Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
-`--admin-user-name` and `--admin-email` when creating the runtime-only HUMAN
-admin mapping; do not commit personal Entra identifiers into this public repo.
+`--admin-user-name`, `--admin-email` and `--admin-object-id` when creating the
+runtime-only HUMAN admin mapping. Email is contact metadata; the Entra `oid`
+claim supplies identity. Do not commit personal Entra identifiers into this
+public repo. Follow the [migration preflight](octelium.md#entra-identity-migration)
+before refreshing an older email-based mapping.
 
-The public Octelium control plane uses a Cloudflare Tunnel connector in
-`octelium-public`. Store the credentials JSON created by
-`cloudflared tunnel create homelab-octelium-public` in
-`/homelab/octelium/cloudflare-tunnel-credentials-json` and the tunnel UUID in
-`/homelab/octelium/cloudflare-tunnel-id`, then run
-`scripts/octelium-public-dns.sh` to route `stinkyboi.com`,
-`octelium.stinkyboi.com`, `portal.stinkyboi.com`,
-`octelium-api.stinkyboi.com`, `octelium-transport.stinkyboi.com`,
-`console.stinkyboi.com`, and the committed app
-hostnames
-through proxied CNAME records to the tunnel target
-`<tunnel-uuid>.cfargotunnel.com`. Keep the credentials JSON and any Cloudflare
-API token outside git. Cloudflare edge TLS uses the apex plus first-level
-`*.stinkyboi.com` shape; making `octelium.stinkyboi.com` the cluster domain
-would force the client onto the unsupported nested
-`octelium-api.octelium.stinkyboi.com` hostname.
+The legacy `octelium-public` Cloudflare Tunnel Deployment and its existing
+`/homelab/octelium/cloudflare-tunnel-credentials-json` and
+`/homelab/octelium/cloudflare-tunnel-id` contracts remain during staged cutover.
+Do not recreate public Tunnel DNS: the old DNS helper and restoration workflow
+are removed before changing application records. Credential retirement follows
+successful application, callback, CI, and Cordium acceptance in a separate change.
 
-Octelium's browser API uses HTTPS/gRPC-Web through the Tunnel. Native CLI
-and VPN sessions retain `octelium-api.stinkyboi.com` inside a TLS stream carried
-by `octelium-transport.stinkyboi.com`; configure the scoped local carrier
-before login as documented in the Octelium public app README.
-The protected `octelium-public-tunnel.yml` workflow requires an exact reviewed
-main SHA. Its existing production AWS role reads the cert-manager Cloudflare
-DNS token and Tunnel UUID from SSM to reconcile both API records as CNAMEs.
-DNS reconciliation needs only zone read and DNS edit. No token value enters
-git or workflow output.
+The canonical DNS helper reads the existing scoped cert-manager Cloudflare
+DNS token from SSM. It previews by default and writes only fixed DNS-only A/AAAA
+records to the verified Traefik Tailscale peer. It preserves legacy callback,
+CI, and carrier names during preparation. API responses and token values stay
+out of public logs. Follow the [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md)
+from a clean reviewed `main` checkout:
+
+```sh
+scripts/tailscale-private-dns.sh --dry-run
+scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
+```
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
@@ -458,14 +504,6 @@ deliveries to `/api/github/hook` validate. The Deployment runs one replica
 after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
 
-OctoBot does not currently have a repository-owned SSM parameter contract.
-First-run setup, exchange credentials, tentacles, and strategy state are managed
-through the OctoBot UI and persist on the `finance` namespace PVCs. Do not add
-live-trading autostart configuration until a separate PR adds the
-repository-owned secret contract or documents why UI-managed state is sufficient,
-records backtest and paper-trading evidence, and confirms withdrawal access is
-disabled at the exchange.
-
 ## Harbor private registry
 
 The generated `/homelab/harbor/` contract owns administrator, encryption,
@@ -473,5 +511,22 @@ internal-service, PostgreSQL and project-robot passwords. External Secrets
 materializes `harbor-secrets`; repository-owned bootstrap uses mounted files.
 The NOFX namespace reads only `/homelab/nofx/harbor-pull-password`, a generated
 alias of the pull robot credential, into its Docker-config Secret. CI reads
-only the publisher credential during protected image publication. See the
+`/homelab/harbor/mirror-robot-push-password` only for protected public-mirror
+publication. The Stage A saved plan has created and metadata-verified
+`/homelab/harbor/mirror-robot-pull-password`; it is used for authenticated Harbor
+publication receipts and the later Talos registry-auth candidate. The Stage B
+`harbor-secrets` revision advances its `OnChange` annotation to `v3` so External
+Secrets can reconcile the new key. Parameter creation alone does not create a
+Harbor robot, grant a workload registry access, or change a node; wait for the
+Harbor PostSync bootstrap and the separately reviewed Talos path. See the
+[reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
+
+The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
+`/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
+supplies kubelet pulls only; the credential is not mounted in app containers.
+The candidate itself adds no further SSM parameter, IAM permission or rotation.
+Activation waits
+for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
+`OnChange` refresh requires a declared annotation revision after rotation.

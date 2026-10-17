@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/part-of: homelab
   annotations:
     argocd.argoproj.io/sync-options: Prune=false,Delete=false
-    homelab.rst.io/managed-reason: "Use stable public resolvers and an internal Octelium API route."
+    homelab.rst.io/managed-reason: "Use stable public resolvers and internal Traefik routes for Octelium API and Harbor."
 data:
   Corefile: |
     .:53 {
@@ -23,8 +23,8 @@ data:
         }
         prometheus :9153
 
-        rewrite name exact octelium-api.stinkyboi.com octelium-api-ingressgateway.istio-system.svc.cluster.local
-        rewrite name exact harbor.stinkyboi.com istio-ingressgateway.istio-system.svc.cluster.local
+        rewrite name exact octelium-api.stinkyboi.com traefik-private.traefik.svc.cluster.local
+        rewrite name exact harbor.stinkyboi.com traefik-private.traefik.svc.cluster.local
         kubernetes cluster.local in-addr.arpa ip6.arpa {
             pods insecure
             fallthrough in-addr.arpa ip6.arpa

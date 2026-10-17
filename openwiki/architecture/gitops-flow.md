@@ -3,25 +3,42 @@ type: architecture
 title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
+sources:
+  - id: openwiki-source-8f628fd33437cf63e7f9b8c2
+    resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-77d110fdd1547564be86e611
+    resource: repo://IaC/modules/tailscale-access/main.tf
+  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+    resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-da61504fb6ba4ceba279edb0
+    resource: repo://IaC/stacks/traefik/stack.hcl
+generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-14T03:46:52.296Z
 ---
 
 # GitOps Flow
 
 ## Flow
 
-```text
-git change
-  -> Terragrunt/OpenTofu registration
-  -> Argo CD Application
-  -> Helm, Kustomize, or repo-owned manifests
-  -> Kubernetes cluster state
+```mermaid
+flowchart LR
+    Git[Reviewed source] --> TG[Terragrunt registration]
+    TG --> Argo[Argo CD Application]
+    Argo --> Runtime[Helm and Kustomize runtime]
 ```
+
+Reviewed source separates infrastructure registration from runtime reconciliation.
 
 Infrastructure and application registration are modeled through Terragrunt and
 OpenTofu. Runtime Kubernetes changes are delivered through Argo CD Applications
 that point back at repository-owned manifests, Helm values, or Kustomize
-overlays.
-Argo CD globally terminates sync operations after 15 minutes so one unhealthy
+overlays. Argo CD runs two application-controller replicas with parallel pod
+management, so loss of one worker does not strand reconciliation. It globally
+terminates sync operations after 15 minutes so one unhealthy
 resource cannot hold an Application operation forever and block later reviewed
 revisions.
 The bootstrap chart carries a revision annotation on the application-controller
@@ -79,13 +96,42 @@ The Cordium Application prunes removed repository-owned Kubernetes manifests;
 Cordium and Octelium resources generated through their native APIs remain
 outside Argo CD's tracking and are unaffected by that setting.
 
-Bazarr's public, human-authenticated native Octelium Service follows the existing single-Service
-operator pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
+Bazarr's retained legacy Octelium Service uses the single-Service recovery
+pattern: `scripts/octelium-bazarr-reconcile.py` previews read-only by
 default and requires a clean checkout matching reviewed current `main` for
 `--execute`. It applies only `bazarr.default`, verifies unchanged human-only
 authorization and public routing, and requires a second apply with no changes.
-The Kubernetes application itself follows the protected Terragrunt registration
-and Argo CD sync path.
+The Kubernetes application follows protected Terragrunt registration and Argo CD.
+Current ingress uses the guarded private DNS/Traefik cutover; the recovery helper
+does not authorize restoring public DNS or the deleted restoration workflow.
+
+## Tailscale ingress foundation
+
+The staged migration adds the `traefik` Application and the administrator-owned
+`operator/tailscale-access` unit. The latter imports the existing full policy
+before applying the reviewed policy and three scoped CI auth keys with the
+Tailscale Terraform provider; CI cannot administer its own tailnet grants.
+Tailnet Lock remains enabled. A trusted Mac signs provider keys through the
+fixed publisher; committed generation changes drive 60-day rotation of keys
+with 90-day expiry. The three unused federated identities remain protected until
+the final migration retirement, after signed-key CI acceptance.
+Follow its [private saved-plan runbook](../../IaC/modules/tailscale-access/README.md).
+
+Publish the pinned Traefik image before merging its consuming runtime source.
+Apply the operator policy before registering Traefik, then use protected
+Terragrunt Apply on exact current `main` and check Argo's observed revision.
+Application registration order alone does not establish certificate, proxy,
+Funnel, or application readiness. The fixed ingress signer verifies the three
+operator-owned proxy identities before signing them; ordinary node approval
+does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
+
+Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
+removes the legacy public DNS helper and restoration workflow. External DNS
+writes still require the guarded operator command after signed proxy, TLS,
+backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
+old native catalog, credentials, and CI transport through their separate
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
+does not claim that traffic has moved or old native Services have been retired.
 
 ## Important Paths
 
@@ -165,12 +211,15 @@ Fleet's targeted protected `argocd_app=fleet` apply reconciles shared SSM
 credentials/IAM before registering only Fleet. It requires the existing
 AppProject, secret store and platform dependencies to permit Fleet first;
 it does not advance the full-apply checkpoint. This avoids unrelated AzureAD
-changes whose credentials are currently absent from CI. Mirror the reviewed
-Fleet/MySQL/Redis/bootstrap digests to Harbor with the fixed `image_scope=fleet`
-dispatch before registering the new app; reconcile
-the declared public DNS through `octelium-public-tunnel.yml`. The app's internal
-PostSync bootstrap creates its first administrator, followed by a verified
-database backup; both public setup API aliases remain blocked. See the
+changes during a deliberately scoped rollout. The earlier Azure credential gap
+is resolved; [full apply 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
+advanced the current checkpoint. Mirror the reviewed Fleet/MySQL/Redis/bootstrap
+digests to Harbor with the fixed `image_scope=fleet` dispatch before registering
+the new app. The old public-DNS restoration workflow is removed; move Fleet's
+existing hostname to private mesh addresses through the guarded
+[DNS cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Fleet has no Funnel
+route. The app's internal PostSync bootstrap creates its first administrator,
+followed by a verified database backup; both setup API aliases remain blocked. See the
 [Fleet rollout](../../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 Terragrunt `dependencies` blocks order Application registration. They do not

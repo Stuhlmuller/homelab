@@ -51,7 +51,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | Harbor (`apps/harbor`) | Local DB with logical backups to QNAP, NFS registry blobs | 24h / 8h | Fence pushes/GC and pair DB/blobs; restore encryption key and signing Secret separately; retain public verification key. DB dump excludes private signing key |
 | Langfuse (`apps/langfuse`) | NFS PostgreSQL/ClickHouse/Valkey; S3 raw events expire after 30d; no logical backup pipeline | 24h / 8h | Coordinate relational, ClickHouse and raw-object versions; recover application encryption/salt secrets; decide queue losses. A lifecycle-managed raw-event bucket is not a backup |
 | Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files | 24h / 8h | Paired stopped-writer dump/files, private provider credentials; no adapter scheduled |
-| OpenClaw, NOFX, OctoBot (`apps/openclaw`, `apps/nofx`, `apps/octobot`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
+| OpenClaw, NOFX (`apps/openclaw`, `apps/nofx`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
 
 <!-- markdownlint-enable MD013 -->
 | Sonarr/Radarr/Prowlarr/Deluge config, downloads and media | Some nightly config archives on same QNAP; media on QNAP `/media` | Config 24h / 8h; bulk-media loss undecided | Pair config with media DB window. Owner must identify irreplaceable uploads/media vs reproducible downloads; do not silently exclude bulk media |
@@ -125,6 +125,10 @@ Partial uploads and failed local scratch are also retained. No automatic local
 pruning is implemented: provision capacity, monitor it, and arrange reviewed
 cleanup of disposable verification copies. The hourly runner refuses to start
 below 20 GiB free. Large datasets need a reviewed streaming/multipart design.
+Metrics use unique temporary files and atomic replacement, so an interrupted
+write cannot block later checks. The offline tests exercise the hourly runner
+for both initial applications; the runner remains a candidate until the
+activation gates below are satisfied.
 
 ## Exact proposed resources and authorization gates
 

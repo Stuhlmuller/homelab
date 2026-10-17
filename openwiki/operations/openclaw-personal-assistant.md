@@ -3,6 +3,17 @@ type: operation
 title: "OpenClaw personal assistant"
 description: "OpenClaw GitHub installation-token exchange, model routing, managed assistant behavior, and remaining deployment acceptance."
 tags: ["homelab", "navigation"]
+sources:
+  - id: openwiki-source-cce2f8f33e3b3639655d2b33
+    resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
+  - id: openwiki-source-1a1a01e3db3c30a111cb3145
+    resource: repo://clusters/homelab/apps/openclaw/assistant/config.json
+  - id: openwiki-source-b26876230e53fd853d7bcbea
+    resource: repo://clusters/homelab/apps/openclaw/values.yaml
+generated: { by: "codex", at: "2026-10-10T23:00:00.726Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-10T23:10:58.872Z
 ---
 
 # OpenClaw personal assistant
@@ -27,11 +38,15 @@ The existing installation has broader grants (including secrets write and all
 repositories) than this helper requests. Narrowing the App registration is a
 separate owner-reviewed GitHub IaC task; this change scopes issued tokens only.
 
-September 26 model routing: interactive turns, heartbeat, and managed jobs use
-OpenRouter's `openrouter/free` router with no fallback. OpenRouter credentials
-remain in the PVC-backed auth profile; repository configuration contains no key.
-Bootstrap enables the bundled OpenRouter provider plugin so the documented OAuth
-login is available after every restart.
+Current model routing: interactive turns, heartbeat, and managed jobs use
+`openrouter/free` through LiteLLM with no fallback. The managed provider targets
+`http://litellm.ai.svc.cluster.local:4000/v1` and authenticates with the dedicated
+file-backed caller key; LiteLLM owns upstream OpenRouter authentication.
+Bootstrap replaces provider/model maps and disables OpenAI/Codex plugins and
+their active auth references. Private historical credentials and backups remain
+intact, but do not provide an active subscription recovery route. Bootstrap
+installs the Discord plugin at the pinned gateway version; the toolbox no
+longer installs a Codex CLI or code-mode host.
 
 September 7 owner request expands Claw from homelab operations to a natural
 Discord assistant, Google Calendar, and computer shopping on Facebook Marketplace.

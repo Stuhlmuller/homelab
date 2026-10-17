@@ -5,11 +5,17 @@ resources:
   - externalsecret.yaml
   - authorizationpolicy.yaml
   - virtualservice.yaml
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  - postgres-initdb-configmap.yaml
+  - postgres-externalsecret.yaml
+  - postgres-networkpolicy.yaml
 configMapGenerator:
   - name: litellm-app-identity
     namespace: ai
     files:
       - app_identity.py
       - gateway.py
+      - native_keys.py
 generatorOptions:
   disableNameSuffixHash: true

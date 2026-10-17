@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:f19c604aba6d16a9d564df8f5f62c67412812b5bb82fc26120805874579b0153",
+  "claims": [
+    {
+      "id": "claim_17783eb55c0f49c2acf6b2db802c5486",
+      "statement": "The repository wiki validation gate requires authored pages to be reachable through Markdown links from openwiki/quickstart.md.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openwiki-check.py#L143-L153",
+          "version": "repo-lines-v1:sha256:2222be8a58413cf56cec97e893be9fcabe2f83c863a431d0ae6bcc37bc33442d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxYzFhYmM5Yzg4YmM2MDgwYjI2MjNjNmJmODFmYzI4M2NiMjhiN2NiODBkODU1MmMzOTMwZGI1YTNlMTUyYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE5NDQwNTVhY2M2M2FhMmUyNDYzYjk1Mjk5MGNlNmJmNjI0YjE0ZTliMjVmODIyZGQ1Y2YxZmJiMmIxYTQ1ZWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlhZDVlYjU4NDZmNGQ3ZmVkMGM5Y2E4NWYyMjU4MjcwNTkxZjBmYzlmYmVlYzI4MDg4MDViNDRmNjc4ZmM4NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzZDEwZTg2MTljMzEwZjIwZjU2MDNhMDM1M2UyMzUwNjkxZDEzZTFkMTU5ZmE5ODAzOGMyOTg5ZDQ3NjE5ODkifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-07T03:28:13.795Z"
+  }
+}

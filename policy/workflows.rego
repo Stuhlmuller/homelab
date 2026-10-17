@@ -149,7 +149,28 @@ deny contains msg if {
 	uses := object.get(steps[index], "uses", "")
 	some prefix in {"actions/upload-artifact@", "chainguard-actions/actions-upload-artifact@"}
 	startswith(uses, prefix)
+	not encrypted_harbor_diagnostic(job_name, job, steps[index])
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
+}
+
+encrypted_harbor_diagnostic(job_name, job, step) if {
+	job_name == "mirror"
+	some command in job.steps
+	trim(object.get(command, "run", ""), "\n") == harbor_mirror_private_run
+	step == harbor_encrypted_diagnostic_step
+}
+
+harbor_encrypted_diagnostic_step := {
+	"name": "Retain Only Encrypted Failure Diagnostic",
+	"if": "failure()",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}",
+		"path": "${{ runner.temp }}/harbor-publication-error.gpg",
+		"if-no-files-found": "ignore",
+		"retention-days": 1,
+		"include-hidden-files": false,
+	},
 }
 
 deny contains msg if {
@@ -320,20 +341,29 @@ case "$IMAGE_SCOPE" in
   fleet)
     bash scripts/ci/harbor-publish.sh mirror-fleet
     ;;
+  mastodon)
+    bash scripts/ci/harbor-publish.sh mirror-mastodon
+    ;;
   bazarr)
     bash scripts/ci/harbor-publish.sh mirror-bazarr
+    ;;
+  chainguard)
+    bash scripts/ci/harbor-publish.sh mirror-chainguard
+    ;;
+  traefik)
+    bash scripts/ci/harbor-publish.sh mirror-traefik
     ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7c925c8f9a41207b63a485f7a27d666623ba777f8c40fdebd20bdbfe4b655bdc  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
   exit 1
 fi
-echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."`
+echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."`
 
 private_live_tail(tail) if {
 	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
@@ -351,6 +381,19 @@ private_live_tail(tail) if {
 	lines[0] == "then"
 	lines[1] == `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 	lines[2] == `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+	lines[3] == "fi"
+	safe_withheld_echo(lines[4])
+	lines[5] == "exit 1"
+	lines[6] == "fi"
+	safe_withheld_echo(lines[7])
+}
+
+private_live_tail(tail) if {
+	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
+	count(lines) == 8
+	lines[0] == "then"
+	lines[1] == `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
+	lines[2] == `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
 	lines[5] == "exit 1"
