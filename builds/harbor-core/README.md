@@ -40,9 +40,12 @@ After the Linux image/registry fixture, CI saves the exact built container and
 runs lock-pinned Grype 0.112.0 with a fresh advisory database. The audit checks
 the image/config hash, Linux amd64 platform, Photon 5.0 identification, report
 freshness and absence of exclusions/VEX/filtering. Available fixes fail the
-audit. Unfixed/unknown matches remain counted and are not CVE clearance or
-publication approval. Raw image metadata and transport output stay private;
-temporary scan inputs are removed on exit.
+audit. Unfixed/unknown matches remain counted and are not CVE clearance. The
+protected publication workflow additionally requires the exact runtime report
+to contain zero matches before it can obtain registry credentials; this is a
+core-publication gate, not a whole-Harbor or rollout clearance. Raw image
+metadata and transport output stay private; temporary scan inputs are removed
+on exit.
 
 ## Protected publication
 

@@ -98,10 +98,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:17:54.523Z" }
+generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:17:54.523Z
+    at: 2026-10-17T20:13:59.415Z
 ---
 
 # Harbor Private OCI Registry
@@ -497,6 +497,10 @@ destination verification against the enrolled public-key fingerprint.
 Failures withhold the output digest; success produces a pinned-reference artifact.
 Core signing Pods use only the pinned Harbor Cosign mirror, whose publication
 must be verified before dispatch. NOFX's two-subject behavior remains intact.
+The protected publisher additionally requires zero matches in the exact
+full-container Grype report before registry credentials are available. The
+ordinary audit retains unresolved counts for review; neither mode clears other
+Harbor components or proves a live rollout.
 Before registry credentials, the [Linux compatibility fixture](../../builds/harbor-core/signer-test.sh)
 tests the pinned public Chainguard Cosign candidate for P-256 import/public-key
 identity and signing flags. The protected publisher then replaces every core
