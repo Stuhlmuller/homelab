@@ -96,10 +96,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:18:51.612Z" }
+generated: { by: "codex", at: "2026-10-17T18:21:59.355Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-17T18:21:59.355Z
 ---
 
 # Harbor Private OCI Registry
@@ -466,8 +466,11 @@ Linux candidate from Docker after registry acceptance and scans the complete
 archive with lock-pinned Grype. Its [report checker](../../scripts/ci/harbor-core-scan-check.py)
 verifies the config hash against the inspected image ID, platform/distro,
 fresh report/database and absence of filtering, exclusions or VEX input.
-Available fixes fail this audit. Unfixed/unknown matches remain counted;
-successful collection does not mean CVE clearance or authorize publication.
+Available fixes fail this audit. The evidence-only CI audit retains
+unfixed/unknown matches and does not grant CVE clearance. The protected
+publisher reruns the same exact-runtime scan with `--require-zero-matches`
+before registry credentials; any match stops publication. This core gate does
+not establish whole-Harbor or deployed-workload clearance.
 CI emits only an identity/report-hash/database/severity-count receipt while
 raw metadata and transport logs stay private and temporary inputs are removed.
 
@@ -489,7 +492,8 @@ The dispatch-only [Harbor Core Images workflow](../../.github/workflows/harbor-c
 prepares a protected publication path for one fixed
 `homelab/homelab-harbor-core:homelab-<main-sha>` reference. It checks current
 main before checkout/build and again before credentials, rebuilds/tests/audits
-first, and uses `homelab-production` with the shared Harbor publication lock.
+first, requires zero scan matches before credentials, and uses
+`homelab-production` with the shared Harbor publication lock.
 The helper also requires that dedicated workflow reference. After push, a fresh
 complete private pull and digest comparison precede in-cluster signing and
 destination verification against the enrolled public-key fingerprint.

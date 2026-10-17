@@ -46,10 +46,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-12T06:35:49.067Z" }
+generated: { by: "codex", at: "2026-10-17T18:21:59.355Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-17T18:21:59.355Z
 ---
 
 # Secrets And Identity
@@ -640,21 +640,11 @@ auto-provisioning creates the matching Entra users; the Entra federation only
 authenticates those users. CI provider identities do not receive domain-write
 permissions, so the unit remains an independently reviewed operator apply.
 
-The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
-found a deployed pilot UPN mismatch: the Mac attempted personal-account device
-registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
-Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only
-change required a focused apply. The approved apply failed with
-`DirectoryUniquenessException`; the pilot retained its old UPN, nickname and
-password-change timestamp. The owner's existing mail/SMTP proxy uses the
-requested address, making it the leading conflict candidate, but Entra's audit
-did not name the conflicting property. The pilot-rename approval does not cover
-clearing owner aliases or converting that administrator; a separate owner-address
-migration was subsequently approved. The pilot's initial password change must finish
-before native Password PSSO registration. Fleet MDM enrollment remained intact;
-successful organizational device/user registration and password synchronization
-still require interactive acceptance. The runbook retains the separate,
-unresolved token-endpoint profile warning from the same attempt.
+The [registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+and [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
+are historical identity evidence, not a Fleet-only Company Portal or Platform
+SSO procedure. The live federation routes to Google; Fleet-only Company
+Portal/PSSO remains unsupported and retired.
 
 The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
 applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external

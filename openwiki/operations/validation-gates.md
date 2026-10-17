@@ -114,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-14T03:46:52.296Z" }
+generated: { by: "codex", at: "2026-10-17T18:21:59.355Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T04:07:45.942Z
+    at: 2026-10-17T18:21:59.355Z
 ---
 
 # Validation Gates
@@ -1558,8 +1558,11 @@ audit receipts and final-container/component scans are still required.
 The Linux job runs the checker and private runtime-audit command for the exact
 Docker-saved candidate. Offline regressions refuse wrong image/config identity,
 platform/distro, stale or invalid databases, filters/exclusions, and available
-fixes, while retaining unresolved findings unchanged. A privacy case requires
-sanitized receipts to omit raw image metadata and explicitly deny CVE clearance.
+fixes, while retaining unresolved findings in the evidence-only CI audit. A
+privacy case requires sanitized receipts to omit raw image metadata and
+explicitly deny CVE clearance. Protected publication reruns that exact-runtime
+scan with `--require-zero-matches` before registry credentials; any finding
+fails the gate. The offline test covers the switch and workflow ordering.
 Full registry and runtime acceptance still needs fresh Linux CI evidence.
 Core publication regression cases additionally require one fixed subject,
 dedicated workflow/current-main binding, complete private pulls before signing,
