@@ -26,6 +26,8 @@ pod_uid="$(jq -er .readerPodUid "$work/status.json")"
 
 reader=(kubectl -n ai exec "$pod" -c reader --)
 reader_input=(kubectl -n ai exec -i "$pod" -c reader --)
+retirement_sha="$(sha256sum clusters/homelab/apps/openclaw/retirement/retirement.py | cut -d' ' -f1)"
+[[ "$("${reader[@]}" sha256sum /etc/openclaw-retirement/retirement.py | cut -d' ' -f1)" == "$retirement_sha" ]] || exit 1
 "${reader[@]}" sh -c 'umask 077; mkdir -p /private/legacy; chmod 700 /private/legacy; chmod g-s /private/legacy'
 "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/config.json' <scripts/config/openclaw-enterprise.json
 "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$work/status.json"

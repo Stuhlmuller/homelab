@@ -12,6 +12,7 @@ import stat
 import sys
 import tarfile
 import tempfile
+import threading
 import time
 from pathlib import Path, PurePosixPath
 
@@ -22,6 +23,13 @@ if not STORAGE.exists():
 spec = importlib.util.spec_from_file_location('openclaw_runtime_storage', STORAGE)
 runtime_storage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runtime_storage)
+
+KEEPALIVE_SECONDS = 30
+
+
+def keepalive(stop):
+    while not stop.wait(KEEPALIVE_SECONDS):
+        print('Legacy retention operation active', file=sys.stderr, flush=True)
 
 
 def private_dir(path, owner=None):
@@ -307,6 +315,9 @@ def main():
     parser.add_argument('--destination', type=Path)
     parser.add_argument('--receipt', type=Path)
     args = parser.parse_args()
+    stop = threading.Event()
+    heartbeat = threading.Thread(target=keepalive, args=(stop,), daemon=True)
+    heartbeat.start()
     try:
         config = config_at(args.config)
         if args.operation == 'inventory' and args.output and args.status:
@@ -329,6 +340,9 @@ def main():
     except (OSError, ValueError, RuntimeError, KeyError, tarfile.TarError) as error:
         print(f'Legacy retirement refused: {type(error).__name__}', file=sys.stderr)
         return 1
+    finally:
+        stop.set()
+        heartbeat.join()
 
 
 if __name__ == '__main__':
