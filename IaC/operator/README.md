@@ -280,9 +280,12 @@ The same operator unit temporarily declares
 `Stuhlmuller/renovate` on `refs/heads/main`; that repository's active main
 ruleset and the transfer workflow's exact-current-SHA check guard dispatch.
 The companion repository has no protected GitHub environment. The role can
-only write the two declared `/homelab/renovate/github-app/` SecureStrings and
-encrypt their values through the current SSM KMS key. It cannot read either
-value or administer IAM. The companion workflow carries the role ARN directly
+describe SSM parameter metadata to confirm both placeholders before writing;
+AWS does not resource-scope `DescribeParameters`, so the workflow filters the
+two exact names. It can only write the two declared
+`/homelab/renovate/github-app/` SecureStrings and encrypt their values through
+the current SSM KMS key. It has no `GetParameter`, decrypt, or IAM grant. The
+companion workflow carries the role ARN directly
 in reviewed source. Do not grant that repository the existing
 `Github-TF-State` apply role.
 

@@ -123,7 +123,7 @@ run "renovate_transfer_can_write_only_two_declared_parameters" {
 
   assert {
     condition = (
-      length(jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement) == 2 &&
+      length(jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement) == 3 &&
       alltrue([
         for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
         statement.Effect == "Allow"
@@ -131,7 +131,10 @@ run "renovate_transfer_can_write_only_two_declared_parameters" {
       toset(flatten([
         for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
         flatten([statement.Action])
-      ])) == toset(["ssm:PutParameter", "kms:Encrypt"]) &&
+      ])) == toset(["ssm:DescribeParameters", "ssm:PutParameter", "kms:Encrypt"]) &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[0].Sid == "PreflightRenovateParameterMetadata" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[0].Action == "ssm:DescribeParameters" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[0].Resource == "*" &&
       toset(flatten([
         for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
         flatten([statement.Resource]) if statement.Sid == "WriteRenovateAppCredentials"
@@ -139,14 +142,14 @@ run "renovate_transfer_can_write_only_two_declared_parameters" {
         "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/issuer-id",
         "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/private-key",
       ]) &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[1].Resource == "arn:aws:kms:us-west-2:123456789012:key/test" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[1].Condition.StringEquals["kms:ViaService"] == "ssm.us-west-2.amazonaws.com" &&
-      toset(flatten([jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[1].Condition.StringEquals["kms:EncryptionContext:PARAMETER_ARN"]])) == toset([
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[2].Resource == "arn:aws:kms:us-west-2:123456789012:key/test" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[2].Condition.StringEquals["kms:ViaService"] == "ssm.us-west-2.amazonaws.com" &&
+      toset(flatten([jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[2].Condition.StringEquals["kms:EncryptionContext:PARAMETER_ARN"]])) == toset([
         "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/issuer-id",
         "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/private-key",
       ])
     )
-    error_message = "Renovate transfer may only write its two declared parameters and encrypt their values through SSM."
+    error_message = "Renovate transfer may describe metadata, write only its two declared parameters, and encrypt their values through SSM."
   }
 }
 

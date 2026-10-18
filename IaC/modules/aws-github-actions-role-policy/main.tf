@@ -165,6 +165,14 @@ data "aws_iam_policy_document" "renovate_transfer_assume_role" {
 }
 
 data "aws_iam_policy_document" "renovate_transfer" {
+  # DescribeParameters has no resource-level permissions. The transfer script
+  # filters exact names and reads metadata only, never parameter values.
+  statement {
+    sid       = "PreflightRenovateParameterMetadata"
+    actions   = ["ssm:DescribeParameters"]
+    resources = ["*"]
+  }
+
   statement {
     sid       = "WriteRenovateAppCredentials"
     actions   = ["ssm:PutParameter"]
