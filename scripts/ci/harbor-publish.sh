@@ -80,7 +80,7 @@ if [[ "$mode" == mirror ]]; then
       (unique | length) == length) and
     all(.images[];
       keys == ["source"] and
-      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
+      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
   if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.

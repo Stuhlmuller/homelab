@@ -23,6 +23,12 @@ adding an admission webhook or rewriting controller-generated resources.
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed
 cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
+The OpenClaw Enterprise prerequisite catalog also includes the selected Talos,
+Kubernetes, Istio, kube-router and Envoy target digests. Talos 1.14's installer
+comes from `factory.talos.dev/metal-installer/<schematic>`; that registry is
+mirrored with the same exact-digest copy and private authenticated receipt as
+other public sources. Do not use a target image for maintenance until the
+protected mirror workflow has published and completely pulled its Harbor copy.
 The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.

@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "activationEnabled": false,
+  "source": {
+    "repository": "https://github.com/openclaw/openclaw-enterprise",
+    "revision": "33bb74590a749f37934da4502fca6035cd234a55",
+    "chartPath": "deploy/helm/openclaw-enterprise",
+    "images": {
+      "requiredRevisionLabel": "org.opencontainers.image.revision",
+      "controller": {
+        "repository": "ghcr.io/openclaw/openclaw-enterprise-controller",
+        "digest": null
+      },
+      "runtime": {
+        "repository": "ghcr.io/openclaw/openclaw-enterprise-runtime",
+        "digest": null
+      }
+    },
+    "cli": {
+      "sourcePath": "cmd/occ",
+      "buildRevision": "33bb74590a749f37934da4502fca6035cd234a55",
+      "artifactDigest": null
+    },
+    "imagePairingPolicy": "all-artifacts-built-from-source-revision-and-verified-by-publication-receipt"
+  },
+  "installationPhase": "unselected",
+  "namespace": {
+    "logicalName": "claw",
+    "existingNamespace": "openclaw-agents",
+    "controlPlaneNamespace": "openclaw-system"
+  },
+  "agent": {
+    "name": "claw",
+    "type": "embedded",
+    "channels": [],
+    "backend": null,
+    "sandbox": null
+  },
+  "privateOrigins": {
+    "console": "https://console.oce.stinkyboi.com",
+    "agentSuffix": "agents.oce.stinkyboi.com",
+    "cookieDomain": "oce.stinkyboi.com",
+    "gateway": "oce-private-gateway"
+  },
+  "storage": {
+    "postgresClass": "openclaw-enterprise-postgres-local",
+    "agentClass": "openclaw-enterprise-agent-local",
+    "bootstrapClass": "openclaw-enterprise-bootstrap-local",
+    "postgresGiB": 10,
+    "agentGiB": 10,
+    "bootstrapGiB": 1
+  },
+  "secrets": {
+    "modelApiKey": "/homelab/openclaw-enterprise/model-api-key",
+    "postgresAdmin": "/homelab/openclaw-enterprise/postgres-admin-password",
+    "postgresMigrator": "/homelab/openclaw-enterprise/postgres-migrator-password",
+    "postgresApp": "/homelab/openclaw-enterprise/postgres-app-password",
+    "sessionAuth": "/homelab/openclaw-enterprise/session-auth-secret"
+  },
+  "model": {
+    "provider": "openai",
+    "id": null
+  },
+  "privateJournal": {
+    "required": true,
+    "sourceBound": true,
+    "durable": true,
+    "mountPath": "/private/openclaw-enterprise/journal.json",
+    "mode": "0600",
+    "lockRequired": true
+  },
+  "privateArchives": {
+    "legacy": {
+      "mountPath": "/private/openclaw-enterprise/legacy-archive",
+      "retained": true
+    },
+    "enterprise": {
+      "mountPath": "/private/openclaw-enterprise/new-archive",
+      "retained": true
+    }
+  },
+  "executionBlockers": [
+    "Matching published controller/runtime images and source-built CLI are not verified",
+    "Model ID and dedicated credential are not configured",
+    "Storage placement and private recovery paths are not validated"
+  ],
+  "installationPhases": [
+    "foundation",
+    "lifecycle-validation",
+    "production-inactive",
+    "active"
+  ],
+  "bootstrap": {
+    "passwordFile": "/private/openclaw-enterprise/bootstrap/initial-admin-password",
+    "serviceKeyFile": "/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json",
+    "producer": "upstream-initialization-job"
+  },
+  "gatewayIdentity": {
+    "apiKeyParameter": "/homelab/openclaw-enterprise/gateway-api-key",
+    "caProducer": "cert-manager",
+    "caSecretName": "occ-private-gateway-root"
+  }
+}

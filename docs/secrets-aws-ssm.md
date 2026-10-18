@@ -141,6 +141,55 @@ revisions. Verify actual email receipt before accepting the new credential.
 See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md) for provider
 settings, activation, and rollback. This preparation is not live-secret proof.
 
+## OpenClaw Enterprise credential contract
+
+The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
+none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
+SSM unit generates the five internal values below in encrypted state and grants
+their exact parameter names to the External Secrets reader. The model key is a
+placeholder until a separate protected `homelab-production` credential workflow
+writes an owner-supplied OpenAI key. `REPLACE_ME` must block activation and any
+billable probe. That workflow must use the existing
+`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role, a fixed parameter name and an exact
+current-main SHA; it must not accept the key as a dispatch argument or print it.
+
+| SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
+| --- | --- | --- | --- |
+| `postgres-admin-password` | OpenTofu generated | `openclaw-system/occ-postgres-admin` `password` | PostgreSQL bootstrap and isolated recovery |
+| `postgres-migrator-password` | OpenTofu generated | `openclaw-system/occ-postgres-migrator` `password` | Schema migration Job |
+| `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
+| `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API/worker session signing |
+| `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
+| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Fresh agent's native model Secret only |
+
+The foundation must materialize the exact TLS-verified application and
+migration URLs in `openclaw-system/occ-database` without mounting the admin or
+migrator password in API/worker Pods. All six ExternalSecrets use `OnChange` and
+retained targets. A credential rotation requires advancing a committed revision,
+checking ExternalSecret readiness, then restarting only consumers that read the
+value once. A changed SSM value alone is not a rollout. Add `openclaw-system`
+and `openclaw-agents` to the `aws-ssm` ClusterSecretStore allow-list with their
+first ExternalSecrets; do not broaden the reader to a prefix wildcard.
+
+Bootstrap writes the initial administrator password and service key to the
+retained private bootstrap volume. Cert-manager owns the private gateway CA and
+listener certificate in separate Secrets; neither is an SSM password. Preserve
+the bootstrap files, CA Secret, auth key, gateway key, database roles and new
+agent state as one recovery set. The protected operations workflow must receive
+Talos client identity through its protected credential path, never a repo file
+or an SSM value projected into application Pods. No such live projection or
+credential write exists yet.
+
+The planned protected workflows use distinct `homelab-production` environment
+secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
+writer, and `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
+the fixed platform-maintenance job. Neither is a workflow dispatch input or an
+application environment variable. Cluster jobs reuse the existing
+`OCTELIUM_CI_AUTH_TOKEN` private route, and AWS writes use the existing
+`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling those jobs, verify
+their exact destinations and direct recovery access; the declarations above
+do not grant Talos or model access by themselves.
+
 ## AI gateway contract
 
 Use the `LiteLLM Provider Credential` workflow to populate or refresh the
