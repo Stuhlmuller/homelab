@@ -23,9 +23,22 @@ adding an admission webhook or rewriting controller-generated resources.
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed
 cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
+The OpenClaw Enterprise prerequisite catalog also includes the selected Talos,
+Kubernetes, Istio, kube-router and Envoy target digests. Talos 1.14's installer
+comes from `factory.talos.dev/metal-installer/<schematic>`; that registry is
+mirrored with the same exact-digest copy and private authenticated receipt as
+other public sources. Do not use a target image for maintenance until the
+protected mirror workflow has published and completely pulled its Harbor copy.
 The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
+The protected `openclaw-enterprise-images.yml` workflow builds the stock
+controller and runtime Dockerfiles from the checksum-verified Enterprise source
+revision in `builds/openclaw-enterprise/source.json`. It verifies both revision
+labels before using Harbor credentials, then publishes, signs and completely
+pulls the paired images in the private `homelab` project. Dispatch it only with
+the current `main` SHA; use its immutable digest receipts for the Enterprise
+chart and CLI. A source revision change requires a new reviewed archive hash.
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public
@@ -51,6 +64,9 @@ and unexpected hashes stop publication. Source-tag aliases are copied from that
 verified Harbor digest, avoiding a second upstream transfer. Every entry still
 receives a complete authenticated Harbor download and alias verification on
 each run.
+If Skopeo cannot stage an OCI index without changing its digest, the mirror
+uses `regctl` for that copy and its authenticated pull, then checks the exact
+root digest and source-tag alias before recording a receipt.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
 No retention/delete job is introduced. Size NFS for the additional images and
 retain registry blobs together with Harbor database/encryption-key backups.
@@ -114,6 +130,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    those entries while the unrelated full catalog is held. After its
    prerequisite merges, dispatch it at exact current `main` and require six
    complete authenticated pulls before merging any consuming Renovate PR:
+
+   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
+   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
+   catalog by digest, and the same new index was verified in the earlier
+   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate

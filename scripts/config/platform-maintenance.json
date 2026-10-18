@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "activationEnabled": false,
+  "expectedStart": {
+    "talos": "1.11.3",
+    "kubernetes": "1.34.11",
+    "istio": "1.27.3",
+    "controlPlane": "acer",
+    "workers": [
+      "zimaboard-0",
+      "zimaboard-1",
+      "zimaboard-2"
+    ],
+    "nodes": {
+      "acer": {
+        "address": "10.1.0.199",
+        "role": "control-plane"
+      },
+      "zimaboard-0": {
+        "address": "10.1.0.200",
+        "role": "worker"
+      },
+      "zimaboard-1": {
+        "address": "10.1.0.201",
+        "role": "worker"
+      },
+      "zimaboard-2": {
+        "address": "10.1.0.202",
+        "role": "worker"
+      }
+    }
+  },
+  "talosStages": [
+    {
+      "from": "1.11.3",
+      "to": "1.11.6",
+      "installerImage": "ghcr.io/siderolabs/installer:v1.11.6@sha256:f4f6b6f6e515c9fbbd68e0effc78e549827a5d316df8a3476206c44f009ae4a5"
+    },
+    {
+      "from": "1.11.6",
+      "to": "1.12.12",
+      "installerImage": "ghcr.io/siderolabs/installer:v1.12.12@sha256:628028e819d7753a97837fbf4c75692a217c302b5e3507cca2fec52dceb41630"
+    },
+    {
+      "from": "1.12.12",
+      "to": "1.13.11",
+      "installerImage": "ghcr.io/siderolabs/installer:v1.13.11@sha256:3d2ba1f1a45cbfd01e65cd9aa545c09eb789e626a3879595a35b344cdf0da735"
+    },
+    {
+      "from": "1.13.11",
+      "to": "1.14.4",
+      "installerImage": "factory.talos.dev/metal-installer/376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba:v1.14.4@sha256:ac4159f8c36dabd29ea65a8dfe500ed8ef5840711c363a28c18dd0de191e6d02",
+      "schematic": "376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
+    }
+  ],
+  "istioStages": [
+    {
+      "from": "1.27.3",
+      "to": "1.28.10",
+      "images": {
+        "pilot": "docker.io/istio/pilot:1.28.10-distroless@sha256:cc661a8540a2cc459a29ba9ba832df542afcae90b52833ca81225b55f4def752",
+        "install-cni": "docker.io/istio/install-cni:1.28.10-distroless@sha256:eb5697089f7dac05b79f10ac1b1541ca8146f6e92c2f946677edb4f14263c8dd",
+        "ztunnel": "docker.io/istio/ztunnel:1.28.10-distroless@sha256:2ed633b0f4957f58af77bd78a809add5df5d7ca76ad49b3f3dc0da2bd86d9636",
+        "proxyv2": "docker.io/istio/proxyv2:1.28.10-distroless@sha256:550b498e9cc350392e10cbe329111134d0e82c234a924fe17eebc65ddf6ffa73"
+      }
+    },
+    {
+      "from": "1.28.10",
+      "to": "1.29.9",
+      "images": {
+        "pilot": "docker.io/istio/pilot:1.29.9-distroless@sha256:a1b2c0c3fd44258492b318ee60881480d2927b108e1599c49d196a32991516a0",
+        "install-cni": "docker.io/istio/install-cni:1.29.9-distroless@sha256:bb442a7b3e4f1e595e31bf2dbaab11f4f74bfc996293cb74901ebe22b5e83b3b",
+        "ztunnel": "docker.io/istio/ztunnel:1.29.9-distroless@sha256:f01aeb51323b715b840f7018edb904d2a60176b7ddc63708b01953dce6ca8fca",
+        "proxyv2": "docker.io/istio/proxyv2:1.29.9-distroless@sha256:0345f935fb36189a658da88ecac0be6b12f8bf324caad33c08cb083fea286a34"
+      }
+    },
+    {
+      "from": "1.29.9",
+      "to": "1.30.6",
+      "images": {
+        "pilot": "docker.io/istio/pilot:1.30.6-distroless@sha256:c5cf6e6e43da9b0aac94b68bd38b6d74ac2c27f9de44b8c8bdcc4f5c9b735ef5",
+        "install-cni": "docker.io/istio/install-cni:1.30.6-distroless@sha256:0de316298f10b1403cfff9f041bd380fbf21d65bca1985db405ae07d905bd87c",
+        "ztunnel": "docker.io/istio/ztunnel:1.30.6-distroless@sha256:140b48374e7480c6e0f842efd713608d139598f671e0512106681b90dba23671",
+        "proxyv2": "docker.io/istio/proxyv2:1.30.6-distroless@sha256:1ba7b0120d93cc25db3972f24b4735231bd06fb275e204e32192b3787d5828b0"
+      }
+    }
+  ],
+  "kubernetesStage": {
+    "from": "1.34.11",
+    "to": "1.35.9",
+    "images": {
+      "kube-apiserver": "registry.k8s.io/kube-apiserver:v1.35.9@sha256:32abf8e4e2ae679b35c719a04902c2ae1a98a5b8648ac034a4672e39660f8a73",
+      "kube-controller-manager": "registry.k8s.io/kube-controller-manager:v1.35.9@sha256:d7e4983f79ee763f7c56226395ab9c55261ff6035df5ed23eef9bd26b63eb140",
+      "kube-scheduler": "registry.k8s.io/kube-scheduler:v1.35.9@sha256:d96574ba699bc887eeefcc05d9f7828b4df5ba75feac6f20b98097aa85d1ed22",
+      "kube-proxy": "registry.k8s.io/kube-proxy:v1.35.9@sha256:d08adb0c8c2c68075f1e6fa6c4c82880c5af54c1686ac20d22af612082c32a31",
+      "kubelet": "ghcr.io/siderolabs/kubelet:v1.35.9@sha256:40c4200b8163a952bbde447febd9822cb986b70ec785f39c4cfcb8e377b05b55"
+    },
+    "offlineRenderPatches": {
+      "controlPlane": ".talos/patches/kubernetes-1.35.9.yaml",
+      "worker": ".talos/patches/worker-kubernetes-1.35.9.yaml"
+    }
+  },
+  "nodeOrder": [
+    "zimaboard-0",
+    "zimaboard-1",
+    "zimaboard-2",
+    "acer"
+  ],
+  "canary": {
+    "node": null,
+    "label": "homelab.stinkyboi.com/network-policy-canary",
+    "taint": "homelab.stinkyboi.com/network-policy-canary=true:NoSchedule",
+    "requiresDedicatedTaint": true,
+    "requiresMeasuredPlacement": true
+  },
+  "requiredPrivateReceipts": [
+    "placement",
+    "direct-recovery",
+    "off-node-etcd-backup",
+    "artifact-publication"
+  ],
+  "readinessDeadlineSeconds": {
+    "node": 900,
+    "api": 300,
+    "storage": 300,
+    "mesh": 300
+  },
+  "executionBlockers": [
+    "No measured placement or isolated canary",
+    "No current recovery receipts",
+    "Artifacts are not published and verified in Harbor"
+  ],
+  "sourceRevisionPolicy": "exact-current-main-sha-from-protected-workflow"
+}

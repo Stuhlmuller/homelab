@@ -563,6 +563,45 @@ inputs = {
       }
       initial_value = local.placeholder
     }
+    "/homelab/openclaw-enterprise/postgres-admin-password" = {
+      description = "OpenClaw Enterprise PostgreSQL bootstrap administrator password; database container and recovery only."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/postgres-migrator-password" = {
+      description = "OpenClaw Enterprise schema migrator password; initialization job only."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/postgres-app-password" = {
+      description = "OpenClaw Enterprise API and worker PostgreSQL application password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/session-auth-secret" = {
+      description = "Stable OpenClaw Enterprise session signing secret; retain with database recovery material."
+      generated = {
+        kind   = "hex"
+        length = 32
+      }
+    }
+    "/homelab/openclaw-enterprise/gateway-api-key" = {
+      description = "OpenClaw Enterprise private Envoy gateway API identity; API and Envoy policy only."
+      generated = {
+        length  = 48
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/model-api-key" = {
+      description   = "Fresh OpenClaw Enterprise agent OpenAI credential; operator-supplied through a protected workflow."
+      initial_value = local.placeholder
+    }
     "/homelab/nofx/ghcr-read-token" = {
       description   = "Dedicated classic GitHub PAT with read:packages only for private NOFX image pulls."
       initial_value = local.placeholder
