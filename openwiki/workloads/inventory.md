@@ -74,10 +74,10 @@ sources:
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
+generated: { by: "codex", at: "2026-10-18T00:40:35.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:13:58.169Z
+    at: 2026-10-18T00:40:35.896Z
 ---
 
 # Workload Inventory

@@ -46,6 +46,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-c14c7585bd2e583682b8b7f7
+    resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
@@ -74,10 +76,10 @@ sources:
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
-  - id: openwiki-source-dce02546543e605cb2ccbb06
-    resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-f957231327bdd56401fbc4e2
     resource: repo://scripts/ci/image-policy-check.py
+  - id: openwiki-source-dce02546543e605cb2ccbb06
+    resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -134,10 +136,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T23:07:04.882Z" }
+generated: { by: "codex", at: "2026-10-18T00:40:35.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T23:07:04.882Z
+    at: 2026-10-18T00:40:35.896Z
 ---
 
 # Validation Gates

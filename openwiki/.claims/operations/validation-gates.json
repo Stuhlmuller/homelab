@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1fd4c840bf8d4d4c5123cb0b7fc4848e560c89a674783a9fbcb15f2c09831ee5",
+  "pageVersion": "sha256:cd034ffe452e8a6de37c051da26d20e7c1b42bced71eac9946b07a09a3f07f27",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:17dd1381594bafb51b963e3c8a03852b6cd645a95d669422392a3f4ebd9d9aea"
+          "version": "repo-file-v1:sha256:a3ecc1cef14052140e828aa34a7537f087951e99cad8e90d44f4723b462aa776"
         }
       ]
     },
@@ -268,7 +268,7 @@
       "evidence": [
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+          "version": "repo-file-v1:sha256:e79ff25596fa38b78493f42f256285719e10ea6990684b762d9370d255ea9dc6"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -362,7 +362,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0315274e2fb6bbd08704de4dc12eaf45bba3513b0be4261c4f9572125768cf1a"
+          "version": "repo-file-v1:sha256:93954e789bc3c516720da59ca80b7cf50925b42fee040f0eaf3314c98c6cee16"
         }
       ]
     },
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:17dd1381594bafb51b963e3c8a03852b6cd645a95d669422392a3f4ebd9d9aea"
+          "version": "repo-file-v1:sha256:a3ecc1cef14052140e828aa34a7537f087951e99cad8e90d44f4723b462aa776"
         }
       ]
     },
@@ -450,7 +450,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+          "version": "repo-file-v1:sha256:e79ff25596fa38b78493f42f256285719e10ea6990684b762d9370d255ea9dc6"
         },
         {
           "resource": "repo://scripts/nix-builder.py",
@@ -520,7 +520,7 @@
         },
         {
           "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
+          "version": "repo-file-v1:sha256:e79ff25596fa38b78493f42f256285719e10ea6990684b762d9370d255ea9dc6"
         },
         {
           "resource": "repo://scripts/ci/nix-checks.sh",
@@ -556,7 +556,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
@@ -617,10 +617,38 @@
           "version": "repo-file-v1:sha256:433674897aa0b397b0fad38a18cf7958934f76cecf4f7eaa1694c2938998cf05"
         }
       ]
+    },
+    {
+      "id": "claim_279c6d451d754507a131e74080cdf552",
+      "statement": "The bounded Nix builder attempt at af18e0e6 failed at sandbox pivot_root before offline checks or signed publication; cleanup and node health were independently verified, and any profile recovery required separate approval.",
+      "evidence": [
+        {
+          "resource": "repo://docs/nix-cache.md",
+          "version": "repo-file-v1:sha256:e79ff25596fa38b78493f42f256285719e10ea6990684b762d9370d255ea9dc6"
+        }
+      ]
+    },
+    {
+      "id": "claim_9789175b1f264e398db0cd956ed2603e",
+      "statement": "The image-policy CI job verifies the shipped Warn and Audit binding admits public images with warnings, and tests Deny only in a disposable Kind fixture; live audit and authenticated Harbor/node pulls remain required before production Deny.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
+          "version": "repo-file-v1:sha256:c9ffa389cd458f804f5b3dd38db8d9120754311dc6dab226249e3d11347d5ebd"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/policy.yaml",
+          "version": "repo-file-v1:sha256:10245e8a30201657e40b7159b7673101e09baa5ff656859f7d70f0cf8877d9cc"
+        },
+        {
+          "resource": "repo://scripts/ci/image-policy-check.py",
+          "version": "repo-file-v1:sha256:07db6ec4576922f39f699edf70970dbff71c1815b38a2388f78afa01b6ab8a04"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T23:07:04.882Z"
+    "at": "2026-10-18T00:40:35.896Z"
   }
 }

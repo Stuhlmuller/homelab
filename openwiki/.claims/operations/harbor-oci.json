@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e9a564585f5f55275ed0f7ed65eeaf95a120a600baf449eeead7619f1905fdde",
+  "pageVersion": "sha256:e9700b779281c0d9efe36a5dcc23554fa1511d1e9c52341d5294f33bc7a62cf9",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -346,7 +346,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:bdb8c656fc7f9ed2eb1af1b17b525cc9c6f4493eb4b5bf9ee083002f26fdba66"
+          "version": "repo-file-v1:sha256:7884e53b4e1c1ba6b1d377984ed00e0bf570b86631e960964ade2ca49a16606f"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -378,7 +378,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:bdb8c656fc7f9ed2eb1af1b17b525cc9c6f4493eb4b5bf9ee083002f26fdba66"
+          "version": "repo-file-v1:sha256:7884e53b4e1c1ba6b1d377984ed00e0bf570b86631e960964ade2ca49a16606f"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -535,8 +535,8 @@
       ]
     },
     {
-      "id": "claim_59e1825af4de40d285f62283eb403c61",
-      "statement": "The staged harbor-only-images ValidatingAdmissionPolicy audits Pod image references on create and update, including init and ephemeral containers, with Warn and Audit actions; Deny promotion remains held for inventory, publication, and authenticated node-pull acceptance.",
+      "id": "claim_2857c7e25fd84614ab0bda08a77fad3a",
+      "statement": "The staged Harbor-only admission policy uses Warn and Audit for Pod image references, including init and ephemeral containers; Deny is held until live inventory, protected publication, and authenticated node-pull acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/image-policy/README.md",
@@ -555,6 +555,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T23:58:10.958Z"
+    "at": "2026-10-18T00:40:35.896Z"
   }
 }

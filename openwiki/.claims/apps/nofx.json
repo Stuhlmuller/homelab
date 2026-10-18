@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:30a58763b5bba83a7867e5fb235bae2c86c19dd44aa8ede4dcd27f696d892c9d",
+  "pageVersion": "sha256:e678a52462036aeedd2fc0ea868aac9bb5f294bd58b7e13b648e52ad18a84d3c",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -30,13 +30,13 @@
         },
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:bdb8c656fc7f9ed2eb1af1b17b525cc9c6f4493eb4b5bf9ee083002f26fdba66"
+          "version": "repo-file-v1:sha256:7884e53b4e1c1ba6b1d377984ed00e0bf570b86631e960964ade2ca49a16606f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T23:58:10.958Z"
+    "at": "2026-10-18T00:40:35.896Z"
   }
 }
