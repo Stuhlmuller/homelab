@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9823a8faac7577136a909c9f0f2514f0391374aae51cd62319154b50cc113020",
+  "pageVersion": "sha256:4b539bdf5cba2af8788ec0dcc3d1d82ff1f458806a29b86fea81ead3467a330c",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -544,7 +544,7 @@
         },
         {
           "resource": "repo://builds/cordium-runner/README.md",
-          "version": "repo-file-v1:sha256:cac5135b47d625ece5a311a0425039dbeb1be6bf174cbaa6524c831ad96fae4d"
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -555,6 +555,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T23:19:59.804Z"
+    "at": "2026-10-18T00:35:50.724Z"
   }
 }

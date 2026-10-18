@@ -4,14 +4,8 @@ title: "Workload Inventory"
 description: "Application namespaces, GitOps paths, dependencies, state contracts and runtime readiness boundaries."
 tags: [workloads, argocd, inventory]
 sources:
-  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
-    resource: repo://.cordium/runner-pool.json
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
-  - id: openwiki-source-89de10646bdbebfd3e1ed075
-    resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-812216982d0b6a887bf09651
     resource: repo://clusters/homelab/apps/cordium/networkpolicy.yaml
   - id: openwiki-source-efd15335758af38c6e6af9ab
@@ -79,7 +73,7 @@ sources:
 generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:13:58.169Z
+    at: 2026-10-18T00:35:50.724Z
 ---
 
 # Workload Inventory

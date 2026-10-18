@@ -3,9 +3,6 @@ type: runbook
 title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-17T23:43:12.829Z
 sources:
   - id: openwiki-source-28a7f340da431caf1c218c7d
     resource: repo://.github/workflows/cordium-runner-canary.yml
@@ -26,6 +23,9 @@ sources:
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
 generated: { by: "codex", at: "2026-10-17T23:43:12.829Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T00:35:50.724Z
 ---
 
 # CI/CD
