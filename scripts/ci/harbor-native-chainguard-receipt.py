@@ -259,12 +259,14 @@ def index_platforms(raw, required_platforms):
         if key not in wanted:
             continue
         digest = descriptor.get("digest")
-        require(descriptor.get("mediaType") in MANIFEST_MEDIA_TYPES and isinstance(digest, str)
-                and SHA256.fullmatch(digest) is not None and key not in result,
+        media_type = descriptor.get("mediaType")
+        require(media_type in MANIFEST_MEDIA_TYPES and isinstance(digest, str)
+                and SHA256.fullmatch(digest) is not None
+                and (key not in result or result[key] == (digest, media_type)),
                 "image index required platform is ambiguous")
-        result[key] = digest
+        result[key] = (digest, media_type)
     require(set(result) == wanted, "image index lacks a required platform")
-    return dict(sorted(result.items()))
+    return {key: value[0] for key, value in sorted(result.items())}
 
 
 def scan_complete(artifact, digest, platform):

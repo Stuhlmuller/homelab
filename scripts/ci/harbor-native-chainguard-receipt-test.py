@@ -102,6 +102,20 @@ class VerificationTests(TestCase):
         with self.assertRaises(VERIFY.ReceiptError):
             VERIFY.receipt_for(self.plan, "c" * 40, self.raw, self.raw + b" ", self.raw, scan_receipt(self.plan))
 
+    def test_identical_required_platform_descriptors_are_allowed(self):
+        repeated = json.loads(self.raw)
+        repeated["manifests"] += copy.deepcopy(repeated["manifests"])
+        raw = json.dumps(repeated).encode()
+        self.assertEqual(VERIFY.index_platforms(raw, self.plan["required_platforms"]),
+                         {"linux/amd64": AMD64, "linux/arm64": ARM64})
+        repeated["manifests"][-1]["digest"] = AMD64
+        with self.assertRaises(VERIFY.ReceiptError):
+            VERIFY.index_platforms(json.dumps(repeated).encode(), self.plan["required_platforms"])
+        repeated["manifests"][-1]["digest"] = ARM64
+        repeated["manifests"][-1]["mediaType"] = "application/vnd.docker.distribution.manifest.v2+json"
+        with self.assertRaises(VERIFY.ReceiptError):
+            VERIFY.index_platforms(json.dumps(repeated).encode(), self.plan["required_platforms"])
+
     def test_failed_scan_and_forged_receipt_fail(self):
         failed = scan_receipt(self.plan)
         failed["scan_status"]["linux/arm64"] = "Running"
