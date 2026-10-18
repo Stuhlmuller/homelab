@@ -696,6 +696,7 @@ class HarborPublicationGates(unittest.TestCase):
         destination = f"harbor.stinkyboi.com/mirror/{repository}"
         copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
         self.assertEqual(len(copies), 4)
+        self.assertEqual(self.calls_for("timeout")[0][2], "19800")
         self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
         self.assertTrue(copies[0][-1].startswith("dir:"))
         self.assertEqual(copies[1][-2:], [f"docker://{repository}@{digest}",
