@@ -17,6 +17,7 @@ bucket="$(jq -er .bucket IaC/config/application-backup-storage.json)"
 
 work="$(mktemp -d)"
 trap 'rm -rf -- "$work"' EXIT
+status_refresh_count=0
 python3 scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/status.json"
 pod="$(jq -er .readerPod "$work/status.json")"
 pod_uid="$(jq -er .readerPodUid "$work/status.json")"
@@ -39,29 +40,34 @@ restore_version() (
   pipe_dir="$(mktemp -d)"
   trap 'rm -rf -- "$pipe_dir"' EXIT
   mkfifo -m 600 "$pipe_dir/body"
-  exec 3<>"$pipe_dir/body"
   aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
-    "$pipe_dir/body" >/dev/null 3>&- &
+    "$pipe_dir/body" >/dev/null &
   source_pid=$!
   "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$3" \
-    <"$pipe_dir/body" 3>&- &
+    <"$pipe_dir/body" &
   reader_pid=$!
-  source_result=0
-  wait "$source_pid" || source_result=$?
-  exec 3>&-
-  wait "$reader_pid"
-  exit "$source_result"
+  if ! wait -n -p completed_pid "$source_pid" "$reader_pid"; then
+    kill "$source_pid" "$reader_pid" 2>/dev/null || true
+    wait "$source_pid" "$reader_pid" 2>/dev/null || true
+    exit 1
+  fi
+  if [[ "$completed_pid" == "$source_pid" ]]; then wait "$reader_pid"; else wait "$source_pid"; fi
 )
 
-recheck_quiescence() {
-  python3 scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/recheck.json"
-  jq -e --slurpfile before "$work/status.json" '
-    .replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and
-    (.cronJobSuspended == true or .cronJobAbsent == true) and
+refresh_status() {
+  status_refresh_count=$((status_refresh_count + 1))
+  recheck="$work/recheck-${status_refresh_count}.json"
+  python3 scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$recheck"
+  jq -e --arg stage "$1" --slurpfile before "$work/status.json" '
     .readerPodUid == $before[0].readerPodUid and .readerPod == $before[0].readerPod and
     .claims == $before[0].claims and .volumes == $before[0].volumes and
-    .roots == $before[0].roots
-  ' "$work/recheck.json" >/dev/null
+    .roots == $before[0].roots and .image == $before[0].image and
+    .assistantSha256 == $before[0].assistantSha256 and
+    ($stage != "stopped" or (.replicas == 0 and .readyReplicas == 0 and
+      .pods == 0 and .activeJobs == 0 and
+      (.cronJobSuspended == true or .cronJobAbsent == true)))
+  ' "$recheck" >/dev/null
+  "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$recheck"
 }
 
 case "$stage" in
@@ -71,6 +77,7 @@ case "$stage" in
     "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory \
       --config /private/legacy/config.json --status /private/legacy/status.json \
       --output "$baseline_result"
+    refresh_status inventory
     "${reader[@]}" sh -c 'test ! -e "$1" && cp "$2" "$1" && chmod 600 "$1"' sh "$baseline" "$baseline_result"
     baseline_key="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}/baseline.json"
     require_absent_object "$baseline_key"
@@ -83,9 +90,14 @@ case "$stage" in
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
+    observed="/private/legacy/observed-${GITHUB_RUN_ID}.json"
+    "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory \
+      --config /private/legacy/config.json --status /private/legacy/status.json \
+      --output "$observed"
+    refresh_status stopped
     "${reader[@]}" env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py archive \
       --config /private/legacy/config.json --status /private/legacy/status.json \
-      --baseline "$baseline" --destination /archive/private \
+      --baseline "$baseline" --observed "$observed" --destination /archive/private \
       --output "$archive_result"
     receipt="$("${reader[@]}" cat "$archive_result" | jq -er .receipt)"
     [[ "$receipt" =~ ^/archive/private/legacy-[0-9a-f]{64}/receipt\.json$ ]] || exit 1
@@ -107,7 +119,7 @@ case "$stage" in
       --arg baseline "$BASELINE_REF" --arg archiveVersion "$archive_version" \
       --arg receiptVersion "$receipt_version" --arg digest "$(jq -er .sha256 "$work/receipt.json")" \
       '{sourceSha:$sha,runId:$run,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
-    recheck_quiescence
+    refresh_status stopped
     aws s3 cp "$work/final.json" "s3://${bucket}/${prefix}/final.json"
     "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
     ;;

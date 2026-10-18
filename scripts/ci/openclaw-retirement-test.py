@@ -79,12 +79,14 @@ class Retirement(unittest.TestCase):
         }
         self.status_path = self.archive_root / 'status.json'
         self.baseline_path = self.archive_root / 'baseline.json'
+        self.observed_path = self.archive_root / 'observed.json'
         retirement.write_private(self.status_path, self.status)
         retirement.write_private(self.baseline_path, self.baseline)
+        retirement.write_private(self.observed_path, dict(self.observed, rootIdentity=self.status['roots']))
 
     def test_full_local_and_nas_archive_restores_checkpoint_and_databases(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
-            receipt = retirement.archive(self.config, self.status_path, self.baseline_path,
+            receipt = retirement.archive(self.config, self.status_path, self.baseline_path, self.observed_path,
                                          self.archive_root)
         record = retirement.verify_archive(self.config, receipt)
         self.assertEqual(set(record['restoredDatabases']), set(self.config['requiredLocal']))
@@ -95,7 +97,7 @@ class Retirement(unittest.TestCase):
         self.assertIn('nas/unlisted-configuration', names)
         self.assertIn('nas/openclaw-backups/pre-2026.9.2-runtime/retained', names)
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
-            self.assertEqual(retirement.archive(self.config, self.status_path, self.baseline_path,
+            self.assertEqual(retirement.archive(self.config, self.status_path, self.baseline_path, self.observed_path,
                                                 self.archive_root), receipt)
         with (receipt.parent / 'legacy.tar.gz').open('ab') as damaged:
             damaged.write(b'truncated-or-changed')
@@ -109,6 +111,7 @@ class Retirement(unittest.TestCase):
         result = subprocess.run([
             'python3', str(SOURCE), 'archive', '--config', str(config_path),
             '--status', str(self.status_path), '--baseline', str(self.baseline_path),
+            '--observed', str(self.observed_path),
             '--destination', str(self.archive_root), '--output', str(result_path),
         ], env={**os.environ, 'GITHUB_ACTIONS': 'true'}, capture_output=True, text=True,
             timeout=30, check=False)
@@ -129,7 +132,7 @@ class Retirement(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     retirement.stopped(changed, self.config, self.observed, self.baseline)
         with self.assertRaises(ValueError), patch.dict(os.environ, {}, clear=True):
-            retirement.archive(self.config, self.status_path, self.baseline_path,
+            retirement.archive(self.config, self.status_path, self.baseline_path, self.observed_path,
                                self.archive_root)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
 
@@ -142,6 +145,23 @@ class Retirement(unittest.TestCase):
         with self.assertRaises(ValueError):
             retirement.inventory(self.config, stale)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
+
+    def test_inventory_validates_status_before_long_scan(self):
+        status = dict(self.status)
+        scan = retirement.tree
+
+        def long_scan(root):
+            status['checkedAt'] = int(time.time()) - 121
+            return scan(root)
+
+        with patch.object(retirement, 'tree', side_effect=long_scan):
+            self.assertEqual(retirement.inventory(self.config, status)['kubernetes'],
+                             self.observed['kubernetes'])
+        stale_path = self.archive_root / 'stale-status.json'
+        retirement.write_private(stale_path, status)
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), self.assertRaises(ValueError):
+            retirement.archive(self.config, stale_path, self.baseline_path,
+                               self.observed_path, self.archive_root)
 
     def test_missing_required_data_uid_and_overlap_fail_closed(self):
         for change in ('missing', 'uid', 'overlap'):
@@ -171,7 +191,7 @@ class Retirement(unittest.TestCase):
         (self.nas / 'openclaw' / 'escape').symlink_to('/private/unknown')
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
             with self.assertRaises(ValueError):
-                retirement.archive(self.config, self.status_path, self.baseline_path,
+                retirement.archive(self.config, self.status_path, self.baseline_path, self.observed_path,
                                    self.archive_root)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
 
@@ -179,7 +199,7 @@ class Retirement(unittest.TestCase):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
              patch.object(retirement, 'add_tree', side_effect=ValueError('fixture failure')):
             with self.assertRaises(ValueError):
-                retirement.archive(self.config, self.status_path, self.baseline_path,
+                retirement.archive(self.config, self.status_path, self.baseline_path, self.observed_path,
                                    self.archive_root)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
         pending = list(self.archive_root.glob('.partial-oce-legacy-*'))

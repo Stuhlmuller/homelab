@@ -18,7 +18,7 @@ WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 
 
 class Operations(unittest.TestCase):
-    def test_final_receipt_rechecks_writers_and_volume_identity(self):
+    def test_refresh_status_rechecks_writers_and_volume_identity(self):
         status = {'replicas': 0, 'readyReplicas': 0, 'pods': 0, 'activeJobs': 0,
                   'cronJobSuspended': True, 'readerPod': 'reader',
                   'readerPodUid': 'uid', 'claims': {'state': 'pvc'},
@@ -26,17 +26,21 @@ class Operations(unittest.TestCase):
                   'roots': {'local': {'inode': 1}}}
         shell = '''set -euo pipefail
 work="$1"
+status_refresh_count=0
+reader_input=(true)
 python3() { cp "$TEST_STATUS" "${@: -1}"; }
-source <(sed -n '/^recheck_quiescence() {/,/^}/p' "$2")
-recheck_quiescence
+source <(sed -n '/^refresh_status() {/,/^}/p' "$2")
+refresh_status "$3"
 '''
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             (work / 'status.json').write_text(json.dumps(status))
-            for changes, expected in (({}, 0), ({'pods': 1}, 1),
-                                      ({'volumes': {'state': {'pvUid': 'changed'}}}, 1)):
+            for changes, stage, expected in (({}, 'stopped', 0), ({'pods': 1}, 'stopped', 1),
+                                             ({'pods': 1}, 'inventory', 0),
+                                             ({'volumes': {'state': {'pvUid': 'changed'}}},
+                                              'inventory', 1)):
                 (work / 'next.json').write_text(json.dumps({**status, **changes}))
-                result = subprocess.run(['bash', '-c', shell, 'bash', directory, str(SCRIPT)],
+                result = subprocess.run(['bash', '-c', shell, 'bash', directory, str(SCRIPT), stage],
                                         cwd=ROOT, env={**os.environ, 'TEST_STATUS':
                                                        str(work / 'next.json')},
                                         capture_output=True, text=True, timeout=10,
@@ -68,6 +72,7 @@ recheck_quiescence
             shell = '''set -euo pipefail
 bucket=test
 reader_input=()
+if [[ "${TEST_READER_FAIL:-}" == true ]]; then reader_input=(false); fi
 aws() { command aws --endpoint-url "$TEST_ENDPOINT" --no-sign-request "$@"; }
 source <(sed -n '/^restore_version() (/,/^)/p' "$1")
 restore_version key version-1 "$2"
@@ -84,6 +89,13 @@ restore_version key version-1 "$2"
                 server.fail = True
                 result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
                                         cwd=ROOT, env={**os.environ, 'TEST_ENDPOINT':
+                                                       f'http://127.0.0.1:{server.server_port}'},
+                                        capture_output=True, timeout=20, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                server.fail = False
+                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), str(destination)],
+                                        cwd=ROOT, env={**os.environ, 'TEST_READER_FAIL': 'true',
+                                                       'TEST_ENDPOINT':
                                                        f'http://127.0.0.1:{server.server_port}'},
                                         capture_output=True, timeout=20, check=False)
                 self.assertNotEqual(result.returncode, 0)

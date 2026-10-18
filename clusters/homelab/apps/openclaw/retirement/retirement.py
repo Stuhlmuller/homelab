@@ -152,6 +152,7 @@ def volume_identity(status, config):
 
 
 def inventory(config, status=None):
+    identity = volume_identity(status, config) if status is not None else None
     local, nas = roots(config)
     result = {
         'format': 1,
@@ -168,7 +169,7 @@ def inventory(config, status=None):
         'requiredNas': config['requiredNas'],
     }
     if status is not None:
-        result['kubernetes'] = volume_identity(status, config)
+        result['kubernetes'] = identity
         if not all(status.get('roots', {}).get(name) == {
             key: result['roots'][name][key] for key in ('device', 'inode', 'uid')
         } for name in ('local', 'nas')):
@@ -235,12 +236,14 @@ def verify_bundle(bundle, expected, config):
         return {name: digest(local / name) for name in config['requiredLocal']}
 
 
-def archive(config, status_path, baseline_path, destination):
+def archive(config, status_path, baseline_path, observed_path, destination):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('archive runs only in the protected workflow')
     status = json.loads(private_file(status_path).read_text())
     baseline = json.loads(private_file(baseline_path, config['nasUid']).read_text())
-    observed = inventory(config, status)
+    observed = json.loads(private_file(observed_path, config['nasUid']).read_text())
+    if observed.get('format') != 1 or observed.get('requiredNas') != config['requiredNas']:
+        raise ValueError('legacy inventory is incomplete or mismatched')
     stopped(status, config, observed, baseline)
     destination = private_dir(destination, config['nasUid'])
     if any(destination.is_relative_to(root.resolve()) for root in roots(config)):
@@ -257,7 +260,8 @@ def archive(config, status_path, baseline_path, destination):
     restored = verify_bundle(bundle, digest(bundle), config)
     if restored != {name: item['sha256'] for name, item in observed['databases'].items()}:
         raise ValueError('restored database differs from stopped source')
-    if inventory(config) != {key: value for key, value in observed.items() if key != 'kubernetes'}:
+    if inventory(config) != {key: value for key, value in observed.items()
+                             if key not in ('kubernetes', 'rootIdentity')}:
         raise ValueError('legacy source changed during archive')
     receipt = {'format': 1, 'inventory': observed, 'sha256': digest(bundle),
                'restoredDatabases': restored}
@@ -299,6 +303,7 @@ def main():
     parser.add_argument('--output', type=Path)
     parser.add_argument('--status', type=Path)
     parser.add_argument('--baseline', type=Path)
+    parser.add_argument('--observed', type=Path)
     parser.add_argument('--destination', type=Path)
     parser.add_argument('--receipt', type=Path)
     args = parser.parse_args()
@@ -310,8 +315,8 @@ def main():
             observed['rootIdentity'] = {name: {key: item[key] for key in ('device', 'inode', 'uid')}
                                         for name, item in observed['roots'].items()}
             write_private(args.output, observed)
-        elif args.operation == 'archive' and args.status and args.baseline and args.destination:
-            receipt = archive(config, args.status, args.baseline, args.destination)
+        elif args.operation == 'archive' and args.status and args.baseline and args.observed and args.destination:
+            receipt = archive(config, args.status, args.baseline, args.observed, args.destination)
             if args.output:
                 write_private(args.output, {'receipt': str(receipt)})
             print('Verified private legacy archive')

@@ -24,8 +24,10 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 ```
 
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
-four PVC/PV UIDs, node and assistant image. The archive stage refuses active or
-uncertain writers and copies the complete bundle to versioned S3. It downloads
+four PVC/PV UIDs, node and assistant image. Both inventory and archive refresh
+Kubernetes status after scanning retained data and compare volume identities.
+The archive stage refuses active or uncertain writers and copies the complete
+bundle to versioned S3. It downloads
 that copy into scratch and verifies a full isolated extract before publishing a
 private `final.json` receipt. It rechecks zero writers and the original volume
 identities immediately before that publication. Verify selects its original S3
