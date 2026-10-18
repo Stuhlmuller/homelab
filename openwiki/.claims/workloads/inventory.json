@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3fc952fe0864c8dc83139b2831aa52beb841647043f46134e21c683c76c9ce13",
+  "pageVersion": "sha256:5d5d1019b5b5cd439a76838a9752dd6f20a140968b312204bbafad92c7e10874",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
+          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
+          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -265,6 +265,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:24:02.662Z"
+    "at": "2026-10-18T10:55:26.804Z"
   }
 }
