@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location(
-    'openclaw_retirement', ROOT / 'clusters/homelab/apps/openclaw/assistant/retirement.py')
+    'openclaw_retirement', ROOT / 'clusters/homelab/apps/openclaw/retirement/retirement.py')
 retirement = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(retirement)
 

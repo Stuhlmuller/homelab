@@ -160,6 +160,21 @@ plan_and_apply_langfuse_prerequisites() {
   echo "::endgroup::"
 }
 
+plan_and_apply_application_backup_storage() {
+  local plan_dir
+
+  plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-openclaw-archive-plan.XXXXXX")"
+  cleanup_dirs+=("$plan_dir")
+  (
+    cd IaC/operator/application-backup-storage
+    terragrunt init -no-color
+    terragrunt plan -out "$plan_dir/plan.out" -no-color
+    terragrunt --log-disable show -json "$plan_dir/plan.out" >"$plan_dir/plan.json"
+    conftest test --policy ../../../policy --output github "$plan_dir/plan.json"
+    terragrunt apply -no-color "$plan_dir/plan.out"
+  )
+}
+
 plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
@@ -299,6 +314,10 @@ if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
 fi
 
 destroy_deleted_terragrunt_units
+
+echo "::group::OpenClaw legacy offsite bucket plan and apply"
+plan_and_apply_application_backup_storage
+echo "::endgroup::"
 
 echo "::group::Argo CD bootstrap apply"
 (

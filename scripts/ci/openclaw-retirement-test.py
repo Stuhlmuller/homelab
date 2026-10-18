@@ -15,7 +15,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-SOURCE = Path(__file__).resolve().parents[2] / 'clusters/homelab/apps/openclaw/assistant/retirement.py'
+SOURCE = Path(__file__).resolve().parents[2] / 'clusters/homelab/apps/openclaw/retirement/retirement.py'
 spec = importlib.util.spec_from_file_location('openclaw_retirement', SOURCE)
 retirement = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(retirement)

@@ -100,6 +100,9 @@ spec:
             - name: scripts
               mountPath: /etc/openclaw-assistant
               readOnly: true
+            - name: retirement-scripts
+              mountPath: /etc/openclaw-retirement
+              readOnly: true
       volumes:
         - name: local
           persistentVolumeClaim:
@@ -125,6 +128,9 @@ spec:
         - name: scripts
           configMap:
             name: openclaw-assistant
+        - name: retirement-scripts
+          configMap:
+            name: openclaw-retirement
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

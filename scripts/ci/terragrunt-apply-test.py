@@ -50,6 +50,7 @@ units = {
     "IaC/bootstrap/argocd": "bootstrap",
     "IaC/live/aws-ssm-parameters": "ssm",
     "IaC/live/langfuse-blob-storage": "s3",
+    "IaC/operator/application-backup-storage": "archive-bucket",
     "IaC/live/kubernetes-node-labels": "nodes",
     "IaC/live/azuread-applications": "azure",
     "IaC/live/kubernetes-secrets": "secrets",
@@ -255,6 +256,7 @@ class TerragruntApplyTest(unittest.TestCase):
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
             for unit in ("bootstrap/argocd", "live/aws-ssm-parameters", "live/langfuse-blob-storage",
+                         "operator/application-backup-storage",
                          "live/kubernetes-node-labels", "live/azuread-applications",
                          "live/kubernetes-secrets/external-secrets-aws-ssm-auth", "live/argocd-apps"):
                 (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
@@ -278,6 +280,7 @@ class TerragruntApplyTest(unittest.TestCase):
             self.assertNotIn("Traceback", result.stderr, result.stderr)
             self.assertFalse(list((root / "IaC").rglob("plan.out")))
             self.assertFalse(list(root.glob("homelab-langfuse-plan.*")))
+            self.assertFalse(list(root.glob("homelab-openclaw-archive-plan.*")))
             self.assertFalse(list(root.glob("terragrunt-argocd-apps.*")))
             return result, [call["event"] for call in calls]
 
@@ -476,7 +479,7 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any(event.startswith("preflight.") for event in events))
         self.assertEqual([event for event in events if event.endswith(".apply")], [
-            "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
+            "archive-bucket.apply", "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
 

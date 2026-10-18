@@ -17,6 +17,8 @@ from pathlib import Path, PurePosixPath
 
 
 STORAGE = Path(__file__).with_name('runtime-storage.py')
+if not STORAGE.exists():
+    STORAGE = Path(__file__).parent.parent / 'assistant/runtime-storage.py'
 spec = importlib.util.spec_from_file_location('openclaw_runtime_storage', STORAGE)
 runtime_storage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runtime_storage)

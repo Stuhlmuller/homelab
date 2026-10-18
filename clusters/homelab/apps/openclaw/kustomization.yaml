@@ -21,7 +21,10 @@ configMapGenerator:
       - assistant/bootstrap.py
       - assistant/reconcile.py
       - assistant/runtime-storage.py
-      - assistant/retirement.py
       - assistant/gh
+  - name: openclaw-retirement
+    files:
+      - retirement.py=retirement/retirement.py
+      - runtime-storage.py=assistant/runtime-storage.py
 generatorOptions:
   disableNameSuffixHash: true
