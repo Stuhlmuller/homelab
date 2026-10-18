@@ -14,9 +14,11 @@ promtool = shutil.which("promtool")
 if not promtool:
     raise SystemExit("promtool is required; run inside nix develop")
 spec = json.loads(subprocess.check_output(["yq", "-o=json", ".spec", str(rule)]))
-assert "renovate-prometheusrules.yaml" in json.loads(subprocess.check_output([
+resources = json.loads(subprocess.check_output([
     "yq", "-o=json", ".resources", str(rule.with_name("kustomization.yaml"))
 ]))
+if "renovate-prometheusrules.yaml" not in resources:
+    raise SystemExit("Renovate alert rules are absent from the Prometheus Kustomization")
 
 
 def metric(name, values):
