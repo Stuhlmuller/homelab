@@ -58,8 +58,8 @@
     "sessionAuth": "/homelab/openclaw-enterprise/session-auth-secret"
   },
   "model": {
-    "provider": "openai",
-    "id": null
+    "provider": "openrouter",
+    "id": "openrouter/free"
   },
   "privateJournal": {
     "required": true,
@@ -110,7 +110,7 @@
   },
   "executionBlockers": [
     "Matching published controller/runtime images and source-built CLI are not verified",
-    "Model ID and dedicated credential are not configured",
+    "Dedicated OpenRouter credential is not configured",
     "Storage placement and private recovery paths are not validated"
   ],
   "installationPhases": [

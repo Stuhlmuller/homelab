@@ -16,7 +16,7 @@ identifies the matching published pair and records its immutable receipts.
 
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
 Sandbox, optional broker/collector, or configured Codex Harness. The provider is
-`openai`; model ID and dedicated model credential are explicit activation inputs.
+`openrouter`; `openrouter/free` and a dedicated model credential are explicit activation inputs.
 Do not copy the example model or reuse old app credentials. Deployment includes a
 real billable provider probe; no deployment occurs without those configured inputs.
 

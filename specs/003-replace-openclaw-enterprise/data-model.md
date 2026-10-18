@@ -10,7 +10,7 @@ receipts. Secret values and personal contents never belong in these records.
 | Maintenance receipt | stage, node, before/after versions, image digest, health results, timestamp, status | References platform target; completed nodes are verified before resume, never blindly rerun |
 | Policy qualification | source/render hashes, node/CNI/backend versions, reviewed policy fingerprints, scenario results | Bound to actual canary and every expanded node; missing or failed required case blocks rollout |
 | Enterprise installation | source/image/chart pins, phase, namespaces, private origins, storage classes, secret references | Depends on accepted platform and foundation; no plaintext secret or mutable image tag |
-| Model selection | provider, model ID, credential reference, activation enabled | Provider `openai`; model/key absent allowed only while inactive; never inherit old LiteLLM credentials |
+| Model selection | provider, model ID, credential reference, activation enabled | Provider `openrouter`, model `openrouter/free`; key absent allowed only while inactive; never inherit old LiteLLM credentials |
 | Agent binding | logical name `claw`, Namespace ID, Agent ID, ServicePrincipal ID, Configuration ID/generation, revision ID | At most one active desired binding; exact-Secret grants only; ambiguous discovery fails closed |
 | Reconciliation journal | desired hash, operation, server IDs, observed generation/revision, outcome | Protected durable state; pending/unknown outcomes require discovery before another create |
 | Legacy archive | source PVC UIDs/nodes, roots, compatible image/config hash, private artifact location, integrity results | Covers local DBs plus NAS; preserve old checkpoints; no import into new agent |

@@ -189,7 +189,7 @@ the default NFS StorageClass is not suitable for its authoritative SQLite state.
 
 Use native IAM/password login and one fresh Embedded OpenClaw agent. No channels,
 repository broker, optional collector, Slack proxy, Backend, or Codex Harness.
-Provider is the stock supported OpenAI path; model identifier and a dedicated
+Provider is stock OpenRouter with model `openrouter/free`; a dedicated
 provider key must be supplied explicitly before activation. Do not adopt the
 example model or reuse LiteLLM/old assistant credentials. Agent deployment runs a
 real model probe, so it is an inference action, not a free readiness test.
@@ -274,5 +274,5 @@ Sources: [Envoy compatibility](https://gateway.envoyproxy.io/news/releases/matri
 Product-scope questions are resolved by the owner's clarification. No technical
 selection remains unspecified. Execution gates remain: capacity/canary allocation,
 immutable artifact receipts, actual platform compatibility and isolation tests,
-provider model/key input, full restores, and real browser/inference acceptance.
+the dedicated OpenRouter key, full restores, and real browser/inference acceptance.
 These must fail closed during implementation; this document does not mark them passed.
