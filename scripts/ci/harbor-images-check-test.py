@@ -109,7 +109,7 @@ with tempfile.TemporaryDirectory() as directory:
     sources = [prefix + digest for prefix in (
         "ghcr.io/mastodon/mastodon:v4.7.3@",
         "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
-        "docker.io/library/postgres:18.6-bookworm@",
+        "docker.io/library/postgres:18-bookworm@",
         "docker.io/library/redis:7.4.11-alpine@",
     )]
     check.CATALOG.write_text(json.dumps({"images": [{"source": source} for source in sources]}))
@@ -129,15 +129,19 @@ with tempfile.TemporaryDirectory() as directory:
     check.BAZARR_CATALOG = check.ROOT / "bazarr-images.json"
     check.MASTODON_CATALOG = check.ROOT / "mastodon-images.json"
     check.CHAINGUARD_CATALOG = check.ROOT / "chainguard-images.json"
+    check.HARBOR_RUNTIME_CATALOG = check.ROOT / "harbor-runtime-images.json"
+    runtime_images = json.loads((original_root / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+    check.HARBOR_RUNTIME_CATALOG.write_text(json.dumps({"images": runtime_images}))
     check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     check.CHARTS = check.ROOT / "charts.json"
-    catalog = {"images": [
-        {"source": "docker.io/library/busybox@" + digest},
+    base_catalog = {"images": [
+        {"source": "docker.io/library/busybox:1.38@" + digest},
         {"source": "quay.io/example/operator@" + digest}]}
+    catalog = {"images": [*base_catalog["images"], *runtime_images]}
     check.CATALOG.write_text(json.dumps(catalog))
-    check.FLEET_CATALOG.write_text(json.dumps(catalog))
-    check.BAZARR_CATALOG.write_text(json.dumps(catalog))
-    check.MASTODON_CATALOG.write_text(json.dumps(catalog))
+    check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
+    check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
+    check.MASTODON_CATALOG.write_text(json.dumps(base_catalog))
     check.declared_mastodon_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images
@@ -151,6 +155,47 @@ with tempfile.TemporaryDirectory() as directory:
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    original_image = documents[0]["initContainers"][0]["image"]
+    documents[0]["initContainers"][0]["image"] = "busybox:1.38"
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38@" + digest)
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/busybox@" + digest)
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/busybox:1.38@" + digest)
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Unpublished Docker Hub shorthand mirror path passed")
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/busybox:1.38")
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Digestless Harbor mirror tag passed")
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/mirror/docker.io/library/unreviewed:1@" + digest)
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "Unmirrored declared image: harbor.stinkyboi.com/mirror/" in str(error)
+    else:
+        raise AssertionError("Internal image with unreviewed source repository passed")
+    documents[0]["initContainers"][0]["image"] = (
+        "harbor.stinkyboi.com/homelab/private-tool:latest")
+    with contextlib.redirect_stdout(io.StringIO()):
+        check.check()
+    documents[0]["initContainers"][0]["image"] = original_image
     check.MASTODON_CATALOG.write_text(json.dumps({"images": catalog["images"][:1]}))
     try:
         check.check()

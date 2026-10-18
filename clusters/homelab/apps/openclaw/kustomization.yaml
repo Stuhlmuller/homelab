@@ -4,6 +4,8 @@ namespace: ai
 resources:
   - runtime-storage.yaml
   - runtime-backup.yaml
+  - retirement-storage.yaml
+  - retirement-reader.yaml
   - externalsecret.yaml
   - networkpolicy.yaml
   - virtualservice.yaml
@@ -20,5 +22,9 @@ configMapGenerator:
       - assistant/reconcile.py
       - assistant/runtime-storage.py
       - assistant/gh
+  - name: openclaw-retirement
+    files:
+      - retirement.py=retirement/retirement.py
+      - runtime-storage.py=assistant/runtime-storage.py
 generatorOptions:
   disableNameSuffixHash: true

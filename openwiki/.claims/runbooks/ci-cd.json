@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:3aa485ac5b7f1108183f8094138c48a774aa9e07af98e316b1ceb2c915f382b3",
+  "claims": [
+    {
+      "id": "claim_34382a82571c444084b9118105fb700f",
+      "statement": "Optional NOFX image, OpenClaw native config, and Image automation PR events are removed; matching main pushes and reviewed manual dispatches remain, while the five-minute image observer schedule is removed.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/image-automation.yml",
+          "version": "repo-file-v1:sha256:db3bd4716067e37ff02837284d36b6319498ff70f50532b5e57c7e0933ca236c"
+        },
+        {
+          "resource": "repo://.github/workflows/nofx-images.yml",
+          "version": "repo-file-v1:sha256:996093a94239505a4ca3807f717d24d1b2934d8d0d764121e8016bc1399d9924"
+        },
+        {
+          "resource": "repo://.github/workflows/openclaw-config.yml",
+          "version": "repo-file-v1:sha256:eb9c2c8b08817ae2973ec3b0db14717bcb8bd96c027e2067dcf4dd2257ccea9a"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:ca4e4fa183b0946bc44a6c815cfa272eb1dabcf8029753030d97387277a8785d"
+        }
+      ]
+    },
+    {
+      "id": "claim_64b3256c37b048bd8c2f2a27ea52adb8",
+      "statement": "Cordium runner bootstrap stages exact-main credential, image-build, Harbor publication, and canary workflows. Draft PR #1276 routes regular local jobs to the Cordium pool while retaining hosted bootstrap jobs and the isolated canary label; the pool remains disabled on main until live isolation, publication, cold-pull, canary, and recovery acceptance support cutover.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://docs/cordium-runners.md",
+          "version": "repo-file-v1:sha256:cf35d548b4e819baf61ca09827d703e823c2756b97141b36c05c371718f933cd"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:259daff247ce700354cbe716be945e8dc5d896dc369fd1e39a534e97682a2a74"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-18T13:18:20.225Z"
+  }
+}

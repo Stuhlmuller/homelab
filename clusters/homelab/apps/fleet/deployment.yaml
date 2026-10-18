@@ -53,7 +53,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: prepare-database
-          image: fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c
+          image: fleetdm/fleet:v4.92.3@sha256:2c53edaa4e530ae4671284a309c0cc20345f4c3eff8c12cfcd1238c3e3fc46f1
           imagePullPolicy: IfNotPresent
           command: [fleet, prepare, db, --no-prompt, --config, /run/secrets/fleet/fleet.yml]
           resources:
@@ -76,7 +76,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: fleet
-          image: fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c
+          image: fleetdm/fleet:v4.92.3@sha256:2c53edaa4e530ae4671284a309c0cc20345f4c3eff8c12cfcd1238c3e3fc46f1
           imagePullPolicy: IfNotPresent
           command: [fleet, serve, --config, /run/secrets/fleet/fleet.yml]
           ports:

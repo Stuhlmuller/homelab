@@ -59,7 +59,7 @@ controllers:
       migrate-ai-workflow:
         image:
           repository: ghcr.io/n8n-io/n8n
-          tag: "stable@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
+          tag: "stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
         env:
           DB_TYPE: postgresdb
           DB_POSTGRESDB_HOST: n8n-postgres.automation.svc.cluster.local
@@ -169,7 +169,7 @@ controllers:
       app:
         image:
           repository: ghcr.io/n8n-io/n8n
-          tag: "stable@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
+          tag: "stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
         env:
           TZ: America/Los_Angeles
           GENERIC_TIMEZONE: America/Los_Angeles

@@ -150,7 +150,31 @@ deny contains msg if {
 	some prefix in {"actions/upload-artifact@", "chainguard-actions/actions-upload-artifact@"}
 	startswith(uses, prefix)
 	not encrypted_harbor_diagnostic(job_name, job, steps[index])
+	not encrypted_oce_diagnostic(job_name, job, steps[index])
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
+}
+
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
+	not approved_openclaw_legacy_operation
+	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
+}
+
+approved_openclaw_legacy_operation if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	dispatch.inputs.legacy_stage.options == ["inventory", "archive", "verify"]
+	job := input.jobs.legacy
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency.group == "openclaw-enterprise-operations-production"
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	some step in job.steps
+	step.name == "Run Legacy Stage"
+	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
+	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	contains(step.run, "set -euo pipefail\numask 077\n")
+	contains(step.run, concat("", [`sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
@@ -173,6 +197,26 @@ harbor_encrypted_diagnostic_step := {
 	},
 }
 
+encrypted_oce_diagnostic(job_name, job, step) if {
+	job_name == "publish"
+	some command in job.steps
+	trim(object.get(command, "run", ""), "\n") == oce_image_private_run
+	step == oce_encrypted_diagnostic_step
+}
+
+oce_encrypted_diagnostic_step := {
+	"name": "Retain Only Encrypted Failure Diagnostic",
+	"if": "failure()",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "oce-image-error-${{ github.run_id }}-${{ github.run_attempt }}",
+		"path": "${{ runner.temp }}/oce-image-error.gpg",
+		"if-no-files-found": "ignore",
+		"retention-days": 1,
+		"include-hidden-files": false,
+	},
+}
+
 deny contains msg if {
 	jobs := object.get(input, "jobs", {})
 	some job_name, job in jobs
@@ -185,7 +229,7 @@ deny contains msg if {
 	msg := sprintf("Octelium catalog workflow job %q step %d must use its one-use catalog credential", [job_name, index])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
 has_event(events, event) if {
 	events == event
@@ -290,6 +334,14 @@ dynamic_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+
 
 private_wrapper_start := "if ! nix develop --command bash >\"$private_log\" 2>&1 <<'EOF'\n"
 
+azuread_plan_private_wrapper_start := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+private_log="$private_dir/plan.log"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+`
+
 live_script_command_count(run) := count(regex.find_all_string_submatch_n(shell_live_command_pattern, run, -1)) + count(regex.find_all_string_submatch_n(direct_live_command_pattern, run, -1))
 
 live_cluster_command_count(run) := count(regex.find_all_string_submatch_n(kubectl_command_pattern, run, -1)) - count(regex.find_all_string_submatch_n(kubectl_local_render_pattern, run, -1)) + count(regex.find_all_string_submatch_n(talos_command_pattern, run, -1))
@@ -319,11 +371,47 @@ private_live_output(run) if {
 	private_live_tail(tail)
 }
 
+# The AzureAD plan report can contain provider diagnostics, so keep it and the
+# plan log inside the same private directory and expose only the verified helper.
+private_live_output(run) if {
+	wrapped := split(run, azuread_plan_private_wrapper_start)
+	count(wrapped) == 2
+	closed := split(wrapped[1], "\nEOF\n")
+	count(closed) == 2
+	body := closed[0]
+	tail := closed[1]
+	sensitive_command_count(body) > 0
+	sensitive_command_count(run) == sensitive_command_count(body)
+	regex.match(`(?m)^[\t ]*umask[\t ]+077[\t ]*$`, body)
+	azuread_plan_private_live_tail(tail)
+}
+
 # Harbor exposes only the reviewed publisher's fixed status fields. Keep this
 # exception exact: other private wrappers cannot print arbitrary files or logs.
 private_live_output(run) if {
 	trim(run, "\n") == harbor_mirror_private_run
 }
+
+private_live_output(run) if {
+	trim(run, "\n") == oce_image_private_run
+}
+
+oce_image_private_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/harbor-publish.sh publish-openclaw-enterprise
+EOF
+then
+  python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
+    "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
+  echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+  exit 1
+fi
+echo "Pinned Enterprise controller/runtime pair published, signed, and fully pulled; private output withheld."`
 
 harbor_mirror_private_run := `set -euo pipefail
 umask 077
@@ -353,11 +441,17 @@ case "$IMAGE_SCOPE" in
   traefik)
     bash scripts/ci/harbor-publish.sh mirror-traefik
     ;;
+  harbor)
+    bash scripts/ci/harbor-publish.sh mirror-harbor
+    ;;
+  renovate)
+    bash scripts/ci/harbor-publish.sh mirror-renovate
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7b7038f6a3d723f155f51aa0503b37427b0f3fd6518dfc956c4a3c2fe6f55f27  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -373,6 +467,19 @@ private_live_tail(tail) if {
 	lines[2] == "exit 1"
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
+}
+
+azuread_plan_private_live_tail(tail) if {
+	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
+	count(lines) == 8
+	lines[0] == "then"
+	lines[1] == `if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+	lines[2] == `HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+	lines[3] == "fi"
+	safe_withheld_echo(lines[4])
+	lines[5] == "exit 1"
+	lines[6] == "fi"
+	safe_withheld_echo(lines[7])
 }
 
 private_live_tail(tail) if {

@@ -4,8 +4,18 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
-All local jobs select the Cordium self-hosted pool. Provisioning, compatibility,
-and the activation hold are documented in [Cordium runners](cordium-runners.md).
+- The Cordium self-hosted pool is the target for regular local jobs. Bootstrap
+  publication and runner canary jobs retain their dedicated selectors. See
+  [Cordium runners](cordium-runners.md) for provisioning and activation gates.
+- Required pull request checks remain automatic: Policy Bot, Lint, repository
+  validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
+  Their required status names stay unchanged, so eligible PRs can still merge.
+- NOFX image builds, OpenClaw native configuration checks, and Image automation
+  verification run after matching changes land on `main`, or through their
+  reviewed manual dispatch paths. They no longer start optional PR runs.
+  Image automation no longer runs its five-minute observer schedule; the
+  weekly CodeQL security schedule remains active. Dispatch Image automation
+  with `operation=verify` from `main` to check and alert on its journal.
 
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
   with advisory status reporting. It is the shared lightweight lint signal for
@@ -61,6 +71,11 @@ Re-enable those alerts only after adding a reviewed token-backed secret
 contract for Grafana.
 
 ## Security Model
+
+The pinned development shell includes Ruby for Mastodon launch and owner-bootstrap
+validation. Enroll shared toolchain dependencies before the final Harbor
+publication receipt; receipt reuse requires byte-identical publication inputs,
+including the Nix flake.
 
 GitHub Actions static validation allows 60 seconds per OpenTofu registry metadata
 request after repeated provider authentication-checksum download timeouts.

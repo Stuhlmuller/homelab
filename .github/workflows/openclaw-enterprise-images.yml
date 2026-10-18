@@ -1,0 +1,111 @@
+name: OpenClaw Enterprise Images
+
+# checkov:skip=CKV_GHA_7: expected_sha pins the fixed source build to reviewed current main.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact reviewed current main commit for the Enterprise image pair
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Build And Publish Paired Stock Images
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, cordium]
+    timeout-minutes: 180
+    concurrency:
+      group: harbor-packages-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+
+      - name: Validate Pinned Source And Publication Gates
+        run: |
+          nix develop --command python3 -I scripts/ci/openclaw-enterprise-image-test.py
+          nix develop --command python3 -I scripts/ci/harbor-publish-test.py
+
+      - name: Build Stock Controller And Runtime Before Registry Login
+        run: nix develop --command bash builds/openclaw-enterprise/build.sh
+
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-oce-images-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Publish And Verify Signed Harbor Pair
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/harbor-publish.sh publish-openclaw-enterprise
+          EOF
+          then
+            python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
+              "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
+            echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+            exit 1
+          fi
+          echo "Pinned Enterprise controller/runtime pair published, signed, and fully pulled; private output withheld."
+
+      - name: Retain Only Encrypted Failure Diagnostic
+        if: failure()
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: oce-image-error-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/oce-image-error.gpg
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: false

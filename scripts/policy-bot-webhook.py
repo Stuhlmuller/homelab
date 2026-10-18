@@ -96,6 +96,8 @@ def github_client(jwt):
         })
         try:
             with opener.open(req, timeout=20) as response:
+                if response.status == 204:
+                    return None
                 return json.load(response)
         except urllib.error.HTTPError as error:
             raise RuntimeError(f'GitHub request failed with HTTP {error.code}; response withheld') from None

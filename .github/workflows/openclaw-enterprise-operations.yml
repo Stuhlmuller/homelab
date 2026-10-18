@@ -1,0 +1,144 @@
+name: OpenClaw Enterprise Operations
+
+# checkov:skip=CKV_GHA_7: fixed stage names and receipt references are guarded by an exact current-main commit.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit
+        required: true
+        type: string
+      legacy_stage:
+        description: Fixed legacy retention operation
+        required: true
+        type: choice
+        options: [inventory, archive, verify]
+      baseline_ref:
+        description: Inventory source SHA and run ID for archive (SHA/run-id)
+        required: false
+        type: string
+      archive_ref:
+        description: Archive source SHA and run ID for verify (SHA/run-id)
+        required: false
+        type: string
+
+permissions: {}
+
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Validate Legacy Operation
+    runs-on: [self-hosted, Linux, X64, cordium]
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "$ACTUAL_REF" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+          nix develop --command python3 -I scripts/ci/openclaw-enterprise-operations-test.py
+
+  legacy:
+    name: Protected Legacy Retention
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, cordium]
+    timeout-minutes: 240
+    concurrency:
+      group: openclaw-enterprise-operations-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify Protected Inputs
+        env:
+          AWS_APPLY_ROLE_ARN: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          test -n "$AWS_APPLY_ROLE_ARN"
+          test -n "$OCTELIUM_AUTH_TOKEN"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-session-name: homelab-openclaw-legacy-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Run Legacy Stage
+        env:
+          RUN_STAGE: ${{ inputs.legacy_stage }}
+          BASELINE_REF: ${{ inputs.baseline_ref }}
+          ARCHIVE_REF: ${{ inputs.archive_ref }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+        run: |
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/install-kubeconfig.sh
+          kubectl --request-timeout=15s version >/dev/null
+          sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
+          bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
+          EOF
+          then
+            echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld."
+            exit 1
+          fi
+          echo "Legacy operation completed; private receipts withheld."

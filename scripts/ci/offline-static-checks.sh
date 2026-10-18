@@ -333,6 +333,45 @@ yq -e '
 ' "$n8n_values" >/dev/null
 echo "::endgroup::"
 
+echo "::group::Kiali shell-free Prometheus readiness"
+kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e '
+    [
+      .cr.spec.deployment.additional_pod_init_containers_yaml[]
+      | select(.name == "wait-for-prometheus")
+    ] | (
+      length == 1 and
+      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      .[0].imagePullPolicy == "IfNotPresent" and
+      .[0].command == ["curl"] and
+      .[0].args == [
+        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
+        "--retry-delay", "5", "--retry-all-errors",
+        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
+      ] and
+      .[0].securityContext.runAsUser == 100 and
+      .[0].securityContext.runAsGroup == 101 and
+      .[0].securityContext.runAsNonRoot == true and
+      .[0].securityContext.allowPrivilegeEscalation == false and
+      .[0].securityContext.privileged == false and
+      .[0].securityContext.readOnlyRootFilesystem == true and
+      .[0].securityContext.capabilities.drop == ["ALL"] and
+      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
+    )
+  ' >/dev/null
+jq -e '
+  [
+    .consumers[]
+    | select(.consumer_id == "kiali-prometheus-readiness")
+  ] |
+  length == 1 and
+  .[0].image_id == "chainguard-curl" and
+  .[0].migration_status == "candidate" and
+  .[0].automation_status == "not-enrolled"
+' clusters/homelab/apps/harbor/image-automation.json >/dev/null
+echo "::endgroup::"
+
 echo "::group::Kustomize overlays"
 while IFS= read -r overlay; do
   echo "rendering ${overlay}"
@@ -738,11 +777,20 @@ workflow_sha256() {
     cut -d' ' -f1
 }
 
-# Every local job must use the homelab pool; reusable workflows own their jobs.
+# Bootstrap jobs must remain hosted until the Cordium pool exists; the canary
+# uses its own label. All other local jobs use the homelab pool.
 while IFS= read -r -d '' workflow; do
   yq -o=json '.' "$workflow" |
-    jq -e 'all(.jobs[]; has("uses") or
-      .["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"])' >/dev/null || {
+    jq -e --arg workflow "$workflow" 'all(.jobs[]; has("uses") or
+      if $workflow == ".github/workflows/cordium-runner-canary.yml" then
+        .["runs-on"] == ["self-hosted", "Linux", "X64", "cordium-canary"]
+      elif $workflow == ".github/workflows/cordium-runner-images.yml" or
+           $workflow == ".github/workflows/cordium-runner-publish.yml" or
+           $workflow == ".github/workflows/cordium-runner-credentials.yml" then
+        .["runs-on"] == "ubuntu-24.04"
+      else
+        .["runs-on"] == ["self-hosted", "Linux", "X64", "cordium"]
+      end)' >/dev/null || {
     echo "Workflow must use the Cordium runner pool: $workflow" >&2
     exit 1
   }
@@ -792,7 +840,13 @@ expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/cordium-runner-credentials.yml:credential' \
+    '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+    '.github/workflows/cordium-runner-publish.yml:publish' \
+    '.github/workflows/cordium-runner-publish.yml:published-digests' \
+    '.github/workflows/cordium-runner-publish.yml:test-build' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
@@ -807,11 +861,18 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
+    '.github/workflows/mastodon-public-dns.yml:credential' \
+    '.github/workflows/mastodon-public-dns.yml:static-policy' \
+    '.github/workflows/mastodon-smtp-credential.yml:credential' \
+    '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
     '.github/workflows/nofx-images.yml:publish' \
     '.github/workflows/nofx-images.yml:published-digests' \
     '.github/workflows/nofx-images.yml:test-build' \
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-images.yml:publish' \
+    '.github/workflows/openclaw-enterprise-operations.yml:legacy' \
+    '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/release.yml:release' \
@@ -846,36 +907,50 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml d1454835d4624eb6ef33ed9fed3b6d632669cf8a95f22b455c2bb18b77783edb
-.github/workflows/cordium-login-denial.yml cf60d3f37d16525049fc650db155e8533619194d58071f0cc393a450d4f2aa26
-.github/workflows/entra-oidc-verify.yml e940fa49f69c08e61332744d8e51f942aad63fd3ce1d257f28cd36e5367c2ce6
 .github/workflows/codeql.yml 929e9aee59a60419c07150a220007622908ca5d66645e481f82a05ca98a40b16
-.github/workflows/harbor-core-images.yml 3885ec975c20436b201365d723d0ff89afbd7164d6a85ecf39a79a97a5d1ee06
-.github/workflows/harbor-mirror.yml 7747616fc21732214fde323a3d16f096441e8ab182e5bdda26e46cb081d03006
+.github/workflows/cordium-check.yml 6734dc04c484469103bfb8682ade5bb0b99707b1095b52c2960427fc896d1baf
+.github/workflows/cordium-login-denial.yml cf60d3f37d16525049fc650db155e8533619194d58071f0cc393a450d4f2aa26
+.github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
+.github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
+.github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
+.github/workflows/entra-oidc-verify.yml e940fa49f69c08e61332744d8e51f942aad63fd3ce1d257f28cd36e5367c2ce6
+.github/workflows/harbor-core-images.yml fe071f9949af00beb6c4d7f210ebe4bb0944ed91bf79e74526b1bcaf5c66acbf
+.github/workflows/harbor-mirror.yml 8af3cf613183e442b14651b038d2ba0b7f25c41fad4bb2fa556d657acbaa204f
 .github/workflows/homelab-diagnostics.yml 7df5d687810ead79250219b19e53b9b158078a9d25b72b1dfc2ad36affad4540
-.github/workflows/lint.yml 6d0de48c44f2d04133ac5894e679defe616b606de306f070dda7b9f3fc33f0d5
-.github/workflows/nofx-images.yml 4668b524ebfd82ecf8eab1f15c71755aab8c9a656602231c2a1ecc8848c0437e
-.github/workflows/nofx-registry-credential.yml 9589f2e8ac2db4e10a5a6100d4d648353b98f9c70dbf25a3511be2a62788bccc
+.github/workflows/lint.yml 91eeb9dabb69dff367edc708e177c108c6d8ba9f31e1c0d7ebc0156f04553b25
 .github/workflows/litellm-provider-credential.yml eb58d0d1b6b13f3a3e317adaa10fad764757d894c5a98b1d5a6d1bfadd6d62b8
+.github/workflows/mastodon-public-dns.yml 55c3bc5f671e59f25f67ab50195a9c98cb6bf55be2986300674f2bb18fb61db2
+.github/workflows/mastodon-smtp-credential.yml 7b63e869f11f2254fc2bbbdc343d7ef01845379b86653c77f3f200e4827b3207
+.github/workflows/nofx-images.yml d6a01605781bd973659259ab4af061e4498e7de0a98af239da02f4a600d82d87
+.github/workflows/nofx-registry-credential.yml 9589f2e8ac2db4e10a5a6100d4d648353b98f9c70dbf25a3511be2a62788bccc
 .github/workflows/octelium-private-kubernetes-apply.yml 6e9e2b645e267584327bf7a7b48f29dc84130a2d3d6f949cb56a545e3928165d
+.github/workflows/openclaw-enterprise-images.yml c5d09667edf54028a696999b14a81bda549aed44f82a96aaecb7d9e8699532cc
+.github/workflows/openclaw-enterprise-operations.yml cfb1f4c14b25065bd70351892b8b7d6d8bcbde1a0889e8f3bbeabc14aea5f59f
 .github/workflows/release.yml 745016f1b7d32e2bc936c2d2eee04a65688257e28c211f5e17314031d626e773
 .github/workflows/terragrunt-apply-request.yml 96a4cfbb5aff491edb353514d20edfb891a90ac515b9ca2696b66100af8ccbda
-.github/workflows/terragrunt-apply.yml bf0b9172a1734ffadedbf86e8a7965bb58aab4e4478b1ba4c126823fd7085a61
-.github/workflows/terragrunt-plan.yml 84caa7bc0ef1d9f2eb1e74c074d6e3736e11e58c07f03cf0007fc30777d2fb3d
+.github/workflows/terragrunt-apply.yml 56b530542c54d343eb0ce025fe20a8f80b28a19ce5ff935ab98711db0d3f3afb
+.github/workflows/terragrunt-plan.yml f0d9318cd38edf775c33647dba36d9bc363d8acf236fd0b57d4edc9160d6d6fe
 EOF
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
+  '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+  '.github/workflows/cordium-runner-publish.yml:test-build' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-images.yml:publish' \
+  '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
+  '.github/workflows/mastodon-public-dns.yml:static-policy' \
+  '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"
@@ -922,9 +997,15 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}")) and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
+    .on.workflow_dispatch.inputs.application_backup_storage == {
+      "description": "Apply only the versioned OpenClaw legacy archive bucket",
       "required": false,
       "default": false,
       "type": "boolean"
@@ -945,11 +1026,13 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
+      "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",

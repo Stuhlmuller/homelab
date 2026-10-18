@@ -10,7 +10,7 @@ import re
 import sys
 
 
-def verify(report, image_id):
+def verify(report, image_id, require_zero_matches=False):
     assert re.fullmatch(r"sha256:[0-9a-f]{64}", image_id), "identity"
     assert report["source"]["type"] == "image", "identity"
     target = report["source"]["target"]
@@ -48,22 +48,30 @@ def verify(report, image_id):
         assert state in {"fixed", "not-fixed", "unknown", "wont-fix"}, "schema"
         assert state != "fixed", "remediation"
         assert not fix.get("versions") and not fix.get("available"), "remediation"
+    if require_zero_matches:
+        assert not report["matches"], "clearance"
 
 
 def main(args):
     try:
+        require_zero_matches = len(args) == 3 and args[-1] == "--require-zero-matches"
+        if require_zero_matches:
+            args = args[:-1]
         assert len(args) == 2, "schema"
         raw_report = Path(args[0]).read_bytes()
         report = json.loads(raw_report)
-        verify(report, args[1])
+        verify(report, args[1], require_zero_matches=require_zero_matches)
     except AssertionError as error:
         category = str(error)
-        if category not in {"identity", "scanner", "database", "freshness", "filtering", "schema", "remediation"}:
+        if category not in {"identity", "scanner", "database", "freshness", "filtering", "schema", "remediation", "clearance"}:
             category = "schema"
     except (KeyError, TypeError, ValueError, OSError):
         category = "schema"
     else:
-        print("Complete private runtime audit passed; " + str(len(report["matches"])) + " unresolved matches retained; this is not CVE clearance.")
+        if require_zero_matches:
+            print("Complete private runtime audit passed; zero matches required for publication.")
+        else:
+            print("Complete private runtime audit passed; " + str(len(report["matches"])) + " unresolved matches retained; this is not CVE clearance.")
         print("Runtime audit receipt: " + json.dumps({
             "image_id": args[1], "report_sha256": hashlib.sha256(raw_report).hexdigest(),
             "scanner": report["descriptor"]["version"], "db_built": report["descriptor"]["db"]["status"]["built"],

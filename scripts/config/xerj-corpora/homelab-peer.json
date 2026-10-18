@@ -1,0 +1,4 @@
+{"corpus":"homelab-peer","cloned_at":"2026-10-18T02:12:53Z","repos":[
+  {"repo":"homelab","url":"https://github.com/kn-lim/homelab.git","licence":"UNKNOWN","sha":"1b88ad5c211113d0526a676aa26cdcd8282644ff","files":518,"bytes":316640,
+   "review":{"spdx":"Unlicense","use":"adapt-with-attribution","by":"Codex","at":"2026-10-17","note":"Pinned LICENSE is Unlicense; XERJ rc.96 detector reports UNKNOWN"}}
+]}

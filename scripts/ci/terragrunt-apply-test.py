@@ -50,6 +50,7 @@ units = {
     "IaC/bootstrap/argocd": "bootstrap",
     "IaC/live/aws-ssm-parameters": "ssm",
     "IaC/live/langfuse-blob-storage": "s3",
+    "IaC/operator/application-backup-storage": "archive-bucket",
     "IaC/live/kubernetes-node-labels": "nodes",
     "IaC/live/azuread-applications": "azure",
     "IaC/live/kubernetes-secrets": "secrets",
@@ -57,6 +58,7 @@ units = {
     "IaC/live/argocd-apps": "apps",
     "IaC/live/argocd-apps/langfuse": "repair",
     "IaC/live/argocd-apps/fleet": "repair",
+    "IaC/live/argocd-apps/mastodon": "repair",
     "IaC/live/argocd-apps/traefik": "repair",
 }
 unit = units.get(cwd, cwd)
@@ -144,7 +146,7 @@ elif tool == "terragrunt":
     command = [arg for arg in args if arg != "--log-disable"]
     if command == ["stack", "generate"] and cwd == "IaC":
         event("generate")
-        for name in ("langfuse", "fleet", "traefik", "nofx"):
+        for name in ("langfuse", "fleet", "mastodon", "traefik", "nofx"):
             if name != config.get("missing_target"):
                 path = root / "IaC/live/argocd-apps" / name / "terragrunt.hcl"
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -162,7 +164,9 @@ elif tool == "terragrunt":
     elif command[:2] == ["import", "-no-color"] and unit == "ssm":
         assert command[2] == 'aws_ssm_parameter.this["' + command[3] + '"]'
         assert command[3] in ["/homelab/github-actions-runner/registration-token",
-                              "/homelab/cordium/agent-auth-token"]
+                              "/homelab/cordium/agent-auth-token",
+                              "/homelab/cordium-runners/github-app-private-key",
+                              "/homelab/cordium-runners/auth-token"]
         event("ssm.import")
     elif command == ["run", "--", "untaint", "-no-color", "kubernetes_manifest.this"]:
         event("repair.untaint")
@@ -208,14 +212,21 @@ else:
 
 
 class TerragruntApplyTest(unittest.TestCase):
-    def run_apply(self, target="langfuse", repair="false", **overrides):
+    def run_apply(self, target="langfuse", repair="false", scope="false", **overrides):
         project = json.loads(json.dumps(PROJECT))
         app_names = APPS
         crds = CRDS
-        if target in ("fleet",):
+        if target in ("fleet", "mastodon"):
             project["spec"]["destinations"][0]["namespace"] = target
             project["spec"]["sourceRepos"] = project["spec"]["sourceRepos"][:1]
-            app_names = [*APPS, "traefik"]
+            if target == "fleet":
+                app_names = [*APPS, "traefik"]
+            else:
+                app_names = [*APPS, "octelium-public"]
+                project["spec"]["clusterResourceWhitelist"] += [
+                    {"group": "", "kind": "PersistentVolume"},
+                    {"group": "storage.k8s.io", "kind": "StorageClass"},
+                ]
         elif target == "traefik":
             project = json.loads(json.dumps(TRAEFIK_PROJECT))
             app_names = TRAEFIK_APPS
@@ -245,6 +256,7 @@ class TerragruntApplyTest(unittest.TestCase):
             for name in ("terragrunt-apply.sh", "terragrunt-filter-base.sh"):
                 shutil.copyfile(SOURCE / name, scripts / name)
             for unit in ("bootstrap/argocd", "live/aws-ssm-parameters", "live/langfuse-blob-storage",
+                         "operator/application-backup-storage",
                          "live/kubernetes-node-labels", "live/azuread-applications",
                          "live/kubernetes-secrets/external-secrets-aws-ssm-auth", "live/argocd-apps"):
                 (root / "IaC" / unit).mkdir(parents=True, exist_ok=True)
@@ -253,7 +265,8 @@ class TerragruntApplyTest(unittest.TestCase):
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
                            "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
                            "TERRAGRUNT_ARGOCD_APP": target,
-                           "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair}
+                           "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
+                           "TERRAGRUNT_APPLICATION_BACKUP_STORAGE": scope}
             if not config.get("without_azuread"):
                 environment.update(config.get("azuread_environment", {
                     "ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
@@ -263,11 +276,13 @@ class TerragruntApplyTest(unittest.TestCase):
                 [str(binaries / "bash"), str(scripts / "terragrunt-apply.sh")],
                 cwd=root, env=environment,
                 text=True, capture_output=True, timeout=15, check=False)
-            calls = [json.loads(line) for line in (root / "calls.jsonl").read_text().splitlines()]
+            calls_file = root / "calls.jsonl"
+            calls = [json.loads(line) for line in calls_file.read_text().splitlines()] if calls_file.exists() else []
             self.assertNotIn("UNEXPECTED", [call["event"] for call in calls], result.stderr)
             self.assertNotIn("Traceback", result.stderr, result.stderr)
             self.assertFalse(list((root / "IaC").rglob("plan.out")))
             self.assertFalse(list(root.glob("homelab-langfuse-plan.*")))
+            self.assertFalse(list(root.glob("homelab-openclaw-archive-plan.*")))
             self.assertFalse(list(root.glob("terragrunt-argocd-apps.*")))
             return result, [call["event"] for call in calls]
 
@@ -277,7 +292,7 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(events, [
             "generate", "preflight.project", "preflight.apps", "preflight.crds",
             "preflight.store", "preflight.storage", "ssm.init", "ssm.state",
-            "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
+            "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
             "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply", "s3.init",
             "s3.plan", "s3.show", "s3.policy", "s3.apply", "apps.plan", "apps.policy", "apps.apply",
         ])
@@ -377,21 +392,21 @@ class TerragruntApplyTest(unittest.TestCase):
                                     for event in events), events)
 
     def test_generated_secret_apps_check_ssm_then_only_target_without_azuread(self):
-        for target in ("fleet",):
+        for target in ("fleet", "mastodon"):
             with self.subTest(target=target):
                 result, events = self.run_apply(target=target, without_azuread=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(events, [
                     "generate", "preflight.project", "preflight.apps", "preflight.crds",
                     "preflight.store", "preflight.store_scope", "preflight.storage",
-                    "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
+                    "ssm.init", "ssm.state", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import", "ssm.lookup", "ssm.import",
                     "ssm.plan", "ssm.show", "ssm.policy", "ssm.apply",
                     "apps.plan", "apps.policy", "apps.apply",
                 ])
 
     def test_generated_secret_apps_missing_prerequisites_fail_before_any_write(self):
-        for target, access_app in (("fleet", "traefik"),):
-            app_names = [*APPS, access_app]
+        for target, access_app in (("fleet", "traefik"), ("mastodon", "octelium-public")):
+            app_names = [*APPS, *([access_app] if access_app else [])]
             variants = [
                 {"project": PROJECT},  # Project permits Langfuse, not this target.
                 {"apps": []},
@@ -414,13 +429,29 @@ class TerragruntApplyTest(unittest.TestCase):
                                         for event in events), events)
 
     def test_generated_secret_apps_failures_stop_later_stages(self):
-        for target in ("fleet",):
+        for target in ("fleet", "mastodon"):
             for failure in ("ssm.plan", "ssm.policy", "ssm.apply", "apps.plan", "apps.policy"):
                 with self.subTest(target=target, failure=failure):
                     result, events = self.run_apply(target=target, fail=failure)
                     self.assertNotEqual(result.returncode, 0)
                     self.assertEqual(events[-1], failure)
                     self.assertNotIn("apps.apply", events)
+
+    def test_mastodon_requires_cluster_storage_permissions_before_any_write(self):
+        for missing in ("PersistentVolume", "StorageClass"):
+            project = json.loads(json.dumps(PROJECT))
+            project["spec"]["destinations"][0]["namespace"] = "mastodon"
+            project["spec"]["clusterResourceWhitelist"] += [
+                {"group": "", "kind": "PersistentVolume"},
+                {"group": "storage.k8s.io", "kind": "StorageClass"},
+            ]
+            project["spec"]["clusterResourceWhitelist"] = [
+                resource for resource in project["spec"]["clusterResourceWhitelist"]
+                if resource["kind"] != missing
+            ]
+            result, events = self.run_apply(target="mastodon", project=project)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(events, ["generate", "preflight.project"])
 
     def test_full_apply_still_requires_changed_azuread_credentials(self):
         result, events = self.run_apply(target="", without_azuread=True)
@@ -450,9 +481,30 @@ class TerragruntApplyTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any(event.startswith("preflight.") for event in events))
         self.assertEqual([event for event in events if event.endswith(".apply")], [
-            "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
+            "archive-bucket.apply", "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
+
+    def test_backup_storage_scope_is_isolated_and_checks_saved_plan(self):
+        result, events = self.run_apply(target="", scope="true", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "archive-bucket.init", "archive-bucket.plan",
+                                  "archive-bucket.show", "archive-bucket.policy", "archive-bucket.apply"])
+        for failure in ("archive-bucket.plan", "archive-bucket.policy"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="", scope="true", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events[-1], failure)
+                self.assertNotIn("archive-bucket.apply", events)
+
+    def test_backup_storage_scope_rejects_other_targets_before_write(self):
+        for options in ({"target": "openclaw", "scope": "true"},
+                        {"target": "", "repair": "true", "scope": "true"},
+                        {"target": "", "scope": "invalid"}):
+            with self.subTest(options=options):
+                result, events = self.run_apply(**options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, [])
 
 
 class AzureADCredentialsTest(unittest.TestCase):

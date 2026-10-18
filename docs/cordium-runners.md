@@ -1,10 +1,12 @@
 # Cordium GitHub Actions runners
 
-The migration routes every repository-owned workflow job to
-`[self-hosted, Linux, X64, cordium]`. There is no hosted-runner fallback.
-The static workflow gate rejects a local job with any other selector,
-including newly added workflows. Reusable workflow callers delegate their
-runner choice to the called workflow.
+The migration routes regular repository-owned workflow jobs to
+`[self-hosted, Linux, X64, cordium]`. The runner image, publication and
+credential bootstrap workflows stay on hosted runners so the pool can be
+recovered; the canary uses the isolated `cordium-canary` label. There is no
+hosted fallback for migrated jobs. The static workflow gate rejects other
+selectors, including newly added workflows. Reusable workflow callers
+delegate their runner choice to the called workflow.
 
 GitHub-managed workflows are also in scope. Live inspection on 2026-10-11 found
 `dynamic/github-code-quality/codeql` configured with standard hosted runners.

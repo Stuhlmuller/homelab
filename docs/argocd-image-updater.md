@@ -43,9 +43,13 @@ the live ref again, and requests a non-force update. It requires the reviewed
 cherry-pick, or execute proposal-branch code.
 The independent Image Update Gate runs before that write job and checks the
 candidate tree's semantic scope with read-only permissions.
-The scheduled `observe` job reads the durable journal and sends bounded Discord
-alerts for expired failed or paused observations; missing notification
-credentials fail visibly without printing the webhook.
+The `observe` job runs only on a trusted manual `verify` or `promote` dispatch.
+It reads the durable journal and sends bounded Discord alerts for expired failed
+or paused observations; missing notification credentials fail visibly without
+printing the webhook. Removing the former five-minute schedule reduces Actions
+usage but also stops automatic journal alerts. Dispatch `operation=verify` from
+`main` when checking for stalled updates. Restore a reviewed schedule if
+automatic alerting becomes necessary.
 If the protected direct write fails after the same candidate validation, the
 workflow revalidates the proposal and queues its branch for normal protected
 auto-merge.
