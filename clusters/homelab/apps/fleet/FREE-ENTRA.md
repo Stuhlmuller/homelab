@@ -53,6 +53,41 @@ result privately; a successful plan or settings readback cannot establish
 login success. No paid feature, static shared NameID, tenant-owner conversion
 or license bypass is used.
 
+The proposed owner conversion keeps the existing Entra object ID while moving
+its sign-in UPN to `rodman@stuhlmuller.net`. Fleet, Grafana and Octelium owner
+references use that immutable ID. Before a separate conversion, verify an
+independent cloud-only recovery Global Administrator and run the read-only
+`entra-owner-conversion.py prepare` transaction from signed current `main`.
+This conversion is currently blocked: `stuhlmuller.net` is federated with
+Google Workspace, while Microsoft requires a nonfederated UPN domain for
+[cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user).
+`prepare` must reject the federated domain. A separate reviewed change must
+reconcile the protected federation or select a managed target and update this
+transaction and its SAML dependencies before any conversion attempt.
+After an authorized Entra admin-center conversion, clear the recovery
+administrator's Azure CLI session, sign in as the converted owner, and attest
+with the same signed main SHA and private receipt directory:
+
+```sh
+az account clear
+az login --tenant <TENANT_ID> --use-device-code  # Sign in as rodman@stuhlmuller.net.
+python3 -I scripts/entra-owner-conversion.py attest \
+  --expected-sha <FULL_CURRENT_SIGNED_MAIN_SHA> \
+  --receipt-directory <PRIVATE_0700_DIRECTORY>
+```
+
+The helper checks Graph `/me` against the immutable owner ID and target UPN;
+verify the actual sign-in route separately. The recovery-admin unit
+is disabled by default. See the [provider runbook](../../../../docs/entra-terraform-provider.md)
+for the exact prepare and attest contract; this PR does not perform conversion.
+
+For Fleet console SAML, keep `rodman@stinkyboi.com` as a local recovery
+administrator and precreate `rodman@stuhlmuller.net` as SSO-only. The
+`fleet-free-setup.py console-sso` transaction checks both accounts and the
+reviewed SAML metadata; its API readback still requires a separate browser
+callback and recovery-login test before acceptance. This console path does not
+enable the retired Mac Platform SSO pilot.
+
 The retired Mac Platform SSO pilot used the native Microsoft extension and
 Company Portal device/user registration. Fleet console SAML never synchronized
 Mac passwords, and neither integration makes the other one successful.
@@ -189,7 +224,7 @@ Intune license to each user, and enroll the Mac in Intune. Microsoft documents t
 [Intune macOS prerequisites](https://learn.microsoft.com/en-us/mem/intune/enrollment/macos-enroll)
 and requires [Intune enrollment before Company Portal PSSO registration](https://learn.microsoft.com/en-us/entra/identity/devices/device-join-microsoft-entra-company-portal).
 
-## Registration failure: personal account and unapplied UPN correction
+## Registration failure and historical alias-release evidence
 
 Historical record only: the original PSSO pilot exposed an identity collision and
 an external-account route. The live `stuhlmuller.net` federation now routes to
