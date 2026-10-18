@@ -1,6 +1,6 @@
 # OpenClaw Enterprise Acceptance Ledger
 
-Status: **pending; no replacement rollout or shutdown has been executed**.
+Status: **legacy stopped; replacement rollout pending**.
 This public ledger contains only sanitized source identifiers, immutable
 artifact references, private receipt hashes and pass/fail outcomes. Full
 inventories, credentials, diagnostics, model prompts and backups stay private.
@@ -11,8 +11,9 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Signed and fully pulled by protected workflow |
 | Full platform image catalog and transitive render | [main `d7c81d87`, mirror run `39105390894`](https://github.com/Stuhlmuller/homelab/actions/runs/39105390894) | — | Pending |
 | Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. Archive write/restore pending. |
-| Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354); [main `6de59d7c`, protected recovery `39142331296`](https://github.com/Stuhlmuller/homelab/actions/runs/39142331296) | `e8663e8451f7d76acfdd91904b7a9373a738ef5de44195ac4127ff862389307b` | Passed: the private success marker and both retained baseline copies match this digest; protected publication verified current source identities, one KMS-encrypted S3 version, and a versioned download matching the baseline. Old writers remain active until the reviewed shutdown change lands. |
-| Legacy stopped with zero writers | Pending | — | Pending |
+| Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354); [main `6de59d7c`, protected recovery `39142331296`](https://github.com/Stuhlmuller/homelab/actions/runs/39142331296) | `e8663e8451f7d76acfdd91904b7a9373a738ef5de44195ac4127ff862389307b` | Passed: the private success marker and both retained baseline copies match this digest; protected publication verified current source identities, one KMS-encrypted S3 version, and a versioned download matching the baseline. Old writers were active at this pre-shutdown gate; the next row records their shutdown. |
+| Legacy stopped with zero writers | [shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350) | — | Argo synced; gateway deployment has zero replicas and Pods, backup CronJob is suspended, and no backup Job is active. Retained PVCs remain mounted read-only by the retirement reader. |
+| Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full scan and off-NAS upload passed. Versioned download and KMS verification pending; [run `39162466269`](https://github.com/Stuhlmuller/homelab/actions/runs/39162466269) rejected the fresh reference in preflight. |
 | Full independent legacy archive/restore | [failed protected archive `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916) | — | Pending: the stopped source had a WAL file and SQLite could not run integrity checks directly on the reader's read-only PVC mount. The run stopped before creating an observed inventory or archive receipt. Verify a private writable database-and-WAL snapshot in the next reviewed run; do not count this failed run as a backup. |
 | Capacity and isolated canary | Pending | — | Pending |
 | Talos node-by-node ladder | Pending | — | Pending |
