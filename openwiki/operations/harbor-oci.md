@@ -4,6 +4,10 @@ title: "Harbor OCI"
 description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
 tags: [harbor, images, registry, security]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
@@ -12,6 +16,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -108,10 +114,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T00:40:35.896Z" }
+generated: { by: "codex", at: "2026-10-18T01:09:27.563Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T00:40:35.896Z
+    at: 2026-10-18T01:09:27.563Z
 ---
 
 # Harbor Private OCI Registry
@@ -748,6 +754,12 @@ uses `Warn, Audit`, so public image references remain admitted while inventory
 and mirror coverage are measured. A later `Deny` promotion requires clean
 static and live inventory, protected Harbor publication, and authenticated
 node-pull acceptance. See the [policy source](../../clusters/homelab/platform/image-policy/README.md).
+
+The staged [Cordium runner publisher](../../.github/workflows/cordium-runner-publish.yml)
+uses an exact-main manual dispatch for a fixed runner/controller pair. It
+requires authenticated Harbor pulls and signatures before emitting immutable
+digests. Publication and cold-pull acceptance remain pending; the runner pool
+stays disabled. See the [runner contract](../../builds/cordium-runner/README.md).
 
 No consumer migration, full-catalog publication, zero-CVE result or live egress
 enforcement is established by these prerequisites. Image pulls remain

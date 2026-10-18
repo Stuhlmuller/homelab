@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:86454b4f678a8742c803a75cf17f3f6dda7647f19768f34fa0d28e429f94cdde",
+  "pageVersion": "sha256:11e74df88a1092c37f864952608857c65f8044790f836f5e6d98caaf34710098",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -225,10 +225,28 @@
           "version": "repo-file-v1:sha256:c9ffa389cd458f804f5b3dd38db8d9120754311dc6dab226249e3d11347d5ebd"
         }
       ]
+    },
+    {
+      "id": "claim_68d0ca4adf4a4df59eba8e29ede7672e",
+      "statement": "The Cordium Actions runner pool remains disabled with no controller Deployment or published runner image; hosted selectors remain until isolation, private pull, canary, and cleanup acceptance pass.",
+      "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/cordium/kustomization.yaml",
+          "version": "repo-file-v1:sha256:d09ca03576463e5a566dcd5ba3cc2ae4c88f61a64826cefba1b766c1c335af90"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T00:40:35.896Z"
+    "at": "2026-10-18T01:09:27.563Z"
   }
 }
