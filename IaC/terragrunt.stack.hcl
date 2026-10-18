@@ -409,6 +409,12 @@ unit "operator_etcd_backup_storage" {
   no_dot_terragrunt_stack = true
 }
 
+unit "operator_application_backup_storage" {
+  source                  = "./.catalog/units/operator/application-backup-storage"
+  path                    = "operator/application-backup-storage"
+  no_dot_terragrunt_stack = true
+}
+
 unit "operator_azuread_ci_identities" {
   source                  = "./.catalog/units/operator/azuread-ci-identities"
   path                    = "operator/azuread-ci-identities"

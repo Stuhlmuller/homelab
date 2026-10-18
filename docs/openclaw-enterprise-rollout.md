@@ -28,6 +28,13 @@ tenant metadata/secrets, agent volume, bootstrap files, auth secret and private
 gateway identity. Verify independent restores; backup listings alone do not
 prove recovery.
 
+The declared off-NAS destination is the versioned, encrypted
+`operator/application-backup-storage` bucket. Read-only inspection on
+2026-10-18 confirmed that the proposed bucket did not yet exist in account
+`716182248480`; staging its Terragrunt unit does not satisfy the archive gate.
+Verify the bucket and an upload/download restore before stopping the legacy
+writer. The separate application-backup service remains inactive.
+
 ## Fixed stages and stop gates
 
 | Stage | Action | Required exit receipt |
