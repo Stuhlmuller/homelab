@@ -2,11 +2,12 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor' >&2
+[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate' >&2
   exit 2
 }
 mode="$1"
+publish_outputs=(backend frontend)
 core_publication=false
 publish_names=(homelab-nofx-backend homelab-nofx-frontend)
 if [[ "$mode" == publish-harbor-core ]]; then
@@ -15,6 +16,19 @@ if [[ "$mode" == publish-harbor-core ]]; then
   publish_names=(homelab-harbor-core)
   [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
   [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main ]]
+fi
+if [[ "$mode" == publish-cordium ]]; then
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  mode=publish
+  publish_names=(homelab-cordium-runner homelab-cordium-controller)
+  publish_outputs=(runner controller)
+fi
+if [[ "$mode" == publish-openclaw-enterprise ]]; then
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
+  mode=publish
+  publish_names=(homelab-oce-controller homelab-oce-runtime)
+  publish_outputs=(controller runtime)
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
@@ -32,6 +46,9 @@ elif [[ "$mode" == mirror-mastodon ]]; then
 elif [[ "$mode" == mirror-harbor ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-runtime-images.json
+elif [[ "$mode" == mirror-renovate ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-renovate-images.json
 elif [[ "$mode" == mirror-chainguard ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-chainguard-images.json
@@ -70,7 +87,7 @@ if [[ "$mode" == mirror ]]; then
       (unique | length) == length) and
     all(.images[];
       keys == ["source"] and
-      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
+      (.source | type == "string" and test("^(docker[.]io|ghcr[.]io|quay[.]io|registry[.]k8s[.]io|gcr[.]io|mcr[.]microsoft[.]com|public[.]ecr[.]aws|ecr-public[.]aws[.]com|lscr[.]io|xpkg[.]crossplane[.]io|docker[.]langfuse[.]com|cgr[.]dev|factory[.]talos[.]dev)/[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*(:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127})?@sha256:[0-9a-f]{64}$")))
   ' "$manifest" >/dev/null
   if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.
@@ -181,7 +198,7 @@ cp "$(command -v kubectl)" "$scratch/kubectl"
 chmod 700 "$scratch/kubectl"
 sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
 forward_timeout=2400
-[[ "$mode" != mirror ]] || forward_timeout=19800
+[[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 timeout --signal=TERM --kill-after=5s "$forward_timeout" \
   "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
   --namespace traefik port-forward --address 127.0.0.1 \
@@ -217,6 +234,11 @@ if [[ "$mode" == mirror ]]; then
   skopeo login --authfile "$scratch/mirror-publisher-auth.json" \
     --username "robot\$mirror+publisher" --password-stdin harbor.stinkyboi.com \
     <"$scratch/mirror-publisher-password" >/dev/null
+  mkdir "$scratch/regctl-empty-docker"
+  printf '%s\n' '{"auths":{}}' >"$scratch/regctl-empty-docker/config.json"
+  REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+    regctl registry login harbor.stinkyboi.com --user "robot\$mirror+publisher" \
+    --pass-stdin --skip-check <"$scratch/mirror-publisher-password" >/dev/null
   rm -f -- "$scratch/mirror-publisher-password"
 
   # Keep the publisher credential on destination writes only. This distinct
@@ -228,6 +250,9 @@ if [[ "$mode" == mirror ]]; then
   skopeo login --authfile "$scratch/mirror-pull-auth.json" \
     --username "robot\$mirror+pull" --password-stdin harbor.stinkyboi.com \
     <"$scratch/mirror-pull-password" >/dev/null
+  REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+    regctl registry login harbor.stinkyboi.com --user "robot\$mirror+pull" \
+    --pass-stdin --skip-check <"$scratch/mirror-pull-password" >/dev/null
   rm -f -- "$scratch/mirror-pull-password"
 else
   aws ssm get-parameter --region us-west-2 \
@@ -247,6 +272,7 @@ if [[ "$mode" == mirror ]]; then
   # artifacts, not proxy-cache entries that remain dependent on upstream state.
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
   while IFS= read -r source; do
+    oci_index_copy=false
     source_digest="${source##*@}"
     source_repository="${source%@*}"
     source_repository="${source_repository%:*}"
@@ -266,18 +292,27 @@ if [[ "$mode" == mirror ]]; then
       fi
       mirror_phase="upstream-download"
       upstream_directory="$(mktemp -d "$scratch/upstream.XXXXXX")"
-      skopeo copy --all --preserve-digests --src-no-creds \
-        --src-authfile "$scratch/anonymous-auth.json" \
-        "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"
-      mirror_phase="upstream-verify"
-      skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
-      mirror_category="digest-mismatch"
-      [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
-      mirror_category="command-failed"
-      mirror_phase="destination-copy"
-      skopeo copy --all --preserve-digests --src-no-creds \
-        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-        "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      if skopeo copy --all --preserve-digests --src-no-creds \
+          --src-authfile "$scratch/anonymous-auth.json" \
+          "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"; then
+        mirror_phase="upstream-verify"
+        skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
+        mirror_category="digest-mismatch"
+        [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+        mirror_category="command-failed"
+        mirror_phase="destination-copy"
+        skopeo copy --all --preserve-digests --src-no-creds \
+          --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+          "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      else
+        grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" || exit 1
+        grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error" || exit 1
+        mirror_phase="destination-copy"
+        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+          2>"$scratch/mirror-error"
+        oci_index_copy=true
+      fi
       rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
       skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
@@ -292,9 +327,15 @@ if [[ "$mode" == mirror ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
       mirror_phase="alias-copy"
-      skopeo copy --all --preserve-digests \
-        --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-        "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+      if "$oci_index_copy"; then
+        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+          2>"$scratch/mirror-error"
+      else
+        skopeo copy --all --preserve-digests \
+          --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+          "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+      fi
       mirror_phase="alias-verify"
       skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
         "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"
@@ -304,13 +345,24 @@ if [[ "$mode" == mirror ]]; then
     fi
     mirror_phase="authenticated-pull"
     pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
-    skopeo copy --all --preserve-digests \
-      --src-authfile "$scratch/mirror-pull-auth.json" \
-      "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
-    mirror_phase="pull-verify"
-    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
-    mirror_category="digest-mismatch"
-    [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    if "$oci_index_copy"; then
+      REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+        regctl image copy "${destination}@${source_digest}" "ocidir://${pull_directory}:verify" \
+        2>"$scratch/mirror-error"
+      mirror_phase="pull-verify"
+      pulled_digest="$(REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+        regctl image digest "ocidir://${pull_directory}:verify" 2>"$scratch/mirror-error")"
+      mirror_category="digest-mismatch"
+      [[ "$pulled_digest" == "$source_digest" ]]
+    else
+      skopeo copy --all --preserve-digests \
+        --src-authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
+      mirror_phase="pull-verify"
+      skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
+      mirror_category="digest-mismatch"
+      [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    fi
     mirror_category="command-failed"
     rm -rf -- "$pull_directory"
     printf '%s:%s@%s\n' "$destination" "$tag" "$source_digest" >>"$scratch/verified-digests"
@@ -393,10 +445,10 @@ if [[ "$mode" == publish ]]; then
     [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-harbor-core:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
     printf 'core=%s\n' "${published_refs[0]}" >>"$GITHUB_OUTPUT"
   else
-  [[ "${#published_refs[@]}" -eq 2 ]]
-  [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-backend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-  [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-nofx-frontend:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
-  printf 'backend=%s\nfrontend=%s\n' "${published_refs[0]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
+    [[ "${#published_refs[@]}" -eq 2 ]]
+    [[ "${published_refs[0]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[0]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    [[ "${published_refs[1]}" =~ ^harbor\.stinkyboi\.com/homelab/${publish_names[1]}:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+    printf '%s=%s\n%s=%s\n' "${publish_outputs[0]}" "${published_refs[0]}" "${publish_outputs[1]}" "${published_refs[1]}" >>"$GITHUB_OUTPUT"
   fi
 fi
 cat "$scratch/verified-digests" >>"${GITHUB_STEP_SUMMARY:?GITHUB_STEP_SUMMARY is required}"

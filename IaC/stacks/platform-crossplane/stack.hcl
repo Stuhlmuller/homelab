@@ -17,6 +17,11 @@ inputs = {
         targetRevision = "2.3.3"
         helm = {
           releaseName = "crossplane"
+          # No packages or compositions installed; retain CRDs/RBAC in standby.
+          parameters = [
+            { name = "replicas", value = "0" },
+            { name = "rbacManager.replicas", value = "0" },
+          ]
         }
       }
     ]
@@ -26,7 +31,7 @@ inputs = {
     info = [
       {
         name  = "rollout"
-        value = "core only; add providers and credentials in purpose-specific changes"
+        value = "core standby; restore replicas before adding providers or compositions"
       },
       {
         name  = "docs"

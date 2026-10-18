@@ -4,6 +4,16 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+- Required pull request checks remain automatic: Policy Bot, Lint, repository
+  validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
+  Their required status names stay unchanged, so eligible PRs can still merge.
+- NOFX image builds, OpenClaw native configuration checks, and Image automation
+  verification run after matching changes land on `main`, or through their
+  reviewed manual dispatch paths. They no longer start optional PR runs.
+  Image automation no longer runs its five-minute observer schedule; the
+  weekly CodeQL security schedule remains active. Dispatch Image automation
+  with `operation=verify` from `main` to check and alert on its journal.
+
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
   with advisory status reporting. It is the shared lightweight lint signal for
   every PR; the repository-specific blocking checks remain in `Terragrunt Gate`

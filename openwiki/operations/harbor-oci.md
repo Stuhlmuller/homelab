@@ -4,6 +4,10 @@ title: "Harbor OCI"
 description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
 tags: [harbor, images, registry, security]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
@@ -12,6 +16,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -46,8 +52,6 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-738da32a5c98c5c0390c9a2f
-    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -60,6 +64,12 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-c14c7585bd2e583682b8b7f7
+    resource: repo://clusters/homelab/platform/image-policy/policy.yaml
+  - id: openwiki-source-e61e6d11d2a5c456a06bdb85
+    resource: repo://clusters/homelab/platform/image-policy/README.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -84,8 +94,6 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-1882ca1e6f216149daf718a1
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
-  - id: openwiki-source-c9d15e45ff607987f9820f38
-    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -100,16 +108,18 @@ sources:
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
+  - id: openwiki-source-85a2ae8a5ccc5550950c86b5
+    resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T22:21:21.854Z" }
+generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:21:21.854Z
+    at: 2026-10-18T01:55:27.595Z
 ---
 
 # Harbor Private OCI Registry
@@ -244,6 +254,12 @@ it would regenerate Harbor's salted bcrypt registry password hash. The public
 `mirror` project remains public until a separate reviewed Talos path validates
 authenticated pulls on every node before a privacy flip.
 
+The native receipt scan robot has a separate staged SSM parameter,
+`/homelab/harbor/robot-scan-password`, with an exact-ARN External Secrets reader
+grant. Its consumer remains held until a reviewed saved plan applies that
+parameter and read-only metadata verifies it. Staging this contract does not
+create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
+
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
 Retain the database, registry blobs, signing certificate and encryption key
@@ -313,7 +329,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, or `traefik`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, or `renovate`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -340,6 +356,13 @@ It preserves all-platform digest copying, the reviewed tag alias and fresh
 complete authenticated Harbor pulls. No caller-supplied image, path or destination is
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
+
+The fixed `renovate` scope selects six cataloged update digests for Fleet,
+Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, and n8n from
+[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json).
+It retains the normal digest, alias, and fresh authenticated pull checks while
+the unrelated full catalog is held. Its success proves only these six images;
+each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
 mirror verification requires `Mirror all @ <run head SHA>` and the unchanged
@@ -385,13 +408,13 @@ coverage while the LiteLLM duplicate-index failure remains. That upgrade must ve
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
-The consumer keeps chart 1.19.2 and pins all nine coupled components to 2.15.4.
-Harbor 2.15.4 includes database migration `0181`, so rollback requires a
-verified database and registry-blob backup with an isolated restore test;
-do not downgrade the schema in place. Accept the rollout only after live
-registry/API and scan checks. The bundled Distribution v2 component still has
-unresolved CVE findings. See the [runtime values](../../clusters/homelab/apps/harbor/values.yaml)
-and [upgrade runbook](../../docs/harbor-image-mirroring.md#harbor-runtime-patch-update).
+The registry Deployment uses `Recreate`, so its two 2.15.4 container images
+must be cached before the old Pod stops. After protected publication, the
+[Talos operator](../../scripts/talos-harbor-mirrors.py) can pre-pull exactly
+the reviewed registry and registryctl pins into each node's CRI cache from
+exact reviewed `main`; it verifies cache aliases after each pull. Audit all
+four node caches again immediately before the consumer merge. This cache gate
+does not establish rollout health. See the [operator steps](../../docs/harbor-image-mirroring.md).
 
 ### Identical-reference core repair candidate
 
@@ -733,6 +756,19 @@ Preserve DNS, API, HBONE, webhook, storage, and recovery paths and prove direct-
 alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
+
+The staged `harbor-only-images` ValidatingAdmissionPolicy audits Pod create and
+update, including init and ephemeral containers, across namespaces. Its binding
+uses `Warn, Audit`, so public image references remain admitted while inventory
+and mirror coverage are measured. A later `Deny` promotion requires clean
+static and live inventory, protected Harbor publication, and authenticated
+node-pull acceptance. See the [policy source](../../clusters/homelab/platform/image-policy/README.md).
+
+The staged [Cordium runner publisher](../../.github/workflows/cordium-runner-publish.yml)
+uses an exact-main manual dispatch for a fixed runner/controller pair. It
+requires authenticated Harbor pulls and signatures before emitting immutable
+digests. Publication and cold-pull acceptance remain pending; the runner pool
+stays disabled. See the [runner contract](../../builds/cordium-runner/README.md).
 
 No consumer migration, full-catalog publication, zero-CVE result or live egress
 enforcement is established by these prerequisites. Image pulls remain

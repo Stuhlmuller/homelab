@@ -219,6 +219,14 @@ inputs = {
         prefix  = "Aa1"
       }
     }
+    "/homelab/harbor/robot-scan-password" = {
+      description = "Harbor homelab project artifact-scan reader credential."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
     "/homelab/harbor/mirror-robot-pull-password" = {
       description = "Harbor mirror project read-only robot credential."
       generated = {
@@ -298,6 +306,14 @@ inputs = {
     }
     "/homelab/cert-manager/cloudflare-api-token" = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
+      initial_value = local.placeholder
+    }
+    "/homelab/cordium-runners/github-app-private-key" = {
+      description   = "Private key of the repository-scoped Cordium runner GitHub App."
+      initial_value = local.placeholder
+    }
+    "/homelab/cordium-runners/auth-token" = {
+      description   = "Policy-bound authentication token of the dedicated Cordium runner manager."
       initial_value = local.placeholder
     }
     "/homelab/cordium/agent-auth-token" = {
@@ -545,6 +561,45 @@ inputs = {
         length  = 40
         special = false
       }
+      initial_value = local.placeholder
+    }
+    "/homelab/openclaw-enterprise/postgres-admin-password" = {
+      description = "OpenClaw Enterprise PostgreSQL bootstrap administrator password; database container and recovery only."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/postgres-migrator-password" = {
+      description = "OpenClaw Enterprise schema migrator password; initialization job only."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/postgres-app-password" = {
+      description = "OpenClaw Enterprise API and worker PostgreSQL application password."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/session-auth-secret" = {
+      description = "Stable OpenClaw Enterprise session signing secret; retain with database recovery material."
+      generated = {
+        kind   = "hex"
+        length = 32
+      }
+    }
+    "/homelab/openclaw-enterprise/gateway-api-key" = {
+      description = "OpenClaw Enterprise private Envoy gateway API identity; API and Envoy policy only."
+      generated = {
+        length  = 48
+        special = false
+      }
+    }
+    "/homelab/openclaw-enterprise/model-api-key" = {
+      description   = "Fresh OpenClaw Enterprise agent OpenAI credential; operator-supplied through a protected workflow."
       initial_value = local.placeholder
     }
     "/homelab/nofx/ghcr-read-token" = {

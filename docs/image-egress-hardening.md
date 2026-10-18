@@ -42,6 +42,17 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
+## Admission inventory
+
+The [Harbor-only image policy](../clusters/homelab/platform/image-policy/README.md)
+uses Kubernetes native admission to report public references in regular, init,
+and ephemeral containers. Its `Warn, Audit` binding has no system or namespace
+exceptions, so it observes future Pod writes rather than existing Pods. Use the
+separate static and live inventory for existing references. Promote it to `Deny`
+only after catalog publication, private node-pull acceptance, and clean
+inventories. It does not replace Istio egress controls or node-level Harbor
+routing.
+
 ## Read-only findings, 2026-10-10
 
 Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
@@ -102,6 +113,13 @@ update/download paths. Image registry access belongs only to nodes and the
 Harbor publisher/replication/scanner workflows. Privileged/host-network pods,
 VPN/UDP workloads and non-meshed namespaces need explicit controls; they cannot
 be declared isolated solely by enrolling ordinary TCP workloads in Istio.
+
+The NOFX frontend has no service-account token, probes its local `/health`
+endpoint in-container, and permits only CoreDNS TCP/UDP 53 plus its backend on
+TCP 8080/15008. Its declared policy contains no Harbor or public-registry
+egress. It is not enforced until the NRI enforcer canary proves the same allow
+and deny paths. The backend admits ambient TCP 15008; its Istio
+AuthorizationPolicy still limits the decrypted request to the frontend identity.
 
 Acceptance must demonstrate allowed requests succeed and undeclared domains,
 direct IPs, alternate ports, IPv6 and gateway bypass fail. Preserve DNS,

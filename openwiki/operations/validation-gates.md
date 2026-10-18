@@ -4,14 +4,20 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
 tags: [operations, validation]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-bb8a89652a59628537fcc9b2
+    resource: repo://.github/workflows/harbor-mirror.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -30,8 +36,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
-  - id: openwiki-source-738da32a5c98c5c0390c9a2f
-    resource: repo://clusters/homelab/apps/harbor/values.yaml
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
@@ -44,10 +50,18 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-c14c7585bd2e583682b8b7f7
+    resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -56,10 +70,10 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-714484b73b4ba165201cb06d
+    resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
-  - id: openwiki-source-c9d15e45ff607987f9820f38
-    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -70,6 +84,10 @@ sources:
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-f957231327bdd56401fbc4e2
+    resource: repo://scripts/ci/image-policy-check.py
+  - id: openwiki-source-dce02546543e605cb2ccbb06
+    resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
@@ -110,6 +128,8 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-85a2ae8a5ccc5550950c86b5
+    resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-4bbfe00c406fec8a213babcb
@@ -126,10 +146,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T22:21:21.854Z" }
+generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T22:21:21.854Z
+    at: 2026-10-18T01:55:27.595Z
 ---
 
 # Validation Gates
@@ -156,6 +176,14 @@ serial substitutions and original-Pod/attempt-ID cancellation. Fresh node
 health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt.
 A render or healthy rollout proves neither full-check memory sufficiency nor
 signed cache publication; verify actual substitution in fresh CI separately.
+
+The bounded attempt on `af18e0e6` passed private loopback setup but failed at
+Nix sandbox `pivot_root` before either offline check ran. No signed outputs
+were published; independent inspection found the lock and workspaces gone,
+four Ready nodes, and a 1,012 MiB memory peak below the 1 GiB limit without
+OOM events. The failure identified the operation, not its enforcement cause.
+That attempt release was exhausted before the separately approved profile
+recovery below. See the [dated incident](../../docs/nix-cache.md).
 
 The [dedicated builder seccomp profile](../../docs/nix-builder-seccomp.md)
 is declared separately from container selection. It preserves the captured
@@ -416,6 +444,13 @@ NRI registration, denied startup connections, allowed Service and DNS traffic,
 established-connection revocation, and denial while the worker enforcer process
 is paused without cleanup. A passing fixture does not establish production
 Flannel enforcement or approve a worker rollout.
+
+The `image-policy` job in the same workflow runs a disposable Kind admission
+check. It verifies that the shipped `Warn, Audit` binding admits public images
+with warnings across regular, init, and ephemeral containers, then separately
+tests an isolated temporary `Deny` binding. The temporary binding is fixture
+only. Live audit inventory and authenticated Harbor/node-pull proof remain
+required before a reviewed production `Deny` change.
 
 The additive cutover utilities have focused static tests for fixed DNS ownership,
 Mac credential/profile preservation, bounded same-profile reconnect and carrier
@@ -1315,6 +1350,17 @@ Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
 format as well as raw gRPC stderr errors. Already-absent resources are skipped;
 other native failures remain errors.
 
+The staged Cordium runner path has separate source checks for fixed
+runner/controller builds, one-job JIT provisioning, credential refresh,
+per-Workspace UID network policy, controller access, and verified cleanup.
+Protected publication must build before credentials, completely pull both
+fixed Harbor digests, and verify signatures. Canary modes cover success,
+intentional failure, and session renewal. These fixtures establish only the
+declared contract: live NRI enforcement, denied traffic, credential refresh,
+cold pulls, canary cleanup, and workflow execution remain gates before
+enabling registration or changing job selectors. See the
+[runner source contract](../../builds/cordium-runner/README.md).
+
 ## OpenClaw bootstrap gates
 
 Bootstrap verifies its current offline archive, existing local database
@@ -1559,6 +1605,16 @@ changed. If a device client receives 403, inspect edge events and capture any
 needed exception in desired state; this probe does not establish device
 enrollment compatibility.
 
+## Cordium workspace capacity gate
+
+The pinned Langfuse chart render requires one web replica with no explicit
+strategy, a 1280 MiB request, unchanged 2 GiB limit, and required Acer node
+affinity. This checks the declared rolling replacement path. A live Workspace
+still requires the new web Pod Ready on Acer, the old web Pod gone from
+`zimaboard-1`, recovered SQL/web behavior, and fresh node headroom and pressure
+readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+is a projection, not rollout acceptance.
+
 ## Harbor OCI rollout
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
@@ -1631,13 +1687,11 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
-The Harbor runtime check renders chart 1.19.2 twice, requires identical output,
-then asserts one replica of the `harbor-nginx` Deployment with no explicit
-strategy. Kubernetes' default rolling update keeps the old singleton available
-while the new Pod pulls. The checker also rejects mixed runtime component
-versions; it does not establish live registry availability. See the
-[render gate](../../scripts/ci/harbor-check.sh) and
-[catalog gate](../../scripts/ci/harbor-images-check.py).
+The fixed Renovate scope contains six cataloged update digests. Publisher
+fixtures reject an unreviewed scoped entry and exercise its selected-image
+copy and authenticated-pull path. The workflow's exact security hash is
+updated with the new choice; a passing fixture does not publish the images or
+validate the six consuming applications.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
@@ -1658,6 +1712,13 @@ ordinary mirror rollout requires supplied reader auth unless its captured config
 owned reader auth. The missing-reader fixture reaches neither Harbor receipt
 checks nor candidate machine-config rendering or `apply-config`. These fixtures
 do not read SSM or change a node.
+
+The registry pre-pull fixture checks that dry-run mode does not pull, execution
+checks exact reviewed `main`, already-cached digests are skipped, and a pull
+without the expected cache alias fails. The live operator must still verify
+both pins on all four nodes immediately before a Harbor consumer merge. See
+the [Talos test](../../scripts/ci/talos-harbor-mirrors-test.py) and
+[operator](../../scripts/talos-harbor-mirrors.py).
 
 The fixed Traefik publication scope retains all-platform digest, tag alias and
 fresh complete authenticated Harbor-pull checks. The Talos regression rejects scoped,

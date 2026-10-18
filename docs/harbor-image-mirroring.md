@@ -23,9 +23,22 @@ adding an admission webhook or rewriting controller-generated resources.
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed
 cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
+The OpenClaw Enterprise prerequisite catalog also includes the selected Talos,
+Kubernetes, Istio, kube-router and Envoy target digests. Talos 1.14's installer
+comes from `factory.talos.dev/metal-installer/<schematic>`; that registry is
+mirrored with the same exact-digest copy and private authenticated receipt as
+other public sources. Do not use a target image for maintenance until the
+protected mirror workflow has published and completely pulled its Harbor copy.
 The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
+The protected `openclaw-enterprise-images.yml` workflow builds the stock
+controller and runtime Dockerfiles from the checksum-verified Enterprise source
+revision in `builds/openclaw-enterprise/source.json`. It verifies both revision
+labels before using Harbor credentials, then publishes, signs and completely
+pulls the paired images in the private `homelab` project. Dispatch it only with
+the current `main` SHA; use its immutable digest receipts for the Enterprise
+chart and CLI. A source revision change requires a new reviewed archive hash.
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public
@@ -51,6 +64,9 @@ and unexpected hashes stop publication. Source-tag aliases are copied from that
 verified Harbor digest, avoiding a second upstream transfer. Every entry still
 receives a complete authenticated Harbor download and alias verification on
 each run.
+If Skopeo cannot stage an OCI index without changing its digest, the mirror
+uses `regctl` for that copy and its authenticated pull, then checks the exact
+root digest and source-tag alias before recording a receipt.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
 No retention/delete job is introduced. Size NFS for the additional images and
 retain registry blobs together with Harbor database/encryption-key backups.
@@ -78,7 +94,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
-   `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
+   `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -105,6 +122,17 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
+   ```
+
+   The `renovate` scope selects the six reviewed Fleet, Harbor PostgreSQL,
+   Multica Python, Dispatcharr, Bazarr, and n8n update digests in
+   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
+   those entries while the unrelated full catalog is held. After its
+   prerequisite merges, dispatch it at exact current `main` and require six
+   complete authenticated pulls before merging any consuming Renovate PR:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
    ```
 
    See [migration gates and current findings](image-egress-hardening.md).
@@ -435,6 +463,27 @@ explicit strategy, so Kubernetes uses RollingUpdate with one surge and zero
 unavailable Pods. The old nginx remains available while its replacement pulls
 through Harbor. The repository Harbor render check asserts this shape; recheck
 it and the live nginx Pod during the upgrade.
+
+The chart uses `Recreate` for the registry Deployment. Before merging the
+consumer, pre-pull its 2.15.4 registry and registryctl images onto every Talos
+node so replacement does not need the registry being stopped. Complete the
+fixed Harbor publisher and fresh authenticated pulls first. On reviewed
+`main`, use the repository-owned operator command with a private Talos client
+config and the exact full `main` SHA:
+
+```sh
+for node in 10.1.0.199 10.1.0.200 10.1.0.201 10.1.0.202; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --talosconfig ~/.talos/config --prepull-registry-runtime \
+    --execute --expected-sha '<reviewed-main-sha>'
+done
+```
+
+The command pulls only the two reviewed digest pins into each CRI cache and
+checks the cache alias after each pull. Re-run it without `--execute` just
+before the consumer merge; all four nodes must report both pins cached.
+Re-pull a missing pin before proceeding. Cache verification does not establish
+rollout health.
 
 ## Bootstrap and recovery
 
