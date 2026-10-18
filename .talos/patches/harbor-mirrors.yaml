@@ -53,3 +53,8 @@ machine:
           - https://harbor.stinkyboi.com/v2/mirror/cgr.dev
         overridePath: true
         skipFallback: true
+      factory.talos.dev:
+        endpoints:
+          - https://harbor.stinkyboi.com/v2/mirror/factory.talos.dev
+        overridePath: true
+        skipFallback: true

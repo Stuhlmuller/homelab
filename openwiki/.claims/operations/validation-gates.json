@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:82cd408505412d1c1de7633e6d8d4cd0bbc6a6ecb21cf22279cb7e87bc39669e",
+  "pageVersion": "sha256:15ea950be67ad280b108bd8eecaa9dd8a366170c5b120673a55c01ce18249ddf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
-      "statement": "Offline validation runs the mocked Octelium OIDC migration regression; static validation runs the owner-mail plan-only test. The live runbook requires a private baseline and reviewed mail-only saved plan, then fresh Graph, owner-access, and SMTP-proxy readback; those live outcomes are not proven by the tests.",
+      "statement": "Offline validation retains immutable-owner OIDC tests. The owner-mail Graph PATCH is retired with state-only removal; read-only conversion tests reject the current federated target and require recovery administrator evidence. Live domain reconciliation, recovery sign-in, conversion, Fleet SAML and recovery login remain separate acceptance.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
-          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+          "resource": "repo://IaC/modules/entra-owner-mail/main.tf",
+          "version": "repo-file-v1:sha256:1750c30868a6ba16808e30c1785487e218e224581eeff38c43545abcb6290656"
+        },
+        {
+          "resource": "repo://scripts/ci/entra-emergency-global-admin-plan-test.py",
+          "version": "repo-file-v1:sha256:871b49c9e29b2cff2e4003eb83d31d1e3fd893835030c83516e2c734bb83eccf"
+        },
+        {
+          "resource": "repo://scripts/ci/entra-owner-conversion-test.py",
+          "version": "repo-file-v1:sha256:5454f95032877fa50755f1d684166e886194056dc386f339c8e1d52665e263ce"
         },
         {
           "resource": "repo://scripts/ci/octelium-entra-oidc-test.py",
           "version": "repo-file-v1:sha256:d8ba5cb80354e9eb48327c6bd694820d9f3ff5ff0a0e31d0d09c822262341a3b"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
-        },
-        {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
         }
       ]
     },
@@ -30,7 +30,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
         },
         {
           "resource": "repo://docs/ci-cd.md",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:bbb88f1d75f4fd71885df36f576395b0b03399204f3919d8f08674df7a311ee2"
+          "version": "repo-file-v1:sha256:3dcf8ebf2198a685fd94ecf3222e82e92fa6748edc5eac4272eb8ded037cfa69"
         }
       ]
     },
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         }
       ]
     },
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -344,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3f07a85452d23833d786335a2ceb08949467d649cb547f8903cefef5c3d4fad5"
+          "version": "repo-file-v1:sha256:c734161442090600c05715f6423198a13aabf5f4efc298e3fcb24808446cf70d"
         }
       ]
     },
@@ -402,11 +402,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -670,25 +670,25 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:e390d2a25634bd8a34817ae77188ac47eae0e68526a98339c5c3a010dafefc91"
+          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3f07a85452d23833d786335a2ceb08949467d649cb547f8903cefef5c3d4fad5"
+          "version": "repo-file-v1:sha256:c734161442090600c05715f6423198a13aabf5f4efc298e3fcb24808446cf70d"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
-          "version": "repo-file-v1:sha256:074b451bb8ea669882b9a7950817a6412b9f407013eff5dc3f824f4cef4ad9a7"
+          "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T01:55:27.595Z"
+    "at": "2026-10-18T06:24:02.662Z"
   }
 }

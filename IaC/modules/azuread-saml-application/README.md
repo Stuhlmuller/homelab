@@ -29,7 +29,10 @@ For Fleet, generate the explicit stack and use only
 `IaC/live/azuread-applications/fleet` for init, validation, plan, and the reviewed
 apply. Providers reuse existing Azure CLI login locally or CI-injected identity
 credentials. Explicit human and automation owners apply to both the application
-and service principal; switching the Terraform login does not replace them.
+and service principal; human owners and assignments resolve by immutable object
+ID so a supported UPN conversion does not replace them. The assignment map keys
+remain stable Terraform addresses and are not sign-in names. Switching the
+Terraform login does not replace the owners.
 Bootstrap the named automation principal through the operator-owned identity
 unit before planning this unit. Keep the human owner during the transition.
 The operator needs permission to manage applications, create token-signing

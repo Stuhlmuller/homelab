@@ -297,6 +297,40 @@ test_allows_exact_plan_stage_classifier if {
 	count(violations) == 0
 }
 
+test_allows_exact_azuread_plan_stage_classifier if {
+	violations := deny with input as workflow_with_live_run(classified_azuread_live_run)
+	count(violations) == 0
+}
+
+test_rejects_modified_azuread_plan_private_wrapper if {
+	every run in [
+		replace(classified_azuread_live_run, `private_dir="$(mktemp -d)"`, `private_dir="$(mktemp)"`),
+		replace(classified_azuread_live_run, `chmod 700 "$private_dir"`, `chmod 777 "$private_dir"`),
+		replace(classified_azuread_live_run, `azuread_report="$private_dir/azuread-report.json"`, `azuread_report="$RUNNER_TEMP/report.json"`),
+		replace(classified_azuread_live_run, `azuread_report="$private_dir/azuread-report.json"`, "azuread_report=\"$private_dir/azuread-report.json\"\nazuread_report=\"$RUNNER_TEMP/report.json\""),
+		replace(classified_azuread_live_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
+		replace(classified_azuread_live_run, `if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop`, `if ! nix develop`),
+	] {
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_azuread_plan_stage_classifier if {
+	every replacement in [
+		`bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="$other_report" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/other.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"; cat "$azuread_report"`,
+	] {
+		run := replace(classified_azuread_live_run, azuread_plan_stage_call, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_allows_exact_apply_stage_classifier if {
 	violations := deny with input as workflow_with_live_run(classified_apply_run)
 	count(violations) == 0
@@ -412,7 +446,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
@@ -513,6 +547,27 @@ plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3e
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
 
+azuread_plan_stage_call := `HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+
+azuread_plan_stage_guard := `if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+
+azuread_private_live_run := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+private_log="$private_dir/plan.log"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+EOF
+then
+  echo "failure details withheld"
+  exit 1
+fi
+echo "success details withheld"`
+
+classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
+
 apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
 
 apply_stage_guard := `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
@@ -594,4 +649,28 @@ test_encrypted_harbor_artifact_exception_is_exact if {
 		some msg in denials
 		contains(msg, "must not upload artifacts")
 	}
+}
+
+test_encrypted_oce_image_artifact_exception_is_exact if {
+	base := workflow_with_live_run(oce_image_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [oce_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"publish": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(oce_encrypted_diagnostic_step, {"with": object.union(oce_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(oce_encrypted_diagnostic_step, {"with": object.union(oce_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(oce_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"publish": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
+	forged_run := replace(oce_image_private_run, "harbor-encrypt-diagnostic.py", "cat")
+	forged_job := object.union(job, {"steps": [{"run": forged_run}, oce_encrypted_diagnostic_step]})
+	forged := object.union(base, {"jobs": {"publish": forged_job}})
+	forged_denials := deny with input as forged
+	count(forged_denials) > 0
 }
