@@ -20,8 +20,13 @@ inputs = {
   entity_id                      = "https://fleet.stinkyboi.com"
   assertion_consumer_service_url = "https://fleet.stinkyboi.com/api/v1/fleet/sso/callback"
   login_url                      = "https://fleet.stinkyboi.com/login"
-  allowed_user_principal_names   = ["rodman@stinkyboi.com"]
-  owner_user_principal_names     = ["rodman@stinkyboi.com"]
+  # Keep the existing assignment keys so this refactor does not revoke and regrant roles.
+  allowed_user_object_ids = {
+    "rodman@stinkyboi.com" = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
+  }
+  owner_user_object_ids = {
+    "rodman@stinkyboi.com" = "08dfba7f-71ea-4eae-ae56-b3fb6cb2ad45"
+  }
   owner_service_principal_names = [
     "homelab-terraform-apply",
   ]

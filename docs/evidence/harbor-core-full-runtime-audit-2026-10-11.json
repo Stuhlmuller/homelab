@@ -1,0 +1,19 @@
+{
+  "cve_clearance": false,
+  "db_built": "2026-10-11T06:30:42Z",
+  "image_id": "sha256:06e82a8d95c5a9d786f8cf460ef0bce30a5a56770a889cc58ec89190fdf09ef9",
+  "matches": 5,
+  "report_sha256": "5aaf8bdd98e589a832a7ec23d3be97fbfdef6fa4087c1d6651dfe00199cc5406",
+  "scanner": "0.112.0",
+  "severity_counts": {
+    "High": 2,
+    "Medium": 2,
+    "Unknown": 1
+  },
+  "scope": "Full Docker-saved candidate runtime audit only; not publication/deployment or blanket advisory clearance",
+  "head": "279092e65e8687aabb1387e435d291fbd232542c",
+  "job_url": "https://github.com/Stuhlmuller/homelab/actions/runs/38169761648/job/114559714419",
+  "job_conclusion": "success",
+  "fixed_findings_gate": "passed",
+  "source_filters": "none; checked by report validator"
+}

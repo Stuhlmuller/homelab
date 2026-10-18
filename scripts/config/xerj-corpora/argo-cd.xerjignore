@@ -1,0 +1,8 @@
+# Keep the reference index focused on implementation; the clone retains these paths.
+# The resource_customizations fixtures also trigger an annotation-sort bug in rc.96.
+/argo-cd/resource_customizations/
+/argo-cd/docs/
+/argo-cd/ui/
+/argo-cd/hack/
+/argo-cd/test/
+/argo-cd/manifests/

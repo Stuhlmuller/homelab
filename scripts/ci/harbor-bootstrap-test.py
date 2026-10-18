@@ -6,6 +6,7 @@ import contextlib
 import copy
 import importlib.util
 import io
+from itertools import combinations
 import json
 import tempfile
 import threading
@@ -23,6 +24,7 @@ SPEC.loader.exec_module(bootstrap)
 ADMIN = "TestAdmin1-do-not-log"
 PASSWORDS = {("homelab", "pull"): "TestPull1-do-not-log",
              ("homelab", "publisher"): "TestPush1-do-not-log",
+             ("mirror", "pull"): "TestMirrorPull1-do-not-log",
              ("mirror", "publisher"): "TestMirrorPush1-do-not-log"}
 
 
@@ -376,7 +378,7 @@ class BootstrapTest(unittest.TestCase):
         self.assertFalse(self.api.config["self_registration"]["value"])
         self.assertEqual(self.api.config["project_creation_restriction"]["value"], "adminonly")
         original = copy.deepcopy(self.api.robots)
-        self.assertEqual(len(original), 3)
+        self.assertEqual(len(original), 4)
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
         for project_name, settings in bootstrap.PROJECTS.items():
             for name in settings["robots"]:
@@ -384,12 +386,13 @@ class BootstrapTest(unittest.TestCase):
                              if robot["name"] == bootstrap.robot_name(name, project_name))
                 self.assertEqual(robot["permissions"], bootstrap.permissions(name, project_name))
                 self.assertEqual(self.api.passwords[robot["id"]], PASSWORDS[(project_name, name)])
-        self.assertNotEqual(self.api.passwords[2], self.api.passwords[3])
+        self.assertEqual(len(set(self.api.passwords.values())), len(self.api.passwords))
         self.api.requests.clear()
         self.reconcile()
         self.assertEqual(self.api.robots, original)
         self.assertEqual([(method, path) for method, path, _ in self.mutations()],
-                         [("PATCH", "/robots/1"), ("PATCH", "/robots/2"), ("PATCH", "/robots/3")])
+                         [("PATCH", "/robots/1"), ("PATCH", "/robots/2"),
+                          ("PATCH", "/robots/3"), ("PATCH", "/robots/4")])
 
     def test_reconciles_public_project_and_robot_drift_without_touching_other_robots(self):
         self.reconcile()
@@ -417,12 +420,16 @@ class BootstrapTest(unittest.TestCase):
         self.assertEqual(self.api.projects["mirror"]["metadata"], {"public": "true", "auto_scan": "true"})
         self.assertEqual(self.api.projects["homelab"], homelab)
         self.assertEqual({key: self.api.robots[key] for key in (1, 2)}, private_robots)
-        mirror_robot = self.api.robots[3]
-        self.assertEqual(mirror_robot["name"], "robot$mirror+publisher")
-        self.assertEqual(mirror_robot["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
+        mirror_pull = self.api.robots[3]
+        self.assertEqual(mirror_pull["name"], "robot$mirror+pull")
+        self.assertEqual(mirror_pull["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
+            {"resource": "repository", "action": "pull", "effect": "allow"}]}])
+        mirror_publisher = self.api.robots[4]
+        self.assertEqual(mirror_publisher["name"], "robot$mirror+publisher")
+        self.assertEqual(mirror_publisher["permissions"], [{"kind": "project", "namespace": "mirror", "access": [
             {"resource": "repository", "action": "pull", "effect": "allow"},
             {"resource": "repository", "action": "push", "effect": "allow"}]}])
-        mirror_robot["permissions"][0]["namespace"] = "homelab"
+        mirror_publisher["permissions"][0]["namespace"] = "homelab"
         self.api.requests.clear()
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.mutations(), [])
@@ -594,9 +601,10 @@ class BootstrapTest(unittest.TestCase):
         self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.robots, {})
 
-    def test_shared_publisher_secret_fails_before_network(self):
-        with patch.dict(PASSWORDS, {("mirror", "publisher"): PASSWORDS[("homelab", "publisher")]}):
-            self.assertEqual(self.main()[0], 1)
+    def test_shared_robot_secret_fails_before_network(self):
+        for first, second in combinations(PASSWORDS, 2):
+            with self.subTest(first=first, second=second), patch.dict(PASSWORDS, {second: PASSWORDS[first]}):
+                self.assertEqual(self.main()[0], 1)
         self.assertEqual(self.api.requests, [])
 
     def test_invalid_secret_fails_without_network_or_leak(self):

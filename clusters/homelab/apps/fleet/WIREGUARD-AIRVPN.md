@@ -33,11 +33,10 @@ bytes. It must contain one password line; one final LF or CRLF is ignored, while
 password spaces are preserved. Do not put the password in command arguments.
 
 `--password-file` works with `policy`, `macos`, and `ios`, including profile
-removal. It replaces the bootstrap-secret credential source for that execution;
-there is no fallback, login retry, or password rotation. Without this option,
-the operator uses the initial administrator secret, which works only before
-that password has been rotated. Dry runs never read the password file or the
-initial secret.
+removal. It replaces the SSM local-recovery administrator password for that
+execution. The operator always signs in as `rodman@stinkyboi.com`; it does not
+try the target SSO account or rotate either password. Dry runs never read either
+source.
 
 ```sh
 # Local catalog preview; no credentials or network access.

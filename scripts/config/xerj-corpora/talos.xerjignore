@@ -1,0 +1,10 @@
+# Focus on Talos machine configuration and runtime implementation.
+/talos/pkg/imager/
+/talos/pkg/provision/
+/talos/internal/integration/
+/talos/internal/pkg/
+/talos/website/
+/talos/tools/
+/talos/hack/
+*_test.go
+testdata/

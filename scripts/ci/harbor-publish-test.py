@@ -33,7 +33,10 @@ class HarborPublicationGates(unittest.TestCase):
         self.mirror_manifest = {"images": [{"source": "docker.io/library/busybox:1@sha256:" + "a" * 64}]}
         self.fleet_mirror_manifest = None
         self.bazarr_mirror_manifest = None
+        self.mastodon_mirror_manifest = None
         self.traefik_mirror_manifest = None
+        self.harbor_mirror_manifest = None
+        self.renovate_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
@@ -53,7 +56,7 @@ class HarborPublicationGates(unittest.TestCase):
         }
         self.executable("uname", "printf '%s\\n' Linux\n")
         self.executable("git", f"printf '%s\\n' {SHA}\n")
-        for command in ("aws", "skopeo", "docker", "kubectl", "sudo", "curl", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "cosign"):
             self.executable(command, f"printf '%s\\n' {command} >>'{self.calls}'\nexit 97\n")
 
     def executable(self, name, body):
@@ -73,6 +76,11 @@ class HarborPublicationGates(unittest.TestCase):
             bazarr_manifest_path.unlink(missing_ok=True)
         else:
             bazarr_manifest_path.write_text(json.dumps(self.bazarr_mirror_manifest))
+        mastodon_manifest_path = self.root / "scripts/config/harbor-mastodon-images.json"
+        if self.mastodon_mirror_manifest is None:
+            mastodon_manifest_path.unlink(missing_ok=True)
+        else:
+            mastodon_manifest_path.write_text(json.dumps(self.mastodon_mirror_manifest))
         traefik_manifest_path = self.root / "scripts/config/harbor-traefik-images.json"
         if self.traefik_mirror_manifest is None:
             traefik_manifest_path.unlink(missing_ok=True)
@@ -83,6 +91,16 @@ class HarborPublicationGates(unittest.TestCase):
             chainguard_path.unlink(missing_ok=True)
         else:
             chainguard_path.write_text(json.dumps(self.chainguard_mirror_manifest))
+        harbor_path = self.root / "scripts/config/harbor-runtime-images.json"
+        if self.harbor_mirror_manifest is None:
+            harbor_path.unlink(missing_ok=True)
+        else:
+            harbor_path.write_text(json.dumps(self.harbor_mirror_manifest))
+        renovate_path = self.root / "scripts/config/harbor-renovate-images.json"
+        if self.renovate_mirror_manifest is None:
+            renovate_path.unlink(missing_ok=True)
+        else:
+            renovate_path.write_text(json.dumps(self.renovate_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -107,10 +125,18 @@ class HarborPublicationGates(unittest.TestCase):
         return result
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
-                        missing_error="manifest unknown", registries=("docker.io", "quay.io")):
+                        missing_error="manifest unknown", registries=("docker.io", "quay.io"),
+                        source_error="toomanyrequests", core=False, cordium=False, enterprise=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
-        names = ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        if cordium:
+            names = ["homelab-cordium-runner", "homelab-cordium-controller"]
+        if enterprise:
+            names = ["homelab-oce-controller", "homelab-oce-runtime"]
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main"
+        if core:
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
@@ -124,6 +150,7 @@ class HarborPublicationGates(unittest.TestCase):
                 source = f"{registry}/library/{name}:stable@{digest}"
                 self.mirror_manifest["images"].append({"source": source})
                 destination = f"harbor.stinkyboi.com/mirror/{registry}/library/{name}"
+                manifests[f"{registry}/library/{name}@{digest}"] = published_manifests[name]
                 manifests[f"{destination}@{digest}"] = published_manifests[name]
                 manifests[f"{destination}:{digest.removeprefix('sha256:')}"] = published_manifests[name]
                 manifests[f"{destination}:stable"] = published_manifests[name]
@@ -136,6 +163,7 @@ class HarborPublicationGates(unittest.TestCase):
             "mirror": mirror,
             "resume": resume,
             "missing_error": missing_error,
+            "source_error": source_error,
         }
         mock = "#!/usr/bin/env python3\nFIXTURE = " + repr(fixture) + "\n" + textwrap.dedent('''\
             import json
@@ -174,8 +202,8 @@ class HarborPublicationGates(unittest.TestCase):
                                  "--new-bundle-format=false", "--oidc-disable-ambient-providers"):
                         assert flag in sign["args"]
                     expected = ["harbor.stinkyboi.com/homelab/" + name + "@" + digest
-                                for name, digest in sorted(FIXTURE["published_digests"].items())]
-                    assert sign["args"][-2:] == expected
+                                for name, digest in FIXTURE["published_digests"].items()]
+                    assert sign["args"][-len(expected):] == expected
                     assert not pod["automountServiceAccountToken"]
                     assert job["spec"]["backoffLimit"] == 0
                     assert job["spec"]["activeDeadlineSeconds"] == 300
@@ -194,8 +222,11 @@ class HarborPublicationGates(unittest.TestCase):
                         "status": {"containerStatuses": [{"name": "public-key", "state": {"terminated": {
                             "exitCode": 0, "message": "test public key\\n"}}}]}}]}))
                 elif "port-forward" in args:
-                    (root / "forward-pid").write_text(str(os.getpid()))
+                    # Cleanup can interrupt startup; never expose a partial PID file.
+                    (root / "forward-pid.tmp").write_text(str(os.getpid()))
+                    (root / "forward-pid.tmp").replace(root / "forward-pid")
                     if FIXTURE["failure"] == "forward":
+                        print("x" * 70000 + "private port-forward fixture", file=sys.stderr)
                         raise SystemExit(13)
                     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
                     while True:
@@ -205,6 +236,7 @@ class HarborPublicationGates(unittest.TestCase):
                 os.execv(args[3], args[3:])
             elif command == "curl":
                 if FIXTURE["failure"] == "forward":
+                    print("private readiness fixture", file=sys.stderr)
                     time.sleep(0.2)
                     raise SystemExit(7)
                 print("401", end="")
@@ -226,6 +258,7 @@ class HarborPublicationGates(unittest.TestCase):
                     assert sys.stdin.read().strip() == "private-test-credential-must-never-appear"
                     authfile = Path(args[args.index("--authfile") + 1])
                     username = args[args.index("--username") + 1]
+                    assert username in {"robot$homelab+publisher", "robot$mirror+publisher", "robot$mirror+pull"}
                     authfile.write_text(json.dumps({"username": username}))
                     assert authfile.stat().st_mode & 0o077 == 0
                 elif args[0] == "inspect":
@@ -236,6 +269,10 @@ class HarborPublicationGates(unittest.TestCase):
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0].split(":", 1)[0]
                     published_file = root / "published-images.json"
                     published = json.loads(published_file.read_text()) if published_file.exists() else {}
+                    if FIXTURE["mirror"] and reference.startswith("harbor.stinkyboi.com/"):
+                        assert "--no-creds" not in args
+                        authfile = Path(args[args.index("--authfile") + 1])
+                        assert json.loads(authfile.read_text()) == {"username": "robot$mirror+pull"}
                     if FIXTURE["mirror"] and ":" in reference and not reference.endswith(":stable"):
                         if FIXTURE["failure"] == "mirror-lookup":
                             print("connection refused private-test-credential-must-never-appear", file=sys.stderr)
@@ -249,38 +286,65 @@ class HarborPublicationGates(unittest.TestCase):
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
                         assert json.loads(authfile.read_text()) == {"auths": {}}
-                    if FIXTURE["failure"] in ("digest", "mirror-existing-digest") and name.endswith("frontend"):
+                    if FIXTURE["failure"] in ("digest", "mirror-existing-digest") and name.endswith(("frontend", "controller")):
                         raw += "corruption"
                     if FIXTURE["failure"] == "mirror-tag" and reference.endswith(":stable"):
                         raw += "tag corruption"
                     sys.stdout.write(raw)
                 elif args[0] == "copy" and args[-1].startswith("dir:"):
-                    authfile = Path(args[args.index("--src-authfile") + 1])
-                    expected_auth = {"auths": {}}
-                    assert json.loads(authfile.read_text()) == expected_auth
-                    if FIXTURE["mirror"]:
-                        assert "--src-no-creds" in args
                     reference = args[-2].removeprefix("docker://")
+                    upstream = FIXTURE["mirror"] and not reference.startswith("harbor.stinkyboi.com/")
+                    authfile = Path(args[args.index("--src-authfile") + 1])
+                    expected_auth = (
+                        {"auths": {}} if FIXTURE["mirror"] and upstream
+                        else {"username": "robot$mirror+pull"} if FIXTURE["mirror"]
+                        else {"username": "robot$homelab+publisher"}
+                    )
+                    assert json.loads(authfile.read_text()) == expected_auth
+                    if FIXTURE["mirror"] and upstream:
+                        assert "--src-no-creds" in args
+                    elif FIXTURE["mirror"]:
+                        assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    raw = FIXTURE["manifests"][reference]
-                    if FIXTURE["failure"] == "pull-digest" and name.endswith("frontend"):
+                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest"):
+                        print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
+                              file=sys.stderr)
+                        raise SystemExit(17)
+                    if upstream and FIXTURE["failure"] == "mirror-source":
+                        print(FIXTURE["source_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
+                        raise SystemExit(17)
+                    raw = FIXTURE["manifests"][reference] if FIXTURE["mirror"] else FIXTURE["published_manifests"][name]
+                    if upstream and FIXTURE["failure"] == "upstream-digest":
+                        raw += "corrupted upstream index"
+                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith(("frontend", "core", "controller")):
                         raw += "corrupted download"
-                    if FIXTURE["failure"] == "pull" and name.endswith("frontend"):
+                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith(("frontend", "core", "controller")):
                         raise SystemExit(15)
                     directory = Path(args[-1][4:])
                     assert list(directory.iterdir()) == []
                     (directory / "manifest.json").write_text(raw)
                     (directory / "blob").write_text("downloaded image content")
                 elif args[0] == "copy" and FIXTURE["mirror"]:
-                    assert ":" not in args[-2].removeprefix("docker://").split("@")[0], "Skopeo rejects tag@digest"
-                    assert "--src-no-creds" in args
+                    if not args[-2].startswith("dir:"):
+                        assert ":" not in args[-2].removeprefix("docker://").split("@")[0], "Skopeo rejects tag@digest"
+                    source = args[-2]
                     authfile = Path(args[args.index("--src-authfile") + 1])
-                    assert json.loads(authfile.read_text()) == {"auths": {}}
+                    upstream = not source.startswith(("dir:", "docker://harbor.stinkyboi.com/"))
+                    expected_auth = {"auths": {}} if source.startswith("dir:") or upstream else {"username": "robot$mirror+pull"}
+                    assert json.loads(authfile.read_text()) == expected_auth
+                    if source.startswith("dir:") or upstream:
+                        assert "--src-no-creds" in args
+                    else:
+                        assert "--src-no-creds" not in args
                     authfile = Path(args[args.index("--dest-authfile") + 1])
                     assert json.loads(authfile.read_text()) == {"username": "robot$mirror+publisher"}
-                    if FIXTURE["failure"] == "mirror-source" and not args[-2].startswith("docker://harbor.stinkyboi.com/"):
-                        print("toomanyrequests private-test-credential-must-never-appear", file=sys.stderr)
-                        raise SystemExit(17)
+                    if args[-2].startswith("dir:"):
+                        source_directory = Path(args[-2][4:])
+                        assert (source_directory / "blob").is_file()
+                        assert (source_directory / "manifest.json").read_text() == FIXTURE["manifests"][args[-1].removeprefix("docker://")]
+                        if FIXTURE["failure"] == "mirror-destination":
+                            print("502 Bad Gateway private-test-credential-must-never-appear", file=sys.stderr)
+                            raise SystemExit(20)
                     if FIXTURE["failure"] == "mirror-alias" and args[-1].endswith(":stable"):
                         print("connection reset private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(19)
@@ -290,6 +354,40 @@ class HarborPublicationGates(unittest.TestCase):
                     published[reference] = FIXTURE["manifests"][reference]
                     path.write_text(json.dumps(published))
                 elif args[0] != "copy":
+                    raise SystemExit(95)
+            elif command == "regctl":
+                config = Path(os.environ["REGCTL_CONFIG"])
+                docker_config = Path(os.environ["DOCKER_CONFIG"]) / "config.json"
+                assert json.loads(docker_config.read_text()) == {"auths": {}}
+                if args[:2] == ["registry", "login"]:
+                    assert sys.stdin.read().strip() == "private-test-credential-must-never-appear"
+                    assert "--pass-stdin" in args and "--skip-check" in args
+                    user = args[args.index("--user") + 1]
+                    assert user in {"robot$mirror+publisher", "robot$mirror+pull"}
+                    config.write_text(json.dumps({"username": user}))
+                    assert config.stat().st_mode & 0o077 == 0
+                elif args[:2] == ["image", "copy"]:
+                    source, target = args[2:]
+                    assert "@sha256:" in source
+                    user = json.loads(config.read_text())["username"]
+                    if target.startswith("ocidir://"):
+                        assert user == "robot$mirror+pull"
+                        if FIXTURE["failure"] == "mirror-regctl-pull":
+                            raise SystemExit(21)
+                        Path(target.removeprefix("ocidir://").split(":", 1)[0], "digest").write_text(source.rsplit("@", 1)[1])
+                    else:
+                        assert user == "robot$mirror+publisher"
+                        assert target.startswith("harbor.stinkyboi.com/mirror/")
+                        reference = target
+                        path = root / "published-images.json"
+                        published = json.loads(path.read_text()) if path.exists() else {}
+                        published[reference] = FIXTURE["manifests"][reference]
+                        path.write_text(json.dumps(published))
+                elif args[:2] == ["image", "digest"]:
+                    assert json.loads(config.read_text()) == {"username": "robot$mirror+pull"}
+                    digest = Path(args[2].removeprefix("ocidir://").split(":", 1)[0], "digest").read_text()
+                    print("sha256:" + "0" * 64 if FIXTURE["failure"] == "mirror-regctl-digest" else digest)
+                else:
                     raise SystemExit(95)
             elif command == "docker":
                 if "login" in args:
@@ -309,7 +407,7 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
@@ -329,6 +427,22 @@ class HarborPublicationGates(unittest.TestCase):
             call["args"] for call in map(json.loads, self.calls.read_text().splitlines())
             if call["command"] == command
         ]
+
+    def assert_mirror_copy_credentials(self, copies):
+        for args in copies:
+            self.assertIn("--all", args)
+            self.assertIn("--preserve-digests", args)
+            source = args[-2]
+            source_auth = Path(args[args.index("--src-authfile") + 1]).name
+            if source.startswith("docker://harbor.stinkyboi.com/"):
+                self.assertNotIn("--src-no-creds", args)
+                self.assertEqual(source_auth, "mirror-pull-auth.json")
+            else:
+                self.assertIn("--src-no-creds", args)
+                self.assertEqual(source_auth, "anonymous-auth.json")
+            if args[-1].startswith("docker://"):
+                destination_auth = Path(args[args.index("--dest-authfile") + 1]).name
+                self.assertEqual(destination_auth, "mirror-publisher-auth.json")
 
     def test_cert_manager_pkcs8_key_import_and_public_key_handoff(self):
         # Exercise the real pinned CLI's file/password contract without services.
@@ -418,15 +532,15 @@ class HarborPublicationGates(unittest.TestCase):
         repository = source.split(":")[0]
         destination = "harbor.stinkyboi.com/mirror/" + repository
         copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
-        self.assertEqual(len(copies), 3)
-        self.assertEqual(copies[0][-2:], [f"docker://{repository}@{digest}",
-                                        f"docker://{destination}:{digest[7:]}"])
-        self.assertEqual(copies[1][-2:], [f"docker://{destination}@{digest}",
+        self.assertEqual(len(copies), 4)
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertEqual(copies[1][-2:], [copies[0][-1], f"docker://{destination}:{digest[7:]}"])
+        self.assertEqual(copies[2][-2:], [f"docker://{destination}@{digest}",
                                         f"docker://{destination}:stable"])
-        self.assertEqual(copies[2][-2], f"docker://{destination}@{digest}")
-        self.assertTrue(copies[2][-1].startswith("dir:"))
-        for args in copies:
-            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
+        self.assertTrue(copies[3][-1].startswith("dir:"))
+        self.assert_mirror_copy_credentials(copies)
         unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
         self.assertNotIn(unrelated, self.calls.read_text())
         self.assertEqual((self.root / "summary").read_text().splitlines(),
@@ -481,15 +595,15 @@ class HarborPublicationGates(unittest.TestCase):
         repository = source.split(":")[0]
         destination = "harbor.stinkyboi.com/mirror/" + repository
         copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
-        self.assertEqual(len(copies), 3)
-        self.assertEqual(copies[0][-2:], [f"docker://{repository}@{digest}",
-                                        f"docker://{destination}:{digest[7:]}"])
-        self.assertEqual(copies[1][-2:], [f"docker://{destination}@{digest}",
+        self.assertEqual(len(copies), 4)
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertEqual(copies[1][-2:], [copies[0][-1], f"docker://{destination}:{digest[7:]}"])
+        self.assertEqual(copies[2][-2:], [f"docker://{destination}@{digest}",
                                         f"docker://{destination}:stable"])
-        self.assertEqual(copies[2][-2], f"docker://{destination}@{digest}")
-        self.assertTrue(copies[2][-1].startswith("dir:"))
-        for args in copies:
-            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
+        self.assertTrue(copies[3][-1].startswith("dir:"))
+        self.assert_mirror_copy_credentials(copies)
         unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
         self.assertNotIn(unrelated, self.calls.read_text())
         self.assertEqual((self.root / "summary").read_text().splitlines(),
@@ -506,15 +620,155 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
 
-    def test_traefik_scope_declares_only_its_reviewed_public_image(self):
+    def test_mastodon_scope_rejects_missing_or_unreviewed_catalog_before_credentials(self):
+        valid = self.mirror_manifest["images"][0]
+        for catalog in (
+            None,
+            {"images": []},
+            {"images": [valid, valid]},
+            {"images": [{"source": valid["source"].replace("a" * 64, "b" * 64)}]},
+            {"images": [{"source": valid["source"].replace("busybox", "unreviewed")}]},
+            {"images": [valid], "destination": "other"},
+        ):
+            with self.subTest(catalog=catalog):
+                self.mastodon_mirror_manifest = catalog
+                self.rejected(mode="mirror-mastodon")
+        self.mastodon_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-mastodon")
+
+    def test_mastodon_scope_retains_dispatch_guards_and_rejects_arbitrary_modes(self):
+        self.mastodon_mirror_manifest = self.mirror_manifest
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-mastodon")
+                self.env[key] = previous
+        self.rejected(mode="mirror-mastodon:docker.io/library/busybox")
+
+    def test_mastodon_scope_excludes_unrelated_images_and_verifies_complete_pulls(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.mastodon_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-mastodon")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        repository = source.split(":")[0]
+        destination = "harbor.stinkyboi.com/mirror/" + repository
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 4)
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertEqual(copies[1][-2:], [copies[0][-1], f"docker://{destination}:{digest[7:]}"])
+        self.assertEqual(copies[2][-2:], [f"docker://{destination}@{digest}",
+                                        f"docker://{destination}:stable"])
+        self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
+        self.assertTrue(copies[3][-1].startswith("dir:"))
+        self.assert_mirror_copy_credentials(copies)
+        unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
+        self.assertNotIn(unrelated, self.calls.read_text())
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
+    def test_mastodon_scope_retains_digest_and_anonymous_pull_failure_gates(self):
+        for failure in ("digest", "mirror-tag", "pull", "pull-digest"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure, mirror=True)
+                self.mastodon_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+                result = self.run_helper(mode="mirror-mastodon")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+
+    def test_harbor_runtime_scope_has_nine_reviewed_components(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+        self.assertEqual(len(selected), 9)
+        self.assertTrue(all(item in catalog and item["source"].startswith("docker.io/goharbor/")
+                            and ":v2.15.4@" in item["source"] for item in selected))
+
+    def test_harbor_runtime_scope_rejects_unreviewed_and_verifies_selected_pull(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.harbor_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-harbor")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([args for args in self.calls_for("skopeo") if args[0] == "copy"]), 4)
+        self.assert_cleaned()
+        self.calls.unlink()
+        self.harbor_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
+                                                   + "@sha256:" + "0" * 64}]}
+        self.rejected(mode="mirror-harbor")
+
+    def test_renovate_scope_has_six_reviewed_digests(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+        self.assertEqual(len(selected), 6)
+        self.assertTrue(all(item in catalog for item in selected))
+
+    def test_renovate_scope_rejects_unreviewed_and_verifies_selected_pull(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([args for args in self.calls_for("skopeo") if args[0] == "copy"]), 4)
+        self.assert_cleaned()
+        self.calls.unlink()
+        self.renovate_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
+                                                    + "@sha256:" + "0" * 64}]}
+        self.rejected(mode="mirror-renovate")
+
+    def test_renovate_oci_index_uses_regctl_with_authenticated_pull(self):
+        self.transport_mocks(failure="mirror-oci-index", mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        repository = source.split(":")[0]
+        destination = f"harbor.stinkyboi.com/mirror/{repository}"
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 1)
+        self.assertEqual(self.calls_for("timeout")[0][2], "19800")
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assert_mirror_copy_credentials(copies)
+        regctl_copies = [args[2:] for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]
+        self.assertEqual(regctl_copies[:2], [
+            [f"{repository}@{digest}", f"{destination}:{digest[7:]}"],
+            [f"{destination}@{digest}", f"{destination}:stable"],
+        ])
+        self.assertEqual(len(regctl_copies), 3)
+        self.assertEqual(regctl_copies[-1][0], f"{destination}@{digest}")
+        self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
+    def test_renovate_oci_index_rejects_incomplete_or_wrong_pull(self):
+        for failure in ("mirror-regctl-pull", "mirror-regctl-digest"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure, mirror=True)
+                self.renovate_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+                result = self.run_helper(mode="mirror-renovate")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+
+    def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
         self.assertEqual(set(selected), {"images"})
-        self.assertEqual(len(selected["images"]), 1)
-        image = selected["images"][0]
-        self.assertEqual(set(image), {"source"})
-        self.assertTrue(image["source"].startswith("docker.io/library/traefik:"))
-        self.assertIn(image, catalog["images"])
+        self.assertEqual(len(selected["images"]), 2)
+        self.assertTrue(selected["images"][0]["source"].startswith("docker.io/library/traefik:"))
+        self.assertTrue(selected["images"][1]["source"].startswith("registry.k8s.io/pause:3.10@"))
+        for image in selected["images"]:
+            self.assertEqual(set(image), {"source"})
+            self.assertIn(image, catalog["images"])
 
     def test_traefik_scope_rejects_missing_or_unreviewed_catalog_before_credentials(self):
         valid = self.mirror_manifest["images"][0]
@@ -554,15 +808,15 @@ class HarborPublicationGates(unittest.TestCase):
         repository = source.split(":")[0]
         destination = "harbor.stinkyboi.com/mirror/" + repository
         copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
-        self.assertEqual(len(copies), 3)
-        self.assertEqual(copies[0][-2:], [f"docker://{repository}@{digest}",
-                                        f"docker://{destination}:{digest[7:]}"])
-        self.assertEqual(copies[1][-2:], [f"docker://{destination}@{digest}",
+        self.assertEqual(len(copies), 4)
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertEqual(copies[1][-2:], [copies[0][-1], f"docker://{destination}:{digest[7:]}"])
+        self.assertEqual(copies[2][-2:], [f"docker://{destination}@{digest}",
                                         f"docker://{destination}:stable"])
-        self.assertEqual(copies[2][-2], f"docker://{destination}@{digest}")
-        self.assertTrue(copies[2][-1].startswith("dir:"))
-        for args in copies:
-            self.assertTrue(all(flag in args for flag in ("--all", "--preserve-digests", "--src-no-creds")))
+        self.assertEqual(copies[3][-2], f"docker://{destination}@{digest}")
+        self.assertTrue(copies[3][-1].startswith("dir:"))
+        self.assert_mirror_copy_credentials(copies)
         unrelated = self.mirror_manifest["images"][0]["source"].split("/")[-1].split(":")[0]
         self.assertNotIn(unrelated, self.calls.read_text())
         self.assertEqual((self.root / "summary").read_text().splitlines(),
@@ -604,14 +858,12 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertEqual(result.returncode == 0, failure is None, result.stderr)
                 copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
                 if failure is None:
-                    self.assertEqual(len(copies), 3)
+                    self.assertEqual(len(copies), 4)
                     self.assertTrue(copies[-1][-1].startswith("dir:"))
-                    for args in copies:
-                        self.assertTrue(all(flag in args for flag in
-                                            ("--all", "--preserve-digests", "--src-no-creds")))
+                    self.assert_mirror_copy_credentials(copies)
                 self.assert_cleaned()
 
-    def test_mirror_copies_public_sources_and_verifies_anonymous_complete_pulls(self):
+    def test_mirror_copies_anonymous_sources_and_verifies_authenticated_complete_pulls(self):
         self.transport_mocks(mirror=True)
         result = self.run_helper(mode="mirror")
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -624,22 +876,48 @@ class HarborPublicationGates(unittest.TestCase):
             for args, tag in zip(copies[index * 2:index * 2 + 2], (digest[7:], "stable")):
                 self.assertIn("--all", args)
                 self.assertIn("--preserve-digests", args)
-                self.assertIn("--src-no-creds", args)
-                origin = source.split(":")[0] if tag == digest[7:] else destination
-                self.assertEqual(args[-2:], [f"docker://{origin}@{digest}", f"docker://{destination}:{tag}"])
-        pulls = [args for args in self.calls_for("skopeo") if args[0] == "copy" and args[-1].startswith("dir:")]
+                self.assertEqual(args[-1], f"docker://{destination}:{tag}")
+                if tag == digest[7:]:
+                    self.assertTrue(args[-2].startswith("dir:"))
+                    self.assertIn("--src-no-creds", args)
+                    self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "anonymous-auth.json")
+                else:
+                    self.assertEqual(args[-2], f"docker://{destination}@{digest}")
+                    self.assertNotIn("--src-no-creds", args)
+                    self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "mirror-pull-auth.json")
+                self.assertEqual(Path(args[args.index("--dest-authfile") + 1]).name,
+                                 "mirror-publisher-auth.json")
+        pulls = [args for args in self.calls_for("skopeo") if args[0] == "copy" and args[-1].startswith("dir:") and args[-2].startswith("docker://harbor.stinkyboi.com/")]
         self.assertEqual(len(pulls), 2)
         self.assertEqual(len({args[-1] for args in pulls}), 2)
         for args in pulls:
             self.assertIn("--all", args)
             self.assertIn("--preserve-digests", args)
-            self.assertIn("--src-no-creds", args)
-            self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "anonymous-auth.json")
+            self.assertNotIn("--src-no-creds", args)
+            self.assertEqual(Path(args[args.index("--src-authfile") + 1]).name, "mirror-pull-auth.json")
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
         parameters = [args[args.index("--name") + 1] for args in self.calls_for("aws")]
-        self.assertEqual(parameters, ["/homelab/harbor/mirror-robot-push-password"])
+        self.assertEqual(parameters, [
+            "/homelab/harbor/mirror-robot-push-password",
+            "/homelab/harbor/mirror-robot-pull-password",
+        ])
+
+        destination_inspections = [args for args in self.calls_for("skopeo")
+                                   if args[0] == "inspect" and args[-1].startswith("docker://harbor.stinkyboi.com/")]
+        self.assertTrue(destination_inspections)
+        for args in destination_inspections:
+            self.assertNotIn("--no-creds", args)
+            self.assertEqual(Path(args[args.index("--authfile") + 1]).name, "mirror-pull-auth.json")
         self.assertEqual(self.calls_for("docker"), [])
         self.assertEqual(self.calls_for("cosign"), [])
+        self.assert_cleaned()
+
+    def test_mirror_accepts_anonymous_talos_image_factory(self):
+        self.transport_mocks(mirror=True, registries=("factory.talos.dev", "docker.io"))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        sources = [image["source"] for image in self.mirror_manifest["images"]]
+        self.assertTrue(any(image.startswith("factory.talos.dev/") for image in sources))
         self.assert_cleaned()
 
     def test_mirror_accepts_only_expected_harbor_missing_content(self):
@@ -659,8 +937,9 @@ class HarborPublicationGates(unittest.TestCase):
                 copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
                 if accepted:
                     self.assertEqual(result.returncode, 0, result.stderr)
-                    self.assertEqual(len(copies), 6)
-                    self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
+                    self.assertEqual(len(copies), 8)
+                    self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 4)
+                    self.assertEqual(sum(args[-1].startswith("dir:") and args[-2].startswith("docker://harbor.stinkyboi.com/") for args in copies), 2)
                     self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
                 else:
                     self.assertNotEqual(result.returncode, 0)
@@ -669,6 +948,58 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
 
+    def test_mirror_transport_logs_are_bounded_and_private(self):
+        helper = self.root / "scripts/ci/harbor-encrypt-diagnostic.py"
+        helper.write_text("from pathlib import Path\nimport sys\n"
+                          "data = Path(sys.argv[1]).read_bytes()\n"
+                          "assert b'private port-forward fixture' in data\n"
+                          "assert b'private readiness fixture' in data\n"
+                          "assert len(data) < 66000\n"
+                          "Path(sys.argv[2]).write_bytes(b'ciphertext fixture')\n")
+        self.transport_mocks(failure="forward", mirror=True)
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertNotIn("private port-forward fixture", result.stdout + result.stderr)
+        self.assertNotIn("private readiness fixture", result.stdout + result.stderr)
+        artifact = self.root / "runner/harbor-publication-error.gpg"
+        self.assertEqual(artifact.read_bytes(), b"ciphertext fixture")
+        artifact.unlink()
+        self.assert_cleaned()
+
+    def test_mirror_setup_failure_keeps_only_encrypted_diagnostic(self):
+        helper = self.root / "scripts/ci/harbor-encrypt-diagnostic.py"
+        helper.write_text("from pathlib import Path\nimport sys\n"
+                          f"assert {SECRET_SENTINEL!r}.encode() in Path(sys.argv[1]).read_bytes()\n"
+                          "Path(sys.argv[2]).write_bytes(b'ciphertext fixture')\n")
+        self.transport_mocks(mirror=True)
+        self.executable("aws", f"printf '%s\\n' '{SECRET_SENTINEL}' >&2\nexit 17\n")
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 17)
+        self.assertIn("phase=setup\n", self.public_status)
+        artifact = self.root / "runner/harbor-publication-error.gpg"
+        self.assertEqual(artifact.read_bytes(), b"ciphertext fixture")
+        artifact.unlink()
+        self.assert_cleaned()
+
+    def test_mirror_error_capture_preserves_failure_and_cleans_plaintext(self):
+        helper = self.root / "scripts/ci/harbor-encrypt-diagnostic.py"
+        helper.write_text("from pathlib import Path\nimport sys\n"
+                          "assert Path(sys.argv[1]).read_bytes()\n"
+                          "Path(sys.argv[2]).write_bytes(b'ciphertext fixture')\n")
+        self.transport_mocks(failure="mirror-source", mirror=True)
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        artifact = self.root / "runner/harbor-publication-error.gpg"
+        self.assertEqual(artifact.read_bytes(), b"ciphertext fixture")
+        artifact.unlink()
+        self.assert_cleaned()
+        artifact.write_bytes(b"stale ciphertext")
+        helper.write_text("import sys\nsys.exit(1)\n")
+        result = self.run_helper(mode="mirror")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(artifact.exists())
+        self.assert_cleaned()
+
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
         for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
             with self.subTest(failure=failure):
@@ -676,8 +1007,8 @@ class HarborPublicationGates(unittest.TestCase):
                 result = self.run_helper(mode="mirror")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
-                phases = {"mirror-source": "upstream-copy", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup",
-                          "digest": "digest-verify", "mirror-tag": "alias-verify", "pull": "anonymous-pull", "pull-digest": "pull-verify"}
+                phases = {"mirror-source": "upstream-download", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup",
+                          "digest": "digest-verify", "mirror-tag": "alias-verify", "pull": "authenticated-pull", "pull-digest": "pull-verify"}
                 categories = {"mirror-source": "rate-limited", "mirror-alias": "transport-failed", "mirror-lookup": "transport-failed",
                               "digest": "digest-mismatch", "mirror-tag": "digest-mismatch", "pull-digest": "digest-mismatch"}
                 status = dict(line.split("=", 1) for line in self.public_status.splitlines())
@@ -686,6 +1017,48 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertEqual(status["category"], categories.get(failure, "command-failed"))
                 self.assertEqual(status["exit_status"], str(result.returncode))
                 self.assertEqual(set(status), {"source", "phase", "category", "exit_status"})
+                self.assert_cleaned()
+
+    def test_mirror_http_failure_categories_are_private_and_fail_closed(self):
+        for message, category in (
+            ("403 Forbidden", "http-forbidden"),
+            ("received unexpected HTTP status: 403", "http-forbidden"),
+            ("received unexpected HTTP status: 413", "request-too-large"),
+            ("received unexpected HTTP status: 500", "server-error"),
+            ("502 Bad Gateway", "server-error"),
+            ("project quota exceeded", "quota-exceeded"),
+            ("status code: 429", "rate-limited"),
+            ("unrecognized private failure", "command-failed"),
+        ):
+            with self.subTest(message=message):
+                self.transport_mocks(failure="mirror-source", mirror=True, source_error=message)
+                result = self.run_helper(mode="mirror")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                status = dict(line.split("=", 1) for line in self.public_status.splitlines())
+                self.assertEqual(status["category"], category)
+                self.assertEqual(status["phase"], "upstream-download")
+                self.assertNotIn(message, self.public_status)
+                self.assert_cleaned()
+
+    def test_staged_source_and_destination_failures_remain_private(self):
+        for failure, phase, category in (
+            ("upstream-digest", "upstream-verify", "digest-mismatch"),
+            ("mirror-destination", "destination-copy", "server-error"),
+        ):
+            with self.subTest(failure=failure):
+                self.transport_mocks(failure=failure, mirror=True)
+                result = self.run_helper(mode="mirror")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "summary").exists())
+                status = dict(line.split("=", 1) for line in self.public_status.splitlines())
+                self.assertEqual(status["phase"], phase)
+                self.assertEqual(status["category"], category)
+                self.assertEqual(set(status), {"source", "phase", "category", "exit_status"})
+                copies = [a for a in self.calls_for("skopeo") if a[0] == "copy"]
+                if failure == "upstream-digest":
+                    self.assertFalse(any(a[-1].startswith("docker://") for a in copies))
+                self.assertNotIn("private-test-credential-must-never-appear", self.public_status)
                 self.assert_cleaned()
 
     def test_mirror_resume_avoids_upstream_but_rechecks_aliases_and_complete_pulls(self):
@@ -697,7 +1070,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertTrue(all(args[-2].startswith("docker://harbor.stinkyboi.com/mirror/") for args in copies))
         self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
         self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 2)
-        self.assertTrue(all("--all" in args and "--preserve-digests" in args and "--src-no-creds" in args for args in copies))
+        self.assert_mirror_copy_credentials(copies)
         inspections = [args[-1] for args in self.calls_for("skopeo") if args[0] == "inspect"]
         self.assertEqual(sum(reference.endswith(":stable") for reference in inspections), 2)
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
@@ -765,6 +1138,13 @@ class HarborPublicationGates(unittest.TestCase):
             f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}"
             for name in sorted(self.published_digests)
         ])
+        pulls = [args for args in self.calls_for("skopeo") if args[0] == "copy" and args[-1].startswith("dir:")]
+        self.assertEqual(len(pulls), 2)
+        self.assertTrue(all("--all" in args and "--preserve-digests" in args and "--src-authfile" in args for args in pulls))
+        self.assertEqual([args[-2] for args in pulls], [
+            f"docker://harbor.stinkyboi.com/homelab/{name}@{digest}"
+            for name, digest in sorted(self.published_digests.items())
+        ])
         self.assertEqual((self.root / "summary").read_text().splitlines(), [
             f"harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@{digest}"
             for name, digest in sorted(self.published_digests.items())
@@ -782,6 +1162,77 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse((self.root / "outputs").exists())
         self.assertFalse((self.root / "summary").exists())
         self.assert_cleaned()
+
+    def test_core_publication_has_one_fixed_subject_and_complete_pull(self):
+        self.transport_mocks(core=True)
+        result = self.run_helper(mode="publish-harbor-core")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        reference = f"harbor.stinkyboi.com/homelab/homelab-harbor-core:homelab-{SHA}@{self.published_digests['homelab-harbor-core']}"
+        self.assertEqual((self.root / "outputs").read_text().splitlines(), ["core=" + reference])
+        self.assertEqual([a[-1] for a in self.calls_for("cosign")], [reference.split(":homelab-")[0] + "@" + reference.split("@")[1]])
+        copies = [a for a in self.calls_for("skopeo") if a[0] == "copy"]
+        self.assertEqual(len(copies), 1)
+        self.assertIn("--all", copies[0])
+        self.assertIn("--preserve-digests", copies[0])
+        job = json.loads((self.root / "signing-job.json").read_text())
+        pod = job["spec"]["template"]["spec"]
+        for container in pod["initContainers"] + pod["containers"]:
+            self.assertEqual(container["image"], "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18")
+        self.assert_cleaned()
+
+    def test_enterprise_pair_publishes_only_from_its_workflow(self):
+        self.transport_mocks(enterprise=True)
+        result = self.run_helper(mode="publish-openclaw-enterprise")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = (self.root / "outputs").read_text()
+        for name, key in (("homelab-oce-controller", "controller"), ("homelab-oce-runtime", "runtime")):
+            self.assertIn(f"{key}=harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@", output)
+        self.assertEqual(len(self.calls_for("cosign")), 2)
+        self.assert_cleaned()
+
+    def test_enterprise_pair_refuses_other_workflow_before_credentials(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/nofx-images.yml@refs/heads/main"
+        self.rejected(mode="publish-openclaw-enterprise")
+
+    def test_core_refuses_implicit_push_publication_before_credentials(self):
+        self.env["GITHUB_EVENT_NAME"] = "push"
+        self.rejected(mode="publish-harbor-core")
+
+    def test_core_requires_exact_head_and_enrolled_signer_before_credentials(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
+        self.env["EXPECTED_SHA"] = "0" * 40
+        self.rejected(mode="publish-harbor-core")
+        self.env["EXPECTED_SHA"] = SHA
+        (self.root / "scripts/config/harbor-signing.json").write_text('{}')
+        self.rejected(mode="publish-harbor-core")
+
+    def test_core_refuses_another_workflow_before_credentials(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/nofx-images.yml@refs/heads/main"
+        self.rejected(mode="publish-harbor-core")
+
+    def test_core_pull_or_signature_failure_withholds_outputs(self):
+        for failure in ("pull", "pull-digest", "sign", "verify", "signer-owner"):
+            with self.subTest(failure=failure):
+                self.transport_mocks(core=True, failure=failure)
+                result = self.run_helper(mode="publish-harbor-core")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "outputs").exists())
+                self.assertFalse((self.root / "summary").exists())
+                self.assert_cleaned()
+                (self.root / "published-images.json").unlink(missing_ok=True)
+
+    def test_publisher_incomplete_pull_withholds_signing_and_outputs(self):
+        for failure in ("pull", "pull-digest"):
+            with self.subTest(failure=failure):
+                self.calls.unlink(missing_ok=True)
+                self.transport_mocks(failure=failure)
+                result = self.run_helper(mode="publish")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.root / "outputs").exists())
+                self.assertFalse((self.root / "summary").exists())
+                self.assertFalse(self.calls_for("cosign"))
+                self.assertFalse(any("create" in args for args in self.calls_for("kubectl")))
+                self.assert_cleaned()
 
     def test_publisher_signs_and_verifies_each_digest_privately(self):
         self.transport_mocks()
@@ -812,6 +1263,30 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertEqual(self.calls_for("cosign"), [])
                 self.assert_cleaned()
 
+    def test_cordium_publication_uses_only_fixed_pair_and_signed_outputs(self):
+        self.transport_mocks(cordium=True)
+        result = self.run_helper(mode="publish-cordium")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = (self.root / "outputs").read_text()
+        self.assertIn("runner=harbor.stinkyboi.com/homelab/homelab-cordium-runner:", output)
+        self.assertIn("controller=harbor.stinkyboi.com/homelab/homelab-cordium-controller:", output)
+        self.assertNotIn("homelab-nofx", output)
+        self.assertEqual(len(self.calls_for("cosign")), 2)
+        self.assert_cleaned()
+
+    def test_cordium_push_cannot_reach_credentials_or_publication(self):
+        self.env["GITHUB_EVENT_NAME"] = "push"
+        self.rejected(mode="publish-cordium")
+
+    def test_cordium_digest_or_signing_failure_withholds_success(self):
+        for failure in ("digest", "pull", "pull-digest", "sign", "verify"):
+            self.transport_mocks(cordium=True, failure=failure)
+            result = self.run_helper(mode="publish-cordium")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse((self.root / "outputs").exists())
+            self.assert_cleaned()
+            (self.root / "published-images.json").unlink(missing_ok=True)
+
     def test_signing_failure_withholds_success_and_cleans(self):
         for failure in ("sign", "verify", "signer-owner"):
             with self.subTest(failure=failure):
@@ -834,6 +1309,20 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.run_helper()
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.calls_for("aws"))
+        self.assert_cleaned()
+
+    def test_publisher_uses_private_traefik_transport(self):
+        self.transport_mocks()
+        result = self.run_helper()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        forwards = [args for args in self.calls_for("kubectl") if "port-forward" in args]
+        self.assertEqual(len(forwards), 1)
+        self.assertIn("--namespace", forwards[0])
+        self.assertEqual(forwards[0][forwards[0].index("--namespace") + 1], "traefik")
+        self.assertIn("service/traefik-private", forwards[0])
+        self.assertEqual(forwards[0][forwards[0].index("--address") + 1], "127.0.0.1")
+        self.assertIn("443:443", forwards[0])
+        self.assertNotIn("istio-ingressgateway", forwards[0])
         self.assert_cleaned()
 
 
@@ -873,7 +1362,7 @@ class PublishedDigestReport(unittest.TestCase):
         self.assertNotIn("secrets.", json.dumps(self.job))
         self.assertEqual(len(self.job["steps"]), 2)
         upload = self.job["steps"][1]
-        self.assertEqual(upload["uses"], "chainguard-actions/actions-upload-artifact@dc8d35a3347d79eda9033e7af73f508094dd41b5")
+        self.assertEqual(upload["uses"], "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6")
         self.assertNotIn("if", upload)
         self.assertEqual(upload["with"], {
             "name": "nofx-published-images-${{ github.sha }}",
@@ -913,6 +1402,86 @@ class PublishedDigestReport(unittest.TestCase):
         self.output.write_text("existing file")
         self.assertNotEqual(self.run_report().returncode, 0)
         self.assertEqual(self.output.read_text(), "existing file")
+
+
+class NativeStagingTests(unittest.TestCase):
+    def test_directory_staging_preserves_all_platforms_and_repeated_descriptors(self):
+        with tempfile.TemporaryDirectory(prefix="harbor-native-staging-") as temporary:
+            root = Path(temporary)
+            layout = root / "source"
+            blobs = layout / "blobs/sha256"
+            blobs.mkdir(parents=True)
+            (layout / "oci-layout").write_text('{"imageLayoutVersion":"1.0.0"}')
+
+            def blob(value, kind):
+                data = json.dumps(value, separators=(",", ":")).encode()
+                digest = hashlib.sha256(data).hexdigest()
+                (blobs / digest).write_bytes(data)
+                return {"mediaType": "application/vnd.oci.image." + kind + ".v1+json",
+                        "digest": "sha256:" + digest, "size": len(data)}
+
+            children = []
+            for architecture in ("amd64", "arm64"):
+                config = blob({"architecture": architecture, "os": "linux",
+                               "rootfs": {"type": "layers", "diff_ids": []}}, "config")
+                child = blob({"schemaVersion": 2,
+                              "mediaType": "application/vnd.oci.image.manifest.v1+json",
+                              "config": config, "layers": []}, "manifest")
+                child["platform"] = {"architecture": architecture, "os": "linux"}
+                children.append(child)
+            descriptor = blob({"schemaVersion": 2,
+                               "mediaType": "application/vnd.oci.image.index.v1+json",
+                               "manifests": [children[0], children[0], children[1]]}, "index")
+            descriptor["annotations"] = {"org.opencontainers.image.ref.name": "fixture"}
+            (layout / "index.json").write_text(json.dumps({"schemaVersion": 2, "manifests": [descriptor]}))
+            policy = root / "policy.json"
+            # Trust only generated local fixtures; reject every network transport.
+            policy.write_text(json.dumps({"default": [{"type": "reject"}], "transports": {
+                "oci": {"": [{"type": "insecureAcceptAnything"}]},
+                "dir": {"": [{"type": "insecureAcceptAnything"}]}}}))
+            source = "oci:" + str(layout) + ":fixture"
+            for name in ("stage", "pulled"):
+                destination = root / name
+                destination.mkdir()
+                result = subprocess.run(["skopeo", "--policy", str(policy), "copy", "--all",
+                                         "--preserve-digests", source, "dir:" + str(destination)],
+                                        capture_output=True, text=True, timeout=20)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                raw = (destination / "manifest.json").read_bytes()
+                self.assertEqual("sha256:" + hashlib.sha256(raw).hexdigest(), descriptor["digest"])
+                for child in children:
+                    raw = (destination / (child["digest"].split(":")[1] + ".manifest.json")).read_bytes()
+                    self.assertEqual("sha256:" + hashlib.sha256(raw).hexdigest(), child["digest"])
+                source = "dir:" + str(destination)
+
+
+class MirrorProjectQueue(unittest.TestCase):
+    def test_public_mirrors_serialize_without_private_publication_queue(self):
+        def workflow(name):
+            return json.loads(subprocess.check_output([
+                "yq", "-o=json", ".", str(ROOT / ".github/workflows" / name),
+            ], text=True))
+        mirror = workflow("harbor-mirror.yml")["jobs"]["mirror"]
+        self.assertEqual(mirror["concurrency"], {
+            "group": "harbor-mirror-production", "cancel-in-progress": False,
+        })
+        for name in ("nofx-images.yml", "harbor-core-images.yml"):
+            jobs = workflow(name)["jobs"]
+            private = [job["concurrency"]["group"] for job in jobs.values() if "concurrency" in job]
+            self.assertIn("harbor-packages-production", private)
+            self.assertNotIn(mirror["concurrency"]["group"], private)
+
+
+class MirrorWorkflowStatusPin(unittest.TestCase):
+    def test_safe_status_requires_current_reviewed_publisher(self):
+        digest = hashlib.sha256((ROOT / "scripts/ci/harbor-publish.sh").read_bytes()).hexdigest()
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertIn(
+            f"sha256sum --check --status <<<'{digest}  scripts/ci/harbor-publish.sh'",
+            workflow,
+        )
+        for name in ("policy/workflows.rego", "policy/workflows_test.rego"):
+            self.assertIn(digest, (ROOT / name).read_text())
 
 
 if __name__ == "__main__":

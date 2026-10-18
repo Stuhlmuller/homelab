@@ -26,12 +26,6 @@
   {
     "chart": "app-template",
     "repoURL": "https://bjw-s-labs.github.io/helm-charts",
-    "source": "IaC/stacks/octobot/stack.hcl",
-    "targetRevision": "4.4.0"
-  },
-  {
-    "chart": "app-template",
-    "repoURL": "https://bjw-s-labs.github.io/helm-charts",
     "source": "IaC/stacks/openclaw/stack.hcl",
     "targetRevision": "4.4.0"
   },
