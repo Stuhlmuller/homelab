@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:54c1268f769781c67900b3a2e3fd90f88bbc62aebfb2216e5a13a20f3ea1495b",
+  "claims": [
+    {
+      "id": "claim_7c0f496811e943c282dda42f8b6bb4b3",
+      "statement": "The local Spec Kit assess extension registers five assessment commands with no lifecycle hooks, writes its assessment records under .specify/assessments/<slug>/, and hands a go decision to the existing specification workflow only when invoked.",
+      "evidence": [
+        {
+          "resource": "repo://.specify/extensions.yml#L1-L5",
+          "version": "repo-lines-v1:sha256:a5a7a1c0c164ea3a1df2ab38c0fc7adf7fb296962ddbdd453b34f22aa58c5d66:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjY3ODM5MDM1NjgxMTk1OGYxMzUzYzk0Y2YwNDVjMzMwYjM0NjBjMzQ1YTQ3ZDM0MjhjNzNiODZhMTg3ZTRmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2Q5YzEyYzZjZmU3N2UzYWFkZjY3YjE5NGFlMGI3YWNiMDAzZDM2MTc2ZDI2ZTQwMjI0YzQ0MDYwNTRjYWYwMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://.specify/extensions/assess/README.md#L12-L32",
+          "version": "repo-lines-v1:sha256:b49a7f7bf9c47b001314c76c65401df2b1046d6850d4be199feebaa4b9f8c39e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxMzNiYjY0ZDViYjk4NzRlYmY5N2NiZDZiYWM2Mjc0OTU2ZGUyNzNmZDE4Y2Y2OTdmZjBlMDcwMjhkOTI2OTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4OTIyNzliZGVjNDA5NzQ5OWEyZmIxYmNkYmVlYmE1OTQ3NzVlMTFiMGUzZDM4MDE0MzI0M2U0ZDNiYTVhZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRjMjE1MzM3NzE3YzYwM2I1NmNiYzg1ZWFmZGFjMjI2YzQ2MmQzM2IxYWY1NjlkMDE0ZDk3M2I1YjdjMDZhMTgifQ"
+        },
+        {
+          "resource": "repo://.specify/extensions/assess/extension.yml#L17-L33",
+          "version": "repo-lines-v1:sha256:e02f5d727ab5be6da46bb58ed65b69b2a5a3e2c5e3798025c29db26cad99ecd6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1NTQ2OTM1ZTVmN2JkZDk2Zjg0YmQ0OGYzYmRlYjQ4YmM1Mjc3MjcwNzMzYWUwNGJmODA0NzJkMDdhNmNjNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0Mjc5ZjUzMzFkYmI3MDQ5OWE2NmI5NzkwOGZiZDRkNDc3ZGZhMDdjYWZhMGNkOWQzMDU3MzBjZTdiN2IzYTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE5ZDYwZWY3YzYyOTAyNWYwOGJmZjFmN2M4ODkzMzFmNmRiMGMwNmJhODZlMGU4ZWM0OTdmNzE4NzNjMjgwYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMyYjA0MjdiODE0YzE1NzBlZDkxMDlmNTdiMjc2YzQ2M2MwZjc3NGE3MGQ1NDM4YTZkZDQ3MzU5ZWYxMDQwNWIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_32f95a5b5d3847ffbfecff645550271b",
+      "statement": "The assessment decision command directs unattended needs-clarification runs to name the blocking questions and existing artifact for user-authorized interactive revision, since automated stage runs refuse to overwrite existing artifacts.",
+      "evidence": [
+        {
+          "resource": "repo://.specify/extensions/assess/commands/speckit.assess.decide.md#L147-L155",
+          "version": "repo-lines-v1:sha256:2ccba07f7318f205aca2f8b28fc66f5cd8277a3885724090503bc63bfe79bddd:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWVlNmVkYzBiMTk5YmE4ODlhOWVmZWQ5YTk4MmM4MTgyMDY2MTBiZjhjN2UxZDRhYmUwZDViMDkxNWRhMjE1MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODk4Y2NmZWM2MDA0YjQyNjliZGI1NGUwOTE3MGFlMTc1MzU0ZjUzMzA4MTk3ODI0N2ZhMjE3YzY3MGY1MjhlMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODhiNzFjMTJiNDMwOWMzOTc4YTQ4OWU2YzA1NWFmMDkzZGM1NDI2OGE5ZDk5NTk5YmVmN2FiNDcxZDJkMTliOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWI5OWJmOGM1MGExNGFlZGIzMmY1ZGZiMTEyZmY0OTkwMDY4OGFmMTY2YmZmYjJiOTZhYzAxZTg1ODc4NWVmZCJ9"
+        },
+        {
+          "resource": "repo://.specify/extensions/assess/commands/speckit.assess.research.md",
+          "version": "repo-file-v1:sha256:7eea2e84a3b2c4901ee26c96d9b96abdf7b032492eedf45774290e6ea7f1388d"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-18T17:42:33.479Z"
+  }
+}
