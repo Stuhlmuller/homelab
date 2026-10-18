@@ -66,14 +66,10 @@ sources:
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
-  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
-    resource: repo://flake.nix
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
-  - id: openwiki-source-23775c3de52f3ab95a13cb8b
-    resource: repo://README.md
   - id: openwiki-source-714484b73b4ba165201cb06d
     resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -156,10 +152,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T18:08:28.030Z" }
+generated: { by: "codex", at: "2026-10-18T10:55:26.804Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T18:08:28.030Z
+    at: 2026-10-18T17:42:33.479Z
 ---
 
 # Validation Gates
@@ -168,12 +164,6 @@ verified:
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
-
-For most infrastructure or GitOps changes, run `nix run .#validate` from the
-repository root. Its flake app generates the Terragrunt stack before HCL format
-and validation, then runs static checks and Conftest policies with pinned tools.
-Docs-only changes can use focused checks; this local gate does not replace live
-plans or rollout acceptance. See the [validation runbook](../../docs/validation-runbook.md).
 
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
