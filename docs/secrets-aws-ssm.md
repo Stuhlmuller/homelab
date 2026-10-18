@@ -645,10 +645,12 @@ NetworkPolicy for its scan evidence.
 The native Chainguard receipt scan robot needs
 `/homelab/harbor/robot-scan-password` before its ExternalSecret consumer can
 become Ready. This declaration generates the password and adds its exact ARN to the
-existing External Secrets reader policy. Apply only a reviewed saved plan
-for the shared SSM unit, then verify parameter metadata without reading its
-value. This prerequisite alone does not refresh `harbor-secrets`, create the
-Harbor robot, or start a receipt workflow.
+existing External Secrets reader policy. The parameter is present as a version 1
+`SecureString`, and read-only IAM inspection confirmed its exact reader grant.
+A targeted saved plan from `main` at `f6506136` on 2026-10-18 found no changes.
+This prerequisite
+alone does not refresh `harbor-secrets`, create the Harbor robot, or start a
+receipt workflow.
 
 The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
 Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The

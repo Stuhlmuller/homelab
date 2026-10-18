@@ -25,6 +25,8 @@ private destination root index, and a complete authenticated
 `robot$homelab+pull` download have identical bytes; that the required
 `linux/amd64` and `linux/arm64` child descriptors match; and that Harbor
 reports `Success` with every reported finding count zero for those children.
+Complete downloads use local OCI layouts to retain the multi-platform index.
+Scan queries request Harbor's exact vulnerability-report media type.
 
 Protected CI queries those child scans directly with the separate
 `robot$homelab+scan` credential, limited to project-scoped `artifact:read`.

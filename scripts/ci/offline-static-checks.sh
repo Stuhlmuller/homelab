@@ -877,6 +877,18 @@ expected_credentialed_job_inventory="$({
   exit 1
 }
 
+for workflow in .github/workflows/*.yml; do
+  yq -o=json '.' "$workflow" | jq -e '
+    if (.on // {} | has("pull_request")) then
+      [.permissions, .jobs[].permissions] |
+      all(. != "write-all" and (type != "object" or .statuses != "write"))
+    else true end
+  ' >/dev/null || {
+    echo "Pull-request workflow can forge protected commit statuses: $workflow" >&2
+    exit 1
+  }
+done
+
 for promotion_job in image-update-gate promote fallback-pr; do
   yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
     .github/workflows/image-automation.yml >/dev/null || {
@@ -903,7 +915,7 @@ done <<'EOF'
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 53d2b15f3d23944b2f6322c14ec1f216ef1cc9d743156450e702facc7098de91
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
+.github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
 .github/workflows/openclaw-enterprise-operations.yml 5f4844bd70795b0b62569a0e4f384f5655c410a35f4235fcb92f78a4b9c4b23a
@@ -1050,7 +1062,7 @@ while read -r source expected_hash; do
   }
 done <<'EOF'
 scripts/ci/harbor-native-chainguard-receipt-import.py c7a8b65baa2ae4a7a6f5afbd0b9b25a1e3f2638bdc5f8241e42590eef96e69d2
-scripts/ci/harbor-native-chainguard-receipt.py fb2fc2f95cddf38b4403d6433715ddb4fe9ae2d402aec60ee5c93a013dce4902
+scripts/ci/harbor-native-chainguard-receipt.py 7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688
 EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '

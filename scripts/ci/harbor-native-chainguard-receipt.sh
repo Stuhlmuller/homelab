@@ -110,8 +110,8 @@ while IFS= read -r image_id; do
   [[ "sha256:$(sha256sum "$source_tag_index" | cut -d ' ' -f 1)" == "$source_digest" ]]
   source_directory="$(mktemp -d "$scratch/${image_id}-source.XXXXXX")"
   skopeo copy --all --preserve-digests --src-no-creds \
-    "docker://${source_repository}@${source_digest}" "dir:${source_directory}" >>"$transport_log" 2>&1
-  skopeo inspect --raw "dir:${source_directory}" >"$source_index" 2>>"$transport_log"
+    "docker://${source_repository}@${source_digest}" "oci:${source_directory}:receipt" >>"$transport_log" 2>&1
+  skopeo inspect --raw "oci:${source_directory}:receipt" >"$source_index" 2>>"$transport_log"
   cmp -s "$source_tag_index" "$source_index"
   rm -rf -- "$source_directory"
 
@@ -119,8 +119,8 @@ while IFS= read -r image_id; do
   cmp -s "$source_index" "$destination_index"
   pull_directory="$(mktemp -d "$scratch/${image_id}-pull.XXXXXX")"
   skopeo copy --all --preserve-digests --src-authfile "$authfile" \
-    "docker://${destination_repository}@${source_digest}" "dir:${pull_directory}" >>"$transport_log" 2>&1
-  skopeo inspect --raw "dir:${pull_directory}" >"$pulled_index" 2>>"$transport_log"
+    "docker://${destination_repository}@${source_digest}" "oci:${pull_directory}:receipt" >>"$transport_log" 2>&1
+  skopeo inspect --raw "oci:${pull_directory}:receipt" >"$pulled_index" 2>>"$transport_log"
   cmp -s "$source_index" "$pulled_index"
   rm -rf -- "$pull_directory"
 

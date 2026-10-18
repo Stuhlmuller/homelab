@@ -60,7 +60,11 @@ class HarborScanClient:
             raise ReceiptError("Harbor scan credential is invalid")
         encoded = base64.b64encode(f"robot$homelab+scan:{password}".encode()).decode()
         self.endpoint = endpoint
-        self.headers = {"Authorization": f"Basic {encoded}", "Accept": "application/json"}
+        self.headers = {
+            "Authorization": f"Basic {encoded}",
+            "Accept": "application/json",
+            "X-Accept-Vulnerabilities": SCAN_REPORT_TYPE,
+        }
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
 
     def artifact(self, repository, digest):

@@ -3,8 +3,10 @@
 
 import base64
 import copy
+import hashlib
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -256,6 +258,7 @@ class ScanReceiptTests(TestCase):
         self.assertTrue(authorization.startswith("Basic "))
         self.assertEqual(base64.b64decode(authorization.removeprefix("Basic ")),
                          b"robot$homelab+scan:not-a-real-secret")
+        self.assertEqual(opener.request.get_header("X-accept-vulnerabilities"), VERIFY.SCAN_REPORT_TYPE)
 
     def test_runner_uses_separate_artifact_read_credential_without_a_cluster_job(self):
         script = (ROOT / "scripts/ci/harbor-native-chainguard-receipt.sh").read_text()
@@ -275,6 +278,53 @@ class ScanReceiptTests(TestCase):
         self.assertNotIn("chainguard-receipt-job", script)
         self.assertLess(script.index("/homelab/harbor/robot-scan-password"),
                         script.index("--scan-password-file"))
+        self.assertIn('"oci:${source_directory}:receipt"', script)
+        self.assertIn('"oci:${pull_directory}:receipt"', script)
+        self.assertNotIn('"dir:${source_directory}"', script)
+        self.assertNotIn('"dir:${pull_directory}"', script)
+
+    def test_oci_layout_retains_complete_repeated_platform_index(self):
+        with tempfile.TemporaryDirectory(prefix="native-receipt-oci-") as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            blobs = source / "blobs/sha256"
+            blobs.mkdir(parents=True)
+            (source / "oci-layout").write_text('{"imageLayoutVersion":"1.0.0"}')
+
+            def blob(value, kind):
+                raw = json.dumps(value, separators=(",", ":")).encode()
+                digest = hashlib.sha256(raw).hexdigest()
+                (blobs / digest).write_bytes(raw)
+                return {"mediaType": f"application/vnd.oci.image.{kind}.v1+json",
+                        "digest": f"sha256:{digest}", "size": len(raw)}
+
+            children = []
+            for architecture in ("amd64", "arm64"):
+                config = blob({"architecture": architecture, "os": "linux",
+                               "rootfs": {"type": "layers", "diff_ids": []}}, "config")
+                child = blob({"schemaVersion": 2,
+                              "mediaType": "application/vnd.oci.image.manifest.v1+json",
+                              "config": config, "layers": []}, "manifest")
+                child["platform"] = {"architecture": architecture, "os": "linux"}
+                children.append(child)
+            expected = {"schemaVersion": 2, "mediaType": "application/vnd.oci.image.index.v1+json",
+                        "manifests": [children[0], children[0], children[1]]}
+            descriptor = blob(expected, "index")
+            descriptor["annotations"] = {"org.opencontainers.image.ref.name": "fixture"}
+            (source / "index.json").write_text(json.dumps({"schemaVersion": 2, "manifests": [descriptor]}))
+            policy = root / "policy.json"
+            policy.write_text(json.dumps({"default": [{"type": "reject"}], "transports": {
+                "oci": {"": [{"type": "insecureAcceptAnything"}]}}}))
+            destination = root / "download"
+            subprocess.run(["skopeo", "--policy", str(policy), "copy", "--all", "--preserve-digests",
+                            f"oci:{source}:fixture", f"oci:{destination}:receipt"],
+                           check=True, capture_output=True, timeout=20)
+            result = subprocess.run(["skopeo", "--policy", str(policy), "inspect", "--raw",
+                                     f"oci:{destination}:receipt"],
+                                    check=True, capture_output=True, timeout=20)
+            self.assertEqual(json.loads(result.stdout), expected)
+            for child in children:
+                self.assertTrue((destination / "blobs/sha256" / child["digest"].split(":")[1]).is_file())
 
 
 if __name__ == "__main__":
