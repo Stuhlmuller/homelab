@@ -6,6 +6,8 @@ tags: [workloads, argocd, inventory]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -68,6 +70,8 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-65bc6c080b599d8e6d572a31
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
@@ -86,10 +90,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:52:19.770Z
 ---
 
 # Workload Inventory
@@ -447,6 +451,10 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+The native Chainguard Python and curl candidate receipt and scan-robot contract
+remain held. They do not prove publication, change workload images, or migrate
+any consumer; the scan SSM parameter must be applied before that PR can merge.
 
 The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
 Application. Its cluster-scoped admission policy starts with `Warn, Audit` for

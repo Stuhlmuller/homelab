@@ -86,6 +86,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
+  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-f957231327bdd56401fbc4e2
@@ -150,10 +152,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:52:19.770Z
 ---
 
 # Validation Gates
@@ -1695,6 +1697,14 @@ fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate the six consuming applications.
+
+The native Chainguard receipt fixtures bind reviewed source and destination,
+require amd64 and arm64 child scans, complete authenticated Harbor pulls and
+protected provenance, and reject tag-only or mismatched rendered consumers.
+The render gate also requires `harbor-pull` for native Harbor images and rejects
+secret mounts or environment injection. The scan-robot SSM parameter must be
+applied before the ExternalSecret becomes Ready; source checks prove neither
+that parameter nor a live receipt.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

@@ -12,6 +12,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -96,6 +98,8 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -116,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:06:26.593Z
+    at: 2026-10-18T06:52:19.770Z
 ---
 
 # Harbor Private OCI Registry
@@ -259,6 +263,15 @@ The native receipt scan robot has a separate staged SSM parameter,
 grant. Its ExternalSecret is declared but cannot become Ready until a
 reviewed saved plan applies that parameter and read-only metadata verifies it. Staging this contract does not
 create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
+
+The held [protected native receipt workflow](../../.github/workflows/harbor-native-chainguard-receipt.yml)
+binds Chainguard Python and curl sources and private Harbor destinations to the
+reviewed catalog. It verifies required amd64/arm64 children, completed zero-CVE
+Harbor scans, and an authenticated private pull. Identical repeated platform
+descriptors are accepted; conflicting digest or media type is rejected. Render
+validation permits a migrated native reference only with imported protected
+provenance and the matching digest. The scan SSM parameter must exist before
+the consumer PR can merge; no receipt or workload migration has run.
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.

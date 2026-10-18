@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:52:19.770Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -27,6 +27,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
+    resource: repo://clusters/homelab/apps/harbor/README.md
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -71,7 +73,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
+generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
 ---
 
 # Secrets And Identity
@@ -798,9 +800,11 @@ credential rotation; upstream cold recovery remains.
 
 The native receipt scan robot separately needs the staged
 `/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
-grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
-creates the parameter and read-only metadata verifies it. This declaration
-creates no Harbor robot, receipt, or running workload change. See the
+grant. The consumer PR declares that key in `harbor-secrets` revision `v4`,
+but must remain unmerged until a reviewed saved plan creates the parameter and
+read-only metadata verifies it. Merging the `OnChange` consumer first would
+leave Harbor GitOps sync unhealthy. Declaration alone creates no robot or
+receipt. See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the

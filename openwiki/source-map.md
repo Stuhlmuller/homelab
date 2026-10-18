@@ -8,6 +8,8 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a793a7dd08d0dc13de84207b
     resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
@@ -30,6 +32,8 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-8144ee95f00e2d4721210fcf
     resource: repo://IaC/stacks/mastodon/stack.hcl
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
@@ -38,10 +42,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:52:19.770Z
 ---
 
 # Source Map
@@ -73,6 +77,7 @@ desired state.
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
 | `scripts/talos-harbor-mirrors.py` | [Private node registry path](operations/harbor-oci.md#private-node-registry-foundation) |
+| `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
