@@ -19,6 +19,10 @@ workflow dispatches or production changes.
   [the apply script](../../../scripts/ci/terragrunt-apply.sh) before claiming
   its scope. Some targets reconcile shared SSM/IAM and app-specific storage;
   targeted runs do not advance the full-apply checkpoint.
+- Private Octelium Kubernetes or Talos policy and Service declarations: use
+  [Octelium Private Kubernetes Apply](../../../.github/workflows/octelium-private-kubernetes-apply.yml)
+  with its own documented gates; the ordinary Terragrunt apply does not deliver
+  this lane.
 - Custom image or new mirrored digest: finish the relevant publication
   workflow before merging its consuming reference. See
   [Harbor publication](../homelab-harbor-images/SKILL.md).
