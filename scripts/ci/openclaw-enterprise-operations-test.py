@@ -187,6 +187,12 @@ restore_version key version-1 "$2"
         ):
             self.assertIn(required, workflow)
         self.assertNotIn('actions/upload-artifact@', workflow)
+        phase_line = next(line for line in workflow.splitlines() if 'phase="$(sed -n ' in line)
+        phase_filter = phase_line.split("sed -n '", 1)[1].split("'", 1)[0]
+        filtered = subprocess.run(['sed', '-n', phase_filter],
+                                  input='LEGACY_PHASE:verification\nLEGACY_PHASE:secret\nprivate diagnostic\n',
+                                  capture_output=True, text=True, check=True)
+        self.assertEqual(filtered.stdout, 'verification\n')
         script = SCRIPT.read_text()
         self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
         self.assertIn('nohup sh "$directory/inventory-worker-${run_id}.sh"', script)

@@ -45,6 +45,7 @@ and retained baseline copies, current reader/PVC/root identity, and one exact
 versioned S3 object whose downloaded bytes match. It does not rescan or stop
 the old gateway. If publication fails or the object has multiple versions, keep
 shutdown blocked and inspect the private failure; do not overwrite a version.
+The workflow reports only the fixed failure phase, never private command output.
 Unreadable zero-byte NAS files retain their empty hash and original mode in the
 archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and copies the complete

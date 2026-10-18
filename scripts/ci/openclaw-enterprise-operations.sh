@@ -19,7 +19,9 @@ bucket="$(jq -er .bucket IaC/config/application-backup-storage.json)"
 [[ "$(aws s3api get-bucket-encryption --bucket "$bucket" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == 'aws:kms' ]] || exit 1
 
 work="$(mktemp -d)"
-trap 'rm -rf -- "$work"' EXIT
+phase=preflight
+result=0
+trap 'result=$?; rm -rf -- "$work"; if [[ "$stage" == publish-inventory && "$result" -ne 0 ]]; then printf "LEGACY_PHASE:%s\n" "$phase" >&2; fi' EXIT
 status_refresh_count=0
 python3 scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/status.json"
 pod="$(jq -er .readerPod "$work/status.json")"
@@ -144,6 +146,7 @@ case "$stage" in
     "${reader[@]}" cat "$baseline" | aws s3 cp - "s3://${bucket}/${baseline_key}"
     ;;
   publish-inventory)
+    phase=baseline
     baseline_id="${BASELINE_REF##*/}"
     baseline="/archive/private/baseline-${baseline_id}.json"
     baseline_result="/private/legacy/baseline-${baseline_id}.json"
@@ -157,7 +160,9 @@ case "$stage" in
     "${reader[@]}" cat "$baseline_result" >"$work/worker-baseline.json"
     cmp "$work/baseline.json" "$work/worker-baseline.json"
     validate_baseline "$work/baseline.json" "$work/status.json"
+    phase=identity
     refresh_status inventory
+    phase=publication
     baseline_key="openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json"
     versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
     jq -e '.IsTruncated == false' <<<"$versions" >/dev/null
@@ -173,11 +178,13 @@ case "$stage" in
       then [.Versions[]? | select(.Key == $key) | .VersionId] | .[0]
       else empty end' <<<"$versions")"
     [[ "$version" != null && "$version" != None ]] || exit 1
+    phase=verification
     aws s3api get-object --bucket "$bucket" --key "$baseline_key" \
       --version-id "$version" "$work/offsite-baseline.json" >"$work/get.json"
     cmp "$work/baseline.json" "$work/offsite-baseline.json"
     [[ "$(aws s3api head-object --bucket "$bucket" --key "$baseline_key" \
       --version-id "$version" --query ServerSideEncryption --output text)" == aws:kms ]] || exit 1
+    phase=identity
     refresh_status inventory
     ;;
   archive)

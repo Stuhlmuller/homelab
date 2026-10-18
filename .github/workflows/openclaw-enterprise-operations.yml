@@ -134,11 +134,12 @@ jobs:
           umask 077
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'385c68abb44a4495f3525fb0dd4ac6bc3e32338b043543757781ea86a99c6275  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'bd62df2e92715852a6c70592408dba2a01bab043fd4b8090e71a25b988e59adc  scripts/ci/openclaw-enterprise-operations.sh'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
           EOF
           then
-            echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld."
+            phase="$(sed -n 's/^LEGACY_PHASE:\(preflight\|baseline\|identity\|publication\|verification\)$/\1/p' "$private_log" | tail -n 1)"
+            echo "::error::Legacy operation failed in ${phase:-unknown} phase; private cluster and archive diagnostics withheld."
             exit 1
           fi
           echo "Legacy operation completed; private receipts withheld."
