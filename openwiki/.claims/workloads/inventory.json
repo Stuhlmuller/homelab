@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3fc952fe0864c8dc83139b2831aa52beb841647043f46134e21c683c76c9ce13",
+  "pageVersion": "sha256:9772db58b75947671bc9014355e6fad068ffcfd4cd695c41b525cb88677314e1",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
+          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
+          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -261,10 +261,28 @@
           "version": "repo-file-v1:sha256:e1dd68c104e64def1be7e4d0c0f905f9daa30960c5808af832dbe7e28cc61b65"
         }
       ]
+    },
+    {
+      "id": "claim_974ee5f17a584c40a3fea2aa576a48cc",
+      "statement": "The separate Harbor consumer branch proposes nine digest-pinned 2.15.4 runtime components on chart 1.19.2; publication, node cache verification, and an isolated database-and-registry-blob restore gate rollout.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/README.md#L232-L246",
+          "version": "repo-lines-v1:sha256:e6eb8bc649099a8520043e054005f104fafaf91d10dbc0cbf39584638a9cd696:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5YWNhMDcwMDcyMTQ2N2E4NWQ1OThkZjhlYWI1YTkxMjhlZjg0YTgxYjM2NjMyZTc5MDU1YTkxMDRlM2FmMjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3ODZjZDc0MTMzOGQzNThlYWJmMjhiMDgxZDk2MzE4YjZmNTA3N2Q0MDY5ZDQ0MTFjYzA5YTM5OTQ2MDVhZjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE0YTdmN2FiNjU0ZGQ5Zjk4ODYyNWQ0MzUyYjhhYzNlZDk2ZjQ1ZTg5NzEwN2YxNzQ3M2QxODk1N2QxZjU4ZWQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L447-L483",
+          "version": "repo-lines-v1:sha256:da058090cd698d9a524729635c1da99a57e3ba2a48ef724279271d8e1d3b7a28:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzMjM3ZTdlOWVkMTk4Yjc2OWEwZDMyMWI4Mzc2ZDAzMTNmMjUzY2ZhZGNkZmQyM2U4NTc2YzFkOTE0ZWQ0MzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlODBhYTQ0MDVjYzQwOTM3Y2Y0ZDJkODk4Zjk0ZWE4M2FhYjUwMTIyNmIxYjc1NGM0Nzg1MTdkODI1NzI2MTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwZGVkODcwY2E5NmVjYTg2ZmY0YjQ3MTY2NmJmYzNhNjhmYzJjZDdjMTdiMGY0ZDBjMzE3OWM0NmYxYzZjYmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1M2Y0ZWM4MDhiMjU2MDY5MTVlMjUxZDM2NzM1ZTVjY2ZiYzczYmY0NWExODU2NGU3MGM5ZWY1Y2M2ZjAwMjUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:24:02.662Z"
+    "at": "2026-10-18T12:12:45.399Z"
   }
 }
