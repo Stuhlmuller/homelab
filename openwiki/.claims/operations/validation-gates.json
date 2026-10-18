@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a889b61b6877f178cab7a466d413a701ce55e373ad1441ee9c4ba5ed9e51e38e",
+  "pageVersion": "sha256:87174f017a3a638effb59c6d11ebf23344a3aeb3ec509f800afd15837efbe869",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -80,7 +80,7 @@
         },
         {
           "resource": "repo://policy/kubernetes.rego",
-          "version": "repo-file-v1:sha256:250f6fd8964ceb46725a07f68014e737fe3eae5dd4b94decce501c4258938c3d"
+          "version": "repo-file-v1:sha256:77a1a3cc465b15a5b1ae182d4beb1572ba2e27730e1767d6c41f7a44d63eab99"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:cff78af8b39178268dae875789c619c12ef4c8b3fb7775ebc121591298b6df3b"
+          "version": "repo-file-v1:sha256:0a3527f2b294c79399b1493e404a6eacddcd1c2d3ba7afb449d993637eb7f7e1"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -545,7 +545,7 @@
           "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L6-L13",
+          "resource": "repo://scripts/ci/offline-checks.sh#L7-L14",
           "version": "repo-lines-v1:sha256:5195894c7328c3c60862e3324dcf3d6fa968e27d58c446b79619dd967714fa1b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiNGJkZDAwNjMxZWI0NjkyZDk3NzRlZDNiYmJjMjIyNTQ0NTJkYTA3MmY0Y2Q5MmNkOWFlOGYzZjA0Y2JjMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY4ZDYzYjhlODlhNTYzNzI2NDk4OTBhZjU1ZDlkMTkyMDk3NjYyYmU1ZjFiMjc0ZTY4N2Y1ZjlhYzQ2YTgzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNThhZjIxMTcxOTMxYmQzMDRhMmQ3Y2E2NmMzYjZlYjZiNGRkZmVjZDIyMzQ1ZmM1ZWFkNzM5NDljMmUzMWZmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODY1YmZkMTVmMjYwZjQxOGYxNzZkYmIyNmZhNjBlMjdkY2JlY2E3MTZlMTQzN2RjODNmZGE1ZmQyZTA0NTA0YSJ9"
         }
       ]
@@ -709,7 +709,7 @@
           "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
         },
         {
-          "resource": "repo://flake.nix#L22-L42",
+          "resource": "repo://flake.nix#L66-L86",
           "version": "repo-lines-v1:sha256:4eb70c55e9738d7b618e3580e049910b3ec8c1ff4af6e895983ad4946529049d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZTFhNzRkNzU0ZTg3N2MwYzQ3NDAwOGQ5YTc1YWI4NWY0Mjc3MmJlNmIwNzdhNzE3YmZmMTg5NzkwZDYyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyOTQwYThiOGM0ZDFhNWY1NTY5YmNjOWFkOGZmYWFjODkxNTZjZTE2MWM3YTBlNTY2NWRhNDIyYzVkMjY4MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMmQxOTQ0NWM5M2I3Y2I2YWFmZTI1NWU3MDVhYjgwMmFlMTNjM2NmNTFkNzAwMzQ4NTI2ZTNhZjliOWY4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0NDk2MzRiYmY0MDgyMmVlY2NhYTQzYmE0M2QyNGM1YzU0ZmMwMWFlNjYyOTdhNTVlNDI2YWFmOTIxZWQ4YmUifQ"
         }
       ]
@@ -731,10 +731,36 @@
           "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
         }
       ]
+    },
+    {
+      "id": "claim_368d59661a574c7a93d9427a067aa0ab",
+      "statement": "Static checks exercise Renovate's credential-free config and discovery path, while offline Prometheus fixtures validate missed starts, incomplete cycles, a missing CronJob, late prior-Job success, and suspension/resume behavior. These source checks do not establish live credential, cache, or scheduled-Job acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
+          "version": "repo-file-v1:sha256:7b25c188defdd2d8c4cf271c0eb138a905418233860f5362d7488d5ff84543e1"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:8a2ecad8921fc182a54a86cea318b5a9726ae1dfb9cdd77278652d6584174e64"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-alert-check.py",
+          "version": "repo-file-v1:sha256:bce9ad9544000505b3ed4db2aeef93f4d08f1f9f606c6f8614d7e6ff8a92d12e"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-config-test.js",
+          "version": "repo-file-v1:sha256:5eb9a2ed934928c26ce9a0d7e831e3a54ac738b9c8a0151c8e71b0ff4d237cce"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:0a3527f2b294c79399b1493e404a6eacddcd1c2d3ba7afb449d993637eb7f7e1"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:41:22.820Z"
+    "at": "2026-10-18T20:54:44.446Z"
   }
 }

@@ -3,9 +3,6 @@ type: architecture
 title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-18T19:53:38.444Z
 sources:
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
 generated: { by: "codex", at: "2026-10-18T19:53:38.444Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T20:54:44.446Z
 ---
 
 # Storage And State

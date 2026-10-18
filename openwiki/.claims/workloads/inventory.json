@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a5d96a804b1631e887d993ff8769d3aa6aeb3538669b598c8e04df98b1b985e",
+  "pageVersion": "sha256:65181d1909517fee6ed6c32af0ec5eef3e43b2a02429bf1bff4accbaa545a2cd",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:d3217a9eebb6a7699c1b8c48d43fe4fb47b1981b4ea5116d18a6dd0ad1570b40"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:d3217a9eebb6a7699c1b8c48d43fe4fb47b1981b4ea5116d18a6dd0ad1570b40"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -275,10 +275,36 @@
           "version": "repo-lines-v1:sha256:a0cf845c9739c1d0d0ae1708602bec8def146d8fb3a571fcd4b81d0a6e7d24c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_bdd9aea3862a41d69ab38d0bdb487540",
+      "statement": "The root Terragrunt stack stages a Renovate Argo CD Application in automation. Its hourly UTC CronJob remains suspended with full dry-run configuration pending App credential transfer and parity checks; it declares a retained 20 Gi NFS cache. Source registration is not live Job acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/renovate/stack.hcl",
+          "version": "repo-file-v1:sha256:04724af1dc2ae6e1ddb027dcb270d4704ad204c33aff015ca79428175f609ad8"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:d3217a9eebb6a7699c1b8c48d43fe4fb47b1981b4ea5116d18a6dd0ad1570b40"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/config.js",
+          "version": "repo-file-v1:sha256:c265cb232f819bdaf738536729186aed1134b744e9caee4b469424c33602f5ee"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:9bac796bed1e208074cc8221ed2265453e9363285483507def3268887c77bd22"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
+          "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:41:22.820Z"
+    "at": "2026-10-18T20:54:44.446Z"
   }
 }
