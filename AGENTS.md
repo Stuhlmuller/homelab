@@ -25,7 +25,8 @@ and useful to someone learning the pattern for the first time.
   documented near the code that implements them.
 - Make PRs the normal unit of change for cluster setup, maintenance, upgrades,
   and documentation.
-- Consider a repository change task done only after its PR is merged into `main`.
+- Complete repository change tasks by merging their PRs into `main`, unless the
+  user explicitly requests only local work or PR preparation.
 - Include the "why" when changing architecture, workflows, or operational
   assumptions.
 - Keep examples copyable, but clearly mark values that are specific to this
