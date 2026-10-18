@@ -98,10 +98,9 @@ xerj autoindex ~/.xerj-code/local-source \
 Refresh these indices after source changes. If XERJ refuses a new dataset
 schema, build and verify a new prefix and state directory before retiring the
 old one. Search the checkout through Codex's `xerj_search` MCP tool with
-`index: homelab-local-v3-*` and
-`query: {"query_string":{"query":"<problem>"}}`. Use
-`index: homelab-tracked-source-*` for hidden-file cards. Read the cited
-repository path as the source of truth. `xerj corpus list` shows
+`index: homelab-local-v3-*` and `query: "<problem>"` for definition-first
+ranking. Use `index: homelab-tracked-source-*` for hidden-file cards. Read the
+cited repository path as the source of truth. `xerj corpus list` shows
 which reference corpora are loaded.
 XERJ treats autoindex exit `3` as success with skipped junk; an exit `1` or `4`
 needs attention. `corpus index` can return `0` while reporting an inner
