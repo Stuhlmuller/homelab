@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:01ef9345d85a1a5665ef68fbaa96ded343887fb2f086c11a2e5628c9306c9061",
+  "pageVersion": "sha256:86454b4f678a8742c803a75cf17f3f6dda7647f19768f34fa0d28e429f94cdde",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:4be4a9c5c9c20ce210c324d3351d1df15576eedfd8cffd252335ba2f00709d75"
+          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -207,10 +207,28 @@
           "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
         }
       ]
+    },
+    {
+      "id": "claim_56296241228e41d3b304295ffedab73f",
+      "statement": "The root Terragrunt stack declares a platform image-policy Argo CD Application using Warn and Audit admission, with no storage or credentials; live audit evidence and any Deny promotion require separate acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/platform-image-policy/stack.hcl",
+          "version": "repo-file-v1:sha256:233cafd787d1f0ec8701d736c0c1fb3f81571c1b90e27022ee355efb2fe0bff3"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
+          "version": "repo-file-v1:sha256:c9ffa389cd458f804f5b3dd38db8d9120754311dc6dab226249e3d11347d5ebd"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T00:35:50.724Z"
+    "at": "2026-10-18T00:40:35.896Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7417d4c4d94b80f4dd285d89c3f3a76e91b60123e6fd6cd66a1b323730957d31",
+  "pageVersion": "sha256:440acab3cfb5335d19f76952054a7ca677a876cb79af46a01176ef4309e0851a",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/policy-bot-webhook.py",
-          "version": "repo-file-v1:sha256:490bbec5ea987e100a84ef09d43de2c4a73866d8c13e77cd307be9262eb82ffc"
+          "version": "repo-file-v1:sha256:d856eb227a25f4d4d8b43491805778d4562cd9c479f580c0f9767d08eb2b4a0e"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py#L275-L317",
@@ -98,7 +98,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:01eb7a477b2186253e9adb3194174133e7cc6e02eba5c13abf0168afb985e0e5"
+          "version": "repo-file-v1:sha256:e798a1e4cc8aba888cca7f74a026740b6e3b1750b860c0c77e350574035ae624"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/networkpolicy.yaml",
@@ -183,7 +183,7 @@
           "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
         },
         {
-          "resource": "repo://scripts/policy-bot-webhook.py#L107-L125",
+          "resource": "repo://scripts/policy-bot-webhook.py#L105-L123",
           "version": "repo-lines-v1:sha256:b0023f2c20f8cd3e1d3ae6782f0cf9810d66496ef2f68ac506c77e8ed97a6622:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMzdmNTVhMDBlNmNlZGE0MTQ1ZjdkN2IwN2ZhY2Q0NTA3MmY5N2Q2YmJhYzk5NTEwYjQ0YzY5OTU3ODZmYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0MGFmYTYxNmY1OGI3NjBmMmYzYzgzN2Q3MWIwMWMxNjgxNGQ2MTZjY2M5M2Q2MjQ2YmM1YzhhM2FmOTk0ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OGQ4MmViYzU1MmJlYzk5ZTg3NjNkNmI3MTA3M2ZmMTIwNjQ2N2MwODhmYzcxZjVjNzQxYjdiNDJhNTUyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1YzJhM2U1YjViMzhlZWFhMWJjZTM3ZmRlMDgwMzFjNjIyYWNkNDYyZjA4NGU1NGM1YjY4MmY0MjBkYjg4ZWQifQ"
         }
       ]
@@ -287,6 +287,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T23:19:59.804Z"
+    "at": "2026-10-17T23:58:10.958Z"
   }
 }

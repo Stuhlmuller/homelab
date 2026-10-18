@@ -54,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
@@ -64,16 +66,18 @@ sources:
     resource: repo://IaC/stacks/cert-manager/stack.hcl
   - id: openwiki-source-8144ee95f00e2d4721210fcf
     resource: repo://IaC/stacks/mastodon/stack.hcl
+  - id: openwiki-source-25c085c78b1cbef8c164f9f7
+    resource: repo://IaC/stacks/platform-image-policy/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
+generated: { by: "codex", at: "2026-10-18T00:40:35.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T00:35:50.724Z
+    at: 2026-10-18T00:40:35.896Z
 ---
 
 # Workload Inventory
@@ -399,15 +403,6 @@ data is disposable node-local state. Cluster limits allow four stored and one
 active workspace per user, including interactive users. Live execution and
 negative-policy acceptance remain pending; see [Cordium CI](../../docs/cordium-ci.md).
 
-The Actions runner pool and controller are staged separately. The pool remains
-disabled, no controller Deployment is registered, and no runner image has been
-published for consumption. The proposed controller uses `cordium-runners`
-credentials and per-Workspace UID isolation while verifying deletion of each
-runner, Workspace, Pod, PVC, and NetworkPolicy after one job. Existing hosted
-runner selectors remain in place until production enforcement, private image
-pulls, canary modes, and cleanup pass. See the
-[runner bootstrap](../../builds/cordium-runner/README.md).
-
 ### OpenClaw runtime readiness
 
 Bootstrap verifies the current offline backup, existing SQLite databases and
@@ -429,6 +424,11 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+
+The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
+Application. Its cluster-scoped admission policy starts with `Warn, Audit` for
+Pod image references; it declares no storage or credentials. Live audit data
+and any later `Deny` promotion require separate acceptance.
 
 ## Recovery inventory (HOME-2)
 

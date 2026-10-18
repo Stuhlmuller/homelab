@@ -4,8 +4,6 @@ title: "Harbor OCI"
 description: "Harbor ownership, immutable image publication, scanning, recovery and acceptance boundaries."
 tags: [harbor, images, registry, security]
 sources:
-  - id: openwiki-source-a793a7dd08d0dc13de84207b
-    resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
@@ -14,8 +12,6 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
-  - id: openwiki-source-50e1601d2f23b472521e5c0f
-    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -62,6 +58,12 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-c14c7585bd2e583682b8b7f7
+    resource: repo://clusters/homelab/platform/image-policy/policy.yaml
+  - id: openwiki-source-e61e6d11d2a5c456a06bdb85
+    resource: repo://clusters/homelab/platform/image-policy/README.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -106,10 +108,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T23:19:59.804Z" }
+generated: { by: "codex", at: "2026-10-18T00:40:35.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T00:35:50.724Z
+    at: 2026-10-18T00:40:35.896Z
 ---
 
 # Harbor Private OCI Registry
@@ -687,16 +689,6 @@ Static rendering did not catch either runtime validation issue.
 
 ## Expanded publication and egress prerequisites
 
-The staged Cordium Actions runner has a fixed runner/controller image pair.
-`cordium-runner-publish.yml` accepts only an exact-current-main manual dispatch,
-builds and smoke-tests both images before registry credentials, then publishes
-only their private `homelab` references through the shared Harbor signer.
-The helper requires complete authenticated destination pulls and verified
-signatures before emitting immutable digests. Neither image has been
-published or cold-pulled for a consuming controller;
-registration and selector cutover remain disabled. See the
-[runner publication contract](../../builds/cordium-runner/README.md#protected-private-publication).
-
 Both publication catalogs list thirteen digest-pinned `cgr.dev/chainguard/*`
 sources. Go, nginx, Node runtime, Node dev, static, and Wolfi base are the six
 additions to the original seven-image scope. Earlier seven-image receipts exclude
@@ -749,6 +741,13 @@ Preserve DNS, API, HBONE, webhook, storage, and recovery paths and prove direct-
 alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
+
+The staged `harbor-only-images` ValidatingAdmissionPolicy audits Pod create and
+update, including init and ephemeral containers, across namespaces. Its binding
+uses `Warn, Audit`, so public image references remain admitted while inventory
+and mirror coverage are measured. A later `Deny` promotion requires clean
+static and live inventory, protected Harbor publication, and authenticated
+node-pull acceptance. See the [policy source](../../clusters/homelab/platform/image-policy/README.md).
 
 No consumer migration, full-catalog publication, zero-CVE result or live egress
 enforcement is established by these prerequisites. Image pulls remain
