@@ -1,0 +1,58 @@
+image:
+  repository: harbor.stinkyboi.com/mirror/codeberg.org/k8s-gateway/k8s_gateway
+  tag: 1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4
+replicaCount: 2
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 200m, memory: 128Mi}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  seccompProfile: {type: RuntimeDefault}
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities: {drop: [ALL]}
+serviceType: LoadBalancer
+service:
+  name: tailnet-dns
+  loadBalancerClass: tailscale
+  annotations:
+    tailscale.com/hostname: homelab-dns
+    tailscale.com/tags: tag:homelab-ingress
+servers:
+  - zones: [{zone: ., use_tcp: true}]
+    port: 1053
+    servicePort: 53
+    plugins:
+      - name: errors
+      - name: health
+        configBlock: lameduck 10s
+      - name: ready
+      - name: view
+        parameters: private-addresses
+        configBlock: "expr type() in ['A', 'AAAA']"
+      - name: k8s_gateway
+        parameters: stinkyboi.com
+        configBlock: |-
+          ttl 30
+          resources Service
+          serviceLabelSelectors homelab.rst.io/private-dns=approved
+          loadBalancerAddressPreference ip
+          fallthrough
+      - name: forward
+        parameters: . 1.1.1.1 1.0.0.1
+      - name: cache
+        parameters: "30"
+      - name: reload
+  - zones: [{zone: ., use_tcp: true}]
+    port: 1053
+    servicePort: 53
+    plugins:
+      - name: errors
+      - name: forward
+        parameters: . 1.1.1.1 1.0.0.1
+      - name: cache
+        parameters: "30"
+      - name: reload

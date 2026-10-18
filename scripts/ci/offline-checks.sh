@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Generated units are fixtures here; no provider init or live API access.
-# shellcheck disable=SC1091 # CI sources this file from the repository root.
+# shellcheck disable=SC1091 # Shared helper is linted separately.
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
@@ -21,6 +21,8 @@ python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
+python3 -I scripts/ci/tailnet-dns-check-test.py
+python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py

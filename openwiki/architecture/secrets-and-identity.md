@@ -3,9 +3,6 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: [architecture, secrets, identity]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-18T21:04:20.936Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -33,12 +30,10 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
-  - id: openwiki-source-c728e68797517895d00bd9f9
-    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
-  - id: openwiki-source-6680389f3ee90f86c4c9a782
-    resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -51,8 +46,6 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-4fa6e8b8348f9583e76afe30
-    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-326a085bf1ea3cb64a10924e
     resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
@@ -73,11 +66,16 @@ sources:
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
+  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
+    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T20:54:44.446Z" }
+generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T20:54:06.405Z
 ---
 
 # Secrets And Identity
@@ -166,8 +164,11 @@ until authenticated plan/apply and denial checks succeed over the new proxy.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
-recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
-token to write only its fixed mesh A/AAAA inventory from reviewed current main.
+recovery. The separate tailnet resolver watches approved Kubernetes Services
+and needs no DNS write token. Only the later guarded retirement helper reads
+the existing scoped cert-manager Cloudflare token; it can delete public
+A/AAAA/CNAME records for the fixed 27 names after owner tailnet DNS handoff and
+client acceptance. It has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
 
@@ -189,15 +190,6 @@ changing DNS alone does not authorize deleting those credentials.
   aggregate limit is 5,120 characters; the existing fixed-size inline policy
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
-
-The staged [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
-reuses its existing GitHub App. IaC declares two SecureString placeholders for
-the App issuer and private key. A temporary role permits the companion
-repository to transfer only those two values; it cannot read them back. The
-`automation` ExternalSecret projects both as files and refreshes every five
-minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
-and removal of the temporary writer grant are verified. The current code is
-desired state, not evidence that the credentials have reached the cluster.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

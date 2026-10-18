@@ -342,6 +342,14 @@ unit "argocd_apps_tailscale" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailscale/stack.hcl").inputs
 }
 
+unit "argocd_apps_tailnet_dns" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/tailnet-dns"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailnet-dns/stack.hcl").inputs
+}
+
 unit "argocd_apps_traefik" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/traefik"

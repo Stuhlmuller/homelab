@@ -48,10 +48,6 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
-  - id: openwiki-source-436aa6b493bbff8d5c17b3ff
-    resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
-  - id: openwiki-source-c728e68797517895d00bd9f9
-    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -60,6 +56,8 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
@@ -108,8 +106,6 @@ sources:
     resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
-  - id: openwiki-source-3b37d159fd7aec286d251f6b
-    resource: repo://scripts/ci/n8n-github-webhooks-test.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-47792446a9e092544c3c1857
@@ -124,12 +120,12 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
-  - id: openwiki-source-5028d06d31a177019a8bf782
-    resource: repo://scripts/ci/renovate-alert-check.py
-  - id: openwiki-source-9100b7266ad774f6eeda0265
-    resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
+  - id: openwiki-source-1d25596b50032267f565d3f3
+    resource: repo://scripts/ci/tailnet-dns-check-test.py
+  - id: openwiki-source-a98a02c20ac8079466bdbdb6
+    resource: repo://scripts/ci/tailnet-dns-test.py
   - id: openwiki-source-2ec3653fcc5fbc3a0f24c7a1
     resource: repo://scripts/ci/tailscale-access-check-test.py
   - id: openwiki-source-f8287cec4efc309562629516
@@ -160,6 +156,8 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
+  - id: openwiki-source-9e73eddbbea62807ee2ea389
+    resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
@@ -168,10 +166,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T21:04:20.936Z" }
+generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:04:20.936Z
+    at: 2026-10-18T20:54:06.405Z
 ---
 
 # Validation Gates
@@ -480,14 +478,39 @@ tests an isolated temporary `Deny` binding. The temporary binding is fixture
 only. Live audit inventory and authenticated Harbor/node-pull proof remain
 required before a reviewed production `Deny` change.
 
-The additive cutover utilities have focused static tests for fixed DNS ownership,
+The earlier ingress cutover utilities have focused static tests for DNS ownership,
 Mac credential/profile preservation, bounded same-profile reconnect and carrier
 rollback, non-executing webhook
-preflights, and fresh delivery receipts. DNS API readback is separate from normal
-OS resolution: migrate the owned Mac hosts override, wait the previous DNS TTL,
-then run `tailscale-private-dns-check.py --verify-dns`. The
+preflights, and fresh delivery receipts. The current resolver handoff uses the
+observed `tailnet-dns` Service IP, direct UDP/TCP checks, owner restricted
+nameserver setting, and then normal client DNS and HTTPS acceptance. The
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) retains old access
 until replacement acceptance.
+
+### Tailnet DNS resolver handoff
+
+`static-checks.sh` runs the full pinned Helm render and route/annotation parity
+gate in `tailnet-dns-test.py`; `offline-checks.sh` runs its declaration and
+read-only handoff fixtures. For the first migration, also run
+`python3 -I scripts/ci/tailnet-dns-test.py --initial-migration` to require the
+27 reviewed names. Later route additions, renames and removals retain parity
+without freezing that initial inventory. The fixed `image_scope=dns` Harbor
+publisher selects only the pinned k8s_gateway image; catalog and publisher
+fixtures reject missing, extra, or changed scope entries before credentials.
+Protected DNS mirror run `39161113974` passed at `main` `5558f8c1` with
+unchanged digest and complete authenticated Harbor pull. This scoped receipt
+does not prove live resolver health.
+
+After Argo reports the `tailnet-dns` Application Synced/Healthy, sign the fixed
+DNS proxy under Tailnet Lock and run
+`python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff`
+from the trusted signer Mac with read-only cluster access. The checker binds
+the observed IP to the online signed peer, rejects other selected Services,
+and probes all 27 approved A/AAAA names over UDP and TCP, including a Cordium
+wildcard child. It compares public apex MX/TXT and an unrelated public name.
+These checks establish a handoff gate, not owner tailnet DNS configuration or
+normal client resolution. Leave public app records until those later checks
+pass; the `--retire-private` helper is deletion-only and separately guarded.
 
 The CI boundary helper is
 `scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated
@@ -1719,17 +1742,6 @@ fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate consuming workloads.
-
-The staged hourly Renovate runner has a credential-free config and discovery
-test in `static-checks.sh`. `offline-checks.sh` runs its Prometheus rule
-fixture, which checks missed starts, incomplete cycles, a missing CronJob,
-late prior-Job completion, and schedules before and after suspension. These
-fixtures also enforce that the 15-minute allowed late start plus the 40-minute
-Job runtime ends before the completion alert's 56-minute threshold and the next
-hourly slot. These checks verify declared behavior; the suspended runner still
-needs live cold-cache runtime, Secret,
-App inventory, cache, and scheduled-Job acceptance before GitHub writes move
-to the cluster.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

@@ -24,7 +24,8 @@ class Timeout(unittest.TestCase):
                 shutil.copyfile(ROOT / name, root / name)
             for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
                          "openclaw-retirement-status-test.py",
-                         "openclaw-enterprise-operations-test.py", "renovate-config-test.js"):
+                         "openclaw-enterprise-operations-test.py", "renovate-config-test.js",
+                         "tailnet-dns-test.py"):
                 (root / "scripts/ci" / name).write_text("")
             (root / "scripts/ci/terragrunt-filter-base.sh").write_text(
                 "terragrunt_generate_stack() { :; }\n")

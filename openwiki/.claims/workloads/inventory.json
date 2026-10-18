@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bd875c76bbdcf119326a747203f0102a90ed25d58fa5c24f73026ec2d212f5ab",
+  "pageVersion": "sha256:ab230def6ab057c970ff93c3e8244a0fb1fa84f3cb62ec5a2a755541897f1593",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
+          "version": "repo-file-v1:sha256:2a77618d5f16f93020e5737ee925317a956634e9ddf46dd01185e7a564e0801b"
         }
       ]
     },
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:d3217a9eebb6a7699c1b8c48d43fe4fb47b1981b4ea5116d18a6dd0ad1570b40"
+          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -84,7 +84,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:d3217a9eebb6a7699c1b8c48d43fe4fb47b1981b4ea5116d18a6dd0ad1570b40"
+          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -277,34 +277,26 @@
       ]
     },
     {
-      "id": "claim_bdd9aea3862a41d69ab38d0bdb487540",
-      "statement": "The root Terragrunt stack stages a Renovate Argo CD Application in automation. Its hourly UTC CronJob remains suspended with full dry-run configuration pending App credential transfer and parity checks; it declares a retained 20 Gi NFS cache. Source registration is not live Job acceptance.",
+      "id": "claim_c5d8577df3674b02a5ab90e556b69f6e",
+      "statement": "Tailnet DNS is a separate stateless Argo CD resolver in its own namespace, backed by CoreDNS and k8s_gateway, exposed through a distinct signed Tailscale DNS proxy; its pinned Harbor image must be published before rollout.",
       "evidence": [
         {
-          "resource": "repo://IaC/stacks/renovate/stack.hcl",
-          "version": "repo-file-v1:sha256:04724af1dc2ae6e1ddb027dcb270d4704ad204c33aff015ca79428175f609ad8"
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
         },
         {
-          "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:d3217a9eebb6a7699c1b8c48d43fe4fb47b1981b4ea5116d18a6dd0ad1570b40"
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js",
-          "version": "repo-file-v1:sha256:c265cb232f819bdaf738536729186aed1134b744e9caee4b469424c33602f5ee"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
-          "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml",
+          "version": "repo-file-v1:sha256:cb74e07be1531ecddc6f791f28c02c4477621dd0e5bfe9337da4fff98aa6a4e0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T21:04:20.936Z"
+    "at": "2026-10-18T20:54:06.405Z"
   }
 }

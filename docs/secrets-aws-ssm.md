@@ -495,17 +495,14 @@ Do not recreate public Tunnel DNS: the old DNS helper and restoration workflow
 are removed before changing application records. Credential retirement follows
 successful application, callback, CI, and Cordium acceptance in a separate change.
 
-The canonical DNS helper reads the existing scoped cert-manager Cloudflare
-DNS token from SSM. It previews by default and writes only fixed DNS-only A/AAAA
-records to the verified Traefik Tailscale peer. It preserves legacy callback,
-CI, and carrier names during preparation. API responses and token values stay
-out of public logs. Follow the [ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md)
-from a clean reviewed `main` checkout:
-
-```sh
-scripts/tailscale-private-dns.sh --dry-run
-scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
-```
+The tailnet resolver reads the approved Traefik Service and requires no DNS
+write token. The later guarded public-record retirement helper reads the
+existing scoped cert-manager Cloudflare DNS token from SSM. It removes only
+the fixed 27 private application names' A/AAAA/CNAME records after the owner
+tailnet DNS handoff and client acceptance; it preserves callback, CI, carrier,
+unrelated names, and other record types. API responses and token values stay
+out of public logs. Follow the [current cutover](../clusters/homelab/apps/traefik/CUTOVER.md#current-tailnet-dns-cutover)
+from a clean reviewed `main` checkout.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the

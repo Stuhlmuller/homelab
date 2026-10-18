@@ -1,55 +1,70 @@
 #!/usr/bin/env bash
-# Explicit mesh DNS cutover; keep legacy tunnel routing intact until acceptance.
+# Retire only the fixed public DNS migration set after private client acceptance.
 set -euo pipefail
 
-root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 zone_name="stinkyboi.com"
 aws_region="us-west-2"
 token_parameter="/homelab/cert-manager/cloudflare-api-token"
 dry_run="true"
+retire_private="false"
 expected_sha=""
-retire_hostname=""
+evidence=""
+baseline_out=""
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/tailscale-private-dns.sh [--dry-run | --execute --expected-sha SHA]
+Usage: scripts/tailscale-private-dns.sh --retire-private [--dry-run] [--baseline-out FILE]
+       scripts/tailscale-private-dns.sh --retire-private --execute --expected-sha SHA --evidence FILE
 
-Use --retire-hostname NAME to remove A/AAAA/CNAME records for one app name
-removed by the current commit. Legacy CI/callback/carrier entries are excluded.
-
-Preview the fixed private DNS inventory by default. Execution requires a clean
-checkout at reviewed current main and a ready, reachable Traefik mesh service.
-Cloudflare stores DNS-only A/AAAA records from the verified ingress Service; no Cloudflare Tunnel routing is configured.
-This preparation helper cannot retire the legacy CI, callback, or carrier DNS.
+Dry-run reads all 27 exact names and previews only A/AAAA/CNAME deletions.
+--baseline-out writes a private evidence template with the old maximum public TTL;
+complete its cutover checks before execution. Execution requires reviewed main,
+healthy private DNS and clients, and the saved baseline. Retired CI/callback/
+carrier names and other public DNS record types are preserved. This helper has
+no public application record publication or restoration mode.
 USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --retire-private) retire_private="true"; shift ;;
     --dry-run) dry_run="true"; shift ;;
     --execute) dry_run="false"; shift ;;
-    --retire-hostname) retire_hostname="${2:?Missing hostname}"; shift 2 ;;
     --expected-sha) expected_sha="${2:?Missing expected SHA}"; shift 2 ;;
+    --evidence) evidence="${2:?Missing evidence file}"; shift 2 ;;
+    --baseline-out) baseline_out="${2:?Missing baseline file}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "error: unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
+[[ "$retire_private" == "true" ]] || { echo 'error: --retire-private is required; public publication is disabled' >&2; exit 2; }
+if [[ "$dry_run" == "false" ]]; then
+  [[ -n "$expected_sha" && -n "$evidence" && -z "$baseline_out" ]] || {
+    echo 'error: execution requires --expected-sha and --evidence, without --baseline-out' >&2; exit 2;
+  }
+else
+  [[ -z "$expected_sha" && -z "$evidence" ]] || {
+    echo 'error: --expected-sha and --evidence require --execute' >&2; exit 2;
+  }
+  if [[ -n "$baseline_out" ]]; then
+    baseline_target="$(cd -- "$(dirname -- "$baseline_out")" && pwd -P)/$(basename -- "$baseline_out")"
+    [[ "$baseline_target" != "$root/"* ]] || {
+      echo 'error: keep the private baseline outside the public repository' >&2; exit 2;
+    }
+  fi
+fi
+
 for command in aws curl jq python3; do
   command -v "$command" >/dev/null || { echo "error: $command is required" >&2; exit 127; }
 done
 
-preflight=(python3 -I "$root/scripts/tailscale-private-dns-check.py")
-if [[ -n "$retire_hostname" ]]; then
-  if [[ "$dry_run" == "false" ]]; then
-    "${preflight[@]}" --execute --expected-sha "$expected_sha" --retire-hostname "$retire_hostname"
-  else
-    "${preflight[@]}" --retire-hostname "$retire_hostname"
-  fi
-elif [[ "$dry_run" == "false" ]]; then
-  mesh="$("${preflight[@]}" --execute --expected-sha "$expected_sha" --addresses-json)"
+preflight=(python3 -I "$root/scripts/tailscale-private-dns-check.py" --retire-private)
+if [[ "$dry_run" == "false" ]]; then
+  "${preflight[@]}" --execute --expected-sha "$expected_sha" --evidence "$evidence"
 else
-  mesh="$("${preflight[@]}" --addresses-json)"
+  "${preflight[@]}" >/dev/null
 fi
 
 cloudflare_token="$(aws ssm get-parameter --region "$aws_region" --name "$token_parameter" \
@@ -94,17 +109,14 @@ cf_api() {
 zone_response="$(cf_api GET "/zones?name=${zone_name}")"
 zone_id="$(jq -er --arg name "$zone_name" '.result | select(length == 1) | .[0] | select(.name == $name) | .id' <<<"$zone_response")"
 inventory="$root/scripts/config/tailscale-private-dns.json"
-if [[ -z "$retire_hostname" ]]; then
-  desired="$(jq -ce '[.addresses | to_entries[] | .key as $type | .value[] | {type:$type,content:.}] | sort_by(.type) | select(length > 0)' <<<"$mesh")"
-  previous_ttl="$(jq -er '.previous_ttl | select(type == "number" and . >= 0)' <<<"$mesh")"
-  echo "Observed authoritative cache TTL before cutover: ${previous_ttl} seconds"
-fi
+checked_names="$(jq -ce '.hostnames' "$inventory")"
+names="$(jq -r '.[]' <<<"$checked_names")"
 
 records_for() {
   local hostname="$1" encoded response
   encoded="$(jq -rn --arg name "$hostname" '$name | @uri')"
   response="$(cf_api GET "/zones/${zone_id}/dns_records?name=${encoded}&per_page=100")"
-  # Refuse incomplete pagination, unexpected names, or response shapes before any write.
+  # An incomplete page or unexpected name must abort before any deletion.
   jq -ce --arg name "$hostname" '
     select(.result | type == "array") |
     select(.result_info.total_count == (.result | length)) |
@@ -112,76 +124,52 @@ records_for() {
     select(all(.[]; .name == $name and (.id | type == "string")))' <<<"$response"
 }
 
-# Snapshot every changing name before writes. Legacy CI/callback/carrier names stay
-# intact until their clients have separately passed final retirement acceptance.
 private_dir="$(mktemp -d)"
 chmod 700 "$private_dir"
 trap 'rm -rf -- "$private_dir"' EXIT
 while IFS= read -r hostname; do
   records_for "$hostname" >"$private_dir/$hostname.json"
-done < <(if [[ -n "$retire_hostname" ]]; then printf '%s\n' "$retire_hostname"; else jq -r '.hostnames[]' "$inventory"; fi)
+done <<<"$names"
 
-delete_record() {
-  local hostname="$1" record="$2" id type
-  id="$(jq -er '.id' <<<"$record")"
-  type="$(jq -er '.type' <<<"$record")"
-  if [[ "$dry_run" == "true" ]]; then
-    echo "DRY-RUN delete ${type} ${hostname}"
-  else
-    cf_api DELETE "/zones/${zone_id}/dns_records/${id}" >/dev/null
-  fi
-}
+current="$(jq -cs 'add | map({id,name,type,content,ttl,proxied}) | sort_by(.name,.type,.id)' "$private_dir"/*.json)"
 
-if [[ -n "$retire_hostname" ]]; then
-  current="$(cat "$private_dir/$retire_hostname.json")"
-  while IFS= read -r record; do
-    [[ -n "$record" ]] && delete_record "$retire_hostname" "$record"
-  done < <(jq -c '.[]' <<<"$current")
-  if [[ "$dry_run" == "false" ]]; then
-    [[ "$(records_for "$retire_hostname" | jq 'length')" == 0 ]] || {
-      echo 'error: retired hostname still has address records' >&2; exit 1;
-    }
-    echo "Verified retired DNS hostname: ${retire_hostname}"
+if [[ "$dry_run" == "true" ]]; then
+  previous_ttl="$("${preflight[@]}" --baseline-ttl)"
+  echo "Old maximum authoritative TTL: ${previous_ttl} seconds"
+  jq -r '.[] | "DRY-RUN delete \(.id) \(.type) \(.name)"' <<<"$current"
+  if [[ -n "$baseline_out" ]]; then
+    reviewed_sha="$(git -C "$root" rev-parse HEAD)"
+    template="$(jq -cn --arg sha "$reviewed_sha" --argjson ttl "$previous_ttl" --argjson names "$checked_names" --argjson records "$current" '{
+      reviewed_main_sha:$sha, resolver_ip:"", owner_tailnet_dns_confirmed:false,
+      normal_client_dns_confirmed:false,
+      critical_paths_confirmed:{fleet_setup_denied:false,harbor_node_pulls:false,native_api:false,
+        cordium_reconnect:false,public_callbacks:false},
+      off_tailnet:{"stinkyboi.com":"","*.cordium.stinkyboi.com":""},
+      previous_ttl_seconds:$ttl, checked_names:$names, baseline_records:$records
+    }')"
+    (umask 077; set -C; printf '%s\n' "$template" >"$baseline_out")
+    echo "Wrote private cutover evidence template: ${baseline_out}"
   fi
   exit 0
 fi
 
+baseline="$(jq -ce '.baseline_records | sort_by(.name,.type,.id)' "$evidence")"
+jq -e --argjson baseline "$baseline" 'all(.[]; . as $record | any($baseline[]; . == $record))' <<<"$current" >/dev/null || {
+  echo 'error: live public records differ from the saved baseline; no records deleted' >&2; exit 1;
+}
+
 while IFS= read -r hostname; do
-  current="$(cat "$private_dir/$hostname.json")"
-  # Reuse the CNAME id for the first address: Cloudflare forbids CNAME/address coexistence.
-  plan="$(jq -cn --argjson current "$current" --argjson desired "$desired" '
-    $desired | to_entries | map(.key as $index | .value | .type as $type |
-      . + {id: ([$current[] | select(.type == $type)][0].id //
-        (if $index == 0 then [$current[] | select(.type == "CNAME")][0].id else null end))})')"
   while IFS= read -r record; do
-    [[ -n "$record" ]] && delete_record "$hostname" "$record"
-  done < <(jq -c --argjson plan "$plan" '.[] | select(.id as $id | all($plan[]; .id != $id))' <<<"$current")
-  while IFS= read -r record; do
-    keep_id="$(jq -r '.id // empty' <<<"$record")"
-    payload="$(jq -c --arg name "$hostname" 'del(.id) + {name:$name,ttl:60,proxied:false}' <<<"$record")"
-    if [[ "$dry_run" == "true" ]]; then
-      echo "DRY-RUN set DNS-only ${hostname} $(jq -r '.type + " " + .content' <<<"$record")"
-    elif ! jq -e --arg keep "$keep_id" --argjson wanted "$payload" 'any(.[];
-      .id == $keep and .type == $wanted.type and .content == $wanted.content and .proxied == false and .ttl == 60)' <<<"$current" >/dev/null; then
-      if [[ -n "$keep_id" ]]; then
-        cf_api PUT "/zones/${zone_id}/dns_records/${keep_id}" "$payload" >/dev/null
-      else
-        cf_api POST "/zones/${zone_id}/dns_records" "$payload" >/dev/null
-      fi
-    fi
-  done < <(jq -c '.[]' <<<"$plan")
-  if [[ "$dry_run" == "false" ]]; then
-    records_for "$hostname" | jq -e --argjson desired "$desired" '
-      all(.[]; .proxied == false and .ttl == 60) and
-      ([.[] | {type,content}] | sort_by(.type)) == $desired' >/dev/null
-    echo "Verified DNS-only mesh route: ${hostname}"
-  fi
-done < <(jq -r '.hostnames[]' "$inventory")
+    [[ -n "$record" ]] || continue
+    id="$(jq -er '.id | @uri' <<<"$record")"
+    cf_api DELETE "/zones/${zone_id}/dns_records/${id}" >/dev/null
+  done < <(jq -c '.[]' "$private_dir/$hostname.json")
+  [[ "$(records_for "$hostname" | jq 'length')" == 0 ]] || {
+    echo "error: public address record remains for ${hostname}; rerun with the same evidence" >&2; exit 1;
+  }
+  echo "Verified public address retirement: ${hostname}"
+done <<<"$names"
 
-echo "Legacy CI, callback, and carrier DNS records preserved for separate final retirement."
-
-if [[ "$dry_run" == "false" ]]; then
-  echo "DNS records updated. Keep the old tunnel running for at least ${previous_ttl} seconds from now."
-  echo "Then require authoritative/client DNS checks and authenticated clients before tunnel retirement."
-  echo "After local carrier migration, run: python3 -I scripts/tailscale-private-dns-check.py --verify-dns"
-fi
+previous_ttl="$(jq -r '.previous_ttl_seconds' "$evidence")"
+echo "All 27 names read back without A/AAAA/CNAME; wait ${previous_ttl} seconds from the last deletion before public resolver checks."
+echo 'Legacy CI, callback, carrier, unrelated names, and non-address records were preserved.'

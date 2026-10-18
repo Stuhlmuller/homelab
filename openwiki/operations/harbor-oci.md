@@ -112,6 +112,8 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
     resource: repo://scripts/config/harbor-chainguard-images.json
+  - id: openwiki-source-e4e9ca360dcb635535118ee8
+    resource: repo://scripts/config/harbor-dns-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
@@ -124,10 +126,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T20:54:44.446Z" }
+generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:44.446Z
+    at: 2026-10-18T20:54:06.405Z
 ---
 
 # Harbor Private OCI Registry
@@ -252,7 +254,7 @@ including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
 
 The Stage B desired-state consumer advances `harbor-secrets`' `OnChange`
-revision to `v4` and mounts the reader key in the bootstrap Job. After External
+revision to `v3` and mounts the reader key in the bootstrap Job. After External
 Secrets materializes the target Secret, a bootstrap execution can create or
 patch the reader robot. Require ExternalSecret Ready and successful PostSync
 completion before accepting reader-robot, authenticated-receipt, or Talos
@@ -345,7 +347,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, `traefik`, `harbor`, or `renovate`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, or `dns`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -372,6 +374,13 @@ It preserves all-platform digest copying, the reviewed tag alias and fresh
 complete authenticated Harbor pulls. No caller-supplied image, path or destination is
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
+
+The fixed `dns` scope selects only the pinned Codeberg k8s_gateway image from
+[`harbor-dns-images.json`](../../scripts/config/harbor-dns-images.json).
+Protected run [39161113974](https://github.com/Stuhlmuller/homelab/actions/runs/39161113974)
+completed at exact `main` `5558f8c1` with matching digest and a complete
+authenticated Harbor pull. It does not prove full-catalog coverage or live
+resolver health.
 
 The fixed `renovate` scope selects seven cataloged update digests from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
@@ -963,7 +972,7 @@ three IAM updates, with no deletions or existing-secret rotations. Its GitOps
 `generated-secret-revision` advanced to `v2` to reconcile the publisher
 credential. The reviewed reader parameter later existed as a separately scoped,
 metadata-verified Stage A apply. The current desired-state consumer advances to
-`v4`; it must report Ready and the PostSync bootstrap must finish before
+`v3`; it must report Ready and the PostSync bootstrap must finish before
 accepting reader-robot, authenticated-receipt, or Talos prerequisites. Keep
 `refreshPolicy: OnChange` to avoid periodically regenerating the salted bcrypt
 registry password hash; an annotation change alone is not readiness evidence.
