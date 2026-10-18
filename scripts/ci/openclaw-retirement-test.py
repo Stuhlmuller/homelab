@@ -2,6 +2,7 @@
 """Fail-closed legacy retirement and independent restore fixtures."""
 
 import importlib.util
+import io
 import json
 import os
 import sqlite3
@@ -11,7 +12,7 @@ import tarfile
 import tempfile
 import time
 import unittest
-from contextlib import closing
+from contextlib import closing, redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,6 +21,21 @@ SOURCE = Path(__file__).resolve().parents[2] / 'clusters/homelab/apps/openclaw/r
 spec = importlib.util.spec_from_file_location('openclaw_retirement', SOURCE)
 retirement = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(retirement)
+
+
+class Keepalive(unittest.TestCase):
+    def test_long_operation_emits_only_generic_progress(self):
+        class Stop:
+            calls = 0
+
+            def wait(self, _seconds):
+                self.calls += 1
+                return self.calls > 1
+
+        output = io.StringIO()
+        with redirect_stderr(output):
+            retirement.keepalive(Stop())
+        self.assertEqual(output.getvalue(), 'Legacy retention operation active\n')
 
 
 class Retirement(unittest.TestCase):
