@@ -142,6 +142,9 @@ def inventory(config):
 
 def stopped(status, config, observed):
     checked = status.get('checkedAt')
+    roots_match = all(status.get('roots', {}).get(name) == {
+        key: observed['roots'][name][key] for key in ('device', 'inode', 'uid')
+    } for name in ('local', 'nas'))
     if (type(checked) is not int or not 0 <= time.time() - checked <= 120
             or status.get('namespace') != config['namespace']
             or status.get('node') != config['node']
@@ -155,7 +158,7 @@ def stopped(status, config, observed):
                     or status.get('cronJobAbsent') is True)
             or status.get('activeJobs') != 0
             or status.get('claims') != observed['claims']
-            or status.get('roots') != observed['roots']):
+            or not roots_match):
         raise ValueError('legacy writer or source identity is active, missing, or uncertain')
 
 

@@ -63,7 +63,9 @@ class Retirement(unittest.TestCase):
             'assistantSha256': self.config['assistantSha256'],
             'replicas': 0, 'readyReplicas': 0, 'pods': 0,
             'cronJob': 'openclaw-runtime-backup', 'cronJobSuspended': True,
-            'activeJobs': 0, 'claims': self.observed['claims'], 'roots': self.observed['roots'],
+            'activeJobs': 0, 'claims': self.observed['claims'],
+            'roots': {name: {key: item[key] for key in ('device', 'inode', 'uid')}
+                      for name, item in self.observed['roots'].items()},
         }
         self.status_path = self.archive_root / 'status.json'
         retirement.write_private(self.status_path, self.status)
