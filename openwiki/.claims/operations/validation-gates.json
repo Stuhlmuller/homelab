@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:740744b7dbf91e50fe23c2e32d0bd9966ef36f5927062a3b0676414b6eec1044",
+  "pageVersion": "sha256:32d03ed35b92fd6f2ca2ee1346382a09f57b638086f3b480ecc648017421046a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
-      "statement": "Offline validation retains mocked Octelium immutable-owner OIDC tests. The owner-mail Graph PATCH is retired with a state-only removal plan; owner conversion instead has read-only prepare and attest tests plus a disabled-by-default recovery-administrator plan test. Live recovery sign-in, conversion, Fleet SAML and recovery login remain separate acceptance.",
+      "statement": "Offline validation retains immutable-owner OIDC tests. The owner-mail Graph PATCH is retired with state-only removal; read-only conversion tests reject the current federated target and require recovery administrator evidence. Live domain reconciliation, recovery sign-in, conversion, Fleet SAML and recovery login remain separate acceptance.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/main.tf",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/entra-owner-conversion-test.py",
-          "version": "repo-file-v1:sha256:7bccfb6b13f10b1e6acf53f2fc077353241e0772de5dcb3517aa2357eaaad18e"
+          "version": "repo-file-v1:sha256:5454f95032877fa50755f1d684166e886194056dc386f339c8e1d52665e263ce"
         },
         {
           "resource": "repo://scripts/ci/octelium-entra-oidc-test.py",
@@ -30,7 +30,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:67b0c11c966efc899f4976727f1929374faaa82a66ff4795b4830565618715bf"
+          "version": "repo-file-v1:sha256:dfd84714b5eefc6924205913ab1b15953a4a193a3d76ed8c9984796ccb4553e9"
         },
         {
           "resource": "repo://docs/ci-cd.md",
@@ -689,6 +689,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:06:26.593Z"
+    "at": "2026-10-18T06:15:17.473Z"
   }
 }

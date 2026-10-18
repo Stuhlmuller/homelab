@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7a8d66faffdce7685579e10be6d5f9f14a435d37bff73620895410da403ef94a",
+  "pageVersion": "sha256:e94781c9df1aa5199ad02ed66858561b8c65d6a9756f0d7d659ab21393cceb3d",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -246,11 +246,11 @@
     },
     {
       "id": "claim_b68f78a5780c47d18357c3e5ddcde708",
-      "statement": "Fleet's Apple baseline operator remains host-scoped and retains Fleet as Mac MDM. Its Fleet-only Company Portal/Platform SSO route is retired; console SAML and a separately guarded Entra owner conversion do not themselves migrate a workload.",
+      "statement": "Fleet's Apple baseline operator remains host-scoped and retains Fleet as Mac MDM. Fleet-only Company Portal/Platform SSO is retired; console SAML is separate from owner conversion, which is currently blocked by the federated target domain.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:67b0c11c966efc899f4976727f1929374faaa82a66ff4795b4830565618715bf"
+          "version": "repo-file-v1:sha256:dfd84714b5eefc6924205913ab1b15953a4a193a3d76ed8c9984796ccb4553e9"
         },
         {
           "resource": "repo://scripts/entra-owner-conversion.py",
@@ -265,6 +265,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:06:26.593Z"
+    "at": "2026-10-18T06:15:17.473Z"
   }
 }

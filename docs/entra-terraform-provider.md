@@ -152,6 +152,15 @@ public PRs or logs. Keep live acceptance details in a private operator report.
 
 ## Recovery and limits
 
+The owner conversion is blocked while `stuhlmuller.net` remains federated with
+Google Workspace. Microsoft requires a nonfederated UPN domain for
+[cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user),
+and `prepare` rejects the current domain state. Reconcile the protected
+federation through a separate reviewed code change, or choose a managed target
+and revise the conversion transaction and dependent SAML mapping before running
+this procedure. Do not attempt the Entra admin-center conversion while this
+gate fails.
+
 Before converting the existing external owner, create and successfully test an
 independent cloud-only Global Administrator. This is the tenant recovery path;
 it is not a Fleet account or a substitute for the local Fleet recovery

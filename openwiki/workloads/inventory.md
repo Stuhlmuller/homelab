@@ -86,10 +86,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:06:26.593Z
+    at: 2026-10-18T06:15:17.473Z
 ---
 
 # Workload Inventory
@@ -135,7 +135,8 @@ Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
 keeps console SAML separate from the retired Fleet-only Company Portal/Platform
 SSO pilot. Fleet remains the Mac MDM. A repository operator script delivers
 Mac and iPhone/iPad baselines with host-scoped commands; Entra owner conversion
-is a separate reviewed identity operation, not a workload rollout. The
+is a separate reviewed identity operation, currently blocked by the federated
+target domain, not a workload rollout. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).

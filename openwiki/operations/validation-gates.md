@@ -150,10 +150,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:06:26.593Z
+    at: 2026-10-18T06:15:17.473Z
 ---
 
 # Validation Gates
@@ -482,10 +482,12 @@ state address. No alias-release or additional mail write is accepted.
 The new `entra-owner-conversion-test.py` covers read-only Graph preparation and
 post-conversion attestation, including exact existing object ID, target UPN,
 identity issuer, password timestamp, clean signed `main`, private receipt and
-independent recovery Global Administrator. The recovery-admin plan test keeps
+independent recovery Global Administrator. It also asserts that preparation
+rejects the current federated target domain. The recovery-admin plan test keeps
 its unit disabled by default and rejects unrelated provider actions. These
 fixtures do not create the recovery account or convert the owner. An operator
-must review the saved plan, verify the recovery sign-in, prepare a private
+must first resolve the federated target through a separate reviewed code
+change, then review the saved plan, verify the recovery sign-in, prepare a private
 receipt, perform the separately authorized Entra admin-center conversion, then
 attest and test actual Fleet console SAML and local recovery login. See the
 [provider contract](../../docs/entra-terraform-provider.md) and

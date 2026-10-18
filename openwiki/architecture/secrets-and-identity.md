@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:06:26.593Z
+    at: 2026-10-18T06:15:17.473Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -47,6 +47,8 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-326a085bf1ea3cb64a10924e
+    resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-b17e212516ed4cf97993dd01
@@ -69,7 +71,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 ---
 
 # Secrets And Identity
@@ -613,7 +615,10 @@ See [NOFX reconciliation](../../docs/octelium-nofx-reconciliation.md).
 The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
 and owner-address details below are dated history, not a procedure to repeat
 or authorization for ad hoc identity changes. The separate owner conversion
-requires its reviewed preparation, recovery administrator and attestation. See the current
+is currently blocked because `stuhlmuller.net` is federated with Google;
+Microsoft requires a nonfederated target UPN domain for cloud-only conversion.
+Its reviewed preparation, recovery administrator and attestation require a
+separate federation or target-domain change first. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 The [WireGuard/AirVPN operator](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
@@ -653,7 +658,10 @@ authorized admin-center conversion. Fleet, Grafana and Octelium now bind its
 immutable object ID so the supported transition can preserve ownership.
 `scripts/entra-owner-conversion.py` prepares a private read-only receipt and
 attests the converted target identity after the operator action; it never writes
-Graph. Its independent cloud-only recovery Global Administrator prerequisite
+Graph. It rejects the current federated `stuhlmuller.net` target; do not run
+the conversion until a separately reviewed change reconciles the protected
+federation or selects a managed target and updates its dependent mappings. Its
+independent cloud-only recovery Global Administrator prerequisite
 is disabled by default and requires a separately reviewed saved plan and sign-in.
 The Fleet console SAML target is `rodman@stuhlmuller.net`; the existing
 `rodman@stinkyboi.com` local administrator remains recovery-only. API topology
@@ -671,9 +679,10 @@ the sole Graph verification action. That action intentionally uses the
 standard bodyless Graph request, retaining the service default of no domain
 takeover; its private saved plan must confirm the domain remains managed and
 non-default. The companion
-`operator/entra-stuhlmuller-pilot-user` unit can then create only
+`operator/entra-stuhlmuller-pilot-user` unit could then create only
 `rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
-non-default state, and the account receives no role, group, license, mailbox or
+non-default state, so it cannot plan against the current federation. The
+account receives no role, group, license, mailbox or
 Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
 email address alone is not an Entra password identity. Its guarded module is
 separate from the legacy AzureAD user module, and the AzureAD workflow selects
@@ -685,7 +694,9 @@ pilot change cannot trigger legacy-user reconciliation.
 The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
 and owner-address details below are dated history, not a procedure to repeat
 or authorization for ad hoc identity changes. The separate owner conversion
-requires its reviewed preparation, recovery administrator and attestation. See the current
+is blocked by the current Google federation until a reviewed federation or
+target-domain change; preparation, recovery administrator and attestation
+remain required. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 `operator/entra-google-workspace-federation` owns the Entra Graph federation

@@ -58,6 +58,12 @@ its sign-in UPN to `rodman@stuhlmuller.net`. Fleet, Grafana and Octelium owner
 references use that immutable ID. Before a separate conversion, verify an
 independent cloud-only recovery Global Administrator and run the read-only
 `entra-owner-conversion.py prepare` transaction from signed current `main`.
+This conversion is currently blocked: `stuhlmuller.net` is federated with
+Google Workspace, while Microsoft requires a nonfederated UPN domain for
+[cloud-only external-user conversion](https://learn.microsoft.com/en-us/entra/identity/users/convert-external-users-internal#convert-an-external-user).
+`prepare` must reject the federated domain. A separate reviewed change must
+reconcile the protected federation or select a managed target and update this
+transaction and its SAML dependencies before any conversion attempt.
 After an authorized Entra admin-center conversion, run `attest` with the same
 private receipt and verify the actual sign-in route. The recovery-admin unit
 is disabled by default. See the [provider runbook](../../../../docs/entra-terraform-provider.md)

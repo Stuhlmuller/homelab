@@ -136,6 +136,14 @@ class ConversionTransactionTest(unittest.TestCase):
         self.assertEqual(verified.call_count, 2)
         self.assertIn("No Graph write was made", output)
 
+    def test_prepare_rejects_current_federated_target(self):
+        state = prepared_state()
+        state["domain"]["authenticationType"] = "Federated"
+        status, output, _ = self.run_command("prepare", state)
+        self.assertEqual(status, 1)
+        self.assertIn("target Entra domain", output)
+        self.assertFalse((self.directory / MODULE.RECEIPT_NAME).exists())
+
     def test_prepare_refuses_replay_or_occupied_target(self):
         self.assertEqual(self.run_command("prepare", prepared_state())[0], 0)
         status, output, _ = self.run_command("prepare", prepared_state())
