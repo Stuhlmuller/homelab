@@ -2,6 +2,16 @@
 # shellcheck disable=SC2016
 set -euo pipefail
 umask 077
+phase=preflight
+work=
+on_exit() {
+  result=$?
+  if [[ -n "$work" ]]; then rm -rf -- "$work"; fi
+  if (( result != 0 )) && [[ "${stage:-}" == publish-inventory && -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
+    printf '%s\n' "$phase" >"$OPENCLAW_PHASE_FILE"
+  fi
+}
+trap on_exit EXIT
 
 stage="${1:-}"
 case "$stage" in inventory | publish-inventory | archive | verify) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
@@ -19,7 +29,6 @@ bucket="$(jq -er .bucket IaC/config/application-backup-storage.json)"
 [[ "$(aws s3api get-bucket-encryption --bucket "$bucket" --query 'ServerSideEncryptionConfiguration.Rules[0].ApplyServerSideEncryptionByDefault.SSEAlgorithm' --output text)" == 'aws:kms' ]] || exit 1
 
 work="$(mktemp -d)"
-trap 'rm -rf -- "$work"' EXIT
 status_refresh_count=0
 python3 scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/status.json"
 pod="$(jq -er .readerPod "$work/status.json")"
@@ -144,6 +153,7 @@ case "$stage" in
     "${reader[@]}" cat "$baseline" | aws s3 cp - "s3://${bucket}/${baseline_key}"
     ;;
   publish-inventory)
+    phase=baseline
     baseline_id="${BASELINE_REF##*/}"
     baseline="/archive/private/baseline-${baseline_id}.json"
     baseline_result="/private/legacy/baseline-${baseline_id}.json"
@@ -158,6 +168,7 @@ case "$stage" in
     cmp "$work/baseline.json" "$work/worker-baseline.json"
     validate_baseline "$work/baseline.json" "$work/status.json"
     refresh_status inventory
+    phase=publication
     baseline_key="openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json"
     versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
     jq -e '.IsTruncated == false' <<<"$versions" >/dev/null
@@ -173,6 +184,7 @@ case "$stage" in
       then [.Versions[]? | select(.Key == $key) | .VersionId] | .[0]
       else empty end' <<<"$versions")"
     [[ "$version" != null && "$version" != None ]] || exit 1
+    phase=verification
     aws s3api get-object --bucket "$bucket" --key "$baseline_key" \
       --version-id "$version" "$work/offsite-baseline.json" >"$work/get.json"
     cmp "$work/baseline.json" "$work/offsite-baseline.json"
