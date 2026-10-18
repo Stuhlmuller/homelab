@@ -120,6 +120,30 @@ class Retirement(unittest.TestCase):
         with self.assertRaises(ValueError):
             retirement.verify_archive(self.config, receipt)
 
+    def test_unreadable_empty_nas_file_keeps_mode_and_archive_entry(self):
+        path = self.nas / 'unreadable-empty'
+        path.touch()
+        path.chmod(0)
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        with tarfile.open(receipt.parent / 'legacy.tar.gz', 'r:gz') as bundle:
+            member = bundle.getmember('nas/unreadable-empty')
+            self.assertEqual((member.size, member.mode), (0, 0))
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
+    def test_unreadable_nonempty_nas_file_still_blocks_inventory(self):
+        path = self.nas / 'unreadable-nonempty'
+        path.write_bytes(b'retained')
+        path.chmod(0)
+        with self.assertRaises(PermissionError):
+            retirement.inventory(self.config, self.status)
+
     def test_workflow_archive_writes_private_receipt_locator(self):
         config_path = self.archive_root / 'config.json'
         config_path.write_text(json.dumps({'legacyRetention': self.config}))
