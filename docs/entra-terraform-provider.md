@@ -176,7 +176,10 @@ Azure CLI authenticated as that exact recovery account; it read-validates its
 cloud-only identity and direct tenant-root Global Administrator assignment before
 it creates a receipt, then rereads that same recovery path during attestation.
 The read needs delegated `RoleManagement.Read.Directory` (or `Directory.Read.All`),
-never a Graph write permission. Follow the exact conversion and Fleet ordering in the [Fleet
+never a Graph write permission. After the authorized admin-center conversion,
+clear the recovery Azure CLI session and sign in as the converted owner before
+running `attest`; its Graph `/me` check rejects the recovery account. Follow
+the exact commands and Fleet ordering in the [Fleet
 runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 A federation or CI permission failure does not require recreating applications,

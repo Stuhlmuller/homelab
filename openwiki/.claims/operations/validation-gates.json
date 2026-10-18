@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:32d03ed35b92fd6f2ca2ee1346382a09f57b638086f3b480ecc648017421046a",
+  "pageVersion": "sha256:15ea950be67ad280b108bd8eecaa9dd8a366170c5b120673a55c01ce18249ddf",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -30,7 +30,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:dfd84714b5eefc6924205913ab1b15953a4a193a3d76ed8c9984796ccb4553e9"
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
         },
         {
           "resource": "repo://docs/ci-cd.md",
@@ -689,6 +689,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:15:17.473Z"
+    "at": "2026-10-18T06:24:02.662Z"
   }
 }

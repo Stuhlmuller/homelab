@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:17de8a3d89ac165075f62a34bd7572814bf1f5157214385e37e0c429a82712ed",
+  "pageVersion": "sha256:737f8e6788acffe176f3f828503870927d3588c9934996e51b5d898d3673eed2",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:dfd84714b5eefc6924205913ab1b15953a4a193a3d76ed8c9984796ccb4553e9"
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
         },
         {
           "resource": "repo://scripts/entra-owner-conversion.py",
@@ -103,6 +103,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:15:17.473Z"
+    "at": "2026-10-18T06:24:02.662Z"
   }
 }

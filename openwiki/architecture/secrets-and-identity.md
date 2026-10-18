@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:15:17.473Z
+    at: 2026-10-18T06:24:02.662Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -71,7 +71,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
 ---
 
 # Secrets And Identity
@@ -663,6 +663,9 @@ the conversion until a separately reviewed change reconciles the protected
 federation or selects a managed target and updates its dependent mappings. Its
 independent cloud-only recovery Global Administrator prerequisite
 is disabled by default and requires a separately reviewed saved plan and sign-in.
+After any later conversion, clear the recovery Azure CLI session and sign in as
+the converted owner before attesting; the helper checks Graph `/me` against
+the immutable owner ID and target UPN.
 The Fleet console SAML target is `rodman@stuhlmuller.net`; the existing
 `rodman@stinkyboi.com` local administrator remains recovery-only. API topology
 readback does not prove the browser SAML callback or recovery login.

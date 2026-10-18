@@ -64,8 +64,20 @@ Google Workspace, while Microsoft requires a nonfederated UPN domain for
 `prepare` must reject the federated domain. A separate reviewed change must
 reconcile the protected federation or select a managed target and update this
 transaction and its SAML dependencies before any conversion attempt.
-After an authorized Entra admin-center conversion, run `attest` with the same
-private receipt and verify the actual sign-in route. The recovery-admin unit
+After an authorized Entra admin-center conversion, clear the recovery
+administrator's Azure CLI session, sign in as the converted owner, and attest
+with the same signed main SHA and private receipt directory:
+
+```sh
+az account clear
+az login --tenant <TENANT_ID> --use-device-code  # Sign in as rodman@stuhlmuller.net.
+python3 -I scripts/entra-owner-conversion.py attest \
+  --expected-sha <FULL_CURRENT_SIGNED_MAIN_SHA> \
+  --receipt-directory <PRIVATE_0700_DIRECTORY>
+```
+
+The helper checks Graph `/me` against the immutable owner ID and target UPN;
+verify the actual sign-in route separately. The recovery-admin unit
 is disabled by default. See the [provider runbook](../../../../docs/entra-terraform-provider.md)
 for the exact prepare and attest contract; this PR does not perform conversion.
 
