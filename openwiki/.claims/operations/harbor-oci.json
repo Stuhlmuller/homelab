@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f707f9105fa8a66b1094dfb6795b8935c172b593f3b9a57defdd891588c41d70",
+  "pageVersion": "sha256:d531b6abbea92e3a8e33681d257c4e150c5ac500097ddcf2a34b6d4ac5be3203",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -410,11 +410,11 @@
     },
     {
       "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
-      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v3 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
+      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v4 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:739a0168d42e5b86f1336ac7d83cbf05223ed8942cbf61a040382e6254cb2076"
+          "version": "repo-file-v1:sha256:c76bcae62f039eeebcc0c21f47693d1469808218d03108eb6852bf860fdca081"
         },
         {
           "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:7cad6dbb288f39c8b554b872d429cceae0617e65224a2b7e0db68e431d3e512e"
+          "version": "repo-file-v1:sha256:c6d398ed761cf710d171c0f71e621cde88f699f15f0915dd13fc9b58245eff19"
         }
       ]
     },
@@ -508,7 +508,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:739a0168d42e5b86f1336ac7d83cbf05223ed8942cbf61a040382e6254cb2076"
+          "version": "repo-file-v1:sha256:c76bcae62f039eeebcc0c21f47693d1469808218d03108eb6852bf860fdca081"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -516,7 +516,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:7cad6dbb288f39c8b554b872d429cceae0617e65224a2b7e0db68e431d3e512e"
+          "version": "repo-file-v1:sha256:c6d398ed761cf710d171c0f71e621cde88f699f15f0915dd13fc9b58245eff19"
         }
       ]
     },
@@ -635,6 +635,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:31:54.698Z"
+    "at": "2026-10-18T22:37:44.976Z"
   }
 }

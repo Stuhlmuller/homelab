@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e3265c4c7d085a96563b05f4652a91c392297a8b0d940d0020b0457bb93278e5",
+  "pageVersion": "sha256:d744cae229c0199fcdc588b2958e5f8247d9f5b2a58d92983d2dccf1916f31a5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -80,7 +80,7 @@
         },
         {
           "resource": "repo://policy/kubernetes.rego",
-          "version": "repo-file-v1:sha256:250f6fd8964ceb46725a07f68014e737fe3eae5dd4b94decce501c4258938c3d"
+          "version": "repo-file-v1:sha256:77a1a3cc465b15a5b1ae182d4beb1572ba2e27730e1767d6c41f7a44d63eab99"
         }
       ]
     },
@@ -162,7 +162,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -268,7 +268,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:3264d39d1a2c5c321737586735b84f8671d9c50233ee362c3794cf8b6fbab8c6"
+          "version": "repo-file-v1:sha256:c79d0b86a93d8a24bc2a6aa2de0b79a657c38f493d290c00974fb724d8d43228"
         }
       ]
     },
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         }
       ]
     },
@@ -366,7 +366,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         }
       ]
     },
@@ -398,7 +398,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         }
       ]
     },
@@ -490,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -747,7 +747,33 @@
       ]
     },
     {
-      "id": "claim_b2006938f31748689e6e1185e8e95307",
+      "id": "claim_823a08a8670e4b57b50e4cf8ce0507c7",
+      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures for missed starts, incomplete cycles, late prior success, suspension/resume, and a missing CronJob. The completion alert's 56-minute schedule threshold exceeds the 15-minute start allowance plus 40-minute Job runtime; these checks do not establish live credential, cache, or scheduled-Job acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
+          "version": "repo-file-v1:sha256:f0b2885239e3b3f27926503f3928de22c121e7165688b1fc3781c82f582976d6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-alert-check.py",
+          "version": "repo-file-v1:sha256:9389f5fd29fc8a178651498bba75a5c1d9e6884a2aea9f518e20bf47ad3bc9eb"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:c79d0b86a93d8a24bc2a6aa2de0b79a657c38f493d290c00974fb724d8d43228"
+        }
+      ]
+    },
+    {
+      "id": "claim_37f1092e991947868d7aa93dd12a4af0",
       "statement": "The staged Cordium workflow selector cutover uses Nix-managed tools; runner bootstrap and the required native receipt provenance status job stay hosted while the canary uses its own label.",
       "evidence": [
         {
@@ -767,6 +793,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:36:24.435Z"
+    "at": "2026-10-18T22:37:44.976Z"
   }
 }

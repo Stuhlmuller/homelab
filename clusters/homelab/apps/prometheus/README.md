@@ -109,6 +109,17 @@ by reverting both the custom rule registration and
 `defaultRules.disabled.KubeJobFailed`; this restores the chart rule without
 removing Job evidence.
 
+## Renovate Schedule
+
+`renovate-prometheusrules.yaml` warns when the enabled hourly CronJob has not
+started within 15 minutes of an expected UTC slot, including its first slot;
+when its latest Job has not succeeded by the 55-minute deadline; or when Argo CD
+reports the Application but the CronJob is absent. It uses controller metrics,
+not Renovate log content, so private repository names never enter alert labels.
+The existing `KubeJobFailed` rule reports failed runs separately. Verify the
+three rules in Prometheus after Argo CD sync and check the CronJob, Jobs,
+and controller events if one fires. Revert the rule registration to remove them.
+
 ## Argo CD Metrics
 
 `argocd-servicemonitors.yaml` owns the ServiceMonitor resources that scrape the
