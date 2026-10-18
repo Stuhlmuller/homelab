@@ -6,8 +6,12 @@ Registration inputs live in `IaC/stacks/fleet/stack.hcl`, indexed by
 `IaC/terragrunt.stack.hcl`; Argo CD follows `main`.
 No Fleet Premium license or subscription is provisioned.
 
-The [Fleet Free and Entra runbook](FREE-ENTRA.md) owns native Microsoft Mac
-Platform SSO, separate console SAML, Mac and iPhone/iPad passcode profiles,
+The [Google Mac login runbook](GOOGLE-LOGIN.md) owns Google Workspace login,
+the operator-only OAuth secret, private configuration-profile delivery and the
+pinned XCreds installer. Fleet remains the sole Mac MDM. Google login is not
+deployed or accepted yet.
+The [Fleet Free and Entra runbook](FREE-ENTRA.md) records the retired Microsoft Mac
+Platform SSO route, separate console SAML, Mac and iPhone/iPad passcode profiles,
 platform reporting limits, and the interactive acceptance checklist. Profiles live in `profiles/`;
 `scripts/fleet-free-setup.py` applies them through supported Free APIs. These
 application/device settings are a repository operator step after protected merge,

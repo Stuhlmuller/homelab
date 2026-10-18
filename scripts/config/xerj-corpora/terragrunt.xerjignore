@@ -1,0 +1,5 @@
+# Focus on Terragrunt implementation; the clone retains docs and test fixtures.
+/terragrunt/test/
+/terragrunt/docs/
+*_test.go
+testdata/
