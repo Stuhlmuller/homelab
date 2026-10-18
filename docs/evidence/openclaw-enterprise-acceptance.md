@@ -7,8 +7,9 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 
 | Gate | Source or artifact | Private receipt hash | Result |
 | --- | --- | --- | --- |
-| Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source exists; matching images pending |
-| Image publication and transitive render | Pending | — | Pending |
+| Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
+| Stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Signed and fully pulled by protected workflow |
+| Full platform image catalog and transitive render | [mirror run `39105084955`](https://github.com/Stuhlmuller/homelab/actions/runs/39105084955) | — | Pending |
 | Legacy stopped with zero writers | Pending | — | Pending |
 | Full independent legacy archive/restore | Pending | — | Pending |
 | Capacity and isolated canary | Pending | — | Pending |
