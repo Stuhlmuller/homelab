@@ -90,6 +90,8 @@ sources:
     resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-f957231327bdd56401fbc4e2
     resource: repo://scripts/ci/image-policy-check.py
   - id: openwiki-source-dce02546543e605cb2ccbb06
@@ -152,10 +154,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
+generated: { by: "codex", at: "2026-10-18T12:16:54.494Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:52:19.770Z
+    at: 2026-10-18T12:16:54.494Z
 ---
 
 # Validation Gates
@@ -1698,13 +1700,13 @@ copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate the six consuming applications.
 
-The native Chainguard receipt fixtures bind reviewed source and destination,
-require amd64 and arm64 child scans, complete authenticated Harbor pulls and
-protected provenance, and reject tag-only or mismatched rendered consumers.
-The render gate also requires `harbor-pull` for native Harbor images and rejects
-secret mounts or environment injection. The scan-robot SSM parameter must be
-applied before the ExternalSecret becomes Ready; source checks prove neither
-that parameter nor a live receipt.
+Native Chainguard receipt fixtures cover the fixed Python/curl mapping,
+catalog pin, index and child descriptor equality, complete authenticated
+private pull, and zero-finding Harbor scans. The offline static gate pins both
+credentialed receipt workflow hashes and the verifier/importer source hashes;
+the provenance workflow checks receipt-state-only PRs. These checks do not
+execute a private import or make a workload eligible. The provenance context
+must pass on `main` and become required before a receipt import.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
@@ -1715,6 +1717,12 @@ copying fails the original-index digest assertion. This gate requires Skopeo,
 not Docker or production credentials. It proves local staging behavior;
 complete Harbor pulls, destination signatures, scans and live consumers still
 require separate acceptance.
+
+Mocked transport fixtures cover the exact OCI conversion failure at destination
+upload and at alias copy after a resumed digest tag. Both require the `regctl`
+fallback, unchanged root digest and alias, and a complete authenticated pull;
+generic destination errors still fail closed. These fixtures do not establish
+that the protected full-catalog publication succeeded.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked

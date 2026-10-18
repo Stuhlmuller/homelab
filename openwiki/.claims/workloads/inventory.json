@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9ff44dc6615bcb515635f2c8d83a10b5fc64bbd3d9a471262a78e381cf35b2bc",
+  "pageVersion": "sha256:65e74e83e4e4717eae446eb3712b7e588b018b3c7e07814eadbd6fe046d2ee30",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
+          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
+          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -263,22 +263,22 @@
       ]
     },
     {
-      "id": "claim_6c9fd30b92a64d7e886bef0c971a99d6",
-      "statement": "The native Chainguard Python and curl candidate receipt and scan robot contract remain held and do not publish images or migrate workloads; the scan SSM parameter is a prerequisite to merging the consumer.",
+      "id": "claim_548f77abe2984dab8f5127f4ab94a867",
+      "statement": "The staged native Harbor Chainguard receipt covers private Python and curl imports but does not publish those images or migrate consumers; protected receipt and provenance gates remain prerequisites.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
           "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
         },
         {
-          "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:a0eb5a08ad7630ac62ddbbdc25230ff79962493bf975bb540bfdbb156a78dc49"
+          "resource": "repo://docs/harbor-image-mirroring.md#L6-L57",
+          "version": "repo-lines-v1:sha256:92e775b03b5330898cf2ea0c6848e907437c2ee1355b2b39d11afc9deed85081:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:52:19.770Z"
+    "at": "2026-10-18T12:16:54.494Z"
   }
 }

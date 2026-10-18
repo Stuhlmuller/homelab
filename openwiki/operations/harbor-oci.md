@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
+generated: { by: "codex", at: "2026-10-18T12:16:54.494Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:52:19.770Z
+    at: 2026-10-18T12:16:54.494Z
 ---
 
 # Harbor Private OCI Registry
@@ -263,15 +263,6 @@ The native receipt scan robot has a separate staged SSM parameter,
 grant. Its ExternalSecret is declared but cannot become Ready until a
 reviewed saved plan applies that parameter and read-only metadata verifies it. Staging this contract does not
 create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
-
-The held [protected native receipt workflow](../../.github/workflows/harbor-native-chainguard-receipt.yml)
-binds Chainguard Python and curl sources and private Harbor destinations to the
-reviewed catalog. It verifies required amd64/arm64 children, completed zero-CVE
-Harbor scans, and an authenticated private pull. Identical repeated platform
-descriptors are accepted; conflicting digest or media type is rejected. Render
-validation permits a migrated native reference only with imported protected
-provenance and the matching digest. The scan SSM parameter must exist before
-the consumer PR can merge; no receipt or workload migration has run.
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -428,6 +419,20 @@ the reviewed registry and registryctl pins into each node's CRI cache from
 exact reviewed `main`; it verifies cache aliases after each pull. Audit all
 four node caches again immediately before the consumer merge. This cache gate
 does not establish rollout health. See the [operator steps](../../docs/harbor-image-mirroring.md).
+
+### Native Chainguard receipt candidate
+
+The staged [native receipt workflow](../../.github/workflows/harbor-native-chainguard-receipt.yml)
+targets only Chainguard Python and curl imports into the private `homelab`
+project. From exact current `main`, it binds each catalog pin to the native
+replication rule, compares source, private destination, and complete
+authenticated-pull index bytes, checks amd64 and arm64 children, and requires
+successful zero-finding Harbor scans through a project-scoped `artifact:read`
+robot. It uploads a bounded receipt without private transport output. The
+[provenance gate](../../.github/workflows/harbor-native-chainguard-receipt-provenance.yml)
+must pass on `main` and become required before receipt-state import. This
+candidate does not publish an image, import a receipt, or migrate a consumer;
+the scan robot's SSM parameter must exist before merging this consumer branch.
 
 ### Identical-reference core repair candidate
 
@@ -727,15 +732,20 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Their consuming Renovate PRs remain held until that
-publication and pull acceptance finish.
+complete Harbor pulls. Each consuming digest update requires that publication
+and pull acceptance first.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
 anonymously into a local directory image tree and checks the original manifest
-digest before authenticated Harbor upload. Existing destination tags resume
-only after exact hash verification. Aliases come from the verified Harbor digest;
-every selected artifact still needs a fresh complete authenticated destination pull.
+digest before authenticated Harbor upload. If Skopeo cannot preserve an OCI
+index digest during staging or upload, `regctl` copies the exact upstream digest;
+an upload fallback reads upstream a second time. Existing destination tags
+resume only after exact hash verification. Aliases come from the verified
+Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
+`regctl` retries that alias from Harbor. These exact conversion fallbacks use
+`regctl` for the fresh complete authenticated pull. Other copy errors stop
+publication, and every selected artifact still needs digest and alias checks.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
@@ -749,7 +759,9 @@ flowchart TD
     Staging --> Identity{"Original digest matches"}
     Identity -->|yes|Upload["Authenticated Harbor upload"]
     Identity -->|no|Stopped["Stop publication"]
-    Upload --> Verify["Verify digest and tag alias"]
+    Upload -->|Skopeo succeeds| Verify["Verify digest and tag alias"]
+    Upload -->|Exact OCI conversion error| Regctl["Regctl copies original upstream digest"]
+    Regctl --> Verify
     Verify --> Pull["Fresh authenticated Harbor pull"]
     Pull --> Receipt["Verify digest before receipt"]
 ```

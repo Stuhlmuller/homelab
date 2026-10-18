@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:be6de3dafa433701d6265da4f498b0d2fbbe3ef749efee00c1692f183d497807",
+  "pageVersion": "sha256:c6067bea44015d28e3f90ce765257ed0cab307681d371622f1e36f0257ef0c86",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:3dcf8ebf2198a685fd94ecf3222e82e92fa6748edc5eac4272eb8ded037cfa69"
+          "version": "repo-file-v1:sha256:cff78af8b39178268dae875789c619c12ef4c8b3fb7775ebc121591298b6df3b"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b15b63a65fb4111f36b73eab1883e3affcc42341bf0ae56f3b078f71aad03738"
+          "version": "repo-file-v1:sha256:ff6b273a66deda199457b246c85ce112b401d3a7e2ecb29aa24593704674fd53"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:dae981fc6422eb049ec382b402b45dc03225fdc6b2e55d1673425c893f45098e"
+          "version": "repo-file-v1:sha256:75fba623ff1d621bf7c6d0fe99a676cc1212784c77ad4af426139e6d116bd422"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -670,15 +670,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
+          "version": "repo-file-v1:sha256:a91f85d0ed349471abf304be6f1c71f4cb920d0520cc59c3612ae95c2196faf9"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b15b63a65fb4111f36b73eab1883e3affcc42341bf0ae56f3b078f71aad03738"
+          "version": "repo-file-v1:sha256:ff6b273a66deda199457b246c85ce112b401d3a7e2ecb29aa24593704674fd53"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -687,22 +687,40 @@
       ]
     },
     {
-      "id": "claim_2de9c4dc188d4f78962bc83b62aacdc4",
-      "statement": "Native Chainguard receipt source fixtures bind fixed source and destination, require amd64 and arm64 scan and authenticated pull evidence, and reject mismatched native consumer provenance; the scan robot SSM contract and live receipt remain separate prerequisites.",
+      "id": "claim_e0a81929c30d4dcba87d30cdc558415f",
+      "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L770-L818",
+          "version": "repo-lines-v1:sha256:da58bbfbe9bc03844d243a8c139df7b193d7a53f073b88b1e739c89b8e106fd9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1ZjEzZGJlMzNjOWZjNGE0M2QxMzU4OWIwMjVkZDY4MTUxMzQ2OTUyOGFkM2EyYWUyZWUxMTM0MWY4NWVlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNWQxYjE0YTk5NDVkMzE4NTFkMDIyMmYxYmIwOTMxMDQ4YzgyMjg5NjczYmM0ODg3MDg3ZTMzYTlhMzExYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkOGJlZjJlNGZmZmJhMTIxODUzMTY3ZDliZTg2NWI2ZjVhODc3ZWI4OGNlMWIzZTc1MGVhMTQ5NDNiMjAyYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWMwZWZmNmExMWExZGNhZDhmNjVjOTEwMjA1OTFjZDhhN2Y2NGQyMDQ2ZDg0NWY3N2I3NjU5MjNlZDMzNDAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
+          "version": "repo-lines-v1:sha256:d2d374c55db86f3bfdd62b91aef854512b268fa415b27c83724ebbcbcba0de44:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMWIxYjIwMzEzMDZjYTUyOWUyZjNmMWIyZjRmZDlmMTMyNzk2MjZkYWFjZmY2ODBmMmJiYjA3NGFjM2I0YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhYzczZWY3NWZhYmRiODAzZmMxNjc1NzIzOGNhMWZlMDBjNGM0NDQ2NjEwZjQ5ZmY2MWU5OGZhNDYxM2QxYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4OWVkN2E1MDg4NTlhZmUxNWExM2FiNTExOWIyYjE0ZjhmNDVkNjkzN2NlYTcyYTA4MDc5ZDU1YTAwNDU5ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwZWM2ZDllM2U3MDMwMjk5ZTg4MmRlYTM3YjJlNDVhZDcyMmU4OGJkZGE0ZmZmZmYyMjgzNDIzNWRiN2RmYzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7e64e8b114794793816a358463da331f",
+      "statement": "Native Chainguard receipt fixtures check fixed Python/curl provenance, matching source/private/pulled index and child descriptors, complete authenticated pull, and zero-finding scans; offline static pins receipt workflow and verifier/importer hashes. Passing these checks neither imports a private image nor authorizes consumers, and the provenance context must become required on main before receipt-state import.",
+      "evidence": [
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L6-L57",
+          "version": "repo-lines-v1:sha256:92e775b03b5330898cf2ea0c6848e907437c2ee1355b2b39d11afc9deed85081:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
+        },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
           "version": "repo-file-v1:sha256:7173481a07401e921ff8e1b05c7b8ceb77aeb230cfa5f52d902d02174d1bd3a0"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "resource": "repo://scripts/ci/offline-static-checks.sh#L829-L1054",
+          "version": "repo-lines-v1:sha256:494a07ec1aa874db4cc8b38ac698a8a2848fa4de396c969b6ae2f38d0ffb55d7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjI2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1YjY0NzU1YWYzMGExYWJkMjVkOTg0MTdiOGJkNTliZjYyMjAzM2EyZTQzYjY2Y2EwNmRjNWRhNTNiNGNmOGJiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyYTIxYzViM2JmZjAyOTljMDE2MTQ3MDQ2OGYzNTVlNWI0YWZjZjE3YTVmNTkzYWI2ODM5NGVmN2FmMzE5Y2RjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhMTYwNjBkOWI1MmRmM2E1NWEyMjcyMzAyYTQ4Yzg5OWE0YzYxZjYyMGE4MzA1YWMxYjY4NjUwYmRhYWJkNGNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1YWEyZWEyNDFjODA4ZTk1NWViMDI0YTZmZmExZDI2YWFjYWU2YTg2MGU5OGViYWI3MDIwMGUyOThjMDIxNDVlIn0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:52:19.770Z"
+    "at": "2026-10-18T12:16:54.494Z"
   }
 }
