@@ -147,9 +147,10 @@ select private routers there. No Fleet route binds to Funnel.
 Private `harbor.stinkyboi.com` routes directly through Traefik to Harbor.
 Authorization headers pass unchanged; Harbor enforces registry credentials and
 keeps self-registration disabled. Internal Pod DNS reaches `traefik-private`;
-Talos pulls use the restricted registry listener. Phase 2b moves hosted image
-publication to the Tailscale operator API proxy and a reviewed TLS port-forward
-to `traefik-private`. Publish and verify required images before routing changes.
+Talos pulls use the restricted registry listener. Hosted image publication uses
+a reviewed TLS port-forward to `traefik-private`. CI still establishes that
+loopback forward through the Octelium Kubernetes API; moving the control plane
+is separate. Publish and verify required images before routing changes.
 
 ## Acceptance And Rollback
 

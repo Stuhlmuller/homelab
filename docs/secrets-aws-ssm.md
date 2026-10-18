@@ -77,6 +77,16 @@ administrator credentials out of Fleet server Pods. Preserve the encryption key
 with MySQL backups. Platform APNs/WSTEP identities are additional enrollment
 prerequisites; see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
 
+`/homelab/fleet/google-oauth` is a separate operator-only SecureString for the
+dedicated Google Workspace XCreds Web client JSON. It is excluded from External
+Secrets readers and has no Kubernetes consumer. After protected declaration and
+apply, `scripts/fleet-google-login.py store` validates an owner-only private
+JSON file and replaces the placeholder from clean, signed, current `main`.
+The same operator renders the device profile privately and sends it through
+Fleet to the exact local Mac. Rotation requires reapplying that profile on each
+configured Mac; SSM updates do not automatically refresh device profiles.
+See the [Google login runbook](../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
+
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
 `fleet`, `media`, `monitoring`, `octelium-client`, `octelium-public`,
@@ -252,6 +262,7 @@ cluster CA is intentionally rotated.
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | cordium | `cordium-agent-auth` | `cordium-agent-auth-v1` | `/homelab/cordium/agent-auth-token` |
+| cordium-runners | `cordium-runner-credentials` | `cordium-runner-credentials` | `/homelab/cordium-runners/github-app-private-key`, `/homelab/cordium-runners/auth-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
@@ -392,6 +403,26 @@ git. The ExternalSecret polls the current SSM version every five minutes, so a
 populated credential or later rotation replaces the declared placeholder
 without a manifest annotation bump. When populated before the stack apply,
 `scripts/ci/terragrunt-apply.sh` adopts the parameter into OpenTofu state.
+
+Cordium runner credentials have a separate restricted namespace, `cordium-runners`.
+The shared SSM catalog declares two external Standard SecureString slots; its
+existing reader IAM generator grants their exact ARNs. The ClusterSecretStore
+allowlist and source policy permit only `/homelab/cordium-runners/` there.
+`cordium-runner-credentials` polls every five minutes and retains its target on
+source deletion. The manager must mount both keys as read-only files; Workspaces
+receive neither key. Existing values are adopted before placeholder apply.
+
+The protected exact-main `cordium-runner-credentials.yml` intake validates the
+App private key against App `5270069`, validates the native token against the
+dedicated WORKLOAD User and exact forbidden-method denial, and verifies both slots' encryption
+metadata before writing. It accepts no parameter-name or command input. Only
+fixed slot names and version receipts reach public logs. Writes are not atomic:
+a partial failure is a failed intake and requires private inspection/retry.
+The pinned native logout can hide server logout failure; allow the one-hour
+session to expire or verify its revocation before starting the manager. Stop
+manager authentication before rotating the native credential because the User
+allows one session. Controller deployment and mounted-file refresh acceptance
+remain pending. See [runner bootstrap](../builds/cordium-runner/README.md).
 
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/live/azuread-applications/octelium`, which writes generated
@@ -547,6 +578,14 @@ Harbor robot, grant a workload registry access, or change a node; wait for the
 Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
+
+The native Chainguard receipt scan robot needs
+`/homelab/harbor/robot-scan-password` before its ExternalSecret consumer can
+merge. This declaration generates the password and adds its exact ARN to the
+existing External Secrets reader policy. Apply only a reviewed saved plan
+for the shared SSM unit, then verify parameter metadata without reading its
+value. This prerequisite alone does not refresh `harbor-secrets`, create the
+Harbor robot, or start a receipt workflow.
 
 The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
 Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The

@@ -821,7 +821,13 @@ expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/cordium-runner-credentials.yml:credential' \
+    '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+    '.github/workflows/cordium-runner-publish.yml:publish' \
+    '.github/workflows/cordium-runner-publish.yml:published-digests' \
+    '.github/workflows/cordium-runner-publish.yml:test-build' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
     '.github/workflows/harbor-core-images.yml:publish' \
     '.github/workflows/harbor-core-images.yml:published-digest' \
@@ -879,15 +885,18 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml 7cc3d5576e39f314a6d8269b7c6d80ef293685d3aa63a99c7b22c1677cd17d57
+.github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
+.github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
+.github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
+.github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 6a303f1a6681532949b80d3c6fbe8b548f7201041864da5acae7e0802a1ddf92
+.github/workflows/harbor-mirror.yml 1cb756260ffd8b934e1eb5f842510602bbc0c42135284017644db380c39e930e
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
-.github/workflows/nofx-images.yml f65aca30f463f0dfb1891d5551e8a5f4f0f898c85b029b9995f6db0fa0b87115
+.github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
+.github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -903,7 +912,10 @@ echo "::endgroup::"
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
+  '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+  '.github/workflows/cordium-runner-publish.yml:test-build' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \

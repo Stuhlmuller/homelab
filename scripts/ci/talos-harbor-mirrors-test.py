@@ -671,5 +671,49 @@ class RolloutTest(unittest.TestCase):
                             self.assertFalse(Path(call[5][1:]).exists(), "Private JSON patch must be removed")
 
 
+class RegistryPrepullTest(unittest.TestCase):
+    def test_pre_pull_rejects_changed_image_scope_before_talos_access(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = Path(temporary) / "scripts/config/harbor-runtime-images.json"
+            catalog.parent.mkdir(parents=True)
+            source = "docker.io/goharbor/registry-photon:v2.15.4@sha256:" + "a" * 64
+            catalog.write_text(json.dumps({"images": [{"source": source}, {"source": source}]}))
+            with patch.object(rollout, "ROOT", Path(temporary)), patch.object(rollout, "run") as run:
+                with self.assertRaises(RuntimeError):
+                    rollout.prepull_registry_runtime("10.1.0.199", False, None, Path("/private/talosconfig"))
+                run.assert_not_called()
+
+    def test_pre_pull_requires_reviewed_main_and_exact_cached_digests(self):
+        sources = [item["source"] for item in json.loads(
+            (ROOT / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+            if "/registry-photon:" in item["source"] or "/harbor-registryctl:" in item["source"]]
+        aliases = [source.replace(":v2.15.4@", "@") for source in sources]
+        for mode in ("dry", "execute", "missing-after-pull", "cached"):
+            with self.subTest(mode=mode):
+                calls = []
+                cached = set(aliases if mode == "cached" else ())
+
+                def run(*command, binary=False):
+                    calls.append(command)
+                    if command[-2:] == ("image", "list"):
+                        return "NODE IMAGE DIGEST SIZE CREATED\n" + "\n".join(
+                            f"acer {alias} {alias.rsplit('@', 1)[1]} 1MB now" for alias in cached)
+                    if command[-2] == "pull":
+                        if mode != "missing-after-pull":
+                            cached.add(command[-1].replace(":v2.15.4@", "@"))
+                        return ""
+                    raise AssertionError(f"unexpected command: {command}")
+
+                with patch.object(rollout, "run", run), patch.object(rollout, "verify_main") as verify:
+                    if mode == "missing-after-pull":
+                        with self.assertRaises(RuntimeError):
+                            rollout.prepull_registry_runtime("10.1.0.199", True, SHA, Path("/private/talosconfig"))
+                    else:
+                        rollout.prepull_registry_runtime("10.1.0.199", mode != "dry", SHA, Path("/private/talosconfig"))
+                    self.assertEqual(verify.call_count, int(mode != "dry"))
+                    self.assertEqual(sum(command[-2] == "pull" for command in calls),
+                                     0 if mode in ("dry", "cached") else (1 if mode == "missing-after-pull" else 2))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0c5c6ea4752a5ca292ea36cc4591dd86c21fc61c836c606e28b89a584823636e",
+  "pageVersion": "sha256:34115baa5577810a4004c6041ab19771f6c0dcb9050cdea3abc693518f7a6f84",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -77,10 +77,28 @@
           "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
         }
       ]
+    },
+    {
+      "id": "claim_19d83438220445ea972185f0a6371a3b",
+      "statement": "Cordium runner source, fixed pool declaration, and protected workflow contracts are routed to CI, identity, and validation wiki pages.",
+      "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:13:59.415Z"
+    "at": "2026-10-18T01:09:27.563Z"
   }
 }
