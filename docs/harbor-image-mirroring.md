@@ -51,6 +51,9 @@ and unexpected hashes stop publication. Source-tag aliases are copied from that
 verified Harbor digest, avoiding a second upstream transfer. Every entry still
 receives a complete authenticated Harbor download and alias verification on
 each run.
+If Skopeo cannot stage an OCI index without changing its digest, the mirror
+uses `regctl` for that copy and its authenticated pull, then checks the exact
+root digest and source-tag alias before recording a receipt.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
 No retention/delete job is introduced. Size NFS for the additional images and
 retain registry blobs together with Harbor database/encryption-key backups.
