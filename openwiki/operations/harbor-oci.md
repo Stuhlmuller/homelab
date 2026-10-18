@@ -52,8 +52,6 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-738da32a5c98c5c0390c9a2f
-    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -72,8 +70,6 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e61e6d11d2a5c456a06bdb85
     resource: repo://clusters/homelab/platform/image-policy/README.md
-  - id: openwiki-source-099a5c2faf41ef097f464f8f
-    resource: repo://docs/application-recovery.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -120,10 +116,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T05:36:06.343Z" }
+generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T05:36:06.343Z
+    at: 2026-10-18T06:06:26.593Z
 ---
 
 # Harbor Private OCI Registry
@@ -260,8 +256,8 @@ authenticated pulls on every node before a privacy flip.
 
 The native receipt scan robot has a separate staged SSM parameter,
 `/homelab/harbor/robot-scan-password`, with an exact-ARN External Secrets reader
-grant. Its consumer remains held until a reviewed saved plan applies that
-parameter and read-only metadata verifies it. Staging this contract does not
+grant. Its ExternalSecret is declared but cannot become Ready until a
+reviewed saved plan applies that parameter and read-only metadata verifies it. Staging this contract does not
 create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
@@ -411,17 +407,6 @@ the separate consumer upgrade. The scoped receipt does not prove full-catalog
 coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
-
-The consumer keeps chart 1.19.2 while pinning all nine coupled components to
-2.15.4. The component check rejects mixed runtime versions. Harbor 2.15.4
-includes database migration `0181`, so this is a forward-only schema update:
-require a verified database and registry-blob backup with an isolated restore
-test, and never downgrade that schema in place. Accept only after live
-registry/API and scan checks. The bundled Distribution v2 component retains
-unresolved CVE findings. The chart renders one `harbor-nginx` Pod without an
-explicit strategy, so Kubernetes' default rolling update keeps the old Pod
-available while its replacement pulls. See the [values](../../clusters/homelab/apps/harbor/values.yaml),
-[render gate](../../scripts/ci/harbor-check.sh), and [upgrade runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images
 must be cached before the old Pod stops. After protected publication, the
@@ -729,15 +714,13 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. The Dispatcharr and n8n consumers also require
-independent recovery evidence before merging.
+complete Harbor pulls. Their consuming Renovate PRs remain held until that
+publication and pull acceptance finish.
 
 For a missing destination digest tag, the
-[publisher](../../scripts/ci/harbor-publish.sh) normally downloads all upstream
-platforms anonymously into a local directory image tree and checks the original
-manifest digest before authenticated Harbor upload. If Skopeo cannot stage an
-OCI index without changing its digest, the publisher uses `regctl` for the
-copy and authenticated pull, then checks the same exact root digest. Existing destination tags resume
+[publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
+anonymously into a local directory image tree and checks the original manifest
+digest before authenticated Harbor upload. Existing destination tags resume
 only after exact hash verification. Aliases come from the verified Harbor digest;
 every selected artifact still needs a fresh complete authenticated destination pull.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks

@@ -18,6 +18,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
   - id: openwiki-source-3ee445a5390585cab7a1edab
@@ -78,12 +80,16 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
+  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
+    resource: repo://scripts/entra-owner-conversion.py
+  - id: openwiki-source-6a90d887ebbab5a858408f90
+    resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T01:09:27.563Z" }
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T01:09:27.563Z
+    at: 2026-10-18T06:24:02.662Z
 ---
 
 # Workload Inventory
@@ -126,9 +132,11 @@ retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-separates native Microsoft Password Platform SSO from console SAML. Company
-Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
+keeps console SAML separate from the retired Fleet-only Company Portal/Platform
+SSO pilot. Fleet remains the Mac MDM. A repository operator script delivers
+Mac and iPhone/iPad baselines with host-scoped commands; Entra owner conversion
+is a separate reviewed identity operation, currently blocked by the federated
+target domain, not a workload rollout. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
