@@ -282,6 +282,13 @@ class HarborPublicationGates(unittest.TestCase):
                             print(FIXTURE["missing_error"].format(artifact=artifact, repository=artifact.rsplit(":", 1)[0]),
                                   file=sys.stderr)
                             raise SystemExit(1)
+                    if FIXTURE["mirror"] and reference.endswith(":stable"):
+                        if FIXTURE["failure"] == "mirror-alias-lookup":
+                            print("connection refused private-test-credential-must-never-appear", file=sys.stderr)
+                            raise SystemExit(18)
+                        if not FIXTURE["resume"] and reference not in published:
+                            print("manifest unknown", file=sys.stderr)
+                            raise SystemExit(1)
                     raw = published.get(reference) or FIXTURE["manifests"][reference]
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
@@ -290,6 +297,8 @@ class HarborPublicationGates(unittest.TestCase):
                         raw += "corruption"
                     if FIXTURE["failure"] == "mirror-tag" and reference.endswith(":stable"):
                         raw += "tag corruption"
+                    if FIXTURE["failure"] == "mirror-existing-alias" and reference.endswith(":stable") and reference not in published:
+                        raw += "stale alias"
                     sys.stdout.write(raw)
                 elif args[0] == "copy" and args[-1].startswith("dir:"):
                     reference = args[-2].removeprefix("docker://")
@@ -1001,15 +1010,15 @@ class HarborPublicationGates(unittest.TestCase):
         self.assert_cleaned()
 
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
-        for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
+        for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "mirror-alias-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
             with self.subTest(failure=failure):
                 self.transport_mocks(failure=failure, mirror=True)
                 result = self.run_helper(mode="mirror")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
-                phases = {"mirror-source": "upstream-download", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup",
+                phases = {"mirror-source": "upstream-download", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup", "mirror-alias-lookup": "alias-lookup",
                           "digest": "digest-verify", "mirror-tag": "alias-verify", "pull": "authenticated-pull", "pull-digest": "pull-verify"}
-                categories = {"mirror-source": "rate-limited", "mirror-alias": "transport-failed", "mirror-lookup": "transport-failed",
+                categories = {"mirror-source": "rate-limited", "mirror-alias": "transport-failed", "mirror-lookup": "transport-failed", "mirror-alias-lookup": "transport-failed",
                               "digest": "digest-mismatch", "mirror-tag": "digest-mismatch", "pull-digest": "digest-mismatch"}
                 status = dict(line.split("=", 1) for line in self.public_status.splitlines())
                 self.assertIn(status["source"], [image["source"] for image in self.mirror_manifest["images"]])
@@ -1066,13 +1075,13 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.run_helper(mode="mirror")
         self.assertEqual(result.returncode, 0, result.stderr)
         copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
-        self.assertEqual(len(copies), 4)
+        self.assertEqual(len(copies), 2)
         self.assertTrue(all(args[-2].startswith("docker://harbor.stinkyboi.com/mirror/") for args in copies))
         self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
-        self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 2)
+        self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 0)
         self.assert_mirror_copy_credentials(copies)
         inspections = [args[-1] for args in self.calls_for("skopeo") if args[0] == "inspect"]
-        self.assertEqual(sum(reference.endswith(":stable") for reference in inspections), 2)
+        self.assertEqual(sum(reference.endswith(":stable") for reference in inspections), 4)
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
         self.assertEqual(self.public_status, "")
         self.assert_cleaned()
@@ -1087,6 +1096,15 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertIn("phase=digest-verify\n", self.public_status)
         self.assertIn("category=digest-mismatch\n", self.public_status)
         self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_mirror_stale_alias_is_replaced_from_verified_digest(self):
+        self.transport_mocks(failure="mirror-existing-alias", mirror=True, resume=True)
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 2)
+        self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
         self.assert_cleaned()
 
     def test_mirror_digest_only_sources_do_not_create_mutable_aliases(self):
