@@ -8,6 +8,8 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-a793a7dd08d0dc13de84207b
     resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
@@ -24,32 +26,26 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
-  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
-    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-8144ee95f00e2d4721210fcf
     resource: repo://IaC/stacks/mastodon/stack.hcl
-  - id: openwiki-source-612eb02105d61c48b6ba59bd
-    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
-  - id: openwiki-source-9e73eddbbea62807ee2ea389
-    resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
-    resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+generated: { by: "codex", at: "2026-10-18T06:52:19.770Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-18T20:41:22.820Z
 ---
 
 # Source Map
@@ -76,14 +72,12 @@ desired state.
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
-| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/stacks/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
-| `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
-| `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
 | `scripts/talos-harbor-mirrors.py` | [Private node registry path](operations/harbor-oci.md#private-node-registry-foundation) |
+| `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |

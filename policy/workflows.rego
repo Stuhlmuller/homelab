@@ -5,6 +5,7 @@ import rego.v1
 deny contains msg if {
 	events := workflow_events
 	has_event(events, "pull_request_target")
+	not native_receipt_provenance_workflow
 	name := object.get(input, "name", "<unnamed workflow>")
 	msg := sprintf("workflow %q must not use pull_request_target for infrastructure checks", [name])
 }
@@ -146,11 +147,13 @@ deny contains msg if {
 	job_sensitive_command(job)
 	steps := object.get(job, "steps", [])
 	some index
-	uses := object.get(steps[index], "uses", "")
+	step := steps[index]
+	uses := object.get(step, "uses", "")
 	some prefix in {"actions/upload-artifact@", "chainguard-actions/actions-upload-artifact@"}
 	startswith(uses, prefix)
-	not encrypted_harbor_diagnostic(job_name, job, steps[index])
-	not encrypted_oce_diagnostic(job_name, job, steps[index])
+	not encrypted_harbor_diagnostic(job_name, job, step)
+	not native_receipt_artifact(job_name, job, step)
+	not encrypted_oce_diagnostic(job_name, job, step)
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
@@ -232,6 +235,90 @@ deny contains msg if {
 
 workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
+# This checker runs only trusted base-branch code and reads a receipt-only PR
+# as bounded API data. Any shape change must also update the exact workflow hash.
+native_receipt_provenance_workflow if {
+	count(input) == 5
+	object.get(input, "name", "") == "Verify Native Chainguard Receipt Provenance"
+	object.get(input, "concurrency", {}) == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false}
+	workflow_events == {
+		"push": {"branches": ["main"]},
+		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
+	}
+	object.get(input, "permissions", {}) == {}
+	jobs := object.get(input, "jobs", {})
+	jobs == {"verify": native_receipt_provenance_job}
+}
+
+native_receipt_provenance_job := {
+	"name": "Native Chainguard Receipt Provenance",
+	"runs-on": "ubuntu-24.04",
+	"timeout-minutes": 20,
+	"permissions": {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"},
+	"steps": [
+		{
+			"name": "Check Out Trusted Base",
+			"uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505",
+			"with": {
+				"ref": "main",
+				"fetch-depth": 1,
+				"persist-credentials": false,
+			},
+		},
+		{
+			"name": "Revalidate Open Pull Requests Against Current Main",
+			"env": {"GH_TOKEN": "${{ github.token }}"},
+			"run": `set -euo pipefail
+umask 077
+base_sha="$(git rev-parse HEAD)"
+[[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 1
+token_file="$(mktemp)"
+pulls_file="$(mktemp)"
+heads_file="$(mktemp)"
+trap 'rm -f "$token_file" "$pulls_file" "$heads_file"' EXIT
+printf '%s' "$GH_TOKEN" >"$token_file"
+gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100" >"$pulls_file"
+jq -r '.[].head.sha' "$pulls_file" >"$heads_file"
+pending_failed=0
+while IFS= read -r head_sha; do
+  [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || exit 1
+  marked=0
+  for attempt in 1 2 3; do
+    if gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
+      -f state=pending -f context='Native Chainguard Receipt Provenance' \
+      -f description='Rechecking receipt against current main' >/dev/null; then
+      marked=1
+      break
+    fi
+    [[ "$attempt" == 3 ]] || sleep 2
+  done
+  [[ "$marked" == 1 ]] || pending_failed=1
+done <"$heads_file"
+[[ "$pending_failed" == 0 ]] || exit 1
+[[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
+status_failed=0
+while IFS= read -r head_sha; do
+  if python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request \
+    --base-sha "$base_sha" --head-sha "$head_sha" \
+    --token-file "$token_file" && \
+    [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]]; then
+    state=success
+  else
+    state=failure
+  fi
+  [[ "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" == "$base_sha" ]] || exit 0
+  if ! gh api -X POST "repos/${GITHUB_REPOSITORY}/statuses/${head_sha}" \
+    -f state="$state" -f context='Native Chainguard Receipt Provenance' \
+    -f description='Protected receipt state verification' >/dev/null; then
+    status_failed=1
+  fi
+done <"$heads_file"
+exit "$status_failed"
+`,
+		},
+	],
+}
+
 has_event(events, event) if {
 	events == event
 }
@@ -296,6 +383,10 @@ live_homelab_workflow if {
 }
 
 live_homelab_workflow if {
+	workflow_run_contains("scripts/ci/harbor-native-chainguard-receipt.sh")
+}
+
+live_homelab_workflow if {
 	jobs := object.get(input, "jobs", {})
 	some _, job in jobs
 	steps := object.get(job, "steps", [])
@@ -309,9 +400,9 @@ job_sensitive_command(job) if {
 	sensitive_command_run(object.get(steps[index], "run", ""))
 }
 
-shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?(bash|sh|zsh)[\t ]+(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish)\.sh([\t ;]|$)`
+shell_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(nix[\t ]+develop[\t ]+--command[\t ]+)?((/usr/bin/)?env[\t ]+|command[\t ]+)?(bash|sh|zsh)[\t ]+(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish|harbor-native-chainguard-receipt)\.sh([\t ;]|$)`
 
-direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish)\.sh([\t ;]|$)`
+direct_live_command_pattern := `(?m)^[\t ]*(if[\t ]+![\t ]+)?(exec[\t ]+)?(\./)?scripts/ci/(install-kubeconfig|terragrunt-plan|terragrunt-apply|octelium-private-kubernetes-apply|harbor-publish|harbor-native-chainguard-receipt)\.sh([\t ;]|$)`
 
 kubectl_command_pattern := `(?m)(^|[^A-Za-z0-9_.-])["']?kubectl["']?[\t ]+`
 
@@ -391,6 +482,46 @@ private_live_output(run) if {
 # exception exact: other private wrappers cannot print arbitrary files or logs.
 private_live_output(run) if {
 	trim(run, "\n") == harbor_mirror_private_run
+}
+
+# The native receipt is a bounded, nonsecret attestation. Its exact workflow
+# command and sole artifact are reviewed together below.
+private_live_output(run) if {
+	trim(run, "\n") == native_receipt_private_run
+}
+
+native_receipt_private_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash scripts/ci/harbor-native-chainguard-receipt.sh >"$private_log" 2>&1; then
+  echo '::error::Native Harbor receipt verification failed; private transport and registry output withheld.'
+  exit 1
+fi
+jq -e '
+  .schema_version == 1 and .kind == "native-chainguard-receipts-v1" and
+  (.receipts | type == "array" and length == 2 and all(.[]; .consumer_access == true))
+' "$RUNNER_TEMP/harbor-native-chainguard-receipt.json" >/dev/null
+echo 'Native private Chainguard imports passed digest, platform, scan, and authenticated-pull verification.'`
+
+native_receipt_artifact(job_name, job, step) if {
+	object.get(input, "name", "") == "Verify Native Chainguard Harbor Imports"
+	job_name == "receipt"
+	steps := object.get(job, "steps", [])
+	some index
+	step == steps[index]
+	index > 0
+	trim(object.get(steps[index - 1], "run", ""), "\n") == native_receipt_private_run
+	count(step) == 3
+	object.get(step, "name", "") == "Upload Native Receipt"
+	object.get(step, "uses", "") == "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6"
+	options := object.get(step, "with", {})
+	count(options) == 5
+	object.get(options, "name", "") == "harbor-native-chainguard-receipt-${{ github.sha }}"
+	object.get(options, "path", "") == "${{ runner.temp }}/harbor-native-chainguard-receipt.json"
+	object.get(options, "if-no-files-found", "") == "error"
+	object.get(options, "retention-days", 0) == 30
+	object.get(options, "include-hidden-files", true) == false
 }
 
 private_live_output(run) if {

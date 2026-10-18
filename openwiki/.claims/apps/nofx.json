@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2ed6b0873e90bf3db33697630f9acc887a98637e7b8b0c513197180ce4505d3f",
+  "pageVersion": "sha256:572a87aa2f378355b3439d05e155a9b72019164377b05beb17fbb0aeb43e73d5",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
       "statement": "NOFX moves its canonical hostname to private Tailscale and Traefik through guarded DNS cutover; the former public DNS writer is removed while legacy runtime routes remain until acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L89-L128",
-          "version": "repo-lines-v1:sha256:95740e8a58f9381005f69e87c610d69ac634a5d4c9f8ff0d843d97790e637c58:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
+          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -30,13 +30,13 @@
         },
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:7884e53b4e1c1ba6b1d377984ed00e0bf570b86631e960964ade2ca49a16606f"
+          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-18T05:44:36.454Z"
   }
 }

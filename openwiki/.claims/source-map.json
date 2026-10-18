@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a70a83771d497c27949641b978a2de5e82f8132fd38dd4a24fa651d048777bb",
+  "pageVersion": "sha256:7dab44ee6f86426277f3b8ff8bcd31e47fb61e3b95086135434198258cc842ce",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -56,7 +56,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
-          "version": "repo-file-v1:sha256:25326218281f5062e0e29eb65f1426a24684a7c5d56e040d8434746d96a8b17a"
+          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
     },
@@ -101,30 +101,22 @@
       ]
     },
     {
-      "id": "claim_634bdb7a34d34a1ca4a3606ef43ebe18",
-      "statement": "The tailnet DNS platform directory and Terragrunt stack own the resolver's GitOps desired state; the read-only DNS checker owns direct signed-peer handoff proof, while the separate public DNS helper owns only later fixed-name address retirement.",
+      "id": "claim_8730a6d88f7a49d7a2c95790a0d79d13",
+      "statement": "The source map links the protected native Chainguard receipt workflow and verifier to Harbor operations and validation gates.",
       "evidence": [
         {
-          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl#L5-L39",
-          "version": "repo-lines-v1:sha256:20609c02c260767c326070e2292d8c534ee94f031b32d6715cf219e9ded79b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
         },
         {
-          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L3-L75",
-          "version": "repo-lines-v1:sha256:2bd90e7c0196424c71800a8cf12271d0a16a609f704025f86779e9291cc9c324:eyJzZWxlY3RlZExpbmVDb3VudCI6NzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlNTliMTQ0OTFjYzg0OGFkMzJiY2YwNDk0YzYwMWYyYjYwZWJhOThmNTg1YTc5OGQ2YmVhOTI5MjUzMTBiMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MzBmNTUxNjNmYzA2YzUwMTQzZWU0NTA1ZWE3ZjI3YmMzZGZkN2Q5MTc0ZjcxMjE5ZTA5MmU3OGJlYWExMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
-        },
-        {
-          "resource": "repo://scripts/tailnet-dns-check.py#L77-L124",
-          "version": "repo-lines-v1:sha256:2ec653bc1aace920775ac23ba84be13eda73efc004ac46b452f6976eb3ee5e1c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYWRlZGJkY2RjNzRlM2ZiOGU3YjljOWE1N2NkYmExMjZkNGEwYWQyODc3Nzc0MDk2MjFhZTI1ZDM0YmE2NjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNzUyYjM3NDk2NDMyNGE2MTJkMjI1NWE2ZmQzYWMzNDA0OTg3N2FmODI1ZDU4NzdmM2M0ZWE1MzA5NDRkMzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjYzYzNTM5NTcxYzE3NWI1N2VjZTQ0ZDRhOTQzYjRlMGMxM2FmMDBiOTgyOWNlNmE4MjljMGVmYmMyODE3YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5ZTE2YmQ4MWJjMmI2ZmNmNmI0NmRhM2JhZDllNTdlYTNkYjYwMjA5ZDA5NDY3ZTUzMTAxMWNhYjEzMjAzZDQifQ"
-        },
-        {
-          "resource": "repo://scripts/tailscale-private-dns.sh#L15-L25",
-          "version": "repo-lines-v1:sha256:d51d9dde2c958a704190de05e1c87e58c2427194d75db65c2eac21058497d5a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3ZGJkNWExYTVkZDNiNGJkZTdmNDQzYTI0NjRkOGVlYzZiOGY4ZjI2NWJlNDAxMmY3ZTM0YTg1YzJlYzk0ZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkMTU3OWNmNjBhZDk3NGY0N2VjYzQ1YzUwM2Y0NjNjNWI1ZGQ5ZWYzYTFlMjdmMDUyNTkwN2U0OTNlMDU5NDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjOTMxOTFmYTJkZDhmOWQ5ODJmMmI5NGE5NTRjN2Q5OTJmMjlhMzgyYTgyODlkOTcxNDZlMDYzMDMyYWNmMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwZGJhYjMzNzk1OTJlNGExODkxMzM5ZTRkZmQ0NDBhMTJjN2VkYmQ3YmFhZmU1ZGIxYmE2ZmM4YjYwMzA2NzUifQ"
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt.py",
+          "version": "repo-file-v1:sha256:7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-18T20:41:22.820Z"
   }
 }

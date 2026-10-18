@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b787c5385438ebdb438f61d50c02abace9e04ee5a1615e9fea7e1439dda90f6c",
+  "pageVersion": "sha256:a889b61b6877f178cab7a466d413a701ce55e373ad1441ee9c4ba5ed9e51e38e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e673301f57f424fa3f34ffd328a137f624f0ecb3e3e99d904e43b2f4f0cfa528"
+          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:b193ba32f675b04a1dcd23ae1a50b70e19d3d7f9db770c5ac56093baeecd73fc"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -86,19 +86,27 @@
     },
     {
       "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
-      "statement": "The earlier ingress cutover has static tests for route/DNS ownership, Mac profile preservation, same-profile reconnect, callback preflight and receipt handling. The current resolver handoff requires direct signed-proxy UDP/TCP checks against the observed DNS Service IP, followed by owner restricted tailnet DNS setting and normal client DNS/HTTPS acceptance before later public record retirement.",
+      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L9-L58",
-          "version": "repo-lines-v1:sha256:7213cbef1f7799960a9b934b5f0563aed195005ee819f1cdc168f25c1c0e576f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmN2Y2NzU4MmZlOGU1ZTE4NzIwODEwNTJlYjAxMWFjZDg4MjQ0OTBkYzZkYWE3MGE0ZmQ5MWM2YTk5MzI4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0N2VlZDEyMGQ0NDBjMjRmYzA5MjA2YWJmNzQ5MjEwOTU4ZGU5N2Q3MWZiODM0ODYxNGI3ZmNiOTNlNTljODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4OGM5NGNiMmMwZWIxMWRkNDMzNGM2MGVmNDEyZWVjODAxZTJmZjEyOTczZTM1M2NmMDJkMTgzZDI5YTY3NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExYmIzMGJjYTEzNGMzYWNhNDg5NTgxOGZlZjVlN2MwOGEzM2Q0M2Y2M2RjYjBjNzg2MGFhYjEwZmVjYjQ0OTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
         },
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md#L26-L52",
-          "version": "repo-lines-v1:sha256:93d3c83a092288b337b6cf838fa8739457e110d728a23c95392c4eb254a15990:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFlOTBmZThjOTUwNTg1MmY2MjQyOTZiNjAyZTc1N2NiYjY2MGY0MDUwNTE0MmQ1ZTJiOTg2ZDFhZmJiYzEwYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmMTgyMjEyNTE5Y2M2MzQ3MThlNDkzNTI5MGM0NzYwZTAxYzRiYmQwZTRmNjM3NjE2MTA4NDA1YzE1N2M2MjkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYzNzUxN2M0MDNiMjE4NGU5MGU3YTk4ZDJiMTBkNTY3OGRjNmE3YWE4OTJiNTU5N2M1NjAzZjQzYzk2NWJjMzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MzQwODRhOTI5MWM4NmIyZTlmMTMyZjc0M2Q0NGY0NjdmMjlhZGI2NmQ2MjE4ZDIwNjQwYmYxMmJmM2ZiYjQifQ"
+          "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
+          "version": "repo-file-v1:sha256:c4bd586a1cd8425864b99026735861f3954413cae95b7094087a995f7adde1c4"
         },
         {
-          "resource": "repo://scripts/ci/tailnet-dns-check-test.py#L44-L122",
-          "version": "repo-lines-v1:sha256:d70b7eb74d81aca0cb6cebbc2b0de2058900b390deaeaf75471a3bb2f49c2468:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljYzU2NmEwMTQ1N2FjYjhjMzBiNTFhOTEzZDAyZWIyNmRjNjRmZmI0NDU5YmM1NGU2NDAzNjcwNmQ4ZWZiMjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1ZjYxZmZhNWIwOGFhYjI3NTAwMDJiNGI5ZTg1ODAzMDg1NGZmZGQxMzMwMWViYWVhZDkxNWM4YjdkZWM3ZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNDY4MThkNDM5NjJlODU5NDQyNmRjODg2NDdkNGM2YmRmYzBjMTVjYWNjNWNkODdkOGU3NTQ0ZDA4NTk5NzkifQ"
+          "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
+          "version": "repo-file-v1:sha256:ae365f23de9ca311b7128fd51365dde7bc596e201b79fb5248815cd71541ca39"
+        },
+        {
+          "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
+          "version": "repo-file-v1:sha256:b91181264cce4b2107f7c60e4e334c255c290ae67114404c9eba08020d1d3f41"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         }
       ]
     },
@@ -108,7 +116,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-access-check-test.py",
-          "version": "repo-file-v1:sha256:af88b46a28a05c2a563046d07c6105502ad3a722bd6048ad026c570570f5b2c8"
+          "version": "repo-file-v1:sha256:e3c6ddf149737edb47473d8b5b8fd561e55d70b4478718b7d5af48e2de1a7cb5"
         },
         {
           "resource": "repo://scripts/ci/tailscale-access-check.py",
@@ -140,7 +148,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
+          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -148,7 +156,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -158,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:b193ba32f675b04a1dcd23ae1a50b70e19d3d7f9db770c5ac56093baeecd73fc"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -166,25 +174,25 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
-          "version": "repo-file-v1:sha256:80c10992dd64545f345d198e5173b0d59e1b7e90ce527d2c2a5495343d625fdf"
+          "version": "repo-file-v1:sha256:079ceef243831262e78d6115923c02e92071b3d89e2db2a882c6a531bc0555e0"
         }
       ]
     },
     {
       "id": "claim_208b0475f0894dc0a15e62f0943aeb0a",
-      "statement": "The retained ingress readiness preflight accepts AFFiNE HTTP 502 or 503 only with explicit source and live zero replicas, rejects other app 5xx, and uses only the ingress Service's published IPv4 even when its peer also has IPv6.",
+      "statement": "Private DNS preflight accepts AFFiNE502/503 only with explicit source and live zero replicas and rejects other app5xx; its regression also prevents publishing peer IPv6 when the ingress Service publishes only IPv4.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
           "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L125-L163",
-          "version": "repo-lines-v1:sha256:09c12ebe9b10cce7dd3f61c5191ae9d23bc07cfc6ccd0494751d8557eb675fd7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFjNWRkZWExYjY0OTIxNmQ5N2YxZGQxYjlkNTg1OWE1ZDE3ZTFmOGUyZGRiNjIwZTIxYWEzYjZkNmU4ZTU2NTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU5NmJhMmM1ZTZiNzY0MzNjN2MxNjRhODMwNGEzMDMyNGUxYmNlYzBjOWYxNzg5N2M5ODE4NGVkYmQyZmI2MGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ODU1M2UwOTJlMTk2Y2VkYTYyYzZmYzM5MTJlNDNhOWQ1YzE5YzllYWYyZDhmYjhmNjI2ZWU5MGViOWFkYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg1Zjk3MjM1ZGI2MDVmYWQ4MGY4YzBlMDE0YzZlZmZlMjAxYmUxODE2M2NjMDZiNmY2NTdkMTVkOGE0NmM3NTYifQ"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L125-L182",
+          "version": "repo-lines-v1:sha256:0347a319ef9c90ccd922e4ea5a6527b06ce3ecef0cddd390d24fd4e757b8321a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2ZWRkNDg3NWMzZTgzNzBhYTZlZDhkOTE5YTQ4MDE3ZjY0OTU0ZWQ2ZTU3MTAyNTQyM2VkNDI4Njc2YzRjNmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyOTNjZjk5ODIwYjhhZDJmOTE2OTMxMWE2ODgzNWEyMGJlMmFlOTkxMjUxZjU2ZWE4MzE1OTQ2NTM1OWM1ZWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3Y2RkYmU5MmY0MTFjM2UzNjhlZTdjOGRlMDMwNDU0ZTZlYTA5ODg4MzBmMGEwN2NmZWQxZGRlOWJkYTUyYWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNzg4ZWVmODk2ODBlMzcxMDk5NTdhMGM3YTZjNjc5YTBkOTBiNDA4ZTlhOWRkZGQ4YTE0ZWYxZTdlMThjZWUifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py#L108-L157",
-          "version": "repo-lines-v1:sha256:b52f0a5c6795356da66a0f72ffc695268b5b9839369f32eb2b30c8671a3c3bc8:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkYzM3ODU0MDk0Mjk3OTg2NWU1MDIzOTgwYzExYWI2ZmNjYTZiNTcxYzJmNWFiZmNiNDM5OTRlZWE3NWUwMDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwMjEyMjI5ZWRjYTk2MTU1Nzc2ZTdkMDIyNDJkYTdhNTIyNmY4YzYzMGMyOWU2N2Q1YThjNjkxOTQ4YWJjZWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwMTUyNTM0ZjA1NDAyNTY5ZjI5ZjlmN2JjYWM0OTc2MWRlYjVjOGU4MGVmNGExOWY1Y2FlOWNmNDA5NTcxZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlOTlhYzUwMDlkMmUwYmFhYWUwYTMxNjNjYjI2MmJhOWRhZTg2M2Q5ZDM5YTEyZDM3NjQwMDY1MmE3MzBmOWYifQ"
+          "resource": "repo://scripts/tailscale-private-dns-check.py",
+          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
         }
       ]
     },
@@ -268,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:300ea47565e7878c7f6606593dfc26dcd34465ec41e9e815ed6df631ee4d37aa"
+          "version": "repo-file-v1:sha256:cff78af8b39178268dae875789c619c12ef4c8b3fb7775ebc121591298b6df3b"
         }
       ]
     },
@@ -286,11 +294,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:b193ba32f675b04a1dcd23ae1a50b70e19d3d7f9db770c5ac56093baeecd73fc"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         }
       ]
     },
@@ -304,11 +312,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         }
       ]
     },
@@ -366,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:b193ba32f675b04a1dcd23ae1a50b70e19d3d7f9db770c5ac56093baeecd73fc"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         }
       ]
     },
@@ -384,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:6cb7f71c03aa26bd73b62cf62b5810011211bbd9a647328ba5d60243bc6f5d5c"
+          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
         }
       ]
     },
@@ -398,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:b193ba32f675b04a1dcd23ae1a50b70e19d3d7f9db770c5ac56093baeecd73fc"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         }
       ]
     },
@@ -420,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e673301f57f424fa3f34ffd328a137f624f0ecb3e3e99d904e43b2f4f0cfa528"
+          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
         }
       ]
     },
@@ -490,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:b193ba32f675b04a1dcd23ae1a50b70e19d3d7f9db770c5ac56093baeecd73fc"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -562,7 +570,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:898106c0fdf8a66c897488f4e0350b7a4b2b4f46917d5225f51e4d516bd9a14b"
+          "version": "repo-file-v1:sha256:a407fca7edcb6d830e3966f93b21af2b6fd5b535b66e85fdd10b37cd5811e777"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -580,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:f5efd63805fd0d122f24f687ab62a92dc314f02c622549efcb2bd379695c282e"
+          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -658,23 +666,23 @@
     },
     {
       "id": "claim_eb3bfe17176d4c108710c0f205d04fb2",
-      "statement": "The fixed Renovate scope contains seven reviewed catalog digests. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash is updated to admit only this reviewed scope.",
+      "statement": "The fixed Renovate scope contains seven reviewed catalog digests, including the runner. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash is updated to admit only this reviewed scope.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-mirror.yml#L12-L17",
-          "version": "repo-lines-v1:sha256:d294918df25306a935c9fa86d9157fc968dd7e47189ea162e04e868c560a7824:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTY2MWRhZjIyYTZlNWI0MDY5Mjk4MTM4OGM5NGJlODc3ZmRhNzExMTM2NzVkNGFjNTM4YmI1NjdlYjQzZjJhOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZGFhZmExOWU5YzM1ODJjOTYyZGE4ZGNjODI5YWY4NjVhZTI4ZDU2ODVkN2U0YjE4NGQ1YWIzMzQ5OGUxN2YyNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzRiZDIyNDA1OWI0NTQ3YTg0NjIzYTE2MDk0NWY2NDVmYjRiYjQ3ZDg4MGJhNWZiZTE1MDk1MjJjNTFmZTk3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDQyN2Y1MjQxYjVkYmYzZGM4Y2VmNmQ5MzAwNTU1NTI3ZDQ5YjIyNGE2ZjRmN2Q3ZTMzNTE2NmU0MGU4YWQyNyJ9"
+          "resource": "repo://.github/workflows/harbor-mirror.yml",
+          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L836-L861",
-          "version": "repo-lines-v1:sha256:d40b188866a7ebc1cf1909bbf038c89a303ed4cfee1c581c2b6d7f69e6ac8d03:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1ZjEzZGJlMzNjOWZjNGE0M2QxMzU4OWIwMjVkZDY4MTUxMzQ2OTUyOGFkM2EyYWUyZWUxMTM0MWY4NWVlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzMDA1OWNiYWY2MGM2ZGJjYmUyZTcwMTE2NTFjNmRkOTkyY2FkODI0ZDg4Y2MyYjcyNGNkODcwZTIzMmY1NWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkOGJlZjJlNGZmZmJhMTIxODUzMTY3ZDliZTg2NWI2ZjVhODc3ZWI4OGNlMWIzZTc1MGVhMTQ5NDNiMjAyYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUzY2Q5OWVmNDUyMmYxZDkzM2YwNTNmMjRlZjEwMzAxNmI1YThjODg2N2Q5YTcyY2NhZTNkMzY5MGMzMjhmNzEifQ"
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
         },
         {
-          "resource": "repo://scripts/ci/offline-static-checks.sh#L895-L900",
-          "version": "repo-lines-v1:sha256:3f18b00efb669f3cfe51053e58e0bcc15916a6ef9b30c1f8ecd7e6620ed4ad2d:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ5Y2EyNGI1N2VjZGFkMjgwODViZWUzMTRhZDE3MzlkMGQ2MTQxZTNiOTM5YTUxN2JlY2JlNTMxM2NkOWNhZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2YxOTM5Mjg1NDU2ZjEwOWUzYTVlODdlYjdiNjE0YzBlNGQ3NTM0MTFiNjFmOTJiODdkZmFlN2ZjOTk2NDE1NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTU0MmQ3MjkwNDI3Zjg2ZWVmZDdhN2EyOWYzMzc0NjYwODI3MmY4ZDIwNGRkZDQ1NTg4YjljM2ZkOGUxMmY2OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzI2YzRlYmM0YzMzOTA3ZTZiOTBhODEzODZiOTIwZTY3NDVmYjY0OWI3YjI3ZWNhMDQ4YjE0NDBhNDU1MDYzZiJ9"
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
         },
         {
-          "resource": "repo://scripts/config/harbor-renovate-images.json#L1-L25",
-          "version": "repo-lines-v1:sha256:f596a5fdc094a260ff012eb5630044ce2006f26f829895d195cf6984d2787277:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/config/harbor-renovate-images.json",
+          "version": "repo-file-v1:sha256:f596a5fdc094a260ff012eb5630044ce2006f26f829895d195cf6984d2787277"
         }
       ]
     },
@@ -683,12 +691,12 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L836-L910",
-          "version": "repo-lines-v1:sha256:392231e8b54b2084b4dac9f181afcf83597b3cae19a6edf494c71d88f35c9c74:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1ZjEzZGJlMzNjOWZjNGE0M2QxMzU4OWIwMjVkZDY4MTUxMzQ2OTUyOGFkM2EyYWUyZWUxMTM0MWY4NWVlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhMDBiNzAzZGJiZmE0MjA4NjY5MGMxZDEyYjI3YjI0YjcxYjhkMzM1OTkzMTcwZjg3YmEzZDhkODQzMGE0NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkOGJlZjJlNGZmZmJhMTIxODUzMTY3ZDliZTg2NWI2ZjVhODc3ZWI4OGNlMWIzZTc1MGVhMTQ5NDNiMjAyYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkZTFhMGVmYzk1ZTE4N2ZlOGQ4NjgxMTExMmJhZDM4NGFhMjk5YTZmMTVkZTM1NDE0YjA0M2RjZDU0YmFlNGYifQ"
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L860-L925",
+          "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L309-L398",
-          "version": "repo-lines-v1:sha256:9df4e3bbffad1b6802d39a7b52c47df93c29abaff2c869358d804be39ce6d1a4:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMWIxYjIwMzEzMDZjYTUyOWUyZjNmMWIyZjRmZDlmMTMyNzk2MjZkYWFjZmY2ODBmMmJiYjA3NGFjM2I0YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjMGU3NWVkZjJjZDZiODFjMmRmZDg0ZDVkNjY3NWZiNmRhZWY1NzU5ODQ0ZTUyNTg5MzQwZGFmODMyMjljNzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4OWVkN2E1MDg4NTlhZmUxNWExM2FiNTExOWIyYjE0ZjhmNDVkNjkzN2NlYTcyYTA4MDc5ZDU1YTAwNDU5ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA0YmU4OWMzY2Q5ZTVlMTdmNzYxMWIxZTNiYzQ2MDAyM2VjYzc2YjAyMTI5ODg2YTY0MzI2NGEwMzVkNjc5OGEifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
+          "version": "repo-lines-v1:sha256:ec12ba9fcd206767aec57c3c89c926b83df6aa3cd14eead3fb972208fb6a2c46:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
         }
       ]
     },
@@ -707,66 +715,26 @@
       ]
     },
     {
-      "id": "claim_7f7ced7a18a4472fbacdb41840209a1d",
-      "statement": "The static gate renders the pinned tailnet-dns chart and checks approved Traefik route/annotation parity; a separate initial-migration mode requires exactly the reviewed 27 names, while later paired additions, renames, and removals remain possible.",
+      "id": "claim_c988f42ffda44947b5720c708eecfd01",
+      "statement": "Native Chainguard receipt fixtures use Skopeo with generated local OCI indexes to prove complete two-platform and repeated-descriptor copies, and require Harbor's exact vulnerability report header. The static gate rejects status-write grants in pull-request workflows; these checks do not dispatch the protected receipt.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L13-L17",
-          "version": "repo-lines-v1:sha256:41409769d92e7d21dbc6d41097b074bba557bae7673adc51333612ba5cbef842:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmM2ODMyZWJkMTExMjNlMTY1ZTJiYTIwYzU1MTc4YTdhM2YxNjFmNzkzZTIzNzUzMTM2OWQzM2JkNzFmMTU0MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZThiYzViOWQ0MzIwZjM3ZWIyMjExZmI2OTgwMjY4YTU5NDA0YmIxNzc2MWQ1NjhmNjA3OTYxMzRiYzYyNmRhYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjI0MGI5ZDA1ZDllM2MwYjk5OTQ2ZTc1YTBjMDI1NjU4ZTgyZWFjOTM4OGI2ZmQzNDk5ZGQxMDc4ZWFiZGQ3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjBiMjlhMTQ2MmY2NmFhOWQ4YTQzNGRhYTVjN2MxOThmYTRjN2IyNTRjYTZiNzc4NDYyMjliZmJlNzdmMThkYSJ9"
+          "resource": "repo://.github/workflows/lint.yml",
+          "version": "repo-file-v1:sha256:0fa8148c1b9d471174d4f6971bcf8a0bc07346ab957714b009ce31816fba9cbe"
         },
         {
-          "resource": "repo://scripts/ci/tailnet-dns-test.py#L195-L209",
-          "version": "repo-lines-v1:sha256:1586f7959e3bcd9377bbff524ed5706f1301fb996e5d173dfdd5abc2e7fe2fc9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNGUzM2JlZTAxMzI2YTkwYjA5NDUyMTdhOGU1NTRkOGI1ZmIxZTAyZGM3YzYxOTMzMmQzZDNlYTIzMTQ3MzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNGRiYzlhNzRhOGMwZTljZjBhZjE1YjJlN2RkYjMzNzM1YjkzYWZlYWYyNTVlOTZiOGZlYWJkNjVkNDNmYjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5M2JkNjZlMmJiNzFmM2I4YTkyNDA2NGJiZjdiMDdjNTkwM2E3NzNmYTRmOGMzNTQ2MDYwMzg2NjcxZDNhNzMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
+          "version": "repo-file-v1:sha256:389c047b8ec4fb19116598c50d5c97158c0640a8644ecc2625a670d29bcd6f90"
         },
         {
-          "resource": "repo://scripts/ci/tailnet-dns-test.py#L25-L95",
-          "version": "repo-lines-v1:sha256:9e301d823dec098396ba637c0ed9cf867e90321a67c3049535cfe2e49e892aba:eyJzZWxlY3RlZExpbmVDb3VudCI6NzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5MWFmZThkZDkyYjZiYTNlNTA0ZTU0ZWVhZWRlYjZlZTRlZTQ2MDJjMzY3N2JjZTZmYTE2NTRlMzliMTljNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNmNjJlOTYyMjk4ZWQxYWE5ZmQ1MjRlYTUwYTQzZjVmNWZjNzA3NGZjMjYyZTk4MzYzZWE3M2YwMDM3MmJkNDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ3ZDYwMjI0NTBmZTk0MjA5ZDRlYzAzNDE4YmJmZDQwZTAyYzBkNjY2NTc1NzVkOTdiMWQ2OGRkMzZjNjAzZGEifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_faee6635a14e431ea297b9ada135cb0a",
-      "statement": "The read-only live DNS handoff checker binds the observed resolver Service IPv4 to an online Tailnet Lock signed proxy, rejects another approved Service, and requires authoritative A/AAAA answers for all initial names over UDP/TCP plus public fallthrough for apex MX/TXT and an unrelated name; it does not set tailnet DNS or retire public records.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L45-L75",
-          "version": "repo-lines-v1:sha256:006b5ede6e30178f0fd64ed60378428485067f177397cc4399d17e12625557f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUzODI0OTNjM2E2YWEwNDQzMWJhMzlhNmEzNDdiNTg1MWQ1NGJmNjA3NGJmYjIyNTVlNWExYjYyYzBlMjg3MDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBhMzMyZWM5NmFiOWNmY2YxNDU3YjIxNmJiZjkzZTk4NGUzN2YzNjNhYzgyNTg1MTlkYWIxY2Q2NmY4ZmNlNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/tailnet-dns-check-test.py#L44-L122",
-          "version": "repo-lines-v1:sha256:d70b7eb74d81aca0cb6cebbc2b0de2058900b390deaeaf75471a3bb2f49c2468:eyJzZWxlY3RlZExpbmVDb3VudCI6NzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljYzU2NmEwMTQ1N2FjYjhjMzBiNTFhOTEzZDAyZWIyNmRjNjRmZmI0NDU5YmM1NGU2NDAzNjcwNmQ4ZWZiMjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1ZjYxZmZhNWIwOGFhYjI3NTAwMDJiNGI5ZTg1ODAzMDg1NGZmZGQxMzMwMWViYWVhZDkxNWM4YjdkZWM3ZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNDY4MThkNDM5NjJlODU5NDQyNmRjODg2NDdkNGM2YmRmYzBjMTVjYWNjNWNkODdkOGU3NTQ0ZDA4NTk5NzkifQ"
-        },
-        {
-          "resource": "repo://scripts/tailnet-dns-check.py#L77-L124",
-          "version": "repo-lines-v1:sha256:2ec653bc1aace920775ac23ba84be13eda73efc004ac46b452f6976eb3ee5e1c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFkYWRlZGJkY2RjNzRlM2ZiOGU3YjljOWE1N2NkYmExMjZkNGEwYWQyODc3Nzc0MDk2MjFhZTI1ZDM0YmE2NjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZhNzUyYjM3NDk2NDMyNGE2MTJkMjI1NWE2ZmQzYWMzNDA0OTg3N2FmODI1ZDU4NzdmM2M0ZWE1MzA5NDRkMzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjYzYzNTM5NTcxYzE3NWI1N2VjZTQ0ZDRhOTQzYjRlMGMxM2FmMDBiOTgyOWNlNmE4MjljMGVmYmMyODE3YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5ZTE2YmQ4MWJjMmI2ZmNmNmI0NmRhM2JhZDllNTdlYTNkYjYwMjA5ZDA5NDY3ZTUzMTAxMWNhYjEzMjAzZDQifQ"
-        }
-      ]
-    },
-    {
-      "id": "claim_1c8d346b10a34d93b7639f836d306bb0",
-      "statement": "The fixed dns Harbor publisher selects only the pinned k8s_gateway image from the reviewed full catalog. Catalog and publisher fixtures reject missing, extra, or changed scope entries before credentials; reviewed current main and complete authenticated digest-preserving pulls precede the consuming Application merge. Scoped publication does not establish live resolver health.",
-      "evidence": [
-        {
-          "resource": "repo://.github/workflows/harbor-mirror.yml#L103-L113",
-          "version": "repo-lines-v1:sha256:9ff3eb8af90bd6edbaa4322ecdf8cd9800c14d1a6fe10a3fd2a691b7adef3741:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU0ZmZiMjBhNzY1ZTMwYzQ1ZDAwZjcxOTk2NTQwZTg0ZmFkNjdjZmExMDBlM2Y5ZDI2ZmJjNjliMzE4NGM2M2MiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlYWU0MzhkOWU4MjAzMTQ3ZTdiMmY4NjViOTBhYTM1NzA5MGJlOWM3ZjVmZTJkN2FlNzA4NWQ0MTQ0OTFhNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzNzNlNGIxYzQ1NTk2MDRlNTQzMzM4N2ZlMzVmOTM1ZWI2NzZhMDY1Y2JmOGY0Yjk1YzEwYjQ2NzVkNGY2NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwYmFhYTU2ZTFlNmIyNGNkNzdjZGFkNDUxNzU3ZThmMzUyZGJmMjA2Y2RjZDZiNDQ3MWM2YmJhZGRhNjc4ODEifQ"
-        },
-        {
-          "resource": "repo://docs/harbor-image-mirroring.md#L103-L121",
-          "version": "repo-lines-v1:sha256:838f9f3cdd47ac9969822d53c0770337eaba3f45a5d91201adf79e459ed851eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2ZGNmZGMxY2FmMjYxYTgzOWQwMTYyYmM1OTQ1YzU2NjJkMGJjZjI3MjhmYWIzYTIzNTc0YzE0NDNmNTBiMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiYzhlZjFjOWEwZWEyMGJkYzU3OGM3NTNjODJlNWQ0OGI1NTZjMTE5NDVhODEyNTM1ZTY4M2Q1MjI4YjQyMzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhYjZkMmY0YjAzYzg0NTlmNDViNjM2MWZmYmM1NjQ3MGM1MGQ4ZTcyNzg0MGE0OTJlNWI1OTM1MjVhOTQ1MDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwOGY5YmQ3NWRiYzhiZjUxOGY1YmI5OGRhZTYwYzU0NTI5YTUwMzQwY2IxYzg3YWY3NDFjOTA1NjAyNzc2ZjgifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-images-check.py#L233-L259",
-          "version": "repo-lines-v1:sha256:d87cc8d4ef969e0b859512d02f190062d5cac84d21333ab8a1ce49fc8ded0a9e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxYTRlYTNhNzlkOTg3NmZmNDRmYjJkMDFmZmQzNDNjZTUyNmMxYmQzYjQxY2I2ZTRjZjVkOGYxOGY1YmUxMzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRlNzVjMDI2MDE5OGI4M2I0MTY1YTY5OGM1NDY4OTBhODJiM2MwMzIzNmI0M2Y2NjM5ZDRiYzQ5OWZjZjY0NjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViMGExNzAzZjgzOThmYjhlMGQ1NzkwYzg1OWU1YzM2ODc5MzExMDQwZjVlYzkwMTI1M2Q1Zjg3YzM2MzFjYTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNiNjBiNWVmNTA1ZWY1MzRlZjMyMDdlODU1NTA3NmI4NjgzZTc3Y2EwYzgxYjIxMzc0NDA2YmNhZjA3OWQ2NGUifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L519-L553",
-          "version": "repo-lines-v1:sha256:9218cd1a98686b5dc60a8db277dbc4db9a898d5d301e9ec61d7acba2445b297f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkMzE2NTY3MDgyNzY0MTM0Yzk0MmYzZjg3Mjg5YWNhZWJhYTFlNzk0YThkMDAzYjkxMThiZTJlZDJkZmQ4ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwYTJiMjAxNDM2Y2Y5YzcwNTJjZWM4OWEyNzRmY2M2MzFjNjJjMDYwYTE1YmJjOTEwNjAxZDBkZWFmNmMwNTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkNjUzY2RhYTViZTFiOWQ3YzEyZjMxZTM2OWEzNmNkZGI3OGRjNmJjMTExNGViYzVkMDZiYzk3ZTdkMWZmY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1YjI5ZTJkODRiOWIyYWU5Mjk2ODU1Nzg0YTkzZjIzMDEzMTliOTgxMzZlMzA5OTA4NDBhMTg2ZGM5MTFjMGQifQ"
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:08:36.658Z"
+    "at": "2026-10-18T20:41:22.820Z"
   }
 }

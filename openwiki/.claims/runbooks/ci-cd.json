@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9d878d6bf9c3e3350b656ed1b216a8d9945549fe9d77f9fe339427d437f79579",
+  "pageVersion": "sha256:ce63b83e7dbc0bfaa4d8cc15aa205479d2f07b4442dd64f4113a0a2897311564",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e673301f57f424fa3f34ffd328a137f624f0ecb3e3e99d904e43b2f4f0cfa528"
+          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
         }
       ]
     },
@@ -49,10 +49,32 @@
           "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
         }
       ]
+    },
+    {
+      "id": "claim_3a6ef031cf564bd7812d9172a91b72cc",
+      "statement": "The pull-request Lint job reports its job conclusion without commit-status write permission. Static checks reject status-write permission in PR workflows; the trusted-base native Chainguard receipt provenance workflow owns its status after current-main and PR-head verification.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+        },
+        {
+          "resource": "repo://.github/workflows/lint.yml",
+          "version": "repo-file-v1:sha256:0fa8148c1b9d471174d4f6971bcf8a0bc07346ab957714b009ce31816fba9cbe"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:44:36.108Z"
+    "at": "2026-10-18T20:41:22.820Z"
   }
 }
