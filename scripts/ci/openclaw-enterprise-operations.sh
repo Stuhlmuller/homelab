@@ -104,6 +104,16 @@ validate_baseline() {
   ' "$1" >/dev/null
 }
 
+lookup_baseline_versions() {
+  if ! versions="$(aws s3api list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key" --output json 2>"$work/s3-error")"; then
+    phase=publication-lookup-failed
+    if grep -Fq '(AccessDenied)' "$work/s3-error"; then phase=publication-lookup-denied; fi
+    return 1
+  fi
+  phase=publication-lookup-response
+  jq -e '.IsTruncated == false and ((.Versions // []) | type == "array") and ((.DeleteMarkers // []) | type == "array")' <<<"$versions" >/dev/null
+}
+
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
@@ -171,15 +181,14 @@ case "$stage" in
     phase=publication
     baseline_key="openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json"
     phase=publication-lookup
-    versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
-    jq -e '.IsTruncated == false' <<<"$versions" >/dev/null
+    lookup_baseline_versions
     count="$(jq --arg key "$baseline_key" '[(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length' <<<"$versions")"
     if [[ "$count" == 0 ]]; then
       phase=publication-upload
       aws s3api put-object --bucket "$bucket" --key "$baseline_key" \
         --body "$work/baseline.json" --if-none-match '*' >"$work/put.json"
       phase=publication-lookup
-      versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
+      lookup_baseline_versions
     fi
     phase=publication-version
     version="$(jq -er --arg key "$baseline_key" '
@@ -241,7 +250,7 @@ case "$stage" in
     prefix="openclaw-enterprise/legacy/${ARCHIVE_REF}"
     final_key="$prefix/final.json"
     # Archive refuses prior versions, so the oldest exact-key version is its original receipt.
-    final_version="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$final_key" --output json |
+    final_version="$(aws s3api list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key" --output json |
       jq -er --arg key "$final_key" 'if .IsTruncated == false then [.Versions[]? | select(.Key == $key) | .VersionId] | last else empty end')"
     aws s3api get-object --bucket "$bucket" --key "$final_key" --version-id "$final_version" "$work/final.json" >/dev/null
     jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and (.sourceSha + "/" + .runId) == $ref and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
