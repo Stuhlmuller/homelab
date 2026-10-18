@@ -727,11 +727,13 @@ class HarborPublicationGates(unittest.TestCase):
                                                    + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-harbor")
 
-    def test_renovate_scope_has_six_reviewed_digests(self):
+    def test_renovate_scope_has_seven_reviewed_digests(self):
         selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
-        self.assertEqual(len(selected), 6)
+        self.assertEqual(len(selected), 7)
         self.assertTrue(all(item in catalog for item in selected))
+        self.assertEqual(sum(item["source"].startswith("ghcr.io/renovatebot/renovate:")
+                             for item in selected), 1)
 
     def test_renovate_scope_rejects_unreviewed_and_verifies_selected_pull(self):
         self.transport_mocks(mirror=True)
