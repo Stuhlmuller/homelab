@@ -359,6 +359,12 @@ class HarborPublicationGates(unittest.TestCase):
                             print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
                                   file=sys.stderr)
                             raise SystemExit(17)
+                        if FIXTURE["failure"] == "mirror-index-child-notfound":
+                            target = args[-1].removeprefix("docker://")
+                            repository, tag = target.rsplit(":", 1)
+                            print(f'not found [http 404]: artifact {repository.removeprefix("harbor.stinkyboi.com/")}@sha256:{tag} not found',
+                                  file=sys.stderr)
+                            raise SystemExit(17)
                     if FIXTURE["failure"] == "mirror-alias" and args[-1].endswith(":stable"):
                         print("connection reset private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(19)
@@ -793,6 +799,23 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
         self.assertEqual((self.root / "summary").read_text().splitlines(),
                          [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
+    def test_harbor_missing_index_child_retries_with_regctl_only_for_index(self):
+        self.transport_mocks(failure="mirror-index-child-notfound", mirror=True, oci_index=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([args for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]), 3)
+        self.assert_cleaned()
+        self.calls.unlink()
+
+        self.transport_mocks(failure="mirror-index-child-notfound", mirror=True)
+        self.renovate_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse([args for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]])
         self.assert_cleaned()
 
     def test_oci_alias_retry_uses_regctl_and_authenticated_pull(self):

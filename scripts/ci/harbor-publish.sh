@@ -307,8 +307,15 @@ if [[ "$mode" == mirror ]]; then
           :
         else
           copy_status=$?
-          if ! grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" ||
-              ! grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
+          if grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" &&
+              grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
+            :
+          elif jq -e '.mediaType == "application/vnd.oci.image.index.v1+json"' \
+              "$scratch/upstream-manifest.json" >/dev/null &&
+              grep -Fq "artifact mirror/${source_repository}@${source_digest} not found" \
+                "$scratch/mirror-error"; then
+            : # Harbor may fail to resolve a child while registering an OCI index.
+          else
             exit "$copy_status"
           fi
           REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
