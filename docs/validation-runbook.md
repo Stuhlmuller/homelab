@@ -10,11 +10,8 @@ secrets, Octelium CI identity setup, and AWS OIDC role boundaries.
 ## Pre-Mutation Checks
 
 ```sh
-terragrunt hcl fmt
-terragrunt hcl validate
-nix develop --command bash scripts/ci/static-checks.sh
+nix run .#validate
 cd IaC
-terragrunt stack generate
 cd live/aws-ssm-parameters
 terragrunt plan
 cd ../..

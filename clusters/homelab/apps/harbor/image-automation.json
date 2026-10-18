@@ -7,7 +7,7 @@
     {
       "image_id": "chainguard-python",
       "source": "cgr.dev/chainguard/python:latest",
-      "destination": "harbor.stinkyboi.com/homelab/chainguard-python:latest",
+      "destination": "harbor.stinkyboi.com/homelab/chainguard/python:latest",
       "access_class": "public",
       "required_platforms": ["linux/amd64", "linux/arm64"],
       "release_recipe": "python-release-v1"
@@ -15,7 +15,7 @@
     {
       "image_id": "chainguard-curl",
       "source": "cgr.dev/chainguard/curl:latest",
-      "destination": "harbor.stinkyboi.com/homelab/chainguard-curl:latest",
+      "destination": "harbor.stinkyboi.com/homelab/chainguard/curl:latest",
       "access_class": "public",
       "required_platforms": ["linux/amd64", "linux/arm64"],
       "release_recipe": "curl-release-v1"

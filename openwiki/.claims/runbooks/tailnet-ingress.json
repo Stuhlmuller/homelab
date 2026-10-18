@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:402f0034465f05748016b727aa312205da3bdca73acdedbc1c3ca380dfff1f21",
+  "pageVersion": "sha256:89d3028850014b711bad816ab3eb8a5125e819a4701b5c270da8ea99178932b1",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
+          "version": "repo-file-v1:sha256:2a77618d5f16f93020e5737ee925317a956634e9ddf46dd01185e7a564e0801b"
         }
       ]
     },
@@ -36,19 +36,19 @@
     },
     {
       "id": "claim_c259cf35c0ff478ea1a083b2450394ee",
-      "statement": "The additive DNS cutover writes only fixed DNS-only A/AAAA mesh records from reviewed main and preserves legacy CI, callback and carrier names; Mac credential-preserving migration and the prior TTL precede explicit normal-DNS acceptance.",
+      "statement": "The current tailnet DNS handoff uses a separate resolver with approved Service-derived names and a signed DNS proxy; only after owner nameserver configuration and normal-client acceptance may a guarded helper delete the fixed public A/AAAA/CNAME records. It has no publication or restoration mode.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
-          "resource": "repo://scripts/multica-desktop-connect.py",
-          "version": "repo-file-v1:sha256:2b19544db645d5c190c794f4cda9437465ddecd4326c97e5348a6aec95206cf9"
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:f49ebfc02d9711820a1b6234a318a75877c4cc9648c1095b721c764a2eed053f"
+          "version": "repo-file-v1:sha256:b39004f10c5d7c5f4224f74702c49eae590a70acc8d26e6703a54bc779abff0f"
         }
       ]
     },
@@ -80,7 +80,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -116,15 +116,15 @@
     },
     {
       "id": "claim_edab07e8064e49849b7bb6fd9bacd525",
-      "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy and two Funnel proxies after verifying exact controller ownership, Ready state, tailnet, tags, published addresses, public node/rotation keys and local peer identity; already-signed targets are skipped without adding signing authorities.",
+      "statement": "The ingress signer preserves Tailnet Lock and signs only the fixed private proxy, two Funnel proxies, and distinct DNS proxy after verifying controller ownership, Ready state, tailnet, tags, published addresses, keys and local peer identity. Its --dns-only mode touches only the DNS proxy, and already-signed targets are skipped without adding authorities.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/README.md#L76-L97",
-          "version": "repo-lines-v1:sha256:b42a967cf619c082eb5e6fe842fa7e93f5b602bdeb1d02629afbdefda918a789:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlOWY1Mzg4ZTg3YjA3NDg4MjBmODBmNzllNWQ2YmE1MzYwOWNhNzI2MzkyMDhlZjA1MDE0ZWNkN2MwYmVlNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjBhY2QxNzk2MzA4MDA5M2FhMTEyZGU1NzhjZDY1YzY4Y2U4NDM4MjQyNGEzZjRiZGVlZTBjNzNhODM1YWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA2YzZiNWJhMmM4YjA5MDcyNjEwZmI0MjRlMjdhZDIwNGQ5ZDFiZTExOGM2YjBmNDhjMmNkMGY3ODA5YTQ4NTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiNmY5MzM0MWE4MzM3YjFlYTA3MjBmMjk1Y2ZiNGY0YjljN2I1NjAwN2VmYmIwZTc5OGU5MDMyYTdkYTYyYjkifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
-          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
+          "version": "repo-file-v1:sha256:25326218281f5062e0e29eb65f1426a24684a7c5d56e040d8434746d96a8b17a"
         }
       ]
     },
@@ -133,7 +133,7 @@
       "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from four fixed LAN node addresses, four verified cni0 bridges and four flannel.1 overlay /32s; node-to-Service SNAT selects bridge or overlay by destination, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L159-L179",
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L190-L210",
           "version": "repo-lines-v1:sha256:93a4ba98b55e6754691476e3c712a5c485b8697b16e5e3c70b9b61770ad9ae28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzAzYjYyZjNlN2U0Y2Q4NzdkOWJmNjJlMDQ2YjFhNTk1NmIxMDA5NWQyNTRjZWYzZTZiOTY5NjIwMzk2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2MzNTY0M2RjZWQ2YzgxYTNhOWNmZjczNzE1ZWE2OGNmNTdjNDk4ZTBjNWQ4MjMxMTk3M2FjYWQxOTQ2MDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1ZDk5NDlmMTRjYzNhNWVkYjJlODEyNDMyNTJhNTA3ODcwNGVjNjU5OWM0MmNlNzU4YTdkNjYwOWE2ODg4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         },
         {
@@ -162,15 +162,15 @@
     },
     {
       "id": "claim_9a3bd45e810d43b3abe5f9383275d13b",
-      "statement": "The current IPv4-only ingress publishes Service-derived A records and no AAAA despite its peer having IPv6; the DNS regression rejects using unsupported peer address families as application endpoints.",
+      "statement": "The current IPv4-only ingress publishes Service-derived A records and no AAAA despite its peer having IPv6; DNS resolver regressions reject unsupported peer address families as application endpoints.",
       "evidence": [
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md#L27-L42",
-          "version": "repo-lines-v1:sha256:e8f18f8a408f737aad7dfbfb499c0a9b032c9b47653adb33ba44bfe78be3939d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyYWI2OTRhMzE5NmQ3NmMwNWRkNWFmYmNiYzgwZTQ4YWE4ZTZiNTEyOTBjZDdlNDk0MWJiMGU5Y2EyYzE0ZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNTA1MDRmM2YwOGQ3NzE0MWIxOWQ3ZjljZTMxMGRjY2Y1NWNmYTVhNTI1NDVlM2UyNTNiYWIwODYxZmUwYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYWFiOTE2MjhiZWE5MmViNjk1Mjg4OGM3MWIyMzVjMTdkNzBkNTA0MjUwNWViOGQ4Y2NhYzQ3Mzg1MTYyNjAifQ"
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:64f9eb5ffad94a804aa82c3de1e2154746f1f21f9da081a51d70a482471b7d4b"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
-          "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
+          "resource": "repo://scripts/ci/tailnet-dns-test.py",
+          "version": "repo-file-v1:sha256:38d315393fd39d82aa657eb6c9aed70f6e9eaa08a7f539b989a44c3c18f3e15b"
         }
       ]
     },
@@ -180,7 +180,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+          "version": "repo-file-v1:sha256:53b844d8a5914ad297e6e259d385a82509ad1e0dc8a5ac3cd76c763e9899f66e"
         },
         {
           "resource": "repo://scripts/policy-bot-webhook.py#L107-L125",
@@ -207,22 +207,22 @@
       "statement": "The October10 read-only preflight recorded28 canonical IPv4 strict-TLS route successes,20 public negative denials, two non-executing n8n OPTIONS responses and corrected PolicyBot GET success; normal DNS, authenticated flows and signed delivery acceptance remained pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L138-L157",
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L169-L188",
           "version": "repo-lines-v1:sha256:96185bb86350960a9bf1282c8886723910220df993f03c18589771dfbec81141:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4NDgxMTMxYTFlYzI3MjA1ODA4MjYzYzM1YjNhZjQwNTQ3OTYwMzNjZDIxMWE1YjI2M2JiYTc4YWM3ZWE3MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ODA2N2ZkZWRiNjFiMDhjOGQxY2ZmMzVhNzNhOTFhYTVkZmE3NTQ5YmZiZjYyZmY0ZThhZjJhOGM4MDA5ZWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNDFhM2RiZjkzYmVmNjJjOTFkZTkwY2EwODVjYmI0NmE5M2Y0ZDYyMTMxNDc3ODZjYWVjNTllNDNiOWViZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         }
       ]
     },
     {
       "id": "claim_8979fbf3db7e4b0d8ddf9bbd0ffcb8ee",
-      "statement": "Phase2a declares internal Octelium API and Harbor CoreDNS rewrites and n8n's Funnel URL, while legacy DNS restoration writers are removed and runtime legacy transports remain until separate acceptance.",
+      "statement": "Phase 2a declares internal Octelium API and Harbor CoreDNS rewrites and n8n's Funnel URL, while legacy DNS restoration writers are removed and runtime legacy transports remain until separate acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
           "version": "repo-file-v1:sha256:2ef50b92d14ccbdcc052bcf2810562b8cd13008754a32e9808997e1fb8f05c8b"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
-          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
@@ -236,11 +236,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
+          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
         }
       ]
     },
@@ -283,10 +283,32 @@
           "version": "repo-lines-v1:sha256:078039205d7f615e3ec801592ccd083427d63d956d4dd720cbf23b631d84efbe:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1OWY2NWI0NzI0OTVmNzE5OTQwZGMyNDM5YjljNzlkNTFhNmY2MzI5ZDkxMjk2YThiMDNmZjViMjc2OTA1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYTVmNmE2OTNmODk5ZTA0MzRmOWQ5YmJhM2RjNzc1NzhhMDgxMzk3ZTIzMGIxYzJjMWY0YmRmYjJmMTFmMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFhNDdiMjU0ZGRiNDcyZWMzNmE2MDFjNGJiMWIyYWU4YjM2M2M1NjkyZWUzMTE0OGYzYjZlMzQ5ZTExZGEyZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyMjYwOGYzMTExYjg1MWM5Y2IyOTE1MzQ2ZjllYWVlMDVkNDEzMjVhMGUzNzUxZTQxZGQ2ZmUyMDRmNzI3YzMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_e2160e5471854bff9880bc47354a7845",
+      "statement": "The tailnet-dns Application provides a separate stateless CoreDNS/k8s_gateway resolver behind a distinct signed homelab-dns Tailscale proxy on UDP/TCP 53. It derives fixed approved names from the private Traefik Service annotation, forwards other DNS to public resolvers, and requires direct read-only UDP/TCP proof at its observed IP before owner nameserver configuration. Public records remain until later accepted cutover and guarded deletion.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:64f9eb5ffad94a804aa82c3de1e2154746f1f21f9da081a51d70a482471b7d4b"
+        },
+        {
+          "resource": "repo://scripts/tailnet-dns-check.py",
+          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+        },
+        {
+          "resource": "repo://scripts/tailscale-ingress-sign.py",
+          "version": "repo-file-v1:sha256:25326218281f5062e0e29eb65f1426a24684a7c5d56e040d8434746d96a8b17a"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:18:20.225Z"
+    "at": "2026-10-18T22:31:54.698Z"
   }
 }

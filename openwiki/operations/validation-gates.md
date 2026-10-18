@@ -6,10 +6,18 @@ tags: [operations, validation]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-729acf039d34520f724d5bfe
+    resource: repo://.github/workflows/cordium-check.yml
+  - id: openwiki-source-28a7f340da431caf1c218c7d
+    resource: repo://.github/workflows/cordium-runner-canary.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
+  - id: openwiki-source-2ab88915e37908e92fe8ef01
+    resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -54,10 +62,10 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-91e827f6c7eda3b4ffbf7131
-    resource: repo://docs/cordium-runners.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -68,10 +76,14 @@ sources:
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
+  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
+    resource: repo://flake.nix
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-23775c3de52f3ab95a13cb8b
+    resource: repo://README.md
   - id: openwiki-source-714484b73b4ba165201cb06d
     resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -88,6 +100,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
+  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -98,8 +112,6 @@ sources:
     resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
-  - id: openwiki-source-3b37d159fd7aec286d251f6b
-    resource: repo://scripts/ci/n8n-github-webhooks-test.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-47792446a9e092544c3c1857
@@ -116,6 +128,10 @@ sources:
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
+  - id: openwiki-source-1d25596b50032267f565d3f3
+    resource: repo://scripts/ci/tailnet-dns-check-test.py
+  - id: openwiki-source-a98a02c20ac8079466bdbdb6
+    resource: repo://scripts/ci/tailnet-dns-test.py
   - id: openwiki-source-2ec3653fcc5fbc3a0f24c7a1
     resource: repo://scripts/ci/tailscale-access-check-test.py
   - id: openwiki-source-f8287cec4efc309562629516
@@ -146,6 +162,8 @@ sources:
     resource: repo://scripts/octelium-api-response.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
+  - id: openwiki-source-9e73eddbbea62807ee2ea389
+    resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
@@ -154,10 +172,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T13:18:20.225Z" }
+generated: { by: "codex", at: "2026-10-18T22:31:54.698Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:18:20.225Z
+    at: 2026-10-18T22:36:24.435Z
 ---
 
 # Validation Gates
@@ -166,6 +184,12 @@ verified:
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
+
+For most infrastructure or GitOps changes, run `nix run .#validate` from the
+repository root. Its flake app generates the Terragrunt stack before HCL format
+and validation, then runs static checks and Conftest policies with pinned tools.
+Docs-only changes can use focused checks; this local gate does not replace live
+plans or rollout acceptance. See the [validation runbook](../../docs/validation-runbook.md).
 
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
@@ -460,14 +484,39 @@ tests an isolated temporary `Deny` binding. The temporary binding is fixture
 only. Live audit inventory and authenticated Harbor/node-pull proof remain
 required before a reviewed production `Deny` change.
 
-The additive cutover utilities have focused static tests for fixed DNS ownership,
+The earlier ingress cutover utilities have focused static tests for DNS ownership,
 Mac credential/profile preservation, bounded same-profile reconnect and carrier
 rollback, non-executing webhook
-preflights, and fresh delivery receipts. DNS API readback is separate from normal
-OS resolution: migrate the owned Mac hosts override, wait the previous DNS TTL,
-then run `tailscale-private-dns-check.py --verify-dns`. The
+preflights, and fresh delivery receipts. The current resolver handoff uses the
+observed `tailnet-dns` Service IP, direct UDP/TCP checks, owner restricted
+nameserver setting, and then normal client DNS and HTTPS acceptance. The
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) retains old access
 until replacement acceptance.
+
+### Tailnet DNS resolver handoff
+
+`static-checks.sh` runs the full pinned Helm render and route/annotation parity
+gate in `tailnet-dns-test.py`; `offline-checks.sh` runs its declaration and
+read-only handoff fixtures. For the first migration, also run
+`python3 -I scripts/ci/tailnet-dns-test.py --initial-migration` to require the
+27 reviewed names. Later route additions, renames and removals retain parity
+without freezing that initial inventory. The fixed `image_scope=dns` Harbor
+publisher selects only the pinned k8s_gateway image; catalog and publisher
+fixtures reject missing, extra, or changed scope entries before credentials.
+Protected DNS mirror run `39161113974` passed at `main` `5558f8c1` with
+unchanged digest and complete authenticated Harbor pull. This scoped receipt
+does not prove live resolver health.
+
+After Argo reports the `tailnet-dns` Application Synced/Healthy, sign the fixed
+DNS proxy under Tailnet Lock and run
+`python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff`
+from the trusted signer Mac with read-only cluster access. The checker binds
+the observed IP to the online signed peer, rejects other selected Services,
+and probes all 27 approved A/AAAA names over UDP and TCP, including a Cordium
+wildcard child. It compares public apex MX/TXT and an unrelated public name.
+These checks establish a handoff gate, not owner tailnet DNS configuration or
+normal client resolution. Leave public app records until those later checks
+pass; the `--retire-private` helper is deletion-only and separately guarded.
 
 The CI boundary helper is
 `scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated
@@ -525,8 +574,8 @@ This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
 still runs the upstream GHCR container, pinned by digest. Other
 actions use JavaScript or composite steps. The staged Cordium selector cutover
-uses Nix-managed tools; runner bootstrap jobs stay hosted, and the canary uses
-its own label. Application images built or inspected by CI are separate workload
+uses Nix-managed tools; runner bootstrap and required native receipt provenance
+stay hosted, and the canary uses its own label. Application images built or inspected by CI are separate workload
 contracts. `terragrunt-apply-request.yml` has no external actions to replace.
 
 `nix-community/cache-nix-action` remains pinned upstream: no corresponding
@@ -1695,11 +1744,11 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
-The fixed Renovate scope contains six cataloged update digests. Publisher
+The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
-validate the six consuming applications.
+validate consuming workloads.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
@@ -1716,6 +1765,13 @@ upload and at alias copy after a resumed digest tag. Both require the `regctl`
 fallback, unchanged root digest and alias, and a complete authenticated pull;
 generic destination errors still fail closed. These fixtures do not establish
 that the protected full-catalog publication succeeded.
+
+The native Chainguard receipt fixture uses actual Skopeo and generated local
+OCI indexes to check complete two-platform downloads with repeated child
+descriptors. Its scan-client fixture requires Harbor's exact vulnerability
+report negotiation header. The static gate rejects commit-status write grants
+in pull-request workflows, so the trusted base receipt provenance status cannot
+be forged by the ordinary lint job. These checks do not dispatch the receipt.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked

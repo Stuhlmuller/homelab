@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c631bb61cb4c40775344109b00110a303e7f60a3d1c1073b227e7b6e854d223f",
+  "pageVersion": "sha256:250b51c57e33ce2749cc876d7eb11c738a78b8d731d3f84d5275162cde49707e",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -56,7 +56,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
-          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
+          "version": "repo-file-v1:sha256:25326218281f5062e0e29eb65f1426a24684a7c5d56e040d8434746d96a8b17a"
         }
       ]
     },
@@ -99,10 +99,46 @@
           "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
         }
       ]
+    },
+    {
+      "id": "claim_8730a6d88f7a49d7a2c95790a0d79d13",
+      "statement": "The source map links the protected native Chainguard receipt workflow and verifier to Harbor operations and validation gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:d6d4b37b173b7887e733b9658a5ec65dd799efbb7fb7e9e7740a98e58c3b5089"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt.py",
+          "version": "repo-file-v1:sha256:7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688"
+        }
+      ]
+    },
+    {
+      "id": "claim_3290bd59dad34ea0b1b825a33da95272",
+      "statement": "The source map links the separate tailnet DNS resolver, its Terragrunt stack, direct DNS checker, and guarded public address retirement helper to their operational wiki pages.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://scripts/tailnet-dns-check.py",
+          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh",
+          "version": "repo-file-v1:sha256:b39004f10c5d7c5f4224f74702c49eae590a70acc8d26e6703a54bc779abff0f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:18:20.225Z"
+    "at": "2026-10-18T22:36:24.435Z"
   }
 }

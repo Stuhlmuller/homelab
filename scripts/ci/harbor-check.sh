@@ -12,8 +12,6 @@ cmp "$rendered_dir/first.yaml" "$rendered_dir/second.yaml"
 {
   kubectl kustomize clusters/homelab/apps/harbor
   printf '\n---\n'
-  # The CI-created Job participates in prerequisite/policy checks without
-  # becoming a periodically recreated Argo application resource.
   cat clusters/homelab/apps/harbor/signing-job.yaml
 } >"$rendered_dir/resources.yaml"
 conftest test --policy policy "$rendered_dir/first.yaml" "$rendered_dir/resources.yaml"

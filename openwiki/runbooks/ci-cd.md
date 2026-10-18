@@ -4,26 +4,36 @@ title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
 sources:
+  - id: openwiki-source-729acf039d34520f724d5bfe
+    resource: repo://.github/workflows/cordium-check.yml
   - id: openwiki-source-28a7f340da431caf1c218c7d
     resource: repo://.github/workflows/cordium-runner-canary.yml
+  - id: openwiki-source-36db39acd9400bc022704939
+    resource: repo://.github/workflows/cordium-runner-credentials.yml
+  - id: openwiki-source-d63f608fcb391d5edcf496e7
+    resource: repo://.github/workflows/cordium-runner-images.yml
   - id: openwiki-source-a793a7dd08d0dc13de84207b
     resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-9a01f0687eaa075cf78c3abc
     resource: repo://.github/workflows/image-automation.yml
+  - id: openwiki-source-2ab88915e37908e92fe8ef01
+    resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-91e827f6c7eda3b4ffbf7131
-    resource: repo://docs/cordium-runners.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-18T13:18:20.225Z" }
+generated: { by: "codex", at: "2026-10-18T22:31:54.698Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:18:20.225Z
+    at: 2026-10-18T22:36:24.435Z
 ---
 
 # CI/CD
@@ -38,6 +48,11 @@ while desired state stays in repository-owned files.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
+
+The pull-request `Lint` job reports its own conclusion without commit-status
+write permission. The static gate rejects that permission in any PR workflow;
+the trusted-base native Chainguard receipt workflow alone sets its provenance
+status after checking the current main and PR head.
 Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
@@ -60,9 +75,11 @@ Cordium runner bootstrap is staged as separate exact-main workflows for
 credential intake, fixed image builds, protected Harbor publication, and a
 canary. The controller would provision one JIT runner per job with private
 file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
-The pool remains disabled on `main`. Draft PR #1276 stages regular job selectors
-for the Cordium pool while keeping bootstrap publication and credential jobs
-hosted and the canary on its isolated label. The
+The pool remains disabled. Draft PR #1276 stages regular job selectors for
+the Cordium pool while keeping bootstrap publication and credential jobs
+hosted and the canary on its isolated label. The required native receipt
+provenance status job stays hosted so PR validation can run before the pool is
+enabled. The
 [runner contract](../../builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
 before a reviewed selector cutover.

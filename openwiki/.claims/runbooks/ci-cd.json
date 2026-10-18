@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3aa485ac5b7f1108183f8094138c48a774aa9e07af98e316b1ceb2c915f382b3",
+  "pageVersion": "sha256:1d3bbe182cc0885e242f115356fab6ecac4b2655a99647bb289ab0e5e891546c",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,35 +20,79 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ca4e4fa183b0946bc44a6c815cfa272eb1dabcf8029753030d97387277a8785d"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         }
       ]
     },
     {
       "id": "claim_64b3256c37b048bd8c2f2a27ea52adb8",
-      "statement": "Cordium runner bootstrap stages exact-main credential, image-build, Harbor publication, and canary workflows. Draft PR #1276 routes regular local jobs to the Cordium pool while retaining hosted bootstrap jobs and the isolated canary label; the pool remains disabled on main until live isolation, publication, cold-pull, canary, and recovery acceptance support cutover.",
+      "statement": "Cordium runner bootstrap stages exact-main credential, image-build, Harbor publication, and canary workflows; the pool and job selectors stay disabled until live isolation, publication, cold-pull, canary, and recovery acceptance support a reviewed cutover.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/cordium-runner-canary.yml",
           "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
         },
         {
+          "resource": "repo://.github/workflows/cordium-runner-credentials.yml",
+          "version": "repo-file-v1:sha256:333a6e986548d489ff23f1dc8bc8f65a8e8a27acc5b3e72c1597b41bcec024c4"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-images.yml",
+          "version": "repo-file-v1:sha256:794199d0f301c46137bd0a3c061cc6f2b6177b087ce64f6db042b68daa0ff860"
+        },
+        {
           "resource": "repo://.github/workflows/cordium-runner-publish.yml",
           "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
         },
         {
-          "resource": "repo://docs/cordium-runners.md",
-          "version": "repo-file-v1:sha256:cf35d548b4e819baf61ca09827d703e823c2756b97141b36c05c371718f933cd"
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        }
+      ]
+    },
+    {
+      "id": "claim_3a6ef031cf564bd7812d9172a91b72cc",
+      "statement": "The pull-request Lint job reports its job conclusion without commit-status write permission. Static checks reject status-write permission in PR workflows; the trusted-base native Chainguard receipt provenance workflow owns its status after current-main and PR-head verification.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+        },
+        {
+          "resource": "repo://.github/workflows/lint.yml",
+          "version": "repo-file-v1:sha256:40214fd3e60c37c12ffb0dd06cc4219c8826379067dbe2ba087e20abf1a7c96e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:259daff247ce700354cbe716be945e8dc5d896dc369fd1e39a534e97682a2a74"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
+        }
+      ]
+    },
+    {
+      "id": "claim_f9248f1d338749c5b3cd7aea3a431d34",
+      "statement": "Draft PR #1276 stages regular job selectors for the Cordium pool while bootstrap publication, credential jobs, and the required native receipt provenance status job stay hosted; the canary keeps its isolated label and the pool remains disabled.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-check.yml",
+          "version": "repo-file-v1:sha256:d9bd5b88fde5ae4fc8d5866128accf4c24538f7da4b6480bcba1596410cb1795"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:18:20.225Z"
+    "at": "2026-10-18T22:36:24.435Z"
   }
 }

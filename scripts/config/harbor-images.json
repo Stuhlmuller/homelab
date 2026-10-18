@@ -40,6 +40,9 @@
       "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:256c88bb066424045021090932d50be93c8e3f2ce3586707702a401b146f3e43"
     },
     {
+      "source": "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
+    },
+    {
       "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
     },
     {
@@ -500,6 +503,9 @@
     },
     {
       "source": "ghcr.io/qdm12/gluetun:v3.41.3@sha256:fa19cc76b2af13d57a8d3dc3066f2ada061b1c761b8aecf989b3877c0486e027"
+    },
+    {
+      "source": "ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d"
     },
     {
       "source": "ghcr.io/siderolabs/flannel:v0.27.4@sha256:0490e475f3e2f66cce10ff77bc2ce6efb20b61ea3ce0bee638556ddfdaf7be82"

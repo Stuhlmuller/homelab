@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f65b3f258a6cd319f27a38ef1b6d761a841acc73a526cbd62fca68607a8603b4",
+  "pageVersion": "sha256:e3265c4c7d085a96563b05f4652a91c392297a8b0d940d0020b0457bb93278e5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ca4e4fa183b0946bc44a6c815cfa272eb1dabcf8029753030d97387277a8785d"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -86,27 +86,23 @@
     },
     {
       "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
-      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
+      "statement": "Earlier cutover fixtures cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, callback preflights, and fresh delivery receipts. The current resolver handoff uses the observed tailnet DNS Service IP, direct UDP/TCP probes, owner restricted nameserver setting, and later normal client DNS and HTTPS acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
           "version": "repo-file-v1:sha256:c4bd586a1cd8425864b99026735861f3954413cae95b7094087a995f7adde1c4"
         },
         {
-          "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
-          "version": "repo-file-v1:sha256:ae365f23de9ca311b7128fd51365dde7bc596e201b79fb5248815cd71541ca39"
-        },
-        {
-          "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
-          "version": "repo-file-v1:sha256:b91181264cce4b2107f7c60e4e334c255c290ae67114404c9eba08020d1d3f41"
+          "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
+          "version": "repo-file-v1:sha256:de7919f7a1d0d5f5da8bdd3c9d31271041966adac4929afd2758acc9407bf68b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         }
       ]
     },
@@ -116,7 +112,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-access-check-test.py",
-          "version": "repo-file-v1:sha256:e3c6ddf149737edb47473d8b5b8fd561e55d70b4478718b7d5af48e2de1a7cb5"
+          "version": "repo-file-v1:sha256:af88b46a28a05c2a563046d07c6105502ad3a722bd6048ad026c570570f5b2c8"
         },
         {
           "resource": "repo://scripts/ci/tailscale-access-check.py",
@@ -130,11 +126,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
+          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
+          "version": "repo-file-v1:sha256:1fdd7c9d4edd55fbe539ca1c2d53cfa6e0bf8c60e55deef5c7607bf118638d71"
         }
       ]
     },
@@ -148,7 +144,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -156,7 +152,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
+          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
         }
       ]
     },
@@ -166,7 +162,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -174,25 +170,21 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
-          "version": "repo-file-v1:sha256:079ceef243831262e78d6115923c02e92071b3d89e2db2a882c6a531bc0555e0"
+          "version": "repo-file-v1:sha256:80c10992dd64545f345d198e5173b0d59e1b7e90ce527d2c2a5495343d625fdf"
         }
       ]
     },
     {
       "id": "claim_208b0475f0894dc0a15e62f0943aeb0a",
-      "statement": "Private DNS preflight accepts AFFiNE502/503 only with explicit source and live zero replicas and rejects other app5xx; its regression also prevents publishing peer IPv6 when the ingress Service publishes only IPv4.",
+      "statement": "The retained private DNS preflight accepts AFFiNE 502/503 only with explicit source and live zero replicas and rejects other app 5xx responses; its regression also prevents publishing peer IPv6 when ingress Service publishes only IPv4.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
-          "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L125-L182",
-          "version": "repo-lines-v1:sha256:0347a319ef9c90ccd922e4ea5a6527b06ce3ecef0cddd390d24fd4e757b8321a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2ZWRkNDg3NWMzZTgzNzBhYTZlZDhkOTE5YTQ4MDE3ZjY0OTU0ZWQ2ZTU3MTAyNTQyM2VkNDI4Njc2YzRjNmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyOTNjZjk5ODIwYjhhZDJmOTE2OTMxMWE2ODgzNWEyMGJlMmFlOTkxMjUxZjU2ZWE4MzE1OTQ2NTM1OWM1ZWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3Y2RkYmU5MmY0MTFjM2UzNjhlZTdjOGRlMDMwNDU0ZTZlYTA5ODg4MzBmMGEwN2NmZWQxZGRlOWJkYTUyYWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNzg4ZWVmODk2ODBlMzcxMDk5NTdhMGM3YTZjNjc5YTBkOTBiNDA4ZTlhOWRkZGQ4YTE0ZWYxZTdlMThjZWUifQ"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
+          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
         }
       ]
     },
@@ -202,7 +194,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+          "version": "repo-file-v1:sha256:53b844d8a5914ad297e6e259d385a82509ad1e0dc8a5ac3cd76c763e9899f66e"
         },
         {
           "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
@@ -220,7 +212,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
+          "version": "repo-file-v1:sha256:1fdd7c9d4edd55fbe539ca1c2d53cfa6e0bf8c60e55deef5c7607bf118638d71"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py#L473-L503",
@@ -276,7 +268,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:cff78af8b39178268dae875789c619c12ef4c8b3fb7775ebc121591298b6df3b"
+          "version": "repo-file-v1:sha256:3264d39d1a2c5c321737586735b84f8671d9c50233ee362c3794cf8b6fbab8c6"
         }
       ]
     },
@@ -294,11 +286,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         }
       ]
     },
@@ -312,11 +304,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         }
       ]
     },
@@ -374,7 +366,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         }
       ]
     },
@@ -392,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:259daff247ce700354cbe716be945e8dc5d896dc369fd1e39a534e97682a2a74"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
         }
       ]
     },
@@ -402,11 +394,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
+          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         }
       ]
     },
@@ -428,7 +420,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:ca4e4fa183b0946bc44a6c815cfa272eb1dabcf8029753030d97387277a8785d"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         }
       ]
     },
@@ -468,7 +460,7 @@
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
+          "version": "repo-file-v1:sha256:1fdd7c9d4edd55fbe539ca1c2d53cfa6e0bf8c60e55deef5c7607bf118638d71"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirror-credential.py",
@@ -498,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -545,7 +537,7 @@
           "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L6-L13",
+          "resource": "repo://scripts/ci/offline-checks.sh#L7-L14",
           "version": "repo-lines-v1:sha256:5195894c7328c3c60862e3324dcf3d6fa968e27d58c446b79619dd967714fa1b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiNGJkZDAwNjMxZWI0NjkyZDk3NzRlZDNiYmJjMjIyNTQ0NTJkYTA3MmY0Y2Q5MmNkOWFlOGYzZjA0Y2JjMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY4ZDYzYjhlODlhNTYzNzI2NDk4OTBhZjU1ZDlkMTkyMDk3NjYyYmU1ZjFiMjc0ZTY4N2Y1ZjlhYzQ2YTgzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNThhZjIxMTcxOTMxYmQzMDRhMmQ3Y2E2NmMzYjZlYjZiNGRkZmVjZDIyMzQ1ZmM1ZWFkNzM5NDljMmUzMWZmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODY1YmZkMTVmMjYwZjQxOGYxNzZkYmIyNmZhNjBlMjdkY2JlY2E3MTZlMTQzN2RjODNmZGE1ZmQyZTA0NTA0YSJ9"
         }
       ]
@@ -570,11 +562,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:08cd354840cf6c38e486f55f67769ba4adaa71adeba2e24c70ccf02b05a60afe"
+          "version": "repo-file-v1:sha256:a407fca7edcb6d830e3966f93b21af2b6fd5b535b66e85fdd10b37cd5811e777"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
+          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,11 +580,11 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:9dc31d22e2f6c79c9654936ba1b50f23d82c25feb96c9a8d6b39f159436428df"
+          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
-          "version": "repo-file-v1:sha256:a79863001e62486b510efdeac48110879e810a142bd319aa789fb0f76136e65c"
+          "version": "repo-file-v1:sha256:1fdd7c9d4edd55fbe539ca1c2d53cfa6e0bf8c60e55deef5c7607bf118638d71"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -666,23 +658,23 @@
     },
     {
       "id": "claim_eb3bfe17176d4c108710c0f205d04fb2",
-      "statement": "The fixed Renovate scope contains six reviewed catalog digests. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash is updated to admit only this reviewed scope.",
+      "statement": "The fixed Renovate scope contains seven reviewed catalog digests, including the runner. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash is updated to admit only this reviewed scope.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:a98ffdc25c2ccecc1834ab257a096e8a396b0528dd50397bad37a442b43f6d9f"
+          "version": "repo-file-v1:sha256:2978369cab487d8b8e6dc6c2a50644f405ef3ab759761bb39df38b9c28326d21"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
+          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:259daff247ce700354cbe716be945e8dc5d896dc369fd1e39a534e97682a2a74"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
-          "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
+          "version": "repo-file-v1:sha256:f596a5fdc094a260ff012eb5630044ce2006f26f829895d195cf6984d2787277"
         }
       ]
     },
@@ -691,32 +683,90 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L770-L818",
-          "version": "repo-lines-v1:sha256:da58bbfbe9bc03844d243a8c139df7b193d7a53f073b88b1e739c89b8e106fd9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1ZjEzZGJlMzNjOWZjNGE0M2QxMzU4OWIwMjVkZDY4MTUxMzQ2OTUyOGFkM2EyYWUyZWUxMTM0MWY4NWVlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNWQxYjE0YTk5NDVkMzE4NTFkMDIyMmYxYmIwOTMxMDQ4YzgyMjg5NjczYmM0ODg3MDg3ZTMzYTlhMzExYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkOGJlZjJlNGZmZmJhMTIxODUzMTY3ZDliZTg2NWI2ZjVhODc3ZWI4OGNlMWIzZTc1MGVhMTQ5NDNiMjAyYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWMwZWZmNmExMWExZGNhZDhmNjVjOTEwMjA1OTFjZDhhN2Y2NGQyMDQ2ZDg0NWY3N2I3NjU5MjNlZDMzNDAifQ"
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L860-L925",
+          "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
-          "version": "repo-lines-v1:sha256:d2d374c55db86f3bfdd62b91aef854512b268fa415b27c83724ebbcbcba0de44:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMWIxYjIwMzEzMDZjYTUyOWUyZjNmMWIyZjRmZDlmMTMyNzk2MjZkYWFjZmY2ODBmMmJiYjA3NGFjM2I0YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhYzczZWY3NWZhYmRiODAzZmMxNjc1NzIzOGNhMWZlMDBjNGM0NDQ2NjEwZjQ5ZmY2MWU5OGZhNDYxM2QxYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4OWVkN2E1MDg4NTlhZmUxNWExM2FiNTExOWIyYjE0ZjhmNDVkNjkzN2NlYTcyYTA4MDc5ZDU1YTAwNDU5ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwZWM2ZDllM2U3MDMwMjk5ZTg4MmRlYTM3YjJlNDVhZDcyMmU4OGJkZGE0ZmZmZmYyMjgzNDIzNWRiN2RmYzIifQ"
+          "version": "repo-lines-v1:sha256:ec12ba9fcd206767aec57c3c89c926b83df6aa3cd14eead3fb972208fb6a2c46:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
         }
       ]
     },
     {
-      "id": "claim_051bec60bd244af3a99f940487cea6fa",
-      "statement": "The staged Cordium selector cutover routes regular local jobs to the Cordium pool while keeping bootstrap workflows hosted and the canary on its isolated label; live runner acceptance remains a merge gate.",
+      "id": "claim_d241cdf1ec014386b9b591f2d4b4f425",
+      "statement": "The repository's local validation entry point is `nix run .#validate`; the flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
       "evidence": [
         {
-          "resource": "repo://docs/cordium-runners.md",
-          "version": "repo-file-v1:sha256:cf35d548b4e819baf61ca09827d703e823c2756b97141b36c05c371718f933cd"
+          "resource": "repo://README.md#L66-L90",
+          "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
+        },
+        {
+          "resource": "repo://flake.nix#L66-L86",
+          "version": "repo-lines-v1:sha256:4eb70c55e9738d7b618e3580e049910b3ec8c1ff4af6e895983ad4946529049d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZTFhNzRkNzU0ZTg3N2MwYzQ3NDAwOGQ5YTc1YWI4NWY0Mjc3MmJlNmIwNzdhNzE3YmZmMTg5NzkwZDYyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyOTQwYThiOGM0ZDFhNWY1NTY5YmNjOWFkOGZmYWFjODkxNTZjZTE2MWM3YTBlNTY2NWRhNDIyYzVkMjY4MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMmQxOTQ0NWM5M2I3Y2I2YWFmZTI1NWU3MDVhYjgwMmFlMTNjM2NmNTFkNzAwMzQ4NTI2ZTNhZjliOWY4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0NDk2MzRiYmY0MDgyMmVlY2NhYTQzYmE0M2QyNGM1YzU0ZmMwMWFlNjYyOTdhNTVlNDI2YWFmOTIxZWQ4YmUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c988f42ffda44947b5720c708eecfd01",
+      "statement": "Native Chainguard receipt fixtures use Skopeo with generated local OCI indexes to prove complete two-platform and repeated-descriptor copies, and require Harbor's exact vulnerability report header. The static gate rejects status-write grants in pull-request workflows; these checks do not dispatch the protected receipt.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/lint.yml",
+          "version": "repo-file-v1:sha256:40214fd3e60c37c12ffb0dd06cc4219c8826379067dbe2ba087e20abf1a7c96e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
+          "version": "repo-file-v1:sha256:389c047b8ec4fb19116598c50d5c97158c0640a8644ecc2625a670d29bcd6f90"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:259daff247ce700354cbe716be945e8dc5d896dc369fd1e39a534e97682a2a74"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
+        }
+      ]
+    },
+    {
+      "id": "claim_a552195c300d4b0c844370b0dbb16c15",
+      "statement": "The tailnet DNS resolver gate renders the pinned chart and checks route/annotation parity and fixed 27-name initial migration. A protected scoped Harbor run must prove the pinned image digest and authenticated pull. After GitOps health, the signed DNS proxy and direct UDP/TCP 53 handoff checker bind the observed Service IP to all approved names while preserving public fallback and apex records; owner DNS and client acceptance remain separate.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
+          "version": "repo-file-v1:sha256:de7919f7a1d0d5f5da8bdd3c9d31271041966adac4929afd2758acc9407bf68b"
+        },
+        {
+          "resource": "repo://scripts/ci/tailnet-dns-test.py",
+          "version": "repo-file-v1:sha256:38d315393fd39d82aa657eb6c9aed70f6e9eaa08a7f539b989a44c3c18f3e15b"
+        },
+        {
+          "resource": "repo://scripts/tailnet-dns-check.py",
+          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+        }
+      ]
+    },
+    {
+      "id": "claim_b2006938f31748689e6e1185e8e95307",
+      "statement": "The staged Cordium workflow selector cutover uses Nix-managed tools; runner bootstrap and the required native receipt provenance status job stay hosted while the canary uses its own label.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-check.yml",
+          "version": "repo-file-v1:sha256:d9bd5b88fde5ae4fc8d5866128accf4c24538f7da4b6480bcba1596410cb1795"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:18:20.225Z"
+    "at": "2026-10-18T22:36:24.435Z"
   }
 }
