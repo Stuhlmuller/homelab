@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "1df6ea7a07eb5c16807ae283dd3ea100f92b366451585debebbfa80f200e0184", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "ac58ed2a263c59198ce3e43d08cb853c3c6f7c64273e783a1749127778246389", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -28,7 +28,7 @@ test_rejects_changed_openclaw_legacy_operation if {
 
 openclaw_legacy_run := `set -euo pipefail
 umask 077
-sha256sum --check --status <<<'1df6ea7a07eb5c16807ae283dd3ea100f92b366451585debebbfa80f200e0184  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'ac58ed2a263c59198ce3e43d08cb853c3c6f7c64273e783a1749127778246389  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
@@ -493,7 +493,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "76b37fc76b9050289cf729afc6072dd1a07252e8d7c79938ceb85c81a19ec9cc", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),

@@ -60,10 +60,10 @@ the catalog; a missing tag is copied from upstream. Missing-content detection
 accepts registry manifest/name-unknown errors and Harbor's exact expected
 artifact or repository `not found` message. Generic 404 responses and messages
 for another repository or digest tag still stop publication. Other lookup errors
-and unexpected hashes stop publication. Source-tag aliases are copied from that
-verified Harbor digest, avoiding a second upstream transfer. Every entry still
-receives a complete authenticated Harbor download and alias verification on
-each run.
+and unexpected digest-tag hashes stop publication. Source-tag aliases are copied
+from the verified Harbor digest when missing or stale; exact existing aliases
+are reused. Every entry still receives a complete authenticated Harbor download
+and alias verification on each run.
 If Skopeo cannot stage an OCI index without changing its digest, the mirror
 uses `regctl` for that copy and its authenticated pull, then checks the exact
 root digest and source-tag alias before recording a receipt.

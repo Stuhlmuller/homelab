@@ -30,6 +30,11 @@ class Operations(unittest.TestCase):
                            check=True, capture_output=True)
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o700)
 
+    def test_reader_uses_the_reviewed_retirement_source(self):
+        script = SCRIPT.read_text()
+        self.assertIn('sha256sum clusters/homelab/apps/openclaw/retirement/retirement.py', script)
+        self.assertIn('"${reader[@]}" sha256sum /etc/openclaw-retirement/retirement.py', script)
+
     def test_refresh_status_rechecks_writers_and_volume_identity(self):
         status = {'replicas': 0, 'readyReplicas': 0, 'pods': 0, 'activeJobs': 0,
                   'cronJobSuspended': True, 'readerPod': 'reader',
