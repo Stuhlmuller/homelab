@@ -35,6 +35,12 @@ require_absent_object() {
     jq -e --arg key "$1" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null
 }
 
+restore_version() {
+  aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
+    --output off /dev/stdout |
+    "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$3"
+}
+
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
@@ -69,8 +75,8 @@ case "$stage" in
     [[ -n "$archive_version" && "$archive_version" != None && -n "$receipt_version" && "$receipt_version" != None ]] || exit 1
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
-    aws s3 cp "s3://${bucket}/${prefix}/legacy.tar.gz" - | "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$restore/legacy.tar.gz"
-    aws s3 cp "s3://${bucket}/${prefix}/receipt.json" - | "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$restore/receipt.json"
+    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
+    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
     "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py verify-archive \
       --config /private/legacy/config.json --receipt "$restore/receipt.json"
     "${reader[@]}" cat "$restore/receipt.json" >"$work/receipt.json"
@@ -86,10 +92,12 @@ case "$stage" in
     prefix="openclaw-enterprise/legacy/${ARCHIVE_REF}"
     aws s3 cp "s3://${bucket}/${prefix}/final.json" "$work/final.json"
     jq -e '.offsiteRestoreVerified == true and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
+    archive_version="$(jq -er .archiveVersion "$work/final.json")"
+    receipt_version="$(jq -er .receiptVersion "$work/final.json")"
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
-    aws s3 cp "s3://${bucket}/${prefix}/legacy.tar.gz" - | "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$restore/legacy.tar.gz"
-    aws s3 cp "s3://${bucket}/${prefix}/receipt.json" - | "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$restore/receipt.json"
+    restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
+    restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
     "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py verify-archive \
       --config /private/legacy/config.json --receipt "$restore/receipt.json"
     "${reader[@]}" cat "$restore/receipt.json" | jq -e --arg sha "$(jq -er .archiveSha256 "$work/final.json")" '.sha256 == $sha' >/dev/null
