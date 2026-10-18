@@ -163,6 +163,11 @@ class Retirement(unittest.TestCase):
             retirement.archive(self.config, stale_path, self.baseline_path,
                                self.observed_path, self.archive_root)
 
+    def test_scanned_inventory_uses_reader_owned_scratch(self):
+        self.assertEqual(retirement.private_file(self.observed_path), self.observed_path)
+        with self.assertRaises(ValueError):
+            retirement.private_file(self.observed_path, os.getuid() + 1)
+
     def test_missing_required_data_uid_and_overlap_fail_closed(self):
         for change in ('missing', 'uid', 'overlap'):
             with self.subTest(change=change):

@@ -241,7 +241,7 @@ def archive(config, status_path, baseline_path, observed_path, destination):
         raise ValueError('archive runs only in the protected workflow')
     status = json.loads(private_file(status_path).read_text())
     baseline = json.loads(private_file(baseline_path, config['nasUid']).read_text())
-    observed = json.loads(private_file(observed_path, config['nasUid']).read_text())
+    observed = json.loads(private_file(observed_path).read_text())
     if observed.get('format') != 1 or observed.get('requiredNas') != config['requiredNas']:
         raise ValueError('legacy inventory is incomplete or mismatched')
     stopped(status, config, observed, baseline)
