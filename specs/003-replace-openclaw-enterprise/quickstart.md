@@ -74,9 +74,11 @@ verify zero writers, create the final multi-root archive and perform an isolated
 restore. Keep both local authoritative databases, NAS files, old full archives
 and historical runtime checkpoint in the protected inventory.
 
-The read-only status helper and protected stages are implemented, but the
-reader, offsite bucket and stopped desired state are not yet live. Validate the
-offline contracts first:
+The read-only status helper and protected stages are implemented. This stage
+starts one reader; the offsite bucket must be applied and verified separately,
+and the legacy writer stays active. If the reader is not Ready or its retained
+mount identities differ, return it to zero replicas through GitOps before any
+archive or shutdown. Validate the offline contracts first:
 
 ```sh
 python3 scripts/ci/openclaw-retirement-test.py

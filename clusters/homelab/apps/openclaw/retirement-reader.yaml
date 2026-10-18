@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/name: openclaw-retirement-reader
     app.kubernetes.io/part-of: homelab-ai
 spec:
-  replicas: 0
+  replicas: 1
   strategy:
     type: Recreate
   selector:
