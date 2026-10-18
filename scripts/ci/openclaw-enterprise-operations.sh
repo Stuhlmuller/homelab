@@ -105,7 +105,7 @@ validate_baseline() {
 }
 
 lookup_baseline_versions() {
-  if ! versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json 2>"$work/s3-error")"; then
+  if ! versions="$(aws s3api list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key" --output json 2>"$work/s3-error")"; then
     phase=publication-lookup-failed
     if grep -Fq '(AccessDenied)' "$work/s3-error"; then phase=publication-lookup-denied; fi
     return 1
@@ -250,7 +250,7 @@ case "$stage" in
     prefix="openclaw-enterprise/legacy/${ARCHIVE_REF}"
     final_key="$prefix/final.json"
     # Archive refuses prior versions, so the oldest exact-key version is its original receipt.
-    final_version="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$final_key" --output json |
+    final_version="$(aws s3api list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key" --output json |
       jq -er --arg key "$final_key" 'if .IsTruncated == false then [.Versions[]? | select(.Key == $key) | .VersionId] | last else empty end')"
     aws s3api get-object --bucket "$bucket" --key "$final_key" --version-id "$final_version" "$work/final.json" >/dev/null
     jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and (.sourceSha + "/" + .runId) == $ref and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null

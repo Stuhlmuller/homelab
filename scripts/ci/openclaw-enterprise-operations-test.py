@@ -189,6 +189,8 @@ restore_version key version-1 "$2"
                           'publication-version|verification', workflow)
             script = SCRIPT.read_text()
             self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
+            self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
+            self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key"', script)
             self.assertIn('phase=publication-upload\n      aws s3api put-object', script)
             self.assertIn('phase=publication-version\n    version=', script)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
@@ -223,6 +225,7 @@ bucket=example
 baseline_key=baseline.json
 phase=publication-lookup
 aws() {
+  [[ " $* " == *' --no-paginate '* ]] || { printf 'missing unpaginated response\\n' >&2; return 1; }
   if [[ "$LOOKUP_ERROR" == truncated ]]; then printf '{"IsTruncated":true}\\n'; return 0; fi
   printf '%s\\n' "$LOOKUP_ERROR" >&2
   return 1
