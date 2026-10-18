@@ -1,15 +1,11 @@
 policy:
   approval:
     - pull request approved without review
-  disapproval:
-    requires:
-      organizations:
-        - "Stuhlmuller"
 
 approval_rules:
   - name: pull request approved without review
     description: >-
-      Approve without human or bot review. Required GitHub checks still gate
-      merges, and organization members can explicitly disapprove a PR.
+      Approve without a maintainer comment or review. Required GitHub checks
+      gate merges.
     requires:
       count: 0
