@@ -14,20 +14,22 @@ sources:
     resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
+    resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
-  - id: openwiki-source-f585f8850806deb1619ec0c5
-    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
+generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:00:28.489Z
+    at: 2026-10-18T22:42:08.398Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -318,6 +320,9 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
   `octelium connect` and an Octelium-generated kubeconfig
 - Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
   through Traefik; canonical custom hostnames move during staged DNS cutover
+- Declared private DNS proxy: `homelab-dns` through the separate `tailnet-dns`
+  Tailscale LoadBalancer Service on UDP/TCP 53; use its observed tailnet IP for
+  the later restricted `stinkyboi.com` tailnet nameserver
 - Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
   CI switches separately after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
@@ -346,6 +351,15 @@ Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 canonical TLS names. Talos host pulls use the separate registry-only Service
 `10.96.0.50`; require the exact LAN/bridge/overlay source policy and uncached pulls before
 external Harbor DNS changes. Source preparation does not prove live cutover.
+
+The separate `tailnet-dns` CoreDNS/k8s_gateway workload watches only Services
+with `homelab.rst.io/private-dns=approved`. The reviewed Traefik private
+Service supplies the approved hostnames and live ingress IPv4; Traefik still
+terminates HTTPS and routes requests. Cluster `kube-dns` remains separate.
+Approved A/AAAA answers are local; unmatched address queries and other record
+types use public resolvers. The owner adds the DNS proxy's observed IP to
+Tailscale only after direct UDP/TCP answers, signature, and client checks pass;
+public app address records stay until a later guarded retirement.
 
 ## Source Files
 

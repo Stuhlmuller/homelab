@@ -11,6 +11,7 @@ from pathlib import Path
 spec = importlib.util.spec_from_file_location("check", Path(__file__).with_name("harbor-images-check.py"))
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
+real_yaml_documents = check.yaml_documents
 # Shared stack defaults and sparse sources must not hide chart upgrades from
 # the image inventory gate. A chart needs no Helm overrides to deploy.
 with tempfile.TemporaryDirectory() as directory:
@@ -136,6 +137,7 @@ with tempfile.TemporaryDirectory() as directory:
     check.BAZARR_CATALOG = check.ROOT / "bazarr-images.json"
     check.MASTODON_CATALOG = check.ROOT / "mastodon-images.json"
     check.CHAINGUARD_CATALOG = check.ROOT / "chainguard-images.json"
+    check.DNS_CATALOG = check.ROOT / "dns-images.json"
     check.HARBOR_RUNTIME_CATALOG = check.ROOT / "harbor-runtime-images.json"
     runtime_images = json.loads((original_root / "scripts/config/harbor-runtime-images.json").read_text())["images"]
     check.HARBOR_RUNTIME_CATALOG.write_text(json.dumps({"images": runtime_images}))
@@ -144,24 +146,35 @@ with tempfile.TemporaryDirectory() as directory:
     base_catalog = {"images": [
         {"source": "docker.io/library/busybox:1.38@" + digest},
         {"source": "quay.io/example/operator@" + digest}]}
-    catalog = {"images": [*base_catalog["images"], *runtime_images]}
+    dns_source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
+    catalog = {"images": [*base_catalog["images"], *runtime_images, {"source": dns_source}]}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
     check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
     check.MASTODON_CATALOG.write_text(json.dumps(base_catalog))
+    check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source}]}))
     check.declared_mastodon_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images
     check.CHARTS.write_text("[]")
     mirrors = {registry: {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
                           "overridePath": True, "skipFallback": True}
-               for registry in ("docker.io", "quay.io")}
+               for registry in ("docker.io", "quay.io", "codeberg.org")}
     mirror_patch = {"machine": {"registries": {"mirrors": mirrors}}}
     check.yaml_documents = lambda paths: (
         [mirror_patch] if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
     check.chart_sources = list
     with contextlib.redirect_stdout(io.StringIO()):
         check.check()
+    check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source.replace("0b556", "0b557")}]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "DNS mirror scope missing required image" in str(error)
+        assert "DNS mirror scope source absent from full catalog" in str(error)
+    else:
+        raise AssertionError("Unreviewed DNS publication scope passed")
+    check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source}]}))
     original_image = documents[0]["initContainers"][0]["image"]
     documents[0]["initContainers"][0]["image"] = "busybox:1.38"
     with contextlib.redirect_stdout(io.StringIO()):
@@ -347,4 +360,185 @@ assert check.declared_images(related)[0] == {related["value"]}
 assert inventory.runtime_references(related) == {related["value"]}
 assert check.declared_images({"image": {"repo": "quay.io/kiali/kiali-operator", "tag": "v2.26.0"}})[0] == {"quay.io/kiali/kiali-operator:v2.26.0"}
 
+# A config-bound direct-digest native receipt remains untrusted until protected
+# workflow evidence has an explicit importer.
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    original_root = check.ROOT
+    original_automation = check.AUTOMATION
+    original_state = check.AUTOMATION_STATE
+    original_yaml_documents = check.yaml_documents
+    try:
+        check.ROOT = root
+        check.AUTOMATION = root / "image-automation.json"
+        check.AUTOMATION_STATE = root / "image-automation-state.json"
+        target = root / "clusters/homelab/apps/kiali/values.yaml"
+        target.parent.mkdir(parents=True)
+        target.write_text("image: fixture\n")
+        other = root / "clusters/homelab/apps/other/values.yaml"
+        other.parent.mkdir(parents=True)
+        unrelated_native = f'harbor.stinkyboi.com/homelab/chainguard/python@sha256:{"a" * 64}'
+        other.write_text(f'image: {unrelated_native}\n')
+        check.yaml_documents = real_yaml_documents
+        assert check.native_references_by_path([target, other]) == {
+            "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
+        }
+        other.write_text(f'image:\n  registry: harbor.stinkyboi.com\n'
+                         f'  repository: homelab/chainguard/python\n  digest: sha256:{"a" * 64}\n')
+        assert check.native_references_by_path([other]) == {
+            "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
+        }
+        other.write_text(f'images:\n- name: cgr.dev/chainguard/python\n'
+                         f'  newName: harbor.stinkyboi.com/homelab/chainguard/python\n'
+                         f'  digest: sha256:{"a" * 64}\n')
+        assert check.native_references_by_path([other]) == {
+            "/clusters/homelab/apps/other/values.yaml": {unrelated_native}
+        }
+        for name, content in (("deployment.yml", f"image: {unrelated_native}\n"),
+                              ("deployment.json", json.dumps({"image": unrelated_native}))):
+            resource = other.with_name(name)
+            resource.write_text(content)
+            assert resource in check.manifest_paths()
+            assert check.native_references_by_path([resource]) == {
+                f"/clusters/homelab/apps/other/{name}": {unrelated_native}
+            }
+        for name, content in (("kustomization.yaml", "patches:\n- patch: |-\n    - op: replace\n"
+                               f"      path: /spec/template/spec/containers/0/image\n      value: {unrelated_native}\n"),
+                              ("image-patch.json", json.dumps([{
+                                  "op": "replace", "path": "/spec/template/spec/containers/0/image",
+                                  "value": unrelated_native
+                              }]))):
+            resource = other.with_name(name)
+            resource.write_text(content)
+            assert check.native_references_by_path([resource]) == {
+                f"/clusters/homelab/apps/other/{name}": {unrelated_native}
+            }
+            unpinned = unrelated_native.split("@", 1)[0] + ":latest"
+            resource.write_text(content.replace(unrelated_native, unpinned))
+            assert check.native_references_by_path([resource]) == {
+                f"/clusters/homelab/apps/other/{name}": {unpinned}
+            }
+        replacement = other.with_name("kustomization.yaml")
+        replacement.write_text(
+            "configMapGenerator:\n- name: runtime\n  literals:\n"
+            f"  - RUNTIME_IMAGE={unrelated_native}\n"
+            "replacements:\n- source:\n    kind: ConfigMap\n"
+            "    name: runtime\n    fieldPath: data.RUNTIME_IMAGE\n"
+            "  targets:\n  - select:\n      kind: Deployment\n"
+            "    fieldPaths:\n    - spec.template.spec.containers.0.image\n"
+        )
+        assert check.native_references_by_path([replacement]) == {
+            "/clusters/homelab/apps/other/kustomization.yaml": {unrelated_native}
+        }
+        check.yaml_documents = original_yaml_documents
+        config = json.loads(original_automation.read_text())
+        consumer = next(item for item in config["consumers"]
+                        if item["image_id"] == "chainguard-curl")
+        consumer["automation_status"] = "enrolled"
+        consumer["migration_status"] = "migrated"
+        check.AUTOMATION.write_text(json.dumps(config))
+        plan = next(item for item in check.native_receipt_plans(config).values()
+                    if item["image_id"] == "chainguard-curl")
+        receipt = {
+            "schema_version": 1,
+            "kind": "native-chainguard-v1",
+            "repository_sha": "a" * 40,
+            "config_digest": plan["config_digest"],
+            "image_id": plan["image_id"],
+            "source_ref": plan["source_ref"],
+            "source_digest": plan["source_digest"],
+            "destination_ref": plan["destination_ref"],
+            "destination_digest": plan["source_digest"],
+            "platforms": {"linux/amd64": "sha256:" + "a" * 64,
+                          "linux/arm64": "sha256:" + "b" * 64},
+            "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
+            "consumer_access": True,
+        }
+        def container_fragment(image):
+            return [{"cr": {"spec": {"deployment": {
+                "additional_pod_init_containers_yaml": f"- name: wait\n  image: {image}\n"
+            }}}}]
+
+        declared = container_fragment(plan["destination_ref"])
+        check.yaml_documents = lambda paths: declared
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {
+            "chainguard-curl": {"destination_ref": plan["destination_ref"], "consumer_access": True}
+        }}))
+        assert check.receipt_errors()
+
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": receipt}}))
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@sha256:{"0" * 64}')
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@{receipt["destination_digest"]}')
+        assert check.receipt_errors() == [
+            "Native Chainguard consumer requires protected workflow evidence: chainguard-curl"
+        ]
+
+        provenance = {
+            "repository": "Stuhlmuller/homelab",
+            "workflow_path": ".github/workflows/harbor-native-chainguard-receipt.yml",
+            "workflow_id": 1,
+            "run_id": 2,
+            "artifact_id": 3,
+            "artifact_sha256": "sha256:" + "c" * 64,
+        }
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
+            "receipt": receipt, "provenance": provenance,
+        }}}))
+        assert check.receipt_errors() == []
+        exact_native = f'{plan["destination_repository"]}@{receipt["destination_digest"]}'
+        target_path = consumer["target"]
+        assert check.receipt_errors({target_path: {exact_native}}) == []
+        assert check.receipt_errors({"/clusters/homelab/apps/other/values.yaml": {exact_native}}) == [
+            f"Declared native Chainguard reference lacks migrated consumer: /clusters/homelab/apps/other/values.yaml: {exact_native}"
+        ]
+        rogue_native = f'{plan["destination_repository"]}@sha256:{"0" * 64}'
+        assert check.receipt_errors({target_path: {rogue_native}}) == [
+            f"Declared native Chainguard reference lacks migrated consumer: {target_path}: {rogue_native}",
+            f"Declared native Chainguard reference lacks verified receipt: {target_path}: {rogue_native}",
+        ]
+        unpinned_native = plan["destination_repository"] + ":latest"
+        assert check.receipt_errors({target_path: {unpinned_native}})
+        assert rogue_native in check.embedded_yaml_images(container_fragment(rogue_native))
+
+        consumer["automation_status"] = "not-enrolled"
+        consumer["migration_status"] = "candidate"
+        check.AUTOMATION.write_text(json.dumps(config))
+        assert check.receipt_errors() == [
+            "Native Chainguard reference lacks migrated status: kiali-prometheus-readiness"
+        ]
+        consumer["migration_status"] = "migrated"
+        check.AUTOMATION.write_text(json.dumps(config))
+
+        declared.extend(container_fragment(plan["destination_ref"]))
+        assert check.receipt_errors()
+        declared[:] = container_fragment(f'{plan["destination_repository"]}@{receipt["destination_digest"]}')
+
+        provenance["artifact_id"] = "invalid"
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
+            "receipt": receipt, "provenance": provenance,
+        }}}))
+        assert check.receipt_errors()
+        provenance["artifact_id"] = 3
+
+        consumer["automation_status"] = "not-enrolled"
+        consumer["migration_status"] = "migrated"
+        check.AUTOMATION.write_text(json.dumps(config))
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {}}))
+        assert check.receipt_errors() == [
+            "Native Chainguard consumer requires protected workflow evidence: chainguard-curl"
+        ]
+        check.AUTOMATION_STATE.write_text(json.dumps({"receipts": {"chainguard-curl": {
+            "receipt": receipt, "provenance": provenance,
+        }}}))
+        assert check.receipt_errors() == []
+
+        target.unlink()
+        assert check.receipt_errors()
+    finally:
+        check.ROOT = original_root
+        check.AUTOMATION = original_automation
+        check.AUTOMATION_STATE = original_state
+        check.yaml_documents = original_yaml_documents
 print("Harbor image coverage regression check passed")

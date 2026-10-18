@@ -4,14 +4,58 @@
 
 ## Chainguard source provenance
 
-Known Chainguard repositories are imported into the private Harbor destination
-by exact repository and stable tag. The public Chainguard rules are enabled; their
-copies become deployment-eligible only after the release recipe verifies the
-source/index digest, required platform children, and complete consumer pulls.
-Successful copies retain their immutable `sha256-<hex>` tag and may advance
-`verified-stable`; failed, partial, or inaccessible copies never advance the
-alias and are retained for diagnosis. Existing upstream-origin digests remain
-available for cold bootstrap and rollback.
+`scripts/config/harbor-chainguard-images.json` is the reviewed, digest-pinned
+public Chainguard source catalog. The protected `harbor-mirror.yml`
+`chainguard` scope copies its thirteen entries to
+`mirror/cgr.dev/chainguard/<image>`. That proves source provenance and Harbor
+custody only; it does not make an artifact deployment-eligible or move a
+consumer to the public `mirror` project.
+
+Native Harbor replication is currently limited to
+`cgr.dev/chainguard/python:latest` and `cgr.dev/chainguard/curl:latest`, which
+it imports into private `homelab/chainguard/python:latest` and
+`homelab/chainguard/curl:latest` repositories. After bootstrap has reconciled
+those rules, the protected
+`harbor-native-chainguard-receipt.yml` workflow must run from exact current
+`main`. Its receipt is bound to the per-image native import contract: the
+source and private destination mapping, catalog pin, required platforms and
+fixed replication rule. Unrelated consumer or automation-state changes do not
+invalidate that contract. The receipt proves that the source root index,
+private destination root index, and a complete authenticated
+`robot$homelab+pull` download have identical bytes; that the required
+`linux/amd64` and `linux/arm64` child descriptors match; and that Harbor
+reports `Success` with every reported finding count zero for those children.
+Complete downloads use local OCI layouts to retain the multi-platform index.
+Scan queries request Harbor's exact vulnerability-report media type.
+
+Protected CI queries those child scans directly with the separate
+`robot$homelab+scan` credential, limited to project-scoped `artifact:read`.
+It does not create an in-cluster scanner Job or use the Harbor administrator
+credential. Both receipt identities are read from exact SSM parameters into
+private temporary files and are excluded from workflow output and artifacts.
+
+The receipt is protected-workflow evidence only. It does not create a digest
+tag or `verified-stable` alias, update Image Updater state, or change a
+workload. A receipt-state-only pull request is checked by
+`harbor-native-chainguard-receipt-provenance.yml`, which runs trusted base
+code and reads the proposed state as data. It publishes the verified result as
+`Native Chainguard Receipt Provenance` on the PR head commit, so a required
+ruleset status can evaluate the exact proposal. A changed native receipt must match
+the exact successful protected Actions run, workflow, `main` revision and
+bounded artifact whose SHA-256 is recorded with its provenance in
+`scripts/config/image-automation-state.json`; a copied receipt alone is
+rejected. Artifact expiry does not invalidate unchanged historic imported
+state, while every changed entry must be reverified from its available
+artifact. This importer design does not deploy a workload or migrate a
+consumer. A later reviewed migration must add namespace pull authorization,
+compatibility evidence, imported protected receipt state, and a direct,
+digest-pinned private reference such as
+`harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
+The image gate requires that reference in the declared target of a migrated
+consumer, with the exact receipt-backed digest.
+Before any receipt-state import or migration, the provenance context must first
+run successfully on `main` and be required by the production GitHub ruleset.
+The bootstrap workflow alone does not unlock a consumer.
 
 Named workload image declarations use
 `harbor.stinkyboi.com/mirror/<upstream-registry>/<repository>` directly, retaining
@@ -73,7 +117,10 @@ from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
-digest, the mirror uses `regctl` for that exact copy error. All OCI indexes,
+digest, the mirror uses `regctl` for that exact copy error. It also retries an
+OCI index with `regctl` when Harbor reports that the exact root artifact is
+missing during upload, a [known Harbor index failure](https://github.com/goharbor/harbor/issues/19977).
+Other upload errors and non-index images still fail closed. All OCI indexes,
 including existing digest tags on retries, use an OCI directory for the complete
 authenticated pull; the mirror checks the root digest and source-tag alias
 before recording a receipt. A destination-upload fallback reads upstream again;
@@ -87,7 +134,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
 1. Merge the bootstrap, inventory, publisher and unapplied Talos patches through
    normal signed-commit, review and CI gates. The reviewed Stage A saved plan has
    created and metadata-verified the independent mirror reader SSM parameter.
-   This consumer revision advances `harbor-secrets` to `v3`; wait for External
+   This consumer revision advances `harbor-secrets` to `v4`; wait for External
    Secrets to reconcile it and Harbor's PostSync bootstrap to finish
    Synced/Healthy before publication. The parameter alone does not create a
    Harbor robot, enable authenticated receipts, or change Talos.
@@ -105,8 +152,19 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
+   For the tailnet DNS resolver prerequisite, use the fixed one-image scope
+   after its catalog and publisher PR merges:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=dns
+   ```
+
+   `scripts/config/harbor-dns-images.json` selects only the pinned Codeberg
+   k8s_gateway image. Require a successful digest-preserving copy and complete
+   authenticated Harbor pull before merging the resolver Application.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -128,18 +186,19 @@ retain registry blobs together with Harbor database/encryption-key backups.
    Redis, Valkey, PostgreSQL, Cosign, nginx, Node (runtime and development), Go,
    Wolfi base and static runtime. It publishes to the same normal
    `mirror/cgr.dev/chainguard/<image>` repositories, with all platforms,
-   digest preservation and fresh authenticated Harbor downloads. It does not change
-   consumers or prove runtime compatibility. Run after the prerequisite merges:
+   digest preservation and fresh authenticated Harbor downloads. It does not
+   change consumers, prove native `homelab` imports, or prove runtime
+   compatibility. Run after the prerequisite merges:
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the six reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, and n8n update digests in
+   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
+   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
    `scripts/config/harbor-renovate-images.json`. It copies and verifies only
    those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require six
+   prerequisite merges, dispatch it at exact current `main` and require seven
    complete authenticated pulls before merging any consuming Renovate PR:
 
    The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
@@ -152,9 +211,60 @@ retain registry blobs together with Harbor database/encryption-key backups.
    ```
 
    See [migration gates and current findings](image-egress-hardening.md).
-   Keep the public import source distinct from the internal runtime reference.
-   New consuming references use `harbor.stinkyboi.com/mirror/cgr.dev/chainguard/<image>:<reviewed-tag>@sha256:<verified-index-digest>`
-   only after successful publication and compatibility validation.
+   Keep the public source copy distinct from the internal runtime reference.
+   No application consumes these `mirror` copies. Python and curl need a
+   successfully imported protected native receipt before a reviewed
+   compatibility migration may reference a private direct digest such as
+   `harbor.stinkyboi.com/homelab/chainguard/python@sha256:<verified-index-digest>`.
+
+   After that public source copy and Harbor's native Python/curl replication
+   have both completed, verify the private imports from exact reviewed current
+   `main`:
+
+   ```sh
+   gh workflow run harbor-native-chainguard-receipt.yml --ref main -f expected_sha="$reviewed_sha"
+   ```
+
+   The receipt workflow accepts no image, registry, destination, or credential
+   input. It verifies only the committed Python and curl plan and uploads the
+   bounded receipt artifact. Import it only through a receipt-state-only pull
+   request. The trusted provenance workflow rechecks each changed entry against
+   the exact protected Actions artifact and records its provenance; it does not
+   migrate a consumer or deploy a workload. Its PR and main-push checks run
+   serially so an older result cannot overwrite a newer base check. Unchanged
+   historic entries remain valid if their artifacts later expire, but changing
+   one requires a fresh
+   verifiable artifact. First let the provenance context run on `main` and add
+   it as a required production ruleset check; do not import receipt state or
+   migrate a consumer before that enforcement is live.
+
+   Select the successful dispatch whose full `headSha` equals `$reviewed_sha`,
+   then generate and verify a private candidate from its run ID:
+
+   ```sh
+   gh run list --workflow harbor-native-chainguard-receipt.yml --branch main \
+     --event workflow_dispatch --limit 20 \
+     --json databaseId,headSha,conclusion
+   run_id='<matching-successful-databaseId>'
+   (
+     umask 077
+     token_file=$(mktemp /path/to/private/harbor-receipt-token.XXXXXX)
+     trap 'rm -f "$token_file"' EXIT
+     gh auth token >"$token_file"
+     python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py import \
+       --run-id "$run_id" --expected-sha "$reviewed_sha" \
+       --token-file "$token_file" --output /path/to/private/native-state.json
+     python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-state-change \
+       --base-state scripts/config/image-automation-state.json \
+       --state /path/to/private/native-state.json --expected-sha "$reviewed_sha" \
+       --token-file "$token_file"
+   )
+   ```
+
+   If either command fails, retain the committed state and check the run ID,
+   exact main SHA, artifact availability and token access before retrying. Copy
+   only the verified candidate into `scripts/config/image-automation-state.json`
+   on a receipt-state-only branch and submit it through the protected PR path.
 
    Require a successful run, including complete authenticated Harbor downloads. A completed
    successful `main` dispatch on an ancestor is reusable only when its publication
@@ -426,7 +536,7 @@ Its wider shared dependency closure remains outside approved scope; reject
 unexpected grants, rotations, deletes, or other actions.
 
 This later consumer revision advances `harbor-secrets`' `OnChange` revision to
-`v3`, after the parameter exists, so External Secrets reconciles the new key.
+`v4`, after the parameter exists, so External Secrets reconciles the new key.
 Until that reconciliation and the PostSync bootstrap succeed, it does not create
 the Harbor reader robot, enable publication receipt/readback, or change nodes.
 Keep that Secret `OnChange`: periodic reconciliation would regenerate its salted
@@ -444,9 +554,9 @@ must be inventoried before use. Strict mirrors intentionally reject missing
 artifacts instead of silently contacting upstream.
 
 Resolve source digests anonymously with `skopeo inspect --raw --no-creds` and
-hash the exact manifest bytes. For `tag@sha256` references pass `repo@sha256`
-to Skopeo; it rejects combined tag/digest addresses. Preserve historical pinned
-digests when a mutable tag has moved. Each repository/tag has one catalog alias;
+hash the exact manifest bytes. Pass direct `repo@sha256` addresses to Skopeo;
+it rejects combined tag/digest addresses. Preserve historical pinned digests
+when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
 

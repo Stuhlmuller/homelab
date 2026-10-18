@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ac28dd1ae2517d9d6b0e621e5aecac499f652fa4fbb076ec3bfd1a0def210d9b",
+  "pageVersion": "sha256:bbaa4dae2d735113c17c9b2c006df277b52427fa286fbb0e5c3aed2cb83d1459",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:3e11cadeba28060337dc7c6ebd94a8d3ab0f3291b4b44c75b4314cea91849415"
+          "version": "repo-file-v1:sha256:ccbcda07f6a5b36267d29bd3ab4d2741d0be1bbcf2ae7194d6944f3aa4832951"
         }
       ]
     },
@@ -44,11 +44,11 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:7177b650f641a70858f303e2a1725fc011e884365ecdbc55779c5eb05ca034f5"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:f85f50f287fce9a78081f77d97fecf42560d1ff79eb256bfad55e800a0c64225"
+          "version": "repo-file-v1:sha256:c563eebf9010f3d4473b8369f9070667a7b84f7c4c7d3fba1b3988bf8a0bfcbb"
         }
       ]
     },
@@ -84,7 +84,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
@@ -106,7 +106,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+          "version": "repo-file-v1:sha256:53b844d8a5914ad297e6e259d385a82509ad1e0dc8a5ac3cd76c763e9899f66e"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:7177b650f641a70858f303e2a1725fc011e884365ecdbc55779c5eb05ca034f5"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -263,26 +263,76 @@
       ]
     },
     {
-      "id": "claim_6449042f15f949809223071726d5a90b",
-      "statement": "The staged internal-image migration repoints named workload, hook and bootstrap refs to cataloged Harbor paths while keeping current digest pins; publication, node cache and running image IDs remain unverified, and retired OctoBot is excluded.",
+      "id": "claim_548f77abe2984dab8f5127f4ab94a867",
+      "statement": "The staged native Harbor Chainguard receipt covers private Python and curl imports but does not publish those images or migrate consumers; protected receipt and provenance gates remain prerequisites.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/harbor/README.md",
-          "version": "repo-file-v1:sha256:2f46d5d4deed887ec8e99551cef75e71a2cf799782e8a611d060b4d3025edada"
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
         },
         {
+          "resource": "repo://docs/harbor-image-mirroring.md#L6-L59",
+          "version": "repo-lines-v1:sha256:a0cf845c9739c1d0d0ae1708602bec8def146d8fb3a571fcd4b81d0a6e7d24c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c5d8577df3674b02a5ab90e556b69f6e",
+      "statement": "Tailnet DNS is a separate stateless Argo CD resolver in its own namespace, backed by CoreDNS and k8s_gateway, exposed through a distinct signed Tailscale DNS proxy; its pinned Harbor image must be published before rollout.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml",
+          "version": "repo-file-v1:sha256:cb74e07be1531ecddc6f791f28c02c4477621dd0e5bfe9337da4fff98aa6a4e0"
+        }
+      ]
+    },
+    {
+      "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
+      "statement": "The Renovate Application is staged in automation as a suspended hourly UTC CronJob in full dry-run mode, with a retained 20 Gi NFS cache and a protected App-key transfer prerequisite. Source registration does not establish live Job acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/renovate/stack.hcl",
+          "version": "repo-file-v1:sha256:04724af1dc2ae6e1ddb027dcb270d4704ad204c33aff015ca79428175f609ad8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:e8db2c19d1cd96d44cb8d4e79f95e8ef49e6708fa2e508ab69a0db65cdefbf05"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
+          "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+        }
+      ]
+    },
+    {
+      "id": "claim_7408e53e82354d798743d25202cd875f",
+      "statement": "The staged internal-image migration repoints named workload, hook, and bootstrap images to cataloged Harbor mirror paths while retaining digest pins; publication, cache, and running behavior remain unverified.",
+      "evidence": [
+        {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:1284f4389adedaddd8e003a941a9031dac73fad63e718b6bf05a1b9fb6cc735d"
+          "version": "repo-file-v1:sha256:2b704ffa51253445a04e24fe51c216b72a146557510b699925dbc316d2fc824e"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:6b3254f8e8fce511aa377be05f992ea032f0e8e9ec394f309c9b8f46efb56ba8"
+          "version": "repo-file-v1:sha256:98d6c3e6c04ef305d616abd439a88286595cc388acfaf7c71702db2f85ebd7a1"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:00:28.489Z"
+    "at": "2026-10-18T22:42:08.398Z"
   }
 }

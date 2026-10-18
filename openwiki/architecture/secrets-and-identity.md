@@ -30,8 +30,16 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-6680389f3ee90f86c4c9a782
+    resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -44,6 +52,8 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-4fa6e8b8348f9583e76afe30
+    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-326a085bf1ea3cb64a10924e
     resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
@@ -64,14 +74,16 @@ sources:
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
+  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
+    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:00:28.489Z
+    at: 2026-10-18T22:42:08.398Z
 ---
 
 # Secrets And Identity
@@ -160,8 +172,11 @@ until authenticated plan/apply and denial checks succeed over the new proxy.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
-recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
-token to write only its fixed mesh A/AAAA inventory from reviewed current main.
+recovery. The separate tailnet resolver watches approved Kubernetes Services
+and needs no DNS write token. Only the later guarded retirement helper reads
+the existing scoped cert-manager Cloudflare token; it can delete public
+A/AAAA/CNAME records for the fixed 27 names after owner tailnet DNS handoff and
+client acceptance. It has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
 
@@ -183,6 +198,15 @@ changing DNS alone does not authorize deleting those credentials.
   aggregate limit is 5,120 characters; the existing fixed-size inline policy
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
+
+The staged [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
+reuses its existing GitHub App. IaC declares two SecureString placeholders for
+the App issuer and private key. A temporary role permits the companion
+repository to transfer only those two values; it cannot read them back. The
+`automation` ExternalSecret projects both as files and refreshes every five
+minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
+and removal of the temporary writer grant are verified. The current code is
+desired state, not evidence that the credentials have reached the cluster.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when
@@ -767,7 +791,7 @@ mirror runbook](../../docs/harbor-image-mirroring.md).
 The reviewed Stage A saved plan created and metadata-verified the generated
 `/homelab/harbor/mirror-robot-pull-password` without reading its value. The
 Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
-to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+to `v4` and mounts the reader key in the Harbor bootstrap Job. After External
 Secrets materializes the target Secret, that Job can reconcile the separate
 read-only robot during execution; require successful PostSync completion before
 accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
@@ -796,11 +820,12 @@ Native-image activation waits for publication/scans, recovery clearance and
 ExternalSecret readiness. An `OnChange` annotation advance is required after
 credential rotation; upstream cold recovery remains.
 
-The native receipt scan robot separately needs the staged
-`/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
-grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
-creates the parameter and read-only metadata verifies it. This declaration
-creates no Harbor robot, receipt, or running workload change. See the
+The native receipt scan robot separately needs
+`/homelab/harbor/robot-scan-password` and its exact-ARN reader grant. The
+parameter is present as a version 1 `SecureString`; read-only IAM inspection
+verified the grant, and a targeted plan from `main` at `f6506136` found no
+changes on 2026-10-18. The parameter alone creates no Harbor robot or receipt.
+See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the

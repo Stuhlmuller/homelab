@@ -6,6 +6,8 @@ tags: [workloads, argocd, inventory]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -22,8 +24,6 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
-  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
-    resource: repo://clusters/homelab/apps/harbor/README.md
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -50,6 +50,12 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-caf6d77fd092a28e8583a6a2
+    resource: repo://clusters/homelab/apps/renovate/pvc.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -66,8 +72,14 @@ sources:
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
+    resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
@@ -80,6 +92,10 @@ sources:
     resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-25c085c78b1cbef8c164f9f7
     resource: repo://IaC/stacks/platform-image-policy/stack.hcl
+  - id: openwiki-source-9bb89193cf7d1787e70a1647
+    resource: repo://IaC/stacks/renovate/stack.hcl
+  - id: openwiki-source-612eb02105d61c48b6ba59bd
+    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
@@ -92,10 +108,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T13:00:28.489Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:00:28.489Z
+    at: 2026-10-18T22:42:08.398Z
 ---
 
 # Workload Inventory
@@ -179,6 +195,7 @@ and device connection tests.
 | App                     | Kind                      | Namespace               | GitOps path                                   | Terragrunt path                              | Depends on                                                  |
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `traefik` | ingress foundation | `traefik` | `clusters/homelab/apps/traefik` | `IaC/live/argocd-apps/traefik` | cert-manager, istio, tailscale; operator policy before proxy registration |
+| `tailnet-dns` | tailnet application resolver | `tailnet-dns` | `clusters/homelab/platform/tailnet-dns` | `IaC/live/argocd-apps/tailnet-dns` | tailscale, traefik, published pinned Harbor DNS image |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/live/argocd-apps/platform-dns`          | Argo CD bootstrap                                           |
 | `platform-multus`       | support                   | `kube-system`           | `clusters/homelab/platform/multus`            | `IaC/live/argocd-apps/platform-multus`       | Octelium data-plane prerequisites                           |
 | `platform-storage`      | support                   | cluster-scoped          | `clusters/homelab/platform/storage`           | `IaC/live/argocd-apps/platform-storage`      | QNAP NFS export                                             |
@@ -198,6 +215,17 @@ a Service route for internal callers before external DNS moves to mesh addresses
 It now declares all six CoreDNS resources and pins the running image content,
 with a controlled rolling replacement. The Talos bootstrap handoff remains a
 separate, gated step; see [CoreDNS GitOps Ownership](../operations/coredns-gitops-ownership.md).
+
+`tailnet-dns` is a separate, stateless CoreDNS/k8s_gateway resolver for tailnet
+clients; it does not replace `platform-dns` or Traefik. Its Tailscale
+LoadBalancer exposes UDP/TCP 53 through the distinct `homelab-dns` proxy.
+The resolver watches the approved `traefik-private` Service's hostname
+annotation and published ingress IP; reviewed HTTPS routes must match those
+names. The first handoff checks all 27 migration names, while later paired
+route/annotation changes update DNS without a zone-record edit. Its two Pods
+need no PVC, DNS database, backup, or application secret. Direct signed-proxy
+and DNS checks precede the owner tailnet nameserver setting; public address
+records remain until separate client acceptance and guarded retirement.
 
 `platform-crossplane` installs Crossplane core `2.3.3` from the upstream stable
 Helm repository with default chart values. It intentionally does not install
@@ -266,6 +294,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `openclaw`             | `ai`               | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`             | NAS configuration/workspace; retained node-local SQLite state on zimaboard-1; daily verified NAS database snapshots; `6Gi` ephemeral cap; exact-image-version external Discord npm package with no floating fallback; a dedicated LiteLLM caller key and OpenAI-compatible internal endpoint provide `openrouter/free`; Kubernetes-only containment with sandboxing off until a supported Docker, SSH, or OpenShell backend exists; explicit agent resources; HTTP proxy probes; pinned to `zimaboard-1` for persistent local runtime state                                                                                                                                                                                                                                                                                   | external-secrets, cert-manager, istio, litellm, platform-storage                                                    |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
+| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/live/argocd-apps/renovate` | Staged hourly UTC CronJob, suspended in full dry-run mode pending protected App-key transfer and parity checks; retained 20 Gi NFS cache; no live Job acceptance yet | aws-ssm-parameters, external-secrets, platform-storage |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
@@ -459,6 +488,9 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+The staged native Chainguard receipt targets private Python and curl imports;
+it neither publishes them nor moves consumers until protected receipt and
+provenance gates pass.
 
 The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
 Application. Its cluster-scoped admission policy starts with `Warn, Audit` for

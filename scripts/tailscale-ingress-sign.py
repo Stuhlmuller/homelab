@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sign only the three repository-owned ingress proxies with the existing local signer."""
+"""Sign only the fixed repository-owned Tailscale proxies with the existing local signer."""
 import sys
 
 if __name__ == "__main__" and not sys.flags.isolated:
@@ -19,9 +19,10 @@ SPEC.loader.exec_module(GUARDS)
 TAILSCALE = "/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 TAILNET = "tail67beb.ts.net"
 TARGETS = (
-    ("svc", "traefik-private", "homelab-ingress", "tag:homelab-ingress"),
-    ("ingress", "n8n-webhook", "n8n-webhook", "tag:homelab-funnel"),
-    ("ingress", "policy-bot-hook", "policy-bot-hook", "tag:homelab-funnel"),
+    ("traefik", "svc", "traefik-private", "homelab-ingress", "tag:homelab-ingress"),
+    ("traefik", "ingress", "n8n-webhook", "n8n-webhook", "tag:homelab-funnel"),
+    ("traefik", "ingress", "policy-bot-hook", "policy-bot-hook", "tag:homelab-funnel"),
+    ("tailnet-dns", "svc", "tailnet-dns", "homelab-dns", "tag:homelab-ingress"),
 )
 
 
@@ -43,11 +44,11 @@ def local_signer():
 
 
 def validate_target(target, source, pod, status, lock, signer):
-    kind, name, hostname, tag = target
+    namespace, kind, name, hostname, tag = target
     metadata = pod["metadata"]
     labels = metadata.get("labels", {})
     expected = {"tailscale.com/managed": "true", "tailscale.com/parent-resource": name,
-                "tailscale.com/parent-resource-ns": "traefik", "tailscale.com/parent-resource-type": kind,
+                "tailscale.com/parent-resource-ns": namespace, "tailscale.com/parent-resource-type": kind,
                 "app": source["metadata"]["uid"]}
     require(all(labels.get(key) == value for key, value in expected.items())
             and not metadata.get("deletionTimestamp")
@@ -83,9 +84,9 @@ def validate_target(target, source, pod, status, lock, signer):
 
 
 def inspect_target(target, signer):
-    kind, name, _, _ = target
-    source = GUARDS.read_json(["kubectl", "-n", "traefik", "get", kind, name, "-o", "json"], "ingress resource")
-    selector = ("tailscale.com/managed=true,tailscale.com/parent-resource-ns=traefik,"
+    namespace, kind, name, _, _ = target
+    source = GUARDS.read_json(["kubectl", "-n", namespace, "get", kind, name, "-o", "json"], "ingress resource")
+    selector = (f"tailscale.com/managed=true,tailscale.com/parent-resource-ns={namespace},"
                 f"tailscale.com/parent-resource={name},tailscale.com/parent-resource-type={kind}")
     pods = GUARDS.read_json(["kubectl", "-n", "tailscale", "get", "pods", "-l", selector, "-o", "json"],
                            "controller proxy lookup")["items"]
@@ -99,19 +100,20 @@ def inspect_target(target, signer):
     return validate_target(target, source, pod, status, lock, signer)
 
 
-def reconcile(execute):
+def reconcile(execute, dns_only=False):
     revision = GUARDS.verify_main() if execute else None
     server = GUARDS.command(["kubectl", "config", "view", "--minify", "-o",
                              "jsonpath={.clusters[0].cluster.server}"], "Kubernetes context").strip()
     require(server == "https://10.1.0.199:6443", "Signing requires the authenticated local homelab Kubernetes API")
     signer = local_signer()
-    targets = [inspect_target(target, signer) for target in TARGETS]
+    selected = TARGETS[-1:] if dns_only else TARGETS
+    targets = [inspect_target(target, signer) for target in selected]
     if not execute:
         for target in targets:
             print(target["dns"] + (": already signed" if target["signed"] else ": signature required"))
         return
     require(GUARDS.verify_main() == revision, "Current main changed during signing preflight")
-    for target, expected in zip(TARGETS, targets):
+    for target, expected in zip(selected, targets):
         current = inspect_target(target, local_signer())
         require(current == expected, "Proxy identity changed during preflight; rerun the preview")
         if not current["signed"]:
@@ -119,12 +121,12 @@ def reconcile(execute):
                            "fixed ingress node signing")
     for attempt in range(16):
         signer = local_signer()
-        current = [inspect_target(target, signer) for target in TARGETS]
+        current = [inspect_target(target, signer) for target in selected]
         require(all({k: v for k, v in a.items() if k != "signed"}
                     == {k: v for k, v in b.items() if k != "signed"}
                     for a, b in zip(current, targets)), "Proxy identity changed during signature verification")
         if all(target["signed"] for target in current):
-            print("Verified all three ingress signatures; Tailnet Lock remains enabled.")
+            print("Verified selected fixed proxy signatures; Tailnet Lock remains enabled.")
             return
         if attempt < 15:
             time.sleep(2)
@@ -134,9 +136,10 @@ def reconcile(execute):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true", help="Sign only the verified fixed ingress nodes")
+    parser.add_argument("--dns-only", action="store_true", help="Inspect or sign only the fixed homelab-dns proxy")
     args = parser.parse_args(argv)
     try:
-        reconcile(args.execute)
+        reconcile(args.execute, args.dns_only)
     except GUARDS.Failure as error:
         print(str(error), file=sys.stderr)
         return 1

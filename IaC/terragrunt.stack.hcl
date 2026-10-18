@@ -310,6 +310,14 @@ unit "argocd_apps_prowlarr" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/prowlarr/stack.hcl").inputs
 }
 
+unit "argocd_apps_renovate" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/renovate"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/renovate/stack.hcl").inputs
+}
+
 unit "argocd_apps_radarr" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/radarr"
@@ -332,6 +340,14 @@ unit "argocd_apps_tailscale" {
   no_dot_terragrunt_stack = true
 
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailscale/stack.hcl").inputs
+}
+
+unit "argocd_apps_tailnet_dns" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/tailnet-dns"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/tailnet-dns/stack.hcl").inputs
 }
 
 unit "argocd_apps_traefik" {

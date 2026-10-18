@@ -10,6 +10,7 @@ metadata:
     app.kubernetes.io/name: openclaw-runtime-backup
     app.kubernetes.io/part-of: homelab-ai
 spec:
+  suspend: true
   schedule: "25 4 * * *"
   timeZone: America/Los_Angeles
   concurrencyPolicy: Forbid

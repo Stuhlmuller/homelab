@@ -12,9 +12,9 @@ on:
         description: Fixed legacy retention operation
         required: true
         type: choice
-        options: [inventory, archive, verify]
+        options: [inventory, publish-inventory, archive, verify]
       baseline_ref:
-        description: Inventory source SHA and run ID for archive (SHA/run-id)
+        description: Inventory source SHA and run ID for publish or archive (SHA/run-id)
         required: false
         type: string
       archive_ref:
@@ -129,16 +129,21 @@ jobs:
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
+          export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'3491fe8b6c80454d522b7d03dba1baf7e0101519467368ba4bf9c471a91efb6d  scripts/ci/openclaw-enterprise-operations.sh'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
           EOF
           then
-            echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld."
+            phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+            case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)
+              echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+            *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+            esac
             exit 1
           fi
           echo "Legacy operation completed; private receipts withheld."
