@@ -57,7 +57,7 @@ spec:
         - alert: RenovateHourlyCycleIncomplete
           expr: |
             (
-              (time() - homelab_renovate:last_schedule_after_resume:seconds > 3240)
+              (time() - homelab_renovate:last_schedule_after_resume:seconds > 3360)
               and on (namespace, cronjob)
               (
                 homelab_renovate:last_schedule_after_resume:seconds
@@ -89,7 +89,7 @@ spec:
             summary: Renovate did not complete its hourly cycle.
             description: >-
               The latest automation/renovate schedule has no successful Job
-              by its 55-minute deadline. Inspect its active or failed Job.
+              by 56 minutes after the scheduled slot. Inspect its active or failed Job.
             runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/renovate/README.md
         - alert: RenovateCronJobMissing
           expr: |

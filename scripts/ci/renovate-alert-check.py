@@ -3,6 +3,7 @@
 
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -14,6 +15,16 @@ promtool = shutil.which("promtool")
 if not promtool:
     raise SystemExit("promtool is required; run inside nix develop")
 spec = json.loads(subprocess.check_output(["yq", "-o=json", ".spec", str(rule)]))
+cronjob = json.loads(subprocess.check_output([
+    "yq", "-o=json", ".spec", str(root / "clusters/homelab/apps/renovate/cronjob.yaml")
+]))
+incomplete = next(item for item in spec["groups"][0]["rules"] if item.get("alert") == "RenovateHourlyCycleIncomplete")
+deadline_match = re.search(r"time\(\) - homelab_renovate:last_schedule_after_resume:seconds > (\d+)", incomplete["expr"])
+if not deadline_match:
+    raise SystemExit("Renovate completion alert has no schedule deadline")
+deadline = int(deadline_match.group(1))
+if cronjob["startingDeadlineSeconds"] + cronjob["jobTemplate"]["spec"]["activeDeadlineSeconds"] >= deadline or deadline >= 3600:
+    raise SystemExit("Renovate Job may outlive its completion alert or hourly slot")
 resources = json.loads(subprocess.check_output([
     "yq", "-o=json", ".resources", str(rule.with_name("kustomization.yaml"))
 ]))
@@ -86,6 +97,7 @@ tests.extend([
     completion_case("next schedule resets previous failure", schedule="3600x119 7200x79", at="121m", fires=False),
     completion_case("second failed cycle alerts", schedule="3600x119 7200x79", at="178m"),
     completion_case("successful schedule clears deadline", jobs=[("renovate-current", 3600, "1x199")], fires=False),
+    completion_case("late-start success clears deadline", jobs=[("renovate-late", 4440, "0x113 1x86")], fires=False),
     completion_case("late old success cannot clear new failure", schedule="3600x119 7200x79", at="178m", jobs=[
         ("renovate-old", 4500, "0x121 1x77"),
         ("renovate-new", 7205, "0x199"),

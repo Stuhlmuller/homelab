@@ -33,8 +33,8 @@ into the namespaced `renovate` Secret. The Pod reads `issuer-id` and
 signs a GitHub App JWT in memory and requests one installation token at Job
 start. Neither credential nor token belongs in logs, Pod environment, command
 arguments, or the cache. The Pod has no Kubernetes API token. The token must
-cover all owner repositories and remain valid beyond the Job's 55-minute
-deadline; otherwise config loading fails closed.
+cover all owner repositories. The Job has a 40-minute deadline and config
+requires 55 minutes of token validity at startup; otherwise it fails closed.
 
 The protected credential-transfer workflow in `Stuhlmuller/renovate` writes
 the existing App credentials to those exact SSM paths. Apply the temporary
