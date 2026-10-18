@@ -173,8 +173,9 @@ approved_openclaw_legacy_operation if {
 	step.name == "Run Legacy Stage"
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'385c68abb44a4495f3525fb0dd4ac6bc3e32338b043543757781ea86a99c6275  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'4e83b1055f5070eb933a95dde0d45e14e9883cfacfcb95a99107104105331d66  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
@@ -467,6 +468,21 @@ private_live_tail(tail) if {
 	lines[2] == "exit 1"
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
+}
+
+private_live_tail(tail) if {
+	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
+	lines == [
+		"then",
+		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
+		`case "$phase" in preflight|baseline|publication|verification)`,
+		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
+		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
+		"esac",
+		"exit 1",
+		"fi",
+		`echo "Legacy operation completed; private receipts withheld."`,
+	]
 }
 
 azuread_plan_private_live_tail(tail) if {
