@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:47:13.681Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -13,6 +13,8 @@ sources:
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-6155e2b0ac0be42ac6e4aa1d
+    resource: repo://clusters/homelab/apps/cordium/nocturne-pull-secret.yaml
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -71,7 +73,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
+generated: { by: "codex", at: "2026-10-18T06:47:13.681Z" }
 ---
 
 # Secrets And Identity
@@ -802,6 +804,15 @@ grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
 creates the parameter and read-only metadata verifies it. This declaration
 creates no Harbor robot, receipt, or running workload change. See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
+
+The staged Cordium Nocturne controller uses a separate generated SSM copy of
+the existing Harbor read-only robot password at
+`/homelab/cordium/nocturne-harbor-pull-password`. Its exact reader grant and
+copy require a reviewed private saved plan before the excluded
+`octelium/cordium-nocturne-pull` ExternalSecret can enter Kustomize. The
+eventual Pod uses the namespace-local Secret only through `imagePullSecrets`;
+this staging does not publish or deploy the controller. See the
+[Nocturne pull contract](../../docs/secrets-aws-ssm.md#cordium-nocturne-custom-controller-pull).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

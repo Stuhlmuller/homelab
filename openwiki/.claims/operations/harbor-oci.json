@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cacbb0152cd39ade8b06e3583468ad45edc25c5a4df92feff906f38323338376",
+  "pageVersion": "sha256:1421b27a487f777867faa38dd2aceaf282384610611d5026979f55a80d94e77d",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
+          "version": "repo-file-v1:sha256:3473f0b7053030a7eda56fb9783a2ee21627298d143354355515ede552b06951"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -364,11 +364,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
         }
       ]
     },
@@ -404,7 +404,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
         }
       ]
     },
@@ -414,7 +414,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:739a0168d42e5b86f1336ac7d83cbf05223ed8942cbf61a040382e6254cb2076"
+          "version": "repo-file-v1:sha256:8a5d306f08847a0730ebcecfdd685766d8fdad24fa8fc343f7cc3cd296fb9a18"
         },
         {
           "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:429ae9bb0c50766bb0ef34726226c9ba7306546af179b486d0e4390977100bb2"
+          "version": "repo-file-v1:sha256:bb77bed4315b72d4cae5cb8c1f6d3f74a74a73f1abaff4a0d4707e2cb31ddc76"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
@@ -466,7 +466,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
         }
       ]
     },
@@ -508,7 +508,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:739a0168d42e5b86f1336ac7d83cbf05223ed8942cbf61a040382e6254cb2076"
+          "version": "repo-file-v1:sha256:8a5d306f08847a0730ebcecfdd685766d8fdad24fa8fc343f7cc3cd296fb9a18"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -516,7 +516,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:429ae9bb0c50766bb0ef34726226c9ba7306546af179b486d0e4390977100bb2"
+          "version": "repo-file-v1:sha256:bb77bed4315b72d4cae5cb8c1f6d3f74a74a73f1abaff4a0d4707e2cb31ddc76"
         }
       ]
     },
@@ -580,21 +580,39 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
+          "version": "repo-file-v1:sha256:3473f0b7053030a7eda56fb9783a2ee21627298d143354355515ede552b06951"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
           "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
         }
       ]
+    },
+    {
+      "id": "claim_1e924646bdf643998f0692acc6ffd9c0",
+      "statement": "The staged Nocturne publisher builds a checksum-pinned patched controller before credentials and publishes only the fixed Harbor image, requiring complete authenticated pull and signature verification before output; no consumer is enabled.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-nocturne-publish.yml",
+          "version": "repo-file-v1:sha256:60566fad8d31d44337094fade5b812ea58dbb80dd0ded52245dd83b24d682cf2"
+        },
+        {
+          "resource": "repo://builds/cordium-nocturne/README.md",
+          "version": "repo-file-v1:sha256:c0a12526371d2000d35d7d8d6cc2e9f934a57d25708d3a48e3f121db7f41ab8d"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:06:26.593Z"
+    "at": "2026-10-18T06:47:13.681Z"
   }
 }

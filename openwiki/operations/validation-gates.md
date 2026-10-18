@@ -16,6 +16,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
+  - id: openwiki-source-b7a8f502eac27f334c6bfc5f
+    resource: repo://builds/cordium-nocturne/README.md
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
@@ -56,6 +58,8 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -150,10 +154,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T06:47:13.681Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:47:13.681Z
 ---
 
 # Validation Gates
@@ -1617,6 +1621,15 @@ still requires the new web Pod Ready on Acer, the old web Pod gone from
 `zimaboard-1`, recovered SQL/web behavior, and fresh node headroom and pressure
 readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 is a projection, not rollout acceptance.
+
+The staged [Nocturne controller patch](../../builds/cordium-nocturne/README.md)
+reserves the configured workspace CPU/memory limits and uses a separate Pod user
+namespace. Its pinned build reproduces the old request defect before patching
+and checks the generator afterward. The fixed publisher fixture covers one
+Nocturne image, exact workflow/current-main binding, complete Harbor pull,
+signature verification, and withheld outputs on failure. These checks do not
+establish image publication, Acer capacity allocation, Talos configuration
+application, or live workspace execution.
 
 ## Harbor OCI rollout
 

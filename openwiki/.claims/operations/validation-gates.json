@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:15ea950be67ad280b108bd8eecaa9dd8a366170c5b120673a55c01ce18249ddf",
+  "pageVersion": "sha256:103d10b0f2b4bfa8442c20e3711918229796e440e5662ce511f217fe5568356e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c734161442090600c05715f6423198a13aabf5f4efc298e3fcb24808446cf70d"
+          "version": "repo-file-v1:sha256:d809fb6e3d787e2c2faf7b56809462178137eb3795a17c9b6336ba5552fc11e7"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -670,25 +670,43 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
+          "version": "repo-file-v1:sha256:3473f0b7053030a7eda56fb9783a2ee21627298d143354355515ede552b06951"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
+          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:c734161442090600c05715f6423198a13aabf5f4efc298e3fcb24808446cf70d"
+          "version": "repo-file-v1:sha256:d809fb6e3d787e2c2faf7b56809462178137eb3795a17c9b6336ba5552fc11e7"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
           "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
         }
       ]
+    },
+    {
+      "id": "claim_a9f87f8990f546ac9e691d72a4652acc",
+      "statement": "The staged Nocturne controller patch fixes CPU and memory requests plus Pod user namespace isolation; local source and publisher fixtures validate the build and fixed Harbor publication path, while image publication, Acer capacity, Talos apply and live workspace execution remain unaccepted.",
+      "evidence": [
+        {
+          "resource": "repo://builds/cordium-nocturne/README.md",
+          "version": "repo-file-v1:sha256:c0a12526371d2000d35d7d8d6cc2e9f934a57d25708d3a48e3f121db7f41ab8d"
+        },
+        {
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:10ec974797217d12bfac9b686877d08811f5cb286b46b9a87854dd846d0cff5a"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:24:02.662Z"
+    "at": "2026-10-18T06:47:13.681Z"
   }
 }
