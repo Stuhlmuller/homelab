@@ -160,6 +160,21 @@ plan_and_apply_langfuse_prerequisites() {
   echo "::endgroup::"
 }
 
+plan_and_apply_application_backup_storage() {
+  local plan_dir
+
+  plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-openclaw-archive-plan.XXXXXX")"
+  cleanup_dirs+=("$plan_dir")
+  (
+    cd IaC/operator/application-backup-storage
+    terragrunt init -no-color
+    terragrunt plan -out "$plan_dir/plan.out" -no-color
+    terragrunt --log-disable show -json "$plan_dir/plan.out" >"$plan_dir/plan.json"
+    conftest test --policy ../../../policy --output github "$plan_dir/plan.json"
+    terragrunt apply -no-color "$plan_dir/plan.out"
+  )
+}
+
 plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
@@ -200,7 +215,25 @@ plan_and_apply_argocd_apps() {
 }
 
 prepare_terragrunt_filter_base
+backup_storage_scope="${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}"
+case "$backup_storage_scope" in
+  true)
+    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false ]] || {
+      echo "The backup-storage scope cannot be combined with an Argo CD target or state repair." >&2
+      exit 2
+    }
+    ;;
+  false) ;;
+  *) echo "Invalid backup-storage scope." >&2; exit 2 ;;
+esac
 terragrunt_generate_stack
+
+if [[ "$backup_storage_scope" == true ]]; then
+  echo "::group::OpenClaw legacy offsite bucket plan and apply"
+  plan_and_apply_application_backup_storage
+  echo "::endgroup::"
+  exit 0
+fi
 
 repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
@@ -299,6 +332,10 @@ if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
 fi
 
 destroy_deleted_terragrunt_units
+
+echo "::group::OpenClaw legacy offsite bucket plan and apply"
+plan_and_apply_application_backup_storage
+echo "::endgroup::"
 
 echo "::group::Argo CD bootstrap apply"
 (

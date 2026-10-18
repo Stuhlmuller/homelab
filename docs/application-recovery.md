@@ -140,9 +140,11 @@ activation gates below are satisfied.
    account `716182248480`, `us-east-1`, AWS-managed `alias/aws/s3`, versioned,
    no completed-object expiry. Reuse `IaC/modules/aws-backup-bucket`; the staged
    catalog unit is `IaC/.catalog/units/operator/application-backup-storage`.
-   It is deliberately **absent** from `IaC/terragrunt.stack.hcl`, so routine
-   stack generation/apply does not create it. Approve storage, request and KMS
-   costs only after measuring dump sizes. For daily compressed input D GiB,
+   The unit is staged in `IaC/terragrunt.stack.hcl` for the measured OpenClaw
+   Enterprise legacy archive; the protected apply must still pass its scoped
+   plan before the bucket exists. It does not activate the separate application
+   backup host or timer. Review storage, request and KMS costs after measuring
+   dump sizes. For daily compressed input D GiB,
    retained storage grows roughly D GiB/day plus failed objects; hourly
    full-byte checks read roughly 24D GiB/day. No dollar quote or budget approval
    is inferred.
@@ -181,16 +183,6 @@ activation gates below are satisfied.
 
 Keep changes in reviewed commits; no commands in this section were executed
 against live resources. Do not approve a blanket apply based on this runbook.
-
-After approving the bucket plan, add this explicit stack unit in a follow-up PR:
-
-```hcl
-unit "operator_application_backup_storage" {
-  source                  = "./.catalog/units/operator/application-backup-storage"
-  path                    = "operator/application-backup-storage"
-  no_dot_terragrunt_stack = true
-}
-```
 
 From `IaC`, generate the stack and plan only the new unit through the repository's
 normal Terragrunt path; review the exact saved plan before authorizing apply.

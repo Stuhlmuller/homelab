@@ -157,6 +157,29 @@ deny contains msg if {
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
+	not approved_openclaw_legacy_operation
+	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
+}
+
+approved_openclaw_legacy_operation if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	dispatch.inputs.legacy_stage.options == ["inventory", "archive", "verify"]
+	job := input.jobs.legacy
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency.group == "openclaw-enterprise-operations-production"
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	some step in job.steps
+	step.name == "Run Legacy Stage"
+	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
+	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	contains(step.run, "set -euo pipefail\numask 077\n")
+	contains(step.run, concat("", [`sha256sum --check --status <<<'08f1127138e6cc1b826aa48ba9ba0cbff1961027badbb42f0a14cd5e9a4681b6  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+}
+
 encrypted_harbor_diagnostic(job_name, job, step) if {
 	job_name == "mirror"
 	some command in job.steps
