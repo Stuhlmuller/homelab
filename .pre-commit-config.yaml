@@ -11,6 +11,31 @@ repos:
         entry: bash scripts/ci/secret-scan.sh --artifacts-only
         language: system
         pass_filenames: false
+      - id: actionlint
+        name: GitHub Actions lint
+        entry: actionlint
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
+      - id: shellcheck
+        name: Bash lint
+        entry: shellcheck
+        language: system
+        types: [shell]
+      - id: markdownlint
+        name: Markdown lint
+        entry: markdownlint --config .github/linters/.markdown-lint.yml
+        language: system
+        types: [markdown]
+      - id: ruff
+        name: Python lint
+        entry: ruff check
+        language: system
+        types: [python]
+      - id: yamllint
+        name: YAML lint
+        entry: yamllint -d relaxed
+        language: system
+        types: [yaml]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     # v5.0.0
@@ -21,6 +46,7 @@ repos:
         exclude: ^builds/(nofx|harbor-core)/patches/.*\.patch$
       - id: end-of-file-fixer
       - id: check-added-large-files
+      - id: check-json
       - id: check-yaml
         args:
           - --allow-multiple-documents
