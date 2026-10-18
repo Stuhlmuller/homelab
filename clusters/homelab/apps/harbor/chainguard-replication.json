@@ -7,7 +7,7 @@
     {
       "repository": "chainguard/python",
       "source_tag": "latest",
-      "destination": "homelab/chainguard-python",
+      "destination": "homelab/chainguard/python",
       "override": true,
       "delete": false,
       "flatten": false,
@@ -16,7 +16,7 @@
     {
       "repository": "chainguard/curl",
       "source_tag": "latest",
-      "destination": "homelab/chainguard-curl",
+      "destination": "homelab/chainguard/curl",
       "override": true,
       "delete": false,
       "flatten": false,

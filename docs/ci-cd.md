@@ -14,10 +14,11 @@ This repository uses GitHub Actions for the review and rollout path:
   weekly CodeQL security schedule remains active. Dispatch Image automation
   with `operation=verify` from `main` to check and alert on its journal.
 
-- `Lint` runs on pull requests and invokes Super-Linter against changed files
-  with advisory status reporting. It is the shared lightweight lint signal for
-  every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
-  and `validate`.
+- `Lint` runs on pull requests and invokes Super-Linter against changed files.
+  Its job conclusion is the shared lightweight lint signal; it cannot write
+  commit statuses, so pull-request code cannot forge the protected native
+  Chainguard receipt provenance status. Repository-specific blocking checks
+  remain in `Terragrunt Gate` and `validate`.
 - `Terragrunt Plan` runs on every pull request. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,

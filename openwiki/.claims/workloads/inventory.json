@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5d5d1019b5b5cd439a76838a9752dd6f20a140968b312204bbafad92c7e10874",
+  "pageVersion": "sha256:9a5d96a804b1631e887d993ff8769d3aa6aeb3538669b598c8e04df98b1b985e",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:f85f50f287fce9a78081f77d97fecf42560d1ff79eb256bfad55e800a0c64225"
+          "version": "repo-file-v1:sha256:c563eebf9010f3d4473b8369f9070667a7b84f7c4c7d3fba1b3988bf8a0bfcbb"
         }
       ]
     },
@@ -261,10 +261,24 @@
           "version": "repo-file-v1:sha256:e1dd68c104e64def1be7e4d0c0f905f9daa30960c5808af832dbe7e28cc61b65"
         }
       ]
+    },
+    {
+      "id": "claim_548f77abe2984dab8f5127f4ab94a867",
+      "statement": "The staged native Harbor Chainguard receipt covers private Python and curl imports but does not publish those images or migrate consumers; protected receipt and provenance gates remain prerequisites.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L6-L59",
+          "version": "repo-lines-v1:sha256:a0cf845c9739c1d0d0ae1708602bec8def146d8fb3a571fcd4b81d0a6e7d24c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T10:55:26.804Z"
+    "at": "2026-10-18T20:41:22.820Z"
   }
 }

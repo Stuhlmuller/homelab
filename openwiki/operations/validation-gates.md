@@ -10,6 +10,8 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-2ab88915e37908e92fe8ef01
+    resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -90,6 +92,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
+  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -156,10 +160,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T18:11:31.710Z" }
+generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T18:11:31.710Z
+    at: 2026-10-18T20:41:22.820Z
 ---
 
 # Validation Gates
@@ -1702,11 +1706,11 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
-The fixed Renovate scope contains six cataloged update digests. Publisher
+The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
-validate the six consuming applications.
+validate consuming workloads.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
@@ -1723,6 +1727,13 @@ upload and at alias copy after a resumed digest tag. Both require the `regctl`
 fallback, unchanged root digest and alias, and a complete authenticated pull;
 generic destination errors still fail closed. These fixtures do not establish
 that the protected full-catalog publication succeeded.
+
+The native Chainguard receipt fixture uses actual Skopeo and generated local
+OCI indexes to check complete two-platform downloads with repeated child
+descriptors. Its scan-client fixture requires Harbor's exact vulnerability
+report negotiation header. The static gate rejects commit-status write grants
+in pull-request workflows, so the trusted base receipt provenance status cannot
+be forged by the ordinary lint job. These checks do not dispatch the receipt.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked

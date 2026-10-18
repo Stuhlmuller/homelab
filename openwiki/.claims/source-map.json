@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:737f8e6788acffe176f3f828503870927d3588c9934996e51b5d898d3673eed2",
+  "pageVersion": "sha256:7dab44ee6f86426277f3b8ff8bcd31e47fb61e3b95086135434198258cc842ce",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -99,10 +99,24 @@
           "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
         }
       ]
+    },
+    {
+      "id": "claim_8730a6d88f7a49d7a2c95790a0d79d13",
+      "statement": "The source map links the protected native Chainguard receipt workflow and verifier to Harbor operations and validation gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt.py",
+          "version": "repo-file-v1:sha256:7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:24:02.662Z"
+    "at": "2026-10-18T20:41:22.820Z"
   }
 }
