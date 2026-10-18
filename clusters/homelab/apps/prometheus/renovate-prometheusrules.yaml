@@ -11,16 +11,35 @@ spec:
     - name: homelab.renovate
       interval: 1m
       rules:
+        - record: homelab_renovate:last_suspended_sample:seconds
+          expr: |
+            max by (namespace, cronjob) (
+              max_over_time((timestamp(kube_cronjob_spec_suspend{job="kube-state-metrics",namespace="automation",cronjob="renovate"} == 1))[2h:1m])
+            )
+        - record: homelab_renovate:last_schedule_after_resume:seconds
+          expr: |
+            max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
+            unless on (namespace, cronjob)
+            (
+              max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
+              <= on (namespace, cronjob)
+              homelab_renovate:last_suspended_sample:seconds
+            )
+        # shortcut: 60-second resume cushion assumes kube-state-metrics is scraped at most every 30 seconds; revisit if scrape interval grows.
         - alert: RenovateHourlyCycleMissing
           expr: |
             (
               (
-                (time() - max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0) > 4500)
+                (time() - homelab_renovate:last_schedule_after_resume:seconds > 4500)
                 or
                 (
-                  (time() - (floor(min by (namespace, cronjob) (kube_cronjob_created{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) / 3600) * 3600 + 3600) > 900)
+                  (time() - (floor((
+                    (homelab_renovate:last_suspended_sample:seconds + 60)
+                    or on (namespace, cronjob)
+                    min by (namespace, cronjob) (kube_cronjob_created{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
+                  ) / 3600) * 3600 + 3600) > 900)
                   unless on (namespace, cronjob)
-                    (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
+                    homelab_renovate:last_schedule_after_resume:seconds
                 )
               )
               and on (namespace, cronjob)
@@ -44,7 +63,18 @@ spec:
                 max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
                 unless on (namespace, cronjob)
                 (
-                  max by (namespace, cronjob) (kube_cronjob_status_last_successful_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
+                  max by (namespace, cronjob) (
+                    label_replace(
+                      (
+                        homelab_job:current_cronjob_owner:info{namespace="automation",owner_name="renovate"}
+                        * on (namespace, job_name) group_left
+                          max by (namespace, job_name) (kube_job_created{job="kube-state-metrics",namespace="automation"} > 0)
+                      )
+                      and on (namespace, job_name)
+                        max by (namespace, job_name) (kube_job_status_succeeded{job="kube-state-metrics",namespace="automation"} > 0),
+                      "cronjob", "$1", "owner_name", "(.+)"
+                    )
+                  )
                   >= on (namespace, cronjob)
                   max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
                 )
