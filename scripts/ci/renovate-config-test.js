@@ -1,0 +1,143 @@
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const configPath = path.resolve(__dirname, '../../clusters/homelab/apps/renovate/config.js');
+const source = fs.readFileSync(configPath, 'utf8');
+const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
+const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
+
+function load(options = {}) {
+  const calls = [];
+  const issuer = options.issuer ?? 'Iv1.example';
+  const key = options.key ?? pem;
+  const installation = options.installation ?? {
+    id: 42,
+    account: { login: 'Stuhlmuller' },
+    repository_selection: 'all',
+  };
+  const result = options.result ?? {
+    token: 'ghs_test-installation-token',
+    expires_at: new Date(Date.now() + 3600_000).toISOString(),
+  };
+  const context = {
+    module: { exports: {} },
+    Buffer,
+    require(name) {
+      if (name === 'node:fs') {
+        return {
+          readFileSync(file) {
+            if (file === '/var/run/secrets/renovate/issuer-id') return issuer;
+            if (file === '/var/run/secrets/renovate/private-key') return key;
+            throw new Error('unexpected credential path');
+          },
+        };
+      }
+      if (name === 'node:crypto') return crypto;
+      throw new Error('unexpected module');
+    },
+    async fetch(url, request) {
+      calls.push({ url, request });
+      const status = options.status?.[calls.length - 1] ?? 200;
+      return {
+        ok: status === 200 || status === 201,
+        status,
+        async json() { return calls.length === 1 ? installation : result; },
+      };
+    },
+  };
+  vm.runInNewContext(source, context, { filename: configPath });
+  return { config: context.module.exports, calls };
+}
+
+test('mints a signed installation token and preserves the current global policy', async () => {
+  const { config, calls } = load();
+  const resolved = await config();
+  assert.equal(resolved.token, 'ghs_test-installation-token');
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, 'https://api.github.com/orgs/Stuhlmuller/installation');
+  assert.equal(calls[1].url, 'https://api.github.com/app/installations/42/access_tokens');
+  assert.equal(calls[1].request.method, 'POST');
+  assert.equal(calls[0].request.headers.Authorization, calls[1].request.headers.Authorization);
+
+  const jwt = calls[0].request.headers.Authorization.slice('Bearer '.length);
+  const [header, payload, signature] = jwt.split('.');
+  assert.deepEqual(JSON.parse(Buffer.from(header, 'base64url')), { alg: 'RS256', typ: 'JWT' });
+  const claims = JSON.parse(Buffer.from(payload, 'base64url'));
+  assert.equal(claims.iss, 'Iv1.example');
+  assert.ok(claims.exp - claims.iat <= 600);
+  assert.ok(crypto.verify('RSA-SHA256', Buffer.from(`${header}.${payload}`), publicKey, Buffer.from(signature, 'base64url')));
+
+  assert.equal(resolved.platform, 'github');
+  assert.equal(resolved.autodiscover, true);
+  assert.deepEqual(Array.from(resolved.autodiscoverFilter), ['Stuhlmuller/*']);
+  assert.equal(resolved.forkProcessing, 'enabled');
+  assert.equal(resolved.onboarding, false);
+  assert.equal(resolved.requireConfig, 'optional');
+  assert.equal(resolved.platformCommit, 'enabled');
+  assert.deepEqual(Array.from(resolved.globalExtends), [
+    'config:best-practices', ':automergeAll', 'replacements:all',
+    'schedule:automergeDaily', 'security:openssf-scorecard',
+  ]);
+  assert.equal(resolved.dryRun, 'full');
+  assert.equal(resolved.cacheDir, '/cache/renovate');
+  assert.equal(resolved.baseDir, '/tmp/renovate');
+  assert.equal(resolved.repositoryCache, 'enabled');
+  assert.equal(resolved.cachePrivatePackages, true);
+});
+
+test('fails closed for missing credentials and invalid signing keys', async () => {
+  for (const options of [{ issuer: '' }, { key: '' }, { key: 'not a private key' }]) {
+    const { config, calls } = load(options);
+    await assert.rejects(config(), /credential files are empty|private key is invalid/);
+    assert.equal(calls.length, 0);
+  }
+});
+
+test('refuses an inaccessible or selected-repository installation', async () => {
+  const inaccessible = load({ status: [404] });
+  await assert.rejects(inaccessible.config(), /returned HTTP 404/);
+  assert.equal(inaccessible.calls.length, 1);
+
+  const selected = load({ installation: {
+    id: 42,
+    account: { login: 'Stuhlmuller' },
+    repository_selection: 'selected',
+  } });
+  await assert.rejects(selected.config(), /does not cover the owner/);
+  assert.equal(selected.calls.length, 1);
+});
+
+test('refuses invalid or nearly expired installation tokens', async () => {
+  for (const result of [
+    { token: 'bad-token', expires_at: new Date(Date.now() + 3600_000).toISOString() },
+    { token: 'ghs_short', expires_at: new Date(Date.now() + 3000_000).toISOString() },
+    { token: 'ghs_missing-expiration' },
+    { token: 'ghs_invalid-expiration', expires_at: 'invalid' },
+  ]) {
+    const { config, calls } = load({ result });
+    await assert.rejects(config(), /installation token is invalid or expires too soon/);
+    assert.equal(calls.length, 2);
+  }
+});
+
+test('keeps Renovate cache refresh defaults and mounts credentials outside the PVC', async () => {
+  const { config } = load();
+  const resolved = await config();
+  for (const key of ['cacheTtlOverride', 'cacheHardTtlMinutes', 'httpCacheTtlDays']) {
+    assert.equal(Object.hasOwn(resolved, key), false, `${key} must use the Renovate default`);
+  }
+  assert.equal(resolved.repositoryCache, 'enabled');
+  assert.equal(resolved.cachePrivatePackages, true);
+  assert.equal(resolved.cacheDir, '/cache/renovate');
+  assert.equal(resolved.baseDir, '/tmp/renovate');
+
+  const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
+  assert.match(cronjob, /- name: cache\n\s+mountPath: \/cache\/renovate\n/);
+  assert.match(cronjob, /- name: cache\n\s+persistentVolumeClaim:\n\s+claimName: renovate-cache\n/);
+  assert.match(cronjob, /- name: github-app\n\s+mountPath: \/var\/run\/secrets\/renovate\n\s+readOnly: true\n/);
+  assert.match(cronjob, /- name: github-app\n\s+secret:\n\s+secretName: renovate\n/);
+});

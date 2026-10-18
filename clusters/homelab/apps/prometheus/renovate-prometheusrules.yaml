@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: renovate-schedule
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: renovate-schedule
+    homelab.stuhlmuller.dev/cluster: homelab
+spec:
+  groups:
+    - name: homelab.renovate
+      interval: 1m
+      rules:
+        - alert: RenovateHourlyCycleMissing
+          expr: |
+            (
+              (
+                (time() - max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0) > 4500)
+                or
+                (
+                  (time() - (floor(min by (namespace, cronjob) (kube_cronjob_created{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) / 3600) * 3600 + 3600) > 900)
+                  unless on (namespace, cronjob)
+                    (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
+                )
+              )
+              and on (namespace, cronjob)
+                (max by (namespace, cronjob) (kube_cronjob_spec_suspend{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) == 0)
+            )
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Renovate missed an hourly start.
+            description: >-
+              The automation/renovate CronJob has not started an expected hourly
+              cycle within 15 minutes. Check its schedule, controller, and Jobs.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/renovate/README.md
+        - alert: RenovateHourlyCycleIncomplete
+          expr: |
+            (
+              (time() - max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) > 3240)
+              and on (namespace, cronjob)
+              (
+                max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
+                unless on (namespace, cronjob)
+                (
+                  max by (namespace, cronjob) (kube_cronjob_status_last_successful_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
+                  >= on (namespace, cronjob)
+                  max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
+                )
+              )
+              and on (namespace, cronjob)
+                (max by (namespace, cronjob) (kube_cronjob_spec_suspend{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) == 0)
+            )
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Renovate did not complete its hourly cycle.
+            description: >-
+              The latest automation/renovate schedule has no successful Job
+              by its 55-minute deadline. Inspect its active or failed Job.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/renovate/README.md
+        - alert: RenovateCronJobMissing
+          expr: |
+            argocd_app_info{name="renovate"}
+            unless on ()
+              kube_cronjob_spec_suspend{job="kube-state-metrics",namespace="automation",cronjob="renovate"}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Renovate Application has no CronJob.
+            description: >-
+              Argo CD reports the Renovate Application, but kube-state-metrics
+              cannot see its CronJob. Check sync and controller health.
+            runbook_url: https://github.com/Stuhlmuller/homelab/blob/main/clusters/homelab/apps/renovate/README.md

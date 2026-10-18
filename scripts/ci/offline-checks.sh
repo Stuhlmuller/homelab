@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Generated units are fixtures here; no provider init or live API access.
+# shellcheck disable=SC1091 # CI sources this file from the repository root.
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
@@ -93,6 +94,7 @@ python3 -I scripts/ci/application-backup-test.py
 python3 -I scripts/ci/application-backup-restore-test.py
 python3 -I scripts/ci/application-backup-rules-test.py
 python3 scripts/ci/job-alert-recovery-check.py
+python3 scripts/ci/renovate-alert-check.py
 python3 -I scripts/ci/memory-overcommit-check.py
 python3 -I scripts/ci/terragrunt-stack-test.py
 python3 scripts/ci/terragrunt-apply-test.py

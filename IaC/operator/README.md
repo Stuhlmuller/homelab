@@ -273,6 +273,65 @@ user require an un-targeted operator plan. Import
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
 
+### Temporary Renovate App credential transfer
+
+The same operator unit temporarily declares
+`homelab-renovate-credential-transfer`. Its OIDC trust accepts only
+`Stuhlmuller/renovate` on `refs/heads/main`; that repository's active main
+ruleset and the transfer workflow's exact-current-SHA check guard dispatch.
+The companion repository has no protected GitHub environment. The role can
+only write the two declared `/homelab/renovate/github-app/` SecureStrings and
+encrypt their values through the current SSM KMS key. It cannot read either
+value or administer IAM. The companion workflow carries the role ARN directly
+in reviewed source. Do not grant that repository the existing
+`Github-TF-State` apply role.
+
+After the homelab change merges, generate the stack, run backend-free validation
+and `boundary.tftest.hcl`, then use an administrator profile for a private,
+un-targeted saved plan. This must show exactly the new transfer role and its
+inline policy being created; stop on unrelated changes. Review the private
+plan before applying the saved bytes. Do not attach it to a public PR.
+
+```sh
+cd IaC
+terragrunt stack generate
+cd operator/github-actions-role-policy
+terragrunt --log-disable init -backend=false -no-color
+terragrunt --log-disable run --no-auto-init -- validate -no-color
+terragrunt --log-disable run --no-auto-init -- test -no-color
+operator_profile="<administrator-profile>"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable init -reconfigure -no-color
+umask 077
+transfer_plan_dir="$(mktemp -d "${TMPDIR:-/tmp}/renovate-role-plan.XXXXXX")"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable plan -input=false \
+  -lock-timeout=5m -out="$transfer_plan_dir/role.tfplan" -no-color \
+  >"$transfer_plan_dir/plan.log" 2>&1
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -json \
+  "$transfer_plan_dir/role.tfplan" >"$transfer_plan_dir/plan.json"
+jq -e '
+  [.resource_changes[] | select(.mode == "managed" and .change.actions != ["no-op"])
+   | {address, actions: .change.actions}] | sort_by(.address) == [
+    {address: "aws_iam_role.renovate_transfer", actions: ["create"]},
+    {address: "aws_iam_role_policy.renovate_transfer", actions: ["create"]}
+  ]
+' "$transfer_plan_dir/plan.json"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable show -no-color \
+  "$transfer_plan_dir/role.tfplan"
+AWS_PROFILE="$operator_profile" terragrunt --log-disable apply -no-color \
+  "$transfer_plan_dir/role.tfplan"
+```
+
+First verify the SSM unit created both placeholders as `SecureString` under
+`alias/aws/ssm` through its own reviewed apply. Then merge the companion
+transfer workflow, dispatch it with the exact current `main` SHA, and verify
+only SSM parameter versions and ExternalSecret readiness; never print values.
+Keep the CronJob suspended until both projected keys are ready. After the
+transfer, remove the temporary role, policy, output, and policy tests through a
+reviewed change. Repeat the private full-unit plan gate, requiring exactly
+those two resource deletions, and apply only those saved bytes. A later rotation
+requires a reviewed reintroduction of the same limited role before dispatch.
+Delete the private plan directory after review and application.
+
 The September 29, 2026 Langfuse apply reached SSM refresh but failed because
 the workflow role's KMS grant still named the former runtime key, not the
 current `alias/aws/ssm` target. Reconcile the existing managed policy through

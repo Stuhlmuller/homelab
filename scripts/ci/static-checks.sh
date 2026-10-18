@@ -14,8 +14,10 @@ python3 -I scripts/ci/nix-cache-signature-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
+node --test scripts/ci/renovate-config-test.js
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091 # The runtime path is resolved from this script.
 source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack

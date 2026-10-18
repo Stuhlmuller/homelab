@@ -310,6 +310,14 @@ unit "argocd_apps_prowlarr" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/prowlarr/stack.hcl").inputs
 }
 
+unit "argocd_apps_renovate" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/renovate"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/renovate/stack.hcl").inputs
+}
+
 unit "argocd_apps_radarr" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/radarr"

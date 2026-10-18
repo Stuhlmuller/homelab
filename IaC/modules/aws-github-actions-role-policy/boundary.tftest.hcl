@@ -18,6 +18,11 @@ override_data {
   values = { target_key_arn = "arn:aws:kms:us-west-2:123456789012:key/test" }
 }
 
+override_data {
+  target = data.aws_iam_openid_connect_provider.github_actions
+  values = { arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" }
+}
+
 variables {
   apply_role_name                       = "test-apply"
   aws_region                            = "us-west-2"
@@ -84,6 +89,64 @@ run "apply_role_reads_only_langfuse_blob_storage_identity" {
         ])
     }]
     error_message = "The apply role may read only the exact Langfuse S3 user's metadata; it must not gain wildcard or IAM write, tag, rotation, or other-user access."
+  }
+}
+
+run "renovate_transfer_trusts_only_companion_main" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.renovate_transfer_assume_role]
+  }
+
+  assert {
+    condition = (
+      length(jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement) == 1 &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Effect == "Allow" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Action == "sts:AssumeRoleWithWebIdentity" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Principal.Federated == "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:aud"] == "sts.amazonaws.com" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:Stuhlmuller/renovate:ref:refs/heads/main"
+    )
+    error_message = "Renovate transfer must trust only GitHub OIDC from the companion repository's main branch."
+  }
+}
+
+run "renovate_transfer_can_write_only_two_declared_parameters" {
+  command = plan
+
+  plan_options {
+    refresh = false
+    target  = [data.aws_iam_policy_document.renovate_transfer]
+  }
+
+  assert {
+    condition = (
+      length(jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement) == 2 &&
+      alltrue([
+        for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
+        statement.Effect == "Allow"
+      ]) &&
+      toset(flatten([
+        for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
+        flatten([statement.Action])
+      ])) == toset(["ssm:PutParameter", "kms:Encrypt"]) &&
+      toset(flatten([
+        for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
+        flatten([statement.Resource]) if statement.Sid == "WriteRenovateAppCredentials"
+        ])) == toset([
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/issuer-id",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/private-key",
+      ]) &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[1].Resource == "arn:aws:kms:us-west-2:123456789012:key/test" &&
+      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[1].Condition.StringEquals["kms:ViaService"] == "ssm.us-west-2.amazonaws.com" &&
+      toset(flatten([jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[1].Condition.StringEquals["kms:EncryptionContext:PARAMETER_ARN"]])) == toset([
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/issuer-id",
+        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/private-key",
+      ])
+    )
+    error_message = "Renovate transfer may only write its two declared parameters and encrypt their values through SSM."
   }
 }
 
