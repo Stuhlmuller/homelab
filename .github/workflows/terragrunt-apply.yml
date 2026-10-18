@@ -17,8 +17,13 @@ on:
         required: false
         default: false
         type: boolean
+      application_backup_storage:
+        description: Apply only the versioned OpenClaw legacy archive bucket
+        required: false
+        default: false
+        type: boolean
 
-run-name: ${{ inputs.argocd_app == '' && format('Full @ {0}', github.sha) || format('Targeted {0} @ {1}', inputs.argocd_app, github.sha) }}
+run-name: ${{ inputs.application_backup_storage && format('Backup storage @ {0}', github.sha) || inputs.argocd_app == '' && format('Full @ {0}', github.sha) || format('Targeted {0} @ {1}', inputs.argocd_app, github.sha) }}
 
 permissions: {}
 
@@ -85,6 +90,7 @@ jobs:
     env:
       TERRAGRUNT_ARGOCD_APP: ${{ inputs.argocd_app }}
       TERRAGRUNT_REPAIR_ARGOCD_APP_STATE: ${{ inputs.repair_argocd_app_state }}
+      TERRAGRUNT_APPLICATION_BACKUP_STORAGE: ${{ inputs.application_backup_storage }}
     steps:
       - name: Verify Current Main Commit
         env:
