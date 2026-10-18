@@ -1,0 +1,120 @@
+<!-- markdownlint-disable MD013 -->
+# Tasks: Run Renovate in the Homelab
+
+**Input**: Design documents in specs/004-run-renovate-in-cluster/
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/runner-contract.md, quickstart.md, and the checked operations checklist
+**Tests**: Use the focused mock credential self-check and the static/live acceptance gates in the plan. No broad test framework is needed.
+
+**Organization**: Each user story has its own phase. The two P1 stories form the production-ready runner; US3 completes the two-repository cutover.
+
+## Phase 1: Setup
+
+**Purpose**: Establish the existing runner's identity, scope, and image source before changing desired state.
+
+- [ ] T001 Record the Stuhlmuller/renovate workflow and global-config commit, latest successful run, App PR author, owned-versus-App-accessible repository counts, all-repositories installation selection, archived/fork behavior, actual App permissions, and any legacy private-registry credential inputs in clusters/homelab/apps/renovate/README.md; keep private repository names and credentials out of public text.
+- [ ] T002 [P] Add the selected upstream Renovate image and verified Harbor mirror digest to scripts/config/harbor-images.json, and publish that exact digest through the repository image workflow before any CronJob references it.
+
+**Checkpoint**: The parity baseline and immutable image are known; any missing App access or legacy registry credential has an explicit resolution path.
+
+---
+
+## Phase 2: Foundational Prerequisites
+
+**Purpose**: Declare the GitOps application, secret boundary, cache volume, and protected transfer path. Complete this phase before a cluster Job can start.
+
+- [X] T003 Add SecureString placeholders for /homelab/renovate/github-app/issuer-id and /homelab/renovate/github-app/private-key in IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl; add fixed paths for legacy registry credentials only if T001 proves they exist, with their source and consumer recorded, and preserve existing values on subsequent applies.
+- [X] T004 [P] Add a dedicated short-lived Stuhlmuller/renovate OIDC App-key transfer role with exact two-parameter SSM write and necessary KMS rights, protected workflow trust, and negative boundary cases in IaC/modules/aws-github-actions-role-policy/main.tf, IaC/modules/aws-github-actions-role-policy/variables.tf, and IaC/modules/aws-github-actions-role-policy/boundary.tftest.hcl; if T001 finds legacy registry secrets, declare a distinct exact-scope transfer grant for their fixed SSM paths without widening the App-key or existing apply role.
+- [X] T005 [P] Declare the protected, retained nfs-default cache claim in clusters/homelab/apps/renovate/pvc.yaml, sized for the measured image/tool/cache footprint and containing no durable repository or credential state.
+- [X] T006 [P] Map only the fixed SSM keys to read-only issuer-id and private-key Secret files, plus any T001-verified registry keys, in clusters/homelab/apps/renovate/externalsecret.yaml; choose and document a rotation refresh mechanism.
+- [X] T007 [P] Register the application through the shared Argo CD unit in IaC/terragrunt.stack.hcl and IaC/stacks/renovate/stack.hcl, targeting main, homelab-workloads, and the existing automation namespace with only required dependencies.
+- [ ] T008 Add a manually dispatched, protected, fixed-target credential-transfer workflow in the companion repository at Stuhlmuller/renovate/.github/workflows/renovate-credential-transfer.yml; read the existing RENOVATE_APP_ID and RENOVATE_PRIVATE_KEY secrets, verify the issuer type without printing it, add a separate fixed-target registry transfer job only for T001-proven legacy secret sources, and pass actionlint plus a redacted gitleaks secret scan in that companion checkout before dispatch.
+- [ ] T009 Validate and apply the affected SSM/IAM units through the protected private-plan path, then dispatch the applicable fixed-target jobs in Stuhlmuller/renovate/.github/workflows/renovate-credential-transfer.yml and verify only SSM parameter metadata before the CronJob is reconciled; block cutover if an existing registry credential lacks a declared source-to-SSM transfer path in IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl.
+
+**Checkpoint**: The App material is in declared SSM paths before any scheduled Pod can consume it; no plaintext key, token, or private registry credential appears in git or public plans.
+
+---
+
+## Phase 3: User Story 1 - Get frequent dependency proposals (Priority: P1)
+
+**Goal**: Scan Stuhlmuller-owned repositories hourly under the existing App and update policy, beginning with a full dry run.
+
+**Independent Test**: A GitOps-created full dry-run Job reports owner-filtered repository outcomes, skips archived repositories, honors repository overrides and the shared policy for config-free repositories, and shows an eligible planned proposal without writing to GitHub. The actual write path is accepted during US3 cutover.
+
+- [X] T010 [US1] Port the exact legacy global policy and existing auto-merge settings into clusters/homelab/apps/renovate/config.js; add owner-filtered autodiscovery, owned-fork processing, optional repository config, no onboarding, initial full dry-run mode, and file-backed in-memory GitHub App JWT/installation-token exchange with fail-closed errors.
+- [X] T011 [P] [US1] Define the initially suspended hourly UTC CronJob in clusters/homelab/apps/renovate/cronjob.yaml with Forbid concurrency, a 900-second start deadline, a Job deadline below token expiry, observable scheduled/start/completion times, retained Job history, digest-pinned image, restricted file mounts, no service-account token or ingress, and resource/security limits.
+- [X] T012 [US1] Assemble the CronJob, ExternalSecret, PVC, and generated config ConfigMap in clusters/homelab/apps/renovate/kustomization.yaml, with the mounted config and Secret paths matching clusters/homelab/apps/renovate/config.js and clusters/homelab/apps/renovate/cronjob.yaml.
+- [X] T013 [US1] Add credential-free mock App-token and discovery self-checks in scripts/ci/renovate-config-test.js and scripts/ci/renovate-discovery-path-test.mjs covering valid JWT/token exchange, inaccessible installation, expired/invalid credentials, no token/key logging or cache writes, and preserved policy defaults; drive Renovate's actual discovery and config resolution path from clusters/homelab/apps/renovate/config.js against mocked owner/App API inventories A → A plus config-free B → A, proving B is scanned then excluded on successive runs without onboarding. Reject a fixture that only asserts config fields or reimplements a separate repository filter.
+- [ ] T014 [US1] Run config validation, scripts/ci/renovate-config-test.js, Kustomize rendering, policy/static checks, and affected Terragrunt format/validate/plan commands from specs/004-run-renovate-in-cluster/quickstart.md; fix any failure before GitOps reconciliation.
+- [ ] T015 [US1] Reconcile the suspended dry-run application through IaC/stacks/renovate/stack.hcl and clusters/homelab/apps/renovate/kustomization.yaml; verify ExternalSecret readiness, target Secret projection metadata, and that clusters/homelab/apps/renovate/cronjob.yaml has produced no Job.
+- [ ] T016 [US1] Remove the temporary App-key and any registry-transfer write grants after Secret projection through a reviewed IaC/modules/aws-github-actions-role-policy/main.tf change, extend negative cases in IaC/modules/aws-github-actions-role-policy/boundary.tftest.hcl, and verify the protected plan/apply before any dry-run Job starts.
+- [ ] T017 [US1] Unsuspend clusters/homelab/apps/renovate/cronjob.yaml through reviewed GitOps after T016, then compare restricted dry-run results with T001 owner/App inventories, including config-free repositories, policy overrides, archived skips, failure classes, and no GitHub writes.
+
+**Checkpoint**: Hourly discovery and planned proposals are visible without a second writer; missing App access blocks cutover rather than disappearing from the inventory.
+
+---
+
+## Phase 4: User Story 2 - Reuse version data without hiding updates (Priority: P1)
+
+**Goal**: Persist and safely refresh Renovate's replaceable package and extraction caches across scheduled Pods.
+
+**Independent Test**: Two dry-run Jobs using different Pods and the same PVC show a confirmed cache hit for one unchanged datasource; a new test version appears after normal refresh, while an empty cache rebuilds.
+
+- [X] T018 [P] [US2] Set the persistent /cache/renovate cacheDir, repository extraction cache, private-package metadata cache, default Renovate freshness/expiry behavior, and ephemeral clone baseDir in clusters/homelab/apps/renovate/config.js; do not persist credentials or override TTLs to conceal releases.
+- [X] T019 [P] [US2] Mount clusters/homelab/apps/renovate/pvc.yaml only at /cache/renovate in clusters/homelab/apps/renovate/cronjob.yaml, with permissions and resource limits that allow the non-root Renovate process to use it.
+- [X] T020 [US2] Extend scripts/ci/renovate-config-test.js with focused assertions for the cache path, enabled cache types, default refresh behavior, and exclusion of the mounted credential path from the PVC; re-run the render and policy gates in specs/004-run-renovate-in-cluster/quickstart.md.
+- [ ] T021 [US2] Add a temporary github-releases custom-manager fixture for Stuhlmuller/renovate in renovate.json and scripts/fixtures/renovate-cache-canary.txt, plus a protected fixed-purpose release workflow at Stuhlmuller/renovate/.github/workflows/renovate-cache-canary.yml; validate the fixture with Renovate config checks and lint/secret-scan the companion workflow before merge.
+- [ ] T022 [US2] Publish reviewed initial and next v0.0.x GitHub Releases only through Stuhlmuller/renovate/.github/workflows/renovate-cache-canary.yml; using specs/004-run-renovate-in-cluster/quickstart.md, confirm a successful cold-cache build with the first version, prove the same datasource key hits cache in two consecutive scheduled scans with distinct Pod UIDs using scoped restricted TRACE or a mock-registry request counter, verify the marker against the pinned image, and see the next version after normal TTL refresh without publishing private cache contents.
+- [ ] T023 [US2] After SC-003 evidence is captured, remove the temporary custom-manager fixture from renovate.json and scripts/fixtures/renovate-cache-canary.txt and delete Stuhlmuller/renovate/.github/workflows/renovate-cache-canary.yml through reviewed PRs; verify no canary update proposal remains active.
+- [ ] T024 [US2] Document loss, corruption, volume exhaustion, safe reviewed PVC reset/expansion, and the absence of cache backups in clusters/homelab/apps/renovate/README.md; verify an unavailable/full PVC produces a visible storage failure without an ad hoc cluster mutation.
+
+**Checkpoint**: Cache reuse and freshness have direct evidence; the cache can be rebuilt through declared desired state.
+
+---
+
+## Phase 5: User Story 3 - Cut over and operate safely (Priority: P2)
+
+**Goal**: Keep one writer, protect credentials and private metadata, and detect failed or missed hourly cycles.
+
+**Independent Test**: After dry-run parity, delete the entire legacy write-capable workflow and verify no scheduled/manual trigger or nonterminal legacy run remains before enabling cluster writes. A scheduled cluster Job then verifies App identity, coverage, proposal continuity, and merge policy; a failed or missing cluster cycle alerts within one hour, and rollback uses only reviewed desired state after pending write Jobs drain.
+
+- [X] T025 [P] [US3] Add a Renovate-specific freshness alert for no successful hourly cycle, including a missed slot with no Job, in clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml and clusters/homelab/apps/prometheus/kustomization.yaml; retain the existing failed-Job alert and protect private labels.
+- [ ] T026 [P] [US3] Add a temporary suspended 15-minute read-only upstream observer in clusters/homelab/apps/renovate/acceptance-observer.js, clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml, clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml, and clusters/homelab/apps/renovate/kustomization.yaml; deterministically preregister a seeded natural-release sample across every active datasource class and public/private sources where present, exclude the controlled canary, request only read permissions, make uncached healthy upstream polls without GitHub writes, and store raw last-absent/first-present brackets only on the separate protected ledger PVC while logging aggregates only.
+- [ ] T027 [P] [US3] Document the hourly schedule, App/registry permissions, file-backed SSM/ExternalSecret rotation that first restores and later retires a reviewed temporary transfer grant, restricted logs, failure classes, cache recovery, cutover window, temporary observer/private-ledger lifecycle, verification, and GitOps rollback in clusters/homelab/apps/renovate/README.md, docs/secrets-aws-ssm.md, docs/argocd-app-onboarding.md, and docs/image-automation.md.
+- [X] T028 [US3] Refresh affected OpenWiki pages through the native OpenWiki update lifecycle using the new source, including openwiki/workloads/inventory.md, openwiki/architecture/secrets-and-identity.md, openwiki/architecture/storage-and-state.md, and openwiki/operations/validation-gates.md; do not hand-edit generated page state.
+- [ ] T029 [US3] Complete the dry-run parity gate in specs/004-run-renovate-in-cluster/quickstart.md: live owner/App inventory parity, all-repositories installation selection, required App grants, passing actual discovery-path mock add/remove fixture, repository outcomes, planned updates, existing PR identity, auto-merge policy, two-Pod cache evidence, ExternalSecret readiness, and alert coverage; stop on any access or registry-credential gap.
+- [ ] T030 [US3] After T029 and the last legacy 00:00 UTC run, delete the entire write-capable companion workflow at Stuhlmuller/renovate/.github/workflows/renovate.yml through a reviewed PR, including its schedule and workflow_dispatch; verify no trigger remains and all nonterminal runs from scheduled and manual events are absent, including requested, pending, queued, waiting, and in_progress states, before cluster writes are enabled. If the PR cannot merge or runs have not drained before the next legacy slot, keep clusters/homelab/apps/renovate/config.js in full dry-run mode.
+- [ ] T031 [US3] Only after T030 verifies the legacy writer and all nonterminal runs are absent, remove full dry-run mode through a reviewed change to clusters/homelab/apps/renovate/config.js; reconcile through Argo CD and verify one scheduled Job creates or updates an eligible PR or records a timestamped policy deferral as the existing App without bypassing repository protection. If activation fails, first restore full dry-run in clusters/homelab/apps/renovate/config.js or suspend clusters/homelab/apps/renovate/cronjob.yaml through GitOps and verify no active or pending write-enabled cluster Job before restoring Stuhlmuller/renovate/.github/workflows/renovate.yml through a reviewed PR.
+- [ ] T032 [US3] Verify failed-Job and missed-cycle alert timing, per-repository failure visibility, next-hour recovery, and the one-writer invariant using the read-only commands and reviewed temporary fault path in specs/004-run-renovate-in-cluster/quickstart.md; keep private logs out of public artifacts.
+- [ ] T033 [US3] Before the seven-day window, validate the seeded sample and separate ledger access in clusters/homelab/apps/renovate/acceptance-observer.js, then unsuspend clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml through reviewed GitOps; verify 15-minute healthy upstream polls use no Renovate cache and no GitHub write call, and keep private package/repository identities only on the volume declared by clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml.
+- [ ] T034 [US3] Measure seven healthy days for SC-001 and sampled SC-002, and record direct SC-003 through SC-006 evidence using the aggregate-only report mode of clusters/homelab/apps/renovate/acceptance-observer.js and criteria in specs/004-run-renovate-in-cluster/spec.md; publish planned-slot denominator, preregistered sample strata and seed, aggregate latency computed from conservative last-absent bounds, eligible-event denominator and exclusions, proposal/deferral latency, canary separately, confirmed cache hits, live App parity and mock discovery transition, and absence of overlapping writers; report SC-002 inconclusive below ten natural eligible events or with ambiguous timing, and track the first real owner transition as a later operational check.
+- [ ] T035 [US3] After the aggregate report is reviewed, deploy an idempotent GitOps cleanup Job in clusters/homelab/apps/renovate/acceptance-ledger-cleanup-job.yaml that erases only the temporary private ledger from clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml; verify erasure, then delete the temporary observer script/CronJob, cleanup Job, and PVC manifests and remove their entries from clusters/homelab/apps/renovate/kustomization.yaml through a reviewed change so no retained NFS ledger data is orphaned.
+
+**Checkpoint**: The legacy writer workflow is absent, the cluster runner is the sole writer, and the documented SLOs and rollback path are verified.
+
+---
+
+## Phase 6: Polish and Cross-Cutting Validation
+
+- [ ] T036 Re-run the full static, secret-scan, Kustomize, Terragrunt/OpenTofu, and documentation checks listed in specs/004-run-renovate-in-cluster/quickstart.md for the homelab files; separately run actionlint on remaining Stuhlmuller/renovate/.github/workflows/ files and a redacted gitleaks scan of the companion checkout and reviewed diff, preserving failure output.
+- [ ] T037 Check the reviewed diffs for plaintext credentials, private repository/package metadata, default-branch bypasses, unpinned images, environment-derived desired state, manual live-mutation commands, and any surviving legacy writer at Stuhlmuller/renovate/.github/workflows/renovate.yml or elsewhere in Stuhlmuller/renovate/.github/workflows/ alongside clusters/homelab/apps/renovate/, IaC/, and docs/.
+
+## Dependencies and Execution Order
+
+- Phase 1 precedes credential and image changes. T001 determines whether extra registry secret contracts are needed; T002 must finish before T011 references the image.
+- Phase 2 blocks cluster execution. T003/T004/T008/T009 must finish, with protected plans and SSM transfer, before T015 reconciles the suspended CronJob. T005/T006/T007 can be authored in parallel once their names and boundaries are fixed.
+- US1 first stages a suspended CronJob, verifies Secret projection at T015, retires transfer grants at T016, and only then unsuspends the dry-run schedule at T017. US2 edits to config.js and cronjob.yaml follow that US1 file baseline; T018 and T019 can run in parallel with each other. Its live cache/refresh acceptance T022 needs a successful US1 dry run and the reviewed canary fixture T021. Both P1 stories must pass before US3 enables writes.
+- US3 T029 depends on US1 and US2 dry-run evidence, including T013's actual Renovate discovery-path fixture. T030 deletes the complete legacy workflow after the last daily run and verifies no trigger or requested, pending, queued, waiting, or in_progress scheduled/manual run remains; if deletion or drainage misses the next daily slot, the cluster stays in full dry-run. T031 enables cluster writes only after T030; a failed activation restores dry-run or suspends the cluster writer and verifies no active or pending write Job before any reviewed legacy-workflow restoration. The observer is staged suspended and starts only for the preregistered seven-day window; aggregate reporting precedes GitOps ledger erasure and retirement.
+- Polish follows all intended story phases. Keep the steady-state single Terragrunt root apply path intact.
+
+## Parallel Execution Examples
+
+- **US1**: T010 config.js policy/token work and T011 cronjob.yaml scheduling/security work can proceed on separate files using the runner contract; T012 assembles them afterward.
+- **US2**: T018 config.js cache options and T019 cronjob.yaml PVC mount are separate-file tasks; T020 validates the combined result.
+- **US3**: T025 Prometheus alert and T027 operator documentation are separate-file tasks; T028 refreshes OpenWiki after source documentation is final.
+
+## Implementation Strategy
+
+1. Complete Setup and Foundation, including the private SSM plan and fixed-target credential transfer, before any scheduled Pod starts.
+2. Stage US1 with the CronJob suspended, verify Secret projection, retire transfer grants, then unsuspend into full dry-run mode through reviewed GitOps. Complete US2 cache persistence and freshness proof before writes.
+3. Complete US3 in a window after the last legacy daily run: pass dry-run parity, delete the legacy workflow, verify every scheduled/manual run has left nonterminal states, then enable cluster writes through GitOps. Keep the cluster dry-run until deletion and drainage complete; stop and drain cluster write Jobs before any reviewed legacy restoration. Validate the seven-day outcomes after cutover.
+4. Finish the cross-cutting gates and retain the read-only evidence and rollback commands in the operator docs.
