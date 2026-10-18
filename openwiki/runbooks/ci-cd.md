@@ -14,24 +14,24 @@ sources:
     resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-9a01f0687eaa075cf78c3abc
     resource: repo://.github/workflows/image-automation.yml
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
-  - id: openwiki-source-29ced481494f3a85c0d7921b
-    resource: repo://.github/workflows/terragrunt-apply.yml
-  - id: openwiki-source-885831275c8e751281369a80
-    resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
-    resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
+generated: { by: "codex", at: "2026-10-18T13:07:20.728Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:49:03.265Z
+    at: 2026-10-18T13:07:20.728Z
 ---
 
 # CI/CD
@@ -75,11 +75,13 @@ before a reviewed selector cutover.
 
 ## Staged Tailscale CI cutover
 
-Phase 2b stages nine credentialed hosted CI jobs on pre-signed ephemeral
+Phase 2b stages thirteen credentialed hosted live jobs on pre-signed ephemeral
 Tailscale keys with Tailnet Lock retained. Plan and apply use separate protected
 environment keys; Cordium has a separate repository key and OIDC policy. Each
 job uses a private, uncached state directory and verifies its exact tag and
 tailnet before live work. The operator proxy kubeconfig is tokenless.
+The newly included jobs publish Cordium runner and OpenClaw images, publish
+Mastodon DNS, and run protected OpenClaw legacy retention.
 
 Canonical DNS/API, proxy admission/RBAC, and protected key publication must
 pass before merge. Live plan denial, exact-main apply, diagnostics, publisher,

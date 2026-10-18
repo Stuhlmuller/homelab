@@ -12,6 +12,10 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
@@ -44,10 +48,10 @@ sources:
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+generated: { by: "codex", at: "2026-10-18T13:07:20.728Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:49:03.265Z
+    at: 2026-10-18T13:07:20.728Z
 ---
 
 # Source Map
@@ -120,4 +124,8 @@ scoped pre-signed Tailscale keys and verify the joined identity. The shared
 [kubeconfig helper](../scripts/ci/install-kubeconfig.sh) gives plan/apply a
 tokenless operator API path; Cordium keeps separate native authorization.
 Legacy catalog credentials remain through live acceptance and retirement.
+The added live jobs are [Cordium runner publication](../.github/workflows/cordium-runner-publish.yml),
+[Mastodon DNS](../.github/workflows/mastodon-public-dns.yml),
+[OpenClaw image publication](../.github/workflows/openclaw-enterprise-images.yml),
+and [OpenClaw retention](../.github/workflows/openclaw-enterprise-operations.yml).
 See the [CI runbook](runbooks/ci-cd.md).

@@ -325,7 +325,7 @@ requires a pre-signed reusable ephemeral auth key and a `statedir`. Each workflo
 creates `$RUNNER_TEMP/tailscale-state` with `umask 077`, refuses an existing
 directory, and never caches or uploads it. The pinned action logs out and stops
 the daemon in its post step; it does not delete the supplied state directory.
-All nine jobs require `ubuntu-24.04` hosted runners: GitHub
+All thirteen live jobs require `ubuntu-24.04` hosted runners: GitHub
 [decommissions each job's VM](https://docs.github.com/en/actions/how-tos/manage-runners/github-hosted-runners/use-github-hosted-runners)
 after completion, including root-owned daemon state that ordinary temporary
 folder cleanup may not remove. Do not move these jobs to persistent runners
@@ -333,9 +333,10 @@ without adding explicit post-daemon state cleanup. `tags` is intentionally absen
 from the action inputs: authkey mode uses the key's tags, and the status guard
 requires exactly one expected tag.
 
-Nine workflows join the mesh: Terragrunt plan/apply, Harbor mirror and core
-image publication, NOFX publication, diagnostics, the retained private
-catalog lane, Cordium execution, and Cordium login denial.
+Thirteen live jobs join the mesh: Terragrunt plan/apply, Harbor mirror and core
+image publication, NOFX and Cordium runner publication, OpenClaw Enterprise
+image publication and legacy retention, Mastodon DNS publication, diagnostics,
+the retained private catalog lane, Cordium execution, and Cordium login denial.
 `install-kubeconfig.sh --tailscale` only accepts an
 ephemeral GitHub Actions runner and refuses to replace an existing kubeconfig.
 It uses the fixed TLS operator endpoint and a nonsecret `tailscale` username
@@ -352,9 +353,10 @@ is in [the tailnet policy](../scripts/config/tailscale-policy.json) and
 [Traefik routes](../clusters/homelab/apps/traefik/routes.yaml).
 
 After merge, require a protected plan including its real write-denial check,
-an exact-main apply, diagnostics verifying the apply tag, both image publishers,
-and Cordium execution/denial/cleanup. Logs remain private and successful checks
-are the public result. Retain the old catalog and credentials through acceptance.
+an exact-main apply, diagnostics verifying the apply tag, each applicable
+publisher and protected retention operation, and Cordium execution/denial/cleanup.
+Logs remain private and successful checks are the public result. Retain the old
+catalog and credentials through acceptance.
 
 ## Octelium CI Access Setup
 

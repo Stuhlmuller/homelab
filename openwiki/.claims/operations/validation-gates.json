@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2fe77d1447d2dfefa05fb9d0000a87518a120b930b0adc4e6a131ea8bf2d1299",
+  "pageVersion": "sha256:a68ad2b97714eef1e2a72416aaeb72ec0ae4906b266e6452fcecce1e34b80722",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
+          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:8cb921beef922be495ae13e6d81cb02ba2f0d80ebe020bf99740e7cfee2fb03f"
+          "version": "repo-file-v1:sha256:8572345ac49789562346ba743a47f216276d7bc833117830bc84f4ce81e2c7b2"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
+          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
         }
       ]
     },
@@ -537,8 +537,8 @@
       "statement": "Mastodon offline fixtures cover launcher, owner bootstrap, routing, SMTP injection and DNS conflict handling, while protected live activation additionally requires declared registration, real workload health, provider delivery and public behavior; the DNS lane installs and uses its pinned Nix shell.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/mastodon-public-dns.yml#L106-L133",
-          "version": "repo-lines-v1:sha256:be19aaca48ffa7909adbc09812c510f62edbe7e904f5c0271b94174d32d4ecce:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjYTkwZTdiYmQ2MmI5ZDA1YTAwMjRiZGVmNjcxNjE3YzU0M2M5NGM1ODEwNzQ1ZjNhMjA0NzliNGQ0YmMyMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjZjQyMzU3Y2FkZDlmY2U2ZDZhMzU3MjdiMjg3NDkzODZiZjVkYmJkYjk1N2ExOWQxODRmZjA0NWUxODFlYTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml#L103-L146",
+          "version": "repo-lines-v1:sha256:194bebcdf1fe1b0645a9debf3d2ca88cf127b5eb21883dff84100f4ad40defc2:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjYTkwZTdiYmQ2MmI5ZDA1YTAwMjRiZGVmNjcxNjE3YzU0M2M5NGM1ODEwNzQ1ZjNhMjA0NzliNGQ0YmMyMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjZjQyMzU3Y2FkZDlmY2U2ZDZhMzU3MjdiMjg3NDkzODZiZjVkYmJkYjk1N2ExOWQxODRmZjA0NWUxODFlYTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
@@ -678,7 +678,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:8cb921beef922be495ae13e6d81cb02ba2f0d80ebe020bf99740e7cfee2fb03f"
+          "version": "repo-file-v1:sha256:8572345ac49789562346ba743a47f216276d7bc833117830bc84f4ce81e2c7b2"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -702,11 +702,11 @@
     },
     {
       "id": "claim_d4434a8d25224900989b01868005bcd7",
-      "statement": "Staged phase 2b offline CI checks enforce pinned Tailscale action, scoped secret and state, exact node identity, and tokenless kubeconfig across nine credentialed mesh jobs; passing fixtures does not prove live proxy or app acceptance.",
+      "statement": "Staged phase 2b offline CI checks enforce pinned Tailscale action, scoped secret and state, exact node identity, and tokenless kubeconfig across thirteen credentialed live jobs; passing fixtures does not prove live proxy or application acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
+          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig-test.py",
@@ -714,7 +714,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:8cb921beef922be495ae13e6d81cb02ba2f0d80ebe020bf99740e7cfee2fb03f"
+          "version": "repo-file-v1:sha256:8572345ac49789562346ba743a47f216276d7bc833117830bc84f4ce81e2c7b2"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check-test.py",
@@ -725,6 +725,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T12:49:03.265Z"
+    "at": "2026-10-18T13:07:20.728Z"
   }
 }

@@ -156,10 +156,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+generated: { by: "codex", at: "2026-10-18T13:07:20.728Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:49:03.265Z
+    at: 2026-10-18T13:07:20.728Z
 ---
 
 # Validation Gates
@@ -348,7 +348,7 @@ and run Conftest on all declared routing resources.
 
 The staged phase 2b CI gate also checks the pinned Tailscale action, fixed
 secret and state scope, exact tag/tailnet identity, and tokenless kubeconfig
-for each of the nine credentialed mesh jobs. Identity and transport fixtures
+for each of the thirteen credentialed live jobs. Identity and transport fixtures
 reject wrong tags, disconnected peers, malformed status and private diagnostic
 leaks. Passing offline fixtures does not establish live proxy admission or
 application acceptance.

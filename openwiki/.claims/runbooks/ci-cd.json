@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:381edbf1826a01966a5cd7379d0f2e8d4847b0358f463e2e33596137c06fba24",
+  "pageVersion": "sha256:09eb33c8f67cb0d3db87e9060fb73687959fb46e1d1128eae0c450b0a398c943",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
+          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
         }
       ]
     },
@@ -42,7 +42,7 @@
         },
         {
           "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
         },
         {
           "resource": "repo://builds/cordium-runner/README.md",
@@ -52,29 +52,29 @@
     },
     {
       "id": "claim_9803f46b8a3340db9077b897cc04cac0",
-      "statement": "Phase 2b stages nine credentialed hosted CI jobs on scoped pre-signed Tailscale keys with exact tag and tailnet checks, uncached private state, and tokenless operator-proxy kubeconfigs; live proxy, plan, apply, publisher and Cordium acceptance remain required.",
+      "statement": "Phase 2b stages thirteen credentialed hosted live jobs on scoped pre-signed Tailscale keys with exact tag and tailnet checks, uncached private state, and tokenless operator-proxy kubeconfigs; live proxy, plan/apply, publisher, Mastodon DNS, OpenClaw retention and Cordium acceptance remain required.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/terragrunt-apply.yml",
-          "version": "repo-file-v1:sha256:66f501ceec27ec1b5b7738c81486a7696aad91c210af91415b49cf00b9c694f7"
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
+          "version": "repo-file-v1:sha256:7491c488c8dfde841f6f4e544593e06979b574c681d31ac91b6f871283ed720e"
         },
         {
-          "resource": "repo://.github/workflows/terragrunt-plan.yml",
-          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:ecee68dec6b498513ffb05b9cb31c6073434967b9aa181f8340981c97b99814a"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
+          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-identity-check.py",
-          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:8572345ac49789562346ba743a47f216276d7bc833117830bc84f4ce81e2c7b2"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T12:49:03.265Z"
+    "at": "2026-10-18T13:07:20.728Z"
   }
 }

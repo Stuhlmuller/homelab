@@ -890,20 +890,20 @@ done <<'EOF'
 .github/workflows/cordium-login-denial.yml e7c61ae727c8cceee7b63a8e972a51ce0fc36eac5fc629b500af26304fbb504d
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
-.github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
+.github/workflows/cordium-runner-publish.yml 36b251906350872882a345e470a8b84b32fd802b5767dbe4a28ae3bf65faa1f6
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/harbor-core-images.yml 860783bd77c65324b553f80de3b48630f10b188e512fc33ae05da1b614fddff5
 .github/workflows/harbor-mirror.yml 0b02905db7cb49c82ac569e1b92eb76ca251221564602fcd9d97bcbfc00673b7
 .github/workflows/homelab-diagnostics.yml e906d9d2c0fc1c6101da7312365739b6270d8f0a3d78296c9147440ffe39f273
 .github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
-.github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
+.github/workflows/mastodon-public-dns.yml e2b8cf213b063caf9b185fa1e6da104636d05cc7748d9f2c6185e740eebf57f1
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/nofx-images.yml 491fec04df240aa49151311abfaac2757e371ffad24e958ca94a03d5c1f0357d
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/octelium-private-kubernetes-apply.yml bb4b6a3246911de068adb6577276b8887521872771c4a612d2e0ca78e91aa4d3
-.github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
-.github/workflows/openclaw-enterprise-operations.yml e8250cd86f2657751762ce7316e250ea748295bd3546f38a0e0c94f0c05bc748
+.github/workflows/openclaw-enterprise-images.yml b2f1659ddf47fe9dd5498cddbf5a3dc003c8378ccadac57aec247ab6885f4dbf
+.github/workflows/openclaw-enterprise-operations.yml f4a569ad7d68e31854130350607b2968114b3bb247c931229c1c155a9c16704a
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml b1bd10e38b3d0010f66fd85cf81fd878e5a67f70fe0eefae3f3c16088bbcb70a
@@ -945,7 +945,11 @@ done <<'EOF'
 .github/workflows/terragrunt-apply.yml terragrunt-apply apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/harbor-mirror.yml mirror apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/harbor-core-images.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/cordium-runner-publish.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/mastodon-public-dns.yml credential apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/nofx-images.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/openclaw-enterprise-images.yml publish apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
+.github/workflows/openclaw-enterprise-operations.yml legacy apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/octelium-private-kubernetes-apply.yml reconcile apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/homelab-diagnostics.yml grafana apply TAILSCALE_AUTH_KEY homelab-tailscale-operator.tail67beb.ts.net
 .github/workflows/cordium-check.yml check cordium TAILSCALE_CORDIUM_AUTH_KEY homelab-ingress.tail67beb.ts.net

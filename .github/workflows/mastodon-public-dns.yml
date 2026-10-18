@@ -11,9 +11,6 @@ on:
 
 permissions: {}
 
-env:
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
-
 concurrency:
   group: mastodon-public-dns-production
   cancel-in-progress: false
@@ -109,10 +106,26 @@ jobs:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Tailscale State
+        timeout-minutes: 1
+        run: |
+          umask 077
+          mkdir -- "$RUNNER_TEMP/tailscale-state"
+
+      - name: Connect To Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          statedir: ${{ runner.temp }}/tailscale-state
+          version: 1.102.3
+          log-mode: quiet
+          ping: homelab-tailscale-operator.tail67beb.ts.net
+
+      - name: Verify Tailscale Identity
+        timeout-minutes: 1
+        run: python3 -I scripts/ci/tailscale-identity-check.py apply
+
       - name: Install Readiness Kubeconfig
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
         run: |
           set -euo pipefail
           umask 077
@@ -121,7 +134,7 @@ jobs:
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
-          bash scripts/ci/install-kubeconfig.sh
+          bash scripts/ci/install-kubeconfig.sh --tailscale
           EOF
           then
             echo "::error::Readiness kubeconfig installation failed; private details withheld."

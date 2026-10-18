@@ -4,10 +4,14 @@ title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
 sources:
-  - id: openwiki-source-5639384dcb82d59768eb1132
-    resource: repo://.github/workflows/harbor-core-images.yml
-  - id: openwiki-source-29ced481494f3a85c0d7921b
-    resource: repo://.github/workflows/terragrunt-apply.yml
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-db6cf97d787f19eab7b1a68b
+    resource: repo://.github/workflows/openclaw-enterprise-images.yml
+  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
+    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -30,10 +34,10 @@ sources:
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+generated: { by: "codex", at: "2026-10-18T13:07:20.728Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:49:03.265Z
+    at: 2026-10-18T13:07:20.728Z
 ---
 
 # GitOps Flow
@@ -146,13 +150,15 @@ removes the legacy public DNS helper and restoration workflow. External DNS
 writes still require the guarded operator command after signed proxy, TLS,
 backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
 old native catalog, and credentials through their separate
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b stages nine
-credentialed CI jobs with scoped pre-signed Tailscale keys, verifies the joined tag
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b stages thirteen
+credentialed live jobs with scoped pre-signed Tailscale keys, verifies the joined tag
 and tailnet, and sends native API calls directly through mesh TLS. Plan and
 apply use the operator API proxy with tokenless runner kubeconfigs; admission
 permits plan dry-runs but denies real Application writes. Production jobs
 retain protected-environment and exact-current-main checks. This prepared
 source does not establish live CI acceptance or retire old native Services.
+The added jobs cover Cordium runner and OpenClaw image publication, OpenClaw
+legacy retention, and Mastodon DNS publication.
 
 ## Signed offline CI checks
 

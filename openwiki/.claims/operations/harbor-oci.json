@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f9783f1aec0a1e77028b27b10df85b2bbee2bc01047350262313aeed5bdc08ec",
+  "pageVersion": "sha256:69f99bde4cffa5e1a20e3b1ce7d6f451d5224f356a9957d0e4e7c6bf32f14bdb",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
         },
         {
           "resource": "repo://builds/cordium-runner/README.md",
@@ -603,6 +603,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T12:49:03.265Z"
+    "at": "2026-10-18T13:07:20.728Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2ffc7f8e4ae960924aad043022973ea1b10df2be4c8338adbf1fd025aa42b388",
+  "pageVersion": "sha256:92b8ad741eb6f367eb5f85fead1d886aad71cbc9587b9d58b1eb95bb8304bc3a",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -36,23 +36,27 @@
     },
     {
       "id": "claim_1e76027c22f74ebd8abc4362f0879415",
-      "statement": "Phase 2b stages nine credentialed CI jobs, including the Harbor core publisher, with scoped pre-signed Tailscale keys, exact tag and tailnet verification, and direct native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
+      "statement": "Phase 2b stages thirteen credentialed live jobs, including Harbor and Cordium publisher, OpenClaw publication/retention, and Mastodon DNS jobs, with scoped pre-signed Tailscale keys, exact identity verification and native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:37a3d323f1bb42ed28838b5e5b29b6f09f99378e663111b7d51873b5bbfed5cf"
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
         },
         {
-          "resource": "repo://.github/workflows/terragrunt-apply.yml",
-          "version": "repo-file-v1:sha256:66f501ceec27ec1b5b7738c81486a7696aad91c210af91415b49cf00b9c694f7"
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
+          "version": "repo-file-v1:sha256:7491c488c8dfde841f6f4e544593e06979b574c681d31ac91b6f871283ed720e"
         },
         {
-          "resource": "repo://.github/workflows/terragrunt-plan.yml",
-          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
+          "version": "repo-file-v1:sha256:18cc8e11d50e5c4371922fd9546670400b530dd61584a23ba7ac393781135df5"
+        },
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
+          "version": "repo-file-v1:sha256:ecee68dec6b498513ffb05b9cb31c6073434967b9aa181f8340981c97b99814a"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
+          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
         },
         {
           "resource": "repo://scripts/ci/tailscale-identity-check.py",
@@ -85,6 +89,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T12:49:03.265Z"
+    "at": "2026-10-18T13:07:20.728Z"
   }
 }
