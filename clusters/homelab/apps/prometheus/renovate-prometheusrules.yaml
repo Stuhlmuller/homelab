@@ -57,10 +57,10 @@ spec:
         - alert: RenovateHourlyCycleIncomplete
           expr: |
             (
-              (time() - max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) > 3240)
+              (time() - homelab_renovate:last_schedule_after_resume:seconds > 3240)
               and on (namespace, cronjob)
               (
-                max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"} > 0)
+                homelab_renovate:last_schedule_after_resume:seconds
                 unless on (namespace, cronjob)
                 (
                   max by (namespace, cronjob) (
@@ -76,7 +76,7 @@ spec:
                     )
                   )
                   >= on (namespace, cronjob)
-                  max by (namespace, cronjob) (kube_cronjob_status_last_schedule_time{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
+                  homelab_renovate:last_schedule_after_resume:seconds
                 )
               )
               and on (namespace, cronjob)

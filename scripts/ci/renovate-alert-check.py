@@ -59,10 +59,10 @@ tests = [
 ]
 
 
-def completion_case(name, jobs=(), fires=True, schedule="3600x199", at="121m"):
+def completion_case(name, jobs=(), fires=True, schedule="3600x199", at="121m", suspend_values="0x199"):
     inputs = [
         metric("kube_cronjob_status_last_schedule_time", schedule),
-        metric("kube_cronjob_spec_suspend", "0x199"),
+        metric("kube_cronjob_spec_suspend", suspend_values),
     ]
     for job_name, created, succeeded in jobs:
         labels = f'namespace="automation",job_name="{job_name}"'
@@ -94,6 +94,7 @@ tests.extend([
         ("renovate-old", 4500, "0x121 1x77"),
         ("renovate-new", 7205, "0x130 1x68"),
     ], fires=False),
+    completion_case("old schedule stays incomplete-alert free after maintenance", schedule="3600x319", suspend_values="0x89 1x119 0x110", at="215m", fires=False),
     {
         "name": "Argo Application without CronJob", "interval": "1m",
         "input_series": [{"series": 'argocd_app_info{name="renovate",project="homelab-workloads"}', "values": "1x19"}],
