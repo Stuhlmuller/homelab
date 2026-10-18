@@ -69,7 +69,7 @@ jobs:
     needs: [static-policy]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 360
     concurrency:
       group: openclaw-enterprise-operations-production
       cancel-in-progress: false
