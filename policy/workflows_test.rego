@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "08f1127138e6cc1b826aa48ba9ba0cbff1961027badbb42f0a14cd5e9a4681b6", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "1df6ea7a07eb5c16807ae283dd3ea100f92b366451585debebbfa80f200e0184", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -28,7 +28,7 @@ test_rejects_changed_openclaw_legacy_operation if {
 
 openclaw_legacy_run := `set -euo pipefail
 umask 077
-sha256sum --check --status <<<'08f1127138e6cc1b826aa48ba9ba0cbff1961027badbb42f0a14cd5e9a4681b6  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'1df6ea7a07eb5c16807ae283dd3ea100f92b366451585debebbfa80f200e0184  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
