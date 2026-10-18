@@ -17,6 +17,9 @@
     },
     {
       "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
+    },
+    {
+      "source": "ghcr.io/renovatebot/renovate:44.167.4@sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d"
     }
   ]
 }
