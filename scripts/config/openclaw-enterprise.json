@@ -8,11 +8,11 @@
     "images": {
       "requiredRevisionLabel": "org.opencontainers.image.revision",
       "controller": {
-        "repository": "ghcr.io/openclaw/openclaw-enterprise-controller",
+        "repository": "harbor.stinkyboi.com/homelab/homelab-oce-controller",
         "digest": null
       },
       "runtime": {
-        "repository": "ghcr.io/openclaw/openclaw-enterprise-runtime",
+        "repository": "harbor.stinkyboi.com/homelab/homelab-oce-runtime",
         "digest": null
       }
     },
