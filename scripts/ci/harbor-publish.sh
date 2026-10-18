@@ -227,6 +227,11 @@ if [[ "$mode" == mirror ]]; then
   skopeo login --authfile "$scratch/mirror-publisher-auth.json" \
     --username "robot\$mirror+publisher" --password-stdin harbor.stinkyboi.com \
     <"$scratch/mirror-publisher-password" >/dev/null
+  mkdir "$scratch/regctl-empty-docker"
+  printf '%s\n' '{"auths":{}}' >"$scratch/regctl-empty-docker/config.json"
+  REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+    regctl registry login harbor.stinkyboi.com --user "robot\$mirror+publisher" \
+    --pass-stdin --skip-check <"$scratch/mirror-publisher-password" >/dev/null
   rm -f -- "$scratch/mirror-publisher-password"
 
   # Keep the publisher credential on destination writes only. This distinct
@@ -238,6 +243,9 @@ if [[ "$mode" == mirror ]]; then
   skopeo login --authfile "$scratch/mirror-pull-auth.json" \
     --username "robot\$mirror+pull" --password-stdin harbor.stinkyboi.com \
     <"$scratch/mirror-pull-password" >/dev/null
+  REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+    regctl registry login harbor.stinkyboi.com --user "robot\$mirror+pull" \
+    --pass-stdin --skip-check <"$scratch/mirror-pull-password" >/dev/null
   rm -f -- "$scratch/mirror-pull-password"
 else
   aws ssm get-parameter --region us-west-2 \
@@ -257,6 +265,7 @@ if [[ "$mode" == mirror ]]; then
   # artifacts, not proxy-cache entries that remain dependent on upstream state.
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
   while IFS= read -r source; do
+    oci_index_copy=false
     source_digest="${source##*@}"
     source_repository="${source%@*}"
     source_repository="${source_repository%:*}"
@@ -292,9 +301,10 @@ if [[ "$mode" == mirror ]]; then
         grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" || exit 1
         grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error" || exit 1
         mirror_phase="destination-copy"
-        skopeo copy --all --preserve-digests --src-no-creds \
-          --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-          "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+          2>"$scratch/mirror-error"
+        oci_index_copy=true
       fi
       rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
@@ -310,9 +320,15 @@ if [[ "$mode" == mirror ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
       mirror_phase="alias-copy"
-      skopeo copy --all --preserve-digests \
-        --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-        "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+      if "$oci_index_copy"; then
+        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+          2>"$scratch/mirror-error"
+      else
+        skopeo copy --all --preserve-digests \
+          --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+          "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+      fi
       mirror_phase="alias-verify"
       skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
         "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"
@@ -322,13 +338,24 @@ if [[ "$mode" == mirror ]]; then
     fi
     mirror_phase="authenticated-pull"
     pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
-    skopeo copy --all --preserve-digests \
-      --src-authfile "$scratch/mirror-pull-auth.json" \
-      "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
-    mirror_phase="pull-verify"
-    skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
-    mirror_category="digest-mismatch"
-    [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    if "$oci_index_copy"; then
+      REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+        regctl image copy "${destination}@${source_digest}" "ocidir://${pull_directory}:verify" \
+        2>"$scratch/mirror-error"
+      mirror_phase="pull-verify"
+      pulled_digest="$(REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+        regctl image digest "ocidir://${pull_directory}:verify" 2>"$scratch/mirror-error")"
+      mirror_category="digest-mismatch"
+      [[ "$pulled_digest" == "$source_digest" ]]
+    else
+      skopeo copy --all --preserve-digests \
+        --src-authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
+      mirror_phase="pull-verify"
+      skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
+      mirror_category="digest-mismatch"
+      [[ "sha256:$(sha256sum "$scratch/pulled-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+    fi
     mirror_category="command-failed"
     rm -rf -- "$pull_directory"
     printf '%s:%s@%s\n' "$destination" "$tag" "$source_digest" >>"$scratch/verified-digests"

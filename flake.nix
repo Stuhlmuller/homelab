@@ -108,6 +108,7 @@
             postgresql_14
             prometheus.cli
             python3
+            regctl
             ripgrep
             ruby
             shellcheck
