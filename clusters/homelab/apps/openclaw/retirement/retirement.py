@@ -12,6 +12,7 @@ import stat
 import sys
 import tarfile
 import tempfile
+import threading
 import time
 from pathlib import Path, PurePosixPath
 
@@ -22,6 +23,13 @@ if not STORAGE.exists():
 spec = importlib.util.spec_from_file_location('openclaw_runtime_storage', STORAGE)
 runtime_storage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runtime_storage)
+
+KEEPALIVE_SECONDS = 30
+
+
+def keepalive(stop):
+    while not stop.wait(KEEPALIVE_SECONDS):
+        print('Legacy retention operation active', file=sys.stderr, flush=True)
 
 
 def private_dir(path, owner=None):
@@ -72,7 +80,10 @@ def tree(root):
                     'link' if stat.S_ISLNK(info.st_mode) else 'directory',
         }
         if stat.S_ISREG(info.st_mode):
-            value['sha256'] = digest(path)
+            # Zero-byte, unreadable NAS files still have exact known content.
+            value['sha256'] = (hashlib.sha256(b'').hexdigest()
+                               if info.st_size == 0 and not (info.st_mode & 0o444)
+                               else digest(path))
             total += info.st_size
         elif stat.S_ISLNK(info.st_mode):
             value['target'] = os.readlink(path)
@@ -210,6 +221,9 @@ def add_tree(tar, root, label):
         if member.issym() and (PurePosixPath(member.linkname).is_absolute()
                               or '..' in PurePosixPath(member.linkname).parts):
             raise ValueError('unsafe source symlink in legacy state')
+        if member.isfile() and member.size == 0 and not (member.mode & 0o444):
+            tar.addfile(member)
+            return None
         return member
 
     tar.add(root, arcname=label, recursive=True, filter=check)
@@ -307,6 +321,9 @@ def main():
     parser.add_argument('--destination', type=Path)
     parser.add_argument('--receipt', type=Path)
     args = parser.parse_args()
+    stop = threading.Event()
+    heartbeat = threading.Thread(target=keepalive, args=(stop,), daemon=True)
+    heartbeat.start()
     try:
         config = config_at(args.config)
         if args.operation == 'inventory' and args.output and args.status:
@@ -329,6 +346,9 @@ def main():
     except (OSError, ValueError, RuntimeError, KeyError, tarfile.TarError) as error:
         print(f'Legacy retirement refused: {type(error).__name__}', file=sys.stderr)
         return 1
+    finally:
+        stop.set()
+        heartbeat.join()
 
 
 if __name__ == '__main__':

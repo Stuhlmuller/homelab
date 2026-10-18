@@ -177,7 +177,7 @@ approved_openclaw_legacy_operation if {
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'1df6ea7a07eb5c16807ae283dd3ea100f92b366451585debebbfa80f200e0184  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'ac58ed2a263c59198ce3e43d08cb853c3c6f7c64273e783a1749127778246389  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
@@ -582,7 +582,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'76b37fc76b9050289cf729afc6072dd1a07252e8d7c79938ceb85c81a19ec9cc  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

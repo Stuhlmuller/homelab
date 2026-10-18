@@ -326,15 +326,32 @@ if [[ "$mode" == mirror ]]; then
     if [[ "$tagged_source" == *:* ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
-      mirror_phase="alias-copy"
-      if "$oci_index_copy"; then
-        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
-          2>"$scratch/mirror-error"
+      mirror_phase="alias-lookup"
+      alias_needs_copy=true
+      if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+        if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
+          alias_needs_copy=false
+        fi
       else
-        skopeo copy --all --preserve-digests \
-          --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-          "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+        lookup_status=$?
+        if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" &&
+            ! grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" &&
+            ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+          exit "$lookup_status"
+        fi
+      fi
+      if [[ "$alias_needs_copy" == true ]]; then
+        mirror_phase="alias-copy"
+        if "$oci_index_copy"; then
+          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+            2>"$scratch/mirror-error"
+        else
+          skopeo copy --all --preserve-digests \
+            --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+            "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+        fi
       fi
       mirror_phase="alias-verify"
       skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \

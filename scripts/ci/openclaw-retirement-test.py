@@ -2,6 +2,7 @@
 """Fail-closed legacy retirement and independent restore fixtures."""
 
 import importlib.util
+import io
 import json
 import os
 import sqlite3
@@ -11,7 +12,7 @@ import tarfile
 import tempfile
 import time
 import unittest
-from contextlib import closing
+from contextlib import closing, redirect_stderr
 from pathlib import Path
 from unittest.mock import patch
 
@@ -20,6 +21,21 @@ SOURCE = Path(__file__).resolve().parents[2] / 'clusters/homelab/apps/openclaw/r
 spec = importlib.util.spec_from_file_location('openclaw_retirement', SOURCE)
 retirement = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(retirement)
+
+
+class Keepalive(unittest.TestCase):
+    def test_long_operation_emits_only_generic_progress(self):
+        class Stop:
+            calls = 0
+
+            def wait(self, _seconds):
+                self.calls += 1
+                return self.calls > 1
+
+        output = io.StringIO()
+        with redirect_stderr(output):
+            retirement.keepalive(Stop())
+        self.assertEqual(output.getvalue(), 'Legacy retention operation active\n')
 
 
 class Retirement(unittest.TestCase):
@@ -103,6 +119,30 @@ class Retirement(unittest.TestCase):
             damaged.write(b'truncated-or-changed')
         with self.assertRaises(ValueError):
             retirement.verify_archive(self.config, receipt)
+
+    def test_unreadable_empty_nas_file_keeps_mode_and_archive_entry(self):
+        path = self.nas / 'unreadable-empty'
+        path.touch()
+        path.chmod(0)
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        with tarfile.open(receipt.parent / 'legacy.tar.gz', 'r:gz') as bundle:
+            member = bundle.getmember('nas/unreadable-empty')
+            self.assertEqual((member.size, member.mode), (0, 0))
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
+    def test_unreadable_nonempty_nas_file_still_blocks_inventory(self):
+        path = self.nas / 'unreadable-nonempty'
+        path.write_bytes(b'retained')
+        path.chmod(0)
+        with self.assertRaises(PermissionError):
+            retirement.inventory(self.config, self.status)
 
     def test_workflow_archive_writes_private_receipt_locator(self):
         config_path = self.archive_root / 'config.json'

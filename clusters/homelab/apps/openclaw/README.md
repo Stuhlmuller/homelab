@@ -27,6 +27,8 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
 four PVC/PV UIDs, node and assistant image. Both inventory and archive refresh
 Kubernetes status after scanning retained data and compare volume identities.
+Unreadable zero-byte NAS files retain their empty hash and original mode in the
+archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and copies the complete
 bundle to versioned S3. It downloads
 that copy into scratch and verifies a full isolated extract before publishing a
