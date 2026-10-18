@@ -3,6 +3,17 @@ type: architecture
 title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
+sources:
+  - id: openwiki-source-52536621afbfff1f8abeed59
+    resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-caf6d77fd092a28e8583a6a2
+    resource: repo://clusters/homelab/apps/renovate/pvc.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
+generated: { by: "codex", at: "2026-10-18T19:53:38.444Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T20:54:44.446Z
 ---
 
 # Storage And State
@@ -501,6 +512,15 @@ registry storage. Preserve a fresh encrypted off-node etcd backup after key
 creation and restore that Secret before cert-manager can regenerate it. Keep
 the public key independently for historical signature verification. See
 [Harbor Private OCI Registry](../operations/harbor-oci.md) for the pending signing acceptance gates.
+
+## Renovate cache
+
+Renovate retains a 20 GiB `nfs-default` PVC in `automation` for datasource,
+private-package, and repository caches; its working files stay on ephemeral
+storage. The cache includes private package metadata, so restrict access to the
+volume and logs. It is replaceable and has no backup requirement. Argo CD does
+not prune the PVC; recover from corruption with a reviewed desired-state reset
+and let the next Job rebuild it. See [the workload runbook](../../clusters/homelab/apps/renovate/README.md).
 
 ## Staged independent application recovery (HOME-2)
 

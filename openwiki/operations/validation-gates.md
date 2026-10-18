@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -48,6 +50,10 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-436aa6b493bbff8d5c17b3ff
+    resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -120,6 +126,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
+  - id: openwiki-source-5028d06d31a177019a8bf782
+    resource: repo://scripts/ci/renovate-alert-check.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-1d25596b50032267f565d3f3
@@ -166,10 +174,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:24:17.285Z
+    at: 2026-10-18T22:39:47.335Z
 ---
 
 # Validation Gates
@@ -1282,7 +1290,8 @@ never relabel a targeted run or manually skip an unapplied range. See the
 
 Until the staged phase 2b Tailscale jobs pass live acceptance, existing
 GitHub-hosted live jobs still depend on the Octelium clientless Kubernetes
-route. If that route is the failed dependency, restore reviewed
+route. If
+that route is the failed dependency, restore reviewed
 `IaC/live/kubernetes-node-labels` state from a trusted LAN machine with a direct
 `https://10.1.0.199:6443` kubeconfig, shared-backend AWS credentials, a saved
 Terragrunt plan, and the Terraform-plan Conftest gate documented in
@@ -1743,6 +1752,17 @@ fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate consuming workloads.
+
+The staged hourly Renovate runner has a credential-free config and discovery
+test in `static-checks.sh`. `offline-checks.sh` runs its Prometheus rule
+fixture, which checks missed starts, incomplete cycles, a missing CronJob,
+late prior-Job completion, and schedules before and after suspension. These
+fixtures also enforce that the 15-minute allowed late start plus the 40-minute
+Job runtime ends before the completion alert's 56-minute threshold and the next
+hourly slot. These checks verify declared behavior; the suspended runner still
+needs live cold-cache runtime, Secret,
+App inventory, cache, and scheduled-Job acceptance before GitHub writes move
+to the cluster.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

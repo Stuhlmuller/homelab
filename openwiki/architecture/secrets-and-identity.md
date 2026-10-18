@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -30,12 +32,16 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-6680389f3ee90f86c4c9a782
+    resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
-  - id: openwiki-source-e0d1dba87aa9213350b1234a
-    resource: repo://docs/ci-cd.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -48,6 +54,8 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-4fa6e8b8348f9583e76afe30
+    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-326a085bf1ea3cb64a10924e
     resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
@@ -60,8 +68,8 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
-  - id: openwiki-source-8853fb993dc68b93d8f20498
-    resource: repo://policy/workflows.rego
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -76,10 +84,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:24:17.285Z
+    at: 2026-10-18T22:39:47.335Z
 ---
 
 # Secrets And Identity
@@ -171,10 +179,6 @@ their exact node tag and tailnet, and create tokenless kubeconfigs for the TLS
 proxy. Apply and Cordium tags can reach shared private ingress on TCP 443;
 Tailscale grants cannot isolate Traefik hosts. App authentication and Cordium
 policy still enforce access. Live acceptance precedes retiring native CI access.
-Generation 2 key recovery used a reviewed three-key provider plan and fixed
-current-main publisher for the protected GitHub secret slots. The
-[rotation runbook](../../IaC/modules/tailscale-access/README.md#rotation-and-retirement)
-keeps migration and credential retirement as separate gates.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
@@ -204,6 +208,15 @@ changing DNS alone does not authorize deleting those credentials.
   aggregate limit is 5,120 characters; the existing fixed-size inline policy
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
+
+The staged [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
+reuses its existing GitHub App. IaC declares two SecureString placeholders for
+the App issuer and private key. A temporary role permits the companion
+repository to transfer only those two values; it cannot read them back. The
+`automation` ExternalSecret projects both as files and refreshes every five
+minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
+and removal of the temporary writer grant are verified. The current code is
+desired state, not evidence that the credentials have reached the cluster.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

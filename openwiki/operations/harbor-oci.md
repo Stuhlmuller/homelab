@@ -74,8 +74,6 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e61e6d11d2a5c456a06bdb85
     resource: repo://clusters/homelab/platform/image-policy/README.md
-  - id: openwiki-source-e0d1dba87aa9213350b1234a
-    resource: repo://docs/ci-cd.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -108,6 +106,8 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -126,10 +126,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:24:17.285Z
+    at: 2026-10-18T22:39:47.335Z
 ---
 
 # Harbor Private OCI Registry
@@ -255,7 +255,7 @@ including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
 
 The Stage B desired-state consumer advances `harbor-secrets`' `OnChange`
-revision to `v3` and mounts the reader key in the bootstrap Job. After External
+revision to `v4` and mounts the reader key in the bootstrap Job. After External
 Secrets materializes the target Secret, a bootstrap execution can create or
 patch the reader robot. Require ExternalSecret Ready and successful PostSync
 completion before accepting reader-robot, authenticated-receipt, or Talos
@@ -973,7 +973,7 @@ three IAM updates, with no deletions or existing-secret rotations. Its GitOps
 `generated-secret-revision` advanced to `v2` to reconcile the publisher
 credential. The reviewed reader parameter later existed as a separately scoped,
 metadata-verified Stage A apply. The current desired-state consumer advances to
-`v3`; it must report Ready and the PostSync bootstrap must finish before
+`v4`; it must report Ready and the PostSync bootstrap must finish before
 accepting reader-robot, authenticated-receipt, or Talos prerequisites. Keep
 `refreshPolicy: OnChange` to avoid periodically regenerating the salted bcrypt
 registry password hash; an annotation change alone is not readiness evidence.
