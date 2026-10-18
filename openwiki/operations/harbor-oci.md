@@ -120,10 +120,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:47:13.681Z" }
+generated: { by: "codex", at: "2026-10-18T12:23:45.502Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:47:13.681Z
+    at: 2026-10-18T12:23:45.502Z
 ---
 
 # Harbor Private OCI Registry
@@ -419,6 +419,16 @@ the reviewed registry and registryctl pins into each node's CRI cache from
 exact reviewed `main`; it verifies cache aliases after each pull. Audit all
 four node caches again immediately before the consumer merge. This cache gate
 does not establish rollout health. See the [operator steps](../../docs/harbor-image-mirroring.md).
+
+### Staged Nocturne controller image
+
+The separate [Nocturne publisher](../../.github/workflows/cordium-nocturne-publish.yml)
+builds the checksum-pinned patched controller before credentials and permits
+only `homelab-cordium-nocturne`. The shared publisher verifies the transferred
+digest, a fresh complete authenticated Harbor pull, and the signature before
+emitting the immutable reference. No image has been published or consumed;
+the excluded namespace-local pull Secret first needs its SSM copy and grant.
+See the [controller build](../../builds/cordium-nocturne/README.md).
 
 ### Identical-reference core repair candidate
 
@@ -718,15 +728,20 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Their consuming Renovate PRs remain held until that
-publication and pull acceptance finish.
+complete Harbor pulls. Each consuming digest update requires that publication
+and pull acceptance first.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
 anonymously into a local directory image tree and checks the original manifest
-digest before authenticated Harbor upload. Existing destination tags resume
-only after exact hash verification. Aliases come from the verified Harbor digest;
-every selected artifact still needs a fresh complete authenticated destination pull.
+digest before authenticated Harbor upload. If Skopeo cannot preserve an OCI
+index digest during staging or upload, `regctl` copies the exact upstream digest;
+an upload fallback reads upstream a second time. Existing destination tags
+resume only after exact hash verification. Aliases come from the verified
+Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
+`regctl` retries that alias from Harbor. These exact conversion fallbacks use
+`regctl` for the fresh complete authenticated pull. Other copy errors stop
+publication, and every selected artifact still needs digest and alias checks.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
@@ -740,7 +755,9 @@ flowchart TD
     Staging --> Identity{"Original digest matches"}
     Identity -->|yes|Upload["Authenticated Harbor upload"]
     Identity -->|no|Stopped["Stop publication"]
-    Upload --> Verify["Verify digest and tag alias"]
+    Upload -->|Skopeo succeeds| Verify["Verify digest and tag alias"]
+    Upload -->|Exact OCI conversion error| Regctl["Regctl copies original upstream digest"]
+    Regctl --> Verify
     Verify --> Pull["Fresh authenticated Harbor pull"]
     Pull --> Receipt["Verify digest before receipt"]
 ```
@@ -773,13 +790,6 @@ uses an exact-main manual dispatch for a fixed runner/controller pair. It
 requires authenticated Harbor pulls and signatures before emitting immutable
 digests. Publication and cold-pull acceptance remain pending; the runner pool
 stays disabled. See the [runner contract](../../builds/cordium-runner/README.md).
-
-The separate staged [Nocturne controller publisher](../../.github/workflows/cordium-nocturne-publish.yml)
-builds the checksum-pinned patched controller before credentials, then publishes
-only `homelab-cordium-nocturne`. The shared publisher requires an all-platform
-transfer, fresh authenticated Harbor pull, and verified signature before
-emitting its immutable reference. No image has been published or consumed;
-the excluded namespace-local pull Secret first needs its SSM prerequisite.
 
 No consumer migration, full-catalog publication, zero-CVE result or live egress
 enforcement is established by these prerequisites. Image pulls remain

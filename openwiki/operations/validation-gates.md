@@ -92,6 +92,8 @@ sources:
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-f957231327bdd56401fbc4e2
     resource: repo://scripts/ci/image-policy-check.py
   - id: openwiki-source-dce02546543e605cb2ccbb06
@@ -154,10 +156,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:47:13.681Z" }
+generated: { by: "codex", at: "2026-10-18T12:23:45.502Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:47:13.681Z
+    at: 2026-10-18T12:23:45.502Z
 ---
 
 # Validation Gates
@@ -1622,15 +1624,6 @@ still requires the new web Pod Ready on Acer, the old web Pod gone from
 readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 is a projection, not rollout acceptance.
 
-The staged [Nocturne controller patch](../../builds/cordium-nocturne/README.md)
-reserves the configured workspace CPU/memory limits and uses a separate Pod user
-namespace. Its pinned build reproduces the old request defect before patching
-and checks the generator afterward. The fixed publisher fixture covers one
-Nocturne image, exact workflow/current-main binding, complete Harbor pull,
-signature verification, and withheld outputs on failure. These checks do not
-establish image publication, Acer capacity allocation, Talos configuration
-application, or live workspace execution.
-
 ## Harbor OCI rollout
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
@@ -1703,6 +1696,14 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
+The staged Nocturne controller patch reserves configured workspace CPU and
+memory limits and uses a separate Pod user namespace. Its pinned build
+reproduces the old request defect before patching and checks the generator
+afterward. Publisher fixtures require one fixed Nocturne image, exact workflow
+and current-main binding, complete authenticated Harbor pull, signature
+verification, and withheld outputs on failure. These checks do not establish
+publication, Acer capacity, Talos application, or live workspace execution.
+
 The fixed Renovate scope contains six cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
@@ -1718,6 +1719,12 @@ copying fails the original-index digest assertion. This gate requires Skopeo,
 not Docker or production credentials. It proves local staging behavior;
 complete Harbor pulls, destination signatures, scans and live consumers still
 require separate acceptance.
+
+Mocked transport fixtures cover the exact OCI conversion failure at destination
+upload and at alias copy after a resumed digest tag. Both require the `regctl`
+fallback, unchanged root digest and alias, and a complete authenticated pull;
+generic destination errors still fail closed. These fixtures do not establish
+that the protected full-catalog publication succeeded.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked

@@ -309,9 +309,21 @@ if [[ "$mode" == mirror ]]; then
         [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
         mirror_category="command-failed"
         mirror_phase="destination-copy"
-        skopeo copy --all --preserve-digests --src-no-creds \
-          --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-          "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+        if skopeo copy --all --preserve-digests --src-no-creds \
+            --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+            "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"; then
+          :
+        else
+          copy_status=$?
+          if ! grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" ||
+              ! grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
+            exit "$copy_status"
+          fi
+          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${source_repository}@${source_digest}" "${destination}:${tag}" \
+            2>"$scratch/mirror-error"
+          oci_index_copy=true
+        fi
       else
         grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" || exit 1
         grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error" || exit 1
@@ -330,19 +342,51 @@ if [[ "$mode" == mirror ]]; then
     mirror_category="digest-mismatch"
     [[ "sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
     mirror_category="command-failed"
+    if jq -e '.mediaType == "application/vnd.oci.image.index.v1+json"' "$scratch/manifest.json" >/dev/null; then
+      oci_index_copy=true
+    fi
     tagged_source="${source%@*}"
     if [[ "$tagged_source" == *:* ]]; then
       # Operators and chart defaults may request tags rather than digests.
       source_tag="${tagged_source##*:}"
-      mirror_phase="alias-copy"
-      if "$oci_index_copy"; then
-        REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-          regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
-          2>"$scratch/mirror-error"
+      mirror_phase="alias-lookup"
+      alias_needs_copy=true
+      if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+        if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
+          alias_needs_copy=false
+        fi
       else
-        skopeo copy --all --preserve-digests \
-          --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-          "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"
+        lookup_status=$?
+        if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" &&
+            ! grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" &&
+            ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+          exit "$lookup_status"
+        fi
+      fi
+      if [[ "$alias_needs_copy" == true ]]; then
+        mirror_phase="alias-copy"
+        if "$oci_index_copy"; then
+          REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+            regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+            2>"$scratch/mirror-error"
+        else
+          if skopeo copy --all --preserve-digests \
+              --src-authfile "$scratch/mirror-pull-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+              "docker://${destination}@${source_digest}" "docker://${destination}:${source_tag}" 2>"$scratch/mirror-error"; then
+            :
+          else
+            copy_status=$?
+            if ! grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" ||
+                ! grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error"; then
+              exit "$copy_status"
+            fi
+            REGCTL_CONFIG="$scratch/regctl-publisher.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+              regctl image copy "${destination}@${source_digest}" "${destination}:${source_tag}" \
+              2>"$scratch/mirror-error"
+            oci_index_copy=true
+          fi
+        fi
       fi
       mirror_phase="alias-verify"
       skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \

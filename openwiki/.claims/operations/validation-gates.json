@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:103d10b0f2b4bfa8442c20e3711918229796e440e5662ce511f217fe5568356e",
+  "pageVersion": "sha256:ae6eb9b829b4eefe7bd195d82699b0617d20f34dc6043e4a556161aec39b810d",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
+          "version": "repo-file-v1:sha256:6ad81b0855675bc342df928eea3ba733bb91fd65fd6abdfdd4edcf069ba00f14"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:3dcf8ebf2198a685fd94ecf3222e82e92fa6748edc5eac4272eb8ded037cfa69"
+          "version": "repo-file-v1:sha256:cff78af8b39178268dae875789c619c12ef4c8b3fb7775ebc121591298b6df3b"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d809fb6e3d787e2c2faf7b56809462178137eb3795a17c9b6336ba5552fc11e7"
+          "version": "repo-file-v1:sha256:581383068e9724d1be9c7ce8790860f253f43cdca23afbe86948898a4b95cf38"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
+          "version": "repo-file-v1:sha256:6ad81b0855675bc342df928eea3ba733bb91fd65fd6abdfdd4edcf069ba00f14"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
+          "version": "repo-file-v1:sha256:6ad81b0855675bc342df928eea3ba733bb91fd65fd6abdfdd4edcf069ba00f14"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:9dc31d22e2f6c79c9654936ba1b50f23d82c25feb96c9a8d6b39f159436428df"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -670,15 +670,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:3473f0b7053030a7eda56fb9783a2ee21627298d143354355515ede552b06951"
+          "version": "repo-file-v1:sha256:27841b14d3de272ac99685faaf095f025a7ed9eb454b106f4beb1af5dabde729"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
+          "version": "repo-file-v1:sha256:6ad81b0855675bc342df928eea3ba733bb91fd65fd6abdfdd4edcf069ba00f14"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d809fb6e3d787e2c2faf7b56809462178137eb3795a17c9b6336ba5552fc11e7"
+          "version": "repo-file-v1:sha256:581383068e9724d1be9c7ce8790860f253f43cdca23afbe86948898a4b95cf38"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -687,8 +687,22 @@
       ]
     },
     {
-      "id": "claim_a9f87f8990f546ac9e691d72a4652acc",
-      "statement": "The staged Nocturne controller patch fixes CPU and memory requests plus Pod user namespace isolation; local source and publisher fixtures validate the build and fixed Harbor publication path, while image publication, Acer capacity, Talos apply and live workspace execution remain unaccepted.",
+      "id": "claim_e0a81929c30d4dcba87d30cdc558415f",
+      "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L774-L822",
+          "version": "repo-lines-v1:sha256:da58bbfbe9bc03844d243a8c139df7b193d7a53f073b88b1e739c89b8e106fd9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1ZjEzZGJlMzNjOWZjNGE0M2QxMzU4OWIwMjVkZDY4MTUxMzQ2OTUyOGFkM2EyYWUyZWUxMTM0MWY4NWVlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNWQxYjE0YTk5NDVkMzE4NTFkMDIyMmYxYmIwOTMxMDQ4YzgyMjg5NjczYmM0ODg3MDg3ZTMzYTlhMzExYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkOGJlZjJlNGZmZmJhMTIxODUzMTY3ZDliZTg2NWI2ZjVhODc3ZWI4OGNlMWIzZTc1MGVhMTQ5NDNiMjAyYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWMwZWZmNmExMWExZGNhZDhmNjVjOTEwMjA1OTFjZDhhN2Y2NGQyMDQ2ZDg0NWY3N2I3NjU5MjNlZDMzNDAifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh#L311-L400",
+          "version": "repo-lines-v1:sha256:d2d374c55db86f3bfdd62b91aef854512b268fa415b27c83724ebbcbcba0de44:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMWIxYjIwMzEzMDZjYTUyOWUyZjNmMWIyZjRmZDlmMTMyNzk2MjZkYWFjZmY2ODBmMmJiYjA3NGFjM2I0YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhYzczZWY3NWZhYmRiODAzZmMxNjc1NzIzOGNhMWZlMDBjNGM0NDQ2NjEwZjQ5ZmY2MWU5OGZhNDYxM2QxYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4OWVkN2E1MDg4NTlhZmUxNWExM2FiNTExOWIyYjE0ZjhmNDVkNjkzN2NlYTcyYTA4MDc5ZDU1YTAwNDU5ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwZWM2ZDllM2U3MDMwMjk5ZTg4MmRlYTM3YjJlNDVhZDcyMmU4OGJkZGE0ZmZmZmYyMjgzNDIzNWRiN2RmYzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9e9c33daedc848e3a1732f38f9cf872a",
+      "statement": "The staged Nocturne controller build reproduces the workspace request defect before applying its Pod generator patch, then checks the corrected generator. Publisher fixtures require one fixed Nocturne subject, exact trusted workflow/current-main binding, complete authenticated Harbor pull, verified signature and withheld outputs on failure; local checks do not prove publication, Acer capacity, Talos apply or live workspace execution.",
       "evidence": [
         {
           "resource": "repo://builds/cordium-nocturne/README.md",
@@ -699,14 +713,14 @@
           "version": "repo-file-v1:sha256:10ec974797217d12bfac9b686877d08811f5cb286b46b9a87854dd846d0cff5a"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:6e92b625a7e2229f5389c5ff2a9f50303b355933cb2640db4b5a72d15cb32a89"
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L1258-L1285",
+          "version": "repo-lines-v1:sha256:430b6c7808cb85ab1dff0b46a668b326517010889de5ce5e82c88d65971f5593:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA3ZDc3NDNhYzYyMTNkY2EwMDUwNDg3YzdkY2NjZDNlZTEwZTk3MTA2ZjNjMmVjMmNmMmRjYzhiMWEzMjcyOTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3MmYxOWRmMTMyMjI3YWY1ZTQ2MWE5ZjYzMDk4MTgzZDhmMmQyODMyYWNjY2I0MGJlYjJiYzZiYTgxZjA3NjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdlZWNiNDcyMzNiOWFkNmM3ZTQxZjE5ZGM3MDZkNDkyNzg4MWZmM2E5Mjc3YTUwZGYyYjRjNWMzNDQ4YTMyZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjZiMzc4ZmNmZmE5NTI0ZDg3YjUxODIxZTUzNTY5MzFlMjhlMzI2OGVjOGRjMjVlMGNhMTAxYTQzOTM2OTQzMGYifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:47:13.681Z"
+    "at": "2026-10-18T12:23:45.502Z"
   }
 }

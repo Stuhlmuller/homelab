@@ -124,7 +124,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse(self.calls.exists(), "A refusal path reached a credential or service command")
         return result
 
-    def transport_mocks(self, failure=None, mirror=False, resume=False,
+    def transport_mocks(self, failure=None, mirror=False, resume=False, oci_index=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", core=False, nocturne=False,
                         cordium=False, enterprise=False):
@@ -141,7 +141,8 @@ class HarborPublicationGates(unittest.TestCase):
         if nocturne:
             names = ["homelab-cordium-nocturne"]
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/cordium-nocturne-publish.yml@refs/heads/main"
-        published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
+        published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name,
+            **({"mediaType": "application/vnd.oci.image.index.v1+json"} if oci_index else {})}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
             for name, raw in published_manifests.items()
@@ -286,6 +287,13 @@ class HarborPublicationGates(unittest.TestCase):
                             print(FIXTURE["missing_error"].format(artifact=artifact, repository=artifact.rsplit(":", 1)[0]),
                                   file=sys.stderr)
                             raise SystemExit(1)
+                    if FIXTURE["mirror"] and reference.endswith(":stable"):
+                        if FIXTURE["failure"] == "mirror-alias-lookup":
+                            print("connection refused private-test-credential-must-never-appear", file=sys.stderr)
+                            raise SystemExit(18)
+                        if not FIXTURE["resume"] and reference not in published:
+                            print("manifest unknown", file=sys.stderr)
+                            raise SystemExit(1)
                     raw = published.get(reference) or FIXTURE["manifests"][reference]
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
@@ -294,6 +302,8 @@ class HarborPublicationGates(unittest.TestCase):
                         raw += "corruption"
                     if FIXTURE["failure"] == "mirror-tag" and reference.endswith(":stable"):
                         raw += "tag corruption"
+                    if FIXTURE["failure"] in ("mirror-existing-alias", "mirror-oci-alias") and reference.endswith(":stable") and reference not in published:
+                        raw += "stale alias"
                     sys.stdout.write(raw)
                 elif args[0] == "copy" and args[-1].startswith("dir:"):
                     reference = args[-2].removeprefix("docker://")
@@ -349,9 +359,17 @@ class HarborPublicationGates(unittest.TestCase):
                         if FIXTURE["failure"] == "mirror-destination":
                             print("502 Bad Gateway private-test-credential-must-never-appear", file=sys.stderr)
                             raise SystemExit(20)
+                        if FIXTURE["failure"] == "mirror-oci-destination":
+                            print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
+                                  file=sys.stderr)
+                            raise SystemExit(17)
                     if FIXTURE["failure"] == "mirror-alias" and args[-1].endswith(":stable"):
                         print("connection reset private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(19)
+                    if FIXTURE["failure"] == "mirror-oci-alias" and args[-1].endswith(":stable"):
+                        print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
+                              file=sys.stderr)
+                        raise SystemExit(17)
                     reference = args[-1].removeprefix("docker://")
                     path = root / "published-images.json"
                     published = json.loads(path.read_text()) if path.exists() else {}
@@ -753,6 +771,56 @@ class HarborPublicationGates(unittest.TestCase):
                          [f"{destination}:{digest[7:]}@{digest}"])
         self.assert_cleaned()
 
+    def test_oci_destination_conversion_uses_regctl_after_verified_staging(self):
+        self.transport_mocks(failure="mirror-oci-destination", mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        repository = source.split(":")[0]
+        destination = f"harbor.stinkyboi.com/mirror/{repository}"
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 2)
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertTrue(copies[1][-2].startswith("dir:"))
+        self.assertEqual(copies[1][-1], f"docker://{destination}:{digest[7:]}")
+        self.assert_mirror_copy_credentials(copies)
+        regctl_copies = [args[2:] for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]
+        self.assertEqual(regctl_copies[:2], [
+            [f"{repository}@{digest}", f"{destination}:{digest[7:]}"],
+            [f"{destination}@{digest}", f"{destination}:stable"],
+        ])
+        self.assertEqual(len(regctl_copies), 3)
+        self.assertEqual(regctl_copies[-1][0], f"{destination}@{digest}")
+        self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
+    def test_oci_alias_retry_uses_regctl_and_authenticated_pull(self):
+        self.transport_mocks(failure="mirror-oci-alias", mirror=True, resume=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        destination = f"harbor.stinkyboi.com/mirror/{source.split(':')[0]}"
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 1)
+        self.assertEqual(copies[0][-2], f"docker://{destination}@{digest}")
+        self.assertEqual(copies[0][-1], f"docker://{destination}:stable")
+        self.assert_mirror_copy_credentials(copies)
+        regctl_copies = [args[2:] for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]
+        self.assertEqual(regctl_copies[0], [f"{destination}@{digest}", f"{destination}:stable"])
+        self.assertEqual(len(regctl_copies), 2)
+        self.assertEqual(regctl_copies[-1][0], f"{destination}@{digest}")
+        self.assertTrue(regctl_copies[-1][-1].startswith("ocidir://"))
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
+
     def test_renovate_oci_index_rejects_incomplete_or_wrong_pull(self):
         for failure in ("mirror-regctl-pull", "mirror-regctl-digest"):
             with self.subTest(failure=failure):
@@ -762,6 +830,17 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
+
+    def test_renovate_existing_oci_index_uses_complete_regctl_pull(self):
+        self.transport_mocks(mirror=True, resume=True, oci_index=True)
+        self.renovate_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        copies = [args[2:] for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]
+        self.assertEqual(len(copies), 1)
+        self.assertTrue(copies[0][-1].startswith("ocidir://"))
+        self.assertFalse([args for args in self.calls_for("skopeo") if args[0] == "copy"])
+        self.assert_cleaned()
 
     def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())
@@ -1005,15 +1084,15 @@ class HarborPublicationGates(unittest.TestCase):
         self.assert_cleaned()
 
     def test_mirror_failures_withhold_acceptance_and_clean_credentials(self):
-        for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
+        for failure in ("mirror-source", "mirror-alias", "mirror-lookup", "mirror-alias-lookup", "digest", "mirror-tag", "pull", "pull-digest"):
             with self.subTest(failure=failure):
                 self.transport_mocks(failure=failure, mirror=True)
                 result = self.run_helper(mode="mirror")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
-                phases = {"mirror-source": "upstream-download", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup",
+                phases = {"mirror-source": "upstream-download", "mirror-alias": "alias-copy", "mirror-lookup": "digest-lookup", "mirror-alias-lookup": "alias-lookup",
                           "digest": "digest-verify", "mirror-tag": "alias-verify", "pull": "authenticated-pull", "pull-digest": "pull-verify"}
-                categories = {"mirror-source": "rate-limited", "mirror-alias": "transport-failed", "mirror-lookup": "transport-failed",
+                categories = {"mirror-source": "rate-limited", "mirror-alias": "transport-failed", "mirror-lookup": "transport-failed", "mirror-alias-lookup": "transport-failed",
                               "digest": "digest-mismatch", "mirror-tag": "digest-mismatch", "pull-digest": "digest-mismatch"}
                 status = dict(line.split("=", 1) for line in self.public_status.splitlines())
                 self.assertIn(status["source"], [image["source"] for image in self.mirror_manifest["images"]])
@@ -1070,13 +1149,13 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.run_helper(mode="mirror")
         self.assertEqual(result.returncode, 0, result.stderr)
         copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
-        self.assertEqual(len(copies), 4)
+        self.assertEqual(len(copies), 2)
         self.assertTrue(all(args[-2].startswith("docker://harbor.stinkyboi.com/mirror/") for args in copies))
         self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
-        self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 2)
+        self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 0)
         self.assert_mirror_copy_credentials(copies)
         inspections = [args[-1] for args in self.calls_for("skopeo") if args[0] == "inspect"]
-        self.assertEqual(sum(reference.endswith(":stable") for reference in inspections), 2)
+        self.assertEqual(sum(reference.endswith(":stable") for reference in inspections), 4)
         self.assertEqual(len((self.root / "summary").read_text().splitlines()), 2)
         self.assertEqual(self.public_status, "")
         self.assert_cleaned()
@@ -1091,6 +1170,15 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertIn("phase=digest-verify\n", self.public_status)
         self.assertIn("category=digest-mismatch\n", self.public_status)
         self.assertFalse((self.root / "summary").exists())
+        self.assert_cleaned()
+
+    def test_mirror_stale_alias_is_replaced_from_verified_digest(self):
+        self.transport_mocks(failure="mirror-existing-alias", mirror=True, resume=True)
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(sum(args[-1].endswith(":stable") for args in copies), 2)
+        self.assertEqual(sum(args[-1].startswith("dir:") for args in copies), 2)
         self.assert_cleaned()
 
     def test_mirror_digest_only_sources_do_not_create_mutable_aliases(self):

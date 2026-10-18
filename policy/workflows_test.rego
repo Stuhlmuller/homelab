@@ -2,6 +2,53 @@ package main
 
 import rego.v1
 
+test_allows_exact_openclaw_legacy_operation if {
+	candidate := workflow_with_openclaw_legacy_operation(
+		openclaw_legacy_run,
+		{"contents": "read", "id-token": "write"},
+	)
+	violations := deny with input as candidate
+	count(violations) == 0
+}
+
+test_rejects_changed_openclaw_legacy_operation if {
+	every candidate in [
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"contents": "read", "id-token": "write"}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "exact protected stages")
+	}
+}
+
+openclaw_legacy_run := `set -euo pipefail
+umask 077
+sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
+bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
+`
+
+workflow_with_openclaw_legacy_operation(run, permissions) := {
+	"name": "OpenClaw Enterprise Operations",
+	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "archive", "verify"]}}}},
+	"jobs": {"legacy": {
+		"needs": ["static-policy"],
+		"environment": {"name": "homelab-production"},
+		"concurrency": {"group": "openclaw-enterprise-operations-production"},
+		"permissions": permissions,
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+		"steps": [{
+			"name": "Run Legacy Stage",
+			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+			"run": run,
+		}],
+	}},
+}
+
 test_rejects_mutable_docker_action_image if {
 	violations := deny with input as workflow_with_images(
 		"docker://alpine:3.21",
@@ -446,7 +493,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-        replace(harbor_mirror_private_run, "e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "02144e74fa3f52013b866700a233444d503da93a48881c1c8b9ca3c292291c5d", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),

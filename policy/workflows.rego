@@ -154,6 +154,29 @@ deny contains msg if {
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Operations"
+	not approved_openclaw_legacy_operation
+	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
+}
+
+approved_openclaw_legacy_operation if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	dispatch.inputs.legacy_stage.options == ["inventory", "archive", "verify"]
+	job := input.jobs.legacy
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency.group == "openclaw-enterprise-operations-production"
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	some step in job.steps
+	step.name == "Run Legacy Stage"
+	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
+	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	contains(step.run, "set -euo pipefail\numask 077\n")
+	contains(step.run, concat("", [`sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+}
+
 encrypted_harbor_diagnostic(job_name, job, step) if {
 	job_name == "mirror"
 	some command in job.steps
@@ -206,7 +229,7 @@ deny contains msg if {
 	msg := sprintf("Octelium catalog workflow job %q step %d must use its one-use catalog credential", [job_name, index])
 }
 
-workflow_events := object.get(input, "on", object.get(input, true, {}))
+workflow_events := object.get(input, "on", object.get(input, "true", object.get(input, true, {})))
 
 has_event(events, event) if {
 	events == event
@@ -428,7 +451,7 @@ case "$IMAGE_SCOPE" in
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'e72c4ba588b41e760cab32fbe1715f3dbae99b23270e22300b2b9e62c49efb24  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'02144e74fa3f52013b866700a233444d503da93a48881c1c8b9ca3c292291c5d  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
