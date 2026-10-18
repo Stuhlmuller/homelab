@@ -623,20 +623,34 @@ alias of the pull robot credential, into its Docker-config Secret. CI reads
 publication. The Stage A saved plan has created and metadata-verified
 `/homelab/harbor/mirror-robot-pull-password`; it is used for authenticated Harbor
 publication receipts and the later Talos registry-auth candidate. The Stage B
-`harbor-secrets` revision advances its `OnChange` annotation to `v3` so External
+`harbor-secrets` revision advances its `OnChange` annotation to `v4` so External
 Secrets can reconcile the new key. Parameter creation alone does not create a
 Harbor robot, grant a workload registry access, or change a node; wait for the
 Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
+The protected native Chainguard receipt workflow has an inline AWS session
+policy for only `/homelab/harbor/robot-pull-password` and
+`/homelab/harbor/robot-scan-password`. It writes each value to a private
+temporary file, passes the pull password only to `skopeo --password-stdin`, and
+uses the scan password only for exact child-image scan queries through the
+existing Harbor transport. The pull robot has only repository pull permission;
+the separate `robot$homelab+scan` identity has only project-scoped
+`artifact:read`. Neither credential reaches workflow environment, arguments,
+JSON, logs, or artifacts. The receipt creates no in-cluster scanner Job and
+does not mount or rely on the administrator password, a ConfigMap, or a
+NetworkPolicy for its scan evidence.
+
 The native Chainguard receipt scan robot needs
 `/homelab/harbor/robot-scan-password` before its ExternalSecret consumer can
-merge. This declaration generates the password and adds its exact ARN to the
-existing External Secrets reader policy. Apply only a reviewed saved plan
-for the shared SSM unit, then verify parameter metadata without reading its
-value. This prerequisite alone does not refresh `harbor-secrets`, create the
-Harbor robot, or start a receipt workflow.
+become Ready. This declaration generates the password and adds its exact ARN to the
+existing External Secrets reader policy. The parameter is present as a version 1
+`SecureString`, and read-only IAM inspection confirmed its exact reader grant.
+A targeted saved plan from `main` at `f6506136` on 2026-10-18 found no changes.
+This prerequisite
+alone does not refresh `harbor-secrets`, create the Harbor robot, or start a
+receipt workflow.
 
 The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
 Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
