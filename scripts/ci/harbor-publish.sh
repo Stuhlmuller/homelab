@@ -191,7 +191,7 @@ cp "$(command -v kubectl)" "$scratch/kubectl"
 chmod 700 "$scratch/kubectl"
 sudo -n setcap cap_net_bind_service=+ep "$scratch/kubectl"
 forward_timeout=2400
-[[ "$mode" != mirror ]] || forward_timeout=19800
+[[ "$mode" != mirror && "$mode" != mirror-renovate ]] || forward_timeout=19800
 timeout --signal=TERM --kill-after=5s "$forward_timeout" \
   "$scratch/kubectl" --kubeconfig "$HOME/.kube/config" \
   --namespace traefik port-forward --address 127.0.0.1 \
@@ -276,18 +276,26 @@ if [[ "$mode" == mirror ]]; then
       fi
       mirror_phase="upstream-download"
       upstream_directory="$(mktemp -d "$scratch/upstream.XXXXXX")"
-      skopeo copy --all --preserve-digests --src-no-creds \
-        --src-authfile "$scratch/anonymous-auth.json" \
-        "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"
-      mirror_phase="upstream-verify"
-      skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
-      mirror_category="digest-mismatch"
-      [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
-      mirror_category="command-failed"
-      mirror_phase="destination-copy"
-      skopeo copy --all --preserve-digests --src-no-creds \
-        --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
-        "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      if skopeo copy --all --preserve-digests --src-no-creds \
+          --src-authfile "$scratch/anonymous-auth.json" \
+          "docker://${source_repository}@${source_digest}" "dir:${upstream_directory}" 2>"$scratch/mirror-error"; then
+        mirror_phase="upstream-verify"
+        skopeo inspect --raw "dir:${upstream_directory}" >"$scratch/upstream-manifest.json" 2>"$scratch/mirror-error"
+        mirror_category="digest-mismatch"
+        [[ "sha256:$(sha256sum "$scratch/upstream-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
+        mirror_category="command-failed"
+        mirror_phase="destination-copy"
+        skopeo copy --all --preserve-digests --src-no-creds \
+          --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+          "dir:${upstream_directory}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      else
+        grep -Fq 'Manifest list must be converted to type' "$scratch/mirror-error" || exit 1
+        grep -Fq 'Instructed to preserve digests' "$scratch/mirror-error" || exit 1
+        mirror_phase="destination-copy"
+        skopeo copy --all --preserve-digests --src-no-creds \
+          --src-authfile "$scratch/anonymous-auth.json" --dest-authfile "$scratch/mirror-publisher-auth.json" \
+          "docker://${source_repository}@${source_digest}" "docker://${destination}:${tag}" 2>"$scratch/mirror-error"
+      fi
       rm -rf -- "$upstream_directory"
       mirror_phase="digest-verify"
       skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
