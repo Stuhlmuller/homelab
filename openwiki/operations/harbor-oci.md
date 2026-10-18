@@ -126,10 +126,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:06.405Z
+    at: 2026-10-18T21:31:10.787Z
 ---
 
 # Harbor Private OCI Registry
@@ -254,7 +254,7 @@ including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
 
 The Stage B desired-state consumer advances `harbor-secrets`' `OnChange`
-revision to `v3` and mounts the reader key in the bootstrap Job. After External
+revision to `v4` and mounts the reader key in the bootstrap Job. After External
 Secrets materializes the target Secret, a bootstrap execution can create or
 patch the reader robot. Require ExternalSecret Ready and successful PostSync
 completion before accepting reader-robot, authenticated-receipt, or Talos
@@ -972,7 +972,7 @@ three IAM updates, with no deletions or existing-secret rotations. Its GitOps
 `generated-secret-revision` advanced to `v2` to reconcile the publisher
 credential. The reviewed reader parameter later existed as a separately scoped,
 metadata-verified Stage A apply. The current desired-state consumer advances to
-`v3`; it must report Ready and the PostSync bootstrap must finish before
+`v4`; it must report Ready and the PostSync bootstrap must finish before
 accepting reader-robot, authenticated-receipt, or Talos prerequisites. Keep
 `refreshPolicy: OnChange` to avoid periodically regenerating the salted bcrypt
 registry password hash; an annotation change alone is not readiness evidence.
