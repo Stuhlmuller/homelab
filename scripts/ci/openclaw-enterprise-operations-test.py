@@ -174,6 +174,18 @@ restore_version key version-1 "$2"
                 self.assertNotIn('aws', result.stderr)
                 self.assertNotIn('kubectl', result.stderr)
 
+    def test_failure_reports_only_fixed_phase(self):
+        with tempfile.TemporaryDirectory() as directory:
+            phase = Path(directory) / 'phase'
+            result = subprocess.run(['bash', str(SCRIPT), 'invalid'], cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(phase.read_text(), 'preflight\n')
+            workflow = WORKFLOW.read_text()
+            self.assertIn('preflight|baseline|publication|verification', workflow)
+            self.assertIn('private cluster and archive diagnostics withheld', workflow)
+
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
