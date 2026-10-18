@@ -135,7 +135,7 @@ kubectl kustomize clusters/homelab/apps/octelium-public
 kubectl kustomize clusters/homelab/apps/istio
 kubectl -n octelium-public get externalsecret,secret,deploy,pod
 kubectl -n octelium-public logs deploy/cloudflared
-scripts/tailscale-private-dns.sh --dry-run
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 python3 scripts/octelium-tunnel-check.py
 dig +short octelium.stinkyboi.com
 curl -fsS -o /dev/null -w '%{http_code}\n' https://stinkyboi.com/

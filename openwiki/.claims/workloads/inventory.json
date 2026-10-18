@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a5d96a804b1631e887d993ff8769d3aa6aeb3538669b598c8e04df98b1b985e",
+  "pageVersion": "sha256:ab230def6ab057c970ff93c3e8244a0fb1fa84f3cb62ec5a2a755541897f1593",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
+          "version": "repo-file-v1:sha256:2a77618d5f16f93020e5737ee925317a956634e9ddf46dd01185e7a564e0801b"
         }
       ]
     },
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -84,7 +84,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -275,10 +275,28 @@
           "version": "repo-lines-v1:sha256:a0cf845c9739c1d0d0ae1708602bec8def146d8fb3a571fcd4b81d0a6e7d24c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c5d8577df3674b02a5ab90e556b69f6e",
+      "statement": "Tailnet DNS is a separate stateless Argo CD resolver in its own namespace, backed by CoreDNS and k8s_gateway, exposed through a distinct signed Tailscale DNS proxy; its pinned Harbor image must be published before rollout.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml",
+          "version": "repo-file-v1:sha256:cb74e07be1531ecddc6f791f28c02c4477621dd0e5bfe9337da4fff98aa6a4e0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:41:22.820Z"
+    "at": "2026-10-18T20:54:06.405Z"
   }
 }

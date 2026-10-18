@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:98030b9204752eedb8975dcc1dc14d79b910052f1b60a1f825aeea931abd7e6b",
+  "pageVersion": "sha256:22762a7b1ce95ac90eaf4329891d0a526606868d6f288a62f30f1b68ba3486c3",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
       "statement": "Phase2a routes the canonical Octelium API and Harbor cluster DNS names to Traefik's private Service while preserving separate registry-only Talos node ingress and staged mesh/CI acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L91",
-          "version": "repo-lines-v1:sha256:0a1bbce0ecf0decdd82b5deeac06b1f1fd964f9de3f419f6b7e3fa8d9f88a051:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L89-L127",
+          "version": "repo-lines-v1:sha256:07a64f7d1281c30d4b21fa31a3320171072849dec752e466b32ad328d9b72d65:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
@@ -89,10 +89,38 @@
           "version": "repo-file-v1:sha256:4bc47ef2f8b66ef0c2327b7b186c9486f8b3ae9ec641e37409f7062ffde7a863"
         }
       ]
+    },
+    {
+      "id": "claim_a722fa5b6c02441c8bd2d9182291459e",
+      "statement": "The separate tailnet-dns CoreDNS/k8s_gateway Service answers approved application A/AAAA names from the labeled Traefik private Service, forwards other DNS queries, and leaves cluster kube-dns and HTTPS routing with their existing owners.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L3-L23",
+          "version": "repo-lines-v1:sha256:107c3f415a03d020f63cb58ee6204297952717734e0bf0b69ec54c905b6d3942:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlNTliMTQ0OTFjYzg0OGFkMzJiY2YwNDk0YzYwMWYyYjYwZWJhOThmNTg1YTc5OGQ2YmVhOTI5MjUzMTBiMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MmZhYTU3NGUxNjgyOTc5NDlhMzIxMGM2OWMwYTRiZjIxNTBjMTM1ODliYTEwZWJlZmFkM2IzYjg0YjMwNzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MzBmNTUxNjNmYzA2YzUwMTQzZWU0NTA1ZWE3ZjI3YmMzZGZkN2Q5MTc0ZjcxMjE5ZTA5MmU3OGJlYWExMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzOWQ1ZmM4MjRlNTUwYjZkNDFlMDFmY2Y3ZjY5YWQ3NDlmZGMxZWQyMGI4NjdmYmFiOWNlM2U0ZjE0YmFkMWYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml#L17-L58",
+          "version": "repo-lines-v1:sha256:5cf5dfd3ec46eee3fea95f7107fea8487ce87c7cb702f044584ec761c7b87880:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMmEwMzMyNjgxNjhlYjZmOThiMDRmMTg0MzUzYzFmOTkwNzM4MGRiMzQyMmJiYWVhNWU4OWM1YWU1NjU4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyNTI5ZTAwODVlOWM3ZjJhOWE2NDBjNzY3OWYzNzAwNmY1ZTk0MDNiNzgzNGNiMWEwNDBjNjdhNGI5YzVkMTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTNlZTU3NDBlZWU3ODVkMTdiNjlkMWMwOTdkMWE5OGRlYTMxMTk2YmRiOTk3NTFjNTUxZDc0M2FiYmNhNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0810ce2688044653901326282a9dc0cf",
+      "statement": "The tailnet-dns Tailscale LoadBalancer has its own homelab-dns identity and UDP/TCP 53 endpoint; the owner sets its observed, signed tailnet IP as restricted stinkyboi.com DNS only after direct checks, with public address retirement later.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L31-L75",
+          "version": "repo-lines-v1:sha256:b6bc589d0744d50dbe627e9cfd5d27c41ae329238e15a61e189cb19bf4436eda:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhZTA4ZmNmZTU0NTNkMTJkYjI5NmE4YTU2NWYzYTg0ZTkwODc1ZmYwYzNkNDE0ODczMWUzZWQ1MTAxMDVjZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3NGVkNWIyMTVkYjZmYzk3YzRlZTVhMDE1NzdiM2UyN2I3ZjE1MTMwNGUyOGJiY2FmZDRmZjI2YzhjNzIzYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml#L17-L27",
+          "version": "repo-lines-v1:sha256:25bb6bee4eebb47c7429ce45b083b265cce81f06a26e6a7ab4b3320f73057935:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMmEwMzMyNjgxNjhlYjZmOThiMDRmMTg0MzUzYzFmOTkwNzM4MGRiMzQyMmJiYWVhNWU4OWM1YWU1NjU4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZTU3YTg2Y2VjM2Y2ZWExYWI2ZTU5ZDNkOWM3YmMyZDRlMDc3ODAzOGFkMGRlYjQyNGM1NmU2YjA4Yjk2MGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTNlZTU3NDBlZWU3ODVkMTdiNjlkMWMwOTdkMWE5OGRlYTMxMTk2YmRiOTk3NTFjNTUxZDc0M2FiYmNhNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ODZmYWYzYTAwNjIxZDk3MDk4OTgxMTY2NjE4ZTU0YTJhZGNhMDg3ZTYxYTY5MDk5MGI2YzIwMTFkNzdmYmMifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T22:13:58.169Z"
+    "at": "2026-10-18T19:06:56.344Z"
   }
 }

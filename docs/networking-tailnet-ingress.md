@@ -25,31 +25,31 @@ See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md).
 
 ## DNS Model
 
-`scripts/tailscale-private-dns.sh` owns a fixed inventory of DNS-only A/AAAA
-records derived from the verified `traefik-private` Service and unique online
-`homelab-ingress.tail67beb.ts.net` peer. It never creates CNAMEs to MagicDNS:
-public recursive resolvers cannot resolve tailnet-only peer names. It preserves
-unrelated records and old CI, callback, and carrier hostnames. Application DNS
-can be publicly resolvable while its Tailscale addresses remain mesh-only.
+The separate [tailnet resolver](../clusters/homelab/platform/tailnet-dns/README.md)
+watches only the approved `traefik-private` Service. Its
+`coredns.io/hostname` annotation is paired with explicit HTTPS routes in one
+reviewed change. A/AAAA queries for those hosts use the Service's published
+Tailscale IPv4; unrelated names and non-address types, including apex mail
+records, forward to public DNS. Traefik still owns TLS and route restrictions.
+The current ingress is IPv4-only. Keep approved AAAA empty until a reviewed
+network change supports it. The resolver has a distinct Tailscale IP and a
+signed `homelab-dns` proxy; never use the ingress IP as the nameserver.
 
-The current `traefik-private` Service is single-stack IPv4. Its controller
-publishes only `100.99.16.74`; the same peer's IPv6 address is not a supported
-application ingress destination. Derive DNS from Service-published addresses,
-never from every peer address. Keep AAAA empty until a separately reviewed
-network change supports it. Tailscale's [IPv6 support contract](https://tailscale.com/docs/kubernetes-operator/reference/ipv6)
-and pinned 1.102.3 [Service publication](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/k8s-operator/svc.go#L350-L373)
-and [matching-family forwarding](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/containerboot/forwarding.go#L158-L188)
-explain this boundary; the API server proxy has different IPv6 requirements.
+After the DNS image is present in Harbor and the resolver is deployed, inspect
+its Service IP and run the direct UDP/TCP handoff check:
 
 ```sh
-python3 -I scripts/tailscale-private-dns-check.py --check
-scripts/tailscale-private-dns.sh --dry-run
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
 ```
 
-The exact-main execute command, old-TTL wait, Mac migration, and normal OS DNS
-verification are separate steps in the cutover guide. An API readback alone does
-not prove client access. Never run the removed public DNS writer or historical
-restoration workflow after this migration.
+The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
+`stinkyboi.com`** in Tailscale DNS. Enable **Use with exit node** for clients
+using an exit node. Do not set a global nameserver. Keep the 27 public app
+records until ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls,
+and callbacks pass. Then follow the guarded retirement in the
+[cutover guide](../clusters/homelab/apps/traefik/CUTOVER.md). After retirement,
+a resolver outage fails closed; recover the declared resolver or signed proxy
+and do not republish public application addresses.
 
 Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients
