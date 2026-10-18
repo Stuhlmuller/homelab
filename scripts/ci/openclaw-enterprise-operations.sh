@@ -170,14 +170,18 @@ case "$stage" in
     refresh_status inventory
     phase=publication
     baseline_key="openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json"
+    phase=publication-lookup
     versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
     jq -e '.IsTruncated == false' <<<"$versions" >/dev/null
     count="$(jq --arg key "$baseline_key" '[(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length' <<<"$versions")"
     if [[ "$count" == 0 ]]; then
+      phase=publication-upload
       aws s3api put-object --bucket "$bucket" --key "$baseline_key" \
         --body "$work/baseline.json" --if-none-match '*' >"$work/put.json"
+      phase=publication-lookup
       versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
     fi
+    phase=publication-version
     version="$(jq -er --arg key "$baseline_key" '
       if .IsTruncated == false and
          ([(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length) == 1

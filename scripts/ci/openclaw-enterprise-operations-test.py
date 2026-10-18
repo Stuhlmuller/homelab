@@ -183,7 +183,11 @@ restore_version key version-1 "$2"
             self.assertEqual(result.returncode, 2)
             self.assertFalse(phase.exists())
             workflow = WORKFLOW.read_text()
-            self.assertIn('preflight|baseline|publication|verification', workflow)
+            self.assertIn('preflight|baseline|publication|publication-lookup|publication-upload|publication-version|verification', workflow)
+            script = SCRIPT.read_text()
+            self.assertIn('phase=publication-lookup\n    versions=', script)
+            self.assertIn('phase=publication-upload\n      aws s3api put-object', script)
+            self.assertIn('phase=publication-version\n    version=', script)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
             shell = '''set -euo pipefail
 source <(sed -n '/^on_exit() {/,/^}/p' "$1")
