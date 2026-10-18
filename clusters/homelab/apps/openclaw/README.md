@@ -41,8 +41,9 @@ The stopped reader verifies SQLite from a temporary owner-only copy of each
 database and its WAL under `/private/legacy`, because SQLite cannot rebuild
 shared memory on the read-only source mount. It removes each copy after the
 integrity check; the archive still includes the unchanged source files.
-Inventory runs as a detached read-only process from the reader's checksum-checked
-ConfigMap because a full NAS hash can outlast one Kubernetes exec stream. The workflow polls its
+Inventory and the archive's stopped-source rescan run as detached read-only
+processes from the reader's checksum-checked ConfigMap because a full NAS hash
+can outlast one Kubernetes exec stream. The workflow polls the worker's
 private completion marker; a failed scan uploads its private diagnostic to the
 versioned backup bucket under
 `openclaw-enterprise/legacy/<SHA>/<RUN_ID>/diagnostic.log`. A missing marker or
