@@ -35,6 +35,10 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
 four PVC/PV UIDs, node and assistant image. Both inventory and archive refresh
 Kubernetes status after scanning retained data and compare volume identities.
+The stopped reader verifies SQLite from a temporary owner-only copy of each
+database and its WAL under `/private/legacy`, because SQLite cannot rebuild
+shared memory on the read-only source mount. It removes each copy after the
+integrity check; the archive still includes the unchanged source files.
 Inventory runs as a detached read-only process in the reader Pod because a
 full NAS hash can outlast one Kubernetes exec stream. The workflow polls its
 private completion marker; a failed scan uploads its private diagnostic to the

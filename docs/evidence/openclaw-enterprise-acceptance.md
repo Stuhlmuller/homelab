@@ -13,7 +13,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. Archive write/restore pending. |
 | Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354); [main `6de59d7c`, protected recovery `39142331296`](https://github.com/Stuhlmuller/homelab/actions/runs/39142331296) | `e8663e8451f7d76acfdd91904b7a9373a738ef5de44195ac4127ff862389307b` | Passed: the private success marker and both retained baseline copies match this digest; protected publication verified current source identities, one KMS-encrypted S3 version, and a versioned download matching the baseline. Old writers remain active until the reviewed shutdown change lands. |
 | Legacy stopped with zero writers | Pending | — | Pending |
-| Full independent legacy archive/restore | Pending | — | Pending |
+| Full independent legacy archive/restore | [failed protected archive `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916) | — | Pending: the stopped source had a WAL file and SQLite could not run integrity checks directly on the reader's read-only PVC mount. The run stopped before creating an observed inventory or archive receipt. Verify a private writable database-and-WAL snapshot in the next reviewed run; do not count this failed run as a backup. |
 | Capacity and isolated canary | Pending | — | Pending |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
