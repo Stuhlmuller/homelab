@@ -9,5 +9,12 @@ startup_timeout_sec = 60
 
 [mcp_servers.xerj]
 command = "/bin/sh"
-args = ["-c", "exec \"$HOME/.local/bin/xerj\" mcp --disable-feedback"]
-startup_timeout_sec = 15
+args = ["-c", '''
+for candidate in /nix/var/nix/profiles/default/bin/nix /run/current-system/sw/bin/nix ~/.nix-profile/bin/nix; do
+  if [ -x "$candidate" ]; then
+    exec "$candidate" run github:Stuhlmuller/homelab#xerj -- mcp --disable-feedback
+  fi
+done
+exec nix run github:Stuhlmuller/homelab#xerj -- mcp --disable-feedback
+''']
+startup_timeout_sec = 60
