@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:fb688fc1cb979be475c8ad9ec02cdfbc0b0c109815c80639d46a84499f726506",
+  "claims": [
+    {
+      "id": "claim_34382a82571c444084b9118105fb700f",
+      "statement": "Optional NOFX image, OpenClaw native config, and Image automation PR events are removed; matching main pushes and reviewed manual dispatches remain, while the five-minute image observer schedule is removed.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/image-automation.yml",
+          "version": "repo-file-v1:sha256:d7c0ee3dc0c5c571b187ad9abbcd90bd50d00f3090d8affd5373484b6d61e9d2"
+        },
+        {
+          "resource": "repo://.github/workflows/nofx-images.yml",
+          "version": "repo-file-v1:sha256:b076f16676452f98d1abf6a084c4fe4583ddc4e7d77d2436962c1643adf7b3a6"
+        },
+        {
+          "resource": "repo://.github/workflows/openclaw-config.yml",
+          "version": "repo-file-v1:sha256:28ab72b380dc338ff504e0560053c26afab121a00fc43ae6aaa19761600e3535"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:a3ecc1cef14052140e828aa34a7537f087951e99cad8e90d44f4723b462aa776"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-17T23:43:12.829Z"
+  }
+}
