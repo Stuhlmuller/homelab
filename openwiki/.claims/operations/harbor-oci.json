@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0d2a1f636dbc4a7d17b0d5594c3e72741632a17b90a6f7fa484ba64fd65b0110",
+  "pageVersion": "sha256:7f3812a85eb36d6ad81294abf9bc5b9dffeb981650fb4771bc0334823bc3db99",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         }
       ]
     },
@@ -410,7 +410,7 @@
     },
     {
       "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
-      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v3 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
+      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v4 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
@@ -430,7 +430,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -490,7 +490,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -526,7 +526,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -624,17 +624,39 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-dns-images.json",
           "version": "repo-file-v1:sha256:e71afe421247062897d141b975ffea2863038c9e775d39dee733e7d8e58e4f23"
         }
       ]
+    },
+    {
+      "id": "claim_fc64a10f1e3d42059413f4806f6d1018",
+      "statement": "The separate Harbor 2.15.4 consumer pins all nine components while retaining chart 1.19.2. Its component gate rejects mixed versions, and migration 0181 requires verified database and registry-blob backups plus an isolated restore before live authenticated registry, API, and scan acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/README.md",
+          "version": "repo-file-v1:sha256:6deb80f8e9383f00652ebd99676d0d3d39182ffb234f3b08afb92fb82e43e000"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:c8f4d28f3ede259728fefaa4a00a6e68b1930f6934d6323a110b3ab25d3c994e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:54:06.405Z"
+    "at": "2026-10-18T21:34:47.154Z"
   }
 }

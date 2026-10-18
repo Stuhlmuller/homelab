@@ -24,6 +24,10 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
+    resource: repo://clusters/homelab/apps/harbor/README.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -96,10 +100,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-18T21:34:47.154Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:06.405Z
+    at: 2026-10-18T21:34:47.154Z
 ---
 
 # Workload Inventory
@@ -469,6 +473,10 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+The separate consumer branch proposes nine digest-pinned Harbor 2.15.4 runtime
+components while retaining chart 1.19.2. It requires nine-image publication,
+node cache checks, and a verified database-and-blob restore before rollout.
+
 The staged native Chainguard receipt targets private Python and curl imports;
 it neither publishes them nor moves consumers until protected receipt and
 provenance gates pass.

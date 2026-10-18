@@ -56,6 +56,10 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
+    resource: repo://clusters/homelab/apps/harbor/README.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -100,6 +104,8 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-d88444044033fa951eb38e67
@@ -126,10 +132,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-18T21:34:47.154Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:06.405Z
+    at: 2026-10-18T21:34:47.154Z
 ---
 
 # Harbor Private OCI Registry
@@ -254,7 +260,7 @@ including deterministic chunk creation or rebalancing; its wider shared
 closure needs separate approval.
 
 The Stage B desired-state consumer advances `harbor-secrets`' `OnChange`
-revision to `v3` and mounts the reader key in the bootstrap Job. After External
+revision to `v4` and mounts the reader key in the bootstrap Job. After External
 Secrets materializes the target Secret, a bootstrap execution can create or
 patch the reader robot. Require ExternalSecret Ready and successful PostSync
 completion before accepting reader-robot, authenticated-receipt, or Talos
@@ -430,8 +436,14 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
-rolling update, so its existing Pod serves Harbor while the replacement pulls.
+coverage while the LiteLLM duplicate-index failure remains. The separate
+consumer branch keeps chart 1.19.2 while pinning all nine runtime components to
+2.15.4; the component gate rejects mixed versions. Migration `0181` is
+forward-only, so verify database and registry-blob backups and an isolated
+restore before rollout. Live registry/API and scan checks remain acceptance
+gates, and bundled Distribution v2 findings remain unresolved. The upgrade
+must also verify that singleton nginx retains a rolling update, so its existing
+Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images
@@ -972,7 +984,7 @@ three IAM updates, with no deletions or existing-secret rotations. Its GitOps
 `generated-secret-revision` advanced to `v2` to reconcile the publisher
 credential. The reviewed reader parameter later existed as a separately scoped,
 metadata-verified Stage A apply. The current desired-state consumer advances to
-`v3`; it must report Ready and the PostSync bootstrap must finish before
+`v4`; it must report Ready and the PostSync bootstrap must finish before
 accepting reader-robot, authenticated-receipt, or Talos prerequisites. Keep
 `refreshPolicy: OnChange` to avoid periodically regenerating the salted bcrypt
 registry password hash; an annotation change alone is not readiness evidence.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ab230def6ab057c970ff93c3e8244a0fb1fa84f3cb62ec5a2a755541897f1593",
+  "pageVersion": "sha256:8a807df24d0734b490b8810a2ea9587d9f453c3c8debd8b13c3166e307d2e324",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -293,10 +293,28 @@
           "version": "repo-file-v1:sha256:cb74e07be1531ecddc6f791f28c02c4477621dd0e5bfe9337da4fff98aa6a4e0"
         }
       ]
+    },
+    {
+      "id": "claim_97b17ab5a9dd450eac6df64d69818389",
+      "statement": "The separate Harbor consumer branch proposes nine digest-pinned 2.15.4 runtime components while retaining chart 1.19.2; publication, every-node registry image cache checks, and a verified database-and-blob restore are required before rollout.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/README.md",
+          "version": "repo-file-v1:sha256:6deb80f8e9383f00652ebd99676d0d3d39182ffb234f3b08afb92fb82e43e000"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:54:06.405Z"
+    "at": "2026-10-18T21:34:47.154Z"
   }
 }

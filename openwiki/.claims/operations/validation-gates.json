@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:96ddcb319cc6a6cb61973dc79916854f28b79ccc512d77569b007c669ad2968e",
+  "pageVersion": "sha256:fed56f66def1ab1815e9d496657122674a6ff6baed3213c0fd001e28a977c276",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -162,7 +162,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
         }
       ]
     },
@@ -366,7 +366,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
         }
       ]
     },
@@ -398,7 +398,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
         }
       ]
     },
@@ -490,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
+          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -562,7 +562,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:a407fca7edcb6d830e3966f93b21af2b6fd5b535b66e85fdd10b37cd5811e777"
+          "version": "repo-file-v1:sha256:c8f4d28f3ede259728fefaa4a00a6e68b1930f6934d6323a110b3ab25d3c994e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -580,7 +580,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -745,10 +745,32 @@
           "version": "repo-file-v1:sha256:14fe7739666ca48bf9626cc7fb6a5e06e2b18186031e7b760b3b71339a67f80f"
         }
       ]
+    },
+    {
+      "id": "claim_e8da2f8db88741db81f8c5fe9dc568c2",
+      "statement": "The Harbor 2.15.4 component gate rejects mixed runtime versions, and the chart 1.19.2 render check verifies one harbor-nginx Pod without an explicit Deployment strategy. Rendering does not prove live registry availability or the isolated database-and-blob restore required before forward-only migration 0181.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/README.md",
+          "version": "repo-file-v1:sha256:6deb80f8e9383f00652ebd99676d0d3d39182ffb234f3b08afb92fb82e43e000"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:c8f4d28f3ede259728fefaa4a00a6e68b1930f6934d6323a110b3ab25d3c994e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-render-check.py",
+          "version": "repo-file-v1:sha256:98e0a24b71f1f79de55273dfff23ca7d10a855ab64f194a35746ac734aab0c95"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:54:06.405Z"
+    "at": "2026-10-18T21:34:47.154Z"
   }
 }
