@@ -898,6 +898,7 @@ class HarborPublicationGates(unittest.TestCase):
             "/homelab/harbor/mirror-robot-push-password",
             "/homelab/harbor/mirror-robot-pull-password",
         ])
+
         destination_inspections = [args for args in self.calls_for("skopeo")
                                    if args[0] == "inspect" and args[-1].startswith("docker://harbor.stinkyboi.com/")]
         self.assertTrue(destination_inspections)
@@ -906,6 +907,14 @@ class HarborPublicationGates(unittest.TestCase):
             self.assertEqual(Path(args[args.index("--authfile") + 1]).name, "mirror-pull-auth.json")
         self.assertEqual(self.calls_for("docker"), [])
         self.assertEqual(self.calls_for("cosign"), [])
+        self.assert_cleaned()
+
+    def test_mirror_accepts_anonymous_talos_image_factory(self):
+        self.transport_mocks(mirror=True, registries=("factory.talos.dev", "docker.io"))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        sources = [image["source"] for image in self.mirror_manifest["images"]]
+        self.assertTrue(any(image.startswith("factory.talos.dev/") for image in sources))
         self.assert_cleaned()
 
     def test_mirror_accepts_only_expected_harbor_missing_content(self):
