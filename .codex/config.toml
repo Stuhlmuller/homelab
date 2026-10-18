@@ -8,6 +8,13 @@ args = ["--yes", "--package=openwiki@0.7.0", "openwiki", "mcp", "--host", "codex
 startup_timeout_sec = 60
 
 [mcp_servers.xerj]
-command = "/nix/var/nix/profiles/default/bin/nix"
-args = ["run", "github:Stuhlmuller/homelab#xerj", "--", "mcp", "--disable-feedback"]
+command = "/bin/sh"
+args = ["-c", '''
+for candidate in /nix/var/nix/profiles/default/bin/nix /run/current-system/sw/bin/nix ~/.nix-profile/bin/nix; do
+  if [ -x "$candidate" ]; then
+    exec "$candidate" run github:Stuhlmuller/homelab#xerj -- mcp --disable-feedback
+  fi
+done
+exec nix run github:Stuhlmuller/homelab#xerj -- mcp --disable-feedback
+''']
 startup_timeout_sec = 60
