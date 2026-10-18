@@ -65,7 +65,10 @@ from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
-digest, the mirror uses `regctl` for that exact copy error. All OCI indexes,
+digest, the mirror uses `regctl` for that exact copy error. It also retries an
+OCI index with `regctl` when Harbor reports that the exact root artifact is
+missing during upload, a [known Harbor index failure](https://github.com/goharbor/harbor/issues/19977).
+Other upload errors and non-index images still fail closed. All OCI indexes,
 including existing digest tags on retries, use an OCI directory for the complete
 authenticated pull; the mirror checks the root digest and source-tag alias
 before recording a receipt. A destination-upload fallback reads upstream again;
