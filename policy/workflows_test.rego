@@ -2,6 +2,53 @@ package main
 
 import rego.v1
 
+test_allows_exact_openclaw_legacy_operation if {
+	candidate := workflow_with_openclaw_legacy_operation(
+		openclaw_legacy_run,
+		{"contents": "read", "id-token": "write"},
+	)
+	violations := deny with input as candidate
+	count(violations) == 0
+}
+
+test_rejects_changed_openclaw_legacy_operation if {
+	every candidate in [
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "08f1127138e6cc1b826aa48ba9ba0cbff1961027badbb42f0a14cd5e9a4681b6", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"contents": "read", "id-token": "write"}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "exact protected stages")
+	}
+}
+
+openclaw_legacy_run := `set -euo pipefail
+umask 077
+sha256sum --check --status <<<'08f1127138e6cc1b826aa48ba9ba0cbff1961027badbb42f0a14cd5e9a4681b6  scripts/ci/openclaw-enterprise-operations.sh'
+bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
+`
+
+workflow_with_openclaw_legacy_operation(run, permissions) := {
+	"name": "OpenClaw Enterprise Operations",
+	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "archive", "verify"]}}}},
+	"jobs": {"legacy": {
+		"needs": ["static-policy"],
+		"environment": {"name": "homelab-production"},
+		"concurrency": {"group": "openclaw-enterprise-operations-production"},
+		"permissions": permissions,
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+		"steps": [{
+			"name": "Run Legacy Stage",
+			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+			"run": run,
+		}],
+	}},
+}
+
 test_rejects_mutable_docker_action_image if {
 	violations := deny with input as workflow_with_images(
 		"docker://alpine:3.21",

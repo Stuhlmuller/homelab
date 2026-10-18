@@ -22,7 +22,10 @@ class Timeout(unittest.TestCase):
                          "IaC/modules/aws-github-actions-role-policy/main.tf",
                          "IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
                 shutil.copyfile(ROOT / name, root / name)
-            (root / "scripts/ci/nix-cache-signature-test.py").write_text("")
+            for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
+                         "openclaw-retirement-status-test.py",
+                         "openclaw-enterprise-operations-test.py"):
+                (root / "scripts/ci" / name).write_text("")
             (root / "scripts/ci/terragrunt-filter-base.sh").write_text(
                 "terragrunt_generate_stack() { :; }\n")
             recorded = root / "timeout"
