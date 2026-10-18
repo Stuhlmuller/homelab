@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2329 # sourced helper and test fixtures resolve names indirectly
 set -euo pipefail
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
@@ -901,7 +902,7 @@ done <<'EOF'
 .github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
-.github/workflows/openclaw-enterprise-operations.yml 5f4844bd70795b0b62569a0e4f384f5655c410a35f4235fcb92f78a4b9c4b23a
+.github/workflows/openclaw-enterprise-operations.yml b92e634e0e7b35409c4bbdb121bb3d4d68fca978f7aa8c1d216a44b891fc0f76
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
