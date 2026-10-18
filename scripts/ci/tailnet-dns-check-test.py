@@ -87,13 +87,24 @@ class DirectDnsCheck(unittest.TestCase):
             CHECK.verify(SERVER)
 
     def test_public_fallthrough_cannot_pass_private_answer(self):
+        for cached in (False, True):
+            def leaked(server, hostname, kind, tcp=False):
+                status, flags, records = answer(server, hostname, kind, tcp)
+                if hostname == "stinkyboi.com" and kind == "A" and server == SERVER:
+                    return status, {"qr", "ra"} | ({"aa"} if cached else set()), records
+                return status, flags, records
+            CHECK.dns_answer.side_effect = leaked
+            with self.subTest(cached=cached), self.assertRaisesRegex(RuntimeError, "fell through"):
+                CHECK.verify(SERVER)
+
+    def test_recursive_empty_aaaa_cannot_pass_private_answer(self):
         def leaked(server, hostname, kind, tcp=False):
             status, flags, records = answer(server, hostname, kind, tcp)
-            if hostname == "stinkyboi.com" and kind == "A" and server == SERVER:
-                return status, {"qr", "ra"}, records
+            if hostname == "stinkyboi.com" and kind == "AAAA" and server == SERVER:
+                return status, {"qr", "aa", "ra"}, records
             return status, flags, records
         CHECK.dns_answer.side_effect = leaked
-        with self.assertRaisesRegex(RuntimeError, "fell through"):
+        with self.assertRaisesRegex(RuntimeError, "Private AAAA"):
             CHECK.verify(SERVER)
 
     def test_missing_wildcard_answer_fails(self):
@@ -123,6 +134,15 @@ class DirectDnsCheck(unittest.TestCase):
         CHECK.dns_answer.side_effect = changed
         with self.assertRaisesRegex(RuntimeError, "Public fallthrough"):
             CHECK.verify(SERVER)
+
+    def test_cached_public_records_may_have_authoritative_flag(self):
+        def cached(server, hostname, kind, tcp=False):
+            status, flags, records = answer(server, hostname, kind, tcp)
+            if server == SERVER and (kind in ("MX", "TXT") or hostname == "mastodon.stinkyboi.com"):
+                return status, flags | {"aa"}, records
+            return status, flags, records
+        CHECK.dns_answer.side_effect = cached
+        CHECK.verify(SERVER)
 
 
 if __name__ == "__main__":
