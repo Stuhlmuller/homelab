@@ -78,7 +78,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
-   `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
+   `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -105,6 +106,17 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
+   ```
+
+   The `renovate` scope selects the six reviewed Fleet, Harbor PostgreSQL,
+   Multica Python, Dispatcharr, Bazarr, and n8n update digests in
+   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
+   those entries while the unrelated full catalog is held. After its
+   prerequisite merges, dispatch it at exact current `main` and require six
+   complete authenticated pulls before merging any consuming Renovate PR:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
    ```
 
    See [migration gates and current findings](image-egress-hardening.md).

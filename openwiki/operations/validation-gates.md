@@ -8,6 +8,8 @@ sources:
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-bb8a89652a59628537fcc9b2
+    resource: repo://.github/workflows/harbor-mirror.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
@@ -126,6 +128,8 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-85a2ae8a5ccc5550950c86b5
+    resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-4bbfe00c406fec8a213babcb
@@ -142,10 +146,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T01:09:27.563Z" }
+generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T01:09:27.563Z
+    at: 2026-10-18T01:55:27.595Z
 ---
 
 # Validation Gates
@@ -1682,6 +1686,12 @@ reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
 selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
+
+The fixed Renovate scope contains six cataloged update digests. Publisher
+fixtures reject an unreviewed scoped entry and exercise its selected-image
+copy and authenticated-pull path. The workflow's exact security hash is
+updated with the new choice; a passing fixture does not publish the images or
+validate the six consuming applications.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

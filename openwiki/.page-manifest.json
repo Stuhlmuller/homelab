@@ -30,11 +30,11 @@
       "completedRunId": "628e6f95-defb-4617-af08-60ac09668989"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
-      "pageVersion": "sha256:0e298bc1d4a8c1786ce3cbddbfba68cd8f9920b5cb709e361289536cc87b79a2",
+      "pageVersion": "sha256:fb68f35dafdffab078eeef29d9fde7d1b1d5bf0e3701640d58db25fbd68fd344",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "d47ef4c8-b317-429d-9f40-c8f845403661",
+      "gitHead": "7a5ac0d325c6a558c4b424fd6f8cdd5e152826d2",
+      "sourceFingerprint": "sha256:2d5ce26993eef0e63425edda6f5b471c59d1c737dbf628dc4f9cee9640bc368b"
     },
     "/openwiki/operations/continuous-improvement.md": {
       "gitHead": "04caf5de602970acd29d9d9e2711e63e2869545a",
@@ -58,11 +58,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
-      "pageVersion": "sha256:a75a1077cc80aa7db5df98ffba19f8b4ccbb2132e255cd454c94ef41024a1963",
+      "pageVersion": "sha256:d1ca9fb0ea9598c5f511bdff9d612e943b8ead249786a268a3bb6db75220c7ae",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "d47ef4c8-b317-429d-9f40-c8f845403661",
+      "gitHead": "7a5ac0d325c6a558c4b424fd6f8cdd5e152826d2",
+      "sourceFingerprint": "sha256:2d5ce26993eef0e63425edda6f5b471c59d1c737dbf628dc4f9cee9640bc368b"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "04caf5de602970acd29d9d9e2711e63e2869545a",
@@ -72,11 +72,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:4d6c6e8c71460aea1db0f9fedcd85b62a0e12abc9b58d55cac2ede85959f4606",
+      "pageVersion": "sha256:82cd408505412d1c1de7633e6d8d4cd0bbc6a6ecb21cf22279cb7e87bc39669e",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "d47ef4c8-b317-429d-9f40-c8f845403661",
+      "gitHead": "7a5ac0d325c6a558c4b424fd6f8cdd5e152826d2",
+      "sourceFingerprint": "sha256:2d5ce26993eef0e63425edda6f5b471c59d1c737dbf628dc4f9cee9640bc368b"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "04caf5de602970acd29d9d9e2711e63e2869545a",
@@ -100,11 +100,11 @@
       "completedRunId": "0c4bc290-4b15-4e20-8ac7-ad6b10aa5e98"
     },
     "/openwiki/runbooks/ci-cd.md": {
+      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
+      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72",
       "pageVersion": "sha256:e5c50e5f9306c9b5051a1f11920de6da4a40f2a5c428cdc8b88b79ed3d29561e",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6"
     },
     "/openwiki/runbooks/octelium.md": {
       "gitHead": "04caf5de602970acd29d9d9e2711e63e2869545a",
@@ -114,11 +114,11 @@
       "completedRunId": "8ebfd2be-e655-4296-9998-0bac2ae898ed"
     },
     "/openwiki/runbooks/tailnet-ingress.md": {
+      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
+      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72",
       "pageVersion": "sha256:9e516b42eb6df4096681f54cc9807d362fe828dcc62359d1a0402537dda0ff57",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6"
     },
     "/openwiki/runbooks/talos-control-plane-maintenance.md": {
       "gitHead": "04caf5de602970acd29d9d9e2711e63e2869545a",
@@ -128,11 +128,11 @@
       "completedRunId": "282e7a12-13c4-4ec0-9a7d-0a7ec31b6fdc"
     },
     "/openwiki/source-map.md": {
+      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
+      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72",
       "pageVersion": "sha256:34115baa5577810a4004c6041ab19771f6c0dcb9050cdea3abc693518f7a6f84",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6"
     },
     "/openwiki/workloads/application-notes.md": {
       "gitHead": "04caf5de602970acd29d9d9e2711e63e2869545a",
@@ -142,11 +142,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/workloads/inventory.md": {
+      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
+      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72",
       "pageVersion": "sha256:11e74df88a1092c37f864952608857c65f8044790f836f5e6d98caaf34710098",
       "completedBy": "codex",
-      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6",
-      "gitHead": "e75e147dfc67a6a4bf0c1366f5c9eb5997856716",
-      "sourceFingerprint": "sha256:35c430abd2e4d385b58862aa9887fc67162bb29bb82f6b2b9e72f53e9a98bb72"
+      "completedRunId": "453b5846-a804-4d85-bb4a-6c64611d57f6"
     }
   }
 }

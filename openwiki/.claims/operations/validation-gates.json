@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4d6c6e8c71460aea1db0f9fedcd85b62a0e12abc9b58d55cac2ede85959f4606",
+  "pageVersion": "sha256:82cd408505412d1c1de7633e6d8d4cd0bbc6a6ecb21cf22279cb7e87bc39669e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:13dfebe44bb70b24b7e4aa9337abe92fe250a0134ec1f3063f524db4eb33a2af"
+          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:bdf6bf4ff4c4ce691cd6e5d6fac09f683db7c345234ba8c196ef202d8a374533"
+          "version": "repo-file-v1:sha256:3f07a85452d23833d786335a2ceb08949467d649cb547f8903cefef5c3d4fad5"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:13dfebe44bb70b24b7e4aa9337abe92fe250a0134ec1f3063f524db4eb33a2af"
+          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:13dfebe44bb70b24b7e4aa9337abe92fe250a0134ec1f3063f524db4eb33a2af"
+          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:327503c2b820e4fcd40ef6f4c9ba3e5300e4b0117c3de5d101be19d6c0b0f2a3"
+          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -663,10 +663,32 @@
           "version": "repo-file-v1:sha256:d095dffa57278bd3e5131272f72c490bf673a5f859af19aee5eda80eec7018b3"
         }
       ]
+    },
+    {
+      "id": "claim_eb3bfe17176d4c108710c0f205d04fb2",
+      "statement": "The fixed Renovate scope contains six reviewed catalog digests. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash is updated to admit only this reviewed scope.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-mirror.yml",
+          "version": "repo-file-v1:sha256:e390d2a25634bd8a34817ae77188ac47eae0e68526a98339c5c3a010dafefc91"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:3f07a85452d23833d786335a2ceb08949467d649cb547f8903cefef5c3d4fad5"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-renovate-images.json",
+          "version": "repo-file-v1:sha256:074b451bb8ea669882b9a7950817a6412b9f407013eff5dc3f824f4cef4ad9a7"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T01:09:27.563Z"
+    "at": "2026-10-18T01:55:27.595Z"
   }
 }

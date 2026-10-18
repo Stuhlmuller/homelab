@@ -108,16 +108,18 @@ sources:
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
+  - id: openwiki-source-85a2ae8a5ccc5550950c86b5
+    resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-a97edf7d2cd70d6cb71d0cf2
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T01:09:27.563Z" }
+generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T01:09:27.563Z
+    at: 2026-10-18T01:55:27.595Z
 ---
 
 # Harbor Private OCI Registry
@@ -327,7 +329,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, or `traefik`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, or `renovate`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -354,6 +356,13 @@ It preserves all-platform digest copying, the reviewed tag alias and fresh
 complete authenticated Harbor pulls. No caller-supplied image, path or destination is
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
+
+The fixed `renovate` scope selects six cataloged update digests for Fleet,
+Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, and n8n from
+[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json).
+It retains the normal digest, alias, and fresh authenticated pull checks while
+the unrelated full catalog is held. Its success proves only these six images;
+each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
 mirror verification requires `Mirror all @ <run head SHA>` and the unchanged
