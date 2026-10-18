@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Validate or apply the reviewed Harbor mirror patch to one Ready Talos node."""
+"""Validate or apply the reviewed Harbor mirror patch or registry pre-pull."""
 import argparse
+import base64
 import copy
 import hashlib
 import json
@@ -9,6 +10,7 @@ from pathlib import Path
 import re
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -20,6 +22,10 @@ NODES = {"10.1.0.199": "acer", "10.1.0.200": "zimaboard-0",
          "10.1.0.201": "zimaboard-1", "10.1.0.202": "zimaboard-2"}
 REPOSITORY = "Stuhlmuller/homelab"
 TALOSCTL = "talosctl"
+REGISTRY_HOST = "harbor.stinkyboi.com"
+REGISTRY_USERNAME = "robot$mirror+pull"
+PRIVATE_REGISTRY_HOST = {"ip": "10.96.0.50", "aliases": [REGISTRY_HOST]}
+_UNCHANGED = object()
 
 
 def run(*command, binary=False):
@@ -40,7 +46,99 @@ def verify_main(expected):
         raise RuntimeError("Checkout and current main must match the reviewed SHA")
 
 
-def verify_copies(expected):
+def prepull_registry_runtime(node, execute, expected, talosconfig):
+    images = json.loads((ROOT / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+    selected = [item["source"] for item in images if item["source"].startswith(
+        ("docker.io/goharbor/registry-photon:", "docker.io/goharbor/harbor-registryctl:"))]
+    if {source.split("/")[2].split(":")[0] for source in selected} != {"registry-photon", "harbor-registryctl"} or any(
+            not re.fullmatch(r"docker\.io/goharbor/(registry-photon|harbor-registryctl):v2\.15\.4@sha256:[0-9a-f]{64}", source)
+            for source in selected):
+        raise RuntimeError("The reviewed Harbor registry image scope changed")
+    client = ("talosctl", "--talosconfig", str(talosconfig), "--endpoints", "10.1.0.199", "--nodes", node)
+    if execute:
+        verify_main(expected)
+    for source in selected:
+        repository, digest = source.split(":v2.15.4@", 1)
+        alias = f"{repository}@{digest}"
+        listed = {line.split()[1] for line in run(*client, "image", "list").splitlines()[1:] if len(line.split()) > 1}
+        if alias not in listed:
+            if not execute:
+                print(f"{NODES[node]}: missing {alias}")
+                continue
+            run(*client, "image", "pull", source)
+            listed = {line.split()[1] for line in run(*client, "image", "list").splitlines()[1:] if len(line.split()) > 1}
+            if alias not in listed:
+                raise RuntimeError("Harbor registry image pull did not populate the node cache")
+        print(f"{NODES[node]}: cached {alias}")
+
+
+def private_directory(path):
+    """Require a canonical owner-only directory outside a Git checkout."""
+    path = Path(path)
+    if not path.is_absolute():
+        raise RuntimeError("Registry credential directory must be absolute")
+    path = Path(os.path.abspath(path))
+    try:
+        resolved = path.resolve(strict=True)
+        info = path.lstat()
+    except OSError:
+        raise RuntimeError("Registry credential directory is unavailable") from None
+    if (resolved != path or not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid()
+            or stat.S_IMODE(info.st_mode) != 0o700):
+        raise RuntimeError("Registry credential directory must be owner-only and not a symlink")
+    if (resolved.is_relative_to(ROOT)
+            or any((parent / ".git").exists() for parent in (resolved, *resolved.parents))):
+        raise RuntimeError("Registry credential directory must be outside Git checkouts")
+    return resolved
+
+
+def read_registry_auth(path):
+    """Read the one robot credential from a private, non-symlinked file."""
+    path = Path(path)
+    if not path.is_absolute():
+        raise RuntimeError("Registry credential file must be absolute")
+    path = Path(os.path.abspath(path))
+    private_directory(path.parent)
+    try:
+        before = path.lstat()
+        if (not stat.S_ISREG(before.st_mode) or before.st_uid != os.getuid()
+                or before.st_nlink != 1 or stat.S_IMODE(before.st_mode) != 0o600):
+            raise ValueError
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        with os.fdopen(descriptor, "rb") as source:
+            after = os.fstat(source.fileno())
+            if (not stat.S_ISREG(after.st_mode) or after.st_uid != os.getuid()
+                    or after.st_nlink != 1 or stat.S_IMODE(after.st_mode) != 0o600
+                    or (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)):
+                raise ValueError
+            raw = source.read(16385)
+        if not raw or len(raw) > 16384:
+            raise ValueError
+        value = json.loads(raw)
+        if (not isinstance(value, dict) or set(value) != {"username", "password"}
+                or value.get("username") != REGISTRY_USERNAME
+                or not isinstance(value.get("password"), str) or not value["password"]
+                or len(value["password"].encode("utf-8")) > 4096
+                or any(ord(character) < 32 or ord(character) == 127 for character in value["password"])):
+            raise ValueError
+        return value
+    except (OSError, ValueError, UnicodeError, json.JSONDecodeError):
+        raise RuntimeError("Registry credential file must be one private robot credential") from None
+
+
+def write_private_text(path, value):
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        stream.write(value)
+
+
+def write_private_json(path, value):
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        json.dump(value, stream, separators=(",", ":"))
+
+
+def verify_copies(expected, registry_auth=None):
     pages = json.loads(run("gh", "api", "--paginate", "--slurp",
                            f"repos/{REPOSITORY}/actions/workflows/harbor-mirror.yml/runs"
                            "?branch=main&event=workflow_dispatch&status=success&per_page=100"))
@@ -79,7 +177,15 @@ def verify_copies(expected):
         directory = Path(temporary)
         directory.chmod(0o700)
         headers = directory / "headers"
-        headers.touch(mode=0o600)
+        auth_headers = None
+        if registry_auth is not None:
+            if (not isinstance(registry_auth, dict) or set(registry_auth) != {"username", "password"}
+                    or registry_auth.get("username") != REGISTRY_USERNAME
+                    or not isinstance(registry_auth.get("password"), str)):
+                raise RuntimeError("Registry credential is invalid")
+            auth_headers = directory / "auth-headers"
+            basic = base64.b64encode(f"{REGISTRY_USERNAME}:{registry_auth['password']}".encode()).decode()
+            write_private_text(auth_headers, f"Authorization: Basic {basic}\n")
         for image in images:
             source, digest = image["source"].split("@")
             if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
@@ -88,10 +194,15 @@ def verify_copies(expected):
             if not separator or "/" in tag:
                 repository, tag = source, ""
             query = urllib.parse.urlencode({"service": "harbor-registry", "scope": f"repository:mirror/{repository}:pull"})
-            token = json.loads(run(*curl, "https://harbor.stinkyboi.com/service/token?" + query)).get("token")
+            token_command = [*curl]
+            if auth_headers is not None:
+                token_command += ["--header", "@" + str(auth_headers)]
+            token = json.loads(run(*token_command, "https://harbor.stinkyboi.com/service/token?" + query)).get("token")
             if not isinstance(token, str) or not 1 <= len(token) <= 16384 or not re.fullmatch(r"[A-Za-z0-9._~+/-]+=*", token):
-                raise RuntimeError("Harbor returned an invalid anonymous Bearer token")
-            headers.write_text(f"Authorization: Bearer {token}\nAccept: {accept}\n")
+                raise RuntimeError("Harbor returned an invalid Bearer token")
+            if headers.exists():
+                headers.unlink()
+            write_private_text(headers, f"Authorization: Bearer {token}\nAccept: {accept}\n")
             destination = "https://harbor.stinkyboi.com/v2/mirror/" + urllib.parse.quote(repository, safe="/")
             for reference in (digest[7:], *([tag] if tag else [])):
                 manifest = run(*curl, "--header", "@" + str(headers),
@@ -108,22 +219,82 @@ def documents(path):
     return value
 
 
-def mirrors_only(before, after, wanted):
+def registry_auth_config(registries, registry_auth, rollback):
+    """Change only this rollout's Harbor credential, preserving other hosts."""
+    configs = registries.get("config", {})
+    if not isinstance(configs, dict):
+        raise RuntimeError("Existing registry configuration is invalid")
+    result = copy.deepcopy(configs)
+    harbor = result.get(REGISTRY_HOST, {})
+    if not isinstance(harbor, dict):
+        raise RuntimeError("Existing Harbor registry configuration is invalid")
+    current = harbor.get("auth")
+    if rollback:
+        if current is None:
+            return _UNCHANGED
+        if not isinstance(current, dict) or set(current) != {"username", "password"}:
+            raise RuntimeError("Existing Harbor registry credential is invalid")
+        if current["username"] != REGISTRY_USERNAME:
+            return _UNCHANGED
+        if not isinstance(current["password"], str) or not current["password"]:
+            raise RuntimeError("Existing Harbor registry credential is invalid")
+        harbor.pop("auth")
+        if harbor:
+            result[REGISTRY_HOST] = harbor
+        else:
+            result.pop(REGISTRY_HOST, None)
+        return result
+    if registry_auth is None:
+        return _UNCHANGED
+    if current is not None:
+        if (not isinstance(current, dict) or set(current) != {"username", "password"}
+                or current.get("username") != REGISTRY_USERNAME):
+            raise RuntimeError("Refusing to replace an unrelated Harbor registry credential")
+    harbor["auth"] = copy.deepcopy(registry_auth)
+    result[REGISTRY_HOST] = harbor
+    return result
+
+
+def owned_registry_auth(registries):
+    """Return the existing reader credential only when this rollout owns it."""
+    configs = registries.get("config", {})
+    if not isinstance(configs, dict):
+        raise RuntimeError("Existing registry configuration is invalid")
+    harbor = configs.get(REGISTRY_HOST, {})
+    if not isinstance(harbor, dict):
+        raise RuntimeError("Existing Harbor registry configuration is invalid")
+    auth = harbor.get("auth")
+    if auth is None:
+        return None
+    if (not isinstance(auth, dict) or set(auth) != {"username", "password"}
+            or not isinstance(auth.get("password"), str) or not auth["password"]):
+        raise RuntimeError("Existing Harbor registry credential is invalid")
+    return copy.deepcopy(auth) if auth["username"] == REGISTRY_USERNAME else None
+
+
+def mirrors_only(before, after, wanted, registry_config=_UNCHANGED):
     original, candidate = copy.deepcopy(before), copy.deepcopy(after)
     for stream in (original, candidate):
         configs = [item for item in stream if item.get("version") == "v1alpha1"]
         if len(configs) != 1:
             raise RuntimeError("Expected exactly one v1alpha1 document")
         registries = configs[0]["machine"].setdefault("registries", {})
-        if stream is candidate and registries.get("mirrors") != wanted:
-            raise RuntimeError("Rendered registry mirrors do not match the declared patch")
+        if not isinstance(registries, dict):
+            raise RuntimeError("Existing registry configuration is invalid")
+        if stream is candidate:
+            if registries.get("mirrors") != wanted:
+                raise RuntimeError("Rendered registry mirrors do not match the declared patch")
+            if registry_config is not _UNCHANGED and registries.get("config", {}) != registry_config:
+                raise RuntimeError("Rendered Harbor registry credential does not match the declared patch")
         registries.pop("mirrors", None)
+        if registry_config is not _UNCHANGED:
+            registries.pop("config", None)
     if original != candidate:
-        raise RuntimeError("Refusing changes outside machine.registries.mirrors")
+        raise RuntimeError("Refusing changes outside Harbor mirrors and its owned registry credential")
 
 
 def registry_hosts(entries, declaration, rollback):
-    if declaration != [{"ip": "10.96.0.50", "aliases": ["harbor.stinkyboi.com"]}]:
+    if declaration != [PRIVATE_REGISTRY_HOST]:
         raise RuntimeError("Unexpected private registry host declaration")
     result = []
     for entry in entries:
@@ -137,6 +308,19 @@ def registry_hosts(entries, declaration, rollback):
         if aliases:
             result.append({**entry, "aliases": aliases})
     return result if rollback else result + copy.deepcopy(declaration)
+
+
+def require_private_registry_host(entries):
+    if not isinstance(entries, list):
+        raise RuntimeError("Existing Harbor hostname mapping is invalid")
+    mappings = []
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("aliases"), list):
+            raise RuntimeError("Existing Harbor hostname mapping is invalid")
+        if REGISTRY_HOST in entry["aliases"]:
+            mappings.append(entry)
+    if mappings != [PRIVATE_REGISTRY_HOST]:
+        raise RuntimeError("Executing Harbor mirror rollout requires the exact private Harbor hostname mapping")
 
 
 def hosts_only(before, after, wanted):
@@ -154,6 +338,31 @@ def hosts_only(before, after, wanted):
             machine.pop("network")
     if original != candidate:
         raise RuntimeError("Refusing changes outside machine.network.extraHostEntries")
+
+
+def active_harbor_mirrors(machine, wanted):
+    """Return whether active node config has the complete private mirror route."""
+    if not isinstance(machine, dict):
+        return False
+    registries = machine.get("registries", {})
+    if not isinstance(registries, dict) or registries.get("mirrors") != wanted:
+        return False
+    try:
+        if owned_registry_auth(registries) is None:
+            return False
+    except (KeyError, TypeError, RuntimeError):
+        return False
+    harbor = registries.get("config", {}).get(REGISTRY_HOST, {})
+    tls = harbor.get("tls", {}) if isinstance(harbor, dict) else None
+    if not isinstance(tls, dict) or tls.get("insecureSkipVerify", False) is not False:
+        return False
+    network = machine.get("network", {})
+    entries = network.get("extraHostEntries", []) if isinstance(network, dict) else []
+    if not isinstance(entries, list):
+        return False
+    matches = [entry for entry in entries if isinstance(entry, dict)
+               and isinstance(entry.get("aliases"), list) and REGISTRY_HOST in entry["aliases"]]
+    return matches == [PRIVATE_REGISTRY_HOST]
 
 
 def verify_registry_route():
@@ -258,7 +467,17 @@ def capture(client, path):
             raise RuntimeError("Active and persistent configurations differ; resolve staged or try changes first")
 
 
-def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host_only=False):
+def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host_only=False, registry_auth_file=None,
+              audit=False):
+    if audit and (execute or rollback or registry_host_only or registry_auth_file is not None):
+        raise RuntimeError("Harbor mirror audit cannot combine with rollout options")
+    if audit:
+        verify_main(expected)
+    if registry_auth_file is not None and registry_host_only:
+        raise RuntimeError("Registry credentials cannot be combined with registry-host-only mode")
+    if registry_auth_file is not None and rollback:
+        raise RuntimeError("Rollback removes the owned registry credential without a credential file")
+    registry_auth = read_registry_auth(registry_auth_file) if registry_auth_file is not None else None
     talosconfig = Path(talosconfig or ROOT / ".talos/talosconfig").expanduser().resolve()
     if not talosconfig.is_file():
         raise RuntimeError("The selected Talos client configuration is unavailable")
@@ -266,9 +485,7 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         raise RuntimeError("This rollout requires talosctl 1.11.3")
     if execute:
         verify_main(expected)
-        if not rollback and not registry_host_only:
-            verify_copies(expected)
-        elif not rollback:
+        if not rollback and registry_host_only:
             verify_registry_route()
     client = ["talosctl", "--talosconfig", str(talosconfig), "--endpoints", "10.1.0.199", "--nodes", node]
     # Recovery must work while Harbor-dependent Kubernetes components are down.
@@ -287,6 +504,15 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         original, normalized, candidate = (directory / name for name in ("original.yaml", "normalized.yaml", "candidate.yaml"))
 
         capture(client, original)
+        if audit:
+            active = documents(original)
+            configs = [item for item in active if item.get("version") == "v1alpha1"]
+            machine = configs[0].get("machine") if len(configs) == 1 else None
+            if not active_harbor_mirrors(machine, wanted):
+                print(f"{NODES[node]}: active Harbor mirror configuration does not match declaration")
+                raise RuntimeError("Active Harbor mirror configuration does not match declaration")
+            print(f"{NODES[node]}: active Harbor mirror configuration matches declaration")
+            return
         # Normalize defaults with the same local parser, preserving every document.
         run("talosctl", "machineconfig", "patch", str(original), "--patch", "[]", "--output", str(normalized))
         before = documents(normalized)
@@ -298,12 +524,33 @@ def reconcile(node, execute, expected, rollback, talosconfig=None, registry_host
         field = "extraHostEntries" if registry_host_only else "mirrors"
         if registry_host_only:
             wanted = registry_hosts(configs[0]["machine"].get("network", {}).get("extraHostEntries", []), wanted, rollback)
+        registries = configs[0]["machine"].get("registries", {})
+        if not isinstance(registries, dict):
+            raise RuntimeError("Existing registry configuration is invalid")
+        if execute and not rollback and not registry_host_only:
+            require_private_registry_host(configs[0]["machine"].get("network", {}).get("extraHostEntries", []))
+            verified_registry_auth = registry_auth or owned_registry_auth(registries)
+            if verified_registry_auth is None:
+                raise RuntimeError("Executing Harbor mirror rollout requires the mirror reader credential")
+            verify_copies(expected, verified_registry_auth)
+        registry_config = (_UNCHANGED if registry_host_only else
+                           registry_auth_config(registries, registry_auth, rollback))
         operations = [] if section in configs[0]["machine"] else [
             {"op": "add", "path": f"/machine/{section}", "value": {}}]
         operations.append({"op": "add", "path": f"/machine/{section}/{field}", "value": wanted})
-        run("talosctl", "machineconfig", "patch", str(normalized), "--patch", json.dumps(operations), "--output", str(candidate))
+        if registry_config is not _UNCHANGED:
+            if registry_config:
+                operations.append({"op": "add", "path": "/machine/registries/config", "value": registry_config})
+            elif "config" in registries:
+                operations.append({"op": "remove", "path": "/machine/registries/config"})
+        patch_file = directory / "patch.json"
+        write_private_json(patch_file, operations)
+        run("talosctl", "machineconfig", "patch", str(normalized), "--patch", "@" + str(patch_file), "--output", str(candidate))
         after = documents(candidate)
-        (hosts_only if registry_host_only else mirrors_only)(before, after, wanted)
+        if registry_host_only:
+            hosts_only(before, after, wanted)
+        else:
+            mirrors_only(before, after, wanted, registry_config)
         run("talosctl", "validate", "--config", str(candidate), "--mode", "metal", "--strict")
         if execute:
             verify_main(expected)
@@ -334,15 +581,27 @@ def main():
                         help="Private Talos client config (default: repository .talos/talosconfig)")
     parser.add_argument("--talosctl", default="talosctl", help="Talos 1.11.3 executable (default: talosctl on PATH)")
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--audit", action="store_true",
+                        help="Read active Harbor mirror state without rendering or applying a patch")
     parser.add_argument("--expected-sha")
     parser.add_argument("--rollback", action="store_true")
     parser.add_argument("--registry-host-only", action="store_true",
                         help="Change only Harbor's private node hostname mapping; preserve all registry mirrors")
+    parser.add_argument("--prepull-registry-runtime", action="store_true",
+                        help="Verify or pull both reviewed Harbor registry images into this node's CRI cache")
+    parser.add_argument("--registry-auth-file", type=Path,
+                        help="Absolute 0600 robot credential file in a private directory")
     args = parser.parse_args()
     TALOSCTL = args.talosctl
     os.umask(0o077)
     signal.signal(signal.SIGTERM, lambda signum, _: sys.exit(128 + signum))
-    reconcile(args.node, args.execute, args.expected_sha, args.rollback, args.talosconfig, args.registry_host_only)
+    if args.prepull_registry_runtime:
+        if args.audit or args.rollback or args.registry_host_only or args.registry_auth_file:
+            raise RuntimeError("Registry pre-pull cannot be combined with mirror operations")
+        prepull_registry_runtime(args.node, args.execute, args.expected_sha, args.talosconfig)
+    else:
+        reconcile(args.node, args.execute, args.expected_sha, args.rollback, args.talosconfig,
+                  args.registry_host_only, args.registry_auth_file, args.audit)
 
 
 if __name__ == "__main__":

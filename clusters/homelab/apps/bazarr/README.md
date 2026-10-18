@@ -74,7 +74,7 @@ to loopback; keep that default.
    verification before applying Bazarr. Talos registry mirrors use
    `skipFallback: true`, so the new digest-pinned GHCR Bazarr image must already
    exist in Harbor. The fixed Bazarr scope copies only its app and BusyBox init
-   images, verifies digest identity and complete anonymous pulls, and excludes
+   images, verifies digest identity and complete authenticated Harbor pulls, and excludes
    unrelated historical images.
 3. Dispatch `terragrunt-apply.yml` on current `main` with its exact SHA and
    `argocd_app=bazarr`. The generated unit depends on `platform-storage`,

@@ -25,7 +25,7 @@ REPLICATION_FILE = Path("/replication/chainguard-replication.json")
 PREFIX = "robot$"
 PROJECTS = {
     "homelab": {"metadata": {"public": "false", "auto_scan": "true"}, "robots": ("pull", "publisher")},
-    "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("publisher",)},
+    "mirror": {"metadata": {"public": "true", "auto_scan": "true"}, "robots": ("pull", "publisher")},
 }
 SETTINGS = {"self_registration": False, "project_creation_restriction": "adminonly"}
 CHAINGUARD_REPLICATION = {
@@ -52,6 +52,7 @@ ROBOTS = {"pull": ("pull",), "publisher": ("pull", "push")}
 SECRET_FILES = {
     ("homelab", "pull"): "robot-pull-password",
     ("homelab", "publisher"): "robot-push-password",
+    ("mirror", "pull"): "mirror-robot-pull-password",
     ("mirror", "publisher"): "mirror-robot-push-password",
 }
 MAX_RESPONSE_BYTES = 1024 * 1024
@@ -519,8 +520,8 @@ def main():
         read_replication_policy()
         admin_password = read_secret("admin-password")
         passwords = {name: read_secret(filename) for name, filename in SECRET_FILES.items()}
-        if passwords[("homelab", "publisher")] == passwords[("mirror", "publisher")]:
-            raise BootstrapError("Harbor publishers require separate credentials")
+        if len(set(passwords.values())) != len(passwords):
+            raise BootstrapError("Harbor robots require separate credentials")
         client = Client(admin_password)
         # Retry only transient reads. Auth/schema/write failures never trigger a
         # fallback identity or a retry that might duplicate a created resource.

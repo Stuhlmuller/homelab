@@ -1,7 +1,7 @@
 data "azuread_client_config" "current" {}
 
 data "azuread_user" "operator" {
-  user_principal_name = var.operator_user_principal_name
+  object_id = var.operator_object_id
 }
 
 data "azuread_service_principal" "microsoft_graph" {

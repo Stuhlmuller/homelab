@@ -19,7 +19,7 @@ def main():
     parser.add_argument("--homedir", required=True, help="Private Octelium login directory")
     parser.add_argument("--deadline", required=True, type=int,
                         help="Enclosing CI execution deadline as UTC epoch seconds")
-    parser.add_argument("--mode", choices=("checks", "force-failure"), default="checks",
+    parser.add_argument("--mode", choices=("checks", "force-failure", "runner-probe"), default="checks",
                         help="Run the fixed repository gate or deliberate exit-42 cleanup exercise")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.checkout):
@@ -53,7 +53,9 @@ def main():
             raise RuntimeError("Dedicated CI identity has retained workspaces; inspect them before retrying")
         # --start suppresses JSON in the pinned CLI, so create and start separately.
         creation_attempted = True
-        created = call("create", "workspace", "--file", str(root / ".cordium/workspace.yaml"),
+        workspace_file = ".cordium/runner-workspace.json" if args.mode == "runner-probe" else ".cordium/workspace.yaml"
+        build_options = ["--dockerfile", str(root / "builds/cordium-runner/Dockerfile")] if args.mode == "runner-probe" else []
+        created = call("create", "workspace", "--file", str(root / workspace_file), *build_options,
                        "--checkout", args.checkout, "--ephemeral", "--out", "json", capture=True)
         candidate = json.loads(created.stdout)["metadata"]["name"]
         if not isinstance(candidate, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", candidate):
@@ -84,6 +86,9 @@ def main():
                 expected_failure = error.returncode == 42
                 raise
             raise RuntimeError("The fixed failure command unexpectedly returned success")
+        elif args.mode == "runner-probe":
+            call("exec", workspace, "--no-stdin", "--root", "--workdir", "/workspace/repo", "--",
+                 "bash", "scripts/ci/cordium-runner-probe.sh", timeout=600)
         else:
             call("exec", workspace, "--no-stdin", "--root", "--workdir", "/workspace/repo", "--",
                  "nix", "--extra-experimental-features", "nix-command flakes", "develop",

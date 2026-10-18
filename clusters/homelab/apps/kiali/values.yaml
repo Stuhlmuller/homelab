@@ -31,13 +31,19 @@ cr:
         - name: wait-for-prometheus
           image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
           imagePullPolicy: IfNotPresent
-          command: ["/bin/sh", "-ec"]
+          command: ["curl"]
           args:
-            - |
-              until curl --fail --silent --show-error --max-time 10 \
-                http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready; do
-                sleep 5
-              done
+            - --fail
+            - --silent
+            - --show-error
+            - --max-time
+            - "10"
+            - --retry
+            - "60"
+            - --retry-delay
+            - "5"
+            - --retry-all-errors
+            - http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready
           resources:
             requests:
               cpu: 5m

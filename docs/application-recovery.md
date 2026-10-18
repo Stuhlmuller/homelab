@@ -51,7 +51,7 @@ Octelium and the NAS. Etcd snapshots do not contain PVC contents.
 | Harbor (`apps/harbor`) | Local DB with logical backups to QNAP, NFS registry blobs | 24h / 8h | Fence pushes/GC and pair DB/blobs; restore encryption key and signing Secret separately; retain public verification key. DB dump excludes private signing key |
 | Langfuse (`apps/langfuse`) | NFS PostgreSQL/ClickHouse/Valkey; S3 raw events expire after 30d; no logical backup pipeline | 24h / 8h | Coordinate relational, ClickHouse and raw-object versions; recover application encryption/salt secrets; decide queue losses. A lifecycle-managed raw-event bucket is not a backup |
 | Dispatcharr (`apps/dispatcharr`) | NFS PostgreSQL and runtime files | 24h / 8h | Paired stopped-writer dump/files, private provider credentials; no adapter scheduled |
-| OpenClaw, NOFX, OctoBot (`apps/openclaw`, `apps/nofx`, `apps/octobot`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
+| OpenClaw, NOFX (`apps/openclaw`, `apps/nofx`) | Runtime/config PVCs; NOFX SQLite and simulation state; sensitive tokens/API keys | 24h / 8h | Stop writers or use SQLite online backup API; preserve DB/WAL consistency. Disable agents, trading and callbacks before a drill; no raw live-PVC tar advertised as consistent |
 
 <!-- markdownlint-enable MD013 -->
 | Sonarr/Radarr/Prowlarr/Deluge config, downloads and media | Some nightly config archives on same QNAP; media on QNAP `/media` | Config 24h / 8h; bulk-media loss undecided | Pair config with media DB window. Owner must identify irreplaceable uploads/media vs reproducible downloads; do not silently exclude bulk media |
@@ -140,9 +140,11 @@ activation gates below are satisfied.
    account `716182248480`, `us-east-1`, AWS-managed `alias/aws/s3`, versioned,
    no completed-object expiry. Reuse `IaC/modules/aws-backup-bucket`; the staged
    catalog unit is `IaC/.catalog/units/operator/application-backup-storage`.
-   It is deliberately **absent** from `IaC/terragrunt.stack.hcl`, so routine
-   stack generation/apply does not create it. Approve storage, request and KMS
-   costs only after measuring dump sizes. For daily compressed input D GiB,
+   The unit is staged in `IaC/terragrunt.stack.hcl` for the measured OpenClaw
+   Enterprise legacy archive; the protected apply must still pass its scoped
+   plan before the bucket exists. It does not activate the separate application
+   backup host or timer. Review storage, request and KMS costs after measuring
+   dump sizes. For daily compressed input D GiB,
    retained storage grows roughly D GiB/day plus failed objects; hourly
    full-byte checks read roughly 24D GiB/day. No dollar quote or budget approval
    is inferred.
@@ -181,16 +183,6 @@ activation gates below are satisfied.
 
 Keep changes in reviewed commits; no commands in this section were executed
 against live resources. Do not approve a blanket apply based on this runbook.
-
-After approving the bucket plan, add this explicit stack unit in a follow-up PR:
-
-```hcl
-unit "operator_application_backup_storage" {
-  source                  = "./.catalog/units/operator/application-backup-storage"
-  path                    = "operator/application-backup-storage"
-  no_dot_terragrunt_stack = true
-}
-```
 
 From `IaC`, generate the stack and plan only the new unit through the repository's
 normal Terragrunt path; review the exact saved plan before authorizing apply.

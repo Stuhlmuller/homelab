@@ -13,6 +13,11 @@ Private Harbor routing and fail-closed Talos mirrors are separate from pod
 policies. Retain the documented upstream cold-bootstrap/recovery path; an empty
 cluster cannot bootstrap its own in-cluster registry.
 
+Before the `mirror` project becomes private, reconcile the dedicated
+`robot$mirror+pull` credential and verify authenticated registry configuration
+on every Talos node. Keep `mirror` public through that node-auth phase; flipping
+privacy earlier can strand uncached image pulls.
+
 1. Publish the reviewed [Chainguard scope](harbor-image-mirroring.md#delivery)
    before merging any consuming references. Its seven latest-tag index digests
    were resolved anonymously on 2026-10-10; each index includes Linux amd64
@@ -37,13 +42,32 @@ No workload references or live node settings change in the publication
 prerequisite. Removing old artifacts is not a vulnerability remediation method;
 retain rollback images and backups.
 
-## Public source availability
+## Admission inventory
 
-Keep live image inventories, digest/namespace joins, vulnerability counts and
-scan timestamps outside git in private operator evidence. Public documentation
-records source compatibility and acceptance requirements only. Require fresh
-node/dataplane readiness, full catalog publication and actual private pulls
-before changing consumers or cluster-wide networking.
+The [Harbor-only image policy](../clusters/homelab/platform/image-policy/README.md)
+uses Kubernetes native admission to report public references in regular, init,
+and ephemeral containers. Its `Warn, Audit` binding has no system or namespace
+exceptions, so it observes future Pod writes rather than existing Pods. Use the
+separate static and live inventory for existing references. Promote it to `Deny`
+only after catalog publication, private node-pull acceptance, and clean
+inventories. It does not replace Istio egress controls or node-level Harbor
+routing.
+
+## Read-only findings, 2026-10-10
+
+Context `admin@homelab`: 294 total Pods, including 83 completed/failed Pods.
+The 211 running Pods reference 122 distinct container/init images; image strings
+alone do not establish their transport. Every active public-origin reference
+is covered by the existing full mirror catalog; publication and actual node
+mirror enforcement still need verification. `zimaboard-2` is NotReady, and Flannel,
+Istio CNI and ztunnel each have only three ready instances out of four.
+A later read-only check during preparation found all four nodes Ready. Require
+fresh node/dataplane readiness before any cluster-wide networking rollout;
+transient recovery is not an egress acceptance test.
+
+The Harbor vulnerability exporter returned 147 critical findings for `homelab`
+and 345 for `mirror`. These are completed-scan artifact aggregates, including
+retained images, not unique CVEs or an active-workload-only assessment.
 
 Anonymous source probes confirmed Python, curl, BusyBox, Redis, Valkey,
 PostgreSQL, Cosign, kubectl and nginx indexes. kubectl is not included in the
@@ -58,40 +82,22 @@ credentials are assumed; approved exceptions remain Harbor-hosted.
 
 ## Egress enforcement contract
 
-### Source policy audit, 2026-10-10
-
-Parsing every YAML document under `clusters/` found 44 authored
-`NetworkPolicy` objects. This excludes chart-generated policies and is not a
-live effective-policy audit. Kubernetes combines matching policies additively;
-an ingress-only object does not establish whether another policy isolates the
-same Pod's egress.
-
-| Source | Gap requiring dependency review |
-| --- | --- |
-| [NOFX](../clusters/homelab/apps/nofx/networkpolicy.yaml) | Backend `egress: [{}]` permits every destination and port. Inventory configured model/exchange endpoints and the historical-data feed before replacing this allowance. |
-| [Cordium](../clusters/homelab/apps/cordium/networkpolicy.yaml) | Genesis permits `10.0.0.0/8` on 443/8080/6443; cluster-config permits all IPv4 destinations on 443. Resolve API, controller and external bootstrap dependencies separately. |
-| [Cloudflared](../clusters/homelab/apps/octelium-public/networkpolicy.yaml) | Public IPv4 TCP 443 and TCP/UDP 7844 remain broadly allowed despite private-range exclusions. Tunnel edge traffic needs its documented destination contract; HTTPS alone is not a domain allowlist. |
-| Affine, Bazarr, Dispatcharr PostgreSQL, Fleet, Harbor, Langfuse, LiteLLM PostgreSQL, media PostgreSQL, Multica, n8n PostgreSQL, Octelium demo/storage/backups, OpenClaw, policy-bot, Traefik | Authored policies contain ingress-only objects. Inventory effective selectors, chart policies, controller/API access, DNS, storage, backups, callbacks and external services before adding egress isolation. |
-
-Before activation, join rendered and live policies to actual Pod labels and
-service accounts, including Jobs, init containers and operator-created Pods.
-Review both IP families, Service DNAT and ambient HBONE. Do not infer isolation
-from policy names, an individual policy, or an allowed destination's port.
-Image pulls require node-to-Harbor access, not application-pod registry egress.
-
-The frontend prerequisite now allows only CoreDNS TCP/UDP 53 and same-namespace
-NOFX backend TCP 8080/15008. The pinned source's `nginx/nginx.conf` routes
-`/api/` to `http://nofx:8080/api/`; static assets and `/health` have no external server dependency. Verify the
-DNS selector against current CoreDNS labels privately. This source restriction
-is not live enforcement: require allowed API proxying, ambient readiness, denied
-public/registry destinations and denied alternate ports after the enforcer
-canary. Revert the policy through GitOps if the original API path fails.
-
 The cluster uses Istio ambient and Flannel. Flannel does not enforce the
 existing Kubernetes NetworkPolicy objects. Istio AuthorizationPolicy currently
 restricts inbound traffic for selected meshed workloads; it does not deny all
 outbound traffic. `Sidecar` resources do not configure ambient workloads, and
 `outboundTrafficPolicy: REGISTRY_ONLY` is not a security boundary.
+
+The source-only [NRI fragment](../.talos/patches/nri-containerd.yaml) prepares
+an isolated CRI configuration part, but no node has received it and no NRI
+plugin or policy-enforcing dataplane is deployed. It has no rollout helper or
+node target. The offline gate proves strict machine-config validity only; a
+future canary must reject a pre-existing `30-nri.part`, read the rendered CRI
+configuration and NRI socket, and restore a complete desired machine config
+without that owned entry before treating rollback as complete. Apply only with
+a dedicated tainted canary worker and readback contract; enabling the runtime
+socket on a shared worker would create a privileged control path before those
+safeguards exist.
 
 A complete rollout needs a repository-owned policy-enforcing dataplane plus
 Istio egress waypoints/gateways and narrow destination policies. Do not activate
@@ -108,11 +114,118 @@ Harbor publisher/replication/scanner workflows. Privileged/host-network pods,
 VPN/UDP workloads and non-meshed namespaces need explicit controls; they cannot
 be declared isolated solely by enrolling ordinary TCP workloads in Istio.
 
+The NOFX frontend has no service-account token, probes its local `/health`
+endpoint in-container, and permits only CoreDNS TCP/UDP 53 plus its backend on
+TCP 8080/15008. Its declared policy contains no Harbor or public-registry
+egress. It is not enforced until the NRI enforcer canary proves the same allow
+and deny paths. The backend admits ambient TCP 15008; its Istio
+AuthorizationPolicy still limits the decrypted request to the frontend identity.
+
 Acceptance must demonstrate allowed requests succeed and undeclared domains,
 direct IPs, alternate ports, IPv6 and gateway bypass fail. Preserve DNS,
 controller/webhook calls, storage mounts and the human/CI recovery route.
 Roll back through the owning GitOps application and reviewed Talos config;
 never repair a deny rule with manual cluster mutation.
+
+Before an NRI or egress-gateway canary, compare private, read-only Pod and
+NetworkPolicy snapshots with every rendered policy source by using
+`scripts/network-policy-inventory.py`. Include chart renders and generated
+Octelium policies in `--render`; repository YAML alone is insufficient. The
+JSON review file records the exact `sha256` fingerprints emitted by the audit.
+Run it with `--fail-on-findings` for the candidate namespace. It refuses
+wildcard or ranged CIDR/port egress, peer selectors or IP blocks that reach all
+other active Pods, unresolved namespace selectors, drifted, unowned and
+unreviewed egress, plus unisolated, host-network, privileged,
+NET_ADMIN/NET_RAW/SYS_ADMIN and init-container workloads that require a
+separate control-path review. The utility never calls Kubernetes and snapshot
+files must remain private.
+
+Candidate containers must explicitly drop `ALL` Linux capabilities before
+adding only reviewed capabilities. Otherwise runtime-default capabilities are
+reported as a separate-control-path finding.
+
+The Pod snapshot must include active Pod IPs when a candidate uses `ipBlock`.
+The audit compares resolved IP blocks against every other active Pod and flags
+an incomplete IP snapshot rather than assuming those peers are unreachable.
+
+Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practices/security/),
+[ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
+[Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
+and the [existing isolation contract](runtime-isolation.md).
+
+## Additional publication prerequisite
+
+On 2026-10-11, anonymous index checks refreshed Python, PostgreSQL and Node
+`latest-dev` in both publication catalogs; all thirteen staged Chainguard
+indexes retain Linux amd64/arm64 manifests. Re-run consumer compatibility
+against these exact digests. Earlier publication and compatibility receipts
+do not cover changed artifacts. This source refresh changes no consumers,
+node configuration or egress enforcement.
+
+Anonymous source inspection resolved public Chainguard Node `latest`, Node
+`latest-dev`, Go `latest` and nginx `latest`, each with Linux amd64/arm64 indexes. Add them to the
+reviewed full catalog and Chainguard scope before custom build/runtime changes.
+The nginx candidate is for generic application frontends such as NOFX, subject
+to command, config, UID, temporary-path and actual HTTP/proxy tests. It does not
+establish compatibility with Harbor's coupled nginx-photon component.
+Public Wolfi base and static indexes are also staged for a NOFX backend rebuild.
+Pinned source inspection found no TA-Lib linkage, but GORM's SQLite driver
+still requires CGO. Native static-link, database and runtime tests must pass
+before removing the existing Alpine exception; do not disable CGO to make a
+smaller image compile.
+Node uses `/usr/bin/node` and UID 65532; Go uses `/usr/bin/go` and UID 0 in its
+build image. Existing shell/npm/CGO/linker, filesystem ownership and application
+behavior contracts still require native compatibility tests; a tag lookup does
+not prove a replacement works. No consumer changes in this prerequisite.
+
+The full catalog also includes the paused Image Updater chart's actual v1.3.0
+image, with Linux amd64/arm64/ppc64le/s390x manifests and source attestations.
+Copy the complete index, preserving digests. Keep its zero replicas and promotion
+gates unchanged until publication and its internal reference are accepted.
+The prior seven-image publication receipt covers only those seven entries,
+not the six additions: Go, nginx, Node runtime, Node dev, static and Wolfi base.
+Any publication of the expanded scope requires a new
+protected production approval and complete authenticated Harbor-pull acceptance.
+
+The publisher stages original multi-platform indexes using Skopeo's `dir:`
+transport. The native offline regression in `harbor-publish-test.py` verifies
+both architecture children and repeated index descriptors survive staging and
+a second complete copy without changing manifest digests. It uses generated
+local OCI fixtures with network transports rejected; it proves local transport
+behavior, not Harbor publication or a signature accessory.
+
+## Policy-enforcing dataplane prerequisite
+
+`scripts/ci/network-policy-enforcement-check.py` is a CI-only, disposable
+dual-stack Kind proof. Its public Kind, CNI, enforcer and Python images are test
+fixtures, never homelab workload or node inputs. Passing it proves strict NRI
+enforcement behavior only; production still needs the reviewed Harbor image,
+dedicated worker, active NRI readback and application-specific egress canary.
+
+The current Kubernetes SIG Network userspace enforcer release is v1.1.2
+(2026-09-28). Its reviewed index is cataloged for Harbor publication, including
+Linux amd64/arm64/s390x and source attestations; no DaemonSet is activated here.
+Flannel continues to supply networking. The enforcer supplies L3/L4 boundaries
+needed to prevent bypass of Istio egress waypoints/gateways.
+
+Read-only inspection of worker 10.1.0.200 on 2026-10-11 found no
+`/var/run/nri` socket directory and no explicit NRI stanza in its effective CRI
+configuration. Verify all nodes and activate the reviewed inactive Talos NRI declaration
+before relying on runtime-synchronous Pod IP discovery.
+The enforcer can fall back to API discovery if NRI initialization fails; that
+fallback is not proof that startup traffic is isolated. Require a live socket,
+plugin registration and negative startup/bypass tests.
+
+Use explicit `--fail-open=false`, `--strict-mode=true` and a non-conflicting
+NFQUEUE ID. Review every existing NetworkPolicy before activation: placeholders
+become enforced together. Start with a reviewed worker canary, preserve host/API,
+DNS, mesh HBONE, webhook and storage paths, then verify allowed traffic and denied
+direct IP/alternate-port/IPv6/gateway bypass before expanding. Runtime and Istio
+policy acceptance remain unproved; publication alone does not enforce egress.
+
+Sources: [v1.1.2 release](https://github.com/kubernetes-sigs/kube-network-policies/releases/tag/v1.1.2),
+[enforcer](https://kube-network-policies.sigs.k8s.io/) and
+[Istio ambient egress](https://istio.io/latest/docs/ambient/usage/egress-gateway/).
 
 ## Istio 1.27 external-service routing prerequisite
 
@@ -143,8 +256,9 @@ namespace-wide `fleet-ambient` allowance already permits HBONE, and an ingress r
 `ports` already permits all ports. Do not classify each individual policy as a
 standalone deny rule.
 
-LiteLLM, Multica and n8n database policies and the NOFX backend now permit TCP
-15008 from their existing client selectors. Matching Istio AuthorizationPolicy
+LiteLLM, Multica and n8n database policies permit TCP 15008 from their
+existing client selectors; the NOFX backend separately admits HBONE for
+Istio identity enforcement. Matching Istio AuthorizationPolicy
 rules restrict decrypted traffic to database port 5432 or backend port 8080;
 n8n uses its declared `n8n` service account. These database health probes use
 local exec, so no network probe exception is needed. The signer uses Harbor's
@@ -312,8 +426,3 @@ unavailable; fresh Linux CI must pass this added stage before trusting it.
 
 Sources: [pinned enforcer](https://github.com/kubernetes-sigs/kube-network-policies/tree/v1.1.2)
 and [upstream transport-only fixture](https://github.com/kubernetes-sigs/kube-network-policies/blob/v1.1.2/tests/setup_suite.bash).
-
-Sources: [Istio security guidance](https://istio.io/latest/docs/ops/best-practices/security/),
-[ambient egress gateways](https://istio.io/latest/docs/ambient/usage/egress-gateway/),
-[Chainguard registry access](https://edu.chainguard.dev/chainguard/containers/registry/),
-and the [existing isolation contract](runtime-isolation.md).

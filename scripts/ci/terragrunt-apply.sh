@@ -93,6 +93,8 @@ adopt_existing_ssm_parameters() {
   local parameter_names=(
     "/homelab/github-actions-runner/registration-token"
     "/homelab/cordium/agent-auth-token"
+    "/homelab/cordium-runners/github-app-private-key"
+    "/homelab/cordium-runners/auth-token"
   )
 
   terragrunt init -no-color
@@ -158,6 +160,21 @@ plan_and_apply_langfuse_prerequisites() {
   echo "::endgroup::"
 }
 
+plan_and_apply_application_backup_storage() {
+  local plan_dir
+
+  plan_dir="$(mktemp -d "${RUNNER_TEMP:-/tmp}/homelab-openclaw-archive-plan.XXXXXX")"
+  cleanup_dirs+=("$plan_dir")
+  (
+    cd IaC/operator/application-backup-storage
+    terragrunt init -no-color
+    terragrunt plan -out "$plan_dir/plan.out" -no-color
+    terragrunt --log-disable show -json "$plan_dir/plan.out" >"$plan_dir/plan.json"
+    conftest test --policy ../../../policy --output github "$plan_dir/plan.json"
+    terragrunt apply -no-color "$plan_dir/plan.out"
+  )
+}
+
 plan_and_apply_argocd_apps() {
   local filter
   local plan_dir
@@ -198,13 +215,31 @@ plan_and_apply_argocd_apps() {
 }
 
 prepare_terragrunt_filter_base
+backup_storage_scope="${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}"
+case "$backup_storage_scope" in
+  true)
+    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false ]] || {
+      echo "The backup-storage scope cannot be combined with an Argo CD target or state repair." >&2
+      exit 2
+    }
+    ;;
+  false) ;;
+  *) echo "Invalid backup-storage scope." >&2; exit 2 ;;
+esac
 terragrunt_generate_stack
+
+if [[ "$backup_storage_scope" == true ]]; then
+  echo "::group::OpenClaw legacy offsite bucket plan and apply"
+  plan_and_apply_application_backup_storage
+  echo "::endgroup::"
+  exit 0
+fi
 
 repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps
   terragrunt_argocd_app_state_repair_unit
 )"
-if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" ]]; then
+if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}" == "fleet" || "${TERRAGRUNT_ARGOCD_APP:-}" == "mastodon" || "${TERRAGRUNT_ARGOCD_APP:-}" == "traefik" ]]; then
   # This path skips bootstrap/platform reconciliation. Fail before any state
   # repair, import or apply if those existing prerequisites are not ready.
   (cd IaC/live/argocd-apps && terragrunt_argocd_app_filter) >/dev/null
@@ -215,11 +250,17 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     ($app != "langfuse" or (.sourceRepos | index("ghcr.io/langfuse/langfuse-k8s/charts") != null)) and
     ($app != "traefik" or (.sourceRepos | index("https://bjw-s-labs.github.io/helm-charts") != null)) and
     any(.destinations[]; .namespace == $app and .server == "https://kubernetes.default.svc") and
-    any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace")
+    any(.clusterResourceWhitelist[]; .group == "" and .kind == "Namespace") and
+    ($app != "mastodon" or (
+      any(.clusterResourceWhitelist[]; .group == "" and .kind == "PersistentVolume") and
+      any(.clusterResourceWhitelist[]; .group == "storage.k8s.io" and .kind == "StorageClass")
+    ))
   ' >/dev/null
   prerequisite_apps=(external-secrets cert-manager istio platform-storage)
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "traefik" ]]; then
     prerequisite_apps=(cert-manager istio tailscale)
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
+    prerequisite_apps+=(octelium-public)
   elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
     prerequisite_apps+=(traefik)
   fi
@@ -243,7 +284,7 @@ if [[ "${TERRAGRUNT_ARGOCD_APP:-}" == "langfuse" || "${TERRAGRUNT_ARGOCD_APP:-}"
     kubectl wait --for=condition=Ready --timeout=0s clusterissuer/letsencrypt-cloudflare
   else
     kubectl wait --for=condition=Ready --timeout=0s clustersecretstore/aws-ssm
-    if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+    if [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
       kubectl get clustersecretstore aws-ssm -o json | jq -e --arg app "$TERRAGRUNT_ARGOCD_APP" '
         any(.spec.conditions[]?.namespaces[]?; . == $app)
       ' >/dev/null
@@ -275,7 +316,7 @@ fi
 if [[ -n "${TERRAGRUNT_ARGOCD_APP:-}" ]]; then
   if [[ "$TERRAGRUNT_ARGOCD_APP" == "langfuse" ]]; then
     plan_and_apply_langfuse_prerequisites
-  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" ]]; then
+  elif [[ "$TERRAGRUNT_ARGOCD_APP" == "fleet" || "$TERRAGRUNT_ARGOCD_APP" == "mastodon" ]]; then
     plan_and_apply_ssm_prerequisites
   fi
   echo "::group::Targeted Argo CD Application registration apply"
@@ -291,6 +332,10 @@ if ! azuread_credentials_available && terragrunt_azuread_stack_changed; then
 fi
 
 destroy_deleted_terragrunt_units
+
+echo "::group::OpenClaw legacy offsite bucket plan and apply"
+plan_and_apply_application_backup_storage
+echo "::endgroup::"
 
 echo "::group::Argo CD bootstrap apply"
 (

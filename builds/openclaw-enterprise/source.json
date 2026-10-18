@@ -1,0 +1,5 @@
+{
+  "revision": "33bb74590a749f37934da4502fca6035cd234a55",
+  "archiveSha256": "23714b91b364ff87ec767d5555687788969f05980574b717542c269f8cd940b4",
+  "nodeBaseImage": "docker.io/library/node:24-bookworm@sha256:3d27e5c11e5786e309ec3e03f93ae536eb36e6e5eb3714d5eb3300a36157add0"
+}

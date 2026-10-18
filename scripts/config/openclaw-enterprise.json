@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "activationEnabled": false,
+  "source": {
+    "repository": "https://github.com/openclaw/openclaw-enterprise",
+    "revision": "33bb74590a749f37934da4502fca6035cd234a55",
+    "chartPath": "deploy/helm/openclaw-enterprise",
+    "images": {
+      "requiredRevisionLabel": "org.opencontainers.image.revision",
+      "controller": {
+        "repository": "harbor.stinkyboi.com/homelab/homelab-oce-controller",
+        "digest": "sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164"
+      },
+      "runtime": {
+        "repository": "harbor.stinkyboi.com/homelab/homelab-oce-runtime",
+        "digest": "sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6"
+      }
+    },
+    "cli": {
+      "sourcePath": "cmd/occ",
+      "buildRevision": "33bb74590a749f37934da4502fca6035cd234a55",
+      "artifactDigest": null
+    },
+    "imagePairingPolicy": "all-artifacts-built-from-source-revision-and-verified-by-publication-receipt"
+  },
+  "installationPhase": "unselected",
+  "namespace": {
+    "logicalName": "claw",
+    "existingNamespace": "openclaw-agents",
+    "controlPlaneNamespace": "openclaw-system"
+  },
+  "agent": {
+    "name": "claw",
+    "type": "embedded",
+    "channels": [],
+    "backend": null,
+    "sandbox": null
+  },
+  "privateOrigins": {
+    "console": "https://console.oce.stinkyboi.com",
+    "agentSuffix": "agents.oce.stinkyboi.com",
+    "cookieDomain": "oce.stinkyboi.com",
+    "gateway": "oce-private-gateway"
+  },
+  "storage": {
+    "postgresClass": "openclaw-enterprise-postgres-local",
+    "agentClass": "openclaw-enterprise-agent-local",
+    "bootstrapClass": "openclaw-enterprise-bootstrap-local",
+    "postgresGiB": 10,
+    "agentGiB": 10,
+    "bootstrapGiB": 1
+  },
+  "secrets": {
+    "modelApiKey": "/homelab/openclaw-enterprise/model-api-key",
+    "postgresAdmin": "/homelab/openclaw-enterprise/postgres-admin-password",
+    "postgresMigrator": "/homelab/openclaw-enterprise/postgres-migrator-password",
+    "postgresApp": "/homelab/openclaw-enterprise/postgres-app-password",
+    "sessionAuth": "/homelab/openclaw-enterprise/session-auth-secret"
+  },
+  "model": {
+    "provider": "openai",
+    "id": null
+  },
+  "privateJournal": {
+    "required": true,
+    "sourceBound": true,
+    "durable": true,
+    "mountPath": "/private/openclaw-enterprise/journal.json",
+    "mode": "0600",
+    "lockRequired": true
+  },
+  "privateArchives": {
+    "legacy": {
+      "mountPath": "/private/openclaw-enterprise/legacy-archive",
+      "retained": true
+    },
+    "enterprise": {
+      "mountPath": "/private/openclaw-enterprise/new-archive",
+      "retained": true
+    }
+  },
+  "legacyRetention": {
+    "namespace": "ai",
+    "node": "zimaboard-1",
+    "deployment": "openclaw",
+    "image": "ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218",
+    "assistantSha256": "107e53a7057ea31acb13fda80eeeaa0c56ea75f744000741e648660ad5676704",
+    "cronJob": "openclaw-runtime-backup",
+    "localClaim": "openclaw-runtime-local",
+    "stateClaim": "openclaw-runtime-state-local",
+    "agentClaim": "openclaw-runtime-agent-local",
+    "nasClaim": "openclaw",
+    "localRoot": "/runtime-volume/runtime",
+    "stateMount": "/legacy-state",
+    "agentMount": "/legacy-agent",
+    "nasRoot": "/data",
+    "localUid": 1000,
+    "nasUid": 65534,
+    "requiredLocal": [
+      "state/openclaw.sqlite",
+      "agents/main/agent/openclaw-agent.sqlite"
+    ],
+    "requiredNas": [
+      "openclaw",
+      "openclaw-backups/pre-2026.9.2-runtime",
+      "openclaw-backups/pre-2026.9.5",
+      "openclaw-runtime-snapshots"
+    ]
+  },
+  "executionBlockers": [
+    "Matching published controller/runtime images and source-built CLI are not verified",
+    "Model ID and dedicated credential are not configured",
+    "Storage placement and private recovery paths are not validated"
+  ],
+  "installationPhases": [
+    "foundation",
+    "lifecycle-validation",
+    "production-inactive",
+    "active"
+  ],
+  "bootstrap": {
+    "passwordFile": "/private/openclaw-enterprise/bootstrap/initial-admin-password",
+    "serviceKeyFile": "/private/openclaw-enterprise/bootstrap/initial-admin-service-key.json",
+    "producer": "upstream-initialization-job"
+  },
+  "gatewayIdentity": {
+    "apiKeyParameter": "/homelab/openclaw-enterprise/gateway-api-key",
+    "caProducer": "cert-manager",
+    "caSecretName": "occ-private-gateway-root"
+  }
+}

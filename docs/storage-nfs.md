@@ -211,7 +211,6 @@ app has acceptable backup and restore coverage.
 | openclaw | config, runtime state | `nfs-default` | NFS backup for runtime state | Restore PVC and verify LiteLLM connectivity | Preserve PVC |
 | n8n-postgres | n8n workflows, users, credentials metadata, and execution history | `nfs-default` | NFS backup plus PostgreSQL logical dump before upgrades | Restore PostgreSQL PVC or logical dump before n8n app sync | Preserve PVC unless intentionally rebuilding from exports |
 | n8n | instance config, encryption-key settings, and file-backed runtime data | `nfs-default` | NFS backup plus workflow export when available | Restore n8n PVC and n8n-postgres before app sync | Snapshot first, preserve PVC |
-| octobot | UI-configured bot state, tentacles, exchange credentials after operator setup, logs, strategy config | `nfs-default` | NFS backup before strategy, tentacle, or exchange-account changes | Restore PVCs before comparing long-running paper/live strategy results or reusing exchange credentials | Preserve PVCs unless intentionally resetting bot credentials |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -224,9 +223,8 @@ app has acceptable backup and restore coverage.
   `10.1.0.202`.
 - Read-only `kubectl get storageclass` reported no resources before this
   storage integration was added.
-- Persistent app Terragrunt units were checked on 2026-05-24 and refreshed for
-  OctoBot on 2026-05-26. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
-  Radarr, Sonarr, LiteLLM, OpenClaw, n8n, and OctoBot each explicitly depend on
+- Persistent app Terragrunt units were checked on 2026-05-24. Prometheus, Grafana, Deluge, Dispatcharr, Prowlarr,
+  Radarr, Sonarr, LiteLLM, OpenClaw, and n8n each explicitly depend on
   `IaC/live/argocd-apps/platform-storage`.
 - The live `nfs-subdir-external-provisioner` Application was verified healthy
   on 2026-05-24.

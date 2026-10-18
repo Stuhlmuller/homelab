@@ -88,7 +88,7 @@ spec:
         args:
         - /bin/netpol
         - --hostname-override=$(MY_NODE_NAME)
-        - --v=2
+        - --v=4
         - --nfqueue-id=98
         - --fail-open=false
         - --strict-mode=true
