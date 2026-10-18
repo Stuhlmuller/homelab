@@ -22,7 +22,7 @@ spec.loader.exec_module(check)
 class Readiness(unittest.TestCase):
     def test_fixed_inventory_covers_apps_and_only_intended_legacy_names(self):
         value = check.inventory()
-        apps = 'affine argocd bazarr compass deluge dispatcharr fleet grafana harbor kiali langfuse litellm multica n8n nofx octobot openclaw policy-bot prowlarr radarr sonarr'.split()
+        apps = 'affine argocd bazarr compass deluge dispatcharr fleet grafana harbor kiali langfuse litellm multica n8n nofx openclaw policy-bot prowlarr radarr sonarr'.split()
         self.assertEqual(set(value['hostnames']), {f'{app}.stinkyboi.com' for app in apps} | {
             'stinkyboi.com', 'cordium.stinkyboi.com', '*.cordium.stinkyboi.com', 'console.stinkyboi.com',
             'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com'})
@@ -91,7 +91,7 @@ class Readiness(unittest.TestCase):
         commands = self.exercise()
         self.assertEqual(commands[0], ('kubectl', '-n', 'traefik', 'get', 'service', 'traefik-private', '-o', 'json'))
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 29)
+        self.assertEqual(len(probes), 28)
         self.assertTrue(all('--connect-to' in command and '--disable' in command and '--insecure' not in command
                             for command in probes))
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
@@ -101,7 +101,7 @@ class Readiness(unittest.TestCase):
     def test_ipv4_service_does_not_publish_dualstack_peers_unsupported_ipv6(self):
         commands = self.exercise(dualstack_peer=True)
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 29)
+        self.assertEqual(len(probes), 28)
         self.assertTrue(all(command[command.index('--connect-to') + 1].endswith(':100.100.100.1:443')
                             for command in probes))
 
@@ -185,8 +185,19 @@ class Readiness(unittest.TestCase):
             check.verify_dns(value, addresses)
 
 
+class RemovedHost(unittest.TestCase):
+    def test_only_current_commit_removal_is_allowed(self):
+        previous = {'hostnames':['removed.stinkyboi.com'], 'retired_hostnames':[]}
+        current = {'hostnames':['active.stinkyboi.com'], 'retired_hostnames':['legacy.stinkyboi.com']}
+        with patch.object(check, 'run', return_value=json.dumps(previous)):
+            check.removed_hostname('removed.stinkyboi.com', current)
+            for hostname in ('active.stinkyboi.com','legacy.stinkyboi.com','missing.stinkyboi.com', 'stinkyboi.com', '*.stinkyboi.com', 'other.example.com'):
+                with self.assertRaises(RuntimeError):
+                    check.removed_hostname(hostname, current)
+
+
 class DNS(unittest.TestCase):
-    def exercise(self, execute=False, failure=None, already=False, retire=False):
+    def exercise(self, execute=False, failure=None, already=False, retire=False, removed=False):
         with tempfile.TemporaryDirectory(prefix='private-dns-test-') as directory:
             base = Path(directory)
             script = base/'scripts/tailscale-private-dns.sh'
@@ -213,6 +224,10 @@ class DNS(unittest.TestCase):
                 host = inventory['hostnames'][1]
                 initial[host].append({'id':'duplicate-correct-a', 'name':host, 'type':'A',
                                       'content':'100.100.100.1', 'proxied':False, 'ttl':60})
+            if removed:
+                initial['removed.stinkyboi.com'] = [] if already else [
+                    {'id':'retired-a', 'name':'removed.stinkyboi.com', 'type':'A', 'content':'100.100.100.1'},
+                    {'id':'retired-txt', 'name':'removed.stinkyboi.com', 'type':'TXT', 'content':'retain'}]
             state = base/'state.json'
             state.write_text(json.dumps(initial))
             calls = base/'calls.jsonl'
@@ -268,6 +283,8 @@ else:
                 path.chmod(0o755)
             environment = dict(os.environ, PATH=str(binary)+os.pathsep+os.environ['PATH'])
             command = ['bash', str(script)] + (['--execute','--expected-sha','a'*40] if execute else [])
+            if removed:
+                command += ['--retire-hostname', 'removed.stinkyboi.com']
             if retire:
                 command.append('--retire-old-routes')
             result = subprocess.run(command, env=environment, capture_output=True, text=True, timeout=60)
@@ -308,6 +325,26 @@ else:
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(before, after)
                 self.assertFalse(any(call[0] in ('POST','PUT','DELETE') for call in calls))
+
+    def test_removed_hostname_retirement_is_scoped_idempotent_and_fail_closed(self):
+        result, before, after, calls = self.exercise(removed=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(before, after)
+        self.assertFalse(any(call[0] in ('PUT','POST','DELETE') for call in calls))
+        result, before, after, calls = self.exercise(execute=True, removed=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(after.pop('removed.stinkyboi.com'), [{'id':'retired-txt', 'name':'removed.stinkyboi.com', 'type':'TXT', 'content':'retain'}])
+        before.pop('removed.stinkyboi.com')
+        self.assertEqual(before, after)
+        self.assertEqual(sum(call[0] == 'DELETE' for call in calls), 1)
+        self.assertFalse(any(call[0] in ('PUT','POST') for call in calls))
+        result, before, after, calls = self.exercise(execute=True, removed=True, already=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(before, after)
+        for failure in ('preflight', 'pagination'):
+            result, before, after, calls = self.exercise(execute=True, removed=True, failure=failure)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(before, after)
 
     def test_preparation_cannot_retire_legacy_routes(self):
         result, before, after, calls = self.exercise(execute=True, retire=True)

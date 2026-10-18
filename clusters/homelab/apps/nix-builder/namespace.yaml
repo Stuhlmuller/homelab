@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: nix-builder
   annotations:
-    homelab.rst.io/privileged-namespace-justification: Nix build sandboxes need root, mount namespaces, SYS_ADMIN and SYS_CHROOT; this executor has no host mounts, network ingress or Kubernetes token.
+    homelab.rst.io/privileged-namespace-justification: Nix build sandboxes need root, mount namespaces, SYS_ADMIN and SYS_CHROOT, plus NET_ADMIN for private loopback when host user namespaces are disabled; this executor has no host mounts, network ingress or Kubernetes token.
   labels:
     app.kubernetes.io/name: nix-builder
     app.kubernetes.io/part-of: homelab

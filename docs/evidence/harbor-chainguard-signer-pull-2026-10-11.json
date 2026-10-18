@@ -1,0 +1,20 @@
+{
+  "scope": "Complete read-only pull from exact Harbor mirror; not source signature or runtime compatibility acceptance",
+  "reference": "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18",
+  "checked_at": "2026-10-11T21:12:02.081949+00:00",
+  "root_manifest_verified": true,
+  "platform_manifests": 2,
+  "referenced_blob_hash_checks": 18,
+  "platforms": [
+    {
+      "architecture": "amd64",
+      "os": "linux"
+    },
+    {
+      "architecture": "arm64",
+      "os": "linux"
+    }
+  ],
+  "source_signatures_verified": false,
+  "native_compatibility": "pending Linux CI"
+}

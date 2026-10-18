@@ -44,7 +44,7 @@ class CSRTest(unittest.TestCase):
                 elif self.headers.get("User-Agent") != "Fleet-Apple-Setup/1.0":
                     status, value = 403, {"error": PRIVATE}
                 elif self.path == "/api/v1/fleet/login":
-                    if body != {"email": helper.ADMIN_EMAIL, "password": PASSWORD}:
+                    if body != {"email": fixture.accepted_email, "password": PASSWORD}:
                         status, value = 401, {"error": PRIVATE}
                     else:
                         status, value = 200, {"token": TOKEN}
@@ -95,6 +95,7 @@ class CSRTest(unittest.TestCase):
         self.certificate.write_bytes(CERTIFICATE)
         self.enabled, self.enable_after_upload = False, True
         self.calls, self.overrides = [], {}
+        self.accepted_email = helper.ADMIN_EMAIL
         self.server.fixture = self
         self.credentials = json.dumps({"data": {
             "admin-password": base64.b64encode(PASSWORD.encode()).decode()}}).encode()
@@ -134,6 +135,21 @@ class CSRTest(unittest.TestCase):
         kubectl.assert_called_once_with(
             ["kubectl", "-n", "fleet", "get", "secret", "fleet-admin", "-o", "json"],
             capture_output=True, check=True, timeout=30)
+
+    def test_uses_only_local_recovery_after_console_sso_staging(self):
+        self.accepted_email = helper.ADMIN_EMAIL
+        status, _, _ = self.run_command()
+        self.assertEqual(status, 0)
+        self.assertEqual([call[0:2] for call in self.calls], [
+            ("POST", "/api/v1/fleet/login"),
+            ("GET", "/api/v1/fleet/mdm/apple/request_csr"), ("POST", "/api/v1/fleet/logout"),
+        ])
+        self.assertEqual(self.calls[0][2]["email"], helper.ADMIN_EMAIL)
+
+    def test_login_error_does_not_retry_another_administrator(self):
+        self.overrides["/api/v1/fleet/login"] = (500, {"error": PRIVATE}, {})
+        self.assertEqual(self.run_command()[0], 1)
+        self.assertEqual([call[0:2] for call in self.calls], [("POST", "/api/v1/fleet/login")])
 
     def test_existing_file_is_preserved_before_credentials_or_api(self):
         self.output.write_bytes(b"existing")

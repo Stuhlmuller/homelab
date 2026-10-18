@@ -23,7 +23,7 @@ def resource(kind, name, wave=0, hook=None, namespace="harbor", spec=None):
             "spec": spec or {}}
 
 
-def workload(kind="Deployment", wave=0, hook=None, pod=None):
+def workload(kind="Deployment", wave=0, hook=None, pod=None, name="consumer"):
     pod = copy.deepcopy(pod or {"containers": [{"name": "app", "image": "fixture"}]})
     if kind == "Pod":
         spec = pod
@@ -31,7 +31,32 @@ def workload(kind="Deployment", wave=0, hook=None, pod=None):
         spec = {"jobTemplate": {"spec": {"template": {"spec": pod}}}}
     else:
         spec = {"template": {"spec": pod}}
-    return resource(kind, "consumer", wave, hook, spec=spec)
+    return resource(kind, name, wave, hook, spec=spec)
+
+
+def harbor_pull_secret():
+    secret = resource("ExternalSecret", CHECK.HARBOR_PULL_SECRET, wave=-5, spec={
+        "refreshPolicy": "OnChange",
+        "secretStoreRef": {"kind": "ClusterSecretStore", "name": "aws-ssm"},
+        "target": {
+            "name": CHECK.HARBOR_PULL_SECRET,
+            "creationPolicy": "Owner",
+            "deletionPolicy": "Retain",
+            "template": {
+                "engineVersion": "v2",
+                "type": "kubernetes.io/dockerconfigjson",
+                "data": {".dockerconfigjson": CHECK.HARBOR_PULL_TEMPLATE},
+            },
+        },
+        "data": [{"secretKey": "password", "remoteRef": {
+            "key": CHECK.HARBOR_PULL_PARAMETER,
+            "conversionStrategy": "Default",
+            "decodingStrategy": "None",
+            "metadataPolicy": "None",
+        }}],
+    })
+    secret["metadata"]["annotations"]["homelab.stuhlmuller.dev/generated-secret-revision"] = "v1"
+    return secret
 
 
 def volume_pod(kind, name):
@@ -169,6 +194,76 @@ class HarborRenderPrerequisites(unittest.TestCase):
                 "destination_ref": "harbor.stinkyboi.com/homelab/pilot:latest",
                 "consumer_access": True,
             }}}))
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
+
+    def test_harbor_pull_secret_is_scoped_and_attached_to_exporter(self):
+        pod = {"containers": [{"name": "app", "image": "fixture"}],
+               "imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}]}
+        secret = harbor_pull_secret()
+        resources = [workload(name="harbor-vulnerability-exporter", pod=pod), secret]
+        self.assertEqual(CHECK.harbor_pull_secret_errors(resources), [])
+        secret["metadata"]["annotations"].pop("homelab.stuhlmuller.dev/generated-secret-revision")
+        errors = CHECK.harbor_pull_secret_errors(resources)
+        self.assertTrue(any("revision refresh" in error for error in errors))
+        secret = harbor_pull_secret()
+        resources[1] = secret
+        secret["spec"]["data"] = []
+        errors = CHECK.harbor_pull_secret_errors(resources)
+        self.assertTrue(any("read only" in error for error in errors))
+
+    def test_harbor_pull_secret_and_exporter_reference_cannot_both_disappear(self):
+        resources = [workload(name="harbor-vulnerability-exporter", pod={
+            "containers": [{"name": "app", "image": "fixture"}]})]
+        errors = CHECK.harbor_pull_secret_errors(resources)
+        self.assertTrue(any("expected one ExternalSecret" in error for error in errors))
+        self.assertTrue(any("must reference harbor-pull" in error for error in errors))
+
+    def test_harbor_pull_secret_is_never_mounted_or_injected(self):
+        pod = {"containers": [{"name": "app", "image": "fixture"}],
+               "imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}]}
+        resources = [workload(name="harbor-vulnerability-exporter", pod=pod), harbor_pull_secret()]
+        cases = {
+            "mount": (lambda value: value.setdefault("volumes", []).append({
+                "name": "pull", "secret": {"secretName": CHECK.HARBOR_PULL_SECRET}}), "must not mount"),
+            "environment": (lambda value: value["containers"][0].setdefault("envFrom", []).append({
+                "secretRef": {"name": CHECK.HARBOR_PULL_SECRET}}), "must not expose"),
+            "init environment": (lambda value: value.setdefault("initContainers", []).append({
+                "name": "leak", "env": [{"name": "PULL", "valueFrom": {
+                    "secretKeyRef": {"name": CHECK.HARBOR_PULL_SECRET, "key": ".dockerconfigjson"}}}]}), "must not expose"),
+            "ephemeral environment": (lambda value: value.setdefault("ephemeralContainers", []).append({
+                "name": "leak", "env": [{"name": "PULL", "valueFrom": {
+                    "secretKeyRef": {"name": CHECK.HARBOR_PULL_SECRET, "key": ".dockerconfigjson"}}}]}), "must not expose"),
+        }
+        for name, (mutate, expected) in cases.items():
+            with self.subTest(name=name):
+                changed = copy.deepcopy(resources)
+                mutate(changed[0]["spec"]["template"]["spec"])
+                errors = CHECK.harbor_pull_secret_errors(changed)
+                self.assertTrue(any(expected in error for error in errors))
+
+    def test_enrolled_native_harbor_image_requires_harbor_pull(self):
+        image = "harbor.stinkyboi.com/homelab/chainguard-python:latest"
+        pod = {"containers": [{"name": "app", "image": image}]}
+        resources = [workload(name="harbor-vulnerability-exporter", pod=pod)]
+        rendered_pod = resources[0]["spec"]["template"]["spec"]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "config.json"
+            state = root / "state.json"
+            config.write_text(json.dumps({
+                "images": [{"image_id": "chainguard-python", "source": "cgr.dev/chainguard/python:latest",
+                            "destination": image}],
+                "consumers": [{"image_id": "chainguard-python", "automation_status": "enrolled"}],
+            }))
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "destination_ref": image, "consumer_access": True,
+            }}}))
+            errors = CHECK.receipt_errors(resources, config, state)
+            self.assertTrue(any("must pull native Harbor images" in error for error in errors))
+            rendered_pod["imagePullSecrets"] = [{"name": "wrong"}]
+            errors = CHECK.receipt_errors(resources, config, state)
+            self.assertTrue(any("must pull native Harbor images" in error for error in errors))
+            rendered_pod["imagePullSecrets"] = [{"name": CHECK.HARBOR_PULL_SECRET}]
             self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
 
 
