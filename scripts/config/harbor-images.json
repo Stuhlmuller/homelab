@@ -7,37 +7,37 @@
       "source": "cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18"
     },
     {
-      "source": "cgr.dev/chainguard/curl:latest@sha256:ba503058cf6ca10e91f4be85c88217cdde7dfa2d3260975083e090c2ed1033b7"
+      "source": "cgr.dev/chainguard/curl:latest@sha256:878ba999bcb4d4534c24aeb67631466eb494cde2d12001c139582bc56c87b120"
     },
     {
-      "source": "cgr.dev/chainguard/go:latest@sha256:9777674c18af3042ab4952fa5d8e70ebcc73f243748e4e2585c18ae69bcecd35"
+      "source": "cgr.dev/chainguard/go:latest@sha256:9540b140744c9f17f0752d19374fa4b26fd27fc79f3c07fc4cd2307187d9ada5"
     },
     {
-      "source": "cgr.dev/chainguard/nginx:latest@sha256:028368a7e271b3e0aed3bdc82195de6b38a2fee2bdd2a0b7ce1c4b944907098c"
+      "source": "cgr.dev/chainguard/nginx:latest@sha256:d74ba9e5cf9f6b049807e27a5a14a8cd2550ac428143b7d15ea3dbad282f4ed1"
     },
     {
-      "source": "cgr.dev/chainguard/node:latest-dev@sha256:79f532b9d82481edcaad65bb76c0cc234ff836e40ce46a1a12fed78d89977cf3"
+      "source": "cgr.dev/chainguard/node:latest-dev@sha256:f3ff59f82002e261f6ccc1eb3e876df19666502a0e16b7f535690e1d26895ae9"
     },
     {
-      "source": "cgr.dev/chainguard/node:latest@sha256:4e771308d07813bf9a1aa25299a45e5664533c47fe4c541c14498752f2dbc2dd"
+      "source": "cgr.dev/chainguard/node:latest@sha256:51042bb0c3f282bc5694e8c9b3a06847ef847d566115f91dee6ad2cd88a7d26e"
     },
     {
-      "source": "cgr.dev/chainguard/postgres:latest@sha256:0fb984eb4d7fc358563efdea19e59dd3b2dbfdbac86cd45749e4f5603dab651a"
+      "source": "cgr.dev/chainguard/postgres:latest@sha256:4c8ef6bcf82ab05f4cca769d44847809fc069b5113893f3dc68b95983189a874"
     },
     {
-      "source": "cgr.dev/chainguard/python:latest@sha256:5d7edd76101b0b8112b723072125f428dbfd291d7cc56a6418a5f619023e2542"
+      "source": "cgr.dev/chainguard/python:latest@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
     },
     {
-      "source": "cgr.dev/chainguard/redis:latest@sha256:0c5c0510e8a9931fa07a3bba5e8ae03102be674afe5d191b8e2161609278eb29"
+      "source": "cgr.dev/chainguard/redis:latest@sha256:deddaf0f4b0b81113096bd0ff91bd0f20edc9c7314aaa6276266d8854da33902"
     },
     {
       "source": "cgr.dev/chainguard/static:latest@sha256:fe55470f22d3259488d9d3739168d8f04da67755f0b69382bc26eda4a7d3d327"
     },
     {
-      "source": "cgr.dev/chainguard/valkey:latest@sha256:2455445bd0d43431ccd16e3a1e30809c58f5e52ccf471d2d3f421cad13ee5f2f"
+      "source": "cgr.dev/chainguard/valkey:latest@sha256:52e142902ab8edd43a7202e2f8422a6c87932d0bb29f89edf93e879e0450d3f1"
     },
     {
-      "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:1c451d46a0d5c4e9f2b38e0e8d3e299564a1aa95c21973efcc1980a9d1d2e73e"
+      "source": "cgr.dev/chainguard/wolfi-base:latest@sha256:256c88bb066424045021090932d50be93c8e3f2ce3586707702a401b146f3e43"
     },
     {
       "source": "docker.io/adinhodovic/compass:0.7.0@sha256:26e262c8ec0faec6957b3f8e1290b300f5850fd9e30084d09c0fd0184cbb6895"
@@ -64,34 +64,64 @@
       "source": "docker.io/envoyproxy/envoy:v1.38.0@sha256:8146b97ee61a42cd216514709e4e3198af75f014974e3d9f310aef9c901fcbdf"
     },
     {
-      "source": "docker.io/fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
+      "source": "docker.io/fleetdm/fleet@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
+    },
+    {
+      "source": "docker.io/fleetdm/fleet:v4.92.3@sha256:2c53edaa4e530ae4671284a309c0cc20345f4c3eff8c12cfcd1238c3e3fc46f1"
     },
     {
       "source": "docker.io/goharbor/harbor-core:v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7"
     },
     {
+      "source": "docker.io/goharbor/harbor-core:v2.15.4@sha256:7d2ba5304a729887cdec7cb222a82b500278423de230ae5150c386a6c332b112"
+    },
+    {
       "source": "docker.io/goharbor/harbor-exporter:v2.15.2@sha256:e1b0a248f61aad5084c5d1612d5f1da89f99c23ce743eaf8cba913d6d00c0547"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-exporter:v2.15.4@sha256:9ffede33dc519b4be035596a72f00f354754a22a3769077731f81ee7d6852f4f"
     },
     {
       "source": "docker.io/goharbor/harbor-jobservice:v2.15.2@sha256:f71a4452a095bcd2a8f0683648a3ae28415432df87ccfb00ec7625f3e340a598"
     },
     {
+      "source": "docker.io/goharbor/harbor-jobservice:v2.15.4@sha256:f143578ef30e2be5c48873298257ed0fca31545025958c534e536a06765d2b82"
+    },
+    {
       "source": "docker.io/goharbor/harbor-portal:v2.15.2@sha256:b811b67f7a7f6f1614e4bdf7478b207d13e8aa3f815ff6ad84f216a5098d213d"
+    },
+    {
+      "source": "docker.io/goharbor/harbor-portal:v2.15.4@sha256:01edf478505b21dba23a83c095f6ecac0c1e705690093edbab41e9a4d6754a75"
     },
     {
       "source": "docker.io/goharbor/harbor-registryctl:v2.15.2@sha256:223d5cb49d5dbf0ba4ae022e7dd9775fa459904112dc12084d3aaa36c1408362"
     },
     {
+      "source": "docker.io/goharbor/harbor-registryctl:v2.15.4@sha256:30bd1ace4e3bb390d75b84673f98ddb4a69fcc6d116932ea764391df01943fb7"
+    },
+    {
       "source": "docker.io/goharbor/nginx-photon:v2.15.2@sha256:0ccc1eca228ecea120d7ad9e4386b8e86ced200212f00060a9abc753dbe7f17f"
+    },
+    {
+      "source": "docker.io/goharbor/nginx-photon:v2.15.4@sha256:7eff0287d5ad0f35754e162c8481ced04bbde107153ce586cefb15ee74fa1311"
     },
     {
       "source": "docker.io/goharbor/registry-photon:v2.15.2@sha256:c4ebef61ceb50a3d8bc21d149bc280422db20a1e69df317b64b74098c3615855"
     },
     {
+      "source": "docker.io/goharbor/registry-photon:v2.15.4@sha256:dc0cb388a6445c69c8a0c406679290d2991c9698833d9e6e86a23bdfaf2f83c3"
+    },
+    {
       "source": "docker.io/goharbor/trivy-adapter-photon:v2.15.2@sha256:215c07b71c37fc7fc16e02d9185d936dcb8884a80e810817c2cd058bbd7c4e98"
     },
     {
+      "source": "docker.io/goharbor/trivy-adapter-photon:v2.15.4@sha256:813ca81b4a4ea0f44f5fa81cca2645eeb58d4b1f6c66b428df9d506174bb71d9"
+    },
+    {
       "source": "docker.io/goharbor/valkey-photon:v2.15.2@sha256:7337783e8148f01a25b113f5c7b1d640f78b1860fcaf80a33d0dbb294f7b99d0"
+    },
+    {
+      "source": "docker.io/goharbor/valkey-photon:v2.15.4@sha256:bb022e8f236f56f53cee7bb1f609595e497da67d829048e0af2284f97e6eb54f"
     },
     {
       "source": "docker.io/grafana/grafana:13.2.0@sha256:3fd54ae1214669f8355f065ec9f6445d5279a3d77095ab048ca045685272429b"
@@ -142,7 +172,10 @@
       "source": "docker.io/library/postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382"
     },
     {
-      "source": "docker.io/library/postgres:18.6-bookworm@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+      "source": "docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+    },
+    {
+      "source": "docker.io/library/postgres:18.6-bookworm@sha256:7d3852670a11f0cb9cb1cd50916dc02a0021143fb22d96b78eeef26348abe55c"
     },
     {
       "source": "docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
@@ -154,7 +187,10 @@
       "source": "docker.io/library/postgres@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa"
     },
     {
-      "source": "docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
+      "source": "docker.io/library/python@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
+    },
+    {
+      "source": "docker.io/library/python:3.13-bookworm@sha256:073ffebb96ae4d0ed73ccad59f08c47bd84af8a79f5258130f8458ac50ad9ff4"
     },
     {
       "source": "docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d"
@@ -238,13 +274,19 @@
       "source": "gcr.io/etcd-development/etcd:v3.6.5@sha256:042ef9c02799eb9303abf1aa99b09f09d94b8ee3ba0c2dd3f42dc4e1d3dce534"
     },
     {
+      "source": "ghcr.io/actions/actions-runner:2.338.0@sha256:4ffadc0002b2581327e06101fc8c06cd189232baf79fe561fac9caeb76f5e807"
+    },
+    {
       "source": "ghcr.io/berriai/litellm-database:main-v1.80.8-stable@sha256:3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8"
     },
     {
       "source": "ghcr.io/dexidp/dex:v2.45.1@sha256:8499afd690c437f52301efd2b05b2455da5bd2dfc20332cd697dc9937f808462"
     },
     {
-      "source": "ghcr.io/dispatcharr/dispatcharr:latest@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f"
+      "source": "ghcr.io/dispatcharr/dispatcharr@sha256:f81924fa3dbfeb463b3908be7e086bf58aacbd2ba56062bfb555ee3a471acf8f"
+    },
+    {
+      "source": "ghcr.io/dispatcharr/dispatcharr:latest@sha256:b7d695c5cc98b9abd64c74a94539c1ebffc23d965021613c820c67e25dea41a3"
     },
     {
       "source": "ghcr.io/external-secrets/external-secrets:v2.0.1@sha256:e4ca217803202017da604dc2e7627d37c32ed57bd70e34585dbcd39b065ea23f"
@@ -256,7 +298,10 @@
       "source": "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9"
     },
     {
-      "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
+      "source": "ghcr.io/linuxserver/bazarr@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
+    },
+    {
+      "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:fb0437897eaa7f96cf6ac42f795f8dcc208d34ec969eac5d366454e767304eb9"
     },
     {
       "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b"
@@ -271,10 +316,13 @@
       "source": "ghcr.io/multica-ai/multica-web:v0.4.29@sha256:2aba8c3507fb869c1562eca50cc27e5a696bdca8880678c8c8ccecc113572e4f"
     },
     {
-      "source": "ghcr.io/n8n-io/n8n:stable@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
+      "source": "ghcr.io/n8n-io/n8n@sha256:ffeb52485f78b1b06c9a832205853cf75da72a07a514c9a27724df85979d6c34"
     },
     {
       "source": "ghcr.io/n8n-io/n8n@sha256:b73045abaddb40cb4024e86eea1b1f69093501a7339f685a4cd486b7743d23ae"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
     },
     {
       "source": "ghcr.io/nofxaios/nofx/nofx-backend:stable@sha256:32d77ff9761ba8b068f95a5a4c8fee0a7745c8a927300b7d658e593b1e654ae7"

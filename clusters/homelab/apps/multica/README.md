@@ -47,3 +47,12 @@ The fixed code is a trusted-operator development login and must remain behind
 Octelium. Do not publish it. To roll back the runtime, set its replica count to
 zero through GitOps and preserve its PVC; the web app and database are
 independent.
+
+## Capacity reservations
+
+The October 17 [Acer capacity audit](../../../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+sets backend/frontend/PostgreSQL memory requests to 128/320/320 MiB. These exceed
+observed seven-day peak working sets of 30.3/245.9/230.1 MiB; memory limits,
+replicas, placement and storage remain unchanged. Requests affect scheduling and
+eviction priority, not a new memory cap. The PostgreSQL `Recreate` update briefly
+interrupts Multica; wait for SQL readiness before accepting backend recovery.
