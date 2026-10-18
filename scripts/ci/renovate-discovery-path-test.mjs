@@ -120,7 +120,7 @@ test('pinned Renovate discovers and resolves A, then config-free B, then only A'
   const endpoint = `http://127.0.0.1:${server.address().port}/`;
 
   try {
-    await platform.initPlatform({ endpoint, token: runnerConfig.token, username: 'fixture-bot', gitAuthor: 'Fixture <fixture@example.invalid>' });
+    await platform.initPlatform({ endpoint, token: runnerConfig.token, username: runnerConfig.username, gitAuthor: runnerConfig.gitAuthor });
     const seen = [];
     const a = { full_name: 'Stuhlmuller/A', archived: false };
     const b = { full_name: 'Stuhlmuller/B', archived: false };

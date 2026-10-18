@@ -72,6 +72,8 @@ test('mints a signed installation token and preserves the current global policy'
   assert.ok(crypto.verify('RSA-SHA256', Buffer.from(`${header}.${payload}`), publicKey, Buffer.from(signature, 'base64url')));
 
   assert.equal(resolved.platform, 'github');
+  assert.equal(resolved.username, 'rstuhlmuller-renovate[bot]');
+  assert.equal(resolved.gitAuthor, 'rstuhlmuller-renovate[bot] <239054205+rstuhlmuller-renovate[bot]@users.noreply.github.com>');
   assert.equal(resolved.autodiscover, true);
   assert.deepEqual(Array.from(resolved.autodiscoverFilter), ['Stuhlmuller/*']);
   assert.equal(resolved.forkProcessing, 'enabled');

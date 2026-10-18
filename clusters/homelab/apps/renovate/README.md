@@ -17,7 +17,8 @@ the owner had eight non-archived repositories, and the existing
 observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
 Its workflow/config commits were `3f5f078000173af86205f04df1559132d3e290f8`
 and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
-dependency PRs use author `rstuhlmuller-renovate[bot]`. The current
+dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
+bot username and Git author so startup needs no account lookup. The current
 operator credential could not enumerate the App's accessible repositories;
 compare that inventory, App grants, and existing PR author with the first
 cluster dry run before cutover. Keep private repository names out of public

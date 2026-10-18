@@ -80,6 +80,8 @@ module.exports = async function config() {
   return {
     platform: 'github',
     token: await installationToken(),
+    username: 'rstuhlmuller-renovate[bot]',
+    gitAuthor: 'rstuhlmuller-renovate[bot] <239054205+rstuhlmuller-renovate[bot]@users.noreply.github.com>',
     globalExtends: [
       'config:best-practices',
       ':automergeAll',
