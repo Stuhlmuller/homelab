@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f8f00b9d1c9bb47787af6b91409a12ce38dc881537463b440e7b0054581d5776",
+  "pageVersion": "sha256:53ea978b60e91e43982b4833b2638905199e55a06e3ade77d6341c5a48fdad91",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -25,18 +25,32 @@
       "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
-          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L89-L128",
+          "version": "repo-lines-v1:sha256:95740e8a58f9381005f69e87c610d69ac634a5d4c9f8ff0d843d97790e637c58:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
           "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
+    },
+    {
+      "id": "claim_631d627ab70d4b1b8bf926885a007682",
+      "statement": "The tailnet-dns Terragrunt Application depends on Tailscale and Traefik and lets Argo reconcile a stateless CoreDNS/k8s_gateway chart from repository values; public address retirement remains a separate guarded later step after owner DNS handoff.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl#L5-L39",
+          "version": "repo-lines-v1:sha256:20609c02c260767c326070e2292d8c534ee94f031b32d6715cf219e9ded79b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L25-L75",
+          "version": "repo-lines-v1:sha256:539b628b0d8a8f73695efa935fcbf4f538b1863c3f7f7906a256d12dc5f3d651:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0OGUyY2NiMzAzOTAwNTZiMmFhNTg0ZTllNGJhM2E2ODAzZjcwZDZkMjNhMjhhNjU3ODY4MjhlYjdiNmI0NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmM2UzNWFjZmU0NmM0Nzk1NTQ0MWJjYmZmM2VjYmNiOTZhMTY0ZTAyMzY5ZTY4YWIwOGVkNDVlNTg1YWM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T03:46:52.296Z"
+    "at": "2026-10-18T19:06:56.344Z"
   }
 }

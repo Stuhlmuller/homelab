@@ -12,6 +12,10 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
+  - id: openwiki-source-2ab88915e37908e92fe8ef01
+    resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -52,8 +56,6 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
-  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
-    resource: repo://clusters/homelab/apps/harbor/README.md
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -98,8 +100,10 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
-  - id: openwiki-source-987548d3c95bf43aede062de
-    resource: repo://scripts/ci/harbor-images-check.py
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
+  - id: openwiki-source-d88444044033fa951eb38e67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.sh
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -108,6 +112,8 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
     resource: repo://scripts/config/harbor-chainguard-images.json
+  - id: openwiki-source-e4e9ca360dcb635535118ee8
+    resource: repo://scripts/config/harbor-dns-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
@@ -120,10 +126,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T12:12:45.399Z" }
+generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:12:45.399Z
+    at: 2026-10-18T20:54:06.405Z
 ---
 
 # Harbor Private OCI Registry
@@ -258,11 +264,19 @@ it would regenerate Harbor's salted bcrypt registry password hash. The public
 `mirror` project remains public until a separate reviewed Talos path validates
 authenticated pulls on every node before a privacy flip.
 
-The native receipt scan robot has a separate staged SSM parameter,
+The native receipt scan robot has a separate SSM parameter,
 `/homelab/harbor/robot-scan-password`, with an exact-ARN External Secrets reader
-grant. Its ExternalSecret is declared but cannot become Ready until a
-reviewed saved plan applies that parameter and read-only metadata verifies it. Staging this contract does not
-create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
+grant. The version 1 `SecureString` and reader grant were verified read-only;
+a targeted plan from `main` at `f6506136` found no changes on 2026-10-18.
+The parameter alone does not create the robot or start a receipt workflow.
+See the [SSM contract](../../docs/secrets-aws-ssm.md).
+
+The protected native receipt copies complete source and authenticated Harbor
+indexes into local OCI layouts, then compares their root bytes and required
+platform descriptors. Exact child scan queries request Harbor's vulnerability
+report type before accepting complete zero-count scans. Pull-request lint lacks
+commit-status write permission; the trusted base provenance workflow owns its
+receipt status. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -333,7 +347,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, `traefik`, `harbor`, or `renovate`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, or `dns`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -361,11 +375,19 @@ complete authenticated Harbor pulls. No caller-supplied image, path or destinati
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
 
-The fixed `renovate` scope selects six cataloged update digests for Fleet,
-Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, and n8n from
-[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json).
+The fixed `dns` scope selects only the pinned Codeberg k8s_gateway image from
+[`harbor-dns-images.json`](../../scripts/config/harbor-dns-images.json).
+Protected run [39161113974](https://github.com/Stuhlmuller/homelab/actions/runs/39161113974)
+completed at exact `main` `5558f8c1` with matching digest and a complete
+authenticated Harbor pull. It does not prove full-catalog coverage or live
+resolver health.
+
+The fixed `renovate` scope selects seven cataloged update digests from
+[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
+Fleet, Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the
+Renovate runner.
 It retains the normal digest, alias, and fresh authenticated pull checks while
-the unrelated full catalog is held. Its success proves only these six images;
+the unrelated full catalog is held. Its success proves only these seven images;
 each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
@@ -408,14 +430,8 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage while the LiteLLM duplicate-index failure remains. The separate
-consumer branch keeps chart 1.19.2 while pinning all nine runtime components to
-2.15.4; the component gate rejects mixed versions. Migration `0181` is
-forward-only, so verify database and registry-blob backups and an isolated
-restore before rollout. Live registry/API and scan checks remain acceptance
-gates, and bundled Distribution v2 findings remain unresolved. The upgrade
-must also verify that singleton nginx retains a rolling update, so its
-existing Pod serves Harbor while the replacement pulls.
+coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
+rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images
@@ -724,8 +740,8 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Each consuming digest update requires that publication
-and pull acceptance first.
+complete Harbor pulls. Their consuming Renovate PRs remain held until that
+publication and pull acceptance finish.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms

@@ -279,7 +279,7 @@ kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/tailscale-private-dns.sh --dry-run
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>

@@ -40,6 +40,30 @@ class IngressSigning(unittest.TestCase):
         self.assertFalse(result["signed"])
         self.assertEqual(result["node_key"], "nodekey:" + "a" * 64)
 
+    def test_fixed_dns_proxy_identity(self):
+        data = fixture()
+        data[0]["status"]["loadBalancer"]["ingress"][0]["hostname"] = "homelab-dns.tail67beb.ts.net"
+        labels = data[1]["metadata"]["labels"]
+        labels["tailscale.com/parent-resource"] = "tailnet-dns"
+        labels["tailscale.com/parent-resource-ns"] = "tailnet-dns"
+        own = data[2]["Self"]
+        own["DNSName"] = "homelab-dns.tail67beb.ts.net."
+        own["Tags"] = ["tag:homelab-ingress"]
+        data[4]["FilteredPeers"][0]["DNSName"] = own["DNSName"]
+        for index, value in [(1, "traefik"), (2, "other-dns"), (3, "tag:homelab-funnel")]:
+            changed = copy.deepcopy(data)
+            if index == 1:
+                changed[1]["metadata"]["labels"]["tailscale.com/parent-resource-ns"] = value
+            elif index == 2:
+                changed[1]["metadata"]["labels"]["tailscale.com/parent-resource"] = value
+            else:
+                changed[2]["Self"]["Tags"] = [value]
+            with self.subTest(index=index), self.assertRaises(SIGNER.GUARDS.Failure):
+                SIGNER.validate_target(SIGNER.TARGETS[3], *changed)
+        self.assertFalse(SIGNER.validate_target(SIGNER.TARGETS[3], *data)["signed"])
+        data[3]["NodeKeySigned"] = True
+        self.assertTrue(SIGNER.validate_target(SIGNER.TARGETS[3], *data)["signed"])
+
     def test_already_signed_target(self):
         data = fixture()
         data[3]["NodeKeySigned"] = True
@@ -130,6 +154,28 @@ class IngressSigning(unittest.TestCase):
                 patch.object(SIGNER, "local_signer", return_value={}), \
                 patch.object(SIGNER, "inspect_target", return_value=signed):
             SIGNER.reconcile(True)
+        self.assertFalse(any("sign" in call.args[0] for call in command.call_args_list))
+
+    def test_dns_only_inspects_no_other_proxy(self):
+        signed = copy.deepcopy(self.validate(fixture()))
+        signed["signed"] = True
+        with patch.object(SIGNER.GUARDS, "verify_main", return_value="revision"), \
+                patch.object(SIGNER.GUARDS, "command", return_value="https://10.1.0.199:6443"), \
+                patch.object(SIGNER, "local_signer", return_value={}), \
+                patch.object(SIGNER, "inspect_target", return_value=signed) as inspect:
+            SIGNER.reconcile(True, dns_only=True)
+        self.assertTrue(all(call.args[0] == SIGNER.TARGETS[3] for call in inspect.call_args_list))
+
+    def test_changed_dns_identity_blocks_signature(self):
+        original = self.validate(fixture())
+        changed = copy.deepcopy(original)
+        changed["pod_uid"] = "rotated-pod"
+        with patch.object(SIGNER.GUARDS, "verify_main", return_value="revision"), \
+                patch.object(SIGNER.GUARDS, "command", return_value="https://10.1.0.199:6443") as command, \
+                patch.object(SIGNER, "local_signer", return_value={}), \
+                patch.object(SIGNER, "inspect_target", side_effect=[original, changed]):
+            with self.assertRaisesRegex(SIGNER.GUARDS.Failure, "changed"):
+                SIGNER.reconcile(True, dns_only=True)
         self.assertFalse(any("sign" in call.args[0] for call in command.call_args_list))
 
 

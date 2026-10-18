@@ -53,3 +53,8 @@ machine:
           - https://cgr.dev/v2
         overridePath: true
         skipFallback: false
+      codeberg.org:
+        endpoints:
+          - https://codeberg.org/v2
+        overridePath: true
+        skipFallback: false

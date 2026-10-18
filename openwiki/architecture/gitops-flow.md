@@ -8,16 +8,20 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-612eb02105d61c48b6ba59bd
+    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-14T03:46:52.296Z
+    at: 2026-10-18T19:06:56.344Z
 ---
 
 # GitOps Flow
@@ -127,8 +131,11 @@ does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
-writes still require the guarded operator command after signed proxy, TLS,
-backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
+writes remain behind the guarded 27-name retirement command after the separate
+`tailnet-dns` Application is Synced/Healthy, its Tailscale DNS proxy is signed,
+and the owner has set its observed IP as a restricted tailnet nameserver.
+The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
+stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,
 old native catalog, credentials, and CI transport through their separate
 [ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
 does not claim that traffic has moved or old native Services have been retired.

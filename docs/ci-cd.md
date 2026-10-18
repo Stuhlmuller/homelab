@@ -14,10 +14,11 @@ This repository uses GitHub Actions for the review and rollout path:
   weekly CodeQL security schedule remains active. Dispatch Image automation
   with `operation=verify` from `main` to check and alert on its journal.
 
-- `Lint` runs on pull requests and invokes Super-Linter against changed files
-  with advisory status reporting. It is the shared lightweight lint signal for
-  every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
-  and `validate`.
+- `Lint` runs on pull requests and invokes Super-Linter against changed files.
+  Its job conclusion is the shared lightweight lint signal; it cannot write
+  commit statuses, so pull-request code cannot forge the protected native
+  Chainguard receipt provenance status. Repository-specific blocking checks
+  remain in `Terragrunt Gate` and `validate`.
 - `Terragrunt Plan` runs on every pull request. Its unprivileged static job
   detects live-plan scope, runs static checks, Checkov, and rendered Conftest
   policies. Only trusted same-repository changes to the plan workflow,
@@ -746,9 +747,10 @@ nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 ```
 
-The local pre-commit run is the closest repository-owned equivalent to the
-Super-Linter PR check; GitHub Actions remains the source for the exact
-Super-Linter status contexts.
+The hooks run the PR lint checks on staged Bash, GitHub Actions, JSON,
+Markdown, Python, OpenTofu, Terragrunt, and YAML files using the Nix shell.
+Ruff and Yamllint share the rules under `.github/linters/` with Super-Linter.
+GitHub Actions remains the source for the exact Super-Linter status contexts.
 
 The PR plan script intentionally skips the privileged SSM declaration and
 Kubernetes secret materialization stacks. To review those locally, assume the
@@ -785,8 +787,8 @@ through Conftest, then only the Fleet Application saved plan. This provisions
 Fleet's generated credentials without reconciling AzureAD, Langfuse storage,
 bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
-reviewed images with `harbor-mirror.yml` first and reconcile private DNS with
-`scripts/tailscale-private-dns.sh` in the ordered cutover, following the
+reviewed images with `harbor-mirror.yml` first and verify private DNS through
+the signed tailnet resolver in the ordered cutover, following the
 [Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 ### Harbor provider-plan blocker observed October 7, 2026 UTC
