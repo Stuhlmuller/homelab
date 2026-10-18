@@ -174,6 +174,77 @@ restore_version key version-1 "$2"
                 self.assertNotIn('aws', result.stderr)
                 self.assertNotIn('kubectl', result.stderr)
 
+    def test_failure_reports_only_fixed_phase(self):
+        with tempfile.TemporaryDirectory() as directory:
+            phase = Path(directory) / 'phase'
+            result = subprocess.run(['bash', str(SCRIPT), 'invalid'], cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+            self.assertFalse(phase.exists())
+            workflow = WORKFLOW.read_text()
+            self.assertIn('preflight|baseline|publication|publication-lookup|'
+                          'publication-lookup-denied|publication-lookup-failed|'
+                          'publication-lookup-response|publication-upload|'
+                          'publication-version|verification', workflow)
+            script = SCRIPT.read_text()
+            self.assertIn('phase=publication-lookup\n    lookup_baseline_versions', script)
+            self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$baseline_key"', script)
+            self.assertIn('list-object-versions --no-paginate --bucket "$bucket" --prefix "$final_key"', script)
+            self.assertIn('phase=publication-upload\n      aws s3api put-object', script)
+            self.assertIn('phase=publication-version\n    version=', script)
+            self.assertIn('private cluster and archive diagnostics withheld', workflow)
+            shell = '''set -euo pipefail
+source <(sed -n '/^on_exit() {/,/^}/p' "$1")
+work="$2/work"
+mkdir "$work"
+phase=publication
+stage=publish-inventory
+trap on_exit EXIT
+false
+'''
+            result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), directory],
+                                    cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(phase.read_text(), 'publication\n')
+            self.assertFalse((Path(directory) / 'work').exists())
+            phase.unlink()
+            result = subprocess.run(['bash', str(SCRIPT), 'archive'], cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(phase.exists())
+
+    def test_s3_lookup_reports_only_fixed_error_category(self):
+        shell = '''set -euo pipefail
+source <(sed -n '/^lookup_baseline_versions() {/,/^}/p' "$1")
+work="$2"
+bucket=example
+baseline_key=baseline.json
+phase=publication-lookup
+aws() {
+  [[ " $* " == *' --no-paginate '* ]] || { printf 'missing unpaginated response\\n' >&2; return 1; }
+  if [[ "$LOOKUP_ERROR" == truncated ]]; then printf '{"IsTruncated":true}\\n'; return 0; fi
+  printf '%s\\n' "$LOOKUP_ERROR" >&2
+  return 1
+}
+if lookup_baseline_versions; then exit 1; fi
+printf '%s\\n' "$phase"
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            for error, expected in (('An error occurred (AccessDenied)',
+                                     'publication-lookup-denied'),
+                                    ('transport failed', 'publication-lookup-failed'),
+                                    ('truncated', 'publication-lookup-response')):
+                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), directory],
+                                        cwd=ROOT, env={**os.environ, 'LOOKUP_ERROR': error},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 0)
+                self.assertEqual(result.stdout.strip(), expected)
+                self.assertEqual(result.stderr, '')
+
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (

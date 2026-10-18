@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "385c68abb44a4495f3525fb0dd4ac6bc3e32338b043543757781ea86a99c6275", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "d36866ead2a01d3d05e569b2bd006f778aa7cdc451b8714beceb3d10bb9182ea", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -26,9 +26,31 @@ test_rejects_changed_openclaw_legacy_operation if {
 	}
 }
 
+test_allows_fixed_openclaw_phase_tail if {
+	private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)
+  echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+esac
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
+test_rejects_unbounded_openclaw_phase_tail if {
+	not private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE")"
+echo "$phase"
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
 openclaw_legacy_run := `set -euo pipefail
 umask 077
-sha256sum --check --status <<<'385c68abb44a4495f3525fb0dd4ac6bc3e32338b043543757781ea86a99c6275  scripts/ci/openclaw-enterprise-operations.sh'
+export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
+sha256sum --check --status <<<'d36866ead2a01d3d05e569b2bd006f778aa7cdc451b8714beceb3d10bb9182ea  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
