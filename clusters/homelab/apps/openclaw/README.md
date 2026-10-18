@@ -1,5 +1,53 @@
 # OpenClaw
 
+## Enterprise replacement retention
+
+The legacy gateway stays active until the reviewed shutdown change lands. This
+reader stage starts one read-only Pod on the legacy node for private inventory;
+its separate ConfigMap does not change the assistant checksum. Apply this stage
+only after the off-NAS S3 bucket exists through the protected Terragrunt apply
+path. Verify the reader is Ready and bound to the retained PVCs before running
+inventory. The reader cannot authorize shutdown from inventory alone.
+
+After the bucket and one reader Pod are verified, run the protected fixed-stage
+workflow from the exact current `main` SHA. Replace the placeholders with the
+SHA and run IDs shown by GitHub Actions; never put private receipts in Git:
+
+```sh
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=inventory
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=archive \
+  -f baseline_ref=<INVENTORY_SHA>/<INVENTORY_RUN_ID>
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=verify \
+  -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
+```
+
+Inventory binds the two SQLite databases, NAS root, historical checkpoint,
+four PVC/PV UIDs, node and assistant image. Both inventory and archive refresh
+Kubernetes status after scanning retained data and compare volume identities.
+The archive stage refuses active or uncertain writers and copies the complete
+bundle to versioned S3. It downloads
+that copy into scratch and verifies a full isolated extract before publishing a
+private `final.json` receipt. It rechecks zero writers and the original volume
+identities immediately before that publication. Verify selects its original S3
+version even after later versions or delete markers, then restores the archive
+and receipt versions it recorded. A green inventory alone does not authorize
+shutdown; the old Deployment and backup CronJob must first reach their reviewed
+stopped GitOps state. If any stage
+fails, leave old PVs, NAS data and credentials retained, inspect the private
+diagnostic from the protected runner, and retry with a new run ID after fixing
+the cause. Do not reuse a partial S3 prefix.
+
+For compatible legacy recovery after a later Enterprise failure, first stop
+the new agent through its supported API and prove its runtime is terminated.
+Run the `verify` stage above, then restore the old Deployment replica count and
+backup schedule through a reviewed GitOps change using the retained old image,
+assistant checksum, PVs and secrets. Verify gateway readiness, a real turn and
+the scheduled-job state before declaring recovery. Never import the legacy
+archive into Enterprise.
+
 OpenClaw targets Octelium app access as `openclaw.homelab`, while the stable UI
 URL remains `https://openclaw.stinkyboi.com` and resolves to the Octelium
 service address. Configuration and workspace remain on the `openclaw` NAS PVC.
@@ -589,6 +637,22 @@ subpath mounts hid the databases; restore this checkpoint together with that
 archive. The checkpoint uses SQLite backup, hash, and integrity verification
 before its completion marker, and is separate from daily snapshot retention.
 See [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/).
+
+The Enterprise retirement reader runs as one read-only Pod after this GitOps
+change and uses a retained `openclaw-retirement-archive` claim. It mounts the
+parent and both child local PVs separately
+from the NAS claim, so its archive contains the real NAS files and both local
+SQLite databases without an overlaid mount hiding either copy. The reader has
+no ServiceAccount token, no listener and a deny-all NetworkPolicy. Verify the
+off-NAS bucket, reader readiness and retained PVC identity before running the
+protected inventory. If readiness or mount identity fails, return the reader to
+zero replicas through GitOps; keep the legacy writer active and do not archive
+or shut it down. The archive claim is scratch on the same NAS, so an independently
+verified off-NAS copy is still required before retirement is accepted.
+Provision the versioned off-NAS bucket through the protected Terragrunt Apply
+workflow on the current `main` SHA with `application_backup_storage=true` and
+an empty Argo CD target. Verify an upload and independent download before
+stopping the old writer; the reader's NAS scratch claim alone is insufficient.
 
 The init-only `runtime-storage.py verify` requires both authoritative SQLite
 databases and checks integrity and foreign keys without modifying them. Missing
