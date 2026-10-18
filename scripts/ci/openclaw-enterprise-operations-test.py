@@ -174,6 +174,40 @@ restore_version key version-1 "$2"
                 self.assertNotIn('aws', result.stderr)
                 self.assertNotIn('kubectl', result.stderr)
 
+    def test_failure_reports_only_fixed_phase(self):
+        with tempfile.TemporaryDirectory() as directory:
+            phase = Path(directory) / 'phase'
+            result = subprocess.run(['bash', str(SCRIPT), 'invalid'], cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 2)
+            self.assertFalse(phase.exists())
+            workflow = WORKFLOW.read_text()
+            self.assertIn('preflight|baseline|publication|verification', workflow)
+            self.assertIn('private cluster and archive diagnostics withheld', workflow)
+            shell = '''set -euo pipefail
+source <(sed -n '/^on_exit() {/,/^}/p' "$1")
+work="$2/work"
+mkdir "$work"
+phase=publication
+stage=publish-inventory
+trap on_exit EXIT
+false
+'''
+            result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), directory],
+                                    cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(phase.read_text(), 'publication\n')
+            self.assertFalse((Path(directory) / 'work').exists())
+            phase.unlink()
+            result = subprocess.run(['bash', str(SCRIPT), 'archive'], cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(phase.exists())
+
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (

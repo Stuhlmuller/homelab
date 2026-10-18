@@ -142,16 +142,21 @@ jobs:
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
+          export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
           bash scripts/ci/install-kubeconfig.sh --tailscale
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'385c68abb44a4495f3525fb0dd4ac6bc3e32338b043543757781ea86a99c6275  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'4e83b1055f5070eb933a95dde0d45e14e9883cfacfcb95a99107104105331d66  scripts/ci/openclaw-enterprise-operations.sh'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
           EOF
           then
-            echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld."
+            phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+            case "$phase" in preflight|baseline|publication|verification)
+              echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+            *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+            esac
             exit 1
           fi
           echo "Legacy operation completed; private receipts withheld."
