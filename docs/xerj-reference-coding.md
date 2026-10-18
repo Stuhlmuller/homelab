@@ -22,7 +22,8 @@ loopback `autoindex` also discovers this file without `--api-key` or
 `XERJ_API_KEY`. Check for `using the admin key at` in its startup output. If
 indexing returns 401, check the link and node URL.
 
-Codex runs the flake package through [`.codex/config.toml`](../.codex/config.toml).
+Codex runs the flake package from this repository's `main` branch through
+[`.codex/config.toml`](../.codex/config.toml).
 The MCP server reads the local key file at startup; no credential belongs in
 git or a process environment. The node must be running when Codex searches.
 

@@ -9,5 +9,5 @@ startup_timeout_sec = 60
 
 [mcp_servers.xerj]
 command = "nix"
-args = ["run", ".#xerj", "--", "mcp", "--disable-feedback"]
+args = ["run", "github:Stuhlmuller/homelab#xerj", "--", "mcp", "--disable-feedback"]
 startup_timeout_sec = 60
