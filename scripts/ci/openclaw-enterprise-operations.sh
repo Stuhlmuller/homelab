@@ -53,6 +53,17 @@ restore_version() (
   exit "$source_result"
 )
 
+recheck_quiescence() {
+  python3 scripts/openclaw-retirement-status.py --config scripts/config/openclaw-enterprise.json --output "$work/recheck.json"
+  jq -e --slurpfile before "$work/status.json" '
+    .replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and
+    (.cronJobSuspended == true or .cronJobAbsent == true) and
+    .readerPodUid == $before[0].readerPodUid and .readerPod == $before[0].readerPod and
+    .claims == $before[0].claims and .volumes == $before[0].volumes and
+    .roots == $before[0].roots
+  ' "$work/recheck.json" >/dev/null
+}
+
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
@@ -96,6 +107,7 @@ case "$stage" in
       --arg baseline "$BASELINE_REF" --arg archiveVersion "$archive_version" \
       --arg receiptVersion "$receipt_version" --arg digest "$(jq -er .sha256 "$work/receipt.json")" \
       '{sourceSha:$sha,runId:$run,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
+    recheck_quiescence
     aws s3 cp "$work/final.json" "s3://${bucket}/${prefix}/final.json"
     "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
     ;;

@@ -27,11 +27,12 @@ Inventory binds the two SQLite databases, NAS root, historical checkpoint,
 four PVC/PV UIDs, node and assistant image. The archive stage refuses active or
 uncertain writers and copies the complete bundle to versioned S3. It downloads
 that copy into scratch and verifies a full isolated extract before publishing a
-private `final.json` receipt. Verify selects its original S3 version even after
-later versions or delete markers, then restores the archive and receipt versions
-it recorded. A green inventory alone does not authorize shutdown; the old
-Deployment and backup
-CronJob must first reach their reviewed stopped GitOps state. If any stage
+private `final.json` receipt. It rechecks zero writers and the original volume
+identities immediately before that publication. Verify selects its original S3
+version even after later versions or delete markers, then restores the archive
+and receipt versions it recorded. A green inventory alone does not authorize
+shutdown; the old Deployment and backup CronJob must first reach their reviewed
+stopped GitOps state. If any stage
 fails, leave old PVs, NAS data and credentials retained, inspect the private
 diagnostic from the protected runner, and retry with a new run ID after fixing
 the cause. Do not reuse a partial S3 prefix.
