@@ -54,6 +54,12 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-caf6d77fd092a28e8583a6a2
+    resource: repo://clusters/homelab/apps/renovate/pvc.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
     resource: repo://clusters/homelab/apps/tailscale/values.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
@@ -88,6 +94,8 @@ sources:
     resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-25c085c78b1cbef8c164f9f7
     resource: repo://IaC/stacks/platform-image-policy/stack.hcl
+  - id: openwiki-source-9bb89193cf7d1787e70a1647
+    resource: repo://IaC/stacks/renovate/stack.hcl
   - id: openwiki-source-612eb02105d61c48b6ba59bd
     resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
@@ -100,10 +108,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T21:34:47.154Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:34:47.154Z
+    at: 2026-10-18T22:48:56.298Z
 ---
 
 # Workload Inventory
@@ -286,6 +294,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `openclaw`             | `ai`               | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`             | NAS configuration/workspace; retained node-local SQLite state on zimaboard-1; daily verified NAS database snapshots; `6Gi` ephemeral cap; exact-image-version external Discord npm package with no floating fallback; a dedicated LiteLLM caller key and OpenAI-compatible internal endpoint provide `openrouter/free`; Kubernetes-only containment with sandboxing off until a supported Docker, SSH, or OpenShell backend exists; explicit agent resources; HTTP proxy probes; pinned to `zimaboard-1` for persistent local runtime state                                                                                                                                                                                                                                                                                   | external-secrets, cert-manager, istio, litellm, platform-storage                                                    |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
+| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/live/argocd-apps/renovate` | Staged hourly UTC CronJob, suspended in full dry-run mode pending protected App-key transfer and parity checks; retained 20 Gi NFS cache; no live Job acceptance yet | aws-ssm-parameters, external-secrets, platform-storage |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
@@ -476,7 +485,6 @@ to the evidence recorded there.
 The separate consumer branch proposes nine digest-pinned Harbor 2.15.4 runtime
 components while retaining chart 1.19.2. It requires nine-image publication,
 node cache checks, and a verified database-and-blob restore before rollout.
-
 The staged native Chainguard receipt targets private Python and curl imports;
 it neither publishes them nor moves consumers until protected receipt and
 provenance gates pass.

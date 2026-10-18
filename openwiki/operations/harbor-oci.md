@@ -104,8 +104,6 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
-  - id: openwiki-source-987548d3c95bf43aede062de
-    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-d88444044033fa951eb38e67
@@ -132,10 +130,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T21:34:47.154Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:34:47.154Z
+    at: 2026-10-18T22:48:56.298Z
 ---
 
 # Harbor Private OCI Registry
@@ -436,14 +434,13 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage while the LiteLLM duplicate-index failure remains. The separate
-consumer branch keeps chart 1.19.2 while pinning all nine runtime components to
-2.15.4; the component gate rejects mixed versions. Migration `0181` is
-forward-only, so verify database and registry-blob backups and an isolated
-restore before rollout. Live registry/API and scan checks remain acceptance
-gates, and bundled Distribution v2 findings remain unresolved. The upgrade
-must also verify that singleton nginx retains a rolling update, so its existing
-Pod serves Harbor while the replacement pulls.
+coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
+rolling update, so its existing Pod serves Harbor while the replacement pulls.
+The separate consumer branch keeps chart 1.19.2 while pinning all nine runtime
+components to 2.15.4; the component gate rejects mixed versions. Migration
+`0181` is forward-only, so verify database and registry-blob backups and an
+isolated restore before rollout. Live registry/API and scan checks remain
+acceptance gates, and bundled Distribution v2 findings remain unresolved.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images

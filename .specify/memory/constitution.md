@@ -1,50 +1,93 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Version change: unversioned template → 1.0.0
+- Modified principles: five template placeholders → five project principles below
+- Added sections: Technology and Ownership; Delivery and Review Gates
+- Removed sections: none; placeholder sections were filled
+- Follow-up TODOs: none
+-->
+# Homelab Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Repository-Owned Desired State
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Infrastructure and workload changes MUST be represented in repository-owned code before
+changing live state. Infrastructure MUST use OpenTofu modules orchestrated by Terragrunt;
+Kubernetes workloads MUST use Argo CD, Helm, Kustomize, repository-owned manifests, or
+another declared repository path. Operators MUST NOT repair drift with ad hoc live
+mutations. The sole narrow manual-cloud exception is the authorized Entra conversion
+defined in [AGENTS.md](../../AGENTS.md), including all of its prerequisites. This keeps
+cluster state reproducible and reviewable.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Public Repository and Secret Safety
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Secrets, private credentials, keys, raw certificates, and sensitive kubeconfigs MUST NOT
+be committed. Desired-state inputs MUST be committed as non-secret code or data, rather
+than supplied through process environment variables. CI/CD MAY use environment variables
+for credentials and secret injection; git MUST contain only safe references, encrypted
+material, templates, or contracts. Runtime secrets SHOULD be file-backed or
+controller-managed. These boundaries let a public repository remain usable without
+exposing operational credentials.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Validation Before Production Change
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Live Talos and Kubernetes operations MUST be treated as production changes. Relevant
+validation MUST pass before live changes, or its unavailability MUST be recorded. Affected
+Terragrunt/OpenTofu stacks require formatting and planning; Talos configuration requires
+strict validation; Kubernetes changes require an appropriate render, diff, or dry run.
+Read-only inspection SHOULD precede changes to bootstrap, networking, storage, and
+upgrade assumptions. Validation reduces the chance of an unsafe rollout.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Reviewable and Teachable Changes
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+PRs SHOULD be the normal unit of cluster change. Architecture, workflow, and operational
+changes MUST explain why and include the relevant source-linked documentation. Automation
+MUST document what it changes, how to verify it, and how to roll it back. Stateful workloads
+MUST document storage, backup, and restore implications; public ingress MUST be explicit
+and reviewed. Examples MUST distinguish public teaching values from homelab-specific or
+private values. This repository is both production infrastructure and a learning resource.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Reproducible Bootstrap and Clear Ownership
+
+The steady-state bootstrap MUST preserve one documented `terragrunt apply` path after
+public prerequisites and external secret material are available. Temporary staged
+bootstrap MUST explain the reason and path back to a single apply. Changes MUST follow
+the ownership boundaries in [AGENTS.md](../../AGENTS.md): `.talos/` for Talos,
+Kubernetes app and cluster directories for runtime resources, `IaC/` for infrastructure,
+`docs/` for guides, `openwiki/` for cross-cutting knowledge, and `scripts/` for operator
+helpers. Clear ownership keeps setup repeatable and changes easy to locate.
+
+## Technology and Ownership
+
+Talos Linux, Kubernetes, OpenTofu, Terragrunt, Argo CD, Helm/Kustomize-compatible sources,
+AWS SSM Parameter Store, and external-secrets form the current declared stack. New
+workloads and platform dependencies MUST use the existing repository patterns or explain
+a deliberate change. Nomad, Ansible, and host-bootstrap assumptions MUST NOT be
+reintroduced without an intentional codebase change and documentation of its reason.
+Generated OpenWiki pages MUST NOT be hand-edited; follow the repository OpenWiki policy
+when cross-cutting knowledge needs updating.
+
+## Delivery and Review Gates
+
+Before a substantive change, inspect the relevant source and task context; inspect live
+state with read-only commands when reality matters. Run the repository validation gate
+when available and the narrow checks specific to the affected stack or manifests. Update
+affected documentation and knowledge notes in the same PR, then re-run relevant validation.
+For live rollout, complete documented cluster checks before applying through the declared
+path. Report changed behavior, validation evidence, and remaining operational risk.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Amendments MUST use the normal PR workflow, state the reason and affected rules, and keep
+this constitution consistent with the detailed operational policy in
+[AGENTS.md](../../AGENTS.md). Changes that affect existing deployed state MUST include
+the required transition and rollback explanation. Each feature plan and change review
+MUST check relevant principles; any exception MUST be justified and cannot bypass the
+repository's safety rules.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Constitution versions follow semantic versioning: MAJOR for incompatible principle
+removals or redefinitions, MINOR for new principles or materially expanded guidance, and
+PATCH for non-semantic clarification. This first populated constitution is version 1.0.0.
+
+**Version**: 1.0.0 | **Ratified**: 2026-10-18 | **Last Amended**: 2026-10-18

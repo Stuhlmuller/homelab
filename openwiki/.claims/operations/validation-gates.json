@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fed56f66def1ab1815e9d496657122674a6ff6baed3213c0fd001e28a977c276",
+  "pageVersion": "sha256:79755f07b9f7798699c366b9c556b07a64cb3120e50998b4e3c7a7f26f738866",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:aa2fc059b440d5108ba0046cc3d66820509cb431790fcca2f092de582711ebd1"
+          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -80,7 +80,7 @@
         },
         {
           "resource": "repo://policy/kubernetes.rego",
-          "version": "repo-file-v1:sha256:250f6fd8964ceb46725a07f68014e737fe3eae5dd4b94decce501c4258938c3d"
+          "version": "repo-file-v1:sha256:77a1a3cc465b15a5b1ae182d4beb1572ba2e27730e1767d6c41f7a44d63eab99"
         }
       ]
     },
@@ -98,7 +98,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
-          "version": "repo-file-v1:sha256:cde2cc018f7321359965930435a78a28956a199bae23a6bd799ebcd4da08b2bc"
+          "version": "repo-file-v1:sha256:de7919f7a1d0d5f5da8bdd3c9d31271041966adac4929afd2758acc9407bf68b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
@@ -162,7 +162,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -194,7 +194,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+          "version": "repo-file-v1:sha256:53b844d8a5914ad297e6e259d385a82509ad1e0dc8a5ac3cd76c763e9899f66e"
         },
         {
           "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
@@ -268,7 +268,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:3264d39d1a2c5c321737586735b84f8671d9c50233ee362c3794cf8b6fbab8c6"
+          "version": "repo-file-v1:sha256:c79d0b86a93d8a24bc2a6aa2de0b79a657c38f493d290c00974fb724d8d43228"
         }
       ]
     },
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
         }
       ]
     },
@@ -366,7 +366,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
         }
       ]
     },
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
+          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
         }
       ]
     },
@@ -398,7 +398,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
         }
       ]
     },
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:aa2fc059b440d5108ba0046cc3d66820509cb431790fcca2f092de582711ebd1"
+          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
         }
       ]
     },
@@ -490,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:32f7aa2160008614d324be34d5498a49c9df07eba4926ed1d4147934b883c65a"
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -670,7 +670,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
+          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -720,7 +720,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
+          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
         }
       ]
     },
@@ -734,7 +734,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
-          "version": "repo-file-v1:sha256:cde2cc018f7321359965930435a78a28956a199bae23a6bd799ebcd4da08b2bc"
+          "version": "repo-file-v1:sha256:de7919f7a1d0d5f5da8bdd3c9d31271041966adac4929afd2758acc9407bf68b"
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-test.py",
@@ -742,25 +742,43 @@
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:14fe7739666ca48bf9626cc7fb6a5e06e2b18186031e7b760b3b71339a67f80f"
+          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
         }
       ]
     },
     {
-      "id": "claim_e8da2f8db88741db81f8c5fe9dc568c2",
-      "statement": "The Harbor 2.15.4 component gate rejects mixed runtime versions, and the chart 1.19.2 render check verifies one harbor-nginx Pod without an explicit Deployment strategy. Rendering does not prove live registry availability or the isolated database-and-blob restore required before forward-only migration 0181.",
+      "id": "claim_823a08a8670e4b57b50e4cf8ce0507c7",
+      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures for missed starts, incomplete cycles, late prior success, suspension/resume, and a missing CronJob. The completion alert's 56-minute schedule threshold exceeds the 15-minute start allowance plus 40-minute Job runtime; these checks do not establish live credential, cache, or scheduled-Job acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/harbor/README.md",
-          "version": "repo-file-v1:sha256:6deb80f8e9383f00652ebd99676d0d3d39182ffb234f3b08afb92fb82e43e000"
+          "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
+          "version": "repo-file-v1:sha256:f0b2885239e3b3f27926503f3928de22c121e7165688b1fc3781c82f582976d6"
         },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:4474902e646c37a2dc1c5a8afa52ace8ec92a85da729cd1707a27decd24a47d2"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-alert-check.py",
+          "version": "repo-file-v1:sha256:9389f5fd29fc8a178651498bba75a5c1d9e6884a2aea9f518e20bf47ad3bc9eb"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:c79d0b86a93d8a24bc2a6aa2de0b79a657c38f493d290c00974fb724d8d43228"
+        }
+      ]
+    },
+    {
+      "id": "claim_876b53a49a6e438ea3728d8bde690eb2",
+      "statement": "The Harbor component gate rejects mixed 2.15.4 runtime versions; chart 1.19.2 render verifies singleton nginx retains the default rolling update, but does not prove live registry availability or isolated database and blob restore.",
+      "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
           "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
-        },
-        {
-          "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:c8f4d28f3ede259728fefaa4a00a6e68b1930f6934d6323a110b3ab25d3c994e"
         },
         {
           "resource": "repo://scripts/ci/harbor-render-check.py",
@@ -771,6 +789,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T21:34:47.154Z"
+    "at": "2026-10-18T22:48:56.298Z"
   }
 }

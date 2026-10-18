@@ -38,8 +38,6 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
-  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
-    resource: repo://clusters/homelab/apps/harbor/README.md
   - id: openwiki-source-738da32a5c98c5c0390c9a2f
     resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -52,6 +50,10 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-436aa6b493bbff8d5c17b3ff
+    resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -126,6 +128,8 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
+  - id: openwiki-source-5028d06d31a177019a8bf782
+    resource: repo://scripts/ci/renovate-alert-check.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-1d25596b50032267f565d3f3
@@ -172,10 +176,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T21:34:47.154Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:34:47.154Z
+    at: 2026-10-18T22:48:56.298Z
 ---
 
 # Validation Gates
@@ -1747,14 +1751,24 @@ The Harbor component gate rejects mixed 2.15.4 runtime versions. The render
 check asserts chart 1.19.2 produces one `harbor-nginx` Pod without an explicit
 Deployment strategy, leaving Kubernetes' rolling-update default to retain the
 old Pod while its replacement pulls. Rendering does not prove live registry
-availability or the isolated database-and-blob restore required for migration
-`0181`.
+availability or the isolated database-and-blob restore required for migration.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate consuming workloads.
+
+The staged hourly Renovate runner has a credential-free config and discovery
+test in `static-checks.sh`. `offline-checks.sh` runs its Prometheus rule
+fixture, which checks missed starts, incomplete cycles, a missing CronJob,
+late prior-Job completion, and schedules before and after suspension. These
+fixtures also enforce that the 15-minute allowed late start plus the 40-minute
+Job runtime ends before the completion alert's 56-minute threshold and the next
+hourly slot. These checks verify declared behavior; the suspended runner still
+needs live cold-cache runtime, Secret,
+App inventory, cache, and scheduled-Job acceptance before GitHub writes move
+to the cluster.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

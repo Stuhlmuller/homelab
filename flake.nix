@@ -191,7 +191,6 @@
             unzip
             yamllint
             yq-go
-            self.packages.${system}.xerj
           ];
           checkovPackages = pkgs.lib.optionals (system != "x86_64-darwin") [
             pkgs.checkov
@@ -202,6 +201,9 @@
         {
           default = pkgs.mkShell {
             packages = basePackages ++ checkovPackages ++ localePackages;
+          };
+          xerj = pkgs.mkShell {
+            packages = basePackages ++ checkovPackages ++ localePackages ++ [ self.packages.${system}.xerj ];
           };
         }
       );

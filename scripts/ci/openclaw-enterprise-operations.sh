@@ -18,7 +18,7 @@ case "$stage" in inventory | publish-inventory | archive | verify) ;; *) echo 'I
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
 case "$stage" in
   publish-inventory)
-    [[ "${BASELINE_REF:-}" == 'd55e2ab8521e427c059e07e34b270e476092a8a1/39127113354' ]] || exit 2
+    [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2
     ;;
   archive) [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
   verify) [[ "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
@@ -187,6 +187,7 @@ case "$stage" in
     lookup_baseline_versions
     count="$(jq --arg key "$baseline_key" '[(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length' <<<"$versions")"
     if [[ "$count" == 0 ]]; then
+      [[ "$BASELINE_REF" == 'd55e2ab8521e427c059e07e34b270e476092a8a1/39127113354' ]] || exit 1
       phase=publication-upload
       aws s3api put-object --bucket "$bucket" --key "$baseline_key" \
         --body "$work/baseline.json" --if-none-match '*' >"$work/put.json"

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e3ed3492d86602ae6ab4ad10cb7299feb7d88834df2b52e712e28bf653c6dbaa",
+  "pageVersion": "sha256:35807216235896daa893eaecf149e7bf33f1ec7fd7189635563610e2b456e8e8",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -128,7 +128,7 @@
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:14fe7739666ca48bf9626cc7fb6a5e06e2b18186031e7b760b3b71339a67f80f"
+          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
@@ -139,6 +139,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:54:06.405Z"
+    "at": "2026-10-18T22:48:56.298Z"
   }
 }

@@ -135,7 +135,7 @@ jobs:
           umask 077
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'928255faf367006ae1c767c3fb27fc6a71e35dd5440908265418ba7dc61e0ed7  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'3491fe8b6c80454d522b7d03dba1baf7e0101519467368ba4bf9c471a91efb6d  scripts/ci/openclaw-enterprise-operations.sh'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
           EOF
           then
