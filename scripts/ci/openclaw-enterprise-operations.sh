@@ -38,10 +38,11 @@ require_absent_object() {
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
+    baseline_result="/private/legacy/baseline-${GITHUB_RUN_ID}.json"
     "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory \
       --config /private/legacy/config.json --status /private/legacy/status.json \
-      --output /private/legacy/baseline.json
-    "${reader[@]}" sh -c 'test ! -e "$1" && cp /private/legacy/baseline.json "$1" && chmod 600 "$1"' sh "$baseline"
+      --output "$baseline_result"
+    "${reader[@]}" sh -c 'test ! -e "$1" && cp "$2" "$1" && chmod 600 "$1"' sh "$baseline" "$baseline_result"
     baseline_key="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}/baseline.json"
     require_absent_object "$baseline_key"
     "${reader[@]}" cat "$baseline" | aws s3 cp - "s3://${bucket}/${baseline_key}"
@@ -49,14 +50,15 @@ case "$stage" in
   archive)
     baseline_id="${BASELINE_REF##*/}"
     baseline="/archive/private/baseline-${baseline_id}.json"
+    archive_result="/private/legacy/archive-result-${GITHUB_RUN_ID}.json"
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
     "${reader[@]}" env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py archive \
       --config /private/legacy/config.json --status /private/legacy/status.json \
       --baseline "$baseline" --destination /archive/private \
-      --output /private/legacy/archive-result.json
-    receipt="$("${reader[@]}" cat /private/legacy/archive-result.json | jq -er .receipt)"
+      --output "$archive_result"
+    receipt="$("${reader[@]}" cat "$archive_result" | jq -er .receipt)"
     [[ "$receipt" =~ ^/archive/private/legacy-[0-9a-f]{64}/receipt\.json$ ]] || exit 1
     prefix="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}"
     for name in legacy.tar.gz receipt.json final.json; do require_absent_object "$prefix/$name"; done
