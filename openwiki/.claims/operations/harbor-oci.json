@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ea94861c05918503117a41caa13a6cf361913288adddcec7e1c9347f86ae4e2d",
+  "pageVersion": "sha256:0d2a1f636dbc4a7d17b0d5594c3e72741632a17b90a6f7fa484ba64fd65b0110",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -84,7 +84,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -115,7 +115,7 @@
       "statement": "The October 11 zimaboard-2 host-only pull timed out with six destination ztunnel denials from overlay source 10.244.4.0 and no Traefik requests; the exact overlay source fix requires GitOps convergence and correlated successful registry requests before rollout acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L159-L179",
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L190-L210",
           "version": "repo-lines-v1:sha256:93a4ba98b55e6754691476e3c712a5c485b8697b16e5e3c70b9b61770ad9ae28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzAzYjYyZjNlN2U0Y2Q4NzdkOWJmNjJlMDQ2YjFhNTk1NmIxMDA5NWQyNTRjZWYzZTZiOTY5NjIwMzk2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2MzNTY0M2RjZWQ2YzgxYTNhOWNmZjczNzE1ZWE2OGNmNTdjNDk4ZTBjNWQ4MjMxMTk3M2FjYWQxOTQ2MDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1ZDk5NDlmMTRjYzNhNWVkYjJlODEyNDMyNTJhNTA3ODcwNGVjNjU5OWM0MmNlNzU4YTdkNjYwOWE2ODg4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         }
       ]
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:31ec9673b8ea6d622f707b34446a9a729f7cf6db88551f77950c4b087cb357bf"
+          "version": "repo-file-v1:sha256:7cad6dbb288f39c8b554b872d429cceae0617e65224a2b7e0db68e431d3e512e"
         }
       ]
     },
@@ -462,7 +462,7 @@
       "evidence": [
         {
           "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:a9d60d632ca5423307f23dad0419cb5480d2026960b9518db24d2b43d24410b1"
+          "version": "repo-file-v1:sha256:64f9eb5ffad94a804aa82c3de1e2154746f1f21f9da081a51d70a482471b7d4b"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -516,7 +516,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:31ec9673b8ea6d622f707b34446a9a729f7cf6db88551f77950c4b087cb357bf"
+          "version": "repo-file-v1:sha256:7cad6dbb288f39c8b554b872d429cceae0617e65224a2b7e0db68e431d3e512e"
         }
       ]
     },
@@ -613,10 +613,28 @@
           "version": "repo-file-v1:sha256:3ed16a9c670aed8cc1eb10ba96d5cdbf70184d0c8bb4d1eaf401190144d12f5c"
         }
       ]
+    },
+    {
+      "id": "claim_886286f0e2c346e28e0980c42c9a6c4a",
+      "statement": "The fixed dns Harbor mirror scope selects only the pinned Codeberg k8s_gateway image. Protected run 39161113974 succeeded at exact main 5558f8c1 with matching digest and complete authenticated pull; this scoped receipt does not prove full-catalog or live resolver health.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-mirror.yml",
+          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-dns-images.json",
+          "version": "repo-file-v1:sha256:e71afe421247062897d141b975ffea2863038c9e775d39dee733e7d8e58e4f23"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:41:22.820Z"
+    "at": "2026-10-18T20:54:06.405Z"
   }
 }

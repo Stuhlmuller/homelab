@@ -508,9 +508,9 @@ An account policy requiring Cloudflare Access may add a separate login gate;
 the carrier does not grant Octelium authorization.
 
 The public DNS-restoration workflow is removed before private DNS cutover.
-Use `scripts/tailscale-private-dns.sh --dry-run` and the
-[ordered cutover](../clusters/homelab/apps/traefik/CUTOVER.md), which requires
-verified peer addresses and a reviewed exact-main execute command. Keep the
+Use the [current tailnet DNS cutover](../clusters/homelab/apps/traefik/CUTOVER.md#current-tailnet-dns-cutover),
+which requires a signed resolver, direct queries and an owner nameserver handoff
+before the guarded public-record retirement. Keep the
 Tunnel Deployment and old carrier only until replacement acceptance. Reverting
 transport requires a reviewed desired-state change; do not restore public DNS
 through a historical workflow or an ad hoc command.
@@ -603,11 +603,11 @@ application/control DNS must follow the [ordered cutover](../clusters/homelab/ap
 
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/tailscale-private-dns.sh --dry-run
 ```
 
-The canonical helper reconciles only its fixed DNS-only A/AAAA inventory. It
-preserves old callback, CI, carrier, and unrelated records until retirement.
+The old public application DNS publisher is retired. The private resolver
+follows reviewed Traefik routes and its Service annotation; public-record
+retirement is a later, guarded 27-name cutover.
 
 ## Octelium Enterprise Package
 
@@ -767,9 +767,11 @@ Then follow the private DNS acceptance order before executing DNS changes:
 ```sh
 scripts/octelium-gateway-dns.sh --dry-run
 scripts/octelium-gateway-dns.sh
-scripts/tailscale-private-dns.sh --dry-run
-scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
 ```
+
+For current application DNS, follow the
+[tailnet DNS handoff](../clusters/homelab/apps/traefik/CUTOVER.md#current-tailnet-dns-cutover)
+instead of publishing public application A/AAAA records.
 
 After `octops` completes, apply the service catalog and create the connector
 credential:
@@ -827,7 +829,6 @@ kubectl -n octelium-client get externalsecret,secret octelium-client-auth
 kubectl -n octelium-client get deploy,pod -l app.kubernetes.io/instance=octelium-client
 kubectl -n octelium-client logs deploy/octelium-client
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/tailscale-private-dns.sh --dry-run
 scripts/octelium-e2e-check.sh \
   --octelium-context <octelium-cluster-context> \
   --homelab-context <homelab-context>
@@ -941,18 +942,10 @@ private TCP port 443 routed through the Istio ingress gateway. It verifies the
 pinned CLI, transport, live identity and contract, deletes that exact Service,
 and checks absence. Already absent succeeds.
 
-Retire its removed app DNS entry at the app-removal commit before other
-changes advance `main`:
-
-```sh
-scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> --dry-run
-scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> \
-  --execute --expected-sha <current-main-sha>
-```
-
-This deletes only A/AAAA/CNAME records for an active app hostname removed by
-the commit, preserves other records, and verifies absence. The retired
-CI/callback/carrier inventory remains excluded. Verify authoritative DNS
-and confirm the old URL no longer serves the app.
+For a future private app removal, change the Traefik route and approved Service
+hostname annotation together, then verify the resolver removes its locally
+authoritative answer after the reviewed change is deployed. Public records for
+the initial 27 names have their own guarded retirement path. Verify the old URL no longer
+serves the app.
 Restore its catalog entry and apply the catalog to roll back; generated proxy
 UIDs must be refreshed after recreation.

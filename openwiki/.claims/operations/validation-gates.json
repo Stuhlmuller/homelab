@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a889b61b6877f178cab7a466d413a701ce55e373ad1441ee9c4ba5ed9e51e38e",
+  "pageVersion": "sha256:96ddcb319cc6a6cb61973dc79916854f28b79ccc512d77569b007c669ad2968e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
+          "version": "repo-file-v1:sha256:aa2fc059b440d5108ba0046cc3d66820509cb431790fcca2f092de582711ebd1"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -86,27 +86,23 @@
     },
     {
       "id": "claim_8c09caaeb8764e0c8cc2ec3e1bb35900",
-      "statement": "Additive cutover tests cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, non-executing callback preflights and fresh delivery receipts; normal DNS acceptance follows Mac hosts migration and the prior DNS TTL.",
+      "statement": "Earlier cutover fixtures cover fixed DNS ownership, Mac credential preservation, bounded same-profile reconnect and rollback, callback preflights, and fresh delivery receipts. The current resolver handoff uses the observed tailnet DNS Service IP, direct UDP/TCP probes, owner restricted nameserver setting, and later normal client DNS and HTTPS acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
           "version": "repo-file-v1:sha256:c4bd586a1cd8425864b99026735861f3954413cae95b7094087a995f7adde1c4"
         },
         {
-          "resource": "repo://scripts/ci/n8n-github-webhooks-test.py",
-          "version": "repo-file-v1:sha256:ae365f23de9ca311b7128fd51365dde7bc596e201b79fb5248815cd71541ca39"
-        },
-        {
-          "resource": "repo://scripts/ci/policy-bot-webhook-test.py",
-          "version": "repo-file-v1:sha256:b91181264cce4b2107f7c60e4e334c255c290ae67114404c9eba08020d1d3f41"
+          "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
+          "version": "repo-file-v1:sha256:cde2cc018f7321359965930435a78a28956a199bae23a6bd799ebcd4da08b2bc"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         }
       ]
     },
@@ -116,7 +112,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-access-check-test.py",
-          "version": "repo-file-v1:sha256:e3c6ddf149737edb47473d8b5b8fd561e55d70b4478718b7d5af48e2de1a7cb5"
+          "version": "repo-file-v1:sha256:af88b46a28a05c2a563046d07c6105502ad3a722bd6048ad026c570570f5b2c8"
         },
         {
           "resource": "repo://scripts/ci/tailscale-access-check.py",
@@ -148,7 +144,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:f5bf8cd3ec195da99e95b085b307e714e8d42e82b2206c3726b03868caaa0ae5"
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -156,7 +152,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
+          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
         }
       ]
     },
@@ -166,7 +162,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -174,25 +170,21 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
-          "version": "repo-file-v1:sha256:079ceef243831262e78d6115923c02e92071b3d89e2db2a882c6a531bc0555e0"
+          "version": "repo-file-v1:sha256:80c10992dd64545f345d198e5173b0d59e1b7e90ce527d2c2a5495343d625fdf"
         }
       ]
     },
     {
       "id": "claim_208b0475f0894dc0a15e62f0943aeb0a",
-      "statement": "Private DNS preflight accepts AFFiNE502/503 only with explicit source and live zero replicas and rejects other app5xx; its regression also prevents publishing peer IPv6 when the ingress Service publishes only IPv4.",
+      "statement": "The retained private DNS preflight accepts AFFiNE 502/503 only with explicit source and live zero replicas and rejects other app 5xx responses; its regression also prevents publishing peer IPv6 when ingress Service publishes only IPv4.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L101-L107",
-          "version": "repo-lines-v1:sha256:53e12dc919700cb8093b0b09cc74ad1954ca1928e7f70eeca6d1e1e8735e69e1:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzRiOTg2NTc5N2Q0NzFlZGFlNzAzZjVlY2ZiZmIwNDgwOTdiM2NkM2E5MDc5YWJmZjczYTVjOWE1MThmZTRjNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjJmYmY2MWRlZmRiNDhjODZmMzBhOWQ1MjBhY2NmNTcxNWExNThkOTI4NTA4MzU2MmYyYjg1ZmFhYzk5Y2ZmMCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjUxZTVmYWVlMGIwMDQzNjlhMzg5NGJhNTMxZjEzZjVhMmZmZTU5MzI3YTBhNGRmZmVlNzU2NTk0NzYzNGUxNCJ9"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L125-L182",
-          "version": "repo-lines-v1:sha256:0347a319ef9c90ccd922e4ea5a6527b06ce3ecef0cddd390d24fd4e757b8321a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2ZWRkNDg3NWMzZTgzNzBhYTZlZDhkOTE5YTQ4MDE3ZjY0OTU0ZWQ2ZTU3MTAyNTQyM2VkNDI4Njc2YzRjNmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyOTNjZjk5ODIwYjhhZDJmOTE2OTMxMWE2ODgzNWEyMGJlMmFlOTkxMjUxZjU2ZWE4MzE1OTQ2NTM1OWM1ZWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3Y2RkYmU5MmY0MTFjM2UzNjhlZTdjOGRlMDMwNDU0ZTZlYTA5ODg4MzBmMGEwN2NmZWQxZGRlOWJkYTUyYWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNzg4ZWVmODk2ODBlMzcxMDk5NTdhMGM3YTZjNjc5YTBkOTBiNDA4ZTlhOWRkZGQ4YTE0ZWYxZTdlMThjZWUifQ"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:a3767aba4ced5bf65d45a8e2494c26923692affcf60b43f079540c2713ba6168"
+          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
         }
       ]
     },
@@ -276,7 +268,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:cff78af8b39178268dae875789c619c12ef4c8b3fb7775ebc121591298b6df3b"
+          "version": "repo-file-v1:sha256:3264d39d1a2c5c321737586735b84f8671d9c50233ee362c3794cf8b6fbab8c6"
         }
       ]
     },
@@ -298,7 +290,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         }
       ]
     },
@@ -374,7 +366,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         }
       ]
     },
@@ -406,7 +398,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         }
       ]
     },
@@ -428,7 +420,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
+          "version": "repo-file-v1:sha256:aa2fc059b440d5108ba0046cc3d66820509cb431790fcca2f092de582711ebd1"
         }
       ]
     },
@@ -498,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:2baf990aa4d6473e40c10c6f377a14de5c0f638c2324169d8616d40c22718771"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -545,7 +537,7 @@
           "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
         },
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L6-L13",
+          "resource": "repo://scripts/ci/offline-checks.sh#L7-L14",
           "version": "repo-lines-v1:sha256:5195894c7328c3c60862e3324dcf3d6fa968e27d58c446b79619dd967714fa1b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjhiNGJkZDAwNjMxZWI0NjkyZDk3NzRlZDNiYmJjMjIyNTQ0NTJkYTA3MmY0Y2Q5MmNkOWFlOGYzZjA0Y2JjMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmY4ZDYzYjhlODlhNTYzNzI2NDk4OTBhZjU1ZDlkMTkyMDk3NjYyYmU1ZjFiMjc0ZTY4N2Y1ZjlhYzQ2YTgzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNThhZjIxMTcxOTMxYmQzMDRhMmQ3Y2E2NmMzYjZlYjZiNGRkZmVjZDIyMzQ1ZmM1ZWFkNzM5NDljMmUzMWZmZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODY1YmZkMTVmMjYwZjQxOGYxNzZkYmIyNmZhNjBlMjdkY2JlY2E3MTZlMTQzN2RjODNmZGE1ZmQyZTA0NTA0YSJ9"
         }
       ]
@@ -709,7 +701,7 @@
           "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
         },
         {
-          "resource": "repo://flake.nix#L22-L42",
+          "resource": "repo://flake.nix#L66-L86",
           "version": "repo-lines-v1:sha256:4eb70c55e9738d7b618e3580e049910b3ec8c1ff4af6e895983ad4946529049d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZTFhNzRkNzU0ZTg3N2MwYzQ3NDAwOGQ5YTc1YWI4NWY0Mjc3MmJlNmIwNzdhNzE3YmZmMTg5NzkwZDYyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyOTQwYThiOGM0ZDFhNWY1NTY5YmNjOWFkOGZmYWFjODkxNTZjZTE2MWM3YTBlNTY2NWRhNDIyYzVkMjY4MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMmQxOTQ0NWM5M2I3Y2I2YWFmZTI1NWU3MDVhYjgwMmFlMTNjM2NmNTFkNzAwMzQ4NTI2ZTNhZjliOWY4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0NDk2MzRiYmY0MDgyMmVlY2NhYTQzYmE0M2QyNGM1YzU0ZmMwMWFlNjYyOTdhNTVlNDI2YWFmOTIxZWQ4YmUifQ"
         }
       ]
@@ -731,10 +723,32 @@
           "version": "repo-file-v1:sha256:d1af9c72af10deb4c467ff3f4981751e88ea1487db649dec24c41040141d5ebf"
         }
       ]
+    },
+    {
+      "id": "claim_a552195c300d4b0c844370b0dbb16c15",
+      "statement": "The tailnet DNS resolver gate renders the pinned chart and checks route/annotation parity and fixed 27-name initial migration. A protected scoped Harbor run must prove the pinned image digest and authenticated pull. After GitOps health, the signed DNS proxy and direct UDP/TCP 53 handoff checker bind the observed Service IP to all approved names while preserving public fallback and apex records; owner DNS and client acceptance remain separate.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
+          "version": "repo-file-v1:sha256:cde2cc018f7321359965930435a78a28956a199bae23a6bd799ebcd4da08b2bc"
+        },
+        {
+          "resource": "repo://scripts/ci/tailnet-dns-test.py",
+          "version": "repo-file-v1:sha256:38d315393fd39d82aa657eb6c9aed70f6e9eaa08a7f539b989a44c3c18f3e15b"
+        },
+        {
+          "resource": "repo://scripts/tailnet-dns-check.py",
+          "version": "repo-file-v1:sha256:14fe7739666ca48bf9626cc7fb6a5e06e2b18186031e7b760b3b71339a67f80f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:41:22.820Z"
+    "at": "2026-10-18T20:54:06.405Z"
   }
 }

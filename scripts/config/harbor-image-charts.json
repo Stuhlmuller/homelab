@@ -138,6 +138,12 @@
     "targetRevision": "1.27.3"
   },
   {
+    "chart": "k8s-gateway",
+    "repoURL": "codeberg.org/k8s-gateway/charts",
+    "source": "IaC/stacks/tailnet-dns/stack.hcl",
+    "targetRevision": "4.0.0"
+  },
+  {
     "chart": "kiali-operator",
     "repoURL": "https://kiali.org/helm-charts",
     "source": "IaC/stacks/kiali/stack.hcl",

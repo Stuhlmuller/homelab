@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ce63b83e7dbc0bfaa4d8cc15aa205479d2f07b4442dd64f4113a0a2897311564",
+  "pageVersion": "sha256:060ee2d72c1a9035e7925cae3f6831e1138dce7199f66811e582871ca3f5dc8a",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
+          "version": "repo-file-v1:sha256:aa2fc059b440d5108ba0046cc3d66820509cb431790fcca2f092de582711ebd1"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:7ea5b88146afaa3c9cc070c204469b2a4bedce0c6f8372967ed2458576dfa3dc"
+          "version": "repo-file-v1:sha256:aa2fc059b440d5108ba0046cc3d66820509cb431790fcca2f092de582711ebd1"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -75,6 +75,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:41:22.820Z"
+    "at": "2026-10-18T20:54:06.405Z"
   }
 }

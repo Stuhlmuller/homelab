@@ -7,7 +7,7 @@ workload_status: active
 updated: 2026-10-17
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T05:44:36.454Z
+    at: 2026-10-18T20:54:06.405Z
 sources:
   - id: openwiki-source-b7385f58821387de7a16f687
     resource: repo://clusters/homelab/apps/nofx/deployment.yaml
@@ -17,9 +17,11 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
-generated: { by: "codex", at: "2026-10-17T23:58:10.958Z" }
+generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
 ---
 
 # NOFX
@@ -178,8 +180,9 @@ contract from AWS SSM:
 
 The retained Cloudflare/Octelium route supports legacy callers during the
 [staged private ingress cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
-NOFX keeps its canonical hostname through private Tailscale and Traefik after
-DNS acceptance; it has no public Funnel route. The old Istio `VirtualService`
+NOFX keeps its canonical hostname through the separate tailnet DNS resolver,
+private Tailscale, and Traefik after DNS acceptance; it has no public Funnel
+route. The old Istio `VirtualService`
 remains migration state until final retirement.
 
 Live validation on 2026-08-22 found the Argo CD Application synced and healthy,
