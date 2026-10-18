@@ -116,10 +116,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T10:55:26.804Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:06:26.593Z
+    at: 2026-10-18T10:55:26.804Z
 ---
 
 # Harbor Private OCI Registry
@@ -720,9 +720,14 @@ publication and pull acceptance finish.
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
 anonymously into a local directory image tree and checks the original manifest
-digest before authenticated Harbor upload. Existing destination tags resume
-only after exact hash verification. Aliases come from the verified Harbor digest;
-every selected artifact still needs a fresh complete authenticated destination pull.
+digest before authenticated Harbor upload. If Skopeo cannot preserve an OCI
+index digest during staging or upload, `regctl` copies the exact upstream digest;
+an upload fallback reads upstream a second time. Existing destination tags
+resume only after exact hash verification. Aliases come from the verified
+Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
+`regctl` retries that alias from Harbor. These exact conversion fallbacks use
+`regctl` for the fresh complete authenticated pull. Other copy errors stop
+publication, and every selected artifact still needs digest and alias checks.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
@@ -736,7 +741,9 @@ flowchart TD
     Staging --> Identity{"Original digest matches"}
     Identity -->|yes|Upload["Authenticated Harbor upload"]
     Identity -->|no|Stopped["Stop publication"]
-    Upload --> Verify["Verify digest and tag alias"]
+    Upload -->|Skopeo succeeds| Verify["Verify digest and tag alias"]
+    Upload -->|Exact OCI conversion error| Regctl["Regctl copies original upstream digest"]
+    Regctl --> Verify
     Verify --> Pull["Fresh authenticated Harbor pull"]
     Pull --> Receipt["Verify digest before receipt"]
 ```
