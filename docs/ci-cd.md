@@ -748,6 +748,7 @@ nix develop --command bash scripts/ci/conftest-policies.sh
 
 The hooks run the PR lint checks on staged Bash, GitHub Actions, JSON,
 Markdown, Python, OpenTofu, Terragrunt, and YAML files using the Nix shell.
+Ruff and Yamllint share the rules under `.github/linters/` with Super-Linter.
 GitHub Actions remains the source for the exact Super-Linter status contexts.
 
 The PR plan script intentionally skips the privileged SSM declaration and

@@ -28,12 +28,12 @@ repos:
         types: [markdown]
       - id: ruff
         name: Python lint
-        entry: ruff check
+        entry: ruff check --config .github/linters/.ruff.toml
         language: system
         types: [python]
       - id: yamllint
         name: YAML lint
-        entry: yamllint -d relaxed
+        entry: yamllint -c .github/linters/.yaml-lint.yml
         language: system
         types: [yaml]
 
