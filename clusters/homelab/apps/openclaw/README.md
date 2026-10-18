@@ -11,6 +11,8 @@ and the Terragrunt-owned Argo Application remains registered without a deletion
 finalizer. Verify the gateway and any pending backup Jobs/Pods have fully stopped
 before running the archive stage. Keep the old image, configuration and secrets
 for compatible recovery.
+Kustomize hashes the retirement scripts ConfigMap name so script changes replace
+the reader Pod; its prior projected ConfigMap did not refresh in place.
 
 After the bucket and one reader Pod are verified, run the protected fixed-stage
 workflow from the exact current `main` SHA. Replace the placeholders with the
