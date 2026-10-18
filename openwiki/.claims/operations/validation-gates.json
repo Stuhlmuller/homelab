@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:34df7bb4ff9ed20c2a3719509d190e0227427b3e8010be55df9d5fd564d57025",
+  "pageVersion": "sha256:daa6ad1c41c5223bd6e80135b0f594a129cfd13b784adadeb7ae346d0546a29f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e8176606ed542692cd68261183e1ef13d8ec0bb0e77a9b0c66458f5673b2e534"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b2e76047336dbdc120e77358a446b4e7e0afc5de224dec9fe92de034207c8f0d"
+          "version": "repo-file-v1:sha256:0a9860972631dffffbf0afda9da3c7ef8fbec2a92213c8fc8e34fae3176b82e6"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e8176606ed542692cd68261183e1ef13d8ec0bb0e77a9b0c66458f5673b2e534"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -574,7 +574,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e8176606ed542692cd68261183e1ef13d8ec0bb0e77a9b0c66458f5673b2e534"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:41923dc85a5a6a56fe103d9bf14113bc22f39737bca61e382d8f157a8591e3bd"
+          "version": "repo-file-v1:sha256:9dc31d22e2f6c79c9654936ba1b50f23d82c25feb96c9a8d6b39f159436428df"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -670,15 +670,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:25331ee01241b992efdadded71edf9601c0fbbdf75eff043a66b6be2d7775665"
+          "version": "repo-file-v1:sha256:a91f85d0ed349471abf304be6f1c71f4cb920d0520cc59c3612ae95c2196faf9"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:e8176606ed542692cd68261183e1ef13d8ec0bb0e77a9b0c66458f5673b2e534"
+          "version": "repo-file-v1:sha256:53cd9daa228aef1efb71eadd0bb8b6c2d7f349863b2848d337faadd2911e6db3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b2e76047336dbdc120e77358a446b4e7e0afc5de224dec9fe92de034207c8f0d"
+          "version": "repo-file-v1:sha256:0a9860972631dffffbf0afda9da3c7ef8fbec2a92213c8fc8e34fae3176b82e6"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -691,18 +691,32 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L769-L817",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L770-L818",
           "version": "repo-lines-v1:sha256:da58bbfbe9bc03844d243a8c139df7b193d7a53f073b88b1e739c89b8e106fd9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1ZjEzZGJlMzNjOWZjNGE0M2QxMzU4OWIwMjVkZDY4MTUxMzQ2OTUyOGFkM2EyYWUyZWUxMTM0MWY4NWVlYzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNWQxYjE0YTk5NDVkMzE4NTFkMDIyMmYxYmIwOTMxMDQ4YzgyMjg5NjczYmM0ODg3MDg3ZTMzYTlhMzExYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkOGJlZjJlNGZmZmJhMTIxODUzMTY3ZDliZTg2NWI2ZjVhODc3ZWI4OGNlMWIzZTc1MGVhMTQ5NDNiMjAyYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFhYWMwZWZmNmExMWExZGNhZDhmNjVjOTEwMjA1OTFjZDhhN2Y2NGQyMDQ2ZDg0NWY3N2I3NjU5MjNlZDMzNDAifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L389",
-          "version": "repo-lines-v1:sha256:4c63af5f5e9d374fa6493eb529f92c25bd50d2921014ae6154a2356413b740ea:eyJzZWxlY3RlZExpbmVDb3VudCI6ODcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMWIxYjIwMzEzMDZjYTUyOWUyZjNmMWIyZjRmZDlmMTMyNzk2MjZkYWFjZmY2ODBmMmJiYjA3NGFjM2I0YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhYzczZWY3NWZhYmRiODAzZmMxNjc1NzIzOGNhMWZlMDBjNGM0NDQ2NjEwZjQ5ZmY2MWU5OGZhNDYxM2QxYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4OWVkN2E1MDg4NTlhZmUxNWExM2FiNTExOWIyYjE0ZjhmNDVkNjkzN2NlYTcyYTA4MDc5ZDU1YTAwNDU5ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwZWM2ZDllM2U3MDMwMjk5ZTg4MmRlYTM3YjJlNDVhZDcyMmU4OGJkZGE0ZmZmZmYyMjgzNDIzNWRiN2RmYzIifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
+          "version": "repo-lines-v1:sha256:d2d374c55db86f3bfdd62b91aef854512b268fa415b27c83724ebbcbcba0de44:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiMWIxYjIwMzEzMDZjYTUyOWUyZjNmMWIyZjRmZDlmMTMyNzk2MjZkYWFjZmY2ODBmMmJiYjA3NGFjM2I0YjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhYzczZWY3NWZhYmRiODAzZmMxNjc1NzIzOGNhMWZlMDBjNGM0NDQ2NjEwZjQ5ZmY2MWU5OGZhNDYxM2QxYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk4OWVkN2E1MDg4NTlhZmUxNWExM2FiNTExOWIyYjE0ZjhmNDVkNjkzN2NlYTcyYTA4MDc5ZDU1YTAwNDU5ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwZWM2ZDllM2U3MDMwMjk5ZTg4MmRlYTM3YjJlNDVhZDcyMmU4OGJkZGE0ZmZmZmYyMjgzNDIzNWRiN2RmYzIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e6bef5df60d74d558efb698a1f271f89",
+      "statement": "The repository's local validation entry point is `nix run .#validate`; the flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L66-L90",
+          "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
+        },
+        {
+          "resource": "repo://flake.nix#L22-L42",
+          "version": "repo-lines-v1:sha256:4eb70c55e9738d7b618e3580e049910b3ec8c1ff4af6e895983ad4946529049d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZTFhNzRkNzU0ZTg3N2MwYzQ3NDAwOGQ5YTc1YWI4NWY0Mjc3MmJlNmIwNzdhNzE3YmZmMTg5NzkwZDYyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyOTQwYThiOGM0ZDFhNWY1NTY5YmNjOWFkOGZmYWFjODkxNTZjZTE2MWM3YTBlNTY2NWRhNDIyYzVkMjY4MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMmQxOTQ0NWM5M2I3Y2I2YWFmZTI1NWU3MDVhYjgwMmFlMTNjM2NmNTFkNzAwMzQ4NTI2ZTNhZjliOWY4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0NDk2MzRiYmY0MDgyMmVlY2NhYTQzYmE0M2QyNGM1YzU0ZmMwMWFlNjYyOTdhNTVlNDI2YWFmOTIxZWQ4YmUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T10:55:26.804Z"
+    "at": "2026-10-18T18:08:28.030Z"
   }
 }
