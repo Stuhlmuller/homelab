@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "d36866ead2a01d3d05e569b2bd006f778aa7cdc451b8714beceb3d10bb9182ea", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "28c3b24582f6269e9a60c07c3e1fd2349bb732dd7bab0a120cc5902163c17c53", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -50,7 +50,7 @@ echo "Legacy operation completed; private receipts withheld."`)
 openclaw_legacy_run := `set -euo pipefail
 umask 077
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'d36866ead2a01d3d05e569b2bd006f778aa7cdc451b8714beceb3d10bb9182ea  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'28c3b24582f6269e9a60c07c3e1fd2349bb732dd7bab0a120cc5902163c17c53  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
