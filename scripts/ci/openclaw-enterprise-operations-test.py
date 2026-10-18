@@ -185,6 +185,21 @@ restore_version key version-1 "$2"
             workflow = WORKFLOW.read_text()
             self.assertIn('preflight|baseline|publication|verification', workflow)
             self.assertIn('private cluster and archive diagnostics withheld', workflow)
+            shell = '''set -euo pipefail
+source <(sed -n '/^on_exit() {/,/^}/p' "$1")
+work="$2/work"
+mkdir "$work"
+phase=publication
+trap on_exit EXIT
+false
+'''
+            result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), directory],
+                                    cwd=ROOT,
+                                    env={**os.environ, 'OPENCLAW_PHASE_FILE': str(phase)},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(phase.read_text(), 'publication\n')
+            self.assertFalse((Path(directory) / 'work').exists())
 
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
