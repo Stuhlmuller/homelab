@@ -3,6 +3,7 @@
 
 import os
 import json
+import hashlib
 import subprocess
 import tempfile
 import unittest
@@ -16,9 +17,46 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
+WORKER = ROOT / 'scripts/ci/openclaw-legacy-inventory-worker.sh'
 
 
 class Operations(unittest.TestCase):
+    def test_inventory_worker_finishes_without_exec_stream_and_records_failure_privately(self):
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory)
+            private.chmod(0o700)
+            fake = private / 'fake.py'
+            fake.write_text('''import os, pathlib, sys
+output = pathlib.Path(sys.argv[sys.argv.index('--output') + 1])
+if os.environ.get('FAKE_FAIL'):
+    print('private diagnostic')
+    raise SystemExit(1)
+output.write_text('verified')
+''')
+            worker = private / 'worker.sh'
+            worker.write_text(WORKER.read_text().replace('/private/legacy', directory)
+                              .replace('/etc/openclaw-retirement/retirement.py', str(fake)))
+            for run_id, fail in (('101', False), ('102', True)):
+                (private / 'inventory.lock').mkdir()
+                result = subprocess.run(['sh', str(worker), run_id], cwd=ROOT,
+                                        env={**os.environ, 'FAKE_FAIL': '1' if fail else ''},
+                                        capture_output=True, text=True, timeout=10)
+                self.assertEqual(result.returncode == 0, not fail)
+                self.assertEqual((private / f'inventory-{run_id}.state').read_text().strip(),
+                                 'failure' if fail else 'success')
+                self.assertEqual((private / f'baseline-{run_id}.json').exists(), not fail)
+                self.assertFalse((private / 'inventory.lock').exists())
+                self.assertEqual(stat.S_IMODE((private / f'inventory-{run_id}.log').stat().st_mode),
+                                 0o600)
+            self.assertIn('private diagnostic', (private / 'inventory-102.log').read_text())
+            self.assertNotEqual(subprocess.run(['sh', str(worker), '../103'], cwd=ROOT,
+                                               capture_output=True).returncode, 0)
+            (private / 'inventory.lock').mkdir()
+            (private / 'inventory-103.state').symlink_to(private / 'outside')
+            self.assertNotEqual(subprocess.run(['sh', str(worker), '103'], cwd=ROOT,
+                                               capture_output=True).returncode, 0)
+            self.assertFalse((private / 'outside').exists())
+
     def test_private_directory_clears_inherited_setgid(self):
         command = "umask 077; mkdir -p /private/legacy; chmod 700 /private/legacy; chmod g-s /private/legacy"
         self.assertIn(command, SCRIPT.read_text())
@@ -147,6 +185,11 @@ restore_version key version-1 "$2"
         ):
             self.assertIn(required, workflow)
         self.assertNotIn('actions/upload-artifact@', workflow)
+        script = SCRIPT.read_text()
+        self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
+        self.assertIn('nohup sh "$directory/inventory-worker-${run_id}.sh"', script)
+        self.assertIn('mkdir "$directory/inventory.lock"', script)
+        self.assertIn('/diagnostic.log" >/dev/null', script)
 
 
 if __name__ == '__main__':

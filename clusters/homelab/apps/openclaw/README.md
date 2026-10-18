@@ -27,6 +27,13 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
 four PVC/PV UIDs, node and assistant image. Both inventory and archive refresh
 Kubernetes status after scanning retained data and compare volume identities.
+Inventory runs as a detached read-only process in the reader Pod because a
+full NAS hash can outlast one Kubernetes exec stream. The workflow polls its
+private completion marker; a failed scan uploads its private diagnostic to the
+versioned backup bucket under
+`openclaw-enterprise/legacy/<SHA>/<RUN_ID>/diagnostic.log`. A missing marker or
+unfinished lock means the result is unknown; inspect the Pod and private log
+before attempting another scan.
 Unreadable zero-byte NAS files retain their empty hash and original mode in the
 archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and copies the complete
@@ -39,7 +46,7 @@ and receipt versions it recorded. A green inventory alone does not authorize
 shutdown; the old Deployment and backup CronJob must first reach their reviewed
 stopped GitOps state. If any stage
 fails, leave old PVs, NAS data and credentials retained, inspect the private
-diagnostic from the protected runner, and retry with a new run ID after fixing
+diagnostic in the backup bucket if published, and retry with a new run ID after fixing
 the cause. Do not reuse a partial S3 prefix.
 
 For compatible legacy recovery after a later Enterprise failure, first stop
