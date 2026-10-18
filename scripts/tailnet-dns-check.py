@@ -109,10 +109,10 @@ def verify(server, initial=False):
         query = name.replace("*.", "dns-preflight.", 1)
         for tcp in (False, True):
             status, flags, records = dns_answer(server, query, "A", tcp)
-            if status != "NOERROR" or "aa" not in flags or records != {("A", target)}:
+            if status != "NOERROR" or "aa" not in flags or "ra" in flags or records != {("A", target)}:
                 raise RuntimeError(f"Private A answer differs from Traefik or fell through: {query}")
             status, flags, records = dns_answer(server, query, "AAAA", tcp)
-            if status != "NOERROR" or "aa" not in flags or records:
+            if status != "NOERROR" or "aa" not in flags or "ra" in flags or records:
                 raise RuntimeError(f"Private AAAA must be authoritative NODATA: {query}")
     for name, kind in (("stinkyboi.com", "MX"), ("stinkyboi.com", "TXT"),
                        ("mastodon.stinkyboi.com", "A")):
@@ -121,7 +121,8 @@ def verify(server, initial=False):
             raise RuntimeError(f"Public {kind} baseline is unavailable: {name}")
         for tcp in (False, True):
             status, flags, records = dns_answer(server, name, kind, tcp)
-            if status != public_status or records != public_records or "aa" in flags:
+            # CoreDNS cache sets AA on hits but preserves RA from recursive forwards.
+            if status != public_status or records != public_records or "ra" not in flags:
                 raise RuntimeError(f"Public fallthrough differs from baseline: {name} {kind}")
     print(f"Verified signed DNS proxy {peer['dns']} at {server}; {len(names)} approved names over UDP/TCP")
 
