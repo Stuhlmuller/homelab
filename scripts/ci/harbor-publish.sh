@@ -322,6 +322,9 @@ if [[ "$mode" == mirror ]]; then
     mirror_category="digest-mismatch"
     [[ "sha256:$(sha256sum "$scratch/manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
     mirror_category="command-failed"
+    if jq -e '.mediaType == "application/vnd.oci.image.index.v1+json"' "$scratch/manifest.json" >/dev/null; then
+      oci_index_copy=true
+    fi
     tagged_source="${source%@*}"
     if [[ "$tagged_source" == *:* ]]; then
       # Operators and chart defaults may request tags rather than digests.
