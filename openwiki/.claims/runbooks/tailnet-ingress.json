@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6b920ba4ec164985d9f7c3d7108174583a47abc78baa0b298ba03de2b0260e2b",
+  "pageVersion": "sha256:440acab3cfb5335d19f76952054a7ca677a876cb79af46a01176ef4309e0851a",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -98,7 +98,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:01eb7a477b2186253e9adb3194174133e7cc6e02eba5c13abf0168afb985e0e5"
+          "version": "repo-file-v1:sha256:e798a1e4cc8aba888cca7f74a026740b6e3b1750b860c0c77e350574035ae624"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/networkpolicy.yaml",
@@ -287,6 +287,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T20:20:01.784Z"
+    "at": "2026-10-17T23:58:10.958Z"
   }
 }
