@@ -4,6 +4,16 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+- Required pull request checks remain automatic: Policy Bot, Lint, repository
+  validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
+  Their required status names stay unchanged, so eligible PRs can still merge.
+- NOFX image builds, OpenClaw native configuration checks, and Image automation
+  verification run after matching changes land on `main`, or through their
+  reviewed manual dispatch paths. They no longer start optional PR runs.
+  Image automation no longer runs its five-minute observer schedule; the
+  weekly CodeQL security schedule remains active. Dispatch Image automation
+  with `operation=verify` from `main` to check and alert on its journal.
+
 - `Lint` runs on pull requests and invokes Super-Linter against changed files
   with advisory status reporting. It is the shared lightweight lint signal for
   every PR; the repository-specific blocking checks remain in `Terragrunt Gate`
@@ -24,7 +34,7 @@ This repository uses GitHub Actions for the review and rollout path:
   or OIDC permission.
 - `Terragrunt Apply` starts only through `workflow_dispatch` with the exact
   current `main` SHA. It repeats static checks and Conftest, enters the
-  main-only `homelab-production` environment without reviewer approval, then
+  main-only `homelab-production` environment, then
   verifies `main` again before referencing
   environment credentials or running live commands. Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
@@ -32,6 +42,8 @@ This repository uses GitHub Actions for the review and rollout path:
   They compare against the latest successful historical push apply or full
   dispatch so failed or deferred changes remain in the next affected range;
   targeted Argo reconciliations never advance that checkpoint.
+  Production jobs enter the environment automatically without reviewer approval;
+  `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
   production branch gates, never prunes, and proves a second apply has no
@@ -56,6 +68,16 @@ Re-enable those alerts only after adding a reviewed token-backed secret
 contract for Grafana.
 
 ## Security Model
+
+The pinned development shell includes Ruby for Mastodon launch and owner-bootstrap
+validation. Enroll shared toolchain dependencies before the final Harbor
+publication receipt; receipt reuse requires byte-identical publication inputs,
+including the Nix flake.
+
+GitHub Actions static validation allows 60 seconds per OpenTofu registry metadata
+request after repeated provider authentication-checksum download timeouts.
+This transport setting changes no infrastructure inputs, provider pins or
+checksum/signature verification. Existing retry and job limits still apply.
 
 Offline fixtures and manifest policy checks use the [signed Nix cache](nix-cache.md).
 Static jobs verify cache signatures or build on a miss; live plans and cluster
@@ -224,23 +246,24 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. Require a
-  reviewer and approve only after reviewing the exact pull request diff; the
-  job checks out pull request code before using live write-capable identities.
+- `homelab-plan`: used by same-repository pull request plans. No required
+  reviewers. PR code executes automatically with live write-capable identities;
+  the same-repository workflow trust check remains required.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
   No required reviewers; allow only the exact `main` branch (no tags).
-  Other branches use `homelab-plan` and retain required reviewer approval.
 
 The environment source of truth is `Stuhlmuller/repositories/terragrunt.hcl`
-in [github-iac](https://github.com/Stuhlmuller/github-iac). Its
-`reconcile-homelab-production.sh` checks the existing main-only branch policy
-and PR-plan reviewers before removing the production reviewer requirement.
+in [github-iac](https://github.com/Stuhlmuller/github-iac). Apply its documented
+environment-only saved plan; the ruleset-only deployment workflow does not
+reconcile environments. Restore reviewers through HCL and a saved plan to
+roll back approval behavior, retaining the exact `main` production allowlist.
 
 Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
 operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
-only after approval and production credentials only to `main`; do not keep
+automatically for same-repository PRs and production credentials only to
+`main`; do not keep
 duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |

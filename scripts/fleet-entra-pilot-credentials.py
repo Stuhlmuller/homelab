@@ -56,9 +56,9 @@ def main():
                 f"Fleet Mac pilot ({args.pilot}) — native Microsoft Entra account\n\n"
                 f"Sign-in: {upn}\nInitial password: {password}\n\n"
                 "Use https://myaccount.microsoft.com and sign in with this work/school account.\n"
-                "Change the temporary password, register Microsoft Authenticator, and complete required MFA before Platform SSO registration.\n"
+                "Change the temporary password, register Microsoft Authenticator, and complete required MFA before account testing.\n"
                 "Do not reuse or share this initial password; it becomes obsolete after the change.\n"
-                "Do not enroll Company Portal into Intune. Fleet remains your MDM.\n"
+                "Fleet remains your Mac MDM; the Company Portal Platform SSO pilot is retired.\n"
             )
     except Exception:  # noqa: BLE001 - credential-bearing subprocess failures must never be logged.
         if created:

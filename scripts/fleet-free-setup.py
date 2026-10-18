@@ -25,11 +25,10 @@ ROOT = Path(__file__).resolve().parents[1]
 PROFILES = ROOT / "clusters/homelab/apps/fleet/profiles"
 CONSOLE_USER = "rodman@stuhlmuller.net"
 RECOVERY_USER = "rodman@stinkyboi.com"
-MAC_FILES = ("macos-security-baseline-host.mobileconfig", "macos-entra-platform-sso.mobileconfig")
-MAC_BASELINE_FILES = (MAC_FILES[0],)
-MAC_PSSO_FILES = (MAC_FILES[1],)
+MAC_FILES = ("macos-security-baseline-host.mobileconfig",)
 IOS_FILES = ("ios-passcode-baseline.mobileconfig",)
 LEGACY_MAC_FILES = ("macos-security-baseline.mobileconfig",)  # Global assignment retired; removal only.
+RETIRED_MAC_FILES = ("macos-entra-platform-sso.mobileconfig",)  # Requires Intune enrollment; removal only.
 POLICY = {
     "name": "Family Mac FileVault enabled",
     "query": "SELECT 1 FROM disk_encryption WHERE user_uuid IS NOT '' AND filevault_status = 'on' LIMIT 1;",
@@ -341,8 +340,9 @@ def mac_baseline_catalog(api, token, remove=False):
 
 def execute(args):
     desired = (profiles(IOS_FILES, 1) if args.action == "ios-baseline"
-               else profiles(MAC_BASELINE_FILES if args.action == "mac-baseline"
-                             else MAC_PSSO_FILES if args.action == "mac-psso" else MAC_FILES, 5))
+               else profiles(MAC_FILES, 5))
+    if args.action == "mac-pilot" and args.remove:
+        desired += profiles(RETIRED_MAC_FILES, 5)
     api = module("fleet_api", "fleet-download-apple-csr.py")
     mdm = module("fleet_mdm", "fleet-verify-apple-mdm.py")
     api.MAX_RESPONSE = 16 * 1024 * 1024
@@ -377,10 +377,10 @@ def execute(args):
             print("Fleet Free profile validation passed; no profiles assigned")
         else:
             host = (ios_host(api, mdm, token, args.host_id) if args.action == "ios-baseline"
-                    else mac_host(api, mdm, token, args.host_id) if args.action in ("mac-baseline", "mac-psso")
+                    else mac_host(api, mdm, token, args.host_id) if args.action == "mac-baseline"
                     else mdm.local_host(api, token))
             if args.action == "mac-pilot" and not args.remove:
-                apply_profiles(api, mdm, token, host, profiles(MAC_PSSO_FILES, 5), remove=True)
+                apply_profiles(api, mdm, token, host, profiles(RETIRED_MAC_FILES, 5), remove=True)
                 print("Existing Platform SSO profile absence and baseline/unrelated-profile retention: verified")
             apply_profiles(api, mdm, token, host, desired, remove=args.remove)
             if args.action == "ios-baseline" and not args.remove:
@@ -400,20 +400,20 @@ def execute(args):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline", "mac-psso",
+    parser.add_argument("action", choices=("validate-profiles", "mac-pilot", "mac-baseline",
                                             "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"))
     parser.add_argument("--host-id", type=int,
-                        help="Explicit enrolled Fleet ID; required for mac-baseline, mac-psso, or ios-baseline")
+                        help="Explicit enrolled Fleet ID; required for mac-baseline or ios-baseline")
     parser.add_argument("--remove", action="store_true",
                         help="Remove only the selected repository profiles; does not restore old passwords")
     parser.add_argument("--current-password-file", type=Path,
                         help="Private current target-local Fleet password file for a legacy console SSO migration")
     parser.add_argument("--execute", action="store_true", help="Apply through the authenticated Fleet API")
     args = parser.parse_args(argv)
-    if ((args.action in ("mac-baseline", "mac-psso", "ios-baseline")) != (args.host_id is not None)
+    if ((args.action in ("mac-baseline", "ios-baseline")) != (args.host_id is not None)
             or (args.host_id is not None and args.host_id < 1)):
-        parser.error("Only mac-baseline, mac-psso, and ios-baseline require --host-id with a positive Fleet host ID")
-    if args.remove and args.action not in ("mac-pilot", "mac-baseline", "mac-psso", "ios-baseline", "mac-baseline-catalog"):
+        parser.error("Only mac-baseline and ios-baseline require --host-id with a positive Fleet host ID")
+    if args.remove and args.action not in ("mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog"):
         parser.error("--remove applies only to device profiles")
     if args.current_password_file is not None and args.action != "console-sso":
         parser.error("--current-password-file applies only to console-sso")
@@ -423,12 +423,12 @@ def main(argv=None):
         profiles(MAC_FILES, 5)
         profiles(IOS_FILES, 1)
         profiles(LEGACY_MAC_FILES, 5)
+        profiles(RETIRED_MAC_FILES, 5)
         if not args.execute:
             print("Dry run: profile files valid; no credentials or APIs accessed.\n"
                   "mac-pilot targets this exact Mac by serial AND hardware UUID.\n"
                   "Profile writes replace only stable repository identifiers, preserve other profiles, and never auto-retry.\n"
                   "mac-baseline targets only the selected Fleet-enrolled Mac; future Macs require an explicit install.\n"
-                  "mac-psso targets only the selected Fleet-enrolled Mac and installs or removes only Platform SSO.\n"
                   "ios-baseline targets only the selected iPhone or iPad; install and removal never use a global catalog.\n"
                   "mac-baseline-catalog --remove retires the old global assignment after host-scoped Mac installs.\n"
                   "console-sso stages or verifies the SSO/recovery topology from local recovery; "

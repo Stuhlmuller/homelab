@@ -84,6 +84,7 @@
             findutils
             gh
             git
+            gnupg
             gitleaks
             gnugrep
             gnused
@@ -93,6 +94,7 @@
             jq
             k9s
             kubernetes-helm
+            kind
             kubectl
             kustomize
             lua5_1
@@ -106,7 +108,9 @@
             postgresql_14
             prometheus.cli
             python3
+            regctl
             ripgrep
+            ruby
             shellcheck
             shfmt
             skopeo

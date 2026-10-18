@@ -116,17 +116,20 @@ base intentionally adopts them again and the documentation explains why.
    `homelab-knowledge-base` skill for context and `openwiki` for search/updates.
 2. Inspect current state with read-only commands when the task depends on live
    cluster reality.
-3. Run the repo validation gate when available, such as `nix run .#validate` or
+3. Before nontrivial code with a relevant upstream or peer implementation,
+   search the pinned XERJ reference corpus and inspect the cited source. See
+   [reference coding](docs/xerj-reference-coding.md).
+4. Run the repo validation gate when available, such as `nix run .#validate` or
    the documented replacement.
-4. Make the smallest code and documentation change that solves the request.
-5. Update affected knowledge-base notes under `openwiki/` when the
+5. Make the smallest code and documentation change that solves the request.
+6. Update affected knowledge-base notes under `openwiki/` when the
    change creates, removes, renames, or materially changes an app, platform
    dependency, workflow, topology assumption, secret contract, storage
    requirement, validation gate, or build pattern.
-6. Re-run relevant validation.
-7. For live rollout work, run any documented live-cluster validation before
+7. Re-run relevant validation.
+8. For live rollout work, run any documented live-cluster validation before
    applying changes.
-8. Summarize what changed, what was validated, and any remaining operational
+9. Summarize what changed, what was validated, and any remaining operational
    risk.
 
 Treat security and reliability improvement as ongoing stewardship. When you

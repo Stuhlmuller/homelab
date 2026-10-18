@@ -240,7 +240,7 @@ class FleetFreeTest(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.profiles = Path(self.directory.name)
-        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.IOS_FILES:
+        for name in helper.MAC_FILES + helper.LEGACY_MAC_FILES + helper.RETIRED_MAC_FILES + helper.IOS_FILES:
             shutil.copyfile(helper.PROFILES / name, self.profiles / name)
         self.api, self.mdm = FakeAPI(), FakeMDM()
         self.private_input = Mock()
@@ -310,10 +310,10 @@ class FleetFreeTest(unittest.TestCase):
         ])
 
     def test_every_dry_run_avoids_credentials_modules_and_api(self):
-        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "mac-psso", "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
+        for action in ("validate-profiles", "mac-pilot", "mac-baseline", "ios-baseline", "mac-baseline-catalog", "console-sso", "reporting"):
             with self.subTest(action=action):
                 args = [action]
-                if action in ("mac-baseline", "mac-psso", "ios-baseline"):
+                if action in ("mac-baseline", "ios-baseline"):
                     args += ["--host-id", "2"]
                 if action == "mac-baseline-catalog":
                     args += ["--remove"]
@@ -323,8 +323,6 @@ class FleetFreeTest(unittest.TestCase):
                 self.api.initial_password.assert_not_called()
                 self.assertEqual(self.api.calls, [])
                 self.assertEqual(self.mdm.calls, [])
-                if action == "mac-psso":
-                    self.assertIn("mac-psso targets only the selected Fleet-enrolled Mac", output)
                 if action == "console-sso":
                     self.assertIn("--current-password-file is legacy-only", output)
 
@@ -362,7 +360,8 @@ class FleetFreeTest(unittest.TestCase):
                 (self.profiles / filename).write_bytes(original)
 
     def test_mac_uses_exact_identity_guard_and_preserves_other_profiles(self):
-        baseline, psso = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
+        baseline = plistlib.loads((self.profiles / helper.MAC_FILES[0]).read_bytes())
+        psso = plistlib.loads((self.profiles / helper.RETIRED_MAC_FILES[0]).read_bytes())
         self.mdm.installed += [baseline, psso]
         status, output, _ = self.run_command(["mac-pilot", "--execute"])
         self.assertEqual(status, 0)
@@ -371,12 +370,12 @@ class FleetFreeTest(unittest.TestCase):
         self.assertIn(UNRELATED, self.mdm.installed)
         self.assertEqual([command["RequestType"] for _, command in self.mdm.calls], [
             "ProfileList", "RemoveProfile", "ProfileList", "ProfileList",
-            "InstallProfile", "InstallProfile", "ProfileList",
+            "InstallProfile", "ProfileList",
         ])
         removals = [command["Identifier"] for _, command in self.mdm.calls
                     if command["RequestType"] == "RemoveProfile"]
         self.assertEqual(removals, [psso["PayloadIdentifier"]])
-        self.assertEqual(self.mdm.installed, [UNRELATED, baseline, psso])
+        self.assertEqual(self.mdm.installed, [UNRELATED, baseline])
         self.assertIn("Existing Platform SSO profile absence and baseline/unrelated-profile retention: verified", output)
         self.assert_logged_out()
 
@@ -430,22 +429,11 @@ class FleetFreeTest(unittest.TestCase):
                 self.mdm.local_host.assert_not_called()
                 self.assert_logged_out()
 
-    def test_mac_psso_rejects_wrong_identity_platform_or_disconnected_mdm(self):
-        connected = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
-                     "mdm": {"connected_to_fleet": True}}
-        for field, value in (("platform", "ios"), ("id", 3),
-                             ("mdm", {"connected_to_fleet": False})):
-            with self.subTest(field=field, value=value):
-                self.api.host = dict(connected, **{field: value})
-                self.assertEqual(self.run_command(["mac-psso", "--host-id", "2", "--execute"])[0], 1)
-                self.assert_no_setup_mutations()
-                self.mdm.local_host.assert_not_called()
-                self.assert_logged_out()
-
     def test_mac_baseline_removes_only_individual_profile_and_is_idempotent(self):
         self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
                          "mdm": {"connected_to_fleet": True}}
-        baseline, entra = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
+        baseline = plistlib.loads((self.profiles / helper.MAC_FILES[0]).read_bytes())
+        entra = plistlib.loads((self.profiles / helper.RETIRED_MAC_FILES[0]).read_bytes())
         legacy = plistlib.loads((self.profiles / helper.LEGACY_MAC_FILES[0]).read_bytes())
         self.mdm.installed += [baseline, entra, legacy]
         args = ["mac-baseline", "--host-id", "2", "--remove", "--execute"]
@@ -463,32 +451,6 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual(self.run_command(args)[0], 0)
         self.assertTrue(all(command["RequestType"] == "ProfileList" for _, command in self.mdm.calls))
         self.assertEqual(self.mdm.installed, [UNRELATED, entra, legacy])
-
-    def test_mac_psso_targets_only_selected_mac_and_preserves_baseline_on_removal(self):
-        self.api.host = {"id": 2, "platform": "darwin", "uuid": LOCAL_UUID,
-                         "mdm": {"connected_to_fleet": True}}
-        baseline, entra = [plistlib.loads((self.profiles / name).read_bytes()) for name in helper.MAC_FILES]
-        self.assertIn("Microsoft Authenticator", entra["PayloadDescription"])
-        self.mdm.installed.append(baseline)
-        args = ["mac-psso", "--host-id", "2", "--execute"]
-        self.assertEqual(self.run_command(args)[0], 0)
-        self.assertTrue(all(host == LOCAL_UUID for host, _ in self.mdm.calls))
-        self.assertEqual([command["RequestType"] for _, command in self.mdm.calls],
-                         ["ProfileList", "InstallProfile", "ProfileList"])
-        self.assertEqual(self.mdm.installed, [UNRELATED, baseline, entra])
-        self.mdm.local_host.assert_not_called()
-        self.assert_logged_out()
-
-        self.mdm.calls.clear()
-        self.assertEqual(self.run_command(args[:-1] + ["--remove", "--execute"])[0], 0)
-        self.assertEqual([command for _, command in self.mdm.calls], [
-            {"RequestType": "ProfileList"},
-            {"RequestType": "RemoveProfile", "Identifier": entra["PayloadIdentifier"]},
-            {"RequestType": "ProfileList"},
-        ])
-        self.assertEqual(self.mdm.installed, [UNRELATED, baseline])
-        self.mdm.local_host.assert_not_called()
-        self.assert_logged_out()
 
     def test_ios_baseline_targets_only_selected_device_and_reports_security_info(self):
         for platform in ("ios", "ipados"):
@@ -563,7 +525,7 @@ class FleetFreeTest(unittest.TestCase):
                 self.mdm = FakeMDM()
 
     def test_selected_device_actions_require_positive_host_ids_before_loading_credentials(self):
-        for action in ("mac-baseline", "mac-psso", "ios-baseline"):
+        for action in ("mac-baseline", "ios-baseline"):
             for host_args in ([], ["--host-id", "0"], ["--host-id", "-1"]):
                 with self.subTest(action=action, host_args=host_args), \
                         patch.object(helper, "module") as loader, \
@@ -586,7 +548,7 @@ class FleetFreeTest(unittest.TestCase):
         self.assertEqual([profile["PayloadIdentifier"] for profile in submitted],
                          [profile["PayloadIdentifier"] for _, profile in
                           helper.profiles(helper.MAC_FILES, 5) + helper.profiles(helper.IOS_FILES, 1)])
-        self.assertEqual([profile["TargetDeviceType"] for profile in submitted], [5, 5, 1])
+        self.assertEqual([profile["TargetDeviceType"] for profile in submitted], [5, 1])
         self.assertEqual(self.mdm.calls, [])
         self.assert_logged_out()
 
@@ -671,7 +633,7 @@ class FleetFreeTest(unittest.TestCase):
         self.assert_logged_out()
 
     def test_remove_is_idempotent_and_never_removes_another_profile(self):
-        for name in helper.MAC_FILES:
+        for name in helper.MAC_FILES + helper.RETIRED_MAC_FILES:
             self.mdm.installed.append(plistlib.loads((self.profiles / name).read_bytes()))
         self.assertEqual(self.run_command(["mac-pilot", "--remove", "--execute"])[0], 0)
         removals = [command["Identifier"] for _, command in self.mdm.calls

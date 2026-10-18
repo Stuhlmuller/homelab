@@ -109,6 +109,64 @@ service recovery mutation was performed, and no signed outputs were published.
 Keep retries held until cancellation lifecycle and resource preflight are
 reviewed; preserve raw incident diagnostics in private operator storage.
 
+The separately released retry on main `65ecac9a` downloaded dependencies but
+failed before either check ran: `cannot set loopback interface flags:
+Operation not permitted`. The worker exposed `user.max_user_namespaces=0`,
+and the builder's effective/bounding capabilities omitted `NET_ADMIN`.
+[Nix 2.35.2 sandbox setup](https://github.com/NixOS/nix/blob/2.35.2/src/libstore/linux/build/linux-derivation-builder.cc)
+creates a private network namespace and raises its loopback interface. Without
+user namespaces, that interface operation needs `NET_ADMIN` in the parent
+user namespace. Do not disable the build sandbox to bypass this failure.
+
+All four nodes remained Ready without pressure; OOM/OOM-kill counters stayed
+zero. Observed cgroup peak was 1,079,291,904 bytes (about 1,029 MiB), with the
+configured memory limit still 1 GiB. The failed command exited, automatic
+cancellation found no remaining supervisor, and independent inspection
+confirmed the owner lock and attempt workspaces were absent. The release
+still contained only `nix-cache-info`; no signed results were published.
+
+The protected runtime fix adds only `NET_ADMIN` to the nix-builder container
+and updates its namespace
+justification/README, followed by Argo rollout and one newly authorized
+bounded retry. The operator explicitly approved this capability change and
+one further attempt on October 11, 2026. A temporary candidate rendered and
+passed all 224 Conftest policy assertions without policy changes; this is not runtime acceptance.
+`NET_ADMIN` also allows configuring the Pod's network namespace. The October 11
+approval covered this scoped change only; any further privilege change needs
+separate approval. Keep RuntimeDefault seccomp,
+strict sandbox/signature verification, the 1 GiB request/limit, serial
+substitutions and lifecycle safeguards. Host namespace sysctls, host
+networking, credentials, capacity and other workloads are outside this fix.
+The first full check's memory sufficiency and signed-cache hit remain
+unproved. Preserve raw failure logs and original attempt IDs privately.
+The earlier one-attempt release remains exhausted; further attempts require
+new explicit authorization.
+
+The newly authorized attempt after PR #1291 on `af18e0e6` passed the private
+loopback setup but failed at Nix sandbox root pivot for the Node.js dependency:
+`cannot pivot old root directory ... Operation not permitted`. Neither offline
+check completed, and no signed outputs were published. RuntimeDefault seccomp,
+strict sandbox/signature verification, the 1 GiB limit and the reviewed
+capabilities were retained. This error identifies the failing operation, not
+its confirmed enforcement cause; diagnose the sandbox/profile boundary before
+proposing any additional privilege or profile change.
+
+The attempt exited with status 1. Independent inspection confirmed the owner
+lock and attempt workspaces absent, no active Nix/timeout process, four Ready
+nodes without pressure and fresh leases. Memory peak was 1,060,679,680 bytes
+(about 1,012 MiB), below the configured 1 GiB limit, with no max/OOM events.
+The full-check resource budget remains unproved. That attempt release was
+exhausted; the separate recovery below received its own approval.
+
+The separately approved `pivot_root` recovery uses a dedicated Localhost
+profile for only the builder container; the Pod default remains RuntimeDefault.
+The profile preserves the captured containerd 2.1.4 rules and adds only
+`pivot_root`. Both eligible workers must have exact profile readback before
+container selection is merged. Follow [protected profile delivery](nix-builder-seccomp.md),
+then verify the actual Pod profile, sandbox/signature settings and 1 GiB limit
+before fresh headroom preflight and the single newly released publication
+attempt. Profile installation or selection is not signed-cache acceptance.
+
 New untracked files must first be staged: Git-backed flakes only include
 tracked files. Do not stage private key material. Changes to tracked docs or
 unrelated configuration also invalidate these broad checks; narrow input

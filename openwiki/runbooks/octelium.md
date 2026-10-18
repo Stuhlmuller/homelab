@@ -53,8 +53,7 @@ before it. New application routes belong in Traefik; the retained Octelium
 catalog is not a recipe to restore public app DNS or delete Cordium resources.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
-and 18 additional public WEB Service fallbacks on `acer` without Multus, 19
-including the existing OctoBot fallback. Its generated Service UIDs must be
+and 18 public WEB Service fallbacks on `acer` without Multus. Its generated Service UIDs must be
 refreshed after any Service recreation. Keep it until the native fleet passes
 the capacity, 24-hour stability, direct Pod, and public end-to-end removal
 gates in [Cluster Topology](../architecture/cluster-topology.md).

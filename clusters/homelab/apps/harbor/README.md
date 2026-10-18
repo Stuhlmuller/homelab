@@ -12,11 +12,12 @@ WEB transport, then the private Istio gateway. Harbor authenticates browsers
 and OCI clients itself. The transport must preserve `Authorization` and the
 OCI bearer-token challenge; a browser SSO redirect would break containerd,
 Docker, Helm, and ORAS. Internal publisher Pods use the same HTTPS hostname
-through CoreDNS split resolution to the existing Istio gateway.
+through CoreDNS split resolution to the private Traefik route.
 
 Public Tunnel requests remain subject to Cloudflare's [upload limits][limits].
-Large-image migration and publication use the CI TLS port-forward into Istio. A
-successful browser page or `/v2/` challenge does not prove large uploads.
+Large-image migration and publication use the CI TLS port-forward to
+`traefik-private`; a successful browser page or `/v2/` challenge does not prove
+large uploads.
 Talos containerd resolves names through the host resolver, so the Pod-only
 CoreDNS rewrite does not change node image pulls. Verify a new Pod can pull a
 private digest before changing a workload's image source.
@@ -36,10 +37,14 @@ The PostSync bootstrap creates the private `homelab` project and reconciles:
 | --- | --- | --- |
 | `robot$homelab+pull` | Pull repository | Kubernetes `imagePullSecrets` |
 | `robot$homelab+publisher` | Pull/push repository | Protected image publishing and migration |
-| `robot$mirror+publisher` | Pull/push within public `mirror` only | Public upstream image copies |
+| `robot$mirror+publisher` | Pull/push within `mirror` | Protected upstream image copies |
+| `robot$mirror+pull` | Pull within `mirror` | Node registry authentication and publication receipt |
 
-Bootstrap and Harbor image references retain upstream names. After verified
-copies, Talos redirects pulls to the public upstream-only `mirror` project.
+Bootstrap and Harbor image references retain upstream names. The initial
+`mirror` project stays public only while the dedicated pull robot is reconciled
+and each node's registry authentication is validated. A later reviewed privacy
+flip makes it private after every node can authenticate. Talos redirects pulls
+to the upstream-only `mirror` project.
 Fresh bootstrap and registry recovery use the upstream rollback patch; see
 [the cluster-wide mirror runbook](../../../../docs/harbor-image-mirroring.md). Keep original migration
 sources until independent pulls and workload rollouts succeed. Do not delete
@@ -70,6 +75,10 @@ collector mounts the existing administrator credential as a file and keeps the
 credential out of process arguments and environment variables. Harbor omits
 zero-valued severity buckets, so a completed scan without a `Critical` bucket
 correctly contributes zero rather than failing collection.
+
+The Deployment references the namespace-local `harbor-pull` Docker-config Secret
+for its staged internal image migration. Kubelet uses it only when its image
+needs Harbor authentication; the credential is never mounted in the exporter.
 
 The ServiceMonitor is scraped every minute. Collection runs in the background;
 scrapes and readiness probes return cached totals immediately even when Harbor
@@ -128,7 +137,8 @@ and [schedule validation](https://github.com/goharbor/harbor/blob/v2.15.2/src/co
 | `database-password` | PostgreSQL password; `password` is the chart-required key alias |
 | `robot-pull-password` | Project pull robot credential |
 | `robot-push-password` | Private homelab project publisher robot credential |
-| `mirror-robot-push-password` | Independent public mirror publisher credential |
+| `mirror-robot-pull-password` | Mirror read-only credential for node authentication and publication receipt |
+| `mirror-robot-push-password` | Independent mirror publisher credential |
 
 The chart uses stable secret references instead of Helm-generated random
 credentials. cert-manager owns the RSA token-signing certificate and key in

@@ -113,8 +113,8 @@ reviewed object-ID plan must merge and apply before the owner UPN changes.
 3. Merge signed, reviewed code before applying the saved plan through the
    operator unit. Then review and apply each application's ownership transition
    from the same merged tree. Retain the human administrator and existing state.
-4. Ensure both GitHub environments have their declared reviewer protection with
-   administrator bypass disabled. Production must allow only protected branches.
+4. Ensure both GitHub environments have no required reviewers and administrator
+   bypass disabled. Production must allow only the exact `main` branch, no tags.
    These settings belong to `Stuhlmuller/github-iac`, not a duplicate homelab
    resource. Use that repository's documented environment-only saved-plan path
    to reconcile drift before activating federation.
@@ -184,8 +184,9 @@ is guarded by `prevent_destroy` and is not routine rollback.
 An Entra-only verification does not advance the full homelab apply checkpoint.
 The successful [full apply run 37586972225](https://github.com/Stuhlmuller/homelab/actions/runs/37586972225)
 advanced it to signed `main` commit `f47cf006e1108f2c1d13f7d002b0611fcdfc22df`.
-Native Mac Platform SSO, password sync and offline login remain separate
-acceptance tests in the [Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+The Fleet-only Mac Platform SSO and password-sync pilot is retired. Console SAML
+and the supported Apple baselines have separate acceptance checks in the
+[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 References:
 

@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+# GitHub checksum metadata can exceed OpenTofu's ten-second default.
+if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+  export TF_REGISTRY_CLIENT_TIMEOUT=60
+fi
 case "${1:-}" in
   "") bash scripts/ci/nix-checks.sh ;;
   --offline-verified) [[ $# == 1 ]] ;;
@@ -30,6 +35,7 @@ for parameter in \
   '/homelab/argocd-image-updater/github-app/id' \
   '/homelab/argocd-image-updater/github-app/installation-id' \
   '/homelab/argocd-image-updater/github-app/private-key' \
+  '/homelab/fleet/google-oauth' \
   '/homelab/entra/google-workspace-federation-metadata'; do
   parameter_block="$(
     awk -v target="\"${parameter}\" = {" '
