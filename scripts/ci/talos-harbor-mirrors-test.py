@@ -57,6 +57,21 @@ def patch_operations(test, command):
 
 
 class RolloutTest(unittest.TestCase):
+    def test_codeberg_mirror_has_matching_upstream_recovery(self):
+        def mirrors(name):
+            path = ROOT / ".talos/patches" / name
+            document = json.loads(subprocess.check_output(["yq", "-o=json", ".", str(path)], text=True))
+            return document["machine"]["registries"]["mirrors"]
+
+        self.assertEqual(mirrors("harbor-mirrors.yaml")["codeberg.org"], {
+            "endpoints": ["https://harbor.stinkyboi.com/v2/mirror/codeberg.org"],
+            "overridePath": True, "skipFallback": True,
+        })
+        self.assertEqual(mirrors("harbor-mirrors-rollback.yaml")["codeberg.org"], {
+            "endpoints": ["https://codeberg.org/v2"],
+            "overridePath": True, "skipFallback": False,
+        })
+
     def test_private_registry_preflight_rejects_tls_redirects_and_dashboard_exposure(self):
         for failure in (None, "tls", "dashboard", "service"):
             with self.subTest(failure=failure):
