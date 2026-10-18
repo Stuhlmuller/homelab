@@ -90,15 +90,21 @@ routes. Normal OS lookup acceptance waits for the owner's nameserver setting.
 
 - [X] T026 [P] Explain architecture, DNS query behavior, on-demand tailnet-path health check, signed proxy recovery, restricted nameserver setting, exit-node option, record-retirement gates, cache wait, and fail-closed rollback in `clusters/homelab/platform/tailnet-dns/README.md`, `docs/networking-tailnet-ingress.md`, and `clusters/homelab/apps/traefik/CUTOVER.md`.
 - [X] T027 Refresh the affected platform inventory/topology and validation notes through the repository's native OpenWiki update path for `openwiki/workloads/inventory.md`, `openwiki/architecture/cluster-topology.md`, and `openwiki/operations/validation-gates.md`; keep generated page provenance intact.
-- [ ] T028 Run `python3 -I scripts/ci/tailnet-dns-test.py`, its one-time `--initial-migration` mode, `python3 -I scripts/ci/tailnet-dns-check-test.py`,
+- [X] T028 Run `python3 -I scripts/ci/tailnet-dns-test.py`, its one-time `--initial-migration` mode, `python3 -I scripts/ci/tailnet-dns-check-test.py`,
   `python3 -I scripts/ci/tailscale-private-dns-test.py`, Helm render, Kustomize build, the Nix flake/offline/static gates, affected Terragrunt formatting/saved plan, and live pre-apply validation from
   `specs/004-tailnet-service-dns/quickstart.md`; record any unavailable gate before live changes.
-- [ ] T029 After the T007 Harbor receipt and T028 gates, merge the reviewed Application/Traefik/tooling PR into `main`, then apply `IaC/stacks/tailnet-dns/stack.hcl` through the declared Terragrunt/Argo path and inspect Application, Deployment, Pod, and Service status read-only.
-- [ ] T030 From the trusted signer, preview and sign only the fixed DNS proxy with `scripts/tailscale-ingress-sign.py`; then run `scripts/tailnet-dns-check.py --initial-handoff` and the
+- [X] T029 After the T007 Harbor receipt and T028 gates, merge the reviewed Application/Traefik/tooling PR into `main`, then apply `IaC/stacks/tailnet-dns/stack.hcl` through the declared Terragrunt/Argo path and inspect Application, Deployment, Pod, and Service status read-only.
+- [X] T030 From the trusted signer, preview and sign only the fixed DNS proxy with `scripts/tailscale-ingress-sign.py`; then run `scripts/tailnet-dns-check.py --initial-handoff` and the
   UDP/TCP, 27-name, apex mail, unrelated-public, and HTTPS checks in `specs/004-tailnet-service-dns/quickstart.md` against the actual online Service/peer IPv4. Record the verified address
   and peer identity in private rollout evidence, not as invented static values. The initial 27-name registration and offline mutation checks establish handoff evidence; observe later live
   change convergence on the first actual reviewed name change.
 - [ ] T031 Give the owner the verified IPv4 and restricted `stinkyboi.com` nameserver instruction from `docs/networking-tailnet-ingress.md`, then pause before changing tailnet DNS or executing `scripts/tailscale-private-dns.sh --retire-private`.
+
+T028–T030 receipt: [image publication](https://github.com/Stuhlmuller/homelab/actions/runs/39161113974),
+[reviewed application](https://github.com/Stuhlmuller/homelab/pull/1384), and
+[targeted production apply](https://github.com/Stuhlmuller/homelab/actions/runs/39168123702), and
+[handoff checker fix](https://github.com/Stuhlmuller/homelab/pull/1388).
+The direct checker and representative HTTPS requests passed from the trusted signer Mac, which is an untagged tailnet member. A separate member-client shell was unavailable; normal OS DNS on another client remains a post-handoff cutover check. The local Nix daemon rejected the trusted-builder cache/key policy for `nix run .#validate`; the PR's required repository and Terragrunt checks passed.
 
 ## Dependencies and execution order
 
