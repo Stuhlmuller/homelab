@@ -71,6 +71,16 @@ class RouteTests(unittest.TestCase):
             self.assertEqual(ROUTERS[name]["entryPoints"], ["websecure"])
             self.assertEqual(ROUTERS[name]["tls"], {})
 
+    def test_private_harbor_transport_keeps_tls_service_and_full_route(self):
+        private = read_yaml("clusters/homelab/apps/traefik/values.yaml")["service"]["private"]
+        self.assertEqual(private["ports"]["https"], {"port": 443, "targetPort": 8443})
+        self.assertEqual(ROUTERS["harbor"], {
+            "entryPoints": ["websecure"],
+            "rule": "Host(`harbor.stinkyboi.com`)",
+            "service": "harbor",
+            "tls": {},
+        })
+
     def test_fleet_setup_has_no_router(self):
         rule = ROUTERS["fleet"]["rule"]
         self.assertEqual(rule, "Host(`fleet.stinkyboi.com`) && "

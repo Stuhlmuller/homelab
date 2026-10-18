@@ -33,12 +33,19 @@ langfuse:
     resources:
       requests:
         cpu: 250m
-        # Reserve the full web memory budget for scheduling.
-        memory: 2Gi
+        memory: 1280Mi
       limits:
         cpu: "1"
         memory: 2Gi
     pod:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: [acer]
       additionalEnv:
         - name: LANGFUSE_INIT_ORG_ID
           value: homelab
