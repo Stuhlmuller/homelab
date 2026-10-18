@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mastodon-public
+  namespace: mastodon
+  annotations:
+    homelab.rst.io/access-plane: octelium
+    homelab.rst.io/public-funnel: "false"
+    homelab.rst.io/public-callback: "true"
+    homelab.rst.io/public-callback-reviewed: "true"
+    homelab.rst.io/public-callback-purpose: "Public Mastodon website, native clients, WebFinger and federation; Mastodon authenticates users."
+spec:
+  hosts:
+    - mastodon.stinkyboi.com
+  gateways:
+    - istio-system/tailnet-gateway
+  http:
+    - name: streaming
+      match:
+        - uri:
+            exact: /api/v1/streaming
+        - uri:
+            prefix: /api/v1/streaming/
+      route:
+        - destination:
+            host: mastodon-streaming.mastodon.svc.cluster.local
+            port:
+              number: 4000
+    - name: web
+      route:
+        - destination:
+            host: mastodon-web.mastodon.svc.cluster.local
+            port:
+              number: 3000

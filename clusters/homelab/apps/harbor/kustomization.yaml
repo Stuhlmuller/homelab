@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - serviceaccount.yaml
   - externalsecret.yaml
+  - harbor-pull-secret.yaml
   - token-certificate.yaml
   - image-signing-certificate.yaml
   - local-storage.yaml

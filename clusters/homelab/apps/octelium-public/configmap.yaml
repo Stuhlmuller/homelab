@@ -24,6 +24,12 @@ data:
           httpHostHeader: octelium-api.stinkyboi.com
       - hostname: octelium-transport.stinkyboi.com
         service: tcp://octelium-api-ingressgateway.istio-system.svc.cluster.local:443
+      # Mastodon authenticates users and exposes federation without portal login.
+      - hostname: mastodon.stinkyboi.com
+        service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
+        originRequest:
+          originServerName: mastodon.stinkyboi.com
+          httpHostHeader: mastodon.stinkyboi.com
       - hostname: stinkyboi.com
         service: https://istio-ingressgateway.istio-system.svc.cluster.local:443
         originRequest:

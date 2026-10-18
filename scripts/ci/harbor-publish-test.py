@@ -35,6 +35,8 @@ class HarborPublicationGates(unittest.TestCase):
         self.bazarr_mirror_manifest = None
         self.mastodon_mirror_manifest = None
         self.traefik_mirror_manifest = None
+        self.harbor_mirror_manifest = None
+        self.renovate_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
@@ -89,6 +91,16 @@ class HarborPublicationGates(unittest.TestCase):
             chainguard_path.unlink(missing_ok=True)
         else:
             chainguard_path.write_text(json.dumps(self.chainguard_mirror_manifest))
+        harbor_path = self.root / "scripts/config/harbor-runtime-images.json"
+        if self.harbor_mirror_manifest is None:
+            harbor_path.unlink(missing_ok=True)
+        else:
+            harbor_path.write_text(json.dumps(self.harbor_mirror_manifest))
+        renovate_path = self.root / "scripts/config/harbor-renovate-images.json"
+        if self.renovate_mirror_manifest is None:
+            renovate_path.unlink(missing_ok=True)
+        else:
+            renovate_path.write_text(json.dumps(self.renovate_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -114,10 +126,12 @@ class HarborPublicationGates(unittest.TestCase):
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
-                        source_error="toomanyrequests", core=False):
+                        source_error="toomanyrequests", core=False, cordium=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
+        if cordium:
+            names = ["homelab-cordium-runner", "homelab-cordium-controller"]
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
@@ -185,7 +199,7 @@ class HarborPublicationGates(unittest.TestCase):
                                  "--new-bundle-format=false", "--oidc-disable-ambient-providers"):
                         assert flag in sign["args"]
                     expected = ["harbor.stinkyboi.com/homelab/" + name + "@" + digest
-                                for name, digest in sorted(FIXTURE["published_digests"].items())]
+                                for name, digest in FIXTURE["published_digests"].items()]
                     assert sign["args"][-len(expected):] == expected
                     assert not pod["automountServiceAccountToken"]
                     assert job["spec"]["backoffLimit"] == 0
@@ -269,7 +283,7 @@ class HarborPublicationGates(unittest.TestCase):
                     if "--no-creds" in args:
                         authfile = Path(args[args.index("--authfile") + 1])
                         assert json.loads(authfile.read_text()) == {"auths": {}}
-                    if FIXTURE["failure"] in ("digest", "mirror-existing-digest") and name.endswith("frontend"):
+                    if FIXTURE["failure"] in ("digest", "mirror-existing-digest") and name.endswith(("frontend", "controller")):
                         raw += "corruption"
                     if FIXTURE["failure"] == "mirror-tag" and reference.endswith(":stable"):
                         raw += "tag corruption"
@@ -295,9 +309,9 @@ class HarborPublicationGates(unittest.TestCase):
                     raw = FIXTURE["manifests"][reference] if FIXTURE["mirror"] else FIXTURE["published_manifests"][name]
                     if upstream and FIXTURE["failure"] == "upstream-digest":
                         raw += "corrupted upstream index"
-                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith(("frontend", "core")):
+                    if FIXTURE["failure"] == "pull-digest" and not upstream and name.endswith(("frontend", "core", "controller")):
                         raw += "corrupted download"
-                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith(("frontend", "core")):
+                    if FIXTURE["failure"] == "pull" and not upstream and name.endswith(("frontend", "core", "controller")):
                         raise SystemExit(15)
                     directory = Path(args[-1][4:])
                     assert list(directory.iterdir()) == []
@@ -626,6 +640,45 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
+
+    def test_harbor_runtime_scope_has_nine_reviewed_components(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+        self.assertEqual(len(selected), 9)
+        self.assertTrue(all(item in catalog and item["source"].startswith("docker.io/goharbor/")
+                            and ":v2.15.4@" in item["source"] for item in selected))
+
+    def test_harbor_runtime_scope_rejects_unreviewed_and_verifies_selected_pull(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.harbor_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-harbor")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([args for args in self.calls_for("skopeo") if args[0] == "copy"]), 4)
+        self.assert_cleaned()
+        self.calls.unlink()
+        self.harbor_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
+                                                   + "@sha256:" + "0" * 64}]}
+        self.rejected(mode="mirror-harbor")
+
+    def test_renovate_scope_has_six_reviewed_digests(self):
+        selected = json.loads((ROOT / "scripts/config/harbor-renovate-images.json").read_text())["images"]
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())["images"]
+        self.assertEqual(len(selected), 6)
+        self.assertTrue(all(item in catalog for item in selected))
+
+    def test_renovate_scope_rejects_unreviewed_and_verifies_selected_pull(self):
+        self.transport_mocks(mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len([args for args in self.calls_for("skopeo") if args[0] == "copy"]), 4)
+        self.assert_cleaned()
+        self.calls.unlink()
+        self.renovate_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
+                                                    + "@sha256:" + "0" * 64}]}
+        self.rejected(mode="mirror-renovate")
 
     def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())
@@ -1108,6 +1161,30 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertEqual(self.calls_for("cosign"), [])
                 self.assert_cleaned()
 
+    def test_cordium_publication_uses_only_fixed_pair_and_signed_outputs(self):
+        self.transport_mocks(cordium=True)
+        result = self.run_helper(mode="publish-cordium")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = (self.root / "outputs").read_text()
+        self.assertIn("runner=harbor.stinkyboi.com/homelab/homelab-cordium-runner:", output)
+        self.assertIn("controller=harbor.stinkyboi.com/homelab/homelab-cordium-controller:", output)
+        self.assertNotIn("homelab-nofx", output)
+        self.assertEqual(len(self.calls_for("cosign")), 2)
+        self.assert_cleaned()
+
+    def test_cordium_push_cannot_reach_credentials_or_publication(self):
+        self.env["GITHUB_EVENT_NAME"] = "push"
+        self.rejected(mode="publish-cordium")
+
+    def test_cordium_digest_or_signing_failure_withholds_success(self):
+        for failure in ("digest", "pull", "pull-digest", "sign", "verify"):
+            self.transport_mocks(cordium=True, failure=failure)
+            result = self.run_helper(mode="publish-cordium")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse((self.root / "outputs").exists())
+            self.assert_cleaned()
+            (self.root / "published-images.json").unlink(missing_ok=True)
+
     def test_signing_failure_withholds_success_and_cleans(self):
         for failure in ("sign", "verify", "signer-owner"):
             with self.subTest(failure=failure):
@@ -1130,6 +1207,20 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.run_helper()
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.calls_for("aws"))
+        self.assert_cleaned()
+
+    def test_publisher_uses_private_traefik_transport(self):
+        self.transport_mocks()
+        result = self.run_helper()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        forwards = [args for args in self.calls_for("kubectl") if "port-forward" in args]
+        self.assertEqual(len(forwards), 1)
+        self.assertIn("--namespace", forwards[0])
+        self.assertEqual(forwards[0][forwards[0].index("--namespace") + 1], "traefik")
+        self.assertIn("service/traefik-private", forwards[0])
+        self.assertEqual(forwards[0][forwards[0].index("--address") + 1], "127.0.0.1")
+        self.assertIn("443:443", forwards[0])
+        self.assertNotIn("istio-ingressgateway", forwards[0])
         self.assert_cleaned()
 
 

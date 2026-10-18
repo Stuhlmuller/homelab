@@ -1,0 +1,151 @@
+# checkov:skip=CKV_GHA_7: expected_sha pins exact main; image pair and destination are fixed.
+name: Cordium Runner Image Publication
+"on":
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current reviewed main whose fixed runner/controller pair will be published
+        required: true
+        type: string
+permissions: {}
+concurrency:
+  group: cordium-runner-publication
+  cancel-in-progress: false
+jobs:
+  test-build:
+    name: Build And Smoke Test Fixed Runner Images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505
+        with:
+          persist-credentials: false
+      - name: Build And Smoke Test Runner Images
+        run: bash builds/cordium-runner/build.sh
+  publish:
+    name: Publish Reviewed Main Images
+    needs:
+      - test-build
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    concurrency:
+      group: harbor-packages-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      runner: ${{ steps.publication.outputs.runner }}
+      controller: ${{ steps.publication.outputs.controller }}
+    steps:
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505
+        with:
+          persist-credentials: false
+      - name: Build Fixed Images Before Registry Login
+        run: bash builds/cordium-runner/build.sh
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Restore Nix Store Cache
+        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
+        with:
+          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
+          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
+      - name: Validate Harbor Publication Gates
+        run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
+      - name: Verify Current Main Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          test "${ACTUAL_REF}" = "refs/heads/main"
+          [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "${EVENT_NAME}" == "workflow_dispatch" ]]; then
+            test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          else
+            test "${EVENT_NAME}" = "push"
+          fi
+          test "$(git rev-parse HEAD)" = "${ACTUAL_SHA}"
+          current_main_sha="$(git ls-remote https://github.com/Stuhlmuller/homelab.git refs/heads/main | cut -f1)"
+          test "${ACTUAL_SHA}" = "${current_main_sha}"
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508
+        with:
+          aws-region: us-west-2
+          mask-aws-account-id: true
+          role-session-name: homelab-harbor-publish-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+      - name: Publish And Verify Private Harbor Images
+        id: publication
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+        run: |
+          set -euo pipefail
+          umask 077
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          bash scripts/ci/harbor-publish.sh publish-cordium
+          EOF
+          then
+            echo "::error::Harbor publication failed; private transport and registry output withheld."
+            exit 1
+          fi
+          echo "Both private Cordium images published, signed, and verified; private output withheld."
+  published-digests:
+    name: Report Published Cordium Digests
+    needs:
+      - publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Validate Published References
+        env:
+          RUNNER_REFERENCE: ${{ needs.publish.outputs.runner }}
+          CONTROLLER_REFERENCE: ${{ needs.publish.outputs.controller }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${RUNNER_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-cordium-runner:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          [[ "${CONTROLLER_REFERENCE:-}" =~ ^harbor\.stinkyboi\.com/homelab/homelab-cordium-controller:homelab-${GITHUB_SHA}@sha256:[0-9a-f]{64}$ ]]
+          set -o noclobber
+          printf '%s\n' "$RUNNER_REFERENCE" "$CONTROLLER_REFERENCE" >"${RUNNER_TEMP:?}/cordium-published-images.txt"
+      - name: Upload Published References
+        uses: chainguard-actions/actions-upload-artifact@dc8d35a3347d79eda9033e7af73f508094dd41b5
+        with:
+          name: cordium-published-images-${{ github.sha }}
+          path: ${{ runner.temp }}/cordium-published-images.txt
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: false

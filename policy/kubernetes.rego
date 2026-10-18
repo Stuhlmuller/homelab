@@ -373,6 +373,7 @@ public_external_route if {
 external_secret_allowed_prefixes := {
 	"ai": {"/homelab/litellm/", "/homelab/multica/", "/homelab/openclaw/", "/homelab/nofx/litellm-token", "/homelab/n8n/litellm-token", "/homelab/grafana/openclaw-alert-hook-token", "/homelab/langfuse/project-public-key", "/homelab/langfuse/project-secret-key"},
 	"affine": {"/homelab/affine/"},
+	"mastodon": {"/homelab/mastodon/"},
 	"argocd": {"/homelab/argocd/"},
 	"automation": {"/homelab/n8n/", "/homelab/policy-bot/"},
 	"cert-manager": {"/homelab/cert-manager/"},
@@ -383,6 +384,7 @@ external_secret_allowed_prefixes := {
 	"monitoring": {"/homelab/grafana/"},
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
+	"cordium-runners": {"/homelab/cordium-runners/"},
 	"octelium-client": {"/homelab/octelium/"},
 	"octelium-public": {"/homelab/octelium/"},
 	"octelium-storage": {"/homelab/octelium/"},
