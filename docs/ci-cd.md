@@ -746,9 +746,9 @@ nix develop --command bash scripts/ci/terragrunt-plan.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 ```
 
-The local pre-commit run is the closest repository-owned equivalent to the
-Super-Linter PR check; GitHub Actions remains the source for the exact
-Super-Linter status contexts.
+The hooks run the PR lint checks on staged Bash, GitHub Actions, JSON,
+Markdown, Python, OpenTofu, Terragrunt, and YAML files using the Nix shell.
+GitHub Actions remains the source for the exact Super-Linter status contexts.
 
 The PR plan script intentionally skips the privileged SSM declaration and
 Kubernetes secret materialization stacks. To review those locally, assume the
