@@ -27,4 +27,5 @@ configMapGenerator:
   - name: openclaw-retirement
     files:
       - retirement.py=retirement/retirement.py
+      - inventory-worker.sh=retirement/inventory-worker.sh
       - runtime-storage.py=assistant/runtime-storage.py
