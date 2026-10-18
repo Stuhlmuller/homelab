@@ -38,6 +38,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.harbor_mirror_manifest = None
         self.renovate_mirror_manifest = None
         self.chainguard_mirror_manifest = None
+        self.dns_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -101,6 +102,11 @@ class HarborPublicationGates(unittest.TestCase):
             renovate_path.unlink(missing_ok=True)
         else:
             renovate_path.write_text(json.dumps(self.renovate_mirror_manifest))
+        dns_path = self.root / "scripts/config/harbor-dns-images.json"
+        if self.dns_mirror_manifest is None:
+            dns_path.unlink(missing_ok=True)
+        else:
+            dns_path.write_text(json.dumps(self.dns_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -501,6 +507,7 @@ class HarborPublicationGates(unittest.TestCase):
             {"images": [{**valid, "destination": "other"}]},
             {"images": [{"source": "docker.io/library/busybox:latest"}]},
             {"images": [{"source": "localhost/internal@sha256:" + "a" * 64}]},
+            {"images": [{"source": "codeberg.org.evil/k8s-gateway/k8s_gateway:1.9.0@sha256:" + "a" * 64}]},
             {"images": [{"source": "docker.io/library/../private@sha256:" + "a" * 64}]},
             {"images": [valid, {"source": valid["source"].replace("a" * 64, "b" * 64)}]},
         ]
@@ -508,6 +515,57 @@ class HarborPublicationGates(unittest.TestCase):
             with self.subTest(catalog=catalog):
                 self.mirror_manifest = catalog
                 self.rejected(mode="mirror")
+
+    def test_dns_scope_declares_one_fixed_reviewed_image(self):
+        source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
+        selected = json.loads((ROOT / "scripts/config/harbor-dns-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        self.assertEqual(selected, {"images": [{"source": source}]})
+        self.assertIn(selected["images"][0], catalog["images"])
+
+    def test_dns_scope_rejects_missing_extra_or_changed_image_before_credentials(self):
+        source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [valid, {"source": "docker.io/library/busybox:1@sha256:" + "a" * 64}]},
+                      {"images": [{"source": source.replace("0b556", "0b557")}]},
+                      {"images": [{"source": source.replace("k8s_gateway", "other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.dns_mirror_manifest = scope
+                self.rejected(mode="mirror-dns")
+        self.dns_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-dns")
+
+    def test_dns_scope_retains_dispatch_guards(self):
+        source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
+        self.dns_mirror_manifest = {"images": [{"source": source}]}
+        self.mirror_manifest = self.dns_mirror_manifest
+        for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),
+                           ("EXPECTED_SHA", "b" * 40)):
+            with self.subTest(key=key):
+                previous = self.env[key]
+                self.env[key] = value
+                self.rejected(mode="mirror-dns")
+                self.env[key] = previous
+        self.rejected(mode="mirror-dns:codeberg.org/k8s-gateway/k8s_gateway")
+        del self.env["OCTELIUM_AUTH_TOKEN"]
+        result = self.rejected(mode="mirror-dns")
+        self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
+        self.transport_mocks(mirror=True, registries=("docker.io", "codeberg.org"))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertTrue(any("docker://codeberg.org/" in args[-2] for args in copies))
+        self.assertTrue(any(args[-1].startswith("dir:") and
+                            "harbor.stinkyboi.com/mirror/codeberg.org/" in args[-2]
+                            for args in copies))
+        self.assert_mirror_copy_credentials(copies)
+        self.assert_cleaned()
 
     def test_mirror_requires_current_main_dispatch_before_credentials(self):
         for key, value in (("GITHUB_EVENT_NAME", "push"), ("GITHUB_REF", "refs/heads/test"),

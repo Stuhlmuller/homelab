@@ -100,8 +100,19 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
+   For the tailnet DNS resolver prerequisite, use the fixed one-image scope
+   after its catalog and publisher PR merges:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=dns
+   ```
+
+   `scripts/config/harbor-dns-images.json` selects only the pinned Codeberg
+   k8s_gateway image. Require a successful digest-preserving copy and complete
+   authenticated Harbor pull before merging the resolver Application.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.

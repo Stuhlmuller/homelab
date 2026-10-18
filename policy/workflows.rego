@@ -448,11 +448,14 @@ case "$IMAGE_SCOPE" in
   renovate)
     bash scripts/ci/harbor-publish.sh mirror-renovate
     ;;
+  dns)
+    bash scripts/ci/harbor-publish.sh mirror-dns
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'f4498a7e57b79028729b214b19d075d51bef47d2b72648b377c06e748dc77377  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
