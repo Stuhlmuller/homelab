@@ -7,7 +7,7 @@ work=
 on_exit() {
   result=$?
   if [[ -n "$work" ]]; then rm -rf -- "$work"; fi
-  if (( result != 0 )) && [[ -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
+  if (( result != 0 )) && [[ "${stage:-}" == publish-inventory && -n "${OPENCLAW_PHASE_FILE:-}" ]]; then
     printf '%s\n' "$phase" >"$OPENCLAW_PHASE_FILE"
   fi
 }
