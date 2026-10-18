@@ -3,9 +3,6 @@ type: runbook
 title: "AWS SSM Secret References"
 description: "SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume."
 tags: ["runbook", "secrets", "aws"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-18T20:41:22.820Z
 sources:
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
@@ -16,6 +13,9 @@ sources:
   - id: openwiki-source-cf9e058040b1a15ca636bb42
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
 generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T20:54:06.405Z
 ---
 
 # AWS SSM Secret References

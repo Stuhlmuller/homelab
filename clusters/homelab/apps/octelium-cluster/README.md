@@ -61,7 +61,7 @@ kubectl -n istio-system get destinationrule octelium-cluster-dataplane
 kubectl -n octelium get svc octelium-ingress-dataplane
 kubectl -n istio-system get virtualservice octelium-cluster
 scripts/octelium-gateway-dns.sh --dry-run
-scripts/tailscale-private-dns.sh --dry-run
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP>
 curl -I https://octelium.stinkyboi.com
 curl -I https://portal.stinkyboi.com
 curl -I https://octelium-api.stinkyboi.com

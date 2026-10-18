@@ -6,12 +6,61 @@ Keep the existing Octelium routes, Cloudflare Tunnel, callback URLs, native
 catalog, and macOS carrier available until their replacement passes acceptance.
 Fleet has no Funnel route; its existing hostname moves to private mesh DNS.
 
+## Current tailnet DNS cutover
+
+The earlier ingress migration below records how the existing private Traefik
+entry point was established. For the separate DNS resolver, use the
+[tailnet DNS validation guide](../../../../specs/004-tailnet-service-dns/quickstart.md).
+Publish the pinned image to Harbor, merge and apply the reviewed resolver
+Application, sign its fixed proxy, and run the direct check against its observed
+Service IP over UDP and TCP:
+
+```sh
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+```
+
+**Pause for the owner** to add that IP as the restricted `stinkyboi.com`
+nameserver in tailnet DNS, with **Use with exit node** if those clients need
+it. Keep public application records during this pause. After ordinary tailnet
+client lookups and existing HTTPS, Fleet, Harbor node pulls, native clients,
+and Funnel restrictions pass, capture the live Cloudflare record baseline and
+largest previous TTL. Record off-tailnet impact for the apex and Cordium
+wildcard, preview the fixed 27-name retirement, and execute it only from the
+reviewed `main` checkout with complete evidence. Wait the old TTL and verify
+public A/AAAA/CNAME absence for those names plus public survival of unrelated
+names and apex MX/TXT. The helper preserves other record types and cannot
+republish those private application addresses. During an outage after this
+retirement, restore the resolver through Argo/Terragrunt and re-sign its fixed
+proxy if necessary; public record restoration is not the outage rollback.
+
+After the owner setting and all gates pass, use a clean reviewed `main`
+checkout. Keep the evidence file outside this public repository and complete
+its confirmation fields using actual client and off-tailnet checks:
+
+```sh
+mkdir -p -m 700 ~/.local/state/homelab
+scripts/tailscale-private-dns.sh --retire-private --dry-run \
+  --baseline-out ~/.local/state/homelab/tailnet-dns-retirement.json
+# Complete and review that JSON evidence before this later production action.
+reviewed_sha=$(git rev-parse HEAD)
+scripts/tailscale-private-dns.sh --retire-private --execute \
+  --expected-sha "$reviewed_sha" \
+  --evidence ~/.local/state/homelab/tailnet-dns-retirement.json
+```
+
+The preview lists exact Cloudflare IDs and the old maximum authoritative TTL.
+Execution rechecks the live records, private resolver, normal client DNS, and
+HTTPS before deleting only A/AAAA/CNAME records for the 27 migration names.
+After the reported TTL from the last deletion, confirm public absence and
+normal private access again. A partial run can be retried with the same evidence
+after investigating the failure; it never creates application records.
+
 ## Before execution
 
 Merge the reviewed source and use a clean checkout of the exact current `main`.
 Keep Tailnet Lock enabled. Connect the existing trusted Mac's saved Tailscale
 profile, then preview and execute `scripts/tailscale-ingress-sign.py` as described
-in the [signing runbook](README.md#tailnet-lock). All three proxy identities must
+in the [signing runbook](README.md#tailnet-lock). All fixed proxy identities must
 be signed before mesh/Funnel acceptance; Kubernetes readiness alone is insufficient.
 Confirm Traefik and both Funnel proxies are synced and healthy, certificates are
 Ready, and the private ingress Service publishes the unique online
@@ -56,30 +105,17 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    workflow and `octelium-public-dns.sh`. Wait for any in-flight run to finish
    before writing private DNS. Keep the tunnel Deployment running for remaining
    legacy callers and rollback; neither deleted writer may restore public CNAMEs.
-3. Verify private TLS and upstream readiness at each published mesh address,
-   then preview the fixed DNS changes:
-
-   ```sh
-   python3 -I scripts/tailscale-private-dns-check.py --check
-   scripts/tailscale-private-dns.sh --dry-run
-   ```
+3. Verify private TLS and upstream readiness at each published mesh address.
+   The old public DNS publication preview is superseded by the current tailnet
+   DNS cutover above.
 
    AFFiNE may return 502 or 503 while suspended because Traefik uses its static
    ClusterIP backend. The check accepts either status only when the repository
    and live Deployment both explicitly declare zero replicas and no live replicas
    remain. Other application 5xx responses still fail readiness.
 
-4. Apply DNS from the reviewed clean checkout:
-
-   ```sh
-   scripts/tailscale-private-dns.sh --execute --expected-sha '<merged-main-sha>'
-   ```
-
-   The helper writes and reads back only the fixed application/control DNS-only
-   A/AAAA records. It preserves old CI, callback, and carrier names, plus
-   unrelated DNS record types. It reports the largest observed old authoritative
-   TTL. A failed write can leave partial DNS changes; inspect and rerun the same
-   idempotent command. Successful API readback is not client acceptance.
+4. The previous public application A/AAAA publication step is retired. Do not
+   run it as part of the new resolver rollout.
 5. On the existing Mac, migrate as the signed-in user:
 
    ```sh
@@ -94,15 +130,10 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    verify both runtimes, then check authenticated Octelium status and an actual
    Cordium action/reconnection. Keep `octelium-macos-api-carrier.py install`
    available for reviewed rollback until acceptance.
-6. Wait at least the reported old TTL after the last DNS write, then verify:
-
-   ```sh
-   python3 -I scripts/tailscale-private-dns-check.py --verify-dns
-   ```
-
-   This requires authoritative answers, normal OS resolution, canonical TLS,
-   native gRPC/gRPC-Web, and upstream readiness. It deliberately runs separately
-   from DNS writes: the old Mac hosts stanza must first be removed by step 5.
+6. For the current resolver rollout, verify direct UDP/TCP answers before the
+   owner setting, then normal OS DNS, canonical TLS, and native gRPC/gRPC-Web
+   afterward. Public record deletion follows those checks and the old maximum
+   TTL wait described above.
 7. Once Funnel is reachable from outside the mesh and its root/admin paths fail,
    preview and migrate the fixed GitHub callbacks:
 

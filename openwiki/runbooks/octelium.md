@@ -12,10 +12,10 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:23:56.319Z
+    at: 2026-10-18T19:06:56.344Z
 ---
 
 # Octelium
@@ -40,7 +40,8 @@ The retained Cloudflare Tunnel provides old browser and native carrier routes
 until mesh acceptance. Its DNS-restoration workflow and old DNS writer are
 removed in phase 2a. Follow the
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) for guarded
-DNS-only mesh records, Mac migration, callback delivery, and later CI transport.
+tailnet resolver handoff, later public-record retirement, Mac migration,
+callback delivery, and later CI transport.
 Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
 actual Cordium execution/reconnection before removing the old tunnel or catalog.
 The legacy `octelium-tunnel-check.py` is not a mesh acceptance gate.
@@ -63,9 +64,9 @@ See [Secrets And Identity](../architecture/secrets-and-identity.md), [Tailnet An
 
 ## macOS API carrier
 
-Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects the
+Before the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects the
 verified saved Tailscale profile without changing Desktop or its carrier. After
-private DNS is written, the full migration preserves Desktop credentials and
+the owner tailnet DNS setting passes normal client checks, the full migration preserves Desktop credentials and
 removes only owned transports after authenticated canonical API checks.
 
 The retained `scripts/octelium-macos-api-carrier.py install` supports reviewed
