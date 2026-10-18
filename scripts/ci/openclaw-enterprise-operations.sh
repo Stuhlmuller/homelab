@@ -114,46 +114,51 @@ lookup_baseline_versions() {
   jq -e '.IsTruncated == false and ((.Versions // []) | type == "array") and ((.DeleteMarkers // []) | type == "array")' <<<"$versions" >/dev/null
 }
 
+run_inventory_worker() {
+  local worker marker worker_sha state attempt
+  worker=/etc/openclaw-retirement/inventory-worker.sh
+  marker="/private/legacy/inventory-${GITHUB_RUN_ID}.state"
+  worker_sha=d9ffb78cf80bc8c2fc4e90587e66e721d999679ec123a1d583be40f4f75d0f0d
+  [[ "$(sha256sum clusters/homelab/apps/openclaw/retirement/inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
+  [[ "$("${reader[@]}" sha256sum "$worker" | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
+  "${reader[@]}" sh -c '
+    set -eu
+    run_id="$1"
+    directory=/private/legacy
+    command -v nohup >/dev/null
+    test ! -e "$directory/baseline-${run_id}.json"
+    test ! -L "$directory/baseline-${run_id}.json"
+    test ! -e "$directory/inventory-${run_id}.state"
+    test ! -L "$directory/inventory-${run_id}.state"
+    test ! -e "$directory/inventory-${run_id}.log"
+    test ! -L "$directory/inventory-${run_id}.log"
+    mkdir "$directory/inventory.lock"
+    nohup sh /etc/openclaw-retirement/inventory-worker.sh "$run_id" \
+      </dev/null >/dev/null 2>&1 &
+  ' sh "$GITHUB_RUN_ID"
+  state=pending
+  for ((attempt = 0; attempt < 420; attempt++)); do
+    state="$("${reader[@]}" sh -c \
+      'if test -f "$1"; then cat "$1"; else printf pending; fi' sh "$marker")"
+    case "$state" in
+      success) break ;;
+      failure)
+        "${reader[@]}" cat "/private/legacy/inventory-${GITHUB_RUN_ID}.log" |
+          aws s3 cp - "s3://${bucket}/openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}/diagnostic.log" >/dev/null
+        exit 1
+        ;;
+      pending) sleep 30 ;;
+      *) exit 1 ;;
+    esac
+  done
+  [[ "$state" == success ]] || exit 1
+}
+
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
     baseline_result="/private/legacy/baseline-${GITHUB_RUN_ID}.json"
-    worker=/etc/openclaw-retirement/inventory-worker.sh
-    marker="/private/legacy/inventory-${GITHUB_RUN_ID}.state"
-    worker_sha=d9ffb78cf80bc8c2fc4e90587e66e721d999679ec123a1d583be40f4f75d0f0d
-    [[ "$(sha256sum clusters/homelab/apps/openclaw/retirement/inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
-    [[ "$("${reader[@]}" sha256sum "$worker" | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
-    "${reader[@]}" sh -c '
-      set -eu
-      run_id="$1"
-      directory=/private/legacy
-      command -v nohup >/dev/null
-      test ! -e "$directory/baseline-${run_id}.json"
-      test ! -L "$directory/baseline-${run_id}.json"
-      test ! -e "$directory/inventory-${run_id}.state"
-      test ! -L "$directory/inventory-${run_id}.state"
-      test ! -e "$directory/inventory-${run_id}.log"
-      test ! -L "$directory/inventory-${run_id}.log"
-      mkdir "$directory/inventory.lock"
-      nohup sh /etc/openclaw-retirement/inventory-worker.sh "$run_id" \
-        </dev/null >/dev/null 2>&1 &
-    ' sh "$GITHUB_RUN_ID"
-    state=pending
-    for ((attempt = 0; attempt < 420; attempt++)); do
-      state="$("${reader[@]}" sh -c \
-        'if test -f "$1"; then cat "$1"; else printf pending; fi' sh "$marker")"
-      case "$state" in
-        success) break ;;
-        failure)
-          "${reader[@]}" cat "/private/legacy/inventory-${GITHUB_RUN_ID}.log" |
-            aws s3 cp - "s3://${bucket}/openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}/diagnostic.log" >/dev/null
-          exit 1
-          ;;
-        pending) sleep 30 ;;
-        *) exit 1 ;;
-      esac
-    done
-    [[ "$state" == success ]] || exit 1
+    run_inventory_worker
     refresh_status inventory
     "${reader[@]}" sh -c 'test ! -e "$1" && cp "$2" "$1" && chmod 600 "$1"' sh "$baseline" "$baseline_result"
     baseline_key="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}/baseline.json"
@@ -210,10 +215,8 @@ case "$stage" in
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
-    observed="/private/legacy/observed-${GITHUB_RUN_ID}.json"
-    "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory \
-      --config /private/legacy/config.json --status /private/legacy/status.json \
-      --output "$observed"
+    observed="/private/legacy/baseline-${GITHUB_RUN_ID}.json"
+    run_inventory_worker
     refresh_status stopped
     "${reader[@]}" env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py archive \
       --config /private/legacy/config.json --status /private/legacy/status.json \
