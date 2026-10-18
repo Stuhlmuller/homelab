@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:11e74df88a1092c37f864952608857c65f8044790f836f5e6d98caaf34710098",
+  "pageVersion": "sha256:ce9c6b938846203d9f9237f80532f2fdc571f4393aff69be58cbfa744e23de78",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:f85f50f287fce9a78081f77d97fecf42560d1ff79eb256bfad55e800a0c64225"
+          "version": "repo-file-v1:sha256:c563eebf9010f3d4473b8369f9070667a7b84f7c4c7d3fba1b3988bf8a0bfcbb"
         }
       ]
     },
@@ -243,10 +243,28 @@
           "version": "repo-file-v1:sha256:d09ca03576463e5a566dcd5ba3cc2ae4c88f61a64826cefba1b766c1c335af90"
         }
       ]
+    },
+    {
+      "id": "claim_89eb93c47f894c7d8f20ff5b42eec618",
+      "statement": "Native Chainguard Python and curl are candidate, not-enrolled automation consumers; the protected receipt and scan-robot secret declaration do not by themselves migrate workloads or prove live publication.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/image-automation.json",
+          "version": "repo-file-v1:sha256:b4db2711074a2a467805bd9a65d70b7534723c810b6a670978519227cef0e85c"
+        },
+        {
+          "resource": "repo://docs/secrets-aws-ssm.md",
+          "version": "repo-file-v1:sha256:2589fd03db9aac02d2e49c3a60461fd538dc605d7e8e6a38643e1e92311f89c8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T01:09:27.563Z"
+    "at": "2026-10-18T05:44:36.454Z"
   }
 }

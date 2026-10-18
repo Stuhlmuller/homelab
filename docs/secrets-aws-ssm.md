@@ -642,7 +642,7 @@ NetworkPolicy for its scan evidence.
 
 The native Chainguard receipt scan robot needs
 `/homelab/harbor/robot-scan-password` before its ExternalSecret consumer can
-merge. This declaration generates the password and adds its exact ARN to the
+become Ready. This declaration generates the password and adds its exact ARN to the
 existing External Secrets reader policy. Apply only a reviewed saved plan
 for the shared SSM unit, then verify parameter metadata without reading its
 value. This prerequisite alone does not refresh `harbor-secrets`, create the

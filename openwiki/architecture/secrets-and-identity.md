@@ -3,9 +3,6 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: [architecture, secrets, identity]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-18T01:55:27.595Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -63,7 +60,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T23:19:59.804Z" }
+generated: { by: "codex", at: "2026-10-18T05:44:36.454Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T05:44:36.454Z
 ---
 
 # Secrets And Identity
@@ -786,8 +786,8 @@ credential rotation; upstream cold recovery remains.
 
 The native receipt scan robot separately needs the staged
 `/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
-grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
-creates the parameter and read-only metadata verifies it. This declaration
+grant. The scan ExternalSecret consumer is declared, but cannot become Ready until a
+reviewed saved plan creates the parameter and read-only metadata verifies it. This declaration
 creates no Harbor robot, receipt, or running workload change. See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
 

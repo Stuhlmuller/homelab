@@ -82,8 +82,16 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
+  - id: openwiki-source-11a2787b11eaf93e89c05620
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import-test.py
+  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-897b0dbd854eb91f395fe24b
+    resource: repo://scripts/ci/harbor-render-check-test.py
+  - id: openwiki-source-5f83ab015123e3adcb0c5808
+    resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-f957231327bdd56401fbc4e2
     resource: repo://scripts/ci/image-policy-check.py
   - id: openwiki-source-dce02546543e605cb2ccbb06
@@ -146,10 +154,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
+generated: { by: "codex", at: "2026-10-18T05:44:36.454Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T01:55:27.595Z
+    at: 2026-10-18T05:44:36.454Z
 ---
 
 # Validation Gates
@@ -1692,6 +1700,14 @@ fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate the six consuming applications.
+
+The native Chainguard receipt fixtures bind reviewed source and destination,
+require amd64 and arm64 child scans, complete authenticated Harbor pulls and
+protected provenance, and reject tag-only or mismatched rendered consumers.
+The render gate also requires `harbor-pull` for native Harbor images and rejects
+secret mounts or environment injection. The active ExternalSecret needs the
+scan-robot SSM parameter before it can become Ready; source checks do not prove
+that parameter or a live receipt exists.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

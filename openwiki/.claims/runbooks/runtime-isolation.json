@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:36f1228531c4efd5647d7a7d9323c2dea7e80425155ba826284635101e49f008",
+  "pageVersion": "sha256:368a927a5cfaa07d785dfbc8665be7bc8ed7a4b7134b7c35098c8583e7113e1f",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:afdbc355598793d053357dabbe102c186970e633e29a5b411ceb7596a989a665"
+          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -27,6 +27,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-14T04:45:23.387Z"
+    "at": "2026-10-18T05:44:36.454Z"
   }
 }

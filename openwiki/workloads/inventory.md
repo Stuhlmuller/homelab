@@ -6,6 +6,8 @@ tags: [workloads, argocd, inventory]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -20,6 +22,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/values.yaml
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-18a62bd8e6557f91a37822f4
+    resource: repo://clusters/homelab/apps/harbor/image-automation.json
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -66,6 +70,8 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-65bc6c080b599d8e6d572a31
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
@@ -80,10 +86,10 @@ sources:
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T01:09:27.563Z" }
+generated: { by: "codex", at: "2026-10-18T05:44:36.454Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T01:09:27.563Z
+    at: 2026-10-18T05:44:36.454Z
 ---
 
 # Workload Inventory
@@ -432,7 +438,9 @@ completed-scan critical-CVE counts per project for Grafana; it is read-only,
 uses the existing file-mounted Harbor administrator credential, and emits no
 artifact, digest, or CVE labels. The [Talos mirror rollout](../../docs/harbor-image-mirroring.md)
 covers Helm/operator-generated workloads and system images; publication must
-precede node cutover or new consumer versions.
+precede node cutover or new consumer versions. Native Chainguard Python and
+curl remain candidate automation entries; their protected receipt and scan-robot
+secret contract do not by themselves migrate a workload or prove live publication.
 New builds use a local signing Job and the cert-manager-owned
 `harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical

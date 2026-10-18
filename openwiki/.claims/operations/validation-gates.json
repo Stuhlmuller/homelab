@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:82cd408505412d1c1de7633e6d8d4cd0bbc6a6ecb21cf22279cb7e87bc39669e",
+  "pageVersion": "sha256:c59080d30c79db478c6304dd3800ddf913520702c805221e2ffd4acfa02ae8a2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -290,15 +290,15 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         }
       ]
     },
@@ -312,11 +312,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
+          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
+          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
         }
       ]
     },
@@ -326,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -344,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3f07a85452d23833d786335a2ceb08949467d649cb547f8903cefef5c3d4fad5"
+          "version": "repo-file-v1:sha256:20f6305e2dc6cd98c5cd07cd6b2e092fa79aaab5b175e1d9739c09d28016670c"
         }
       ]
     },
@@ -402,11 +402,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:670e294928ed5493952c873f549672e0435ebabc5d7af6b4bd1259cf850dd7f2"
+          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -570,11 +570,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:08cd354840cf6c38e486f55f67769ba4adaa71adeba2e24c70ccf02b05a60afe"
+          "version": "repo-file-v1:sha256:39e8dd003f7317f8b2883baf88329820f41b4d7bf98b48ef2b4ed5e94609f63f"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:dae981fc6422eb049ec382b402b45dc03225fdc6b2e55d1673425c893f45098e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -670,25 +670,47 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:e390d2a25634bd8a34817ae77188ac47eae0e68526a98339c5c3a010dafefc91"
+          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "version": "repo-file-v1:sha256:3a4cffb3fe596d44e6bb370cc65e41ddc901341112cc175e1deb68b389c09151"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:3f07a85452d23833d786335a2ceb08949467d649cb547f8903cefef5c3d4fad5"
+          "version": "repo-file-v1:sha256:20f6305e2dc6cd98c5cd07cd6b2e092fa79aaab5b175e1d9739c09d28016670c"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
-          "version": "repo-file-v1:sha256:074b451bb8ea669882b9a7950817a6412b9f407013eff5dc3f824f4cef4ad9a7"
+          "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
+        }
+      ]
+    },
+    {
+      "id": "claim_b4a3975113454639a38d82eb24300f5f",
+      "statement": "Native Chainguard receipt fixtures bind reviewed image identity, platform scans, authenticated Harbor pulls and protected provenance; the render gate rejects mismatched consumers and requires harbor-pull without mounting or injecting the Secret. These source checks do not prove SSM readiness or a live receipt.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-import-test.py",
+          "version": "repo-file-v1:sha256:0efa73b999741c8a6cafa8d60ed14dae422ce6420da01ab79937fe59b031b7b9"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
+          "version": "repo-file-v1:sha256:8ef9538764d4c0253dea216e32fef158170a41839d138f0aaad4b52c979261fe"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-render-check-test.py",
+          "version": "repo-file-v1:sha256:a68229812809ff404f6c76f96275f7971e8a73fc959c743c016d03e940896f85"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-render-check.py",
+          "version": "repo-file-v1:sha256:98e0a24b71f1f79de55273dfff23ca7d10a855ab64f194a35746ac734aab0c95"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T01:55:27.595Z"
+    "at": "2026-10-18T05:44:36.454Z"
   }
 }
