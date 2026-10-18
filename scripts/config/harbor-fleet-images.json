@@ -1,7 +1,7 @@
 {
   "images": [
     {
-      "source": "docker.io/fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
+      "source": "docker.io/fleetdm/fleet@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
     },
     {
       "source": "docker.io/library/mysql:8.4.11@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242"

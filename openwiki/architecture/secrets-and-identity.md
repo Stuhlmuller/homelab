@@ -5,12 +5,20 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T20:13:59.415Z
+    at: 2026-10-18T01:55:27.595Z
 sources:
+  - id: openwiki-source-36db39acd9400bc022704939
+    resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-3065a4fecdc69ba955866da5
+    resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
+    resource: repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -47,13 +55,15 @@ sources:
     resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-45a27dbbec11da74be9f5497
+    resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T20:13:59.415Z" }
+generated: { by: "codex", at: "2026-10-17T23:19:59.804Z" }
 ---
 
 # Secrets And Identity
@@ -206,6 +216,17 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   certificate metadata, and revokes its session. Certificate renewal remains
   the documented Fleet UI flow using the same Apple account. APNs material
   stays encrypted in MySQL and outside git.
+
+- Fleet-managed Mac Google login stages a separate operator-only
+  `/homelab/fleet/google-oauth` SecureString. It is excluded from External
+  Secrets: the [XCreds operator](../../scripts/fleet-google-login.py) reads the
+  dedicated OAuth client privately and delivers a host-scoped MDM profile only
+  after protected merge and deployment. The current Fleet administrator
+  password comes from an owner-only file after bootstrap rotation. Email-claim
+  username mapping, local login fallback, and FileVault acceptance are explicit
+  pilot checks. Remote profile removal requires verified native login and an
+  explicit operator attestation; see the
+  [Google login runbook](../../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
 
 - Argo CD SSO uses the `argocd-oidc-sso` ExternalSecret for the upstream OIDC
   issuer compatibility copy, client ID, and client secret. Dex startup uses the
@@ -548,6 +569,16 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
 
 ## Dedicated Cordium CI assertion
 
+The staged runner controller uses a separate `cordium-runners` namespace and
+ExternalSecret for its GitHub App private key and Cordium auth token. Protected
+exact-main intake writes only the two fixed SSM references. The controller
+copies projected values into private files before each queue cycle; the App
+key never enters a runner Workspace. Namespace RBAC can manage per-runner
+NetworkPolicies and inspect named enforcer and workload state, but cannot read
+Kubernetes Secrets or mutate workloads. Registration and the controller
+Deployment remain disabled pending identity, isolation, publication, and
+cold-pull acceptance. See the [runner contract](../../builds/cordium-runner/README.md).
+
 `homelab-cordium-ci-oidc` accepts GitHub assertions only for the exact repository,
 owner, main workflow, audience, and dispatch event. `homelab-cordium-ci` is a
 separate workload identity with bounded sessions and workspace lifecycle/exec
@@ -748,10 +779,17 @@ The active Harbor Kustomization stages `harbor/harbor-pull` from the existing
 `/homelab/harbor/robot-pull-password`. The vulnerability exporter references
 it only for kubelet image pulls, without an app-container mount. The held
 [private-core candidate](../../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-uses the same prerequisite. No new SSM parameter or IAM grant is added.
+uses the same prerequisite. That pull-secret path adds no SSM parameter or IAM grant.
 Native-image activation waits for publication/scans, recovery clearance and
 ExternalSecret readiness. An `OnChange` annotation advance is required after
 credential rotation; upstream cold recovery remains.
+
+The native receipt scan robot separately needs the staged
+`/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
+grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
+creates the parameter and read-only metadata verifies it. This declaration
+creates no Harbor robot, receipt, or running workload change. See the
+[SSM contract](../../docs/secrets-aws-ssm.md).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

@@ -78,7 +78,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
-   `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
+   `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -105,6 +106,17 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
+   ```
+
+   The `renovate` scope selects the six reviewed Fleet, Harbor PostgreSQL,
+   Multica Python, Dispatcharr, Bazarr, and n8n update digests in
+   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
+   those entries while the unrelated full catalog is held. After its
+   prerequisite merges, dispatch it at exact current `main` and require six
+   complete authenticated pulls before merging any consuming Renovate PR:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
    ```
 
    See [migration gates and current findings](image-egress-hardening.md).
@@ -405,6 +417,37 @@ to Skopeo; it rejects combined tag/digest addresses. Preserve historical pinned
 digests when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
+
+The Harbor 2.15.4 prerequisite adds all nine coupled component digests while
+retaining the active 2.15.2 entries. Publish the fixed Harbor scope with
+`image_scope=harbor` and require fresh authenticated pulls of the nine new digests
+before merging a Harbor 2.15.4 consumer. This catalog change does not alter
+running Pods. The scoped receipt proves these nine components only; the full
+catalog remains held on the separate LiteLLM duplicate-index repair. The
+consuming upgrade must verify that the singleton nginx
+Deployment retains a rolling update that keeps Harbor reachable during its
+replacement image pull.
+
+The chart uses `Recreate` for the registry Deployment. Before merging the
+consumer, pre-pull its 2.15.4 registry and registryctl images onto every Talos
+node so replacement does not need the registry being stopped. Complete the
+fixed Harbor publisher and fresh authenticated pulls first. On reviewed
+`main`, use the repository-owned operator command with a private Talos client
+config and the exact full `main` SHA:
+
+```sh
+for node in 10.1.0.199 10.1.0.200 10.1.0.201 10.1.0.202; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --talosconfig ~/.talos/config --prepull-registry-runtime \
+    --execute --expected-sha '<reviewed-main-sha>'
+done
+```
+
+The command pulls only the two reviewed digest pins into each CRI cache and
+checks the cache alias after each pull. Re-run it without `--execute` just
+before the consumer merge; all four nodes must report both pins cached.
+Re-pull a missing pin before proceeding. Cache verification does not establish
+rollout health.
 
 ## Bootstrap and recovery
 

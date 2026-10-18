@@ -129,15 +129,19 @@ with tempfile.TemporaryDirectory() as directory:
     check.BAZARR_CATALOG = check.ROOT / "bazarr-images.json"
     check.MASTODON_CATALOG = check.ROOT / "mastodon-images.json"
     check.CHAINGUARD_CATALOG = check.ROOT / "chainguard-images.json"
+    check.HARBOR_RUNTIME_CATALOG = check.ROOT / "harbor-runtime-images.json"
+    runtime_images = json.loads((original_root / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+    check.HARBOR_RUNTIME_CATALOG.write_text(json.dumps({"images": runtime_images}))
     check.CHAINGUARD_CATALOG.write_text(json.dumps({"images": []}))
     check.CHARTS = check.ROOT / "charts.json"
-    catalog = {"images": [
+    base_catalog = {"images": [
         {"source": "docker.io/library/busybox:1.38@" + digest},
         {"source": "quay.io/example/operator@" + digest}]}
+    catalog = {"images": [*base_catalog["images"], *runtime_images]}
     check.CATALOG.write_text(json.dumps(catalog))
-    check.FLEET_CATALOG.write_text(json.dumps(catalog))
-    check.BAZARR_CATALOG.write_text(json.dumps(catalog))
-    check.MASTODON_CATALOG.write_text(json.dumps(catalog))
+    check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
+    check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
+    check.MASTODON_CATALOG.write_text(json.dumps(base_catalog))
     check.declared_mastodon_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images

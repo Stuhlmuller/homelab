@@ -40,6 +40,11 @@ inputs = {
   ]
 
   parameters = {
+    "/homelab/fleet/google-oauth" = {
+      description   = "Dedicated Google OAuth Web client JSON for Fleet-managed XCreds Mac login; operator-only."
+      initial_value = local.placeholder
+      reader_access = false
+    }
     "/homelab/mastodon/admin-password" = {
       description = "Mastodon initial owner password; bootstrap only, never overwrite an existing account."
       generated = {
@@ -214,6 +219,14 @@ inputs = {
         prefix  = "Aa1"
       }
     }
+    "/homelab/harbor/robot-scan-password" = {
+      description = "Harbor homelab project artifact-scan reader credential."
+      generated = {
+        length  = 32
+        special = false
+        prefix  = "Aa1"
+      }
+    }
     "/homelab/harbor/mirror-robot-pull-password" = {
       description = "Harbor mirror project read-only robot credential."
       generated = {
@@ -293,6 +306,14 @@ inputs = {
     }
     "/homelab/cert-manager/cloudflare-api-token" = {
       description   = "Cloudflare API token used by cert-manager for DNS-01 challenges."
+      initial_value = local.placeholder
+    }
+    "/homelab/cordium-runners/github-app-private-key" = {
+      description   = "Private key of the repository-scoped Cordium runner GitHub App."
+      initial_value = local.placeholder
+    }
+    "/homelab/cordium-runners/auth-token" = {
+      description   = "Policy-bound authentication token of the dedicated Cordium runner manager."
       initial_value = local.placeholder
     }
     "/homelab/cordium/agent-auth-token" = {
