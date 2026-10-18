@@ -852,6 +852,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-images.yml:publish' \
+    '.github/workflows/openclaw-enterprise-operations.yml:legacy' \
+    '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/release.yml:release' \
@@ -899,6 +901,7 @@ done <<'EOF'
 .github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
+.github/workflows/openclaw-enterprise-operations.yml 846ca64ae24f35b0a4eb3182c964f581d6d975f54b67fe0e08a7e08acac8df21
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -922,6 +925,7 @@ for workflow_job in \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
+  '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
