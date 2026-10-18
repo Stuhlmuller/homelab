@@ -4,9 +4,12 @@ set -euo pipefail
 umask 077
 
 stage="${1:-}"
-case "$stage" in inventory | archive | verify) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
+case "$stage" in inventory | publish-inventory | archive | verify) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
 case "$stage" in
+  publish-inventory)
+    [[ "${BASELINE_REF:-}" == 'd55e2ab8521e427c059e07e34b270e476092a8a1/39127113354' ]] || exit 2
+    ;;
   archive) [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
   verify) [[ "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
 esac
@@ -72,6 +75,26 @@ refresh_status() {
   "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$recheck"
 }
 
+validate_baseline() {
+  jq -e --slurpfile status "$2" --slurpfile config scripts/config/openclaw-enterprise.json '
+    . as $baseline | $status[0] as $live | $config[0].legacyRetention as $contract |
+    ($baseline.format == 1 and $baseline.node == $contract.node and
+     $baseline.claims == $live.claims and
+     $baseline.kubernetes == {image: $live.image, assistantSha256: $live.assistantSha256, volumes: $live.volumes} and
+     $baseline.rootIdentity == $live.roots and
+     $baseline.requiredNas == $contract.requiredNas and
+     ($baseline.databases | keys) == ($contract.requiredLocal | sort) and
+     ([$baseline.databases[] | (.bytes | type) == "number" and .bytes >= 0 and
+       (.sha256 | type) == "string" and (.sha256 | test("^[0-9a-f]{64}$"))] | all) and
+     $baseline.roots.local.uid == $contract.localUid and
+     $baseline.roots.nas.uid == $contract.nasUid and
+     ([$baseline.roots.local.tree, $baseline.roots.nas.tree] |
+       all((.entries | type) == "number" and .entries > 0 and
+           (.bytes | type) == "number" and .bytes >= 0 and
+           (.sha256 | type) == "string" and (.sha256 | test("^[0-9a-f]{64}$")))))
+  ' "$1" >/dev/null
+}
+
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
@@ -119,6 +142,43 @@ case "$stage" in
     baseline_key="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}/baseline.json"
     require_absent_object "$baseline_key"
     "${reader[@]}" cat "$baseline" | aws s3 cp - "s3://${bucket}/${baseline_key}"
+    ;;
+  publish-inventory)
+    baseline_id="${BASELINE_REF##*/}"
+    baseline="/archive/private/baseline-${baseline_id}.json"
+    baseline_result="/private/legacy/baseline-${baseline_id}.json"
+    marker="/private/legacy/inventory-${baseline_id}.state"
+    worker="/private/legacy/inventory-worker-${baseline_id}.sh"
+    [[ "$("${reader[@]}" cat "$marker")" == success ]] || exit 1
+    worker_sha=d9ffb78cf80bc8c2fc4e90587e66e721d999679ec123a1d583be40f4f75d0f0d
+    [[ "$(sha256sum scripts/ci/openclaw-legacy-inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
+    [[ "$("${reader[@]}" sha256sum "$worker" | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
+    "${reader[@]}" cat "$baseline" >"$work/baseline.json"
+    "${reader[@]}" cat "$baseline_result" >"$work/worker-baseline.json"
+    cmp "$work/baseline.json" "$work/worker-baseline.json"
+    validate_baseline "$work/baseline.json" "$work/status.json"
+    refresh_status inventory
+    baseline_key="openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json"
+    versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
+    jq -e '.IsTruncated == false' <<<"$versions" >/dev/null
+    count="$(jq --arg key "$baseline_key" '[(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length' <<<"$versions")"
+    if [[ "$count" == 0 ]]; then
+      aws s3api put-object --bucket "$bucket" --key "$baseline_key" \
+        --body "$work/baseline.json" --if-none-match '*' >"$work/put.json"
+      versions="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$baseline_key" --output json)"
+    fi
+    version="$(jq -er --arg key "$baseline_key" '
+      if .IsTruncated == false and
+         ([(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length) == 1
+      then [.Versions[]? | select(.Key == $key) | .VersionId] | .[0]
+      else empty end' <<<"$versions")"
+    [[ "$version" != null && "$version" != None ]] || exit 1
+    aws s3api get-object --bucket "$bucket" --key "$baseline_key" \
+      --version-id "$version" "$work/offsite-baseline.json" >"$work/get.json"
+    cmp "$work/baseline.json" "$work/offsite-baseline.json"
+    [[ "$(aws s3api head-object --bucket "$bucket" --key "$baseline_key" \
+      --version-id "$version" --query ServerSideEncryption --output text)" == aws:kms ]] || exit 1
+    refresh_status inventory
     ;;
   archive)
     baseline_id="${BASELINE_REF##*/}"

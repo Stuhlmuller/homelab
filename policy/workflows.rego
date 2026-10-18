@@ -179,7 +179,7 @@ deny contains msg if {
 
 approved_openclaw_legacy_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.legacy_stage.options == ["inventory", "archive", "verify"]
+	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "verify"]
 	job := input.jobs.legacy
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
@@ -191,7 +191,7 @@ approved_openclaw_legacy_operation if {
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
 	contains(step.run, "bash scripts/ci/install-kubeconfig.sh --tailscale\n")
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'385c68abb44a4495f3525fb0dd4ac6bc3e32338b043543757781ea86a99c6275  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
