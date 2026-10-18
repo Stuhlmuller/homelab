@@ -118,12 +118,10 @@ case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
     baseline_result="/private/legacy/baseline-${GITHUB_RUN_ID}.json"
-    worker="/private/legacy/inventory-worker-${GITHUB_RUN_ID}.sh"
+    worker=/etc/openclaw-retirement/inventory-worker.sh
     marker="/private/legacy/inventory-${GITHUB_RUN_ID}.state"
     worker_sha=d9ffb78cf80bc8c2fc4e90587e66e721d999679ec123a1d583be40f4f75d0f0d
-    [[ "$(sha256sum scripts/ci/openclaw-legacy-inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
-    "${reader_input[@]}" sh -c 'umask 077; test ! -e "$1" && test ! -L "$1" && cat > "$1" && chmod 700 "$1"' sh \
-      "$worker" <scripts/ci/openclaw-legacy-inventory-worker.sh
+    [[ "$(sha256sum clusters/homelab/apps/openclaw/retirement/inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
     [[ "$("${reader[@]}" sha256sum "$worker" | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
     "${reader[@]}" sh -c '
       set -eu
@@ -137,7 +135,7 @@ case "$stage" in
       test ! -e "$directory/inventory-${run_id}.log"
       test ! -L "$directory/inventory-${run_id}.log"
       mkdir "$directory/inventory.lock"
-      nohup sh "$directory/inventory-worker-${run_id}.sh" "$run_id" \
+      nohup sh /etc/openclaw-retirement/inventory-worker.sh "$run_id" \
         </dev/null >/dev/null 2>&1 &
     ' sh "$GITHUB_RUN_ID"
     state=pending
@@ -168,10 +166,10 @@ case "$stage" in
     baseline="/archive/private/baseline-${baseline_id}.json"
     baseline_result="/private/legacy/baseline-${baseline_id}.json"
     marker="/private/legacy/inventory-${baseline_id}.state"
-    worker="/private/legacy/inventory-worker-${baseline_id}.sh"
+    worker=/etc/openclaw-retirement/inventory-worker.sh
     [[ "$("${reader[@]}" cat "$marker")" == success ]] || exit 1
     worker_sha=d9ffb78cf80bc8c2fc4e90587e66e721d999679ec123a1d583be40f4f75d0f0d
-    [[ "$(sha256sum scripts/ci/openclaw-legacy-inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
+    [[ "$(sha256sum clusters/homelab/apps/openclaw/retirement/inventory-worker.sh | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
     [[ "$("${reader[@]}" sha256sum "$worker" | cut -d' ' -f1)" == "$worker_sha" ]] || exit 1
     "${reader[@]}" cat "$baseline" >"$work/baseline.json"
     "${reader[@]}" cat "$baseline_result" >"$work/worker-baseline.json"

@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
-WORKER = ROOT / 'scripts/ci/openclaw-legacy-inventory-worker.sh'
+WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 
 
 class Operations(unittest.TestCase):
@@ -260,7 +260,10 @@ printf '%s\\n' "$phase"
         self.assertNotIn('actions/upload-artifact@', workflow)
         script = SCRIPT.read_text()
         self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
-        self.assertIn('nohup sh "$directory/inventory-worker-${run_id}.sh"', script)
+        self.assertIn('nohup sh /etc/openclaw-retirement/inventory-worker.sh', script)
+        self.assertNotIn('"$worker" <scripts/ci/', script)
+        self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
+                      (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())
         self.assertIn('mkdir "$directory/inventory.lock"', script)
         self.assertIn('/diagnostic.log" >/dev/null', script)
         self.assertIn("--body \"$work/baseline.json\" --if-none-match '*'", script)
