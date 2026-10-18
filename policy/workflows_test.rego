@@ -26,8 +26,30 @@ test_rejects_changed_openclaw_legacy_operation if {
 	}
 }
 
+test_allows_fixed_openclaw_phase_tail if {
+	private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+case "$phase" in preflight|baseline|publication|verification)
+  echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+esac
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
+test_rejects_unbounded_openclaw_phase_tail if {
+	not private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE")"
+echo "$phase"
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
 openclaw_legacy_run := `set -euo pipefail
 umask 077
+export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
 sha256sum --check --status <<<'b5340d8c87cd028830b365c3b5bb34a9a4af733f7dfab5b73f12454a6c8ec00e  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
