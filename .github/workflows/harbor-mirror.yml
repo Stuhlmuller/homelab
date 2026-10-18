@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard inventories with unchanged destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate inventories with unchanged destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, mastodon, traefik, chainguard]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate]
 
 permissions: {}
 
@@ -105,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -157,11 +157,17 @@ jobs:
             traefik)
               bash scripts/ci/harbor-publish.sh mirror-traefik
               ;;
+            harbor)
+              bash scripts/ci/harbor-publish.sh mirror-harbor
+              ;;
+            renovate)
+              bash scripts/ci/harbor-publish.sh mirror-renovate
+              ;;
             *) exit 2 ;;
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'444001e5fdae377b6490f41b62434c19f353824469517aa46fd512fd8bcb45a3  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

@@ -3,6 +3,29 @@ type: runbook
 title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
+sources:
+  - id: openwiki-source-28a7f340da431caf1c218c7d
+    resource: repo://.github/workflows/cordium-runner-canary.yml
+  - id: openwiki-source-36db39acd9400bc022704939
+    resource: repo://.github/workflows/cordium-runner-credentials.yml
+  - id: openwiki-source-d63f608fcb391d5edcf496e7
+    resource: repo://.github/workflows/cordium-runner-images.yml
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-9a01f0687eaa075cf78c3abc
+    resource: repo://.github/workflows/image-automation.yml
+  - id: openwiki-source-3b8a5a1dece086403bc8ab75
+    resource: repo://.github/workflows/nofx-images.yml
+  - id: openwiki-source-66763af1d94960a2aaf14e95
+    resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
+generated: { by: "codex", at: "2026-10-17T23:43:12.829Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T01:09:27.563Z
 ---
 
 # CI/CD
@@ -21,15 +44,28 @@ Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
 
-Read-only GitHub inspection on 2026-10-06 UTC confirmed that `main` ruleset
-`14700233` already requires zero approving reviews. The `homelab-plan` and
-`homelab-production` environments separately require `rstuhlmuller` approval,
-despite the canonical runbook describing production as having no reviewer.
-Policy changes do not remove those environment gates. Reconcile the environment
-configuration and runbook through the repository workflow before treating
-Terragrunt plans or applies as unattended.
+Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
+`14700233` still requires the seven documented checks. `homelab-plan` has no
+environment protection rules; `homelab-production` has its branch policy and
+no required reviewer. The older October 6 reviewer snapshot is superseded.
+Re-read live settings before changing environment or branch protections.
+
+NOFX image builds, OpenClaw native configuration checks, and Image automation
+verification now run on matching `main` pushes or reviewed manual dispatches,
+without optional pull-request runs. Image automation no longer observes every
+five minutes; dispatch its `verify` operation from `main` for a deliberate
+journal check. Required pull-request checks retain their existing producers.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
+
+Cordium runner bootstrap is staged as separate exact-main workflows for
+credential intake, fixed image builds, protected Harbor publication, and a
+canary. The controller would provision one JIT runner per job with private
+file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
+The pool remains disabled and existing job selectors stay unchanged. The
+[runner contract](../../builds/cordium-runner/README.md) lists the live
+isolation, publication, cold-pull, canary, and recovery evidence required
+before a reviewed selector cutover.
 
 ## Credential recovery: 2026-09-26
 

@@ -50,6 +50,11 @@ IaC/operator/**/terragrunt.hcl
 IaC/operator/**/terragrunt.values.hcl
 .direnv/
 .DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
 .pytest_cache/
 __pycache__/
 *.py[cod]

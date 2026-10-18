@@ -14,6 +14,15 @@ Phase 2b switches CI and shared native operator transport only after canonical
 DNS/API acceptance. Old native catalog resources, credentials, callback names,
 and the Tunnel Deployment remain until the final retirement gate.
 
+## Mastodon declaration
+
+The Mastodon draft intentionally declares a public federation website at
+`mastodon.stinkyboi.com`, separate from the private application inventory.
+Its fixed-host publication workflow uses the retained Cloudflare Tunnel and
+application-owned authentication. The declaration is not live acceptance;
+retiring that connector requires a replacement Mastodon transport first.
+See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md).
+
 ## DNS Model
 
 `scripts/tailscale-private-dns.sh` owns a fixed inventory of DNS-only A/AAAA
@@ -138,9 +147,10 @@ select private routers there. No Fleet route binds to Funnel.
 Private `harbor.stinkyboi.com` routes directly through Traefik to Harbor.
 Authorization headers pass unchanged; Harbor enforces registry credentials and
 keeps self-registration disabled. Internal Pod DNS reaches `traefik-private`;
-Talos pulls use the restricted registry listener. Phase 2b moves hosted image
-publication to the Tailscale operator API proxy and a reviewed TLS port-forward
-to `traefik-private`. Publish and verify required images before routing changes.
+Talos pulls use the restricted registry listener. Hosted image publication uses
+a reviewed TLS port-forward to `traefik-private`. CI still establishes that
+loopback forward through the Octelium Kubernetes API; moving the control plane
+is separate. Publish and verify required images before routing changes.
 
 ## Acceptance And Rollback
 

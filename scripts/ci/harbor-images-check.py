@@ -18,6 +18,7 @@ FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
+HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
@@ -57,6 +58,19 @@ def normalize(image):
     if repository.startswith("docker.io/") and repository.count("/") == 1:
         repository = repository.replace("docker.io/", "docker.io/library/", 1)
     return repository + ("@" + digest if separator else ":" + tag)
+
+
+def catalog_reference(image):
+    """Compare a Harbor mirror ref with its reviewed upstream provenance."""
+    return normalize(image.removeprefix("harbor.stinkyboi.com/mirror/"))
+
+
+def mirror_reference(image):
+    """Keep the literal Harbor repository and digest; tags do not change either."""
+    repository, _, digest = image.partition("@")
+    if ":" in repository.rsplit("/", 1)[-1]:
+        repository = repository.rsplit(":", 1)[0]
+    return repository + "@" + digest
 
 
 def declared_images(value):
@@ -358,6 +372,8 @@ def ownership_errors():
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
+    known_mirrors = {mirror_reference("harbor.stinkyboi.com/mirror/" + item["source"])
+                     for item in catalog}
     known_digests = {item.rsplit("@", 1)[-1] for item in known if "@" in item}
     # An unpinned declaration needs its reviewed tag as well as a copied digest.
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
@@ -366,26 +382,37 @@ def check():
     documents = yaml_documents(paths)
     images, digests = declared_images(documents)
     declared_native = native_references_by_path(paths)
+    # Direct Harbor mirror references must retain the reviewed digest. Upstream
+    # provenance refs may use a reviewed tag because Talos resolves them through
+    # the strict Harbor mirror path.
     missing = sorted(normalize(image) for image in images
-                     if not image.startswith("harbor.stinkyboi.com/")
-                     and normalize(image) not in known | known_tags)
+                     if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and (mirror_reference(image) not in known_mirrors
+                          if image.startswith("harbor.stinkyboi.com/mirror/")
+                          else catalog_reference(image) not in known | known_tags))
     missing_digests = sorted(digests - known_digests - {
-        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
+        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
     errors.extend(receipt_errors(declared_native))
     errors.extend(ownership_errors())
     scope_counts = {}
+    harbor_runtime = {item["source"] for item in catalog
+                      if item["source"].startswith("docker.io/goharbor/")
+                      and ":v2.15.4@" in item["source"]}
+    if len(harbor_runtime) != 9:
+        errors.append("Harbor 2.15.4 runtime publication requires nine component digests")
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
         ("Mastodon", MASTODON_CATALOG, declared_mastodon_images()),
         ("Chainguard", CHAINGUARD_CATALOG,
          {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
+        ("Harbor", HARBOR_RUNTIME_CATALOG, harbor_runtime),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
-        required = {normalize(image) for image in required_images}
+        required = {catalog_reference(image) for image in required_images}
         errors.extend(f"{name} mirror scope missing required image: " + image
                       for image in sorted(required - known_scope))
         errors.extend(f"{name} mirror scope has unused image: " + image

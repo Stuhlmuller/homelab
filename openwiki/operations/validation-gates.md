@@ -1,19 +1,23 @@
 ---
 type: operation
 title: "Validation Gates"
-description: "Static, policy, render, secret-scan, and live acceptance gates for Terragrunt, Octelium, Istio, OpenClaw, NOFX, Fleet, and Harbor."
-tags: ["operations", "validation"]
+description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
+tags: [operations, validation]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
-  - id: openwiki-source-ae9e276e4f1f0876814f04a2
-    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
-  - id: openwiki-source-a1af3dbae268cb4278427934
-    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
+  - id: openwiki-source-bb8a89652a59628537fcc9b2
+    resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
     resource: repo://builds/harbor-core/build.sh
   - id: openwiki-source-5a4bc495baa769b6a5e9cae2
@@ -32,6 +36,10 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-4fbefc48f7f8bb8df22af69f
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
@@ -42,10 +50,18 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-c14c7585bd2e583682b8b7f7
+    resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -54,10 +70,8 @@ sources:
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
-  - id: openwiki-source-fdad4f74fd023e19134fcc88
-    resource: repo://policy/workflows_test.rego
-  - id: openwiki-source-8853fb993dc68b93d8f20498
-    resource: repo://policy/workflows.rego
+  - id: openwiki-source-714484b73b4ba165201cb06d
+    resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
@@ -66,20 +80,20 @@ sources:
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
-  - id: openwiki-source-fb4f4b5b36278b2db27610f2
-    resource: repo://scripts/ci/harbor-images-check-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
-  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
-    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
-  - id: openwiki-source-d9d387d4c8e269e62340179d
-    resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-f957231327bdd56401fbc4e2
+    resource: repo://scripts/ci/image-policy-check.py
+  - id: openwiki-source-dce02546543e605cb2ccbb06
+    resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-3b37d159fd7aec286d251f6b
     resource: repo://scripts/ci/n8n-github-webhooks-test.py
+  - id: openwiki-source-263c9c13d476aa142f8ebd42
+    resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -114,6 +128,10 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-85a2ae8a5ccc5550950c86b5
+    resource: repo://scripts/config/harbor-renovate-images.json
+  - id: openwiki-source-8a05c67bc78632e51f4366db
+    resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
@@ -128,10 +146,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-17T21:56:49.510Z" }
+generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T21:56:49.510Z
+    at: 2026-10-18T01:55:27.595Z
 ---
 
 # Validation Gates
@@ -158,6 +176,14 @@ serial substitutions and original-Pod/attempt-ID cancellation. Fresh node
 health, leases, metrics and at least 1.5 GiB measured headroom gate each attempt.
 A render or healthy rollout proves neither full-check memory sufficiency nor
 signed cache publication; verify actual substitution in fresh CI separately.
+
+The bounded attempt on `af18e0e6` passed private loopback setup but failed at
+Nix sandbox `pivot_root` before either offline check ran. No signed outputs
+were published; independent inspection found the lock and workspaces gone,
+four Ready nodes, and a 1,012 MiB memory peak below the 1 GiB limit without
+OOM events. The failure identified the operation, not its enforcement cause.
+That attempt release was exhausted before the separately approved profile
+recovery below. See the [dated incident](../../docs/nix-cache.md).
 
 The [dedicated builder seccomp profile](../../docs/nix-builder-seccomp.md)
 is declared separately from container selection. It preserves the captured
@@ -409,6 +435,22 @@ manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/modules/tailscale-access/README.md).
+
+The `network-policy` job in [validate](../../.github/workflows/validate.yml)
+runs a 30-minute disposable dual-stack Kind
+[enforcement check](../../scripts/ci/network-policy-enforcement-check.py) on
+pull requests and `main` pushes. It checks unrestricted baseline traffic,
+NRI registration, denied startup connections, allowed Service and DNS traffic,
+established-connection revocation, and denial while the worker enforcer process
+is paused without cleanup. A passing fixture does not establish production
+Flannel enforcement or approve a worker rollout.
+
+The `image-policy` job in the same workflow runs a disposable Kind admission
+check. It verifies that the shipped `Warn, Audit` binding admits public images
+with warnings across regular, init, and ephemeral containers, then separately
+tests an isolated temporary `Deny` binding. The temporary binding is fixture
+only. Live audit inventory and authenticated Harbor/node-pull proof remain
+required before a reviewed production `Deny` change.
 
 The additive cutover utilities have focused static tests for fixed DNS ownership,
 Mac credential/profile preservation, bounded same-profile reconnect and carrier
@@ -1308,6 +1350,17 @@ Cordium retirement checks cover the pinned CLI's stdout `gRPC error NotFound:`
 format as well as raw gRPC stderr errors. Already-absent resources are skipped;
 other native failures remain errors.
 
+The staged Cordium runner path has separate source checks for fixed
+runner/controller builds, one-job JIT provisioning, credential refresh,
+per-Workspace UID network policy, controller access, and verified cleanup.
+Protected publication must build before credentials, completely pull both
+fixed Harbor digests, and verify signatures. Canary modes cover success,
+intentional failure, and session renewal. These fixtures establish only the
+declared contract: live NRI enforcement, denied traffic, credential refresh,
+cold pulls, canary cleanup, and workflow execution remain gates before
+enabling registration or changing job selectors. See the
+[runner source contract](../../builds/cordium-runner/README.md).
+
 ## OpenClaw bootstrap gates
 
 Bootstrap verifies its current offline archive, existing local database
@@ -1409,6 +1462,10 @@ live `authorizationMode: PASS` verification.
 See [the operator path](../../docs/octelium-nofx-reconciliation.md).
 
 ## Fleet device management rollout
+
+Fleet-only Company Portal and Platform SSO acceptance is retired. The dated
+pilot records below do not authorize repeating that unsupported enrollment.
+Use the current [Fleet boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 The [WireGuard/AirVPN workflow](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
 adds `python3 -I scripts/ci/fleet-airvpn-setup-test.py` to static checks. Its
@@ -1548,42 +1605,17 @@ changed. If a device client receives 403, inspect edge events and capture any
 needed exception in desired state; this probe does not establish device
 enrollment compatibility.
 
+## Cordium workspace capacity gate
+
+The pinned Langfuse chart render requires one web replica with no explicit
+strategy, a 1280 MiB request, unchanged 2 GiB limit, and required Acer node
+affinity. This checks the declared rolling replacement path. A live Workspace
+still requires the new web Pod Ready on Acer, the old web Pod gone from
+`zimaboard-1`, recovered SQL/web behavior, and fresh node headroom and pressure
+readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+is a projection, not rollout acceptance.
+
 ## Harbor OCI rollout
-
-`offline-checks.sh` runs the native Chainguard receipt fixtures and plan
-validation without Harbor, SSM, or a cluster. `offline-static-checks.sh` pins the
-manual workflow shape, exact-main guard, private credential scope, and its sole
-bounded receipt artifact; Rego permits that artifact only with the reviewed
-private command. These source checks prove the contract and reject unsafe
-changes, but do not copy an image, read a production credential, publish an
-artifact, migrate a workload, or establish a live receipt.
-
-The protected manual receipt workflow can execute only for the exact current
-`main` revision in the production environment. It performs authenticated private
-Harbor index, platform, scan, and pull verification and uploads the bounded
-non-secret receipt when successful. Its result is evidence for a later reviewed
-compatibility migration, not authorization to change a consumer or enable a
-global Harbor-only pull policy.
-
-The separate trusted provenance workflow validates imported receipt state
-against the exact successful main run and publishes `Native Chainguard Receipt
-Provenance` on the PR head SHA. Main pushes and PR edits, including base-branch
-retargets, revalidate all open PR heads against current `main`. One concurrency
-group serializes status writers; a replacement pending event still checks every
-PR. The workflow marks every collected head pending before sequential verification,
-continues after individual status failures, and main-SHA guards reject stale results.
-The required status is enabled only
-after the workflow succeeds on main; static policy tests pin its trusted steps, status
-permission, and source hashes. The Rego `pull_request_target` exception accepts
-only that exact trusted job shape, including serialized all-PR revalidation.
-Neither a local fixture nor a copied receipt substitutes for this head-bound result.
-
-`harbor-images-check.py` reads native consumer targets even when status remains
-`candidate` and `not-enrolled`, and scans `.yaml`, `.yml`, and `.json` cluster
-resources, including inline and file-backed Kustomize patches and replacement-source literals, for private native Chainguard references. Every such reference needs an imported protected receipt
-and the exact verified digest in the declared path of a `migrated` consumer.
-The Harbor render fixture rejects undeclared native destinations.
-These checks prove declared source behavior, not a live pull or rollout.
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
 to offline fixtures. It checks verified source preparation, patch validation,
@@ -1616,6 +1648,9 @@ the enrolled signer, Harbor-only signing Pod images, and withheld outputs on
 pull/digest/signature failures. The credentialed job inventory and canonical
 workflow hash enroll both the publisher and pinned-reference reporting job;
 dispatch verification precedes checkout and repeats before credentials.
+The protected publisher also requires zero matches in the exact full-container
+Grype report before registry credentials; ordinary audit fixtures continue to
+retain unresolved findings for review.
 No publication workflow has been dispatched as part of these source tests.
 The Harbor Core publication workflow runs the pinned public Chainguard signer
 fixture before AWS credential configuration, and `validate` runs the same fixture.
@@ -1631,9 +1666,8 @@ offline OCI fixture still verifies multi-platform and repeated-descriptor
 byte preservation with network transports rejected.
 The build then runs an isolated pinned Harbor/PostgreSQL stack. It requires
 unchanged registry push/pull of eight repeated child descriptors and all blobs,
-with exactly four parent/child database relations. Offline fixtures also
-validate the OCI payload hashes, reject upload locations outside the disposable
-endpoint, and
+with exactly one database relation. Offline fixtures also validate the OCI
+payload hashes, reject upload locations outside the disposable endpoint, and
 require no published host ports, internal networking and core health ordering.
 The registry client shares the proxy's network namespace and uses its loopback
 listener; this avoids publishing a port from an internal-only Docker bridge.
@@ -1646,6 +1680,18 @@ verified TLS, API health, denied anonymous artifact pulls, successful robot
 push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
+
+The fixed Harbor 2.15.4 scope must contain exactly the nine digests from the
+reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
+selected-image pull verification. A successful scoped run proves only those nine
+components; the LiteLLM duplicate-index failure still blocks full-catalog
+acceptance.
+
+The fixed Renovate scope contains six cataloged update digests. Publisher
+fixtures reject an unreviewed scoped entry and exercise its selected-image
+copy and authenticated-pull path. The workflow's exact security hash is
+updated with the new choice; a passing fixture does not publish the images or
+validate the six consuming applications.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
@@ -1667,6 +1713,13 @@ owned reader auth. The missing-reader fixture reaches neither Harbor receipt
 checks nor candidate machine-config rendering or `apply-config`. These fixtures
 do not read SSM or change a node.
 
+The registry pre-pull fixture checks that dry-run mode does not pull, execution
+checks exact reviewed `main`, already-cached digests are skipped, and a pull
+without the expected cache alias fails. The live operator must still verify
+both pins on all four nodes immediately before a Harbor consumer merge. See
+the [Talos test](../../scripts/ci/talos-harbor-mirrors-test.py) and
+[operator](../../scripts/talos-harbor-mirrors.py).
+
 The fixed Traefik publication scope retains all-platform digest, tag alias and
 fresh complete authenticated Harbor-pull checks. The Talos regression rejects scoped,
 untitled and mismatched-revision run receipts as full-catalog evidence before
@@ -1678,3 +1731,21 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Mastodon activation gates
+
+The [offline checks](../../scripts/ci/offline-checks.sh) exercise the Ruby launcher,
+idempotent owner bootstrap, routes, fixed SMTP injection and conflict-safe public
+DNS helpers. Canonical workflow security hashes include the SMTP and DNS lanes;
+the DNS job installs Nix and runs both kubeconfig setup and publication inside
+the pinned shell. These fixtures do not contact SMTP or publish DNS.
+
+Before activation, require current-head protected checks and live Terragrunt
+plan, complete fixed-image publication, worker capacity, ready upstream
+Applications and declared SSM credentials. Register only the Mastodon target
+through the saved-plan apply path. Then verify actual Argo revision/health,
+migrations, owner login, loaded JSON gem, SMTP delivery and public HTTP,
+WebFinger, media and streaming. The DNS workflow requires Mastodon and the
+shared connector Synced/Healthy at its reviewed revision. Preserve data and
+stable keys through recovery; prove backups and isolated restore separately.
+See the [Mastodon runbook](../../clusters/homelab/apps/mastodon/README.md).

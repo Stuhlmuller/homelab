@@ -131,8 +131,9 @@ justification/README, followed by Argo rollout and one newly authorized
 bounded retry. The operator explicitly approved this capability change and
 one further attempt on October 11, 2026. A temporary candidate rendered and
 passed all 224 Conftest policy assertions without policy changes; this is not runtime acceptance.
-`NET_ADMIN` also allows configuring the Pod's network namespace, so obtain
-explicit privilege-change approval first. Keep RuntimeDefault seccomp,
+`NET_ADMIN` also allows configuring the Pod's network namespace. The October 11
+approval covered this scoped change only; any further privilege change needs
+separate approval. Keep RuntimeDefault seccomp,
 strict sandbox/signature verification, the 1 GiB request/limit, serial
 substitutions and lifecycle safeguards. Host namespace sysctls, host
 networking, credentials, capacity and other workloads are outside this fix.
@@ -140,6 +141,22 @@ The first full check's memory sufficiency and signed-cache hit remain
 unproved. Preserve raw failure logs and original attempt IDs privately.
 The earlier one-attempt release remains exhausted; further attempts require
 new explicit authorization.
+
+The newly authorized attempt after PR #1291 on `af18e0e6` passed the private
+loopback setup but failed at Nix sandbox root pivot for the Node.js dependency:
+`cannot pivot old root directory ... Operation not permitted`. Neither offline
+check completed, and no signed outputs were published. RuntimeDefault seccomp,
+strict sandbox/signature verification, the 1 GiB limit and the reviewed
+capabilities were retained. This error identifies the failing operation, not
+its confirmed enforcement cause; diagnose the sandbox/profile boundary before
+proposing any additional privilege or profile change.
+
+The attempt exited with status 1. Independent inspection confirmed the owner
+lock and attempt workspaces absent, no active Nix/timeout process, four Ready
+nodes without pressure and fresh leases. Memory peak was 1,060,679,680 bytes
+(about 1,012 MiB), below the configured 1 GiB limit, with no max/OOM events.
+The full-check resource budget remains unproved. That attempt release was
+exhausted; the separate recovery below received its own approval.
 
 The separately approved `pivot_root` recovery uses a dedicated Localhost
 profile for only the builder container; the Pod default remains RuntimeDefault.

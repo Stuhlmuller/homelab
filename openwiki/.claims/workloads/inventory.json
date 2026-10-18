@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ad970c69af67202360c8a51744c7177d93cfebcf3bf92ba1882d737383320884",
+  "pageVersion": "sha256:11e74df88a1092c37f864952608857c65f8044790f836f5e6d98caaf34710098",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,11 +44,11 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:a77a3e31fce084f6db2fb543b65428ed3e9d494de6235d4681e34e5aff285cc7"
+          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:e74eda87d2b835d8eff01e7dd71a46683769ddf9b96934edc0140bbed448c7e8"
+          "version": "repo-file-v1:sha256:f85f50f287fce9a78081f77d97fecf42560d1ff79eb256bfad55e800a0c64225"
         }
       ]
     },
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:3e648d47a21ff0e1052e7fba69fa97a34aff689cbf8d66a9056945ac1658b178"
+          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -129,26 +129,124 @@
       ]
     },
     {
-      "id": "claim_c12e09fee2904168a36dadc5c1771d1f",
-      "statement": "The staged Image Updater controller remains unregistered and scaled to zero. Its native Chainguard receipt is only evidence for candidate Python and curl artifacts: it neither creates a verified-stable alias nor writes updater state or enrolls a consumer. Enrollment requires a later reviewed compatibility migration using an exact private Harbor digest and verifiable receipt evidence, followed by candidate promotion that binds proposed digests to that protected receipt; current native enrollment is rejected.",
+      "id": "claim_cc4545c330f04f4dabce546e874ee17a",
+      "statement": "Mastodon follows main through its shared Application stack, depends on SSM, External Secrets, cert-manager, Istio, public connector and platform storage, and routes its instance hostname to web port 3000 and streaming port 4000 while preserving the private apex portal.",
       "evidence": [
         {
-          "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:e74eda87d2b835d8eff01e7dd71a46683769ddf9b96934edc0140bbed448c7e8"
+          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
         },
         {
-          "resource": "repo://scripts/ci/image-automation-test.py",
-          "version": "repo-file-v1:sha256:61152a33e62d7d59ad87967e60993e377cbc2263106fbbb014679dac73b953af"
+          "resource": "repo://clusters/homelab/apps/mastodon/virtualservice.yaml",
+          "version": "repo-file-v1:sha256:ae4da97c540a55b79d2195916313133df28df3f503dd4df2b773dad203a3aa06"
         },
         {
-          "resource": "repo://scripts/ci/image-automation.py",
-          "version": "repo-file-v1:sha256:213eb79853933d253e75b52cd3d9832ba4da018b69cdc0564a97a2e8c5cc2fed"
+          "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
+          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
+        }
+      ]
+    },
+    {
+      "id": "claim_bbfe3bc5163448b29e7b9c8edc6623cb",
+      "statement": "Mastodon retains local PostgreSQL and AOF Redis volumes on zimaboard-0, NAS media and checked nightly database backups with 14-day retention; shared NAS storage is not independent disaster recovery and recovery must preserve stable application keys.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L20-L48",
+          "version": "repo-lines-v1:sha256:6397e8272811a35def289adb221db9fc4a86bc57e7856b9c6cd6dbcb550d231d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYmY4NDZjOTFmZjkxNjczZTBmZjdkMTdkMzAzMDc3NTIwNjQ4Mjg2Nzc1NGI3MTA2ZmE0YmU3OGIxMGMxY2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyMGRkOGM2YzcyYmViY2MzY2YzZTNkMzUxMzRmYzQyZjI0YzIwNDMxYmZkM2Y1MTU5MDRmYjE5NWI3MjE2ZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFlZjFjYTA2YzBhYzNhNGFiMTYwMzQ1Yzg5ODM5OGYwMjcyODA3NmQwNjQ3MWY4OGVhZjdlYmE5OThlOGE0ZTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L101-L118",
+          "version": "repo-lines-v1:sha256:2de48697e019c73ddaaa5820abd76d7e6507891d927aa667555008ff3ba151c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjYTMwODNkZGYxYWI3Nzg2MmRlZjg0ZWQzNDU0MmNjYjllMTFiNWRiMjVjZThjYzA0NTc1NzlkYzJlNGFhOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJkNTZkYzE5MmI2YjQxZWQyYmEwNDNjYzA5ZDA1ODEzYzdiZTdlMDNmZjllYTk2MDU2MzFlYmY3MGFjYThjYzcifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml",
+          "version": "repo-file-v1:sha256:4967c5caa133d7adc0747aad6cf6c1d4243363864d84cb34259c58a862ed2b0b"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/storage.yaml",
+          "version": "repo-file-v1:sha256:0b379e40513af1e7685edb35accac30f72f1fba226661bc25351d1ac4bf993ba"
+        }
+      ]
+    },
+    {
+      "id": "claim_6be4193694b64ff2842f394e7c033599",
+      "statement": "Mastodon orders schema preparation before idempotent owner bootstrap and Deployments, refuses SMTP placeholders, and separates declared registration from public DNS publication, which requires both Applications healthy at the reviewed revision.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/bootstrap-job.yaml",
+          "version": "repo-file-v1:sha256:b2fa88e328e2398d618be3668e49fc010bedd85a7f78ee509cac4a3b2c477816"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/launch.rb",
+          "version": "repo-file-v1:sha256:7b52882c4fda2a58d36c7c43c0bb05419833aa6fe9e8e5fc4e570ddb5be473c2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/migration.yaml",
+          "version": "repo-file-v1:sha256:b814d01d46c4606064443b4fe8a805a40694b3b44c623032f0c0f3993034620f"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/workloads.yaml",
+          "version": "repo-file-v1:sha256:6babb30ba9d79f334204db361b90fc4ae9a3817d16e2adf70a24b8fbf4964287"
+        },
+        {
+          "resource": "repo://scripts/mastodon-public-dns.py#L51-L65",
+          "version": "repo-lines-v1:sha256:a3db34e670a0261935bd108c1cac35de4c7fbcacff549f6d1297a6c118800257:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkNDA1MTNkMzk3ZjZkMDExYjI2NDBlYjI2MDQ2MmNmZDA2YzNlN2UwMmMyOTFiZmJkYmZlMTVjYTNhMmI2OGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzNzIyY2FkNjg4ZDI2MWRjMmU2MjMzZGUwNzkyNDM3NjcwOGIwY2FhYWE1MzdhZDk4ZDZkN2YwNmYxYjY3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkNmY5NmEyMWNhYmMyYmRhMTNlMDMwYzdjNTlmMDg3ZTk1OWRmMWNlNjIwNmVlMjUwMDEyMzEwYmY1ZWNhMWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_558d8c79808d45099d6904e3b6819981",
+      "statement": "Langfuse web is a stateless Acer-pinned Pod with a 1280 MiB request and unchanged 2 GiB limit, freeing its former 2 GiB reservation on Cordium-eligible zimaboard-1; worker and CPU budgets are unchanged.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/README.md",
+          "version": "repo-file-v1:sha256:1a6a0ba669f51bc8ca6e78afcdfd9d9579c24ac17427b3b05b64acf1f65229d9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
+          "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
+        }
+      ]
+    },
+    {
+      "id": "claim_56296241228e41d3b304295ffedab73f",
+      "statement": "The root Terragrunt stack declares a platform image-policy Argo CD Application using Warn and Audit admission, with no storage or credentials; live audit evidence and any Deny promotion require separate acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/platform-image-policy/stack.hcl",
+          "version": "repo-file-v1:sha256:233cafd787d1f0ec8701d736c0c1fb3f81571c1b90e27022ee355efb2fe0bff3"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
+          "version": "repo-file-v1:sha256:c9ffa389cd458f804f5b3dd38db8d9120754311dc6dab226249e3d11347d5ebd"
+        }
+      ]
+    },
+    {
+      "id": "claim_68d0ca4adf4a4df59eba8e29ede7672e",
+      "statement": "The Cordium Actions runner pool remains disabled with no controller Deployment or published runner image; hosted selectors remain until isolation, private pull, canary, and cleanup acceptance pass.",
+      "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/cordium/kustomization.yaml",
+          "version": "repo-file-v1:sha256:d09ca03576463e5a566dcd5ba3cc2ae4c88f61a64826cefba1b766c1c335af90"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T21:40:54.253Z"
+    "at": "2026-10-18T01:09:27.563Z"
   }
 }
