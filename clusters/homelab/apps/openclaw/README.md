@@ -2,11 +2,12 @@
 
 ## Enterprise replacement retention
 
-The legacy gateway stays active until the reviewed shutdown change lands. The
-retirement reader is staged at zero replicas. Its separate ConfigMap does not
-change the live assistant checksum. The off-NAS S3 bucket is staged in the
-Terragrunt stack and must exist before archive work; the protected apply path
-plans it, checks policy, and applies that saved plan.
+The legacy gateway stays active until the reviewed shutdown change lands. This
+reader stage starts one read-only Pod on the legacy node for private inventory;
+its separate ConfigMap does not change the assistant checksum. Apply this stage
+only after the off-NAS S3 bucket exists through the protected Terragrunt apply
+path. Verify the reader is Ready and bound to the retained PVCs before running
+inventory. The reader cannot authorize shutdown from inventory alone.
 
 After the bucket and one reader Pod are verified, run the protected fixed-stage
 workflow from the exact current `main` SHA. Replace the placeholders with the
