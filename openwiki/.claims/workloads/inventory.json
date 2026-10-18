@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5d5d1019b5b5cd439a76838a9752dd6f20a140968b312204bbafad92c7e10874",
+  "pageVersion": "sha256:6f155328b037b3956a2df4ab79d75e171920b51200cd29309a0ce09f0785c277",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:be1e38e7f4706b3f3b5f020546ea09c808c19d421227f6dad7e1c0aa2b2898e0"
+          "version": "repo-file-v1:sha256:2a77618d5f16f93020e5737ee925317a956634e9ddf46dd01185e7a564e0801b"
         }
       ]
     },
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -84,7 +84,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:1fd5cf64f8dfddcd213e4cc90e93e3d1fc09f3cac823f5bf847d83ba1ef1706d"
+          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -261,10 +261,46 @@
           "version": "repo-file-v1:sha256:e1dd68c104e64def1be7e4d0c0f905f9daa30960c5808af832dbe7e28cc61b65"
         }
       ]
+    },
+    {
+      "id": "claim_c2b8be8ba3d34f8691fae5b1985b3fd2",
+      "statement": "The root Terragrunt stack registers tailnet-dns as a separate Argo CD Application in its own namespace with Tailscale and Traefik dependencies; the pinned Harbor-backed CoreDNS/k8s_gateway runtime is stateless and needs no PVC, DNS database, application secret, or backup.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl#L5-L39",
+          "version": "repo-lines-v1:sha256:20609c02c260767c326070e2292d8c534ee94f031b32d6715cf219e9ded79b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl#L334-L343",
+          "version": "repo-lines-v1:sha256:a0d40573ddd7634cc4207abfd9fac29ece4e5ae8e793359fcbb5830e76bd7933:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmMTBmNTZiMTk5YWMxN2EwMjY5OGVkNThmMTdjYTg3NjdiODU3MGQ3OTVmZTAwNjVmMmZiYzIxYzRlOTMzMGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxOWEwN2Q3YjM1ZGU0YzEzNmRkYjM1MTVjYWRkN2ZjZjU1ZjJmMDYxNjgxNWU2MjdmYjFiOWRjYTBlNDI3NjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgxZDQ2YjViZmFkMWYzYTg3YTZlMDFiYjlkYTkwNWZjNjM1NjY0YjgwZGVlNTRkZjFhMjdmZmQ3NjY0ZTQ3NjUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L3-L29",
+          "version": "repo-lines-v1:sha256:4e2fe8ad3ec5eb22f68bfd3cf5d51f05ef721de224c782fe016882e23e98ae86:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlNTliMTQ0OTFjYzg0OGFkMzJiY2YwNDk0YzYwMWYyYjYwZWJhOThmNTg1YTc5OGQ2YmVhOTI5MjUzMTBiMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiOWEzZDc0YTYwMTdmNmVhZDg3MmVmZTE5MDE3YWNlMGExMjBjZGFjZTA0ZjU2Y2IyZDgwN2JhNTFjY2ZjNTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MzBmNTUxNjNmYzA2YzUwMTQzZWU0NTA1ZWE3ZjI3YmMzZGZkN2Q5MTc0ZjcxMjE5ZTA5MmU3OGJlYWExMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEyNDJiMTgwYmMzOTgzZGEyNTc0MmIzN2E1NTUxOTczOTNhMGY0YWRjYTdiNjdhMWFhZWU5NTcyMTVmODcxMGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_29c8c7aa60934fde91b1f50de27a3cef",
+      "statement": "The tailnet-dns resolver watches the approved Traefik private Service for reviewed hostnames and its live ingress IP, exposing DNS through a distinct Tailscale UDP/TCP 53 peer; initial handoff checks the fixed 27 names, while later paired route and hostname-annotation edits do not require zone-record changes.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L31-L58",
+          "version": "repo-lines-v1:sha256:f648fb5917a3412be7254d6f20d5a19a2f6046f43ab9cd90dffb94beca1eb341:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhZTA4ZmNmZTU0NTNkMTJkYjI5NmE4YTU2NWYzYTg0ZTkwODc1ZmYwYzNkNDE0ODczMWUzZWQ1MTAxMDVjZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzN2FhMWY1MTAxYmU2MDgzNWU1ZmQwYjVmNjE5MmJkOWI4NjA0ZWJmMDc4ZWVhOTczMmI4NTdiNmM0YmY1M2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3NGVkNWIyMTVkYjZmYzk3YzRlZTVhMDE1NzdiM2UyN2I3ZjE1MTMwNGUyOGJiY2FmZDRmZjI2YzhjNzIzYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE0YzBjMWNmYmI5YzIxYjk3YzM0OTk4MjFhNDYxNmMzNzcwMmNmZjdjODI2NmI5ZDdhMzU1NGI1Mjc5MTJmZDQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L9-L19",
+          "version": "repo-lines-v1:sha256:b9e4de469e8accafb01dba7db5f50a0118efe78d0e541b024870c5c9db6c338c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2MGIxNDg0YzE1MzFjYzZlYTkzOTdkYzcwOGQ2MTZhNTdhNzkzODI5MmYzNTlkN2MzNjliOTljZGZhOWIwOTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiNzZkZjAxODA0MGI5MjVkMzRiM2Q3MGM0YTRkNDQwYTM1NzA3NDZlYWUyNjFjYmQzNzJkZTYzNzcwZDUzMjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjOTI5OTQ2NGEyZmY3NTcwMzY5NjNiNTAwNzI0NDkyZjM3MDk5MTM5M2U2MmFkMTBmNjc5ZjFlNmI5ODBjNTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlZmMzOGQ2OWI1ZGNiMjBlZDQ1OTI5ZGY2ZmQzZjhhYzcwMWY0YzBlMzY0YjBjOGJhMzIwZDhkNzAxYTQ0ZTIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml#L17-L47",
+          "version": "repo-lines-v1:sha256:c89b0c31c533aa84273cf0ab5a730d0e4c8f1ca6e3ad7b4a589abbdb3b378396:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMmEwMzMyNjgxNjhlYjZmOThiMDRmMTg0MzUzYzFmOTkwNzM4MGRiMzQyMmJiYWVhNWU4OWM1YWU1NjU4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiNDI3YjNmMmM4YjQxZWFmYTIzNTBkMzk3ZmMwMzU5ZTMwMDFkZDViNzI4ZjcwMzg5NGZjMzEyZTcxODcwMjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTNlZTU3NDBlZWU3ODVkMTdiNjlkMWMwOTdkMWE5OGRlYTMxMTk2YmRiOTk3NTFjNTUxZDc0M2FiYmNhNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU1MWUyMmZmZjgyYTBjNzBkNmRiNTUwZTU2ODIzZjlkNjZiMWUyMDcxN2ZmNmJkZTQzNDMxNjIyYjI4NDg4ZTYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T10:55:26.804Z"
+    "at": "2026-10-18T19:06:56.344Z"
   }
 }

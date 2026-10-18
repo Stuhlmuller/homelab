@@ -104,6 +104,8 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
     resource: repo://scripts/config/harbor-chainguard-images.json
+  - id: openwiki-source-e4e9ca360dcb635535118ee8
+    resource: repo://scripts/config/harbor-dns-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
@@ -116,10 +118,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T10:55:26.804Z" }
+generated: { by: "codex", at: "2026-10-18T20:08:36.658Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T17:42:33.479Z
+    at: 2026-10-18T20:08:36.658Z
 ---
 
 # Harbor Private OCI Registry
@@ -329,7 +331,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, `traefik`, `harbor`, or `renovate`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, or `dns`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -357,11 +359,18 @@ complete authenticated Harbor pulls. No caller-supplied image, path or destinati
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
 
-The fixed `renovate` scope selects six cataloged update digests for Fleet,
-Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, and n8n from
+The fixed `dns` scope selects only the pinned Codeberg k8s_gateway image from
+[`harbor-dns-images.json`](../../scripts/config/harbor-dns-images.json). Publish
+from exact reviewed current `main` and require an unchanged digest plus a
+complete authenticated Harbor pull before merging the `tailnet-dns` Application.
+Its scoped receipt does not prove full-catalog coverage or live resolver health.
+
+The fixed `renovate` scope selects seven cataloged update digests for Fleet,
+Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the Renovate
+runner from
 [`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json).
 It retains the normal digest, alias, and fresh authenticated pull checks while
-the unrelated full catalog is held. Its success proves only these six images;
+the unrelated full catalog is held. Its success proves only these seven images;
 each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
