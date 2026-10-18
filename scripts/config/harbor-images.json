@@ -64,7 +64,10 @@
       "source": "docker.io/envoyproxy/envoy:v1.38.0@sha256:8146b97ee61a42cd216514709e4e3198af75f014974e3d9f310aef9c901fcbdf"
     },
     {
-      "source": "docker.io/fleetdm/fleet:v4.92.2@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
+      "source": "docker.io/fleetdm/fleet@sha256:0686cf737955ab80f435665bdfd3f49c275c93fbe8fec0ca73b7eb48ad2d218c"
+    },
+    {
+      "source": "docker.io/fleetdm/fleet:v4.92.3@sha256:2c53edaa4e530ae4671284a309c0cc20345f4c3eff8c12cfcd1238c3e3fc46f1"
     },
     {
       "source": "docker.io/goharbor/harbor-core:v2.15.2@sha256:d7b780d23721a000f0fb8e181add6675eafa336de5d033b77fd7da0c171ff7f7"
@@ -169,7 +172,10 @@
       "source": "docker.io/library/postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382"
     },
     {
-      "source": "docker.io/library/postgres:18.6-bookworm@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+      "source": "docker.io/library/postgres@sha256:3725f4e2499eef5134592b3b4ab79a543ed7f8e533b05b5b637af926630f6650"
+    },
+    {
+      "source": "docker.io/library/postgres:18.6-bookworm@sha256:7d3852670a11f0cb9cb1cd50916dc02a0021143fb22d96b78eeef26348abe55c"
     },
     {
       "source": "docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
@@ -181,7 +187,10 @@
       "source": "docker.io/library/postgres@sha256:70b9c8977b5fb87bd55c9e29472d778d76d56a6266143d47259da13d78a72afa"
     },
     {
-      "source": "docker.io/library/python:3.13-bookworm@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
+      "source": "docker.io/library/python@sha256:ab62bdaec8f090e565b8c76a8cac990229c28a42725f356cc32d9f4dea29806d"
+    },
+    {
+      "source": "docker.io/library/python:3.13-bookworm@sha256:073ffebb96ae4d0ed73ccad59f08c47bd84af8a79f5258130f8458ac50ad9ff4"
     },
     {
       "source": "docker.io/library/python:3.14.7-alpine3.23@sha256:218761489de417a6eb0808e264cbdd7043ec6659fe5a61898815e9848536541d"
@@ -289,7 +298,10 @@
       "source": "ghcr.io/k8snetworkplumbingwg/multus-cni:v4.3.0-thick@sha256:2b9671447f3ea4e7e56730843dbf59445b9307246f393b61386b896d56ae51c9"
     },
     {
-      "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
+      "source": "ghcr.io/linuxserver/bazarr@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c"
+    },
+    {
+      "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:fb0437897eaa7f96cf6ac42f795f8dcc208d34ec969eac5d366454e767304eb9"
     },
     {
       "source": "ghcr.io/mastodon/mastodon-streaming:v4.7.3@sha256:a239a39b79b2b78903378b02fa947abeff78146f6b8c9c27f856e5269425653b"
