@@ -33,6 +33,10 @@ claim and about 381 MiB in the local runtime; the NAS reported 853 GiB free.
 The archive needs a separate NAS-backed scratch claim and a verified off-NAS
 copy. Recheck source size, free space, placement and restore headroom immediately
 before shutdown; these observations do not pass the capacity or recovery gate.
+The [read-only policy baseline](openclaw-enterprise-policy-review.json) found
+61 live policies across 204 Pods; 194 Pods had no selected egress policy.
+Source-render and ingress review, owner corrections, and real canary enforcement
+remain pending, so firewall activation is blocked.
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global

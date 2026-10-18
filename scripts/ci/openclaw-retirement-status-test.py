@@ -33,12 +33,17 @@ class Status(unittest.TestCase):
         self.node = {'status': {'conditions': [{'type': 'Ready', 'status': 'True'}]}}
         self.reader = {
             'metadata': {'name': 'retirement-pod', 'labels': {
-                'app.kubernetes.io/name': 'openclaw-retirement-reader'}},
+                'app.kubernetes.io/name': 'openclaw-retirement-reader'},
+                'ownerReferences': [{'kind': 'ReplicaSet', 'name': 'retirement-rs', 'uid': 'reader-rs-uid'}]},
             'spec': {'nodeName': CONFIG['node']},
             'status': {'phase': 'Running', 'conditions': [{'type': 'Ready', 'status': 'True'}]},
         }
         self.old = {'metadata': {'labels': {'app.kubernetes.io/name': 'openclaw'}},
                     'status': {'phase': 'Running'}}
+        self.reader_deployment = {'metadata': {'uid': 'reader-deployment-uid'}}
+        self.reader_rs = {'metadata': {'uid': 'reader-rs-uid', 'ownerReferences': [
+            {'kind': 'Deployment', 'name': 'openclaw-retirement-reader',
+             'uid': 'reader-deployment-uid'}]}}
         self.pods = [self.reader, self.old]
         self.jobs = []
         self.pvcs = {}
@@ -61,7 +66,11 @@ class Status(unittest.TestCase):
             return self.pvs[args[2]]
         kind = args[args.index('get') + 1]
         if kind == 'deployment':
+            if args[args.index('get') + 2] == 'openclaw-retirement-reader':
+                return self.reader_deployment
             return self.deployment
+        if kind == 'replicaset':
+            return self.reader_rs
         if kind == 'cronjob':
             return self.cron
         if kind == 'pods':
@@ -85,6 +94,11 @@ class Status(unittest.TestCase):
 
     def test_unknown_reader_node_or_rebound_pv_fails_closed(self):
         self.reader['spec']['nodeName'] = 'other-node'
+        with self.assertRaises(ValueError):
+            module.resources(CONFIG, self.query)
+
+    def test_reader_label_without_deployment_ownership_fails_closed(self):
+        self.reader_rs['metadata']['ownerReferences'][0]['uid'] = 'foreign-deployment'
         with self.assertRaises(ValueError):
             module.resources(CONFIG, self.query)
         self.reader['spec']['nodeName'] = CONFIG['node']

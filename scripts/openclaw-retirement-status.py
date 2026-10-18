@@ -52,6 +52,18 @@ def resources(config, query=kubectl):
         condition.get('type') == 'Ready' and condition.get('status') == 'True'
         for condition in reader.get('status', {}).get('conditions', [])):
         raise ValueError('retirement reader is not ready on the expected node')
+    reader_deployment = get('deployment', 'openclaw-retirement-reader')
+    owners = [ref for ref in reader.get('metadata', {}).get('ownerReferences', [])
+              if ref.get('kind') == 'ReplicaSet']
+    if len(owners) != 1:
+        raise ValueError('retirement reader owner is uncertain')
+    reader_rs = get('replicaset', owners[0]['name'])
+    if (reader_rs.get('metadata', {}).get('uid') != owners[0].get('uid')
+            or not any(ref.get('kind') == 'Deployment'
+                       and ref.get('name') == 'openclaw-retirement-reader'
+                       and ref.get('uid') == reader_deployment.get('metadata', {}).get('uid')
+                       for ref in reader_rs.get('metadata', {}).get('ownerReferences', []))):
+        raise ValueError('retirement reader Deployment ownership changed')
     roots = query('-n', namespace, 'exec', 'pod/' + reader['metadata']['name'],
                   '-c', 'reader', '--', 'python3', '-c',
                   'import json,os,sys; print(json.dumps({name:{"device":os.stat(path).st_dev,"inode":os.stat(path).st_ino,"uid":os.stat(path).st_uid} for name,path in zip(("local","nas"),sys.argv[1:])}))',
