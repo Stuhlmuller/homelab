@@ -79,6 +79,34 @@
       "retained": true
     }
   },
+  "legacyRetention": {
+    "namespace": "ai",
+    "node": "zimaboard-1",
+    "deployment": "openclaw",
+    "image": "ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218",
+    "assistantSha256": "107e53a7057ea31acb13fda80eeeaa0c56ea75f744000741e648660ad5676704",
+    "cronJob": "openclaw-runtime-backup",
+    "localClaim": "openclaw-runtime-local",
+    "stateClaim": "openclaw-runtime-state-local",
+    "agentClaim": "openclaw-runtime-agent-local",
+    "nasClaim": "openclaw",
+    "localRoot": "/runtime-volume/runtime",
+    "stateMount": "/legacy-state",
+    "agentMount": "/legacy-agent",
+    "nasRoot": "/data",
+    "localUid": 1000,
+    "nasUid": 65534,
+    "requiredLocal": [
+      "state/openclaw.sqlite",
+      "agents/main/agent/openclaw-agent.sqlite"
+    ],
+    "requiredNas": [
+      "openclaw",
+      "openclaw-backups/pre-2026.9.2-runtime",
+      "openclaw-backups/pre-2026.9.5",
+      "openclaw-runtime-snapshots"
+    ]
+  },
   "executionBlockers": [
     "Matching published controller/runtime images and source-built CLI are not verified",
     "Model ID and dedicated credential are not configured",

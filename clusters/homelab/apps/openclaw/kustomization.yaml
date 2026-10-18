@@ -19,6 +19,7 @@ configMapGenerator:
       - assistant/bootstrap.py
       - assistant/reconcile.py
       - assistant/runtime-storage.py
+      - assistant/retirement.py
       - assistant/gh
 generatorOptions:
   disableNameSuffixHash: true

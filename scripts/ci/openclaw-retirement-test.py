@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Fail-closed legacy retirement and independent restore fixtures."""
+
+import importlib.util
+import json
+import os
+import sqlite3
+import stat
+import tarfile
+import tempfile
+import time
+import unittest
+from contextlib import closing
+from pathlib import Path
+from unittest.mock import patch
+
+
+SOURCE = Path(__file__).resolve().parents[2] / 'clusters/homelab/apps/openclaw/assistant/retirement.py'
+spec = importlib.util.spec_from_file_location('openclaw_retirement', SOURCE)
+retirement = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(retirement)
+
+
+class Retirement(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix='oce-retirement-')
+        self.addCleanup(self.tmp.cleanup)
+        base = Path(self.tmp.name)
+        self.local, self.nas, self.archive_root = (base / item for item in ('local', 'nas', 'archive'))
+        for item in (self.local, self.nas, self.archive_root):
+            item.mkdir(mode=0o700)
+        self.config = {
+            'namespace': 'ai', 'node': 'zimaboard-1', 'deployment': 'openclaw',
+            'image': 'ghcr.io/openclaw/openclaw:fixture@sha256:abc',
+            'assistantSha256': 'fixture-assistant-hash',
+            'cronJob': 'openclaw-runtime-backup', 'localClaim': 'openclaw-runtime-local',
+            'stateClaim': 'openclaw-runtime-state-local', 'agentClaim': 'openclaw-runtime-agent-local',
+            'nasClaim': 'openclaw', 'localRoot': str(self.local), 'nasRoot': str(self.nas),
+            'localUid': os.getuid(), 'nasUid': os.getuid(),
+            'requiredLocal': ['state/openclaw.sqlite', 'agents/main/agent/openclaw-agent.sqlite'],
+            'requiredNas': ['openclaw', 'openclaw-backups/pre-2026.9.2-runtime',
+                            'openclaw-backups/pre-2026.9.5', 'openclaw-runtime-snapshots'],
+            'stateMount': str(self.local / 'state'),
+            'agentMount': str(self.local / 'agents/main/agent'),
+        }
+        for name in self.config['requiredLocal']:
+            path = self.local / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with closing(sqlite3.connect(path)) as db:
+                with db:
+                    db.execute('CREATE TABLE messages (id INTEGER PRIMARY KEY, body TEXT)')
+                    db.execute('INSERT INTO messages (body) VALUES (?)', ('private',))
+        for name in self.config['requiredNas']:
+            path = self.nas / name
+            path.mkdir(parents=True, exist_ok=True)
+            (path / 'retained').write_text('private')
+        (self.nas / 'unlisted-configuration').write_text('private')
+        self.observed = retirement.inventory(self.config)
+        self.status = {
+            'checkedAt': int(time.time()),
+            'namespace': 'ai', 'node': 'zimaboard-1', 'nodeReady': True,
+            'deployment': 'openclaw', 'image': self.config['image'],
+            'assistantSha256': self.config['assistantSha256'],
+            'replicas': 0, 'readyReplicas': 0, 'pods': 0,
+            'cronJob': 'openclaw-runtime-backup', 'cronJobSuspended': True,
+            'activeJobs': 0, 'claims': self.observed['claims'], 'roots': self.observed['roots'],
+        }
+        self.status_path = self.archive_root / 'status.json'
+        retirement.write_private(self.status_path, self.status)
+
+    def test_full_local_and_nas_archive_restores_checkpoint_and_databases(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path, self.archive_root)
+        record = retirement.verify_archive(self.config, receipt)
+        self.assertEqual(set(record['restoredDatabases']), set(self.config['requiredLocal']))
+        self.assertEqual(stat.S_IMODE(receipt.stat().st_mode), 0o600)
+        self.assertEqual(len(list(self.archive_root.glob('legacy-*/receipt.json'))), 1)
+        with tarfile.open(receipt.parent / 'legacy.tar.gz', 'r:gz') as bundle:
+            names = set(bundle.getnames())
+        self.assertIn('nas/unlisted-configuration', names)
+        self.assertIn('nas/openclaw-backups/pre-2026.9.2-runtime/retained', names)
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            self.assertEqual(retirement.archive(self.config, self.status_path, self.archive_root), receipt)
+        with (receipt.parent / 'legacy.tar.gz').open('ab') as damaged:
+            damaged.write(b'truncated-or-changed')
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config, receipt)
+
+    def test_writer_uncertainty_or_source_identity_change_never_publishes(self):
+        for key, value in [('replicas', 1), ('pods', 1), ('activeJobs', 1),
+                           ('cronJobSuspended', False), ('nodeReady', False),
+                           ('node', 'other-node'), ('image', 'other-image'),
+                           ('assistantSha256', 'other-hash'), ('claims', {}), ('roots', {}),
+                           ('checkedAt', int(time.time()) - 121)]:
+            with self.subTest(key=key):
+                changed = dict(self.status, **{key: value})
+                with self.assertRaises(ValueError):
+                    retirement.stopped(changed, self.config, self.observed)
+        with self.assertRaises(ValueError), patch.dict(os.environ, {}, clear=True):
+            retirement.archive(self.config, self.status_path, self.archive_root)
+        self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
+
+    def test_missing_required_data_uid_and_overlap_fail_closed(self):
+        for change in ('missing', 'uid', 'overlap'):
+            with self.subTest(change=change):
+                config = dict(self.config)
+                if change == 'missing':
+                    config['requiredNas'] = [*config['requiredNas'], 'missing-checkpoint']
+                elif change == 'uid':
+                    config['localUid'] = os.getuid() + 1
+                else:
+                    config['nasRoot'] = config['localRoot']
+                with self.assertRaises(ValueError):
+                    retirement.inventory(config)
+
+    def test_unmatched_parent_child_mounts_are_rejected(self):
+        wrong = self.nas / 'wrong'
+        wrong.mkdir()
+        config = dict(self.config, stateMount=str(wrong))
+        with self.assertRaises(ValueError):
+            retirement.inventory(config)
+
+    def test_unsafe_paths_and_archive_corruption_fail_without_marker(self):
+        config_path = self.archive_root / 'config.json'
+        config_path.write_text(json.dumps({'legacyRetention': dict(self.config, requiredNas=['../escape'])}))
+        with self.assertRaises(ValueError):
+            retirement.config_at(config_path)
+        (self.nas / 'openclaw' / 'escape').symlink_to('/private/unknown')
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            with self.assertRaises(ValueError):
+                retirement.archive(self.config, self.status_path, self.archive_root)
+        self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
+
+    def test_partial_failure_retains_private_diagnostics_without_marker(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
+             patch.object(retirement, 'add_tree', side_effect=ValueError('fixture failure')):
+            with self.assertRaises(ValueError):
+                retirement.archive(self.config, self.status_path, self.archive_root)
+        self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
+        pending = list(self.archive_root.glob('.partial-oce-legacy-*'))
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(stat.S_IMODE(pending[0].stat().st_mode), 0o700)
+
+    def test_partial_archive_and_private_diagnostics_cannot_verify(self):
+        pending = self.archive_root / '.partial-oce-legacy-incomplete'
+        pending.mkdir(mode=0o700)
+        with self.assertRaises(FileNotFoundError):
+            retirement.verify_archive(self.config, pending / 'receipt.json')
+        public = self.archive_root / 'public.json'
+        public.write_text('{}')
+        public.chmod(0o644)
+        with self.assertRaises(ValueError):
+            retirement.private_file(public)
+
+    def test_already_retired_cronjob_is_idempotent_but_unknown_job_is_not(self):
+        retirement.stopped(dict(self.status, cronJobSuspended=False, cronJobAbsent=True),
+                           self.config, self.observed)
+        with self.assertRaises(ValueError):
+            retirement.stopped(dict(self.status, activeJobs=None), self.config, self.observed)
+
+
+if __name__ == '__main__':
+    unittest.main()
