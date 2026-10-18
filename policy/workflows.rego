@@ -153,6 +153,7 @@ deny contains msg if {
 	startswith(uses, prefix)
 	not encrypted_harbor_diagnostic(job_name, job, step)
 	not native_receipt_artifact(job_name, job, step)
+	not encrypted_oce_diagnostic(job_name, job, step)
 	msg := sprintf("live workflow job %q step %d must not upload artifacts", [job_name, index])
 }
 
@@ -170,6 +171,26 @@ harbor_encrypted_diagnostic_step := {
 	"with": {
 		"name": "harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}",
 		"path": "${{ runner.temp }}/harbor-publication-error.gpg",
+		"if-no-files-found": "ignore",
+		"retention-days": 1,
+		"include-hidden-files": false,
+	},
+}
+
+encrypted_oce_diagnostic(job_name, job, step) if {
+	job_name == "publish"
+	some command in job.steps
+	trim(object.get(command, "run", ""), "\n") == oce_image_private_run
+	step == oce_encrypted_diagnostic_step
+}
+
+oce_encrypted_diagnostic_step := {
+	"name": "Retain Only Encrypted Failure Diagnostic",
+	"if": "failure()",
+	"uses": "chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6",
+	"with": {
+		"name": "oce-image-error-${{ github.run_id }}-${{ github.run_attempt }}",
+		"path": "${{ runner.temp }}/oce-image-error.gpg",
 		"if-no-files-found": "ignore",
 		"retention-days": 1,
 		"include-hidden-files": false,
@@ -455,6 +476,27 @@ native_receipt_artifact(job_name, job, step) if {
 	object.get(options, "retention-days", 0) == 30
 	object.get(options, "include-hidden-files", true) == false
 }
+
+private_live_output(run) if {
+	trim(run, "\n") == oce_image_private_run
+}
+
+oce_image_private_run := `set -euo pipefail
+umask 077
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/harbor-publish.sh publish-openclaw-enterprise
+EOF
+then
+  python3 -I scripts/ci/harbor-encrypt-diagnostic.py "$private_log" \
+    "$RUNNER_TEMP/oce-image-error.gpg" >/dev/null 2>&1 || true
+  echo "::error::Enterprise image publication failed; private transport and registry output withheld."
+  exit 1
+fi
+echo "Pinned Enterprise controller/runtime pair published, signed, and fully pulled; private output withheld."`
 
 harbor_mirror_private_run := `set -euo pipefail
 umask 077

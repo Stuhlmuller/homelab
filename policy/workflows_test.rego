@@ -723,3 +723,27 @@ workflow_with_native_receipt_artifact(artifact) := {
 		],
 	}},
 }
+
+test_encrypted_oce_image_artifact_exception_is_exact if {
+	base := workflow_with_live_run(oce_image_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [oce_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"publish": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(oce_encrypted_diagnostic_step, {"with": object.union(oce_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(oce_encrypted_diagnostic_step, {"with": object.union(oce_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(oce_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"publish": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
+	forged_run := replace(oce_image_private_run, "harbor-encrypt-diagnostic.py", "cat")
+	forged_job := object.union(job, {"steps": [{"run": forged_run}, oce_encrypted_diagnostic_step]})
+	forged := object.union(base, {"jobs": {"publish": forged_job}})
+	forged_denials := deny with input as forged
+	count(forged_denials) > 0
+}
