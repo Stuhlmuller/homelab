@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Validate the fixed DNS inventory and gate execution on reviewed mesh ingress."""
+"""Validate the fixed DNS migration inventory and gate public retirement."""
 import sys
 if __name__ == "__main__" and not sys.flags.isolated:
     raise SystemExit("Run with python3 -I")
 
 import argparse
+import hashlib
 import importlib.util
 import ipaddress
 import json
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parent.parent
 INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
 TARGET = "homelab-ingress.tail67beb.ts.net"
 MESH = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
+MIGRATION_NAMES_SHA256 = "4c4ce2ef575a18a2e18e6cc782a12228fc92fb4f3908c1ccc6a80da52f730b59"
+CRITICAL_PATHS = {"fleet_setup_denied", "harbor_node_pulls", "native_api", "cordium_reconnect", "public_callbacks"}
 
 
 def run(*command):
@@ -41,6 +44,9 @@ def inventory():
     names = value["hostnames"] + value["retired_hostnames"]
     if len(names) != len(set(names)):
         raise RuntimeError("DNS inventory includes duplicate or conflicting names")
+    digest = hashlib.sha256("\n".join(sorted(value["hostnames"])).encode()).hexdigest()
+    if len(value["hostnames"]) != 27 or digest != MIGRATION_NAMES_SHA256:
+        raise RuntimeError("The public retirement inventory must remain the fixed 27-name migration set")
     return value
 
 
@@ -52,14 +58,6 @@ def verify_main(expected):
     for path in ("scripts/tailscale-private-dns.sh", "scripts/tailscale-private-dns-check.py",
                  "scripts/config/tailscale-private-dns.json"):
         native.run("git", "-C", str(ROOT), "cat-file", "-e", f"HEAD:{path}")
-
-
-def removed_hostname(hostname, value):
-    if not re.fullmatch(r"[a-z0-9-]+\.stinkyboi\.com", hostname):
-        raise RuntimeError("Retirement requires one app hostname in the declared zone")
-    previous = json.loads(run("git", "-C", str(ROOT), "show", "HEAD^:scripts/config/tailscale-private-dns.json"))
-    if hostname not in previous["hostnames"] or hostname in value["hostnames"] + value["retired_hostnames"]:
-        raise RuntimeError("Hostname must be removed from the active inventory by this commit")
 
 
 def mesh_address(value):
@@ -186,56 +184,105 @@ def previous_ttl(value):
     # API ttl=1 means automatic; measure served TTLs instead of assuming its duration.
     ttl = 0
     for server in authoritative_servers():
-        for hostname in value["hostnames"] + value["retired_hostnames"]:
+        for hostname in value["hostnames"]:
             for kind in ("A", "AAAA", "CNAME"):
                 ttl = max([ttl] + [record[2] for record in answers(server, hostname, kind)])
     return ttl
 
 
-def verify_dns(value, addresses):
-    servers = authoritative_servers()
+def validate_retirement_evidence(evidence, value, expected_sha):
+    if not isinstance(evidence, dict) or set(evidence) != {
+            "reviewed_main_sha", "resolver_ip", "owner_tailnet_dns_confirmed", "normal_client_dns_confirmed",
+            "critical_paths_confirmed", "off_tailnet", "previous_ttl_seconds", "checked_names", "baseline_records"}:
+        raise RuntimeError("Retirement evidence must contain the complete reviewed cutover fields")
+    if evidence["reviewed_main_sha"] != expected_sha or not re.fullmatch(r"[0-9a-f]{40}", expected_sha or ""):
+        raise RuntimeError("Retirement evidence must match the reviewed main SHA")
+    try:
+        resolver = ipaddress.ip_address(evidence["resolver_ip"])
+    except (ValueError, TypeError):
+        raise RuntimeError("Retirement evidence requires a valid resolver IPv4") from None
+    if resolver.version != 4 or resolver not in MESH[0]:
+        raise RuntimeError("Retirement evidence resolver must be a tailnet IPv4")
+    if evidence["owner_tailnet_dns_confirmed"] is not True or evidence["normal_client_dns_confirmed"] is not True:
+        raise RuntimeError("Owner tailnet DNS and normal-client acceptance must be recorded")
+    critical = evidence["critical_paths_confirmed"]
+    if not isinstance(critical, dict) or set(critical) != CRITICAL_PATHS or any(value is not True for value in critical.values()):
+        raise RuntimeError("All critical client and callback checks must be recorded")
+    off_tailnet = evidence["off_tailnet"]
+    if not isinstance(off_tailnet, dict) or set(off_tailnet) != {"stinkyboi.com", "*.cordium.stinkyboi.com"} or any(
+            decision not in ("migrated", "accepted_loss") for decision in off_tailnet.values()):
+        raise RuntimeError("Apex and Cordium wildcard off-tailnet impact needs a recorded decision")
+    ttl = evidence["previous_ttl_seconds"]
+    if type(ttl) is not int or ttl < 0:
+        raise RuntimeError("Retirement evidence needs the old maximum public TTL")
+    if evidence["checked_names"] != value["hostnames"]:
+        raise RuntimeError("Public baseline must confirm all 27 exact migration names were queried")
+    records = evidence["baseline_records"]
+    if not isinstance(records, list) or (records and ttl == 0):
+        raise RuntimeError("Public baseline records require a measured old TTL")
+    ids = set()
+    for record in records:
+        if (not isinstance(record, dict) or set(record) != {"id", "name", "type", "content", "proxied", "ttl"}
+                or not isinstance(record["id"], str) or not record["id"] or record["id"] in ids
+                or record["name"] not in value["hostnames"] or record["type"] not in ("A", "AAAA", "CNAME")
+                or not isinstance(record["content"], str) or not record["content"]
+                or type(record["proxied"]) is not bool or type(record["ttl"]) is not int or record["ttl"] < 1):
+            raise RuntimeError("Public baseline contains an invalid, duplicate or out-of-scope record")
+        ids.add(record["id"])
+    return str(resolver)
+
+
+def verify_private_dns(value, addresses, resolver_ip):
+    run("python3", "-I", str(ROOT / "scripts/tailnet-dns-check.py"), "--server", resolver_ip)
     expected = set(addresses["A"] + addresses["AAAA"])
     for hostname in value["hostnames"]:
         test_host = hostname.replace("*.", "dns-preflight.", 1)
-        for server in servers:
-            for kind in ("A", "AAAA"):
-                records = answers(server, test_host, kind)
-                if any(record[0] != kind for record in records) or {record[1] for record in records} != set(addresses[kind]):
-                    raise RuntimeError(f"Authoritative {kind} answers do not match the ingress Service for {hostname}")
         resolved = {item[4][0] for item in socket.getaddrinfo(test_host, 443, type=socket.SOCK_STREAM)}
         if resolved != expected:
-            raise RuntimeError(f"Client DNS for {hostname} has not converged; keep the tunnel and retry --verify-dns")
-    # These requests intentionally use normal DNS and canonical SNI, with no connect-to override.
+            raise RuntimeError(f"Normal client DNS for {hostname} does not match the private Traefik Service")
     routes(value)
-    print("Authoritative DNS, client resolution, and canonical HTTPS routes verified", file=sys.stderr)
+    print("Direct resolver, normal client DNS, and canonical HTTPS routes verified", file=sys.stderr)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--execute", action="store_true", help="Require reviewed main and live readiness before DNS writes")
+    parser.add_argument("--retire-private", action="store_true", help="Prepare fixed 27-name public DNS retirement")
+    parser.add_argument("--execute", action="store_true", help="Gate retirement on reviewed main and cutover evidence")
     parser.add_argument("--check", action="store_true", help="Read-only live route readiness check")
-    parser.add_argument("--verify-dns", action="store_true", help="Verify authoritative and normal client DNS/TLS after cutover")
-    parser.add_argument("--addresses-json", action="store_true", help="Return verified controller addresses and observed previous TTL for the DNS operator")
+    parser.add_argument("--baseline-ttl", action="store_true", help="Measure the old maximum authoritative TTL")
     parser.add_argument("--expected-sha")
-    parser.add_argument("--retire-hostname", help="Validate one hostname removed by this commit")
+    parser.add_argument("--evidence", type=Path, help="Private cutover evidence JSON outside this repository")
     args = parser.parse_args()
     value = inventory()
+    if args.baseline_ttl:
+        if not args.retire_private or args.execute:
+            parser.error("--baseline-ttl requires a read-only --retire-private call")
+        print(previous_ttl(value))
+        return
     if args.execute:
+        if not args.retire_private or not args.expected_sha or not args.evidence:
+            parser.error("--execute requires --retire-private, --expected-sha and --evidence")
         verify_main(args.expected_sha)
-    if args.retire_hostname:
-        removed_hostname(args.retire_hostname, value)
+        if args.evidence.resolve().is_relative_to(ROOT):
+            raise RuntimeError("Keep retirement evidence outside the public repository")
+        evidence = json.loads(args.evidence.read_text())
+        resolver_ip = validate_retirement_evidence(evidence, value, args.expected_sha)
+        if previous_ttl(value) > evidence["previous_ttl_seconds"]:
+            raise RuntimeError("Current public TTL exceeds the saved baseline; capture and review a new baseline")
+    elif args.evidence or args.expected_sha:
+        parser.error("--evidence and --expected-sha require --execute")
+    if args.retire_private and not args.execute:
+        print("Fixed 27-name retirement inventory verified")
         return
     addresses = mesh_addresses()
-    if args.execute or args.check or args.verify_dns:
+    if args.execute or args.check:
         declared_routes()
     if args.execute or args.check:
         for address in addresses["A"] + addresses["AAAA"]:
             routes(value, address)
-    if args.verify_dns:
-        verify_dns(value, addresses)
-    if args.addresses_json:
-        print(json.dumps({"addresses": addresses, "previous_ttl": previous_ttl(value)}))
-    elif not (args.execute or args.check or args.verify_dns):
+    if args.execute:
+        verify_private_dns(value, addresses, resolver_ip)
+    elif not args.check:
         print("Verified controller-owned mesh addresses: " + json.dumps(addresses))
 
 

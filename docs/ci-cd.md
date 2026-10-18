@@ -787,8 +787,8 @@ through Conftest, then only the Fleet Application saved plan. This provisions
 Fleet's generated credentials without reconciling AzureAD, Langfuse storage,
 bootstrap or unrelated Applications. Review shared SSM/IAM changes before
 dispatch; that unit still owns other applications' secret contracts. Publish the
-reviewed images with `harbor-mirror.yml` first and reconcile private DNS with
-`scripts/tailscale-private-dns.sh` in the ordered cutover, following the
+reviewed images with `harbor-mirror.yml` first and verify private DNS through
+the signed tailnet resolver in the ordered cutover, following the
 [Fleet rollout runbook](../clusters/homelab/apps/fleet/README.md#rollout-and-validation).
 
 ### Harbor provider-plan blocker observed October 7, 2026 UTC
