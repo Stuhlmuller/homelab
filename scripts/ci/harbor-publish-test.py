@@ -551,9 +551,7 @@ class HarborPublicationGates(unittest.TestCase):
                 self.rejected(mode="mirror-dns")
                 self.env[key] = previous
         self.rejected(mode="mirror-dns:codeberg.org/k8s-gateway/k8s_gateway")
-        del self.env["OCTELIUM_AUTH_TOKEN"]
-        result = self.rejected(mode="mirror-dns")
-        self.assertIn("The production Octelium CI credential is required", result.stderr)
+        self.assertNotIn("OCTELIUM_AUTH_TOKEN", (ROOT / "scripts/ci/harbor-publish.sh").read_text())
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
         self.transport_mocks(mirror=True, registries=("docker.io", "codeberg.org"))
