@@ -125,12 +125,12 @@ CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
 
-The temporary acceptance observer stays suspended until its private sample is
-fixed before the seven-day window. It polls upstream without the Renovate
-cache or GitHub writes; its separate protected ledger retains private release
-brackets. Publish only aggregate results, then erase the ledger and retire its
-Job and claim through reviewed GitOps. A controlled canary is reported
-separately from natural release latency.
+A temporary acceptance observer is planned but not yet declared. Once added,
+keep it suspended until its private sample is fixed before the seven-day
+window. It must poll upstream without the Renovate cache or GitHub writes;
+its separate protected ledger retains private release brackets. Publish only
+aggregate results, then erase the ledger and retire its Job and claim through
+reviewed GitOps. Report a controlled canary separately from natural releases.
 
 Cutover is a two-repository sequence: after dry-run parity and the last old
 run, delete the complete legacy workflow including manual dispatch, verify no
