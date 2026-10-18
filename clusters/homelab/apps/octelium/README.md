@@ -56,7 +56,7 @@ The Octelium resource catalog for the external Octelium Cluster is
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`, whose public FQDNs are the
   existing app hostnames such as `https://grafana.stinkyboi.com`.
 - `affine` is an anonymous Octelium app Service. AFFiNE signup is closed after
@@ -125,7 +125,7 @@ The script reads `/homelab/octelium/entra/*` from SSM, stores the generated
 client secret in an Octelium native Secret, and applies IdentityProvider
 `entra`. It binds login to immutable Entra `oid`; email is contact metadata.
 Use `--dry-run` to preflight changes and follow the
-[legacy mapping migration](../../../../docs/octelium.md#entra-identity-migration)
+[owner-conversion mapping checks](../../../../docs/octelium.md#entra-owner-conversion)
 before upgrading an existing email-based mapping.
 
 Create an authentication token credential for the workload user:

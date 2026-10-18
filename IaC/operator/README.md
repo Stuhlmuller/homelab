@@ -22,16 +22,14 @@ credential-selector publication and real CI acceptance.
 
 ## Entra `stuhlmuller.net` pilot
 
-The separate `entra-owner-mail` unit can update only the existing tenant owner's
-directory `mail`, guarded against identity changes. Its baseline and replacement
-address come from a private `-var-file`, never public stack inputs. Complete the
-Octelium immutable-identity migration first; mail updates may retain the old
-SMTP alias. Follow the [module's review and recovery contract](../modules/entra-owner-mail/README.md)
-before applying or retrying the pilot rename.
+`entra-owner-mail` is a state-only retirement unit for the failed mail-only
+Graph PATCH. It accepts no private inputs and must not call Graph. The patch
+cannot release the owner's SMTP alias, so it is not a route to the required
+UPN and must not be restored.
 
-`entra-stuhlmuller-domain` reads the existing Entra domain through the
-Microsoft Graph provider, reads the Microsoft-generated TXT verification record,
-and verifies it only after the DNS owner has published that record. It is
+`entra-stuhlmuller-domain` reads the existing Entra domain through the Microsoft
+Graph provider, reads the Microsoft-generated TXT verification record, and
+verifies it only after the DNS owner has published that record. It is
 intentionally an operator unit: verification requires tenant-wide domain
 authority that the CI identities must not receive.
 
@@ -39,14 +37,31 @@ The unit requires a managed, non-default and non-initial domain and sends the
 standard bodyless Graph verification request, which defaults to
 `forceTakeover = false`. It cannot create, delete, federate, make a default
 domain, configure Microsoft 365 mail services, or change Google Workspace.
-The companion `entra-stuhlmuller-pilot-user` unit creates only
-`rodman@stuhlmuller.net` after that verification, with no group, role,
-license, Fleet-console assignment, mailbox, or impact on other accounts. The
-unit uses the separate `entra-verified-family-user` module so a guarded
-operator pilot change cannot alter the existing AzureAD user collection. The full
-two-stage saved-plan procedure is in the
-[domain module](../modules/entra-domain-verification/README.md) and the
-[Fleet Free runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
+The companion `entra-stuhlmuller-pilot-user` unit retains only the isolated
+`rodman.mac@stuhlmuller.net` cloud user, with no group, role, license,
+Fleet-console assignment, mailbox, or effect on other accounts. It must not
+create or rename `rodman@stuhlmuller.net`.
+
+`entra-emergency-global-admin` declares one cloud-only
+`homelab-emergency-admin@<tenant>.onmicrosoft.com` recovery account and its
+permanent Global Administrator assignment. Its source-controlled
+`emergency_global_admin_enabled` literal defaults to false, so direct and
+run --all apply/destroy commands exclude it. A separate signed, reviewed change
+may set it true after explicit authorization; its reviewed plan must create only
+the user, bootstrap password, and assignment. Test a fresh login, then restore
+the literal to false without changing the protected resources before conversion.
+
+The exact target is the existing external owner converted in place to an
+internal Entra user through the supported Entra admin-center flow. Terraform
+first changes all ownership and Fleet-assignment lookups to immutable object IDs
+so the conversion keeps ownership and grants. Create and test an independent
+cloud-only Global Administrator before converting the sole owner. The only
+permitted portal action is bounded by the private, Graph-read-only
+[`entra-owner-conversion.py`](../../scripts/entra-owner-conversion.py)
+prepare/attest transaction; it does not automate the conversion. The complete
+order, Fleet local-recovery migration, and live acceptance checks are in the
+[Fleet Free runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md). No
+support case, Exchange license, or alias workaround is required.
 
 ## Etcd Offsite Backup Storage
 

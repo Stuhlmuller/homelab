@@ -335,16 +335,9 @@ ensure_ci_git_history() {
 
   case "${GITHUB_EVENT_NAME:-}" in
     pull_request|pull_request_target)
-      if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+      if [[ -n "${GITHUB_BASE_REF:-}" ]] && ! git rev-parse --verify --quiet "refs/remotes/origin/${GITHUB_BASE_REF}" >/dev/null; then
         git fetch --no-tags --prune origin \
           "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}"
-      fi
-
-      local pr_number
-      pr_number="$(github_pr_number)"
-      if [[ -n "$pr_number" ]]; then
-        git fetch --no-tags --prune origin \
-          "+refs/pull/${pr_number}/head:refs/remotes/origin/pull/${pr_number}/head"
       fi
       ;;
     push)

@@ -1,7 +1,7 @@
 name: Mirror Kubernetes Images To Harbor
 run-name: Mirror ${{ inputs.image_scope || 'all' }} @ ${{ github.sha }}
 
-# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Traefik/Chainguard inventories with unchanged destinations and verification.
+# checkov:skip=CKV_GHA_7: expected_sha binds reviewed current main; image_scope selects only fixed all/Fleet/Bazarr/Mastodon/Traefik/Chainguard/Harbor/Renovate inventories with unchanged destinations and verification.
 on:
   workflow_dispatch:
     inputs:
@@ -14,7 +14,7 @@ on:
         required: true
         default: all
         type: choice
-        options: [all, fleet, bazarr, traefik, chainguard]
+        options: [all, fleet, bazarr, mastodon, traefik, chainguard, harbor, renovate]
 
 permissions: {}
 
@@ -48,17 +48,18 @@ jobs:
           enable_kvm: false
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore Nix Store Cache
-        uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569
-        with:
-          primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
-          restore-prefixes-first-match: nix-develop-${{ runner.os }}-
-
       - name: Run Static Checks
-        run: nix develop --command bash scripts/ci/static-checks.sh
-
-      - name: Run Conftest Policies
-        run: nix develop --command bash scripts/ci/conftest-policies.sh
+        run: |
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          if git cat-file -e origin/main:scripts/config/nix-cache.json 2>/dev/null; then
+            git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          else
+            # Bootstrap before the policy lands on main: build without this cache.
+            printf '%s\n' '{"url":"","publicKey":""}' >"$cache_policy"
+          fi
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 
       - name: Validate Harbor Publication Gates
         run: nix develop --command python3 -I scripts/ci/harbor-publish-test.py
@@ -70,7 +71,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     concurrency:
-      group: harbor-packages-production
+      # Mirror runs share mutable aliases only within the public mirror project.
+      group: harbor-mirror-production
       cancel-in-progress: false
     environment:
       name: homelab-production
@@ -103,7 +105,7 @@ jobs:
           IMAGE_SCOPE: ${{ inputs.image_scope || 'all' }}
         run: |
           set -euo pipefail
-          case "$IMAGE_SCOPE" in all|fleet|bazarr|traefik|chainguard) ;; *) exit 2 ;; esac
+          case "$IMAGE_SCOPE" in all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate) ;; *) exit 2 ;; esac
           test "${ACTUAL_REF}" = refs/heads/main
           [[ "${ACTUAL_SHA}" =~ ^[0-9a-f]{40}$ ]]
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
@@ -143,6 +145,9 @@ jobs:
             fleet)
               bash scripts/ci/harbor-publish.sh mirror-fleet
               ;;
+            mastodon)
+              bash scripts/ci/harbor-publish.sh mirror-mastodon
+              ;;
             bazarr)
               bash scripts/ci/harbor-publish.sh mirror-bazarr
               ;;
@@ -152,14 +157,30 @@ jobs:
             traefik)
               bash scripts/ci/harbor-publish.sh mirror-traefik
               ;;
+            harbor)
+              bash scripts/ci/harbor-publish.sh mirror-harbor
+              ;;
+            renovate)
+              bash scripts/ci/harbor-publish.sh mirror-renovate
+              ;;
             *) exit 2 ;;
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7b7038f6a3d723f155f51aa0503b37427b0f3fd6518dfc956c4a3c2fe6f55f27  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."
             exit 1
           fi
-          echo "Selected inventory copied with matching digests and complete anonymous pulls; upstream sources retained; private output withheld."
+          echo "Selected inventory copied with matching digests and complete authenticated Harbor pulls; upstream sources retained; private output withheld."
+
+      - name: Retain Only Encrypted Failure Diagnostic
+        if: failure()
+        uses: chainguard-actions/actions-upload-artifact@ebf8f2543b7189e9a67dcac1af8cabbc5d7a3fd6 # v7.0.2
+        with:
+          name: harbor-publication-error-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/harbor-publication-error.gpg
+          if-no-files-found: ignore
+          retention-days: 1
+          include-hidden-files: false

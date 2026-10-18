@@ -79,7 +79,7 @@ case "$mode" in
     python3 -I scripts/cordium-ci-acceptance.py --mode "$mode" \
       --homedir "$scratch/login" --deadline "$execution_deadline"
     ;;
-  checks | force-failure | forbidden-method)
+  checks | force-failure | runner-probe | forbidden-method)
     timeout 60 octelium --homedir "$scratch/login" login --domain stinkyboi.com \
       --assertion github-actions >"$scratch/login.log" 2>&1
     logged_in=true

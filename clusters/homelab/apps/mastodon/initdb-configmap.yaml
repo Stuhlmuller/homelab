@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mastodon-initdb
+  namespace: mastodon
+  labels:
+    app.kubernetes.io/name: mastodon-initdb
+    app.kubernetes.io/part-of: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+data:
+  10-mastodon.sql: |
+    CREATE EXTENSION IF NOT EXISTS pg_trgm;
+    CREATE EXTENSION IF NOT EXISTS unaccent;
+    ALTER ROLE mastodon NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;

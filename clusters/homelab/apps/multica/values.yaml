@@ -65,7 +65,7 @@ backend:
   resources:
     requests:
       cpu: 100m
-      memory: 512Mi
+      memory: 128Mi
     limits:
       memory: 2Gi
 
@@ -81,7 +81,7 @@ frontend:
   resources:
     requests:
       cpu: 100m
-      memory: 512Mi
+      memory: 320Mi
     limits:
       memory: 2Gi
 

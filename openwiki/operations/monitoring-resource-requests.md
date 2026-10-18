@@ -152,7 +152,6 @@ projection for current planning; peak usage and failover remain unproven.
 | AFFiNE, PostgreSQL, and Redis | 1.625 |
 | Multica frontend, backend, and PostgreSQL | 1.500 |
 | n8n and its PostgreSQL | 0.750 |
-| OctoBot | 0.500 |
 | NOFX frontend and backend | 0.313 |
 
 Express selected suspensions in their repository-owned manifests/Helm values,
@@ -160,7 +159,7 @@ account for scheduled jobs and dependent services, and render before GitOps
 rollout. Removing at least 7.363 GiB satisfies the original node-loss arithmetic;
 init containers, placement constraints, rollout demand, and underrequested
 workloads still require headroom. Seven-day observed working sets exceeded
-requests for the API server, n8n, OctoBot, and Deluge; reducing reservations
+requests for the API server, n8n and Deluge; reducing reservations
 solely to clear the alert would conceal demand. Per-Pod observation windows
 can be shorter than seven days and are not proven peak bounds.
 

@@ -14,6 +14,14 @@ unit "argocd_apps_affine" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/affine/stack.hcl").inputs
 }
 
+unit "argocd_apps_mastodon" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/mastodon"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/mastodon/stack.hcl").inputs
+}
+
 unit "argocd_apps_bazarr" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/bazarr"
@@ -158,6 +166,14 @@ unit "argocd_apps_multica" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/multica/stack.hcl").inputs
 }
 
+unit "argocd_apps_nix_builder" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/nix-builder"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/nix-builder/stack.hcl").inputs
+}
+
 unit "argocd_apps_nofx" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/nofx"
@@ -222,14 +238,6 @@ unit "argocd_apps_octelium_storage" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/octelium-storage/stack.hcl").inputs
 }
 
-unit "argocd_apps_octobot" {
-  source                  = "./.catalog/units/live/argocd-app"
-  path                    = "live/argocd-apps/octobot"
-  no_dot_terragrunt_stack = true
-
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/octobot/stack.hcl").inputs
-}
-
 unit "argocd_apps_openclaw" {
   source                  = "./.catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/openclaw"
@@ -252,6 +260,14 @@ unit "argocd_apps_platform_dns" {
   no_dot_terragrunt_stack = true
 
   values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/platform-dns/stack.hcl").inputs
+}
+
+unit "argocd_apps_platform_image_policy" {
+  source                  = "./.catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-image-policy"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/platform-image-policy/stack.hcl").inputs
 }
 
 unit "argocd_apps_platform_multus" {
@@ -393,6 +409,12 @@ unit "operator_etcd_backup_storage" {
   no_dot_terragrunt_stack = true
 }
 
+unit "operator_application_backup_storage" {
+  source                  = "./.catalog/units/operator/application-backup-storage"
+  path                    = "operator/application-backup-storage"
+  no_dot_terragrunt_stack = true
+}
+
 unit "operator_azuread_ci_identities" {
   source                  = "./.catalog/units/operator/azuread-ci-identities"
   path                    = "operator/azuread-ci-identities"
@@ -410,6 +432,18 @@ unit "operator_entra_stuhlmuller_domain" {
 unit "operator_entra_stuhlmuller_pilot_user" {
   source                  = "./.catalog/units/operator/entra-stuhlmuller-pilot-user"
   path                    = "operator/entra-stuhlmuller-pilot-user"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_entra_google_workspace_federation" {
+  source                  = "./.catalog/units/operator/entra-google-workspace-federation"
+  path                    = "operator/entra-google-workspace-federation"
+  no_dot_terragrunt_stack = true
+}
+
+unit "operator_entra_emergency_global_admin" {
+  source                  = "./.catalog/units/operator/entra-emergency-global-admin"
+  path                    = "operator/entra-emergency-global-admin"
   no_dot_terragrunt_stack = true
 }
 

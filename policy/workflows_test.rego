@@ -2,6 +2,53 @@ package main
 
 import rego.v1
 
+test_allows_exact_openclaw_legacy_operation if {
+	candidate := workflow_with_openclaw_legacy_operation(
+		openclaw_legacy_run,
+		{"contents": "read", "id-token": "write"},
+	)
+	violations := deny with input as candidate
+	count(violations) == 0
+}
+
+test_rejects_changed_openclaw_legacy_operation if {
+	every candidate in [
+		workflow_with_openclaw_legacy_operation(
+			replace(openclaw_legacy_run, "705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596", "0000000000000000000000000000000000000000000000000000000000000000"),
+			{"contents": "read", "id-token": "write"},
+		),
+		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"contents": "read", "id-token": "write"}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "exact protected stages")
+	}
+}
+
+openclaw_legacy_run := `set -euo pipefail
+umask 077
+sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
+bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
+`
+
+workflow_with_openclaw_legacy_operation(run, permissions) := {
+	"name": "OpenClaw Enterprise Operations",
+	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "archive", "verify"]}}}},
+	"jobs": {"legacy": {
+		"needs": ["static-policy"],
+		"environment": {"name": "homelab-production"},
+		"concurrency": {"group": "openclaw-enterprise-operations-production"},
+		"permissions": permissions,
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+		"steps": [{
+			"name": "Run Legacy Stage",
+			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+			"run": run,
+		}],
+	}},
+}
+
 test_rejects_mutable_docker_action_image if {
 	violations := deny with input as workflow_with_images(
 		"docker://alpine:3.21",
@@ -297,6 +344,40 @@ test_allows_exact_plan_stage_classifier if {
 	count(violations) == 0
 }
 
+test_allows_exact_azuread_plan_stage_classifier if {
+	violations := deny with input as workflow_with_live_run(classified_azuread_live_run)
+	count(violations) == 0
+}
+
+test_rejects_modified_azuread_plan_private_wrapper if {
+	every run in [
+		replace(classified_azuread_live_run, `private_dir="$(mktemp -d)"`, `private_dir="$(mktemp)"`),
+		replace(classified_azuread_live_run, `chmod 700 "$private_dir"`, `chmod 777 "$private_dir"`),
+		replace(classified_azuread_live_run, `azuread_report="$private_dir/azuread-report.json"`, `azuread_report="$RUNNER_TEMP/report.json"`),
+		replace(classified_azuread_live_run, `azuread_report="$private_dir/azuread-report.json"`, "azuread_report=\"$private_dir/azuread-report.json\"\nazuread_report=\"$RUNNER_TEMP/report.json\""),
+		replace(classified_azuread_live_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
+		replace(classified_azuread_live_run, `if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop`, `if ! nix develop`),
+	] {
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_azuread_plan_stage_classifier if {
+	every replacement in [
+		`bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="$other_report" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/other.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"; cat "$azuread_report"`,
+	] {
+		run := replace(classified_azuread_live_run, azuread_plan_stage_call, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_allows_exact_apply_stage_classifier if {
 	violations := deny with input as workflow_with_live_run(classified_apply_run)
 	count(violations) == 0
@@ -412,7 +493,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "142b09d057099c3271a5fd211659c48a4c2097d407cebe3fc8e3289c6d62b66b", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "7b7038f6a3d723f155f51aa0503b37427b0f3fd6518dfc956c4a3c2fe6f55f27", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
@@ -513,6 +594,27 @@ plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3e
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
 
+azuread_plan_stage_call := `HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+
+azuread_plan_stage_guard := `if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+
+azuread_private_live_run := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+private_log="$private_dir/plan.log"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+EOF
+then
+  echo "failure details withheld"
+  exit 1
+fi
+echo "success details withheld"`
+
+classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
+
 apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
 
 apply_stage_guard := `if sha256sum --check --status <<<'a6cbd46213ab38cdae557b56cb1e763ea7d0fdef6fa6ff7b9e071b582f51f865  scripts/ci/terragrunt-apply-stage.sh' 2>/dev/null; then`
@@ -575,4 +677,47 @@ workflow_with_catalog_credential_on_different_step := {
 			{"run": "true", "env": {"OCTELIUM_CATALOG_AUTH_TOKEN": "test"}},
 		],
 	}},
+}
+
+test_encrypted_harbor_artifact_exception_is_exact if {
+	base := workflow_with_live_run(harbor_mirror_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [harbor_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"mirror": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(harbor_encrypted_diagnostic_step, {"with": object.union(harbor_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(harbor_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"mirror": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
+}
+
+test_encrypted_oce_image_artifact_exception_is_exact if {
+	base := workflow_with_live_run(oce_image_private_run)
+	job := object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [oce_encrypted_diagnostic_step])})
+	workflow := object.union(base, {"jobs": {"publish": job}})
+	violations := deny with input as workflow
+	count(violations) == 0
+	every changed in [
+		object.union(oce_encrypted_diagnostic_step, {"with": object.union(oce_encrypted_diagnostic_step.with, {"path": "${{ runner.temp }}/*"})}),
+		object.union(oce_encrypted_diagnostic_step, {"with": object.union(oce_encrypted_diagnostic_step.with, {"retention-days": 2})}),
+		object.union(oce_encrypted_diagnostic_step, {"if": "always()"}),
+	] {
+		bad_job := object.union(job, {"steps": array.concat(base.jobs.test.steps, [changed])})
+		bad := object.union(base, {"jobs": {"publish": bad_job}})
+		denials := deny with input as bad
+		some msg in denials
+		contains(msg, "must not upload artifacts")
+	}
+	forged_run := replace(oce_image_private_run, "harbor-encrypt-diagnostic.py", "cat")
+	forged_job := object.union(job, {"steps": [{"run": forged_run}, oce_encrypted_diagnostic_step]})
+	forged := object.union(base, {"jobs": {"publish": forged_job}})
+	forged_denials := deny with input as forged
+	count(forged_denials) > 0
 }

@@ -23,6 +23,11 @@ inputs = {
               tag        = "v2.3.3@sha256:f1c88a98f113a5cb78d75c7e94e2a7fefdf86ffb3353c63f01697dc5ad855b19"
             }
           }
+          # No packages or compositions installed; retain CRDs/RBAC in standby.
+          parameters = [
+            { name = "replicas", value = "0" },
+            { name = "rbacManager.replicas", value = "0" },
+          ]
         }
       }
     ]
@@ -32,7 +37,7 @@ inputs = {
     info = [
       {
         name  = "rollout"
-        value = "core only; add providers and credentials in purpose-specific changes"
+        value = "core standby; restore replicas before adding providers or compositions"
       },
       {
         name  = "docs"
