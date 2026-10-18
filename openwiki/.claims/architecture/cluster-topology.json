@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:86a82c803d3cc1ef72d2636dedc7fdd6d17e23c62b5a7de53d8c03b52a4e7de6",
+  "pageVersion": "sha256:c08211a991e78ecbdf3d4a8357892489a74e186d6d1b46d2aee1e273a247621a",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
       "statement": "Phase2a routes the canonical Octelium API and Harbor cluster DNS names to Traefik's private Service while preserving separate registry-only Talos node ingress and staged mesh/CI acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L91",
-          "version": "repo-lines-v1:sha256:0a1bbce0ecf0decdd82b5deeac06b1f1fd964f9de3f419f6b7e3fa8d9f88a051:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L89-L127",
+          "version": "repo-lines-v1:sha256:07a64f7d1281c30d4b21fa31a3320171072849dec752e466b32ad328d9b72d65:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
@@ -91,26 +91,54 @@
       ]
     },
     {
-      "id": "claim_ee13da850e334754a1bf7370394a37e6",
-      "statement": "Phase 2b hosted CI stages scoped presigned Tailscale keys with exact identity checks and a tokenless kubeconfig through the operator API proxy; Cordium has private ingress reachability without a Kubernetes grant, and live acceptance remains pending.",
+      "id": "claim_a722fa5b6c02441c8bd2d9182291459e",
+      "statement": "The separate tailnet-dns CoreDNS/k8s_gateway Service answers approved application A/AAAA names from the labeled Traefik private Service, forwards other DNS queries, and leaves cluster kube-dns and HTTPS routing with their existing owners.",
       "evidence": [
         {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L3-L23",
+          "version": "repo-lines-v1:sha256:107c3f415a03d020f63cb58ee6204297952717734e0bf0b69ec54c905b6d3942:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlNTliMTQ0OTFjYzg0OGFkMzJiY2YwNDk0YzYwMWYyYjYwZWJhOThmNTg1YTc5OGQ2YmVhOTI5MjUzMTBiMjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MmZhYTU3NGUxNjgyOTc5NDlhMzIxMGM2OWMwYTRiZjIxNTBjMTM1ODliYTEwZWJlZmFkM2IzYjg0YjMwNzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2MzBmNTUxNjNmYzA2YzUwMTQzZWU0NTA1ZWE3ZjI3YmMzZGZkN2Q5MTc0ZjcxMjE5ZTA5MmU3OGJlYWExMDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIzOWQ1ZmM4MjRlNTUwYjZkNDFlMDFmY2Y3ZjY5YWQ3NDlmZGMxZWQyMGI4NjdmYmFiOWNlM2U0ZjE0YmFkMWYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml#L17-L58",
+          "version": "repo-lines-v1:sha256:5cf5dfd3ec46eee3fea95f7107fea8487ce87c7cb702f044584ec761c7b87880:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMmEwMzMyNjgxNjhlYjZmOThiMDRmMTg0MzUzYzFmOTkwNzM4MGRiMzQyMmJiYWVhNWU4OWM1YWU1NjU4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyNTI5ZTAwODVlOWM3ZjJhOWE2NDBjNzY3OWYzNzAwNmY1ZTk0MDNiNzgzNGNiMWEwNDBjNjdhNGI5YzVkMTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTNlZTU3NDBlZWU3ODVkMTdiNjlkMWMwOTdkMWE5OGRlYTMxMTk2YmRiOTk3NTFjNTUxZDc0M2FiYmNhNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0810ce2688044653901326282a9dc0cf",
+      "statement": "The tailnet-dns Tailscale LoadBalancer has its own homelab-dns identity and UDP/TCP 53 endpoint; the owner sets its observed, signed tailnet IP as restricted stinkyboi.com DNS only after direct checks, with public address retirement later.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L31-L75",
+          "version": "repo-lines-v1:sha256:b6bc589d0744d50dbe627e9cfd5d27c41ae329238e15a61e189cb19bf4436eda:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhZTA4ZmNmZTU0NTNkMTJkYjI5NmE4YTU2NWYzYTg0ZTkwODc1ZmYwYzNkNDE0ODczMWUzZWQ1MTAxMDVjZTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3NGVkNWIyMTVkYjZmYzk3YzRlZTVhMDE1NzdiM2UyN2I3ZjE1MTMwNGUyOGJiY2FmZDRmZjI2YzhjNzIzYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/values.yaml#L17-L27",
+          "version": "repo-lines-v1:sha256:25bb6bee4eebb47c7429ce45b083b265cce81f06a26e6a7ab4b3320f73057935:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMmEwMzMyNjgxNjhlYjZmOThiMDRmMTg0MzUzYzFmOTkwNzM4MGRiMzQyMmJiYWVhNWU4OWM1YWU1NjU4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZTU3YTg2Y2VjM2Y2ZWExYWI2ZTU5ZDNkOWM3YmMyZDRlMDc3ODAzOGFkMGRlYjQyNGM1NmU2YjA4Yjk2MGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTNlZTU3NDBlZWU3ODVkMTdiNjlkMWMwOTdkMWE5OGRlYTMxMTk2YmRiOTk3NTFjNTUxZDc0M2FiYmNhNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ODZmYWYzYTAwNjIxZDk3MDk4OTgxMTY2NjE4ZTU0YTJhZGNhMDg3ZTYxYTY5MDk5MGI2YzIwMTFkNzdmYmMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7cf0fc8fe77147579abcc8e50309ae95",
+      "statement": "The staged phase 2b CI jobs use scoped pre-signed ephemeral Tailscale keys, verify the joined tag and tailnet, and use tokenless kubeconfigs for plan and apply through the operator API proxy. Cordium uses private ingress without a Kubernetes grant; legacy native Services and credentials remain until live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         },
         {
-          "resource": "repo://scripts/ci/install-kubeconfig.sh",
-          "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-identity-check.py",
-          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
+          "resource": "repo://scripts/ci/tailscale-access-check.py",
+          "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:07:20.728Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

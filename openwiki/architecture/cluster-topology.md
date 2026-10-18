@@ -4,6 +4,8 @@ title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -14,6 +16,10 @@ sources:
     resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
+    resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -26,14 +32,12 @@ sources:
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
-    resource: repo://scripts/ci/install-kubeconfig.sh
-  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
-    resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:07:20.728Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -324,8 +328,11 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
   `octelium connect` and an Octelium-generated kubeconfig
 - Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
   through Traefik; canonical custom hostnames move during staged DNS cutover
+- Declared private DNS proxy: `homelab-dns` through the separate `tailnet-dns`
+  Tailscale LoadBalancer Service on UDP/TCP 53; use its observed tailnet IP for
+  the later restricted `stinkyboi.com` tailnet nameserver
 - Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
-  staged phase 2b CI uses a tokenless kubeconfig after mesh DNS and identity acceptance
+  CI switches separately after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -347,18 +354,27 @@ access and the declared application ingress. Old CI and operator transports
 remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
 Octelium does not provide a Talos-native Service mode.
 
-The phase 2b CI workflows stage scoped, pre-signed ephemeral Tailscale keys and
-verify the exact node tag and tailnet. Plan and apply use the operator API proxy;
-Cordium reaches private ingress without a Kubernetes grant. Legacy native
-Services and credentials remain until live CI and client acceptance. This PR's
-source changes do not establish that acceptance; see the
-[CI runbook](../../docs/ci-cd.md).
+The staged phase 2b CI jobs use scoped, pre-signed ephemeral Tailscale keys and
+verify the joined tag and tailnet before private commands. Plan and apply use
+the operator API proxy with tokenless kubeconfigs; Cordium reaches private
+ingress without a Kubernetes grant. Legacy native Services and credentials
+remain until live CI and client acceptance. Source checks alone do not prove
+that acceptance; see the [CI runbook](../../docs/ci-cd.md).
 
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining
 canonical TLS names. Talos host pulls use the separate registry-only Service
 `10.96.0.50`; require the exact LAN/bridge/overlay source policy and uncached pulls before
 external Harbor DNS changes. Source preparation does not prove live cutover.
+
+The separate `tailnet-dns` CoreDNS/k8s_gateway workload watches only Services
+with `homelab.rst.io/private-dns=approved`. The reviewed Traefik private
+Service supplies the approved hostnames and live ingress IPv4; Traefik still
+terminates HTTPS and routes requests. Cluster `kube-dns` remains separate.
+Approved A/AAAA answers are local; unmatched address queries and other record
+types use public resolvers. The owner adds the DNS proxy's observed IP to
+Tailscale only after direct UDP/TCP answers, signature, and client checks pass;
+public app address records stay until a later guarded retirement.
 
 ## Source Files
 

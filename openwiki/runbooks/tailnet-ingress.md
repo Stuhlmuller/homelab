@@ -4,8 +4,6 @@ title: "Tailnet And App Ingress"
 description: "Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover."
 tags: [runbook, networking, ingress]
 sources:
-  - id: openwiki-source-29ced481494f3a85c0d7921b
-    resource: repo://.github/workflows/terragrunt-apply.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-0108413231c2f8b3f2972abd
@@ -38,14 +36,16 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
-  - id: openwiki-source-e0d1dba87aa9213350b1234a
-    resource: repo://docs/ci-cd.md
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
-  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
-    resource: repo://scripts/ci/tailscale-identity-check.py
+  - id: openwiki-source-a98a02c20ac8079466bdbdb6
+    resource: repo://scripts/ci/tailnet-dns-test.py
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
   - id: openwiki-source-511191e55632b55651ad4318
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
@@ -56,6 +56,8 @@ sources:
     resource: repo://scripts/n8n-github-webhooks.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
+  - id: openwiki-source-9e73eddbbea62807ee2ea389
+    resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
@@ -64,10 +66,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:07:20.728Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # Tailnet And App Ingress
@@ -87,6 +89,9 @@ phase 2a source and the separate external DNS and later CI cutover gates.
 
 ```mermaid
 flowchart LR
+    Client --> DNS[Separate signed tailnet DNS proxy]
+    DNS -->|Approved A/AAAA| Private
+    DNS -->|Other queries| PublicDNS[Public DNS]
     Client[Mesh client] --> Private[Tailscale private proxy]
     Private --> TLS[Traefik private TLS listener]
     TLS --> Apps[Application Services]
@@ -107,8 +112,10 @@ cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
 The current single-stack IPv4 Service publishes only `100.99.16.74`; its peer's
-IPv6 address has no matching application forwarding rule. DNS derives A/AAAA
-from Service status, not all peer addresses, so AAAA stays empty. See the
+IPv6 address has no matching application forwarding rule. The separate resolver
+uses the Traefik Service's published IPv4 for approved A answers and returns
+authoritative NODATA for approved AAAA; it does not use the peer's other
+addresses. See the
 [IP-family contract and pinned upstream sources](../../docs/networking-tailnet-ingress.md#dns-model).
 
 Only `n8n-webhook.tail67beb.ts.net` and `policy-bot-hook.tail67beb.ts.net` use
@@ -145,10 +152,12 @@ python3 -I scripts/tailscale-ingress-sign.py
 python3 -I scripts/tailscale-ingress-sign.py --execute
 ```
 
-The fixed signer checks the private Service and two Funnel Ingresses against
+The fixed signer checks the private Service, two Funnel Ingresses, and the
+separate `tailnet-dns` Service against
 controller-owned Ready Pods, exact parent UID, hostname, tag, addresses and
 local lock-peer identity. It reads public node/rotation keys from those Pods and
-signs only those three targets. It never adds a signing authority or disables
+signs only those four targets. For the DNS handoff, `--dns-only` previews or
+signs only the `homelab-dns` proxy. It never adds a signing authority or disables
 Tailnet Lock. Already-signed targets are skipped; lost proxy state requires the
 same guarded process again.
 
@@ -178,10 +187,10 @@ do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
 tradeoff. Each CI job must supply a private `statedir` to the pinned action.
-The staged phase 2b jobs use per-job state that is never cached or uploaded,
-verify one exact node tag and tailnet before live commands, and use tokenless
-operator API kubeconfigs for plan/apply. Cordium retains separate native OIDC.
-Prepared source does not prove protected CI acceptance.
+The staged phase 2b jobs keep per-job state private and uncached, verify the
+exact node tag and tailnet before live commands, and use tokenless operator API
+kubeconfigs for plan/apply. Cordium retains separate native OIDC. Prepared
+source does not prove protected CI acceptance.
 
 ## Security and rollout gates
 
@@ -222,20 +231,35 @@ cutover remain separate gates.
 ## Cutover utilities
 
 Follow the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md).
-The additive `tailscale-private-dns.sh` previews by default and requires exact
-reviewed main to write only its fixed DNS-only A/AAAA inventory. It preserves
-legacy CI, callback and carrier names. Phase 2a removes the old DNS-restoration
-workflow and public DNS helper; wait for in-flight runs, preserve the tunnel,
-and verify Talos registry access before external DNS writes.
+The `tailnet-dns` Application runs a separate CoreDNS/k8s_gateway resolver
+over UDP/TCP 53. It watches only the labeled `traefik-private` Service;
+that Service's hostname annotation and explicit HTTPS routes must match.
+Unmatched address queries and non-address records go to public resolvers;
+Traefik still owns HTTPS and application routing.
+For the initial handoff, publish and verify its pinned Harbor image, reconcile
+the Application, sign the `homelab-dns` proxy, and check its **observed**
+tailnet IP from the trusted signer Mac:
+
+```sh
+python3 -I scripts/tailscale-ingress-sign.py --dns-only
+python3 -I scripts/tailscale-ingress-sign.py --dns-only --execute
+python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff
+```
+
+The owner then sets that IP as a restricted `stinkyboi.com` nameserver in
+Tailscale DNS. Check normal client DNS and HTTPS before removing any public
+records. The later `tailscale-private-dns.sh --retire-private` helper only
+previews or deletes A/AAAA/CNAME records for the fixed 27 names; it cannot
+publish or restore them. Preserve callback, CI, carrier, unrelated names, and
+apex mail records. Keep the public records during this resolver handoff.
+Phase 2a removed the old DNS-restoration workflow and public DNS helper;
+preserve the tunnel and verify Talos registry access before later retirement.
 The same phase declares internal CoreDNS rewrites for Octelium API and Harbor
 to `traefik-private`, additive Cordium bootstrap network peers, and n8n's
 `https://n8n-webhook.tail67beb.ts.net/` advertised webhook URL. Require Funnel
 readiness before n8n restarts because it can register hooks during startup.
-Check native API and Harbor access after internal DNS convergence. The staged
-CI and shared native operator transport switch only after canonical mesh
-acceptance; require protected plan denial, exact-main apply, diagnostics,
-publishers, and Cordium execution and cleanup before retirement. Keep legacy
-catalog, credentials and tunnel through those gates.
+Check native API and Harbor access after internal DNS convergence; keep CI and
+shared native operator transport unchanged until canonical mesh acceptance.
 
 The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
 the repository and live Deployment explicitly declare zero replicas and no
@@ -243,14 +267,15 @@ live replicas remain. This accounts for Traefik's static ClusterIP backend
 while AFFiNE is suspended. All other application 5xx responses fail; this
 exception does not establish AFFiNE runtime health.
 
-Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects only
+For the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most
 20 times with half-second pauses for the same macOS profile to become online,
 rejecting any owner or tailnet change. Each CLI call retains its separate
 45-second timeout; Desktop credentials and the local carrier remain unchanged.
-After DNS readback, the Mac helper migrates the verified existing account while
-preserving credentials and owned-file rollback. Wait the reported former TTL,
-then explicitly verify normal DNS, canonical TLS and native gRPC.
+After the owner tailnet DNS setting passes normal client checks, the Mac helper
+migrates the verified existing account while preserving credentials and
+owned-file rollback. After any later public retirement, wait the old TTL and
+verify normal DNS, canonical TLS and native gRPC.
 
 The callback helpers change only the fixed n8n hooks and Policy Bot App webhook
 URL. Non-executing preflights protect live workflows; private local receipts

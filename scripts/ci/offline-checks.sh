@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Generated units are fixtures here; no provider init or live API access.
+# shellcheck disable=SC1091 # Shared helper is linted separately.
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
@@ -21,6 +22,8 @@ python3 -I scripts/ci/tailscale-access-check-test.py
 python3 -I scripts/ci/tailscale-identity-check-test.py
 python3 -I scripts/ci/octelium-api-response-test.py
 python3 -I scripts/ci/tailscale-private-dns-test.py
+python3 -I scripts/ci/tailnet-dns-check-test.py
+python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
@@ -62,6 +65,8 @@ python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/openclaw-enterprise-image-test.py
 python3 -I scripts/ci/harbor-encrypt-diagnostic-test.py
 python3 -I scripts/ci/static-checks-timeout-test.py
+python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py
+python3 -I scripts/ci/harbor-native-chainguard-receipt-import-test.py
 python3 -I scripts/ci/harbor-core-source-test.py
 python3 -I scripts/ci/harbor-core-scan-check-test.py
 python3 -I scripts/ci/harbor-render-check-test.py

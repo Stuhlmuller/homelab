@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:09eb33c8f67cb0d3db87e9060fb73687959fb46e1d1128eae0c450b0a398c943",
+  "pageVersion": "sha256:b9c92370b21214e2e138142daa75f36163ab833106e14789d791ae30c90b4e9b",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         }
       ]
     },
@@ -51,30 +51,62 @@
       ]
     },
     {
-      "id": "claim_9803f46b8a3340db9077b897cc04cac0",
-      "statement": "Phase 2b stages thirteen credentialed hosted live jobs on scoped pre-signed Tailscale keys with exact tag and tailnet checks, uncached private state, and tokenless operator-proxy kubeconfigs; live proxy, plan/apply, publisher, Mastodon DNS, OpenClaw retention and Cordium acceptance remain required.",
+      "id": "claim_3a6ef031cf564bd7812d9172a91b72cc",
+      "statement": "The pull-request Lint job reports its job conclusion without commit-status write permission. Static checks reject status-write permission in PR workflows; the trusted-base native Chainguard receipt provenance workflow owns its status after current-main and PR-head verification.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
-          "version": "repo-file-v1:sha256:7491c488c8dfde841f6f4e544593e06979b574c681d31ac91b6f871283ed720e"
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
         },
         {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:ecee68dec6b498513ffb05b9cb31c6073434967b9aa181f8340981c97b99814a"
+          "resource": "repo://.github/workflows/lint.yml",
+          "version": "repo-file-v1:sha256:0fa8148c1b9d471174d4f6971bcf8a0bc07346ab957714b009ce31816fba9cbe"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:8572345ac49789562346ba743a47f216276d7bc833117830bc84f4ce81e2c7b2"
+          "version": "repo-file-v1:sha256:3b1c87c27cfff10d6c23268dfce746c38391f8358ca94773a7c42a1857603835"
+        }
+      ]
+    },
+    {
+      "id": "claim_1128065216a341a3aae7b8eef1db6e71",
+      "statement": "Phase 2b stages thirteen credentialed hosted live jobs on scoped pre-signed ephemeral Tailscale keys with exact tag/tailnet checks and tokenless operator proxy kubeconfigs. Legacy transport and credentials remain until live replacement acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:8670a980e44db338b7a8bf1cb90911d112ede890be7bd674af63d53680088e3f"
+        }
+      ]
+    },
+    {
+      "id": "claim_123fd901e91345c783fd34f46c51aba0",
+      "statement": "Policy Bot automatically approves through requires.count: 0, and the active policy has no organization-member disapproval rule; required GitHub checks gate merges.",
+      "evidence": [
+        {
+          "resource": "repo://.policy.yml",
+          "version": "repo-file-v1:sha256:541c4699b2d88107fb1288961abe85cc75982b9abed48f6d570887e5269b93eb"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:07:20.728Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

@@ -4,40 +4,30 @@ title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
 sources:
-  - id: openwiki-source-a793a7dd08d0dc13de84207b
-    resource: repo://.github/workflows/cordium-runner-publish.yml
-  - id: openwiki-source-f3c1ec74b74e361ea2192c05
-    resource: repo://.github/workflows/mastodon-public-dns.yml
-  - id: openwiki-source-db6cf97d787f19eab7b1a68b
-    resource: repo://.github/workflows/openclaw-enterprise-images.yml
-  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
-    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-1247eded2dab9841fec2a345
-    resource: repo://docs/nix-cache.md
-  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
-    resource: repo://flake.nix
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-612eb02105d61c48b6ba59bd
+    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-  - id: openwiki-source-47792446a9e092544c3c1857
-    resource: repo://scripts/ci/nix-checks.sh
-  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
-    resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-18T13:07:20.728Z" }
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:07:20.728Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # GitOps Flow
@@ -77,7 +67,7 @@ requirements.
 Octelium recovery has one transport exception, not a desired-state exception:
 a trusted LAN operator may apply the reviewed `kubernetes-node-labels`
 Terragrunt unit through the canonical private API and shared remote backend when
-GitHub-hosted runners cannot reach their declared API transport. The repository
+GitHub-hosted runners cannot reach that API through Octelium. The repository
 unit, saved plan, policy check, and normal Terragrunt state remain authoritative;
 no ad hoc Kubernetes mutation or GitHub kubeconfig secret is introduced.
 
@@ -147,45 +137,23 @@ does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
-writes still require the guarded operator command after signed proxy, TLS,
-backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
-old native catalog, and credentials through their separate
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b stages thirteen
-credentialed live jobs with scoped pre-signed Tailscale keys, verifies the joined tag
-and tailnet, and sends native API calls directly through mesh TLS. Plan and
-apply use the operator API proxy with tokenless runner kubeconfigs; admission
-permits plan dry-runs but denies real Application writes. Production jobs
-retain protected-environment and exact-current-main checks. This prepared
-source does not establish live CI acceptance or retire old native Services.
-The added jobs cover Cordium runner and OpenClaw image publication, OpenClaw
-legacy retention, and Mastodon DNS publication.
+writes remain behind the guarded 27-name retirement command after the separate
+`tailnet-dns` Application is Synced/Healthy, its Tailscale DNS proxy is signed,
+and the owner has set its observed IP as a restricted tailnet nameserver.
+The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
+stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,
+old native catalog, credentials, and CI transport through their separate
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
+does not claim that traffic has moved or old native Services have been retired.
 
-## Signed offline CI checks
-
-Static jobs derive offline fixture and manifest-policy outputs from the complete
-tracked source, pinned tools and platform. They read cache trust from protected
-`origin/main`, require Nix signatures and sandboxing, and build on a cache miss.
-Provider validation, network-dependent rendering, secret scanning and live plans
-still run fresh. The Tailscale identity/transport fixtures and exact workflow
-security guards belong to the extracted offline suites.
-
-```mermaid
-flowchart TD
-    Source[Tracked source and pinned tools] --> Paths[Expected Nix check paths]
-    Policy[Protected main cache policy] --> Lookup[Verified cache lookup]
-    Paths --> Lookup
-    Lookup --> Result{Valid signed hit}
-    Result -->|Present| Fresh[Fresh remaining checks and live plan]
-    Result -->|Cache miss| Build[Sandboxed offline checks]
-    Build --> Fresh
-```
-
-Signed offline results do not establish live transport or deployment acceptance.
-
-The operator can prime Linux outputs through the declared disposable Nix builder;
-the private signing key remains on the operator machine. Builder registration,
-publication and warm CI reuse need their own acceptance. See
-[signed cache operation](../../docs/nix-cache.md).
+Phase 2b stages thirteen credentialed live jobs with scoped pre-signed Tailscale
+keys, verifies each joined tag and tailnet, and sends private API calls through
+mesh TLS. Plan and apply use tokenless runner kubeconfigs at the operator API
+proxy; admission allows plan dry runs but denies real Application writes.
+Production jobs keep protected-environment and exact-current-main checks.
+Prepared source does not establish live CI acceptance or retire old native
+Services. The added jobs include Cordium runner and OpenClaw image publication,
+OpenClaw legacy retention, and Mastodon DNS publication.
 
 ## Important Paths
 

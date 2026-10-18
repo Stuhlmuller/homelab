@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:0d9e8a2525d3d85741a0225493d956c32a4b843b30a4458b66a15f45864c6ab0",
+  "pageVersion": "sha256:5930837bf492b5ec5ec85c564b91d35372a6dd667a29a18976440d5e2b080a7a",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
         },
         {
           "resource": "repo://docs/octelium.md#L3-L20",
@@ -31,26 +31,40 @@
       ]
     },
     {
-      "id": "claim_d9684f84d30046e582a416afe3695547",
-      "statement": "The shared native helper requires the online declared mesh and unique ingress peer, validates canonical DNS, native gRPC and gRPC-Web over TLS with the shared parser and removes proxy overrides; callers retain resource and reviewed-main guards while old catalog and Mac rollback stay until acceptance.",
+      "id": "claim_64b340417b304cf9b5cbd148af9dc5dc",
+      "statement": "The current tailnet DNS cutover deploys and signs a separate resolver, pauses for the owner to set its observed IP as restricted stinkyboi.com nameserver, and retains public app records until normal clients and application paths pass; a later fixed-27 guarded helper retires only public app address records.",
       "evidence": [
         {
-          "resource": "repo://docs/cordium-ci.md",
-          "version": "repo-file-v1:sha256:2f9b1b396498006a0189e4dcc247c0af3f67fe918a8b990cca6e4028ab1b30dd"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L9-L58",
+          "version": "repo-lines-v1:sha256:7213cbef1f7799960a9b934b5f0563aed195005ee819f1cdc168f25c1c0e576f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmN2Y2NzU4MmZlOGU1ZTE4NzIwODEwNTJlYjAxMWFjZDg4MjQ0OTBkYzZkYWE3MGE0ZmQ5MWM2YTk5MzI4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0N2VlZDEyMGQ0NDBjMjRmYzA5MjA2YWJmNzQ5MjEwOTU4ZGU5N2Q3MWZiODM0ODYxNGI3ZmNiOTNlNTljODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4OGM5NGNiMmMwZWIxMWRkNDMzNGM2MGVmNDEyZWVjODAxZTJmZjEyOTczZTM1M2NmMDJkMTgzZDI5YTY3NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExYmIzMGJjYTEzNGMzYWNhNDg5NTgxOGZlZjVlN2MwOGEzM2Q0M2Y2M2RjYjBjNzg2MGFhYjEwZmVjYjQ0OTUifQ"
+        },
+        {
+          "resource": "repo://docs/octelium.md#L3-L20",
+          "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7f6c7a84c1cc41089422b04187aa8a72",
+      "statement": "Phase 2b's shared native transport uses direct canonical TLS after verifying the online tailnet, unique ingress peer, DNS mesh addresses and native gRPC/gRPC-Web probes. Cordium CI uses that transport after a scoped Tailscale join while native OIDC remains separate; legacy catalog, credentials, Tunnel and Mac rollback stay until live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:2b9406caa3d81c7de783bfebdeaacb867fe33ffb553b3a2e70306ce9264f23bb"
         },
         {
           "resource": "repo://scripts/ci/cordium-ci.sh",
           "version": "repo-file-v1:sha256:69aff5833ba9c50626331def0c5514d51c125c0586f5dc60b809a127dc099594"
         },
         {
-          "resource": "repo://scripts/octelium-nofx-reconcile.py#L72-L113",
-          "version": "repo-lines-v1:sha256:7d89079aca67c36e3dee2ff2b43b9715b87a0747eeb44c5fbc45a35ac30f0eed:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZTA3MDVmMmIwZDI1NjkyZjM2NjliM2U0NzQ5Njg0N2VmMzZjM2IzNjk0MWQwMmFkMjNhODdlNWZiYTk3YjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YjllOTM3OTI4ODI0ZTc5NWRlNDA3MjhjNmIwNDIyMTFmNTFlYWVjMDFhMTMxNTMwMTJkY2MwYTgwNTU4YTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjOWZmNmMyMDBkMTFmN2FhMzUxNzBkNzZiOGQzZGMwMmMxNTMxNjk2OThlOGU4ZWMwYjY5ZTA0ZmNlMTg0YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViOWIwM2NjMDI4MDc0YzNjZWQ1ZDE3ODNhMjU1MTA3ZjYwZTQ1M2MzODJmMzIwMDFjYTNhMTEwZjQ3YjUxNGEifQ"
+          "resource": "repo://scripts/octelium-nofx-reconcile.py",
+          "version": "repo-file-v1:sha256:be898d1d8531dbdffb3b4878c1ad566f52cbb16b6eb9824e872ee86010ea414a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T12:49:03.265Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

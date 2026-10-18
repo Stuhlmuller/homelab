@@ -12,26 +12,32 @@ sources:
     resource: repo://.github/workflows/cordium-runner-images.yml
   - id: openwiki-source-a793a7dd08d0dc13de84207b
     resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-9a01f0687eaa075cf78c3abc
     resource: repo://.github/workflows/image-automation.yml
-  - id: openwiki-source-f3c1ec74b74e361ea2192c05
-    resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-2ab88915e37908e92fe8ef01
+    resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-3b8a5a1dece086403bc8ab75
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
-  - id: openwiki-source-02c6601e3ee1ac6a7a26e042
-    resource: repo://.github/workflows/openclaw-enterprise-operations.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-cb3a8a3b9e69747d8a6feacf
+    resource: repo://.policy.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-18T13:07:20.728Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:07:20.728Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # CI/CD
@@ -41,14 +47,18 @@ Canonical runbook: [`docs/ci-cd.md`](../../docs/ci-cd.md)
 Pull requests always emit the aggregate `Terragrunt Gate`; only trusted changes
 to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
-Azure credentials and scoped pre-signed Tailscale keys remain protected GitHub inputs,
-while desired state stays in repository-owned files.
+Azure, and staged scoped Tailscale keys remain protected GitHub inputs;
+existing Kubernetes and Octelium inputs remain until replacement acceptance.
+Desired state stays in repository-owned files.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
-Required GitHub checks and explicit Stuhlmuller organization-member disapproval
-still block merges. The policy takes effect from the target branch after merge;
-revert `.policy.yml` to restore review requirements.
+
+The pull-request `Lint` job reports its own conclusion without commit-status
+write permission. The static gate rejects that permission in any PR workflow;
+the trusted-base native Chainguard receipt workflow alone sets its provenance
+status after checking the current main and PR head. Required GitHub checks
+gate merges. Revert `.policy.yml` to restore review requirements.
 
 Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
 `14700233` still requires the seven documented checks. `homelab-plan` has no

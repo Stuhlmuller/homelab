@@ -12,6 +12,10 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
+  - id: openwiki-source-2ab88915e37908e92fe8ef01
+    resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -42,8 +46,6 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
-  - id: openwiki-source-6adb36b0025e2d26f05e160c
-    resource: repo://clusters/homelab/apps/dispatcharr/values.yaml
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -58,8 +60,6 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
-  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
-    resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -74,6 +74,8 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e61e6d11d2a5c456a06bdb85
     resource: repo://clusters/homelab/platform/image-policy/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -98,16 +100,20 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
+  - id: openwiki-source-d88444044033fa951eb38e67
+    resource: repo://scripts/ci/harbor-native-chainguard-receipt.sh
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
-  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
-    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
     resource: repo://scripts/config/harbor-chainguard-images.json
+  - id: openwiki-source-e4e9ca360dcb635535118ee8
+    resource: repo://scripts/config/harbor-dns-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
@@ -120,10 +126,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T13:07:20.728Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # Harbor Private OCI Registry
@@ -148,10 +154,11 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Staged hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
-through a tokenless Tailscale kubeconfig. Only its disposable runner maps
+Staged hosted CI establishes a bounded Kubernetes port-forward to
+`traefik-private` through a tokenless Tailscale kubeconfig. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
-retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
+retaining TLS verification. Source validation does not establish live CI
+acceptance. See `scripts/ci/harbor-publish.sh`.
 
 The shared Octelium-to-Istio hop currently skips upstream certificate validation
 for the Kubernetes Service hostname, as declared in
@@ -258,11 +265,19 @@ it would regenerate Harbor's salted bcrypt registry password hash. The public
 `mirror` project remains public until a separate reviewed Talos path validates
 authenticated pulls on every node before a privacy flip.
 
-The native receipt scan robot has a separate staged SSM parameter,
+The native receipt scan robot has a separate SSM parameter,
 `/homelab/harbor/robot-scan-password`, with an exact-ARN External Secrets reader
-grant. Its ExternalSecret is declared but cannot become Ready until a
-reviewed saved plan applies that parameter and read-only metadata verifies it. Staging this contract does not
-create the robot or start a receipt workflow. See the [SSM contract](../../docs/secrets-aws-ssm.md).
+grant. The version 1 `SecureString` and reader grant were verified read-only;
+a targeted plan from `main` at `f6506136` found no changes on 2026-10-18.
+The parameter alone does not create the robot or start a receipt workflow.
+See the [SSM contract](../../docs/secrets-aws-ssm.md).
+
+The protected native receipt copies complete source and authenticated Harbor
+indexes into local OCI layouts, then compares their root bytes and required
+platform descriptors. Exact child scan queries request Harbor's vulnerability
+report type before accepting complete zero-count scans. Pull-request lint lacks
+commit-status write permission; the trusted base provenance workflow owns its
+receipt status. See the [mirror runbook](../../docs/harbor-image-mirroring.md).
 
 NOFX gets only the read-only robot through its namespace-specific SSM alias
 `/homelab/nofx/harbor-pull-password` and `harbor-pull` Docker config Secret.
@@ -333,7 +348,7 @@ snapshot does not establish scan completion for images not yet uploaded.
 ## Scoped application image publication
 
 `harbor-mirror.yml` accepts `image_scope=all` (the default), `chainguard`, `fleet`,
-`bazarr`, `mastodon`, `traefik`, `harbor`, or `renovate`.
+`bazarr`, `mastodon`, `traefik`, `harbor`, `renovate`, or `dns`.
 Fleet uses the fixed `scripts/config/harbor-fleet-images.json` subset, covering
 exactly its rendered Fleet, MySQL, Redis and bootstrap Python images. CI rejects
 missing, extra or non-inventoried sources. All modes keep reviewed-main guards,
@@ -361,11 +376,19 @@ complete authenticated Harbor pulls. No caller-supplied image, path or destinati
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
 
-The fixed `renovate` scope selects six cataloged update digests for Fleet,
-Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, and n8n from
-[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json).
+The fixed `dns` scope selects only the pinned Codeberg k8s_gateway image from
+[`harbor-dns-images.json`](../../scripts/config/harbor-dns-images.json).
+Protected run [39161113974](https://github.com/Stuhlmuller/homelab/actions/runs/39161113974)
+completed at exact `main` `5558f8c1` with matching digest and a complete
+authenticated Harbor pull. It does not prove full-catalog coverage or live
+resolver health.
+
+The fixed `renovate` scope selects seven cataloged update digests from
+[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
+Fleet, Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the
+Renovate runner.
 It retains the normal digest, alias, and fresh authenticated pull checks while
-the unrelated full catalog is held. Its success proves only these six images;
+the unrelated full catalog is held. Its success proves only these seven images;
 each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos
@@ -407,8 +430,8 @@ The [full image catalog](../../scripts/config/harbor-images.json) stages all nin
 Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
-the separate consumer upgrade. A scoped receipt does not prove full-catalog
-coverage; a separate complete `all` run must pass. That upgrade must verify that singleton nginx retains a
+the separate consumer upgrade. The scoped receipt does not prove full-catalog
+coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
@@ -718,8 +741,8 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. n8n now consumes its published digest; Dispatcharr still
-uses its former `f81924f…` digest and needs a separate reviewed consumer change.
+complete Harbor pulls. Their consuming Renovate PRs remain held until that
+publication and pull acceptance finish.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms

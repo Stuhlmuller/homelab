@@ -11,6 +11,8 @@ resources:
   - virtualservice.yaml
 configMapGenerator:
   - name: openclaw-assistant
+    options:
+      disableNameSuffixHash: true
     files:
       - assistant/AGENTS.md
       - assistant/SOUL.md
@@ -25,6 +27,5 @@ configMapGenerator:
   - name: openclaw-retirement
     files:
       - retirement.py=retirement/retirement.py
+      - inventory-worker.sh=retirement/inventory-worker.sh
       - runtime-storage.py=assistant/runtime-storage.py
-generatorOptions:
-  disableNameSuffixHash: true

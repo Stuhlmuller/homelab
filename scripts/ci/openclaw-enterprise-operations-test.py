@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
-WORKER = ROOT / 'scripts/ci/openclaw-legacy-inventory-worker.sh'
+WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 
 
 class Operations(unittest.TestCase):
@@ -162,7 +162,8 @@ restore_version key version-1 "$2"
                 'GITHUB_RUN_ID': '123'}
         for stage, extra in (
             ('arbitrary', {}), ('publish-inventory', {}),
-            ('publish-inventory', {'BASELINE_REF': 'a' * 40 + '/39127113354'}),
+            ('publish-inventory', {'BASELINE_REF': 'a' * 39 + '/39127113354'}),
+            ('publish-inventory', {'BASELINE_REF': 'a' * 40 + '/../secret'}),
             ('archive', {}), ('archive', {'BASELINE_REF': '../secret'}),
             ('verify', {}), ('verify', {'ARCHIVE_REF': 'abc/123'}),
         ):
@@ -173,6 +174,19 @@ restore_version key version-1 "$2"
                 self.assertEqual(result.returncode, 2)
                 self.assertNotIn('aws', result.stderr)
                 self.assertNotIn('kubectl', result.stderr)
+
+        with tempfile.TemporaryDirectory() as directory:
+            aws = Path(directory) / 'aws'
+            called = Path(directory) / 'called'
+            aws.write_text('#!/bin/sh\ntouch "$AWS_CALLED"\nexit 1\n')
+            aws.chmod(0o755)
+            result = subprocess.run(['bash', str(SCRIPT), 'publish-inventory'], cwd=ROOT,
+                                    env={**base, 'BASELINE_REF': 'a' * 40 + '/39157724373',
+                                         'AWS_CALLED': str(called),
+                                         'PATH': directory + os.pathsep + os.environ['PATH']},
+                                    capture_output=True, text=True, timeout=5, check=False)
+            self.assertEqual(result.returncode, 1)
+            self.assertTrue(called.exists())
 
     def test_failure_reports_only_fixed_phase(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -260,10 +274,17 @@ printf '%s\\n' "$phase"
         self.assertNotIn('actions/upload-artifact@', workflow)
         script = SCRIPT.read_text()
         self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
-        self.assertIn('nohup sh "$directory/inventory-worker-${run_id}.sh"', script)
+        self.assertIn('nohup sh /etc/openclaw-retirement/inventory-worker.sh', script)
+        self.assertNotIn('"$worker" <scripts/ci/', script)
+        self.assertEqual(script.count('run_inventory_worker'), 3)
+        self.assertIn('observed="/private/legacy/baseline-${GITHUB_RUN_ID}.json"', script)
+        self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)
+        self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
+                      (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())
         self.assertIn('mkdir "$directory/inventory.lock"', script)
         self.assertIn('/diagnostic.log" >/dev/null', script)
         self.assertIn("--body \"$work/baseline.json\" --if-none-match '*'", script)
+        self.assertIn('[[ "$BASELINE_REF" == \'d55e2ab8521e427c059e07e34b270e476092a8a1/39127113354\' ]] || exit 1', script)
         self.assertIn('cmp "$work/baseline.json" "$work/offsite-baseline.json"', script)
         self.assertIn('refresh_status inventory', script)
 

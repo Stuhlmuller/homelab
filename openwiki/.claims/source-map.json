@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:030dc72858cc76205ee89861936f13b093464f268a3f145ca560a0cf3bb20173",
+  "pageVersion": "sha256:ac766219d82180261013e9356978cac4eceeb106af71373b82029b3c66ef792e",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -56,7 +56,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
-          "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
+          "version": "repo-file-v1:sha256:25326218281f5062e0e29eb65f1426a24684a7c5d56e040d8434746d96a8b17a"
         }
       ]
     },
@@ -101,48 +101,58 @@
       ]
     },
     {
-      "id": "claim_0ceaa21560d44d97aed90c748162b152",
-      "statement": "Phase 2b CI workflows stage scoped pre-signed Tailscale access with exact identity verification and tokenless operator API kubeconfigs, while Cordium keeps separate native authorization and legacy credentials remain until acceptance.",
+      "id": "claim_8730a6d88f7a49d7a2c95790a0d79d13",
+      "statement": "The source map links the protected native Chainguard receipt workflow and verifier to Harbor operations and validation gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
+          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt.py",
+          "version": "repo-file-v1:sha256:7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688"
+        }
+      ]
+    },
+    {
+      "id": "claim_3290bd59dad34ea0b1b825a33da95272",
+      "statement": "The source map links the separate tailnet DNS resolver, its Terragrunt stack, direct DNS checker, and guarded public address retirement helper to their operational wiki pages.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
+          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+        },
+        {
+          "resource": "repo://scripts/tailnet-dns-check.py",
+          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh",
+          "version": "repo-file-v1:sha256:b39004f10c5d7c5f4224f74702c49eae590a70acc8d26e6703a54bc779abff0f"
+        }
+      ]
+    },
+    {
+      "id": "claim_206fbfebdf354090aaeb1bbc98b22543",
+      "statement": "The source map routes staged phase 2b Tailscale CI workflows, tokenless operator kubeconfig helper, and separate Cordium authorization to the CI runbook while legacy credentials remain through live acceptance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-plan.yml",
           "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
         },
         {
-          "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
-        },
-        {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
           "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
-        }
-      ]
-    },
-    {
-      "id": "claim_a29dab8ba23a4bb69a7b271364faacfa",
-      "statement": "The staged Tailscale CI migration additionally owns Cordium runner publication, Mastodon DNS, OpenClaw image publication, and OpenClaw legacy retention live workflow transport.",
-      "evidence": [
-        {
-          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
-        },
-        {
-          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
-          "version": "repo-file-v1:sha256:7491c488c8dfde841f6f4e544593e06979b574c681d31ac91b6f871283ed720e"
-        },
-        {
-          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
-          "version": "repo-file-v1:sha256:18cc8e11d50e5c4371922fd9546670400b530dd61584a23ba7ac393781135df5"
-        },
-        {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:ecee68dec6b498513ffb05b9cb31c6073434967b9aa181f8340981c97b99814a"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:07:20.728Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

@@ -15,6 +15,16 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AccessCheckTest(unittest.TestCase):
+    def test_existing_ingress_tag_allows_member_dns_without_ci_expansion(self):
+        policy = json.loads((Path(__file__).resolve().parents[1] / "config/tailscale-policy.json").read_text())
+        self.assertEqual(policy["tagOwners"]["tag:homelab-ingress"], ["tag:k8s-operator"])
+        self.assertTrue(any("autogroup:member" in grant["src"] and "*" in grant["dst"]
+                            and "*" in grant["ip"] for grant in policy["grants"]))
+        self.assertFalse(any("tag:homelab-dns" in grant["dst"] for grant in policy["grants"]))
+        self.assertTrue(all("udp:53" not in grant["ip"] and "tcp:53" not in grant["ip"]
+                            for grant in policy["grants"] if "tag:homelab-ingress" in grant["dst"]
+                            and "autogroup:member" not in grant["src"]))
+
     def run_check(self, identity="plan", *, denial=True, message=None, groups=None, credentials=None):
         calls = []
         def fake(args):

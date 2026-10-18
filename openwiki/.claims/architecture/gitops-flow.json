@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:92b8ad741eb6f367eb5f85fead1d886aad71cbc9587b9d58b1eb95bb8304bc3a",
+  "pageVersion": "sha256:c5ca5490dbdc633dab27b6ce3a3711688103abe5e2591d7f919fcd9202d46c75",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -25,8 +25,8 @@
       "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
-          "version": "repo-lines-v1:sha256:22122b3286c42186c07df48ee19f34bd9e30eb4cf280e83f38da04fcfeeb83c7:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L89-L128",
+          "version": "repo-lines-v1:sha256:95740e8a58f9381005f69e87c610d69ac634a5d4c9f8ff0d843d97790e637c58:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -35,60 +35,40 @@
       ]
     },
     {
-      "id": "claim_1e76027c22f74ebd8abc4362f0879415",
-      "statement": "Phase 2b stages thirteen credentialed live jobs, including Harbor and Cordium publisher, OpenClaw publication/retention, and Mastodon DNS jobs, with scoped pre-signed Tailscale keys, exact identity verification and native TLS; plan/apply use tokenless API proxy kubeconfigs while retaining protected production and exact-main gates.",
+      "id": "claim_631d627ab70d4b1b8bf926885a007682",
+      "statement": "The tailnet-dns Terragrunt Application depends on Tailscale and Traefik and lets Argo reconcile a stateless CoreDNS/k8s_gateway chart from repository values; public address retirement remains a separate guarded later step after owner DNS handoff.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
+          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl#L5-L39",
+          "version": "repo-lines-v1:sha256:20609c02c260767c326070e2292d8c534ee94f031b32d6715cf219e9ded79b0e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTNjM2Y4MGJiODk0NTA3OTI2ZjFkZWIwZjFhNGE1MDgzMDAxMjU5ODFlZDM3MzNiOGJiYzU4Yjk5MjNlZjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1OWZlZWEyZjk3N2FkZTEyMWFmOWMwNWRkZGJhYTQ0ZjgyOTExNmY0NDBjMWMyODM3MzIxMmI3NDYwMjA2ZDMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         },
         {
-          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
-          "version": "repo-file-v1:sha256:7491c488c8dfde841f6f4e544593e06979b574c681d31ac91b6f871283ed720e"
-        },
-        {
-          "resource": "repo://.github/workflows/openclaw-enterprise-images.yml",
-          "version": "repo-file-v1:sha256:18cc8e11d50e5c4371922fd9546670400b530dd61584a23ba7ac393781135df5"
-        },
-        {
-          "resource": "repo://.github/workflows/openclaw-enterprise-operations.yml",
-          "version": "repo-file-v1:sha256:ecee68dec6b498513ffb05b9cb31c6073434967b9aa181f8340981c97b99814a"
-        },
-        {
-          "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:737a52fde0dc463d3aef216a67452fdbc9c5960b103e72bfeebbefeb2307ec7d"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-identity-check.py",
-          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L25-L75",
+          "version": "repo-lines-v1:sha256:539b628b0d8a8f73695efa935fcbf4f538b1863c3f7f7906a256d12dc5f3d651:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0OGUyY2NiMzAzOTAwNTZiMmFhNTg0ZTllNGJhM2E2ODAzZjcwZDZkMjNhMjhhNjU3ODY4MjhlYjdiNmI0NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmM2UzNWFjZmU0NmM0Nzk1NTQ0MWJjYmZmM2VjYmNiOTZhMTY0ZTAyMzY5ZTY4YWIwOGVkNDVlNTg1YWM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
-      "id": "claim_9d6a1bb0d6cd48debdf0997ac7c30981",
-      "statement": "CI's offline fixture and manifest-policy outputs depend on tracked source, pinned tools and platform; static jobs use protected-main cache trust with signatures and sandboxing, build cache misses, and retain fresh remaining validation and live plans.",
+      "id": "claim_8cfa206fe5e64cbc969189161c8ea9b8",
+      "statement": "Phase 2b stages thirteen credentialed live jobs on scoped pre-signed Tailscale keys, verifies each joined tag and tailnet, and uses tokenless runner kubeconfigs for plan and apply through the operator API proxy. Protected environments and exact-current-main checks remain; source preparation alone does not establish live CI acceptance or retire native Services.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/terragrunt-plan.yml#L65-L78",
-          "version": "repo-lines-v1:sha256:af78064f8cc1304590def210c435c6c23e7a7d9931c6d6b48a8ed15b19c471e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkYzUyODM3YTY5MWUwZmIxYTY5ZDQyNTk2M2Y3ZjEwYTVmMjgyYjMzNjVkMzdjZjZjZDQ1YjkxOGMwMmExZTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliZWU1OTBiMDEzMjIwYzcxOGVmYzM1NDdiODRiOTgwMGMzMWY2NGZlODg5MzM3M2U4OGVhZDdhNzUzOWY4NTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4MGNjOTNmZTFmNjRiNTRiYzljYThmNjY3NWQ3ZmVjZGM3NjQ0OWRlOGRmZGFiYWUwNjg3NDc1ZWE5NjliYzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyMTI1OWJlMTk3ZDRlY2UxNjM2YWJlMmM4ODNjYzY2MzgxZDk5ZjNmMTVjNDEwMDA4ZDY2ZDkzNzdhOTMxMzkifQ"
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
         },
         {
-          "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:e79ff25596fa38b78493f42f256285719e10ea6990684b762d9370d255ea9dc6"
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         },
         {
-          "resource": "repo://flake.nix#L15-L61",
-          "version": "repo-lines-v1:sha256:8c296f9b37cc7350fc3527d5e1d6ee761a7711f864abd9d166ec204c9a49a22a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDBlMjE4OGM2OTgxNmE2YzQyNWM1ZTA2MTM5ZTgyNmEyMjcwNDM5OTdlZjU2M2RmN2VlODcwMDg2YmU3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5M2ZjOTc4OTQxNDA2MjMwOTZjYTlkYjcxNTQ0MjJkNDA0NGNkZGJmYzk1YWQ0MGRhYTc4NWY5YjkzNDJjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1MzFhNDQ5YTg1NjI5YjdkNDIyYWEzZjM1NGFlZWZjYzMxNjBmNmNkY2EzM2E2NmQwMWFkOWIwNTE1MDg1MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4NDRhMmJiNzM2N2E0NDgyYTM5YzgzZDljZTQ5MGJmYzIxZGEyY2M0MjJjZTNhYzk3NDRkNWI4YmU1YjdkYjAifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/nix-checks.sh",
-          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:8670a980e44db338b7a8bf1cb90911d112ede890be7bd674af63d53680088e3f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T13:07:20.728Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

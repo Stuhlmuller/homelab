@@ -2,6 +2,7 @@
 """Inventory and independently restore-verify retained legacy OpenClaw state."""
 
 import argparse
+import errno
 import gzip
 import hashlib
 import importlib.util
@@ -112,6 +113,34 @@ def config_at(path):
     return config
 
 
+def verify_read_only_database(path, config):
+    # SQLite must rebuild WAL shared memory; the retained source mount is read-only.
+    with tempfile.TemporaryDirectory(prefix='sqlite-', dir=private_dir(
+            Path(config['scratchRoot']))) as directory:
+        copy = Path(directory) / path.name
+        for source, target, required in ((path, copy, True),
+                                         (Path(str(path) + '-wal'), Path(str(copy) + '-wal'), False)):
+            try:
+                descriptor = os.open(source, os.O_RDONLY | os.O_NOFOLLOW)
+            except FileNotFoundError:
+                if required:
+                    raise
+                continue
+            except OSError as error:
+                if error.errno == errno.ELOOP:
+                    raise ValueError('untrusted legacy SQLite source') from error
+                raise
+            with os.fdopen(descriptor, 'rb') as original:
+                info = os.fstat(original.fileno())
+                if (not stat.S_ISREG(info.st_mode) or info.st_uid != config['localUid']
+                        or info.st_nlink != 1):
+                    raise ValueError('untrusted legacy SQLite source')
+                with target.open('xb') as writable:
+                    os.fchmod(writable.fileno(), 0o600)
+                    shutil.copyfileobj(original, writable)
+        runtime_storage.verify_database(copy)
+
+
 def roots(config):
     local, nas = Path(config['localRoot']), Path(config['nasRoot'])
     for root, uid in ((local, config['localUid']), (nas, config['nasUid'])):
@@ -123,7 +152,7 @@ def roots(config):
         file = local / relative
         if not file.is_file() or file.is_symlink() or file.stat().st_uid != config['localUid']:
             raise ValueError('required local database missing or ownership changed')
-        runtime_storage.verify_database(file)
+        verify_read_only_database(file, config)
     for relative in config['requiredNas']:
         item = nas / relative
         if not item.is_dir() or item.is_symlink() or not any(item.iterdir()):
@@ -242,7 +271,7 @@ def verify_bundle(bundle, expected, config):
             tar.extractall(scratch, filter='data')
         local, nas = Path(scratch) / 'local', Path(scratch) / 'nas'
         for relative in config['requiredLocal']:
-            runtime_storage.verify_database(local / relative)
+            verify_read_only_database(local / relative, config)
         for relative in config['requiredNas']:
             item = nas / relative
             if not item.is_dir() or not any(item.iterdir()):

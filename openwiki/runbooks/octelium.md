@@ -10,18 +10,16 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
-  - id: openwiki-source-e038674a313521b0f6eadc03
-    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
   - id: openwiki-source-fd5257dfdfce75d54d138848
     resource: repo://scripts/ci/cordium-ci.sh
   - id: openwiki-source-ff63d9d82b2370adf56a5f28
     resource: repo://scripts/octelium-nofx-reconcile.py
-generated: { by: "codex", at: "2026-10-11T00:32:06.826Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:49:03.265Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # Octelium
@@ -46,7 +44,8 @@ The retained Cloudflare Tunnel provides old browser and native carrier routes
 until mesh acceptance. Its DNS-restoration workflow and old DNS writer are
 removed in phase 2a. Follow the
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) for guarded
-DNS-only mesh records, Mac migration, callback delivery, and CI transport.
+tailnet resolver handoff, later public-record retirement, Mac migration,
+callback delivery, and later CI transport.
 Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
 actual Cordium execution/reconnection before removing the old tunnel or catalog.
 The legacy `octelium-tunnel-check.py` is not a mesh acceptance gate.
@@ -59,17 +58,14 @@ before it. New application routes belong in Traefik; the retained Octelium
 catalog is not a recipe to restore public app DNS or delete Cordium resources.
 
 Phase 2b changes the shared `native_transport` helper to direct canonical TLS.
-It requires the declared online tailnet and unique online ingress peer, verifies
-canonical DNS resolves only to that peer's mesh addresses, removes proxy
-overrides, and probes native gRPC plus gRPC-Web with the strict shared parser.
-Existing catalog/credential callers keep their narrow resource and exact-main
-guards. The Cordium CI wrapper now uses direct TLS after its scoped Tailscale
-join; native OIDC remains an independent authorization boundary. It creates no
-carrier or hosts override and removes private login files on exit.
-
-Prepared source does not prove live CI execution or cleanup. Keep the old
-catalog, native credentials, Tunnel and Mac rollback installer through the
-recorded acceptance gates; final retirement remains a separate source change.
+It requires the declared online tailnet and unique online ingress peer,
+verifies canonical DNS against that peer's mesh addresses, removes proxy
+overrides, and probes native gRPC plus gRPC-Web. Existing catalog and credential
+callers keep their narrow resource and exact-main guards. The Cordium CI wrapper
+uses direct TLS after its scoped Tailscale join; native OIDC remains a separate
+authorization boundary. Prepared source does not prove live CI execution or
+cleanup. Keep the old catalog, native credentials, Tunnel, and Mac rollback
+installer through the recorded acceptance gates.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 public WEB Service fallbacks on `acer` without Multus. Its generated Service UIDs must be
@@ -82,9 +78,9 @@ See [Secrets And Identity](../architecture/secrets-and-identity.md), [Tailnet An
 
 ## macOS API carrier
 
-Before DNS preflight, `multica-desktop-connect.py --resume-only` reconnects the
+Before the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects the
 verified saved Tailscale profile without changing Desktop or its carrier. After
-private DNS is written, the full migration preserves Desktop credentials and
+the owner tailnet DNS setting passes normal client checks, the full migration preserves Desktop credentials and
 removes only owned transports after authenticated canonical API checks.
 
 The retained `scripts/octelium-macos-api-carrier.py install` supports reviewed
