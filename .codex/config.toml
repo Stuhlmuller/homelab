@@ -9,5 +9,5 @@ startup_timeout_sec = 60
 
 [mcp_servers.xerj]
 command = "/bin/sh"
-args = ["-c", "XERJ_AUTH=\"ApiKey $(cat \"$HOME/.xerj-code/data/admin.key\")\" exec \"$HOME/.local/bin/xerj\" mcp --disable-feedback"]
+args = ["-c", "exec \"$HOME/.local/bin/xerj\" mcp --disable-feedback"]
 startup_timeout_sec = 15
