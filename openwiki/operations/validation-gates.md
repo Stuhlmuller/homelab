@@ -66,14 +66,18 @@ sources:
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
-  - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
+  - id: openwiki-source-e9bb34bdbee430c2456beb6d
+    resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-714484b73b4ba165201cb06d
     resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-5a9844f09df0d8ff89f969be
+    resource: repo://scripts/ci/entra-emergency-global-admin-plan-test.py
+  - id: openwiki-source-71b17b13c9c25f4d36402204
+    resource: repo://scripts/ci/entra-owner-conversion-test.py
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -82,16 +86,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
-  - id: openwiki-source-11a2787b11eaf93e89c05620
-    resource: repo://scripts/ci/harbor-native-chainguard-receipt-import-test.py
-  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
-    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
-  - id: openwiki-source-897b0dbd854eb91f395fe24b
-    resource: repo://scripts/ci/harbor-render-check-test.py
-  - id: openwiki-source-5f83ab015123e3adcb0c5808
-    resource: repo://scripts/ci/harbor-render-check.py
   - id: openwiki-source-f957231327bdd56401fbc4e2
     resource: repo://scripts/ci/image-policy-check.py
   - id: openwiki-source-dce02546543e605cb2ccbb06
@@ -154,10 +150,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T05:44:36.454Z" }
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T05:44:36.454Z
+    at: 2026-10-18T06:24:02.662Z
 ---
 
 # Validation Gates
@@ -475,28 +471,27 @@ tag, permits an empty server-side dry-run patch and requires the identical real
 empty patch to receive the specific admission denial. Its `apply` mode verifies
 the protected tag's administration permission without changing resources.
 
-## Entra owner-mail and Octelium identity checks
+## Entra owner conversion and Octelium identity checks
 
 Offline validation runs `scripts/ci/octelium-entra-oidc-test.py` against mocked
-native APIs. Static validation separately runs the plan-only tests in
-`IaC/modules/entra-owner-mail`. Together they cover disabled email fallback,
-implicit fallback-user inventory, native empty lists, partial migration retry,
-preserved contact fields, mail-only PATCH scope, current-mail and identity drift,
-and rollback.
+native APIs to retain the immutable owner `oid` and disabled email fallback.
+The historical mail-only Graph PATCH is retired: the owner-mail Terraform unit
+uses `removed { destroy = false }` and any saved plan must forget only that
+state address. No alias-release or additional mail write is accepted.
 
-Before live work, run `scripts/octelium-entra-oidc.sh --dry-run` with the three
-privately supplied admin flags. Follow the [Octelium migration sequence](../../docs/octelium.md#entra-identity-migration)
-and retain an independent session. Verify immutable owner binding and disabled
-email fallback before email reuse. The owner operator unit requires a private
-`-var-file` with current-mail and identity baselines and an encrypted saved plan;
-inspect that plan privately for exactly one
-`msgraph_update_resource.mail` PATCH containing only `mail`. Follow the
-[module contract](../../IaC/modules/entra-owner-mail/README.md), then verify
-unchanged owner identity, fresh owner access and actual SMTP proxy release.
-Offline tests and a valid plan do not prove Graph alias recalculation, owner
-access, SMTP proxy release, or Mac SSO. The
-[Fleet acceptance checks](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#platform-differences-and-acceptance)
-remain required after the pilot rename.
+The new `entra-owner-conversion-test.py` covers read-only Graph preparation and
+post-conversion attestation, including exact existing object ID, target UPN,
+identity issuer, password timestamp, clean signed `main`, private receipt and
+independent recovery Global Administrator. It also asserts that preparation
+rejects the current federated target domain. The recovery-admin plan test keeps
+its unit disabled by default and rejects unrelated provider actions. These
+fixtures do not create the recovery account or convert the owner. An operator
+must first resolve the federated target through a separate reviewed code
+change, then review the saved plan, verify the recovery sign-in, prepare a private
+receipt, perform the separately authorized Entra admin-center conversion, then
+attest and test actual Fleet console SAML and local recovery login. See the
+[provider contract](../../docs/entra-terraform-provider.md) and
+[Fleet runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
 
 ## GitHub Workflow Checks
 
@@ -1509,18 +1504,17 @@ refresh works; require actual CI runs for both identities and fresh no-change
 plans. Keep private identity and authentication evidence out of public logs.
 
 The [Free Entra acceptance checklist](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-adds separate gates for Microsoft Password Platform SSO and console SAML. The
-profile operator is dry-run by default; its Fleet API validation uses
-`configuration_profiles/batch?dry_run=true`, without replacing global profiles.
-Require exact local Mac identity, correct platform-specific profile UUIDs,
-acknowledged installation, retained pre-existing profiles, and session revocation.
-The Entra app/user units require focused encrypted plans before protected apply.
-Browser SAML identity, device/user registration, actual Mac password sync,
-offline login, and FileVault unlock must each be verified independently. Record
-failed versus untested checks explicitly; Argo health is not their acceptance.
-Keep identity-specific acceptance evidence in a private operator report. Public
-documentation should describe the verification method without publishing account
-identifiers, credentials or detailed tenant security state from the test.
+separates console SAML from host-scoped Apple baselines. Fleet-only Company
+Portal/Platform SSO is retired; the profile operator can remove its owned
+profile but cannot install it. The operator is dry-run by default and validates
+Apple profiles through `configuration_profiles/batch?dry_run=true` without
+global assignment. Require exact device identity, acknowledged installation,
+unrelated-profile retention and session revocation. The Entra owner conversion
+requires a separately tested recovery Global Administrator, immutable-ID
+references, a reviewed plan, private read-only prepare receipt, explicit
+admin-center action and matching post-conversion attestation. Fleet console
+SAML still needs a real browser callback and independent recovery login; API
+readback, Argo health and source tests do not establish live acceptance.
 
 Fleet adds bootstrap API regression tests for closed first-admin setup,
 administrator identity validation, token revocation and credential redaction.
@@ -1572,7 +1566,8 @@ existing secure token; screen-lock delay became immediate. Managed screensaver
 preferences read back `idleTime=300`, `askForPassword=1`, and
 `askForPasswordDelay=0` (display-sleep timers are separate). A supported host
 refetch produced fresh inventory and a passing FileVault SQL policy result.
-Company Portal, PSSO registration and password/login acceptance were still pending.
+Company Portal, PSSO registration and password/login acceptance were unproven;
+the Fleet-only route was subsequently retired.
 
 The first real console SAML callback returned `account_disabled`: Fleet matched
 the signed NameID to the existing password-login account, whose SSO flag is
@@ -1700,14 +1695,6 @@ fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate the six consuming applications.
-
-The native Chainguard receipt fixtures bind reviewed source and destination,
-require amd64 and arm64 child scans, complete authenticated Harbor pulls and
-protected provenance, and reject tag-only or mismatched rendered consumers.
-The render gate also requires `harbor-pull` for native Harbor images and rejects
-secret mounts or environment injection. The active ExternalSecret needs the
-scan-robot SSM parameter before it can become Ready; source checks do not prove
-that parameter or a live receipt exists.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

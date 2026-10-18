@@ -3,6 +3,9 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: [architecture, secrets, identity]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T06:24:02.662Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -32,6 +35,8 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-0a6020a0918a65bec7f9d758
+    resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
@@ -42,8 +47,12 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-f8736ea9671721c61be0c639
-    resource: repo://IaC/modules/entra-verified-family-user/main.tf
+  - id: openwiki-source-326a085bf1ea3cb64a10924e
+    resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
+  - id: openwiki-source-e9bb34bdbee430c2456beb6d
+    resource: repo://IaC/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-b17e212516ed4cf97993dd01
+    resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
@@ -52,6 +61,8 @@ sources:
     resource: repo://IaC/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
+  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
+    resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -60,10 +71,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T05:44:36.454Z" }
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-18T05:44:36.454Z
+generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
 ---
 
 # Secrets And Identity
@@ -606,7 +614,11 @@ See [NOFX reconciliation](../../docs/octelium-nofx-reconciliation.md).
 
 The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
 and owner-address details below are dated history, not a procedure to repeat
-or authorization to modify owner identities. See the current
+or authorization for ad hoc identity changes. The separate owner conversion
+is currently blocked because `stuhlmuller.net` is federated with Google;
+Microsoft requires a nonfederated target UPN domain for cloud-only conversion.
+Its reviewed preparation, recovery administrator and attestation require a
+separate federation or target-domain change first. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 The [WireGuard/AirVPN operator](../../clusters/homelab/apps/fleet/WIREGUARD-AIRVPN.md)
@@ -627,11 +639,10 @@ neither credential source. Omitting the option uses the initial administrator
 secret and works only while that password remains current.
 
 See the [Free Entra runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md).
-Native Microsoft Password Platform SSO uses Company Portal's extension and each
-person's Entra account. It preserves the existing local Mac account; no Fleet
-Premium password-sync or Intune enrollment is configured. Registration alone
-does not establish management or compliance. Password, offline login and
-FileVault acceptance require interactive tests.
+Fleet-only Company Portal/Platform SSO is retired after the live pilot required
+licensed Intune enrollment. The repository retains its profile only for scoped
+removal. Mac and iPhone/iPad passcode baselines remain host-scoped Free MDM
+operations; neither synchronizes a local password with Entra.
 
 Console SAML is a separate `azuread-applications/fleet` Terragrunt unit. Its
 single-tenant enterprise application requires individual assignment, selects a
@@ -641,17 +652,25 @@ account; only the authorized Entra identity is precreated as an SSO administrato
 JIT/SCIM provisioning stays disabled. The public native-client route continues
 without Octelium redirects; Fleet authenticates administrative requests.
 
-Read-only inspection found Entra Free and enabled Security Defaults. The existing
-tenant owner is an external Microsoft-account member, not an internal cloud
-password identity. Preserve it; use the separately authorized native pilot
-account for Mac Password SSO. Do not infer password support from `UserType=Member`
-alone, weaken MFA, or convert/reset the existing tenant administrator.
-The `azuread-applications/fleet-pilot-user` unit stays in the existing AzureAD
-CI collection despite owning a user. It grants no role, group or license, protects
-against destruction, and ignores later password changes. Its generated initial
-password remains in encrypted state and a private handoff file; it must be changed
-interactively before PSSO. Family identities beyond the pilot require explicit
-names and must not inherit console administrator access.
+Read-only inspection found Entra Free and enabled Security Defaults. The
+owner remains the existing external Microsoft-account member until a separately
+authorized admin-center conversion. Fleet, Grafana and Octelium now bind its
+immutable object ID so the supported transition can preserve ownership.
+`scripts/entra-owner-conversion.py` prepares a private read-only receipt and
+attests the converted target identity after the operator action; it never writes
+Graph. It rejects the current federated `stuhlmuller.net` target; do not run
+the conversion until a separately reviewed change reconciles the protected
+federation or selects a managed target and updates its dependent mappings. Its
+independent cloud-only recovery Global Administrator prerequisite
+is disabled by default and requires a separately reviewed saved plan and sign-in.
+After any later conversion, clear the recovery Azure CLI session and sign in as
+the converted owner before attesting; the helper checks Graph `/me` against
+the immutable owner ID and target UPN.
+The Fleet console SAML target is `rodman@stuhlmuller.net`; the existing
+`rodman@stinkyboi.com` local administrator remains recovery-only. API topology
+readback does not prove the browser SAML callback or recovery login.
+The separate `rodman.mac@stuhlmuller.net` pilot remains without a role, group,
+license, mailbox or Fleet console assignment and is not a Platform SSO route.
 
 The separate `operator/entra-stuhlmuller-domain` unit reads the existing
 `stuhlmuller.net` Entra domain as a non-default managed domain. It reads the
@@ -663,9 +682,10 @@ the sole Graph verification action. That action intentionally uses the
 standard bodyless Graph request, retaining the service default of no domain
 takeover; its private saved plan must confirm the domain remains managed and
 non-default. The companion
-`operator/entra-stuhlmuller-pilot-user` unit can then create only
-`rodman@stuhlmuller.net`. Its domain guard requires verified managed,
-non-default state, and the account receives no role, group, license, mailbox or
+`operator/entra-stuhlmuller-pilot-user` unit could then create only
+`rodman.mac@stuhlmuller.net`. Its domain guard requires verified managed,
+non-default state, so it cannot plan against the current federation. The
+account receives no role, group, license, mailbox or
 Fleet-console assignment. Existing Google/Entra users stay untouched; a Google
 email address alone is not an Entra password identity. Its guarded module is
 separate from the legacy AzureAD user module, and the AzureAD workflow selects
@@ -676,7 +696,10 @@ pilot change cannot trigger legacy-user reconciliation.
 
 The Fleet-only Company Portal/Platform SSO pilot is retired. Its registration
 and owner-address details below are dated history, not a procedure to repeat
-or authorization to modify owner identities. See the current
+or authorization for ad hoc identity changes. The separate owner conversion
+is blocked by the current Google federation until a reviewed federation or
+target-domain change; preparation, recovery administrator and attestation
+remain required. See the current
 [retirement boundary](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#retired-platform-sso-pilot).
 
 `operator/entra-google-workspace-federation` owns the Entra Graph federation
@@ -686,7 +709,7 @@ auto-provisioning creates the matching Entra users; the Entra federation only
 authenticates those users. CI provider identities do not receive domain-write
 permissions, so the unit remains an independently reviewed operator apply.
 
-The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-personal-account-and-unapplied-upn-correction)
+The [October 6 registration incident](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#registration-failure-and-historical-alias-release-evidence)
 found a deployed pilot UPN mismatch: the Mac attempted personal-account device
 registration while the cloud pilot still used `rodman.mac@stuhlmuller.net`.
 Merged PR #1202 already declared `rodman@stuhlmuller.net`; that operator-only
@@ -696,11 +719,8 @@ password-change timestamp. The owner's existing mail/SMTP proxy uses the
 requested address, making it the leading conflict candidate, but Entra's audit
 did not name the conflicting property. The pilot-rename approval does not cover
 clearing owner aliases or converting that administrator; a separate owner-address
-migration was subsequently approved. The pilot's initial password change must finish
-before native Password PSSO registration. Fleet MDM enrollment remained intact;
-successful organizational device/user registration and password synchronization
-still require interactive acceptance. The runbook retains the separate,
-unresolved token-endpoint profile warning from the same attempt.
+migration was subsequently approved. The former registration failure and token-endpoint warning remain historical;
+Fleet-only PSSO must not be retried. The separate pilot UPN remains unchanged.
 
 The [owner-address migration](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked)
 applied on October 7, 2026 UTC, preserving the owner UPN, object ID and external
@@ -721,21 +741,13 @@ denial after its initial password change and MFA setup; an interrupted
 authentication flow is not proof of denial. Keep actual HUMAN identifiers private.
 
 The [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
-owns only a mail PATCH on the existing owner. A private `-var-file` supplies the
-replacement address, object ID, current-mail and full identity baselines; guards
-refuse a changed or missing current mail and retain the enabled accepted external
-member and its UPN before and after the write. The
-private encrypted plan passed the mail-only scope check and applied. Readback
-preserved the owner identity, enabled state, password-change timestamp, roles,
-grants and application ownership. The replacement became the primary SMTP
-address, but the old address remains a secondary alias. Address release failed,
-so the pilot rename was not retried. A supported repository-owned alias-release
-path is still required; changing mail did not release the requested pilot address.
-On October 7, 2026 UTC, authenticated Exchange Online lookups for this exact
-owner returned HTTP 404 `ManagementObjectNotFoundException`, including
-soft-deleted recipients. No mail-enabled recipient target exists in those
-results for `Set-MailUser`; Microsoft-supported remediation is required while
-preserving the identity. No Exchange write or additional permission grant occurred.
+retires the historical mail-only Graph PATCH. Its `removed` block forgets only
+the retired Terraform state address after a separately reviewed plan; it does
+not write Graph or release the old SMTP alias. The supported replacement is an
+in-place Entra admin-center conversion of the existing owner, bounded by the
+private prepare/attest receipt and independent recovery administrator. Neither
+this source declaration nor the older successful mail plan proves that
+conversion or any new Fleet login has occurred.
 
 ## Harbor registry identities
 
@@ -786,8 +798,8 @@ credential rotation; upstream cold recovery remains.
 
 The native receipt scan robot separately needs the staged
 `/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
-grant. The scan ExternalSecret consumer is declared, but cannot become Ready until a
-reviewed saved plan creates the parameter and read-only metadata verifies it. This declaration
+grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
+creates the parameter and read-only metadata verifies it. This declaration
 creates no Harbor robot, receipt, or running workload change. See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
 

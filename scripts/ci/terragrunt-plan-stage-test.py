@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Ensure private plan output can produce only fixed diagnostic labels."""
 from pathlib import Path
+import json
 import os
 import subprocess
 import tempfile
@@ -9,6 +10,7 @@ import unittest
 
 HELPER = Path(__file__).with_name("terragrunt-plan-stage.sh")
 WORKFLOW = HELPER.parents[2] / ".github/workflows/terragrunt-plan.yml"
+PLAN_RUNNER = HELPER.with_name("terragrunt-plan.sh")
 MARKERS = {
     "": "nix",
     "::group::Kubeconfig setup": "kubeconfig",
@@ -21,14 +23,21 @@ MARKERS = {
 
 
 class PrivatePlanStageTest(unittest.TestCase):
-    def assert_stage(self, private_output, stage, reason="unknown"):
+    def assert_stage(self, private_output, stage, reason="unknown", *,
+                     azuread_report=None, azuread_unit=None):
+        environment = dict(os.environ)
+        if azuread_report is not None:
+            environment["HOMELAB_AZUREAD_PLAN_REPORT_FILE"] = str(azuread_report)
         result = subprocess.run(["bash", str(HELPER)], input=private_output,
-                                text=True, capture_output=True, timeout=5, check=False)
+                                text=True, capture_output=True, timeout=5, check=False,
+                                env=environment)
         self.assertEqual(result.returncode, 0)
         self.assertEqual(result.stderr, "")
-        self.assertEqual(result.stdout,
-                         f"Live plan last recognized stage: {stage}; details withheld.\n"
-                         f"Live plan failure hint: {reason}; details withheld.\n")
+        expected = (f"Live plan last recognized stage: {stage}; details withheld.\n"
+                    f"Live plan failure hint: {reason}; details withheld.\n")
+        if azuread_unit is not None:
+            expected += f"Live plan first failed AzureAD unit: {azuread_unit}; details withheld.\n"
+        self.assertEqual(result.stdout, expected)
 
     def test_only_fixed_labels_leave_private_output(self):
         secret = "SYNTHETIC_PRIVATE_VALUE_DO_NOT_EMIT"
@@ -69,6 +78,53 @@ class PrivatePlanStageTest(unittest.TestCase):
         # First recognized fragment wins; arbitrary text never becomes a label.
         self.assert_stage(f"i/o timeout\nAccessDenied\n{secret}", "nix", "network")
 
+    def test_azuread_failure_categories_and_private_report_unit_are_allowlisted(self):
+        secret = "SYNTHETIC_PRIVATE_VALUE_DO_NOT_EMIT"
+        fragments = {
+            "Authorization_RequestDenied": "entra-authorization",
+            "Insufficient privileges to complete the operation": "entra-authorization",
+            "InvalidAuthenticationToken": "entra-authentication",
+            "AADSTS700213": "entra-authentication",
+            "Request_ResourceNotFound": "entra-resource-not-found",
+            "404 Not Found": "entra-resource-not-found",
+            "TooManyRequests": "entra-throttled",
+            "429 Too Many Requests": "entra-throttled",
+        }
+        for fragment, reason in fragments.items():
+            with self.subTest(fragment=fragment):
+                self.assert_stage("::group::AzureAD application registration plan\n"
+                                  f"{secret} {fragment} {secret}\n", "azuread", reason)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            report = Path(tmp) / "report.json"
+            report.write_text(json.dumps([{
+                "Name": "fleet", "Result": "failed", "Cause": secret,
+            }]))
+            self.assert_stage("::group::AzureAD application registration plan\n"
+                              f"{secret}\n", "azuread", azuread_report=report,
+                              azuread_unit="fleet")
+
+            for records in (
+                [{"Name": "fleet", "Result": "succeeded", "Cause": secret}],
+                [{"Name": "unknown", "Result": "failed", "Cause": secret}],
+                [{"Name": "fleet", "Result": "failed", "Cause": secret},
+                 {"Name": "grafana", "Result": "failed", "Cause": secret}],
+            ):
+                report.write_text(json.dumps(records))
+                self.assert_stage("::group::AzureAD application registration plan\n"
+                                  f"{secret}\n", "azuread", azuread_report=report,
+                                  azuread_unit="fleet" if len(records) == 2 else None)
+            report.write_text("not-json " + secret)
+            self.assert_stage("::group::AzureAD application registration plan\n"
+                              f"{secret}\n", "azuread", azuread_report=report)
+
+    def test_azuread_plan_passes_the_private_report_only_to_terragrunt(self):
+        runner = PLAN_RUNNER.read_text()
+        self.assertIn('if [[ -n "${HOMELAB_AZUREAD_PLAN_REPORT_FILE:-}" ]]; then', runner)
+        self.assertIn('--report-file "$HOMELAB_AZUREAD_PLAN_REPORT_FILE"', runner)
+        self.assertIn('--report-format json', runner)
+        self.assertIn('"${azuread_report_args[@]}" -- plan -lock=false -out plan.out -no-color', runner)
+
     def test_workflow_tail_executes_only_the_verified_helper(self):
         # Execute the actual failure tail; no Nix, credentials, or live commands.
         workflow = WORKFLOW.read_text()
@@ -88,6 +144,21 @@ class PrivatePlanStageTest(unittest.TestCase):
         for helper_source in variants:
             with self.subTest(helper_source=helper_source), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
+                sha256sum = root / "sha256sum"
+                sha256sum.write_text("""#!/usr/bin/env python3
+import hashlib
+import sys
+
+if sys.argv[1:] != ["--check", "--status"]:
+    raise SystemExit(2)
+try:
+    expected, path = sys.stdin.read().strip().split(None, 1)
+    actual = hashlib.sha256(open(path, "rb").read()).hexdigest()
+except (OSError, ValueError):
+    raise SystemExit(1)
+raise SystemExit(0 if actual == expected else 1)
+""")
+                sha256sum.chmod(0o700)
                 helper = root / "scripts/ci/terragrunt-plan-stage.sh"
                 helper.parent.mkdir(parents=True)
                 if helper_source is not None:
@@ -97,7 +168,8 @@ class PrivatePlanStageTest(unittest.TestCase):
                 result = subprocess.run(
                     ["bash", "-euo", "pipefail", "-c", 'private_log="$1"\nif true\n' + tail,
                      "failure-tail-test", str(private_log)],
-                    cwd=root, env=dict(os.environ, CI="true", GITHUB_ACTIONS="true"),
+                    cwd=root, env=dict(os.environ, CI="true", GITHUB_ACTIONS="true",
+                                       PATH=str(root) + os.pathsep + os.environ["PATH"]),
                     text=True, capture_output=True, timeout=5, check=False)
                 expected = withheld_error
                 if helper_source == original:

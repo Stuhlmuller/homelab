@@ -6,8 +6,6 @@ tags: [workloads, argocd, inventory]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
-  - id: openwiki-source-a1af3dbae268cb4278427934
-    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -20,10 +18,10 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
-  - id: openwiki-source-18a62bd8e6557f91a37822f4
-    resource: repo://clusters/homelab/apps/harbor/image-automation.json
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -70,8 +68,6 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
-  - id: openwiki-source-2170f836209310971c5e7b70
-    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-65bc6c080b599d8e6d572a31
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
@@ -84,12 +80,16 @@ sources:
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
+  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
+    resource: repo://scripts/entra-owner-conversion.py
+  - id: openwiki-source-6a90d887ebbab5a858408f90
+    resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T05:44:36.454Z" }
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T05:44:36.454Z
+    at: 2026-10-18T06:24:02.662Z
 ---
 
 # Workload Inventory
@@ -132,9 +132,11 @@ retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-separates native Microsoft Password Platform SSO from console SAML. Company
-Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
+keeps console SAML separate from the retired Fleet-only Company Portal/Platform
+SSO pilot. Fleet remains the Mac MDM. A repository operator script delivers
+Mac and iPhone/iPad baselines with host-scoped commands; Entra owner conversion
+is a separate reviewed identity operation, currently blocked by the federated
+target domain, not a workload rollout. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
@@ -438,9 +440,7 @@ completed-scan critical-CVE counts per project for Grafana; it is read-only,
 uses the existing file-mounted Harbor administrator credential, and emits no
 artifact, digest, or CVE labels. The [Talos mirror rollout](../../docs/harbor-image-mirroring.md)
 covers Helm/operator-generated workloads and system images; publication must
-precede node cutover or new consumer versions. Native Chainguard Python and
-curl remain candidate automation entries; their protected receipt and scan-robot
-secret contract do not by themselves migrate a workload or prove live publication.
+precede node cutover or new consumer versions.
 New builds use a local signing Job and the cert-manager-owned
 `harbor-image-signing` Secret; see the rollout status below.
 Its database uses retained local storage on `acer`; registry blobs and logical

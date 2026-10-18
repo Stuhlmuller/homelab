@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ce9c6b938846203d9f9237f80532f2fdc571f4393aff69be58cbfa744e23de78",
+  "pageVersion": "sha256:3fc952fe0864c8dc83139b2831aa52beb841647043f46134e21c683c76c9ce13",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,11 +44,11 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
+          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
-          "version": "repo-file-v1:sha256:c563eebf9010f3d4473b8369f9070667a7b84f7c4c7d3fba1b3988bf8a0bfcbb"
+          "version": "repo-file-v1:sha256:f85f50f287fce9a78081f77d97fecf42560d1ff79eb256bfad55e800a0c64225"
         }
       ]
     },
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
+          "version": "repo-file-v1:sha256:baae3466a2e155a7ddef5c6c5afb8beebeb91d38921439f7ab91402ea37a52a9"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
+          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -245,26 +245,26 @@
       ]
     },
     {
-      "id": "claim_89eb93c47f894c7d8f20ff5b42eec618",
-      "statement": "Native Chainguard Python and curl are candidate, not-enrolled automation consumers; the protected receipt and scan-robot secret declaration do not by themselves migrate workloads or prove live publication.",
+      "id": "claim_b68f78a5780c47d18357c3e5ddcde708",
+      "statement": "Fleet's Apple baseline operator remains host-scoped and retains Fleet as Mac MDM. Fleet-only Company Portal/Platform SSO is retired; console SAML is separate from owner conversion, which is currently blocked by the federated target domain.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
-          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
         },
         {
-          "resource": "repo://clusters/homelab/apps/harbor/image-automation.json",
-          "version": "repo-file-v1:sha256:b4db2711074a2a467805bd9a65d70b7534723c810b6a670978519227cef0e85c"
+          "resource": "repo://scripts/entra-owner-conversion.py",
+          "version": "repo-file-v1:sha256:8f7a3be17c80ce8acc306ff6583c17c4c1421d0d67f70c99bcc818f1a198da3e"
         },
         {
-          "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:2589fd03db9aac02d2e49c3a60461fd538dc605d7e8e6a38643e1e92311f89c8"
+          "resource": "repo://scripts/fleet-free-setup.py",
+          "version": "repo-file-v1:sha256:e1dd68c104e64def1be7e4d0c0f905f9daa30960c5808af832dbe7e28cc61b65"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T05:44:36.454Z"
+    "at": "2026-10-18T06:24:02.662Z"
   }
 }
