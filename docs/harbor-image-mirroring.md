@@ -131,6 +131,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    prerequisite merges, dispatch it at exact current `main` and require six
    complete authenticated pulls before merging any consuming Renovate PR:
 
+   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
+   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
+   catalog by digest, and the same new index was verified in the earlier
+   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
    ```
