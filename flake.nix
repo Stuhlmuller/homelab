@@ -142,6 +142,7 @@
             kubectl
             kustomize
             lua5_1
+            markdownlint-cli
             miniupnpc
             nixVersions.latest
             nodejs
@@ -154,6 +155,7 @@
             python3
             regctl
             ripgrep
+            ruff
             ruby
             shellcheck
             shfmt
