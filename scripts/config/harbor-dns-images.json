@@ -1,0 +1,7 @@
+{
+  "images": [
+    {
+      "source": "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
+    }
+  ]
+}

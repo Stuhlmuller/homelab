@@ -66,10 +66,14 @@ sources:
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
+  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
+    resource: repo://flake.nix
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
     resource: repo://IaC/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-23775c3de52f3ab95a13cb8b
+    resource: repo://README.md
   - id: openwiki-source-714484b73b4ba165201cb06d
     resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
@@ -86,8 +90,6 @@ sources:
     resource: repo://scripts/ci/harbor-core-source-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
-  - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
-    resource: repo://scripts/ci/harbor-native-chainguard-receipt-test.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -154,10 +156,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T12:16:54.494Z" }
+generated: { by: "codex", at: "2026-10-18T18:11:31.710Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:16:54.494Z
+    at: 2026-10-18T18:11:31.710Z
 ---
 
 # Validation Gates
@@ -166,6 +168,12 @@ verified:
 
 Run the smallest validation that proves the change and record unavailable
 checks in the PR or final response.
+
+For most infrastructure or GitOps changes, run `nix run .#validate` from the
+repository root. Its flake app generates the Terragrunt stack before HCL format
+and validation, then runs static checks and Conftest policies with pinned tools.
+Docs-only changes can use focused checks; this local gate does not replace live
+plans or rollout acceptance. See the [validation runbook](../../docs/validation-runbook.md).
 
 The static wrapper verifies source-bound offline fixture and manifest-policy
 Nix outputs, then runs remaining provider, network and security checks fresh.
@@ -1699,14 +1707,6 @@ fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
 validate the six consuming applications.
-
-Native Chainguard receipt fixtures cover the fixed Python/curl mapping,
-catalog pin, index and child descriptor equality, complete authenticated
-private pull, and zero-finding Harbor scans. The offline static gate pins both
-credentialed receipt workflow hashes and the verifier/importer source hashes;
-the provenance workflow checks receipt-state-only PRs. These checks do not
-execute a private import or make a workload eligible. The provenance context
-must pass on `main` and become required before a receipt import.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

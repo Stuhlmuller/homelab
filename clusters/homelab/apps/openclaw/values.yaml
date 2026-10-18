@@ -4,7 +4,7 @@ controllers:
   openclaw:
     serviceAccount:
       identifier: openclaw
-    replicas: 1
+    replicas: 0
     revisionHistoryLimit: 1
     strategy: Recreate
     pod:
@@ -670,6 +670,8 @@ persistence:
             readOnly: true
   config:
     enabled: true
+    annotations:
+      argocd.argoproj.io/sync-options: Prune=false,Delete=false
     storageClass: nfs-default
     size: 10Gi
     accessMode: ReadWriteOnce

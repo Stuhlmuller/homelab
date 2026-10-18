@@ -2,12 +2,17 @@
 
 ## Enterprise replacement retention
 
-The legacy gateway stays active until the reviewed shutdown change lands. This
-reader stage starts one read-only Pod on the legacy node for private inventory;
-its separate ConfigMap does not change the assistant checksum. Apply this stage
-only after the off-NAS S3 bucket exists through the protected Terragrunt apply
-path. Verify the reader is Ready and bound to the retained PVCs before running
-inventory. The reader cannot authorize shutdown from inventory alone.
+This shutdown stage sets the legacy gateway to zero replicas and suspends its
+runtime-backup CronJob. Apply it only after the protected inventory confirms
+the reader is Ready, all four retained PVC/PV identities are bound and the
+off-NAS archive destination is available. The reader remains one read-only Pod
+on the legacy node. Existing PVCs carry `Prune=false`, local PVs use `Retain`,
+and the Terragrunt-owned Argo Application remains registered without a deletion
+finalizer. Verify the gateway and any pending backup Jobs/Pods have fully stopped
+before running the archive stage. Keep the old image, configuration and secrets
+for compatible recovery.
+Kustomize hashes the retirement scripts ConfigMap name so script changes replace
+the reader Pod; its prior projected ConfigMap did not refresh in place.
 
 After the bucket and one reader Pod are verified, run the protected fixed-stage
 workflow from the exact current `main` SHA. Replace the placeholders with the
@@ -16,6 +21,11 @@ SHA and run IDs shown by GitHub Actions; never put private receipts in Git:
 ```sh
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=inventory
+# One-shot recovery for the successful scan from run 39127113354 whose
+# protected workflow failed before publishing its off-NAS baseline:
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-inventory \
+  -f baseline_ref=d55e2ab8521e427c059e07e34b270e476092a8a1/39127113354
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=archive \
   -f baseline_ref=<INVENTORY_SHA>/<INVENTORY_RUN_ID>
@@ -27,13 +37,24 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
 four PVC/PV UIDs, node and assistant image. Both inventory and archive refresh
 Kubernetes status after scanning retained data and compare volume identities.
-Inventory runs as a detached read-only process in the reader Pod because a
-full NAS hash can outlast one Kubernetes exec stream. The workflow polls its
+The stopped reader verifies SQLite from a temporary owner-only copy of each
+database and its WAL under `/private/legacy`, because SQLite cannot rebuild
+shared memory on the read-only source mount. It removes each copy after the
+integrity check; the archive still includes the unchanged source files.
+Inventory and the archive's stopped-source rescan run as detached read-only
+processes from the reader's checksum-checked ConfigMap because a full NAS hash
+can outlast one Kubernetes exec stream. The workflow polls the worker's
 private completion marker; a failed scan uploads its private diagnostic to the
 versioned backup bucket under
 `openclaw-enterprise/legacy/<SHA>/<RUN_ID>/diagnostic.log`. A missing marker or
 unfinished lock means the result is unknown; inspect the Pod and private log
 before attempting another scan.
+The fixed `publish-inventory` recovery accepts only the completed
+`d55e2ab/39127113354` scan. It requires the success marker, matching worker
+and retained baseline copies, current reader/PVC/root identity, and one exact
+versioned S3 object whose downloaded bytes match. It does not rescan or stop
+the old gateway. If publication fails or the object has multiple versions, keep
+shutdown blocked and inspect the private failure; do not overwrite a version.
 Unreadable zero-byte NAS files retain their empty hash and original mode in the
 archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and copies the complete

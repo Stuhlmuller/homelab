@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c6067bea44015d28e3f90ce765257ed0cab307681d371622f1e36f0257ef0c86",
+  "pageVersion": "sha256:7391f8e7bcdba69218044c58850a73f3a87282228cf4930b5a0327bb7fb6137e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -294,11 +294,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         }
       ]
     },
@@ -312,11 +312,11 @@
         },
         {
           "resource": "repo://builds/harbor-core/registry-test.py",
-          "version": "repo-file-v1:sha256:07a10518c8d3909764878edb0df70a4b82f4ed6b5c2b9fd26032ee02bbbcbadd"
+          "version": "repo-file-v1:sha256:099e4445139c2085c6ce8b95bf738def07aad9be350005f44659452b7d27527e"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
-          "version": "repo-file-v1:sha256:7e59c013b19a8837c1816c65f47c0aa1ee02d22fb4369b7ffdd889486adb0d42"
+          "version": "repo-file-v1:sha256:ab792b4a890266fd6af94d8ad68f57cae2909eb4c9d3c4154815be719a8137f5"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ff6b273a66deda199457b246c85ce112b401d3a7e2ecb29aa24593704674fd53"
+          "version": "repo-file-v1:sha256:0a9860972631dffffbf0afda9da3c7ef8fbec2a92213c8fc8e34fae3176b82e6"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8d5a790f4ab3460a3f2cae7d4a2c660da98f9b20fe355ece89a65578b2c83eb4"
+          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -570,7 +570,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:39e8dd003f7317f8b2883baf88329820f41b4d7bf98b48ef2b4ed5e94609f63f"
+          "version": "repo-file-v1:sha256:08cd354840cf6c38e486f55f67769ba4adaa71adeba2e24c70ccf02b05a60afe"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:75fba623ff1d621bf7c6d0fe99a676cc1212784c77ad4af426139e6d116bd422"
+          "version": "repo-file-v1:sha256:9dc31d22e2f6c79c9654936ba1b50f23d82c25feb96c9a8d6b39f159436428df"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -678,7 +678,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ff6b273a66deda199457b246c85ce112b401d3a7e2ecb29aa24593704674fd53"
+          "version": "repo-file-v1:sha256:0a9860972631dffffbf0afda9da3c7ef8fbec2a92213c8fc8e34fae3176b82e6"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -701,26 +701,22 @@
       ]
     },
     {
-      "id": "claim_7e64e8b114794793816a358463da331f",
-      "statement": "Native Chainguard receipt fixtures check fixed Python/curl provenance, matching source/private/pulled index and child descriptors, complete authenticated pull, and zero-finding scans; offline static pins receipt workflow and verifier/importer hashes. Passing these checks neither imports a private image nor authorizes consumers, and the provenance context must become required on main before receipt-state import.",
+      "id": "claim_d241cdf1ec014386b9b591f2d4b4f425",
+      "statement": "The repository's local validation entry point is `nix run .#validate`; the flake app generates the Terragrunt stack before HCL formatting and validation, static checks, and Conftest policies. Focused docs checks and live plan or rollout acceptance remain separate.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L6-L57",
-          "version": "repo-lines-v1:sha256:92e775b03b5330898cf2ea0c6848e907437c2ee1355b2b39d11afc9deed85081:eyJzZWxlY3RlZExpbmVDb3VudCI6NTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNzgyOGZjNjM2MjBhMmU0NzM4YzY4ZWM0MjQxMjVkMDk1YWMzMWY0NGIyMDI1ZTY1OWNkMTI4NzM2M2UzYzgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5YTkyMmY1NzFmZTRkNmYwZTRjZWU2MDMwYWRkMmVmZDdiNWFlYmQxZjU3Mjg5NzNhMzA3YjhjYThjODIxNmEifQ"
+          "resource": "repo://README.md#L66-L90",
+          "version": "repo-lines-v1:sha256:28b311ce5638c1cf26c52273a782d880f482e60503e99f408127d4eb798ec2fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1MGY2NjUxOGNjOTdiODIwNTUzZjIwNzg0MGUwOTA1Nzc3MzhjNjc4Y2RhOGIyZmM0ZDkyNDA4YTcxNDBlYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVkNDQ2MzI1NmNkNDg1NzVkZGVlOGUyODk5MmY4NmU1N2VmZDE4OWM0M2JmYTg5MjI1YTc5ZmViM2VkYzAxOGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYwODE2ZGNmZDJmNDVhYzVjNDAxMmM5YjIwODY3MDQ4MDliZGY1Mjg5MGI1NzhkNzc3ZDhmNzVmOTAzNjQzZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU5MGUwNjI5MjIwYjZkNWRlNzczMTY5Y2Q1YWE1YTk4YjNkZWI3MzhjZjMyMzRlMTljMzY2YjllODdjZTc0ZTkifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
-          "version": "repo-file-v1:sha256:7173481a07401e921ff8e1b05c7b8ceb77aeb230cfa5f52d902d02174d1bd3a0"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-static-checks.sh#L829-L1054",
-          "version": "repo-lines-v1:sha256:494a07ec1aa874db4cc8b38ac698a8a2848fa4de396c969b6ae2f38d0ffb55d7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjI2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1YjY0NzU1YWYzMGExYWJkMjVkOTg0MTdiOGJkNTliZjYyMjAzM2EyZTQzYjY2Y2EwNmRjNWRhNTNiNGNmOGJiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyYTIxYzViM2JmZjAyOTljMDE2MTQ3MDQ2OGYzNTVlNWI0YWZjZjE3YTVmNTkzYWI2ODM5NGVmN2FmMzE5Y2RjIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJhMTYwNjBkOWI1MmRmM2E1NWEyMjcyMzAyYTQ4Yzg5OWE0YzYxZjYyMGE4MzA1YWMxYjY4NjUwYmRhYWJkNGNjIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1YWEyZWEyNDFjODA4ZTk1NWViMDI0YTZmZmExZDI2YWFjYWU2YTg2MGU5OGViYWI3MDIwMGUyOThjMDIxNDVlIn0"
+          "resource": "repo://flake.nix#L22-L42",
+          "version": "repo-lines-v1:sha256:4eb70c55e9738d7b618e3580e049910b3ec8c1ff4af6e895983ad4946529049d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQxZTFhNzRkNzU0ZTg3N2MwYzQ3NDAwOGQ5YTc1YWI4NWY0Mjc3MmJlNmIwNzdhNzE3YmZmMTg5NzkwZDYyZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUyOTQwYThiOGM0ZDFhNWY1NTY5YmNjOWFkOGZmYWFjODkxNTZjZTE2MWM3YTBlNTY2NWRhNDIyYzVkMjY4MDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMmQxOTQ0NWM5M2I3Y2I2YWFmZTI1NWU3MDVhYjgwMmFlMTNjM2NmNTFkNzAwMzQ4NTI2ZTNhZjliOWY4M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk0NDk2MzRiYmY0MDgyMmVlY2NhYTQzYmE0M2QyNGM1YzU0ZmMwMWFlNjYyOTdhNTVlNDI2YWFmOTIxZWQ4YmUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T12:16:54.494Z"
+    "at": "2026-10-18T18:11:31.710Z"
   }
 }

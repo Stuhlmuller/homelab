@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "928255faf367006ae1c767c3fb27fc6a71e35dd5440908265418ba7dc61e0ed7", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -26,15 +26,37 @@ test_rejects_changed_openclaw_legacy_operation if {
 	}
 }
 
+test_allows_fixed_openclaw_phase_tail if {
+	private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
+case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)
+  echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
+*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
+esac
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
+test_rejects_unbounded_openclaw_phase_tail if {
+	not private_live_tail(`then
+phase="$(cat "$OPENCLAW_PHASE_FILE")"
+echo "$phase"
+exit 1
+fi
+echo "Legacy operation completed; private receipts withheld."`)
+}
+
 openclaw_legacy_run := `set -euo pipefail
 umask 077
-sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
+export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
+sha256sum --check --status <<<'928255faf367006ae1c767c3fb27fc6a71e35dd5440908265418ba7dc61e0ed7  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
 workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"name": "OpenClaw Enterprise Operations",
-	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "archive", "verify"]}}}},
+	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "verify"]}}}},
 	"jobs": {"legacy": {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
@@ -558,9 +580,10 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "7b7038f6a3d723f155f51aa0503b37427b0f3fd6518dfc956c4a3c2fe6f55f27", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
 		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
 		sprintf("%s\necho extra", [harbor_mirror_private_run]),

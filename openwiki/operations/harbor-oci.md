@@ -12,8 +12,6 @@ sources:
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
-  - id: openwiki-source-a1af3dbae268cb4278427934
-    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
@@ -98,8 +96,6 @@ sources:
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
-  - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
-    resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -120,10 +116,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T12:16:54.494Z" }
+generated: { by: "codex", at: "2026-10-18T10:55:26.804Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:16:54.494Z
+    at: 2026-10-18T17:42:33.479Z
 ---
 
 # Harbor Private OCI Registry
@@ -419,20 +415,6 @@ the reviewed registry and registryctl pins into each node's CRI cache from
 exact reviewed `main`; it verifies cache aliases after each pull. Audit all
 four node caches again immediately before the consumer merge. This cache gate
 does not establish rollout health. See the [operator steps](../../docs/harbor-image-mirroring.md).
-
-### Native Chainguard receipt candidate
-
-The staged [native receipt workflow](../../.github/workflows/harbor-native-chainguard-receipt.yml)
-targets only Chainguard Python and curl imports into the private `homelab`
-project. From exact current `main`, it binds each catalog pin to the native
-replication rule, compares source, private destination, and complete
-authenticated-pull index bytes, checks amd64 and arm64 children, and requires
-successful zero-finding Harbor scans through a project-scoped `artifact:read`
-robot. It uploads a bounded receipt without private transport output. The
-[provenance gate](../../.github/workflows/harbor-native-chainguard-receipt-provenance.yml)
-must pass on `main` and become required before receipt-state import. This
-candidate does not publish an image, import a receipt, or migrate a consumer;
-the scan robot's SSM parameter must exist before merging this consumer branch.
 
 ### Identical-reference core repair candidate
 
@@ -732,8 +714,8 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Each consuming digest update requires that publication
-and pull acceptance first.
+complete Harbor pulls. Their consuming Renovate PRs remain held until that
+publication and pull acceptance finish.
 
 For a missing destination digest tag, the
 [publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms

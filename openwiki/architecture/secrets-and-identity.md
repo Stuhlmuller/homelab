@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T12:16:54.494Z
+    at: 2026-10-18T17:42:33.479Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -19,8 +19,6 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
     resource: repo://clusters/homelab/apps/fleet/GOOGLE-LOGIN.md
-  - id: openwiki-source-fd05994eb55b0e1cf42320bb
-    resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-c9627a5536c3972ce48bf57a
     resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -73,7 +71,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T12:16:54.494Z" }
+generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
 ---
 
 # Secrets And Identity
@@ -804,9 +802,6 @@ grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
 creates the parameter and read-only metadata verifies it. This declaration
 creates no Harbor robot, receipt, or running workload change. See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
-The consumer branch advances `harbor-secrets` to revision `v4` and makes the
-scan key mandatory in bootstrap. Merging it before that SSM apply would leave
-GitOps Secret reconciliation unhealthy.
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

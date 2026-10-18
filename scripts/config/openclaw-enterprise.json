@@ -94,6 +94,7 @@
     "stateMount": "/legacy-state",
     "agentMount": "/legacy-agent",
     "nasRoot": "/data",
+    "scratchRoot": "/private/legacy",
     "localUid": 1000,
     "nasUid": 65534,
     "requiredLocal": [

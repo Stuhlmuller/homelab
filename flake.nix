@@ -18,6 +18,31 @@
       forEachSystem = nixpkgs.lib.genAttrs systems;
     in
     {
+      apps = forEachSystem (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          validate = pkgs.writeShellApplication {
+            name = "validate";
+            runtimeInputs = self.devShells.${system}.default.nativeBuildInputs;
+            text = ''
+              (cd IaC && terragrunt stack generate)
+              terragrunt hcl fmt --check
+              terragrunt hcl validate
+              bash scripts/ci/static-checks.sh
+              bash scripts/ci/conftest-policies.sh
+            '';
+          };
+        in
+        {
+          validate = {
+            type = "app";
+            program = "${validate}/bin/validate";
+            meta.description = "Run local homelab validation";
+          };
+        }
+      );
+
       checks = forEachSystem (
         system:
         let
@@ -98,6 +123,7 @@
             kubectl
             kustomize
             lua5_1
+            markdownlint-cli
             miniupnpc
             nixVersions.latest
             nodejs
@@ -110,6 +136,7 @@
             python3
             regctl
             ripgrep
+            ruff
             ruby
             shellcheck
             shfmt

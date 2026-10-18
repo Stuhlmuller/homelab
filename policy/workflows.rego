@@ -165,7 +165,7 @@ deny contains msg if {
 
 approved_openclaw_legacy_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
-	dispatch.inputs.legacy_stage.options == ["inventory", "archive", "verify"]
+	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "verify"]
 	job := input.jobs.legacy
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
@@ -176,8 +176,9 @@ approved_openclaw_legacy_operation if {
 	step.name == "Run Legacy Stage"
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'928255faf367006ae1c767c3fb27fc6a71e35dd5440908265418ba7dc61e0ed7  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
@@ -578,11 +579,14 @@ case "$IMAGE_SCOPE" in
   renovate)
     bash scripts/ci/harbor-publish.sh mirror-renovate
     ;;
+  dns)
+    bash scripts/ci/harbor-publish.sh mirror-dns
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'7b7038f6a3d723f155f51aa0503b37427b0f3fd6518dfc956c4a3c2fe6f55f27  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
@@ -598,6 +602,21 @@ private_live_tail(tail) if {
 	lines[2] == "exit 1"
 	lines[3] == "fi"
 	safe_withheld_echo(lines[4])
+}
+
+private_live_tail(tail) if {
+	lines := [trim(line, " \t\r") | line := split(tail, "\n")[_]; trim(line, " \t\r") != ""]
+	lines == [
+		"then",
+		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
+		`case "$phase" in preflight|baseline|publication|publication-lookup|publication-lookup-denied|publication-lookup-failed|publication-lookup-response|publication-upload|publication-version|verification)`,
+		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
+		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
+		"esac",
+		"exit 1",
+		"fi",
+		`echo "Legacy operation completed; private receipts withheld."`,
+	]
 }
 
 azuread_plan_private_live_tail(tail) if {

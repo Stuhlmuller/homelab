@@ -43,8 +43,9 @@ class Retirement(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(prefix='oce-retirement-')
         self.addCleanup(self.tmp.cleanup)
         base = Path(self.tmp.name)
-        self.local, self.nas, self.archive_root = (base / item for item in ('local', 'nas', 'archive'))
-        for item in (self.local, self.nas, self.archive_root):
+        self.local, self.nas, self.archive_root, self.scratch_root = (
+            base / item for item in ('local', 'nas', 'archive', 'scratch'))
+        for item in (self.local, self.nas, self.archive_root, self.scratch_root):
             item.mkdir(mode=0o700)
         self.config = {
             'namespace': 'ai', 'node': 'zimaboard-1', 'deployment': 'openclaw',
@@ -53,6 +54,7 @@ class Retirement(unittest.TestCase):
             'cronJob': 'openclaw-runtime-backup', 'localClaim': 'openclaw-runtime-local',
             'stateClaim': 'openclaw-runtime-state-local', 'agentClaim': 'openclaw-runtime-agent-local',
             'nasClaim': 'openclaw', 'localRoot': str(self.local), 'nasRoot': str(self.nas),
+            'scratchRoot': str(self.scratch_root),
             'localUid': os.getuid(), 'nasUid': os.getuid(),
             'requiredLocal': ['state/openclaw.sqlite', 'agents/main/agent/openclaw-agent.sqlite'],
             'requiredNas': ['openclaw', 'openclaw-backups/pre-2026.9.2-runtime',
@@ -207,6 +209,55 @@ class Retirement(unittest.TestCase):
         self.assertEqual(retirement.private_file(self.observed_path), self.observed_path)
         with self.assertRaises(ValueError):
             retirement.private_file(self.observed_path, os.getuid() + 1)
+
+    def test_read_only_wal_is_verified_from_private_writable_snapshot(self):
+        source = self.local / self.config['requiredLocal'][0]
+        with closing(sqlite3.connect(source)) as db:
+            db.execute('PRAGMA journal_mode=WAL')
+            db.execute('PRAGMA wal_autocheckpoint=0')
+            with db:
+                db.execute('INSERT INTO messages (body) VALUES (?)', ('wal-row',))
+            seen = []
+            original = retirement.runtime_storage.verify_database
+
+            def inspect_snapshot(path):
+                self.assertTrue(path.resolve().is_relative_to(self.scratch_root.resolve()))
+                with closing(sqlite3.connect(path)) as snapshot:
+                    seen.append(snapshot.execute("SELECT count(*) FROM messages WHERE body='wal-row'").fetchone()[0])
+                original(path)
+
+            with patch.object(retirement.runtime_storage, 'verify_database', side_effect=inspect_snapshot):
+                retirement.inventory(self.config, self.status)
+            self.assertIn(1, seen)
+        self.assertEqual(list(self.scratch_root.iterdir()), [])
+
+    def test_archive_restores_committed_wal_without_writing_to_source(self):
+        source = self.local / self.config['requiredLocal'][0]
+        with closing(sqlite3.connect(source)) as db:
+            db.execute('PRAGMA journal_mode=WAL')
+            db.execute('PRAGMA wal_autocheckpoint=0')
+            with db:
+                db.execute('INSERT INTO messages (body) VALUES (?)', ('wal-row',))
+            observed = retirement.inventory(self.config, self.status)
+            self.observed_path.unlink()
+            retirement.write_private(self.observed_path,
+                                     dict(observed, rootIdentity=self.status['roots']))
+            with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+                receipt = retirement.archive(self.config, self.status_path,
+                                             self.baseline_path, self.observed_path,
+                                             self.archive_root)
+            with tarfile.open(receipt.parent / 'legacy.tar.gz', 'r:gz') as bundle:
+                self.assertIn('local/state/openclaw.sqlite-wal', bundle.getnames())
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertEqual(list(self.scratch_root.iterdir()), [])
+
+    def test_database_snapshot_refuses_untrusted_wal(self):
+        source = self.local / self.config['requiredLocal'][0]
+        wal = Path(str(source) + '-wal')
+        wal.symlink_to(self.nas / 'unlisted-configuration')
+        with self.assertRaises(ValueError):
+            retirement.inventory(self.config, self.status)
+        self.assertEqual(list(self.scratch_root.iterdir()), [])
 
     def test_missing_required_data_uid_and_overlap_fail_closed(self):
         for change in ('missing', 'uid', 'overlap'):

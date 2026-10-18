@@ -107,7 +107,10 @@ from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.
 If Skopeo cannot stage, upload, or alias an OCI index without changing its
-digest, the mirror uses `regctl` for that exact copy error. All OCI indexes,
+digest, the mirror uses `regctl` for that exact copy error. It also retries an
+OCI index with `regctl` when Harbor reports that the exact root artifact is
+missing during upload, a [known Harbor index failure](https://github.com/goharbor/harbor/issues/19977).
+Other upload errors and non-index images still fail closed. All OCI indexes,
 including existing digest tags on retries, use an OCI directory for the complete
 authenticated pull; the mirror checks the root digest and source-tag alias
 before recording a receipt. A destination-upload fallback reads upstream again;
@@ -139,8 +142,19 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
+   For the tailnet DNS resolver prerequisite, use the fixed one-image scope
+   after its catalog and publisher PR merges:
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=dns
+   ```
+
+   `scripts/config/harbor-dns-images.json` selects only the pinned Codeberg
+   k8s_gateway image. Require a successful digest-preserving copy and complete
+   authenticated Harbor pull before merging the resolver Application.
+
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -170,11 +184,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
    ```
 
-   The `renovate` scope selects the six reviewed Fleet, Harbor PostgreSQL,
-   Multica Python, Dispatcharr, Bazarr, and n8n update digests in
+   The `renovate` scope selects the seven reviewed Fleet, Harbor PostgreSQL,
+   Multica Python, Dispatcharr, Bazarr, n8n, and Renovate runner digests in
    `scripts/config/harbor-renovate-images.json`. It copies and verifies only
    those entries while the unrelated full catalog is held. After its
-   prerequisite merges, dispatch it at exact current `main` and require six
+   prerequisite merges, dispatch it at exact current `main` and require seven
    complete authenticated pulls before merging any consuming Renovate PR:
 
    The Harbor PostgreSQL entry now selects the `afc7e2d` index for the

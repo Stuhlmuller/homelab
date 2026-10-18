@@ -1,0 +1,5 @@
+# Match Super-Linter v8.7.0's Ruff rules without its CI-only cache path.
+line-length = 120
+
+[lint]
+ignore = ["E203"]
