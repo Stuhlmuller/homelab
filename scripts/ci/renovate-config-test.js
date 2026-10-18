@@ -13,6 +13,7 @@ const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
 function load(options = {}) {
   const calls = [];
   const cacheWrites = [];
+  const cacheUnlinks = [];
   const issuer = options.issuer ?? 'Iv1.example';
   const key = options.key ?? pem;
   const installation = options.installation ?? {
@@ -36,14 +37,14 @@ function load(options = {}) {
             throw new Error('unexpected credential path');
           },
           writeFileSync(file, bytes, settings) {
-            if (file !== '/cache/renovate/.storage-probe') throw new Error('unexpected write path');
-            if (options.cacheError) throw new Error('ENOSPC');
+            assert.match(file, /^\/cache\/renovate\/\.storage-probe-[0-9a-f-]+$/);
             assert.equal(bytes.length, 4096);
             assert.equal(settings.flush, true);
             cacheWrites.push(file);
+            if (options.cacheError) throw new Error('ENOSPC');
           },
           unlinkSync(file) {
-            if (file !== '/cache/renovate/.storage-probe') throw new Error('unexpected unlink path');
+            cacheUnlinks.push(file);
           },
         };
       }
@@ -61,13 +62,14 @@ function load(options = {}) {
     },
   };
   vm.runInNewContext(source, context, { filename: configPath });
-  return { config: context.module.exports, calls, cacheWrites };
+  return { config: context.module.exports, calls, cacheWrites, cacheUnlinks };
 }
 
 test('mints a signed installation token and preserves the current global policy', async () => {
-  const { config, calls, cacheWrites } = load();
+  const { config, calls, cacheWrites, cacheUnlinks } = load();
   const resolved = await config();
-  assert.deepEqual(cacheWrites, ['/cache/renovate/.storage-probe']);
+  assert.deepEqual(cacheUnlinks, cacheWrites);
+  assert.equal(cacheWrites.length, 1);
   assert.equal(resolved.token, 'ghs_test-installation-token');
   assert.equal(calls.length, 2);
   assert.equal(calls[0].url, 'https://api.github.com/orgs/Stuhlmuller/installation');
@@ -112,9 +114,10 @@ test('fails closed for missing credentials and invalid signing keys', async () =
 });
 
 test('fails before GitHub access when the cache volume is full or unwritable', async () => {
-  const { config, calls } = load({ cacheError: true });
+  const { config, calls, cacheWrites, cacheUnlinks } = load({ cacheError: true });
   await assert.rejects(config(), /cache volume is unavailable or full/);
   assert.equal(calls.length, 0);
+  assert.deepEqual(cacheUnlinks, cacheWrites);
 });
 
 test('refuses an inaccessible or selected-repository installation', async () => {
