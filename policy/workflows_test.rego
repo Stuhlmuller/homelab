@@ -297,6 +297,40 @@ test_allows_exact_plan_stage_classifier if {
 	count(violations) == 0
 }
 
+test_allows_exact_azuread_plan_stage_classifier if {
+	violations := deny with input as workflow_with_live_run(classified_azuread_live_run)
+	count(violations) == 0
+}
+
+test_rejects_modified_azuread_plan_private_wrapper if {
+	every run in [
+		replace(classified_azuread_live_run, `private_dir="$(mktemp -d)"`, `private_dir="$(mktemp)"`),
+		replace(classified_azuread_live_run, `chmod 700 "$private_dir"`, `chmod 777 "$private_dir"`),
+		replace(classified_azuread_live_run, `azuread_report="$private_dir/azuread-report.json"`, `azuread_report="$RUNNER_TEMP/report.json"`),
+		replace(classified_azuread_live_run, `azuread_report="$private_dir/azuread-report.json"`, "azuread_report=\"$private_dir/azuread-report.json\"\nazuread_report=\"$RUNNER_TEMP/report.json\""),
+		replace(classified_azuread_live_run, `trap 'rm -rf -- "$private_dir"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
+		replace(classified_azuread_live_run, `if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop`, `if ! nix develop`),
+	] {
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
+test_rejects_modified_azuread_plan_stage_classifier if {
+	every replacement in [
+		`bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="$other_report" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/other.sh <"$private_log"`,
+		`HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"; cat "$azuread_report"`,
+	] {
+		run := replace(classified_azuread_live_run, azuread_plan_stage_call, replacement)
+		violations := deny with input as workflow_with_live_run(run)
+		some msg in violations
+		contains(msg, "withhold sensitive command output")
+	}
+}
+
 test_allows_exact_apply_stage_classifier if {
 	violations := deny with input as workflow_with_live_run(classified_apply_run)
 	count(violations) == 0
@@ -512,6 +546,27 @@ plan_stage_call := `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
+
+azuread_plan_stage_call := `HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
+
+azuread_plan_stage_guard := `if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+
+azuread_private_live_run := `private_dir="$(mktemp -d)"
+chmod 700 "$private_dir"
+private_log="$private_dir/plan.log"
+azuread_report="$private_dir/azuread-report.json"
+trap 'rm -rf -- "$private_dir"' EXIT
+if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+EOF
+then
+  echo "failure details withheld"
+  exit 1
+fi
+echo "success details withheld"`
+
+classified_azuread_live_run := replace(azuread_private_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [azuread_plan_stage_guard, azuread_plan_stage_call]))
 
 apply_stage_call := `bash scripts/ci/terragrunt-apply-stage.sh <"$private_log"`
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:11e74df88a1092c37f864952608857c65f8044790f836f5e6d98caaf34710098",
+  "pageVersion": "sha256:3fc952fe0864c8dc83139b2831aa52beb841647043f46134e21c683c76c9ce13",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
+          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -102,7 +102,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/README.md",
-          "version": "repo-file-v1:sha256:a7f698acaa9d0b2232c9cc512a325edf3862d8b569ea2e7e8fd3e32fc81b2d6e"
+          "version": "repo-file-v1:sha256:baae3466a2e155a7ddef5c6c5afb8beebeb91d38921439f7ab91402ea37a52a9"
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:662ae6267aef7d3c75dabfd45eb0e51dd32a1e03cb1afc1835a6e674ddbaee39"
+          "version": "repo-file-v1:sha256:ab2ba994e471c8168dbdaf7f6888afaf2cdcdc316fc66e899882050948fa5dfe"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -243,10 +243,28 @@
           "version": "repo-file-v1:sha256:d09ca03576463e5a566dcd5ba3cc2ae4c88f61a64826cefba1b766c1c335af90"
         }
       ]
+    },
+    {
+      "id": "claim_b68f78a5780c47d18357c3e5ddcde708",
+      "statement": "Fleet's Apple baseline operator remains host-scoped and retains Fleet as Mac MDM. Fleet-only Company Portal/Platform SSO is retired; console SAML is separate from owner conversion, which is currently blocked by the federated target domain.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
+        },
+        {
+          "resource": "repo://scripts/entra-owner-conversion.py",
+          "version": "repo-file-v1:sha256:8f7a3be17c80ce8acc306ff6583c17c4c1421d0d67f70c99bcc818f1a198da3e"
+        },
+        {
+          "resource": "repo://scripts/fleet-free-setup.py",
+          "version": "repo-file-v1:sha256:e1dd68c104e64def1be7e4d0c0f905f9daa30960c5808af832dbe7e28cc61b65"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T01:09:27.563Z"
+    "at": "2026-10-18T06:24:02.662Z"
   }
 }
