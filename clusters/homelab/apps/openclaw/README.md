@@ -2,12 +2,15 @@
 
 ## Enterprise replacement retention
 
-The legacy gateway stays active until the reviewed shutdown change lands. This
-reader stage starts one read-only Pod on the legacy node for private inventory;
-its separate ConfigMap does not change the assistant checksum. Apply this stage
-only after the off-NAS S3 bucket exists through the protected Terragrunt apply
-path. Verify the reader is Ready and bound to the retained PVCs before running
-inventory. The reader cannot authorize shutdown from inventory alone.
+This shutdown stage sets the legacy gateway to zero replicas and suspends its
+runtime-backup CronJob. Apply it only after the protected inventory confirms
+the reader is Ready, all four retained PVC/PV identities are bound and the
+off-NAS archive destination is available. The reader remains one read-only Pod
+on the legacy node. Existing PVCs carry `Prune=false`, local PVs use `Retain`,
+and the Terragrunt-owned Argo Application remains registered without a deletion
+finalizer. Verify the gateway and any pending backup Jobs/Pods have fully stopped
+before running the archive stage. Keep the old image, configuration and secrets
+for compatible recovery.
 
 After the bucket and one reader Pod are verified, run the protected fixed-stage
 workflow from the exact current `main` SHA. Replace the placeholders with the
