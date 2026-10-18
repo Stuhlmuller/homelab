@@ -161,7 +161,9 @@ restore_version key version-1 "$2"
         base = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': 'a' * 40,
                 'GITHUB_RUN_ID': '123'}
         for stage, extra in (
-            ('arbitrary', {}), ('archive', {}), ('archive', {'BASELINE_REF': '../secret'}),
+            ('arbitrary', {}), ('publish-inventory', {}),
+            ('publish-inventory', {'BASELINE_REF': 'a' * 40 + '/39127113354'}),
+            ('archive', {}), ('archive', {'BASELINE_REF': '../secret'}),
             ('verify', {}), ('verify', {'ARCHIVE_REF': 'abc/123'}),
         ):
             with self.subTest(stage=stage, extra=extra):
@@ -175,7 +177,7 @@ restore_version key version-1 "$2"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [inventory, archive, verify]',
+            'options: [inventory, publish-inventory, archive, verify]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',
@@ -190,6 +192,48 @@ restore_version key version-1 "$2"
         self.assertIn('nohup sh "$directory/inventory-worker-${run_id}.sh"', script)
         self.assertIn('mkdir "$directory/inventory.lock"', script)
         self.assertIn('/diagnostic.log" >/dev/null', script)
+        self.assertIn("--body \"$work/baseline.json\" --if-none-match '*'", script)
+        self.assertIn('cmp "$work/baseline.json" "$work/offsite-baseline.json"', script)
+        self.assertIn('refresh_status inventory', script)
+
+    def test_publish_recovery_refuses_changed_baseline_identity(self):
+        contract = json.loads((ROOT / 'scripts/config/openclaw-enterprise.json').read_text())[
+            'legacyRetention']
+        claims = {name: contract[name] for name in ('localClaim', 'stateClaim',
+                                                    'agentClaim', 'nasClaim')}
+        roots = {'local': {'device': 1, 'inode': 2, 'uid': contract['localUid']},
+                 'nas': {'device': 3, 'inode': 4, 'uid': contract['nasUid']}}
+        status = {'claims': claims, 'roots': roots, 'image': contract['image'],
+                  'assistantSha256': contract['assistantSha256'], 'volumes': {
+                      claim: {'pvcUid': 'pvc-uid', 'pvName': claim, 'pvUid': 'pv-uid'}
+                      for claim in claims.values()}}
+        tree = {'entries': 1, 'bytes': 1, 'sha256': 'a' * 64}
+        baseline = {'format': 1, 'node': contract['node'], 'claims': claims,
+                    'roots': {name: {**item, 'tree': tree} for name, item in roots.items()},
+                    'rootIdentity': roots, 'kubernetes': {
+                        'image': status['image'], 'assistantSha256': status['assistantSha256'],
+                        'volumes': status['volumes']},
+                    'requiredNas': contract['requiredNas'],
+                    'databases': {name: {'bytes': 1, 'sha256': 'b' * 64}
+                                  for name in contract['requiredLocal']}}
+        shell = '''set -euo pipefail
+source <(sed -n '/^validate_baseline() {/,/^}/p' "$1")
+validate_baseline "$2" "$3"
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory)
+            baseline_path, status_path = private / 'baseline.json', private / 'status.json'
+            status_path.write_text(json.dumps(status))
+            for changed, succeeds in (({}, True), ({'node': 'foreign-node'}, False),
+                                      ({'rootIdentity': {}}, False),
+                                      ({'databases': {}}, False),
+                                      ({'databases': {name: {'bytes': '1', 'sha256': 'b' * 64}
+                                                      for name in contract['requiredLocal']}}, False)):
+                baseline_path.write_text(json.dumps({**baseline, **changed}))
+                result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT),
+                                         str(baseline_path), str(status_path)], cwd=ROOT,
+                                        capture_output=True, timeout=10)
+                self.assertEqual(result.returncode == 0, succeeds)
 
 
 if __name__ == '__main__':
