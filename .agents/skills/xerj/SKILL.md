@@ -11,7 +11,7 @@ For this repository's pinned corpora, index prefixes, and refresh workflow, read
 
 ## Choose the query
 
-- For code in an autoindexed tree, call `xerj_search` with a plain-string `query`; this ranks definitions and returns passages with file and line. For a known symbol, use the CLI's `xerj def` if available. Use `rg` for exact text, file discovery, and checks against the live checkout.
+- For code in an autoindexed tree, call `xerj_search` with `query: {"query_string":{"query":"<problem>"}}`; this ranks definitions and returns passages with file and line. For a known symbol, use the CLI's `xerj def` if available. Use `rg` for exact text, file discovery, and checks against the live checkout.
 - For reference coding, use `xerj_code_search` on a named local corpus, or `xerj_hub_ask` / `xerj_hub_def` for a pinned hub pack. Inspect the cited source before adapting an approach. A no-match is not evidence that no implementation exists. Respect each hit's licence warning; treat restricted-licence source as approach-only.
 - For structured data, call `xerj_map` to get actual index names, fields, and
   types. Use `xerj_plan` for a natural-language filter when it fits, then send

@@ -8,6 +8,6 @@ args = ["--yes", "--package=openwiki@0.7.0", "openwiki", "mcp", "--host", "codex
 startup_timeout_sec = 60
 
 [mcp_servers.xerj]
-command = "nix"
+command = "/nix/var/nix/profiles/default/bin/nix"
 args = ["run", "github:Stuhlmuller/homelab#xerj", "--", "mcp", "--disable-feedback"]
 startup_timeout_sec = 60

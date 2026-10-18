@@ -24,6 +24,7 @@ indexing returns 401, check the link and node URL.
 
 Codex runs the flake package from this repository's `main` branch through
 [`.codex/config.toml`](../.codex/config.toml).
+The absolute Nix executable path lets desktop MCP hosts start it without a shell `PATH`.
 The MCP server reads the local key file at startup; no credential belongs in
 git or a process environment. The node must be running when Codex searches.
 
