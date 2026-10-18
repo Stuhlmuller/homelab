@@ -174,7 +174,7 @@ approved_openclaw_legacy_operation if {
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'8b2abc96ee2affbf8132961e172f53900a42f509875698ab5837fec00c89cbb6  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'5b5921d692c3371365ab32c6b8913c9bcd44c1cdb3ae4b33445ac1f80d3b2e64  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {

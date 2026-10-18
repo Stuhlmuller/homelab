@@ -102,8 +102,12 @@ case "$stage" in
   verify)
     jq -e '.replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and (.cronJobSuspended == true or .cronJobAbsent == true)' "$work/status.json" >/dev/null
     prefix="openclaw-enterprise/legacy/${ARCHIVE_REF}"
-    aws s3 cp "s3://${bucket}/${prefix}/final.json" "$work/final.json"
-    jq -e '.offsiteRestoreVerified == true and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
+    final_key="$prefix/final.json"
+    # Archive refuses prior versions, so the oldest exact-key version is its original receipt.
+    final_version="$(aws s3api list-object-versions --bucket "$bucket" --prefix "$final_key" --output json |
+      jq -er --arg key "$final_key" 'if .IsTruncated == false then [.Versions[]? | select(.Key == $key) | .VersionId] | last else empty end')"
+    aws s3api get-object --bucket "$bucket" --key "$final_key" --version-id "$final_version" "$work/final.json" >/dev/null
+    jq -e --arg ref "$ARCHIVE_REF" '.offsiteRestoreVerified == true and (.sourceSha + "/" + .runId) == $ref and .archiveVersion != null and .receiptVersion != null' "$work/final.json" >/dev/null
     archive_version="$(jq -er .archiveVersion "$work/final.json")"
     receipt_version="$(jq -er .receiptVersion "$work/final.json")"
     restore="/archive/private/offsite-${GITHUB_RUN_ID}"
