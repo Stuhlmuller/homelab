@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cordium-runner-controller
+  namespace: cordium-runners
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cordium-runner-controller
+  namespace: cordium
+rules:
+  - apiGroups: [networking.k8s.io]
+    resources: [networkpolicies]
+    verbs: [get, list, watch, create, delete]
+  - apiGroups: [""]
+    resources: [pods, persistentvolumeclaims]
+    verbs: [get, list]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cordium-runner-controller
+  namespace: cordium
+subjects:
+  - kind: ServiceAccount
+    name: cordium-runner-controller
+    namespace: cordium-runners
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cordium-runner-controller
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cordium-runner-enforcer-inspection
+  namespace: kube-system
+rules:
+  - apiGroups: [apps]
+    resources: [daemonsets]
+    resourceNames: [kube-network-policies]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cordium-runner-enforcer-inspection
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: cordium-runner-controller
+    namespace: cordium-runners
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cordium-runner-enforcer-inspection
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cordium-runner-kubeconfig
+  namespace: cordium-runners
+data:
+  config: |
+    apiVersion: v1
+    kind: Config
+    clusters:
+      - name: homelab
+        cluster:
+          server: https://10.1.0.199:6443
+          certificate-authority: /var/run/cordium-runner-api/ca.crt
+    users:
+      - name: controller
+        user:
+          tokenFile: /var/run/cordium-runner-api/token
+    contexts:
+      - name: homelab
+        context:
+          cluster: homelab
+          user: controller
+          namespace: cordium
+    current-context: homelab

@@ -1,0 +1,83 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mastodon-backup
+  namespace: mastodon
+  annotations:
+    argocd.argoproj.io/sync-wave: '1'
+spec:
+  schedule: 0 3 * * *
+  timeZone: America/Los_Angeles
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    metadata:
+      labels: &id001
+        app.kubernetes.io/name: mastodon-backup
+    spec:
+      activeDeadlineSeconds: 1800
+      backoffLimit: 1
+      template:
+        metadata:
+          labels: *id001
+        spec:
+          automountServiceAccountToken: false
+          nodeSelector:
+            kubernetes.io/hostname: zimaboard-0
+          restartPolicy: Never
+          securityContext:
+            runAsGroup: 65534
+            runAsNonRoot: true
+            runAsUser: 65534
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: backup
+              image: docker.io/library/postgres:18-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+              imagePullPolicy: Always
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  umask 0077
+                  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+                  mkdir -p /backup/database
+                  partial="/backup/database/.${stamp}.partial"
+                  complete="/backup/database/${stamp}"
+                  mkdir "$partial"
+                  pg_dump --host=/local --username=mastodon --format=custom --file="$partial/mastodon.dump" mastodon
+                  pg_restore --list "$partial/mastodon.dump" >/dev/null
+                  (cd "$partial"; sha256sum mastodon.dump > SHA256SUMS)
+                  mv "$partial" "$complete"
+                  (cd "$complete"; sha256sum --check SHA256SUMS)
+                  find /backup/database -mindepth 1 -maxdepth 1 -type d -name '20*Z' -mtime +13 -exec rm -r -- {} +
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+              volumeMounts:
+                - name: local-data
+                  mountPath: /local
+                  readOnly: true
+                - name: backup-data
+                  mountPath: /backup
+          volumes:
+            - name: local-data
+              persistentVolumeClaim:
+                claimName: mastodon-postgres-local
+                readOnly: true
+            - name: backup-data
+              persistentVolumeClaim:
+                claimName: mastodon-backup
+          serviceAccountName: mastodon
