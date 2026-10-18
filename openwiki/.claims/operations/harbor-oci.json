@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:97f13cc1893de23733b52c439910eabded890730a3021ceb111c3ccad328a973",
+  "pageVersion": "sha256:3aef4f336c6c0749bfafc6e5d0d1c115599239e3379c3f61bc140cf580968c0d",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -634,7 +634,7 @@
     },
     {
       "id": "claim_0c4c97449ce74c18942961867479ef2a",
-      "statement": "The staged internal consumer draft maps 141 declared workload, hook, and bootstrap image references to cataloged Harbor paths while keeping digest pins; protected publication, node pulls, recovery, and app acceptance remain separate gates.",
+      "statement": "The staged internal consumer draft maps 143 declared workload, hook, and bootstrap image references to cataloged Harbor paths while keeping digest pins; protected publication, node pulls, recovery, and app acceptance remain separate gates.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -642,13 +642,13 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:98d6c3e6c04ef305d616abd439a88286595cc388acfaf7c71702db2f85ebd7a1"
+          "version": "repo-file-v1:sha256:b967831864472915d532a903730b63f2baca78c4aceb50934d32f1deb7d90b3f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:42:08.398Z"
+    "at": "2026-10-18T22:55:11.187Z"
   }
 }

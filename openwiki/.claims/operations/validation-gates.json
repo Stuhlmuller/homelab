@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:323350a5e3415440d294ab642b694d9a9e8f8cd70fa59c06edee064cfce288f7",
+  "pageVersion": "sha256:5464f6617ff6550d4b4e83021b58b799b8c297cc5009e5f97200f6cb0bfaf39b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -562,7 +562,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:98d6c3e6c04ef305d616abd439a88286595cc388acfaf7c71702db2f85ebd7a1"
+          "version": "repo-file-v1:sha256:b967831864472915d532a903730b63f2baca78c4aceb50934d32f1deb7d90b3f"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -774,7 +774,7 @@
     },
     {
       "id": "claim_0c50eabd8dd74e6dbc1f94e988e673cf",
-      "statement": "The staged internal consumer branch checks 141 declared image references against cataloged Harbor paths; source consistency does not prove protected publication, private node pulls, or app acceptance.",
+      "statement": "The staged internal consumer branch checks 143 declared image references against cataloged Harbor paths; source consistency does not prove protected publication, private node pulls, or app acceptance.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
@@ -782,13 +782,13 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
-          "version": "repo-file-v1:sha256:2d0d4156ec0cc283bd917baa0fbeac6e818a0e7f7ed36e4a20fa95bfde22d3ca"
+          "version": "repo-file-v1:sha256:ca92fd88817ea892f746f6265448b4120ec20748ba4fe6b97aebd3d6f2f57e82"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:42:08.398Z"
+    "at": "2026-10-18T22:55:11.187Z"
   }
 }

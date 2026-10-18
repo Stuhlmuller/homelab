@@ -131,7 +131,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:42:08.398Z
+    at: 2026-10-18T22:55:11.187Z
 ---
 
 # Harbor Private OCI Registry
@@ -414,7 +414,7 @@ The [consumer draft](../../docs/image-egress-hardening.md) maps named workload,
 hook and bootstrap image references to cataloged Harbor mirror paths while
 keeping current main's digest pins. It removes the retired OctoBot reference
 and preserves Crossplane's zero-replica standby. The catalog checker covers
-141 declared image references; publication and authenticated node pulls,
+143 declared image references; publication and authenticated node pulls,
 empty-cluster recovery, Argo image IDs and original app behavior remain
 separate gates before this draft can merge or roll out.
 

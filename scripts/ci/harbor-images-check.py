@@ -84,7 +84,8 @@ def declared_images(value):
         name = str(value.get("name", ""))
         if (name.endswith("IMAGE") or name.startswith("RELATED_IMAGE_")) and isinstance(value.get("value"), str):
             images.add(value["value"])
-        if isinstance(value.get("name"), str) and isinstance(value.get("newName"), str):
+        if (isinstance(value.get("name"), str) and isinstance(value.get("newName"), str)
+                and (value.get("digest") or value.get("newTag"))):
             transformed = value["newName"]
             if value.get("digest"):
                 transformed += "@" + str(value["digest"])

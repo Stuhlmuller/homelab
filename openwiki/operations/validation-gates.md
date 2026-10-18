@@ -179,7 +179,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:42:08.398Z
+    at: 2026-10-18T22:55:11.187Z
 ---
 
 # Validation Gates
@@ -1741,7 +1741,7 @@ push/pull at the declared image digests, ready consumer Pods and a verified
 logical database backup. See [Harbor Private OCI Registry](harbor-oci.md); a Healthy Application alone does
 not establish successful private image publication.
 
-The staged internal-consumer branch checks 141 declared image references
+The staged internal-consumer branch checks 143 declared image references
 against the reviewed catalog and renders the current main digests through
 Harbor paths. These source checks do not prove publication; every referenced
 digest still needs protected publication, private node-pull and original

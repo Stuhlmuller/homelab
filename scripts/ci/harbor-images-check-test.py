@@ -359,6 +359,8 @@ related = {"name": "RELATED_IMAGE_kiali_default", "value": "quay.io/kiali/kiali:
 assert check.declared_images(related)[0] == {related["value"]}
 assert inventory.runtime_references(related) == {related["value"]}
 assert check.declared_images({"image": {"repo": "quay.io/kiali/kiali-operator", "tag": "v2.26.0"}})[0] == {"quay.io/kiali/kiali-operator:v2.26.0"}
+assert check.declared_images({"name": "harbor.example.invalid/mirror/postgres", "newName": "postgres"})[0] == set()
+assert check.declared_images({"name": "postgres", "newName": "harbor.example.invalid/mirror/postgres", "newTag": "18"})[0] == {"harbor.example.invalid/mirror/postgres:18"}
 
 # A config-bound direct-digest native receipt remains untrusted until protected
 # workflow evidence has an explicit importer.
