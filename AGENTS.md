@@ -8,9 +8,9 @@ on Talos Linux. It has two goals:
 - Teach the system as it evolves so readers can learn how to start, operate,
   and upgrade their own homelab.
 
-Agents should treat the repo as both production infrastructure and educational
-material. A good change should be safe to apply, easy to review, and useful to
-someone learning the pattern for the first time.
+Agents should treat the repo as homelab infrastructure, not production, and as
+educational material. A good change should be safe to apply, easy to review,
+and useful to someone learning the pattern for the first time.
 
 ## Repository intent
 
@@ -25,6 +25,8 @@ someone learning the pattern for the first time.
   documented near the code that implements them.
 - Make PRs the normal unit of change for cluster setup, maintenance, upgrades,
   and documentation.
+- Complete repository change tasks by merging their PRs into `main`, unless the
+  user explicitly requests only local work or PR preparation.
 - Include the "why" when changing architecture, workflows, or operational
   assumptions.
 - Keep examples copyable, but clearly mark values that are specific to this
@@ -67,8 +69,8 @@ base intentionally adopts them again and the documentation explains why.
 - Use environment variables only inside CI/CD pipelines for credentials or
   secret injection. If a secret is required, inject it in the CI/CD pipeline and
   keep only safe references, templates, encrypted values, or contracts in git.
-- Treat live Talos and Kubernetes operations as production changes, even though
-  this is a homelab.
+- Treat live Talos and Kubernetes operations as consequential changes to this
+  homelab.
 - Never make manual infrastructure, cloud, Talos, Kubernetes, Argo CD, or
   secret-manager changes to fix live state. All desired-state changes must be
   represented in repository-owned code first and then applied through the
