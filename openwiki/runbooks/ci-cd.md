@@ -4,30 +4,34 @@ title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
 sources:
-  - id: openwiki-source-5639384dcb82d59768eb1132
-    resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-28a7f340da431caf1c218c7d
+    resource: repo://.github/workflows/cordium-runner-canary.yml
+  - id: openwiki-source-36db39acd9400bc022704939
+    resource: repo://.github/workflows/cordium-runner-credentials.yml
+  - id: openwiki-source-d63f608fcb391d5edcf496e7
+    resource: repo://.github/workflows/cordium-runner-images.yml
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-9a01f0687eaa075cf78c3abc
+    resource: repo://.github/workflows/image-automation.yml
+  - id: openwiki-source-3b8a5a1dece086403bc8ab75
+    resource: repo://.github/workflows/nofx-images.yml
+  - id: openwiki-source-66763af1d94960a2aaf14e95
+    resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-29ced481494f3a85c0d7921b
     resource: repo://.github/workflows/terragrunt-apply.yml
   - id: openwiki-source-885831275c8e751281369a80
     resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-e038674a313521b0f6eadc03
-    resource: repo://docs/cordium-ci.md
-  - id: openwiki-source-1247eded2dab9841fec2a345
-    resource: repo://docs/nix-cache.md
-  - id: openwiki-source-47792446a9e092544c3c1857
-    resource: repo://scripts/ci/nix-checks.sh
-  - id: openwiki-source-7f41167da18dbfa043cfc3ca
-    resource: repo://scripts/ci/static-checks.sh
-  - id: openwiki-source-de7fdd1af72d2845e129e766
-    resource: repo://scripts/entra-ci-configure.py
-  - id: openwiki-source-6f8ea3753bc76b21d99fe402
-    resource: repo://scripts/tailscale-ci-configure.py
-generated: { by: "codex", at: "2026-10-12T04:52:40.862Z" }
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
+generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:29:04.432Z
+    at: 2026-10-18T12:49:03.265Z
 ---
 
 # CI/CD
@@ -46,22 +50,42 @@ Required GitHub checks and explicit Stuhlmuller organization-member disapproval
 still block merges. The policy takes effect from the target branch after merge;
 revert `.policy.yml` to restore review requirements.
 
-Read-only GitHub inspection on 2026-10-06 UTC confirmed that `main` ruleset
-`14700233` required zero approving reviews while both CI environments separately
-required owner approval. The canonical guide's contrary production guidance was
-stale; it was corrected on 2026-10-11 UTC after verifying both live environments
-and the upstream `github-iac` declarations.
+Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
+`14700233` still requires the seven documented checks. `homelab-plan` has no
+environment protection rules; `homelab-production` has its branch policy and
+no required reviewer. The older October 6 reviewer snapshot is superseded.
+Re-read live settings before changing environment or branch protections.
 
-Current `github-iac` desired state and live settings use automatic environments
-without required reviewers. The [environment guard](../../scripts/entra-ci-configure.py)
-disables administrator bypass and requires production's exact `main` branch
-allowlist, excluding tags. The workflow additionally verifies current `main`
-before credentials; the [Tailscale publisher](../../scripts/tailscale-ci-configure.py)
-reuses the exact allowlist guard and rejects drift before publication. These
-current settings supersede the dated owner-review snapshot above. A PR push can
-start its live plan automatically; it does not authorize a production apply.
+NOFX image builds, OpenClaw native configuration checks, and Image automation
+verification now run on matching `main` pushes or reviewed manual dispatches,
+without optional pull-request runs. Image automation no longer observes every
+five minutes; dispatch its `verify` operation from `main` for a deliberate
+journal check. Required pull-request checks retain their existing producers.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
+
+Cordium runner bootstrap is staged as separate exact-main workflows for
+credential intake, fixed image builds, protected Harbor publication, and a
+canary. The controller would provision one JIT runner per job with private
+file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
+The pool remains disabled and existing job selectors stay unchanged. The
+[runner contract](../../builds/cordium-runner/README.md) lists the live
+isolation, publication, cold-pull, canary, and recovery evidence required
+before a reviewed selector cutover.
+
+## Staged Tailscale CI cutover
+
+Phase 2b stages nine credentialed hosted CI jobs on pre-signed ephemeral
+Tailscale keys with Tailnet Lock retained. Plan and apply use separate protected
+environment keys; Cordium has a separate repository key and OIDC policy. Each
+job uses a private, uncached state directory and verifies its exact tag and
+tailnet before live work. The operator proxy kubeconfig is tokenless.
+
+Canonical DNS/API, proxy admission/RBAC, and protected key publication must
+pass before merge. Live plan denial, exact-main apply, diagnostics, publisher,
+and Cordium acceptance follow the code change. Native catalog calls retain
+short-lived Octelium authorization; legacy transport and credentials remain
+until replacement acceptance. See the [CI runbook](../../docs/ci-cd.md).
 
 ## Credential recovery: 2026-09-26
 
@@ -84,41 +108,3 @@ the temporary home and transport were removed. No production apply ran.
 Follow the [canonical rotation procedure](../../docs/ci-cd.md); the next 21-day
 rotation is due October 17, 2026. Do not infer rollout completion from
 credential recovery or read-only diagnostics.
-
-## Signed offline validation
-
-Static workflows obtain cache URL/key policy from protected main, then verify or
-build the expected Nix offline-test and manifest-policy outputs. The remaining
-static wrapper still runs fresh provider, network and security checks. The
-trusted PR's environment-scoped live plan remains fresh and runs automatically.
-Neither a cached result nor a green static job authorizes production apply.
-
-Use the [signed cache runbook](../../docs/nix-cache.md) for local validation,
-Linux priming, key rotation and rollback. The declared builder is disposable;
-its signing key remains local. Deployment, full build and warm CI reuse are
-separate acceptance steps. See the [check flow](../architecture/gitops-flow.md#signed-offline-ci-checks).
-
-## Tailscale CI cutover
-
-Phase 2b moves nine workflows to pre-signed reusable ephemeral Tailscale keys
-while retaining Tailnet Lock. Plan and apply use separate protected environment
-keys; Cordium uses its own repository key and independent native OIDC policy.
-Every joined runner verifies its exact single tag and tailnet before live work.
-The hosted Ubuntu runner owns a private per-job state directory that is never
-cached or uploaded; daemon logout alone does not delete that directory.
-
-Before merging this source, complete canonical DNS/API acceptance, deploy the
-operator API proxy and plan admission/RBAC, and publish keys through the fixed
-reviewed `scripts/tailscale-ci-configure.py` helper. After merge, require protected
-plan with denied real writes, exact-main apply, diagnostics, both publishers,
-and Cordium execution, denial and cleanup checks. Source validation alone does
-not establish these live outcomes.
-
-The operator proxy kubeconfig contains no bearer token. Native catalog calls
-use canonical mesh TLS but retain their short-lived Octelium authorization.
-Legacy catalog, Tunnel and credentials stay until replacement acceptance; any
-legacy CI rollback first restores the prior reviewed workflow transport.
-Rotate provider generations before 60 days, republish signed keys, verify new
-CI runs, then explicitly retire previous cached signing authorities. Preserve
-the corrected separate authority/wrapper cache contract in the
-[provider runbook](../../IaC/modules/tailscale-access/README.md).

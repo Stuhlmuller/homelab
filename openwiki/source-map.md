@@ -1,53 +1,53 @@
 ---
 type: overview
 title: "Source Map"
-description: "Maps wiki topics to canonical repository guides, operational runbooks, workload READMEs, and source ownership."
-tags: ["knowledge-base", "source-map"]
+description: "Maps wiki topics to canonical guides, operational runbooks, workload READMEs and source ownership."
+tags: [knowledge-base, source-map]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a793a7dd08d0dc13de84207b
+    resource: repo://.github/workflows/cordium-runner-publish.yml
+  - id: openwiki-source-f3c1ec74b74e361ea2192c05
+    resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-23ac5bc03d1cee79a72b06af
+    resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-9f4d1b63d947cd42e3af68b2
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
-  - id: openwiki-source-e038674a313521b0f6eadc03
-    resource: repo://docs/cordium-ci.md
-  - id: openwiki-source-1247eded2dab9841fec2a345
-    resource: repo://docs/nix-cache.md
-  - id: openwiki-source-3eda5d2b85501c78fc0ba02d
-    resource: repo://flake.nix
-  - id: openwiki-source-0ea5376c0684f2dd735ec9d4
-    resource: repo://IaC/modules/entra-google-workspace-federation/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
     resource: repo://IaC/modules/entra-owner-mail/README.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-8144ee95f00e2d4721210fcf
+    resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-0f1996b7e0fc35047d4f05dd
     resource: repo://scripts/ci/install-kubeconfig.sh
-  - id: openwiki-source-c7852b586f8f1a45684f7ab4
-    resource: repo://scripts/ci/offline-checks.sh
-  - id: openwiki-source-020791e1237c864b31f43a39
-    resource: repo://scripts/ci/offline-static-checks.sh
-  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
-    resource: repo://scripts/ci/tailscale-identity-check.py
-  - id: openwiki-source-4bbfe00c406fec8a213babcb
-    resource: repo://scripts/nix-builder.py
-  - id: openwiki-source-74dcbb88cca2d854985d0d67
-    resource: repo://scripts/nix-cache.py
+  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
+    resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
-  - id: openwiki-source-ff63d9d82b2370adf56a5f28
-    resource: repo://scripts/octelium-nofx-reconcile.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-81658af78f4007503983579d
     resource: repo://scripts/tailscale-ingress-sign.py
-generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
+generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:29:04.432Z
+    at: 2026-10-18T12:49:03.265Z
 ---
 
 # Source Map
@@ -72,23 +72,19 @@ desired state.
 | `docs/argocd-app-onboarding.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 | `docs/image-automation.md` | [Image Automation](runbooks/image-automation.md) |
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
-| `docs/nix-cache.md` | [Signed offline CI checks](architecture/gitops-flow.md#signed-offline-ci-checks) |
-| `flake.nix`, `scripts/ci/nix-checks.sh`, `offline-checks.sh`, `offline-static-checks.sh` | [Offline validation ownership](operations/validation-gates.md#default-gate) |
-| `scripts/nix-cache.py`, `scripts/nix-builder.py`, `clusters/homelab/apps/nix-builder/README.md` | [Builder and local signing boundaries](architecture/secrets-and-identity.md#signed-nix-cache-trust) |
+| `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
 | `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
-| `scripts/ci/tailscale-identity-check.py` and `install-kubeconfig.sh` | [CI joined identity and tokenless API transport](runbooks/ci-cd.md#tailscale-ci-cutover) |
-| `scripts/octelium-nofx-reconcile.py` and `scripts/octelium-api-response.py` | [Verified direct native mesh transport](runbooks/octelium.md) |
 | `scripts/talos-harbor-mirrors.py` | [Private node registry path](operations/harbor-oci.md#private-node-registry-foundation) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
-| `IaC/modules/entra-owner-mail/README.md` | [Owner-mail migration boundary](architecture/secrets-and-identity.md) |
-| `IaC/modules/entra-google-workspace-federation/README.md` | [Operator federation boundary](architecture/secrets-and-identity.md#google-workspace-federation-boundary) |
-| `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Fleet baseline, SAML and retired PSSO boundary](operations/validation-gates.md#entra-owner-mail-and-octelium-identity-checks) |
+| `IaC/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
+| `scripts/entra-owner-conversion.py` and `scripts/ci/entra-owner-conversion-test.py` | [Owner conversion boundary](architecture/secrets-and-identity.md#fleet-free-identity-boundaries), [Fleet validation](operations/validation-gates.md#fleet-device-management-rollout) |
+| `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Retired Platform SSO boundary and historical identity evidence](architecture/secrets-and-identity.md#fleet-free-identity-boundaries) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
 | `docs/runtime-isolation.md` | [Runtime Isolation](runbooks/runtime-isolation.md) |
 | `docs/secrets-aws-ssm.md` | [AWS SSM Secret References](runbooks/secrets-aws-ssm.md) |
@@ -108,11 +104,20 @@ desired state.
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 
-## CI transport ownership
+Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
+[registration](../IaC/stacks/mastodon/stack.hcl),
+[secret declarations](../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
+[protected SMTP injection](../.github/workflows/mastodon-smtp-credential.yml), and
+[public DNS publication](../.github/workflows/mastodon-public-dns.yml).
+See the [inventory](workloads/inventory.md),
+[credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
+and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
 
-Phase 2b workflows join through fixed pre-signed Tailscale keys, verify the
-joined identity, then use tokenless operator API access or independent native
-Cordium authorization. The old CI connector/disconnector helpers are removed;
-shared native callers retain their catalog and credential lifecycle through
-`octelium-nofx-reconcile.py`. Live acceptance and later retirement remain
-separate from this source preparation; see [CI/CD](runbooks/ci-cd.md).
+## Staged CI transport ownership
+
+The [phase 2b workflows](../.github/workflows/terragrunt-plan.yml) join through
+scoped pre-signed Tailscale keys and verify the joined identity. The shared
+[kubeconfig helper](../scripts/ci/install-kubeconfig.sh) gives plan/apply a
+tokenless operator API path; Cordium keeps separate native authorization.
+Legacy catalog credentials remain through live acceptance and retirement.
+See the [CI runbook](runbooks/ci-cd.md).

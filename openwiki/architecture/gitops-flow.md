@@ -30,10 +30,10 @@ sources:
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
+generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:40:16.143Z
+    at: 2026-10-18T12:49:03.265Z
 ---
 
 # GitOps Flow
@@ -146,8 +146,8 @@ removes the legacy public DNS helper and restoration workflow. External DNS
 writes still require the guarded operator command after signed proxy, TLS,
 backend, and node-registry acceptance. Keep the Cloudflare Tunnel Deployment,
 old native catalog, and credentials through their separate
-[ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b switches
-nine CI workflows to scoped pre-signed Tailscale keys, verifies the joined tag
+[ingress acceptance gates](../runbooks/tailnet-ingress.md). Phase 2b stages nine
+credentialed CI jobs with scoped pre-signed Tailscale keys, verifies the joined tag
 and tailnet, and sends native API calls directly through mesh TLS. Plan and
 apply use the operator API proxy with tokenless runner kubeconfigs; admission
 permits plan dry-runs but denies real Application writes. Production jobs

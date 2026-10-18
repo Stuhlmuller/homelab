@@ -1,18 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:757f1a907275f8107acf3b22188435fa96144ee67e5190b11ce513fa90c72436",
+  "pageVersion": "sha256:f4b680c704f8aee7204fdb2e7c24f351a719d8121660d769742118313abe9dda",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
-      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook own immutable identity migration, private mail-only history, supported Fleet baseline/SAML acceptance and the retired Fleet-only PSSO boundary.",
+      "statement": "The Octelium Entra bootstrap retains immutable owner identity; the owner-mail module now documents a retired Graph PATCH and state-only removal. The Fleet runbook records retired Company Portal/Platform SSO and the separate guarded Entra owner conversion.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
-          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+          "version": "repo-file-v1:sha256:133992059c332d4630fdbc23331576eb6ae8e363d4382035da7b888567254c23"
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
+        },
+        {
+          "resource": "repo://scripts/entra-owner-conversion.py",
+          "version": "repo-file-v1:sha256:8f7a3be17c80ce8acc306ff6583c17c4c1421d0d67f70c99bcc818f1a198da3e"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -57,78 +61,66 @@
       ]
     },
     {
-      "id": "claim_11f6712f77254d26a8bbe6d5ed6ba442",
-      "statement": "CI joined-identity and tokenless API setup live in dedicated helpers; shared native mesh transport remains in octelium-nofx-reconcile.py for retained catalog and credential callers, while old CI connector helpers are removed.",
+      "id": "claim_98e5ba802ab443f3881f65ce87e2919e",
+      "statement": "Mastodon's workload runbook, stack inputs, shared SSM catalog and dedicated SMTP/DNS workflows own its runtime, registration, credential and public access contracts.",
       "evidence": [
         {
-          "resource": "repo://docs/cordium-ci.md",
-          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
+          "version": "repo-file-v1:sha256:5ec8b9c13900f72075c89c9c5b9393087daf14fc62c6244a07b9ba36012fe9fc"
+        },
+        {
+          "resource": "repo://.github/workflows/mastodon-smtp-credential.yml",
+          "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
+        },
+        {
+          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md",
+          "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
+        }
+      ]
+    },
+    {
+      "id": "claim_19d83438220445ea972185f0a6371a3b",
+      "statement": "Cordium runner source, fixed pool declaration, and protected workflow contracts are routed to CI, identity, and validation wiki pages.",
+      "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        }
+      ]
+    },
+    {
+      "id": "claim_0ceaa21560d44d97aed90c748162b152",
+      "statement": "Phase 2b CI workflows stage scoped pre-signed Tailscale access with exact identity verification and tokenless operator API kubeconfigs, while Cordium keeps separate native authorization and legacy credentials remain until acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
           "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
-        },
-        {
-          "resource": "repo://scripts/ci/tailscale-identity-check.py",
-          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
-        },
-        {
-          "resource": "repo://scripts/octelium-nofx-reconcile.py",
-          "version": "repo-file-v1:sha256:be898d1d8531dbdffb3b4878c1ad566f52cbb16b6eb9824e872ee86010ea414a"
-        }
-      ]
-    },
-    {
-      "id": "claim_fe48554dd83e4d26a4dd4b5be9bd17a2",
-      "statement": "Signed offline validation is owned by the flake and extracted fixture/source-contract suites; fixed check publication and Linux export helpers keep signing local, while the canonical cache runbook preserves fresh live validation and rollback boundaries.",
-      "evidence": [
-        {
-          "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
-        },
-        {
-          "resource": "repo://flake.nix#L15-L61",
-          "version": "repo-lines-v1:sha256:8c296f9b37cc7350fc3527d5e1d6ee761a7711f864abd9d166ec204c9a49a22a:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MDBlMjE4OGM2OTgxNmE2YzQyNWM1ZTA2MTM5ZTgyNmEyMjcwNDM5OTdlZjU2M2RmN2VlODcwMDg2YmU3M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5M2ZjOTc4OTQxNDA2MjMwOTZjYTlkYjcxNTQ0MjJkNDA0NGNkZGJmYzk1YWQ0MGRhYTc4NWY5YjkzNDJjZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1MzFhNDQ5YTg1NjI5YjdkNDIyYWEzZjM1NGFlZWZjYzMxNjBmNmNkY2EzM2E2NmQwMWFkOWIwNTE1MDg1MDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4NDRhMmJiNzM2N2E0NDgyYTM5YzgzZDljZTQ5MGJmYzIxZGEyY2M0MjJjZTNhYzk3NDRkNWI4YmU1YjdkYjAifQ"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7ffdff5b0ad82464c97684f678c9b7336c649e8fbf1e18a510d292c972cfa873"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:5026b61a8c5f09ddf553c497177b806f1b4cadbe350cf950332dbd9540d4990b"
-        },
-        {
-          "resource": "repo://scripts/nix-builder.py",
-          "version": "repo-file-v1:sha256:0721d6fba864bef0bec033f504b150fd10e13e67273c2aa32bfacd28c74834fd"
-        },
-        {
-          "resource": "repo://scripts/nix-cache.py",
-          "version": "repo-file-v1:sha256:3f8c33cf8c3959c27906618e85e77638083479f8ce28ec2d46fb312e50206961"
-        }
-      ]
-    },
-    {
-      "id": "claim_4fdc25d5799544a69025a0aaf3d128e8",
-      "statement": "The Google Workspace federation module runbook owns protected metadata ingestion and a separate private saved-plan operator apply; it does not replace owner-mail history or Fleet's supported baseline/SAML and retired PSSO boundaries.",
-      "evidence": [
-        {
-          "resource": "repo://IaC/modules/entra-google-workspace-federation/README.md",
-          "version": "repo-file-v1:sha256:aa81f07eafb0f50a5c66c319492124076be297f6fe2af40631371c7f8fdb31a3"
-        },
-        {
-          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
-          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:57af83c4fe5670369ddc92e8decb00a1b1e8a0ab098410e617e3d7fc304afffd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:29:04.432Z"
+    "at": "2026-10-18T12:49:03.265Z"
   }
 }

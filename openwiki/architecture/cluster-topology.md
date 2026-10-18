@@ -4,20 +4,22 @@ title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
 sources:
+  - id: openwiki-source-3ee445a5390585cab7a1edab
+    resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
-  - id: openwiki-source-4fbefc48f7f8bb8df22af69f
-    resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
-  - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
-    resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-0dd011c84b2dc53d92df4754
+    resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-f585f8850806deb1619ec0c5
@@ -28,10 +30,10 @@ sources:
     resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
     resource: repo://scripts/ci/tailscale-identity-check.py
-generated: { by: "codex", at: "2026-10-11T04:35:18.448Z" }
+generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:40:16.143Z
+    at: 2026-10-18T12:49:03.265Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -173,12 +175,28 @@ Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
 
-The declared Linux Nix cache builder is a disposable executor restricted to
-amd64 `zimaboard-0` and `zimaboard-1`. Its memory request and limit are both
-`1Gi`; it excludes the control plane and smaller worker. It has no application
-ingress, Kubernetes token or persistent volume. Registration/build acceptance
-remains pending; verify scheduling and memory headroom before its first full
-build. See the [builder contract](../../clusters/homelab/apps/nix-builder/README.md).
+### October 17 Cordium capacity preparation
+
+Acer's measured allocatable memory was 15,260.7 MiB against 14,483 MiB of
+requests. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+records seven-day Pod-specific working-set peaks and proposes reclaiming
+1,664 MiB there: unused Crossplane core/RBAC controllers enter zero-replica
+standby, Multica backend/frontend/PostgreSQL requests become 128/320/320 MiB,
+and Langfuse PostgreSQL becomes 128 MiB. The stateless Langfuse web Pod moves
+from `zimaboard-1` to Acer with a 1280 MiB request against a 920.6 MiB peak.
+Its 2 GiB limit and all persistent storage stay unchanged. Acer's projected
+request headroom after the move is 1,161.7 MiB. Restore both Crossplane
+controllers before adding packages or compositions.
+
+`zimaboard-1` is the Cordium-eligible node. Its observed request headroom was
+710.5 MiB; removing the old 2 GiB Langfuse web reservation projects
+2,758.5 MiB before one 2 GiB Workspace and 710.5 MiB afterward. The chart's
+rolling web Deployment keeps the old Pod until the Acer replacement is Ready.
+These are desired-state projections, not live rollout proof. Before starting
+a Workspace, verify the new web Pod is Ready on Acer, the old Pod has left
+`zimaboard-1`, SQL and web behavior recover, and both nodes retain measured
+headroom without pressure. Preserve workspace PV bindings and run only one
+Workspace. See the [standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
 
 ### Octelium dataplane capacity
 
@@ -307,7 +325,7 @@ operator reboot or physical recovery before GitOps can roll out this hardening.
 - Declared private application ingress: `homelab-ingress.tail67beb.ts.net`
   through Traefik; canonical custom hostnames move during staged DNS cutover
 - Declared CI API proxy: `homelab-tailscale-operator.tail67beb.ts.net`;
-  phase 2b CI uses a tokenless kubeconfig after mesh DNS and identity acceptance
+  staged phase 2b CI uses a tokenless kubeconfig after mesh DNS and identity acceptance
 - Talos config reference: `.talos/talosconfig`
 - Control-plane config reference: `.talos/controlplane.yaml`
 - Worker config reference: `.talos/worker.yaml`
@@ -325,13 +343,16 @@ not retain stale SANs or append duplicates.
 Cordium Workspaces use the same private Kubernetes Service with restricted
 read-only access through their automatic Octelium client session. Sensitive
 resources and subresources stay denied. Tailscale provides remote Talos/LAN
-access and the declared application ingress. Phase 2b workflows join through
-scoped, pre-signed ephemeral keys and verify their exact node tag and tailnet.
-Plan and apply use the operator API proxy; Cordium reaches private ingress but
-has no Kubernetes grant. Legacy native Services, credentials, and the Mac
-carrier remain until live CI/client acceptance through the
-[staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md). Prepared source
-does not establish that acceptance. Octelium has no Talos-native Service mode.
+access and the declared application ingress. Old CI and operator transports
+remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
+Octelium does not provide a Talos-native Service mode.
+
+The phase 2b CI workflows stage scoped, pre-signed ephemeral Tailscale keys and
+verify the exact node tag and tailnet. Plan and apply use the operator API proxy;
+Cordium reaches private ingress without a Kubernetes grant. Legacy native
+Services and credentials remain until live CI and client acceptance. This PR's
+source changes do not establish that acceptance; see the
+[CI runbook](../../docs/ci-cd.md).
 
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining

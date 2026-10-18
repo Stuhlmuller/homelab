@@ -23,9 +23,22 @@ adding an admission webhook or rewriting controller-generated resources.
 `scripts/config/harbor-images.json` is the reviewed, digest-pinned inventory.
 It includes repository declarations, rendered Helm charts and the observed
 cluster inventory. The initial inventory was captured on 2026-09-28 UTC.
+The OpenClaw Enterprise prerequisite catalog also includes the selected Talos,
+Kubernetes, Istio, kube-router and Envoy target digests. Talos 1.14's installer
+comes from `factory.talos.dev/metal-installer/<schematic>`; that registry is
+mirrored with the same exact-digest copy and private authenticated receipt as
+other public sources. Do not use a target image for maintenance until the
+protected mirror workflow has published and completely pulled its Harbor copy.
 The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
+The protected `openclaw-enterprise-images.yml` workflow builds the stock
+controller and runtime Dockerfiles from the checksum-verified Enterprise source
+revision in `builds/openclaw-enterprise/source.json`. It verifies both revision
+labels before using Harbor credentials, then publishes, signs and completely
+pulls the paired images in the private `homelab` project. Dispatch it only with
+the current `main` SHA; use its immutable digest receipts for the Enterprise
+chart and CLI. A source revision change requires a new reviewed archive hash.
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public
@@ -47,10 +60,16 @@ the catalog; a missing tag is copied from upstream. Missing-content detection
 accepts registry manifest/name-unknown errors and Harbor's exact expected
 artifact or repository `not found` message. Generic 404 responses and messages
 for another repository or digest tag still stop publication. Other lookup errors
-and unexpected hashes stop publication. Source-tag aliases are copied from that
-verified Harbor digest, avoiding a second upstream transfer. Every entry still
-receives a complete authenticated Harbor download and alias verification on
-each run.
+and unexpected digest-tag hashes stop publication. Source-tag aliases are copied
+from the verified Harbor digest when missing or stale; exact existing aliases
+are reused. Every entry still receives a complete authenticated Harbor download
+and alias verification on each run.
+If Skopeo cannot stage, upload, or alias an OCI index without changing its
+digest, the mirror uses `regctl` for that exact copy error. All OCI indexes,
+including existing digest tags on retries, use an OCI directory for the complete
+authenticated pull; the mirror checks the root digest and source-tag alias
+before recording a receipt. A destination-upload fallback reads upstream again;
+operators must allow that second transfer on retries.
 Harbor retains the existing scan-on-push policy and NFS registry storage.
 No retention/delete job is introduced. Size NFS for the additional images and
 retain registry blobs together with Harbor database/encryption-key backups.
@@ -78,7 +97,8 @@ retain registry blobs together with Harbor database/encryption-key backups.
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=traefik
    ```
 
-   `image_scope` accepts only `all`, `fleet`, `bazarr`, `traefik`, or `chainguard`; no image,
+   `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
+   `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -105,6 +125,22 @@ retain registry blobs together with Harbor database/encryption-key backups.
 
    ```sh
    gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=chainguard
+   ```
+
+   The `renovate` scope selects the six reviewed Fleet, Harbor PostgreSQL,
+   Multica Python, Dispatcharr, Bazarr, and n8n update digests in
+   `scripts/config/harbor-renovate-images.json`. It copies and verifies only
+   those entries while the unrelated full catalog is held. After its
+   prerequisite merges, dispatch it at exact current `main` and require six
+   complete authenticated pulls before merging any consuming Renovate PR:
+
+   The Harbor PostgreSQL entry now selects the `afc7e2d` index for the
+   `18.6-bookworm` alias. The previous `7d38526` index remains in the full
+   catalog by digest, and the same new index was verified in the earlier
+   Mastodon scope. Re-run `renovate` to verify the new alias before #1341.
+
+   ```sh
+   gh workflow run harbor-mirror.yml --ref main -f expected_sha="$reviewed_sha" -f image_scope=renovate
    ```
 
    See [migration gates and current findings](image-egress-hardening.md).
@@ -179,6 +215,11 @@ retain registry blobs together with Harbor database/encryption-key backups.
    done
    ```
 
+   Before step 5, complete the [private Talos registry route](#private-talos-registry-route):
+   validate and execute `--registry-host-only` on each node, workers first,
+   then verify the owned `/etc/hosts` mapping. Keep strict mirrors unapplied
+   until that route and its native pull check pass.
+
 5. Apply one node at a time, workers first and the sole control plane last:
 
    ```sh
@@ -198,7 +239,23 @@ retain registry blobs together with Harbor database/encryption-key backups.
    captured configuration already has valid `robot$mirror+pull` auth.
    Rollback and dry-run do not pull images. It never drains, restarts or deletes
    workloads.
-6. Verify every node's `registryconfigs` resource contains the committed
+6. Audit every active node after strict-mirror rollout. The audit requires the
+   full reviewed SHA and Talos client 1.11.3, and exits nonzero unless the
+   strict mirror declaration, private Harbor hostname mapping, and
+   `robot$mirror+pull` credential shape all match. It prints no configuration
+   values or credentials and does not prove Harbor availability or a fresh pull.
+   `set -e` makes a failure on any node stop the fleet check.
+
+   ```sh
+   set -e
+   for node in 10.1.0.202 10.1.0.201 10.1.0.200 10.1.0.199; do
+     python3 -I scripts/talos-harbor-mirrors.py --node "$node" --audit \
+       --expected-sha "$reviewed_sha" \
+       --talosconfig /path/to/private/talosconfig
+   done
+   ```
+
+7. Verify every node's `registryconfigs` resource contains the committed
    endpoints, `skipFallback: true`, and only the owned Harbor reader auth.
    Keep `mirror` public until all node readbacks and native pulls pass. Then make
    its project metadata private through a separate reviewed bootstrap change;
@@ -244,11 +301,13 @@ dashboard and management API paths return 404. No LAN or public listener is adde
 The URL, TLS certificate name, Authorization header and bearer-token realm remain
 `harbor.stinkyboi.com`.
 
-The same inspection found no configured mirrors or extra host entries on any
-of the four Talos nodes. This DNS cutover must preserve that state: it does
+Do not infer mirror state from the DNS cutover. Run the active-node audit after
+strict-mirror rollout. This DNS cutover does
 **not** activate the strict mirror patch. The helper preserves unrelated host
 aliases, refuses a conflicting existing Harbor mapping, and validates that
 the complete machine configuration changes only `extraHostEntries`.
+Normal strict-mirror execution refuses to run until that exact per-node mapping
+is active; public DNS for the Harbor hostname is never an accepted fallback.
 
 Talos 1.11.3 can expose only the active `v1alpha1` machine-config resource after
 loading configuration from STATE at boot; `persistent` is populated by later
@@ -382,6 +441,37 @@ to Skopeo; it rejects combined tag/digest addresses. Preserve historical pinned
 digests when a mutable tag has moved. Each repository/tag has one catalog alias;
 additional old digests use digest-only sources. Never import private artifacts
 into the mirror project.
+
+The Harbor 2.15.4 prerequisite adds all nine coupled component digests while
+retaining the active 2.15.2 entries. Publish the fixed Harbor scope with
+`image_scope=harbor` and require fresh authenticated pulls of the nine new digests
+before merging a Harbor 2.15.4 consumer. This catalog change does not alter
+running Pods. The scoped receipt proves these nine components only; the full
+catalog remains held on the separate LiteLLM duplicate-index repair. The
+consuming upgrade must verify that the singleton nginx
+Deployment retains a rolling update that keeps Harbor reachable during its
+replacement image pull.
+
+The chart uses `Recreate` for the registry Deployment. Before merging the
+consumer, pre-pull its 2.15.4 registry and registryctl images onto every Talos
+node so replacement does not need the registry being stopped. Complete the
+fixed Harbor publisher and fresh authenticated pulls first. On reviewed
+`main`, use the repository-owned operator command with a private Talos client
+config and the exact full `main` SHA:
+
+```sh
+for node in 10.1.0.199 10.1.0.200 10.1.0.201 10.1.0.202; do
+  python3 -I scripts/talos-harbor-mirrors.py --node "$node" \
+    --talosconfig ~/.talos/config --prepull-registry-runtime \
+    --execute --expected-sha '<reviewed-main-sha>'
+done
+```
+
+The command pulls only the two reviewed digest pins into each CRI cache and
+checks the cache alias after each pull. Re-run it without `--execute` just
+before the consumer merge; all four nodes must report both pins cached.
+Re-pull a missing pin before proceeding. Cache verification does not establish
+rollout health.
 
 ## Bootstrap and recovery
 

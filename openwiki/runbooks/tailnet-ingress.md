@@ -4,8 +4,10 @@ title: "Tailnet And App Ingress"
 description: "Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover."
 tags: [runbook, networking, ingress]
 sources:
-  - id: openwiki-source-5639384dcb82d59768eb1132
-    resource: repo://.github/workflows/harbor-core-images.yml
+  - id: openwiki-source-29ced481494f3a85c0d7921b
+    resource: repo://.github/workflows/terragrunt-apply.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
@@ -38,12 +40,12 @@ sources:
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-e038674a313521b0f6eadc03
-    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
     resource: repo://IaC/modules/tailscale-access/README.md
+  - id: openwiki-source-2f1cb193abf8d2f74ad8d8ad
+    resource: repo://scripts/ci/tailscale-identity-check.py
   - id: openwiki-source-511191e55632b55651ad4318
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
@@ -62,10 +64,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
+generated: { by: "codex", at: "2026-10-18T12:49:03.265Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:40:16.143Z
+    at: 2026-10-18T12:49:03.265Z
 ---
 
 # Tailnet And App Ingress
@@ -81,8 +83,7 @@ Canonical desired state and validation:
 [route inventory](../../clusters/homelab/apps/traefik/routes.yaml), and
 [Tailscale provider runbook](../../IaC/modules/tailscale-access/README.md).
 The [ingress runbook](../../docs/networking-tailnet-ingress.md) describes the
-phase 2a source and separate external DNS gates;
-[CI/CD](../../docs/ci-cd.md#tailscale-ci-access-setup) owns phase 2b CI acceptance.
+phase 2a source and the separate external DNS and later CI cutover gates.
 
 ```mermaid
 flowchart LR
@@ -176,12 +177,11 @@ preview never signs, publishes or changes cache contents. Expired auth keys alon
 do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
-tradeoff. All nine phase 2b workflows supply a private per-job `statedir` to
-the pinned action and verify the exact single node tag and tailnet before live
-commands. State is never cached or uploaded; hosted Ubuntu VM decommissioning
-removes daemon state after the action logs out. Plan/apply use tokenless
-operator API kubeconfigs, while Cordium retains separate native OIDC. Prepared
-source does not establish successful protected CI runs.
+tradeoff. Each CI job must supply a private `statedir` to the pinned action.
+The staged phase 2b jobs use per-job state that is never cached or uploaded,
+verify one exact node tag and tailnet before live commands, and use tokenless
+operator API kubeconfigs for plan/apply. Cordium retains separate native OIDC.
+Prepared source does not prove protected CI acceptance.
 
 ## Security and rollout gates
 
@@ -231,12 +231,11 @@ The same phase declares internal CoreDNS rewrites for Octelium API and Harbor
 to `traefik-private`, additive Cordium bootstrap network peers, and n8n's
 `https://n8n-webhook.tail67beb.ts.net/` advertised webhook URL. Require Funnel
 readiness before n8n restarts because it can register hooks during startup.
-Check native API and Harbor access after internal DNS convergence. Phase 2b
-switches CI and shared native operator transport only after canonical mesh
-acceptance. Require protected plan write denial, exact-main apply, diagnostics,
-both publishers and Cordium execution/denial/cleanup before final retirement.
-Legacy catalog, credentials, Tunnel and the Mac rollback installer remain
-through these gates.
+Check native API and Harbor access after internal DNS convergence. The staged
+CI and shared native operator transport switch only after canonical mesh
+acceptance; require protected plan denial, exact-main apply, diagnostics,
+publishers, and Cordium execution and cleanup before retirement. Keep legacy
+catalog, credentials and tunnel through those gates.
 
 The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
 the repository and live Deployment explicitly declare zero replicas and no
@@ -279,23 +278,6 @@ Traefik AP/NP specs matched reviewed main. Forced ingress IPv6 failed before TLS
 consistent with the single-family Service; this is not IPv6 application acceptance.
 Normal-DNS cutover, authenticated user flows and signed callback delivery remain
 separate gates.
-
-## October 11 public callback acceptance
-
-At 04:23 UTC, the reviewed `df04e479` helpers moved Policy Bot's App callback
-and repository n8n hooks `589400612` and `636944763` to their declared Funnel
-URLs. URL-only readback preserved secrets, activation and events. Twenty denial
-requests across both public relay IPv4 addresses returned 404; Policy Bot's
-backend GET markers and both n8n workflows' non-executing OPTIONS checks passed.
-
-Naturally occurring GitHub deliveries subsequently returned HTTP 200 at all
-three new URLs. The acceptance helpers verified delivery IDs and timestamps
-newer than each saved cutover receipt. No event or redelivery was manufactured.
-The [draft CI change](https://github.com/Stuhlmuller/homelab/pull/1277) remains
-held for canonical private DNS/client acceptance. Public callbacks use their
-separate Funnel listener, so this URL migration could proceed while private
-application DNS and Talos host mappings remained unchanged. Keep legacy routes
-through the remaining application, node, CI and Cordium acceptance gates.
 
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and

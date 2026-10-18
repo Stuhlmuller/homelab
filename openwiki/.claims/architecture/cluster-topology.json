@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:36649fc8e0947eebc396c212a4723588ecbc43efc50cc9d290b416bb8652da5d",
+  "pageVersion": "sha256:1f400a9871050a2b198c9b2b8ec0d8000d825ce7e80e249fd9ff04b7defbc8f6",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -39,7 +39,7 @@
           "version": "repo-lines-v1:sha256:ee3ddcd17a0202fd9663bd18c6c6ca3cc273ae9b86448c30453cfbee521b6a05:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQwMjdhNjdiNDY3NTIzZjIwYzgwMmViODcxYzY5YjkyYTc0YWRmZTVjMTdkODIwYTQ1OGM3YWNjZGQ3YmQyN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjliNjJmNjBkODU5MGE1NzljZjQ2ZjhkNjczNzhjNGM1NzJiOTYyY2VjY2RiOTBjN2E1ZjdiNDJiOTYwNzgyYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjFiMjcyZmRjZmYzMjdhMjkyNWQ3YzdjOTVmOGE2MzM2MGQ3M2VkYTc1MTY1MDA1YTRlODcyYjAxNTQ5ZGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2MmVlNDJkNzc2NTlhZjA4NGFiOTIwYTc1YWFlOWM2OWNhZmI3ZGMyZjdkMmYxYmYyZGI5OGFjNDZiMTUzZjIifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L87-L95",
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml#L94-L102",
           "version": "repo-lines-v1:sha256:a20e2045e85d2aa5f782703adfe064fabcfd098317c7e75b4315deaa675382b4:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzI1YjE4NWE5MWU2NjU1MzhjMzJlM2I0Zjk3Y2U2ZDkyZGQ2NzRhMzE4NjI3ZmZjMzg0YzdjYzllZWMzZGVlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOWQxMWYxYjBmZjllMzU3OTQzYTIzOGNkZDA5MmNjZjMyY2YxN2RjZDA3ZTcxNWQyMjFjNTlkZmMzYmJlZmVmNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjlkZDA2NDYwNzk4YmYzMWY0NTZiYTJmODM4ZjQ4MmNmNjJiNDU0YmMyODczZDJiZDE3NDdlZmQ5ZDYwN2UxYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZDk5NzEwOGJlNjAxZGY0ZTU0MmRlOWNiMjhjNGJjMTNlYzVmMGRmMGY3MDUzZjcxNzFhZTdlMTQyNmVjYjc5ZCJ9"
         }
       ]
@@ -55,12 +55,48 @@
       ]
     },
     {
-      "id": "claim_ecac76995cb148e291cb552da428ae2f",
-      "statement": "Phase 2b CI uses scoped pre-signed ephemeral Tailscale keys, verifies exact node tag and tailnet, and uses tokenless operator API proxy kubeconfigs; retained native Services and Mac rollback remain through live acceptance.",
+      "id": "claim_da5448c111854441bd9c5db5938a4a05",
+      "statement": "October 17 preparation releases 1664 MiB of Acer requests through zero-replica Crossplane core/RBAC standby and measured Multica backend/frontend/PostgreSQL requests of 128/320/320 MiB plus Langfuse PostgreSQL at 128 MiB. Stateless Langfuse web moves from zimaboard-1 to Acer with a 1280 MiB request against a 920.6 MiB seven-day peak; limits and persistent storage stay unchanged.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/values.yaml",
+          "version": "repo-file-v1:sha256:e5139fdefcf42c1284b6e471d0efedc88496f9e3ce847c994c92217c456fa4ce"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/crossplane/README.md",
+          "version": "repo-file-v1:sha256:cff958c33146d572d8bcc6139655c336821da565b6587c48547f679e53d4271b"
+        },
+        {
+          "resource": "repo://docs/evidence/acer-cordium-capacity-2026-10-17.json",
+          "version": "repo-file-v1:sha256:4bc47ef2f8b66ef0c2327b7b186c9486f8b3ae9ec641e37409f7062ffde7a863"
+        }
+      ]
+    },
+    {
+      "id": "claim_82f2d92f86074263b44466e3ee12bfab",
+      "statement": "The request snapshot projects 1161.7 MiB Acer headroom after Langfuse web moves there, and 2758.5 MiB on Cordium-eligible zimaboard-1 before one 2 GiB Workspace, leaving 710.5 MiB afterward. Live GitOps convergence, web and SQL readiness, actual node headroom and pressure checks remain acceptance requirements, and workspace PV bindings must be preserved.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/langfuse/README.md",
+          "version": "repo-file-v1:sha256:1a6a0ba669f51bc8ca6e78afcdfd9d9579c24ac17427b3b05b64acf1f65229d9"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/crossplane/README.md",
+          "version": "repo-file-v1:sha256:cff958c33146d572d8bcc6139655c336821da565b6587c48547f679e53d4271b"
+        },
+        {
+          "resource": "repo://docs/evidence/acer-cordium-capacity-2026-10-17.json",
+          "version": "repo-file-v1:sha256:4bc47ef2f8b66ef0c2327b7b186c9486f8b3ae9ec641e37409f7062ffde7a863"
+        }
+      ]
+    },
+    {
+      "id": "claim_ee13da850e334754a1bf7370394a37e6",
+      "statement": "Phase 2b hosted CI stages scoped presigned Tailscale keys with exact identity checks and a tokenless kubeconfig through the operator API proxy; Cordium has private ingress reachability without a Kubernetes grant, and live acceptance remains pending.",
       "evidence": [
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
+          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
         },
         {
           "resource": "repo://scripts/ci/install-kubeconfig.sh",
@@ -71,24 +107,10 @@
           "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
         }
       ]
-    },
-    {
-      "id": "claim_24238620658c4194aaaf60df221779c8",
-      "statement": "The declared Linux Nix builder schedules only on amd64 zimaboard-0 or zimaboard-1 and reserves and caps memory at 1Gi; source constraints do not prove live deployment or sufficient build capacity.",
-      "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/nix-builder/README.md",
-          "version": "repo-file-v1:sha256:ce4b793ad09f4151fa5864adaaec0ff8ed9f144cd26bb168a2353f74c0e64e30"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/nix-builder/deployment.yaml#L41-L79",
-          "version": "repo-lines-v1:sha256:90234dd90d67c84b568238928cdb13775c84d8da04bd410831ceb0cb090c1330:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0Y2MyYWJlZThmZjQyYzVlNzEwYzAxOWU5ODk1NzVhMTYzOGU5YWMyZGYwYTczMWMwNzAwN2ExYmRjZTgyMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5NGQ1NGE2OTc1NDM0YTZjZGRhY2Y5ZTA1ODNkODE4NjgzYWNkNWQwNzEyZTZmMzI4Nzc3NmViZDkzNzhkZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjlmYTRiOWU3YWM2MGI1MzJjOWQ2YjZiZmUxYTBmNGMzZGU0ZDQ5YjE4ZmE5MTA1N2NhYjQwOWI4NDBlODJiYjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0YThjZWQ3ZWYwYmYzM2E5NTk1YWM1ZGZhYTFiZTNjZTgwMjg2NzA2NDRhNjZmNmMxY2I1YzM1ZTI1ODE3MzYifQ"
-        }
-      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:40:16.143Z"
+    "at": "2026-10-18T12:49:03.265Z"
   }
 }

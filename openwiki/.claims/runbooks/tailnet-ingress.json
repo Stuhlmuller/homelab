@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:52b92ca581f4d51d360df84f2fd3a5825035f000269c6b2fe27815ab3c3d61ab",
+  "pageVersion": "sha256:24ddd6752a4ac421e0901eaa5af15db80294886414ea86775f9d3073abfef964",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/policy-bot-webhook.py",
-          "version": "repo-file-v1:sha256:d856eb227a25f4d4d8b43491805778d4562cd9c479f580c0f9767d08eb2b4a0e"
+          "version": "repo-file-v1:sha256:490bbec5ea987e100a84ef09d43de2c4a73866d8c13e77cd307be9262eb82ffc"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py#L276-L318",
@@ -98,7 +98,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:01eb7a477b2186253e9adb3194174133e7cc6e02eba5c13abf0168afb985e0e5"
+          "version": "repo-file-v1:sha256:e798a1e4cc8aba888cca7f74a026740b6e3b1750b860c0c77e350574035ae624"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw/networkpolicy.yaml",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:208ad5f58c40defdd4d9ca188bc5315ec26e0e0a915fb6a3e7ced740443efecd"
+          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
         }
       ]
     },
@@ -165,7 +165,7 @@
       "statement": "The current IPv4-only ingress publishes Service-derived A records and no AAAA despite its peer having IPv6; the DNS regression rejects using unsupported peer address families as application endpoints.",
       "evidence": [
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md#L18-L33",
+          "resource": "repo://docs/networking-tailnet-ingress.md#L27-L42",
           "version": "repo-lines-v1:sha256:e8f18f8a408f737aad7dfbfb499c0a9b032c9b47653adb33ba44bfe78be3939d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyYWI2OTRhMzE5NmQ3NmMwNWRkNWFmYmNiYzgwZTQ4YWE4ZTZiNTEyOTBjZDdlNDk0MWJiMGU5Y2EyYzE0ZjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVlNTA1MDRmM2YwOGQ3NzE0MWIxOWQ3ZjljZTMxMGRjY2Y1NWNmYTVhNTI1NDVlM2UyNTNiYWIwODYxZmUwYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMxYWFiOTE2MjhiZWE5MmViNjk1Mjg4OGM3MWIyMzVjMTdkNzBkNTA0MjUwNWViOGQ4Y2NhYzQ3Mzg1MTYyNjAifQ"
         },
         {
@@ -183,7 +183,7 @@
           "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
         },
         {
-          "resource": "repo://scripts/policy-bot-webhook.py#L105-L123",
+          "resource": "repo://scripts/policy-bot-webhook.py#L107-L125",
           "version": "repo-lines-v1:sha256:b0023f2c20f8cd3e1d3ae6782f0cf9810d66496ef2f68ac506c77e8ed97a6622:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMzdmNTVhMDBlNmNlZGE0MTQ1ZjdkN2IwN2ZhY2Q0NTA3MmY5N2Q2YmJhYzk5NTEwYjQ0YzY5OTU3ODZmYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0MGFmYTYxNmY1OGI3NjBmMmYzYzgzN2Q3MWIwMWMxNjgxNGQ2MTZjY2M5M2Q2MjQ2YmM1YzhhM2FmOTk0ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3OGQ4MmViYzU1MmJlYzk5ZTg3NjNkNmI3MTA3M2ZmMTIwNjQ2N2MwODhmYzcxZjVjNzQxYjdiNDJhNTUyZjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1YzJhM2U1YjViMzhlZWFhMWJjZTM3ZmRlMDgwMzFjNjIyYWNkNDYyZjA4NGU1NGM1YjY4MmY0MjBkYjg4ZWQifQ"
         }
       ]
@@ -218,7 +218,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
-          "version": "repo-file-v1:sha256:8bf8caaf53090a33e32eb06ea4c18290bf6eb55dcba9d550875e7ca50d4b38eb"
+          "version": "repo-file-v1:sha256:2ef50b92d14ccbdcc052bcf2810562b8cd13008754a32e9808997e1fb8f05c8b"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L40-L92",
@@ -257,7 +257,7 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L162-L197",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
           "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
         }
       ]
@@ -285,30 +285,30 @@
       ]
     },
     {
-      "id": "claim_169861d7e70e420dbecaceeec142ab20",
-      "statement": "All nine phase 2b workflows use private per-job Tailscale state and exact identity verification; CI/native transport changes follow canonical mesh acceptance and precede protected CI, publisher and Cordium acceptance before legacy retirement.",
+      "id": "claim_a8b0fa7727ff48999b075e4e1c685373",
+      "statement": "Staged phase 2b CI uses uncached per-job Tailscale state, exact tag and tailnet checks, and tokenless operator API kubeconfigs; legacy catalog, credentials and tunnel remain until protected plan/apply, publisher and Cordium acceptance.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+          "resource": "repo://.github/workflows/terragrunt-apply.yml",
+          "version": "repo-file-v1:sha256:66f501ceec27ec1b5b7738c81486a7696aad91c210af91415b49cf00b9c694f7"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:1ab0543f8959ae80e77f4664b03109947f6bebf235ccc303df84121a62903b9d"
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
+          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
         },
         {
-          "resource": "repo://docs/cordium-ci.md",
-          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+          "resource": "repo://scripts/ci/tailscale-identity-check.py",
+          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:40:16.143Z"
+    "at": "2026-10-18T12:49:03.265Z"
   }
 }

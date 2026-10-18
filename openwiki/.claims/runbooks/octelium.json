@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2d2c99be881eb005096568f2b55280f0fc2bd5b35545e2c855104de65cc3696f",
+  "pageVersion": "sha256:0d9e8a2525d3d85741a0225493d956c32a4b843b30a4458b66a15f45864c6ab0",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -36,11 +36,11 @@
       "evidence": [
         {
           "resource": "repo://docs/cordium-ci.md",
-          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+          "version": "repo-file-v1:sha256:2f9b1b396498006a0189e4dcc247c0af3f67fe918a8b990cca6e4028ab1b30dd"
         },
         {
           "resource": "repo://scripts/ci/cordium-ci.sh",
-          "version": "repo-file-v1:sha256:da1bbb4f1745e68c1a11fc0938dca2be131b4ddca7c87edfc4457291e4dd04b5"
+          "version": "repo-file-v1:sha256:69aff5833ba9c50626331def0c5514d51c125c0586f5dc60b809a127dc099594"
         },
         {
           "resource": "repo://scripts/octelium-nofx-reconcile.py#L72-L113",
@@ -51,6 +51,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:40:16.143Z"
+    "at": "2026-10-18T12:49:03.265Z"
   }
 }

@@ -4,20 +4,22 @@ title: "NOFX"
 description: "NOFX access, Harbor images, cash-spot competition, SQLite persistence, UI request failures, and partial free-model acceptance."
 tags: ["homelab", "navigation"]
 workload_status: active
-updated: 2026-09-29
+updated: 2026-10-17
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T18:40:16.143Z
+    at: 2026-10-18T12:49:03.265Z
 sources:
+  - id: openwiki-source-b7385f58821387de7a16f687
+    resource: repo://clusters/homelab/apps/nofx/deployment.yaml
+  - id: openwiki-source-d190dbce4c50934f34b78ce1
+    resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
-  - id: openwiki-source-b11e34f0c0d38354842445ae
-    resource: repo://docs/octelium-nofx-reconciliation.md
-  - id: openwiki-source-ff63d9d82b2370adf56a5f28
-    resource: repo://scripts/octelium-nofx-reconcile.py
-generated: { by: "codex", at: "2026-10-17T18:29:04.432Z" }
+  - id: openwiki-source-e6fd9160ab2341143a5d45c8
+    resource: repo://docs/image-egress-hardening.md
+generated: { by: "codex", at: "2026-10-17T23:58:10.958Z" }
 ---
 
 # NOFX
@@ -29,6 +31,16 @@ source is `clusters/homelab/apps/nofx`. Octelium passes NOFX's application
 `Authorization` header because NOFX sends its session JWT there. The
 Argo CD Application uses `IaC/stacks/nofx/stack.hcl` registration inputs,
 indexed by `IaC/terragrunt.stack.hcl`.
+
+The [declared frontend policy](../../clusters/homelab/apps/nofx/networkpolicy.yaml)
+allows egress only to CoreDNS on TCP/UDP 53 and the NOFX backend on TCP
+8080/15008. The [deployment](../../clusters/homelab/apps/nofx/deployment.yaml)
+uses local `wget` health probes so they do not depend on network-policy ingress;
+the backend allows ambient HBONE on 15008 while its Istio AuthorizationPolicy
+checks frontend identity. The [runtime check](../../scripts/ci/nofx-runtime-check.py)
+rejects broader egress and missing HBONE. These are declared rules, not proven
+isolation: [enforcement](../../docs/image-egress-hardening.md) remains held
+until the separate NRI canary validates allow and deny paths on live nodes.
 
 The deployment declares maintained Harbor backend and frontend images derived from
 `github.com/NoFxAiOS/nofx`. The backend stores SQLite data under `/app/data` on
@@ -186,9 +198,8 @@ git. Desired state now explicitly declares `isAnonymous: false`; the existing
 policy and `authorizationMode: PASS` remain required.
 
 Use the [fixed NOFX operator path](../../docs/octelium-nofx-reconciliation.md) after
-its review and merge. It verifies the pinned native client, the declared mesh
-peer, canonical DNS, TLS and native protocols, then connects directly with
-inherited proxy settings removed. It defaults to read-only inspection:
+its review and merge. It verifies the pinned native client, starts the scoped
+Tunnel transport, and defaults to read-only inspection:
 
 ```sh
 nix develop --command python3 -I scripts/octelium-nofx-reconcile.py

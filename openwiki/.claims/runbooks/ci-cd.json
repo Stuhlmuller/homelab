@@ -1,72 +1,80 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1a00809fa04895a1338131ae9ff3513032c58c642e3bd605fc69d564bbc3e942",
+  "pageVersion": "sha256:381edbf1826a01966a5cd7379d0f2e8d4847b0358f463e2e33596137c06fba24",
   "claims": [
     {
-      "id": "claim_48e7e9584b0c4fe8ae80dd9fe7329c53",
-      "statement": "Nine prepared CI workflows use separate scoped pre-signed ephemeral mesh keys with exact identity verification and private runner state; canonical DNS and key publication precede merge, while plan denial, publishers and Cordium execution/denial/cleanup require fresh live acceptance afterward.",
+      "id": "claim_34382a82571c444084b9118105fb700f",
+      "statement": "Optional NOFX image, OpenClaw native config, and Image automation PR events are removed; matching main pushes and reviewed manual dispatches remain, while the five-minute image observer schedule is removed.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:4956a38a0393b6b000805cf5e52931414b13c4218e264f4c226dd5f41508a710"
+          "resource": "repo://.github/workflows/image-automation.yml",
+          "version": "repo-file-v1:sha256:d7c0ee3dc0c5c571b187ad9abbcd90bd50d00f3090d8affd5373484b6d61e9d2"
+        },
+        {
+          "resource": "repo://.github/workflows/nofx-images.yml",
+          "version": "repo-file-v1:sha256:e3dc4a51dd8cd3d5652aca33123ef48a61db34169f04514bb7c2926ad482e4c3"
+        },
+        {
+          "resource": "repo://.github/workflows/openclaw-config.yml",
+          "version": "repo-file-v1:sha256:28ab72b380dc338ff504e0560053c26afab121a00fc43ae6aaa19761600e3535"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
-        },
-        {
-          "resource": "repo://docs/cordium-ci.md",
-          "version": "repo-file-v1:sha256:a0444bbad9a01c3d0977a33b57e538dec0452878227612bedf64427e55d2e2e2"
+          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
         }
       ]
     },
     {
-      "id": "claim_56175ee5158e4eff9c6692a106627f5a",
-      "statement": "Current automatic CI environments have no required reviewers and disable administrator bypass; production permits exactly the main branch and no tags, verifies exact current main before credentials, and both credential publishers share the allowlist guard. PR pushes can start live plans automatically without authorizing production applies.",
+      "id": "claim_64b3256c37b048bd8c2f2a27ea52adb8",
+      "statement": "Cordium runner bootstrap stages exact-main credential, image-build, Harbor publication, and canary workflows; the pool and job selectors stay disabled until live isolation, publication, cold-pull, canary, and recovery acceptance support a reviewed cutover.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-credentials.yml",
+          "version": "repo-file-v1:sha256:333a6e986548d489ff23f1dc8bc8f65a8e8a27acc5b3e72c1597b41bcec024c4"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-images.yml",
+          "version": "repo-file-v1:sha256:794199d0f301c46137bd0a3c061cc6f2b6177b087ce64f6db042b68daa0ff860"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        }
+      ]
+    },
+    {
+      "id": "claim_9803f46b8a3340db9077b897cc04cac0",
+      "statement": "Phase 2b stages nine credentialed hosted CI jobs on scoped pre-signed Tailscale keys with exact tag and tailnet checks, uncached private state, and tokenless operator-proxy kubeconfigs; live proxy, plan, apply, publisher and Cordium acceptance remain required.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/terragrunt-apply.yml",
-          "version": "repo-file-v1:sha256:bf1a77d8421072679a92ae1a6095950a6ef1ee455c839cfb18263edd4959b101"
+          "version": "repo-file-v1:sha256:66f501ceec27ec1b5b7738c81486a7696aad91c210af91415b49cf00b9c694f7"
+        },
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:382c999ffa23a6a94920323558e6341d8c114455070541dcc6ae4a31007618db"
+          "version": "repo-file-v1:sha256:77bf906a35f2d451da4e5cb1229a9b39c2325f953a68a5d31b608feb70f66ffd"
         },
         {
-          "resource": "repo://scripts/entra-ci-configure.py",
-          "version": "repo-file-v1:sha256:252272e7cf908036f033f8386315e2c8462e250a17f6f2ead4274adff344affc"
-        },
-        {
-          "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:f34e43eea29a512cf3312df688c0fc273b9c4c31c6a76f8830f7996030975931"
-        }
-      ]
-    },
-    {
-      "id": "claim_c06aa88145794bfba8ffc6db14968041",
-      "statement": "Signed offline fixture and manifest-policy verification uses protected-main cache trust, while remaining static validation and automatic environment-scoped live plans run fresh; cache or static success does not authorize a production apply.",
-      "evidence": [
-        {
-          "resource": "repo://.github/workflows/terragrunt-plan.yml",
-          "version": "repo-file-v1:sha256:788f378893ba9b6a8d719dd8e429e1dcb0688c01921798e280ba8fb2bd2e934a"
-        },
-        {
-          "resource": "repo://docs/nix-cache.md",
-          "version": "repo-file-v1:sha256:9f7c49f65f66837e283c73229bdbbc636be3aa8cc18b4b3af373ff1cb013685d"
-        },
-        {
-          "resource": "repo://scripts/ci/nix-checks.sh",
-          "version": "repo-file-v1:sha256:a90d4969de8cdba666c51083f3c229d44cba56560e0d8fede7c704229ddd9736"
-        },
-        {
-          "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:66d73f94fcc69780ce9e1f15489e9e1e9969ebe4f3c369ed00cc4d2552bef677"
+          "resource": "repo://scripts/ci/tailscale-identity-check.py",
+          "version": "repo-file-v1:sha256:3314bdc263fd4bdff6413d6286808dda47d798d7257c0f944319dcda250660d2"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T18:29:04.432Z"
+    "at": "2026-10-18T12:49:03.265Z"
   }
 }

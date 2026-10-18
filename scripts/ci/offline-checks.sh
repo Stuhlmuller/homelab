@@ -6,6 +6,11 @@ source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
 
 python3 -I scripts/ci/speckit-check.py
+ruby scripts/ci/mastodon-launch-test.rb
+ruby scripts/ci/mastodon-bootstrap-test.rb
+python3 -I scripts/ci/mastodon-routes-test.py
+python3 -I scripts/ci/mastodon-smtp-credential-test.py
+python3 -I scripts/ci/mastodon-public-dns-test.py
 python3 -I scripts/ci/openwiki-check.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
@@ -20,6 +25,12 @@ python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
 python3 -I scripts/ci/cordium-check-test.py
+python3 -I scripts/ci/cordium-runner-test.py
+python3 -I scripts/ci/cordium-runner-controller-test.py
+python3 -I scripts/ci/cordium-code-quality-test.py
+python3 -I scripts/ci/cordium-runner-access-test.py
+python3 -I scripts/ci/cordium-runner-credentials-test.py
+python3 -I scripts/ci/cordium-runner-network-test.py
 python3 -I scripts/ci/cordium-ci-acceptance-test.py
 python3 -I scripts/ci/cordium-ci-transport-test.py
 python3 -I scripts/ci/cordium-ci-retire-test.py
@@ -45,8 +56,10 @@ python3 -I scripts/ci/fleet-bootstrap-test.py
 python3 -I scripts/ci/fleet-backup-test.py
 python3 -I scripts/ci/fleet-apple-csr-test.py
 python3 -I scripts/ci/fleet-free-setup-test.py
+python3 -I scripts/ci/fleet-google-login-test.py
 python3 -I scripts/ci/fleet-airvpn-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
+python3 -I scripts/ci/openclaw-enterprise-image-test.py
 python3 -I scripts/ci/harbor-encrypt-diagnostic-test.py
 python3 -I scripts/ci/static-checks-timeout-test.py
 python3 -I scripts/ci/harbor-core-source-test.py
@@ -62,6 +75,8 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
+python3 -I scripts/ci/talos-nri-preparation-check-test.py
+python3 -I scripts/ci/talos-nri-preparation-check.py
 python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
 python3 scripts/ci/octelium-tunnel-check-test.py
 python3 -I scripts/ci/octelium-macos-api-carrier-test.py
