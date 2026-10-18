@@ -8,6 +8,25 @@
   outputs =
     { self, nixpkgs, ... }:
     let
+      xerjVersion = "1.0.0-rc.96";
+      xerjArchives = {
+        aarch64-darwin = {
+          target = "aarch64-apple-darwin";
+          hash = "sha256-UUSRo2AY4osJ35JIeroAPx30QBUR372d/RFTokxGHXs=";
+        };
+        x86_64-darwin = {
+          target = "x86_64-apple-darwin";
+          hash = "sha256-eSesQYPMjKftiujdYlgEcr/YUi0Xsi9JaDZUm7JhYsM=";
+        };
+        aarch64-linux = {
+          target = "aarch64-unknown-linux-musl";
+          hash = "sha256-MntwU9stFbeWe98OojP2+HfNd+ZJapTrfZRAgRBdcd8=";
+        };
+        x86_64-linux = {
+          target = "x86_64-unknown-linux-musl";
+          hash = "sha256-AHuZKUDQLn7qnmVsWcdzka6MfeBptiAIZlZu8SMrM6E=";
+        };
+      };
       systems = [
         "aarch64-darwin"
         "aarch64-linux"
@@ -18,6 +37,31 @@
       forEachSystem = nixpkgs.lib.genAttrs systems;
     in
     {
+      packages = forEachSystem (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          archive = xerjArchives.${system};
+        in
+        {
+          xerj = pkgs.stdenvNoCC.mkDerivation {
+            pname = "xerj";
+            version = xerjVersion;
+            src = pkgs.fetchurl {
+              url = "https://github.com/xerj-org/xerj/releases/download/v${xerjVersion}/xerj-${xerjVersion}-${archive.target}.tar.gz";
+              inherit (archive) hash;
+            };
+            dontStrip = true;
+            installPhase = ''
+              mkdir -p "$out/bin"
+              cp xerj "$out/bin/xerj"
+              chmod 755 "$out/bin/xerj"
+            '';
+            meta.mainProgram = "xerj";
+          };
+        }
+      );
+
       checks = forEachSystem (
         system:
         let
@@ -120,6 +164,7 @@
             unzip
             yamllint
             yq-go
+            self.packages.${system}.xerj
           ];
           checkovPackages = pkgs.lib.optionals (system != "x86_64-darwin") [
             pkgs.checkov

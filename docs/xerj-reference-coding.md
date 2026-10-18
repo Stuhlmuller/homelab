@@ -1,12 +1,12 @@
 # XERJ Reference Coding
 
 XERJ runs on the operator workstation. Its clones and indices live under
-`~/.xerj-code/`; it does not change the cluster. Install the checksum-verified
-binary using the [XERJ install guide](https://xerj.org/docs/install), then start
-an authenticated, loopback-only node in a terminal:
+`~/.xerj-code/`; it does not change the cluster. The flake pins the
+checksum-verified XERJ release. Enter `nix develop`, then start an authenticated,
+loopback-only node in a terminal:
 
 ```sh
-~/.local/bin/xerj --data-dir ~/.xerj-code/data
+xerj --data-dir ~/.xerj-code/data
 ```
 
 For this non-default data directory, let loopback clients discover its private
@@ -22,9 +22,9 @@ loopback `autoindex` also discovers this file without `--api-key` or
 `XERJ_API_KEY`. Check for `using the admin key at` in its startup output. If
 indexing returns 401, check the link and node URL.
 
-Codex connects through [`.codex/config.toml`](../.codex/config.toml). The MCP
-server reads the local key file at startup; no credential belongs in git or a
-process environment. The node must be running when Codex searches.
+Codex runs the flake package through [`.codex/config.toml`](../.codex/config.toml).
+The MCP server reads the local key file at startup; no credential belongs in
+git or a process environment. The node must be running when Codex searches.
 
 ## Reference sources
 
@@ -34,11 +34,11 @@ homelab; `argo-cd`, `talos`, and `terragrunt` are the upstream implementations.
 Import and index one corpus at a time:
 
 ```sh
-~/.local/bin/xerj corpus add --from scripts/config/xerj-corpora/argo-cd.json
+xerj corpus add --from scripts/config/xerj-corpora/argo-cd.json
 cp scripts/config/xerj-corpora/argo-cd.xerjignore \
   ~/.xerj-code/corpora/argo-cd/.xerjignore
-~/.local/bin/xerj corpus index argo-cd
-~/.local/bin/xerj code argo-cd "How are sync waves ordered and health checked?"
+xerj corpus index argo-cd
+xerj code argo-cd "How are sync waves ordered and health checked?"
 ```
 
 Repeat for `talos`, `terragrunt`, and `homelab-peer`, copying each matching
@@ -72,7 +72,7 @@ generation reconciles later changes within its existing dataset schema. XERJ
 skips hidden paths during a root walk. Index the visible tree first:
 
 ```sh
-~/.local/bin/xerj autoindex . --prefix homelab-local-v3 \
+xerj autoindex . --prefix homelab-local-v3 \
   --state-dir ~/.xerj-code/autoindex-state/homelab-local-v3 \
   --no-graph --workers 4 \
   --stub 'clusters/homelab/apps/octelium-enterprise/resources.yaml'
@@ -87,7 +87,7 @@ The cards include only files tracked by this public repository:
 
 ```sh
 python3 scripts/xerj-tracked-source-cards.py
-~/.local/bin/xerj autoindex ~/.xerj-code/local-source \
+xerj autoindex ~/.xerj-code/local-source \
   --prefix homelab-tracked-source \
   --state-dir ~/.xerj-code/autoindex-state/homelab-tracked-source \
   --no-graph
@@ -99,7 +99,7 @@ old one. Search the checkout through Codex's `xerj_search` MCP tool with
 `index: homelab-local-v3-*` and
 `query: {"query_string":{"query":"<problem>"}}`. Use
 `index: homelab-tracked-source-*` for hidden-file cards. Read the cited
-repository path as the source of truth. `~/.local/bin/xerj corpus list` shows
+repository path as the source of truth. `xerj corpus list` shows
 which reference corpora are loaded.
 XERJ treats autoindex exit `3` as success with skipped junk; an exit `1` or `4`
 needs attention. `corpus index` can return `0` while reporting an inner
