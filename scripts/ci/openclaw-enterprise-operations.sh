@@ -26,7 +26,7 @@ pod_uid="$(jq -er .readerPodUid "$work/status.json")"
 
 reader=(kubectl -n ai exec "$pod" -c reader --)
 reader_input=(kubectl -n ai exec -i "$pod" -c reader --)
-"${reader[@]}" sh -c 'umask 077; mkdir -p /private/legacy; chmod 700 /private/legacy'
+"${reader[@]}" sh -c 'umask 077; mkdir -p /private/legacy; chmod 700 /private/legacy; chmod g-s /private/legacy'
 "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/config.json' <scripts/config/openclaw-enterprise.json
 "${reader_input[@]}" sh -c 'umask 077; cat > /private/legacy/status.json' <"$work/status.json"
 [[ "$(kubectl -n ai get pod "$pod" -o jsonpath='{.metadata.uid}')" == "$pod_uid" ]] || exit 1
