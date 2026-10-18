@@ -14,7 +14,7 @@ from pathlib import Path
 
 ENDPOINT = "http://fleet.fleet.svc.cluster.local:8080"
 SERVER_URL = "https://fleet.stinkyboi.com"
-ADMIN_EMAIL = "rodman@stuhlmuller.net"
+ADMIN_EMAIL = "rodman@stinkyboi.com"
 MAX_RESPONSE = 1024 * 1024
 
 
