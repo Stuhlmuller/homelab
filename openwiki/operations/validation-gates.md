@@ -88,6 +88,8 @@ sources:
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
+  - id: openwiki-source-d9d387d4c8e269e62340179d
+    resource: repo://scripts/ci/harbor-publish.sh
   - id: openwiki-source-f957231327bdd56401fbc4e2
     resource: repo://scripts/ci/image-policy-check.py
   - id: openwiki-source-dce02546543e605cb2ccbb06
@@ -150,10 +152,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T10:55:26.804Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T10:55:26.804Z
 ---
 
 # Validation Gates
@@ -1705,6 +1707,12 @@ copying fails the original-index digest assertion. This gate requires Skopeo,
 not Docker or production credentials. It proves local staging behavior;
 complete Harbor pulls, destination signatures, scans and live consumers still
 require separate acceptance.
+
+Mocked transport fixtures cover the exact OCI conversion failure at destination
+upload and at alias copy after a resumed digest tag. Both require the `regctl`
+fallback, unchanged root digest and alias, and a complete authenticated pull;
+generic destination errors still fail closed. These fixtures do not establish
+that the protected full-catalog publication succeeded.
 
 `talos-harbor-mirror-credential-test.py` rejects unsafe directories, files,
 profile names, inherited AWS credentials and proxies, stale main, and leaked
