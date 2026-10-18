@@ -25,7 +25,6 @@ APPS = {
     "multica": "multica-frontend.ai:3000",
     "n8n": "n8n.automation:5678",
     "nofx": "nofx-frontend.nofx:80",
-    "octobot": "octobot.finance:5001",
     "openclaw": "openclaw.ai:8080",
     "policy-bot": "policy-bot.automation:8080",
     "prowlarr": "prowlarr.media:9696",
@@ -37,6 +36,7 @@ APPS = {
 NODE_REGISTRY_SOURCES = [
     "10.1.0.199/32", "10.1.0.200/32", "10.1.0.201/32", "10.1.0.202/32",
     "10.244.1.1/32", "10.244.2.1/32", "10.244.3.1/32", "10.244.4.1/32",
+    "10.244.1.0/32", "10.244.2.0/32", "10.244.3.0/32", "10.244.4.0/32",
 ]
 
 
@@ -70,6 +70,16 @@ class RouteTests(unittest.TestCase):
         for name in controls:
             self.assertEqual(ROUTERS[name]["entryPoints"], ["websecure"])
             self.assertEqual(ROUTERS[name]["tls"], {})
+
+    def test_private_harbor_transport_keeps_tls_service_and_full_route(self):
+        private = read_yaml("clusters/homelab/apps/traefik/values.yaml")["service"]["private"]
+        self.assertEqual(private["ports"]["https"], {"port": 443, "targetPort": 8443})
+        self.assertEqual(ROUTERS["harbor"], {
+            "entryPoints": ["websecure"],
+            "rule": "Host(`harbor.stinkyboi.com`)",
+            "service": "harbor",
+            "tls": {},
+        })
 
     def test_fleet_setup_has_no_router(self):
         rule = ROUTERS["fleet"]["rule"]
@@ -211,7 +221,7 @@ class RouteTests(unittest.TestCase):
                     "podSelector": {"matchLabels": {"app.kubernetes.io/name": "traefik"}},
                 }, cleartext["from"])
 
-    def test_node_registry_sources_are_exact_hosts_and_bridges(self):
+    def test_node_registry_sources_are_exact_hosts_bridges_and_overlays(self):
         policy = read_yaml("clusters/homelab/apps/traefik/networkpolicy.yaml")["spec"]
         registry, = [rule for rule in policy["ingress"]
                      if {"protocol": "TCP", "port": 9443} in rule["ports"]]
@@ -222,6 +232,8 @@ class RouteTests(unittest.TestCase):
         # A nearby LAN host or ordinary Pod must not match this source boundary.
         networks = [ipaddress.ip_network(source["ipBlock"]["cidr"])
                     for source in registry["from"]]
+        for address in ("10.244.1.0", "10.244.2.0", "10.244.3.0", "10.244.4.0"):
+            self.assertTrue(any(ipaddress.ip_address(address) in net for net in networks))
         for address in ("10.1.0.198", "10.1.0.203", "10.244.1.2", "10.244.2.2",
                         "10.244.3.2", "10.244.4.2"):
             self.assertFalse(any(ipaddress.ip_address(address) in net for net in networks))

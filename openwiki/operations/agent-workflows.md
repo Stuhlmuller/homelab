@@ -12,6 +12,13 @@ The homelab skills point to canonical runbooks; OpenWiki supplies searchable
 cross-cutting context. See [wiki maintenance](wiki-maintenance.md) for its
 installation, update, and verification workflow.
 
+## Reference Coding
+
+Before nontrivial code with a relevant upstream or peer implementation, search
+the pinned XERJ corpus and inspect the cited source. [AGENTS.md](../../AGENTS.md)
+sets this workflow; the [reference coding guide](../../docs/xerj-reference-coding.md)
+lists the corpora, local indexing commands, and search examples.
+
 ## Spec Kit
 
 Spec Kit 0.15.1 adds ten `speckit-*` skills for specification, clarification,

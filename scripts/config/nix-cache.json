@@ -1,0 +1,6 @@
+{
+  "repository": "Stuhlmuller/homelab",
+  "tag": "nix-cache",
+  "url": "https://github.com/Stuhlmuller/homelab/releases/download/nix-cache",
+  "publicKey": "homelab-ci-1:UTFR5qcZj3lDEoLWeVvDY40t6MleLyxBAuF0Dcs+PFA="
+}

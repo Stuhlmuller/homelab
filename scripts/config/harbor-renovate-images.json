@@ -1,0 +1,22 @@
+{
+  "images": [
+    {
+      "source": "docker.io/fleetdm/fleet:v4.92.3@sha256:2c53edaa4e530ae4671284a309c0cc20345f4c3eff8c12cfcd1238c3e3fc46f1"
+    },
+    {
+      "source": "docker.io/library/postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
+    },
+    {
+      "source": "docker.io/library/python:3.13-bookworm@sha256:073ffebb96ae4d0ed73ccad59f08c47bd84af8a79f5258130f8458ac50ad9ff4"
+    },
+    {
+      "source": "ghcr.io/dispatcharr/dispatcharr:latest@sha256:b7d695c5cc98b9abd64c74a94539c1ebffc23d965021613c820c67e25dea41a3"
+    },
+    {
+      "source": "ghcr.io/linuxserver/bazarr:1.6.2@sha256:fb0437897eaa7f96cf6ac42f795f8dcc208d34ec969eac5d366454e767304eb9"
+    },
+    {
+      "source": "ghcr.io/n8n-io/n8n:stable@sha256:3db21366be1d3c77c1708963129c051948573019659e8873e0294be035ffc1b2"
+    }
+  ]
+}

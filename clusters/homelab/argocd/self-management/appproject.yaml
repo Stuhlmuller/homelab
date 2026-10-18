@@ -43,13 +43,13 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: cordium
     - server: https://kubernetes.default.svc
+      namespace: cordium-runners
+    - server: https://kubernetes.default.svc
       namespace: cordium-storage
     - server: https://kubernetes.default.svc
       namespace: crossplane-system
     - server: https://kubernetes.default.svc
       namespace: external-secrets
-    - server: https://kubernetes.default.svc
-      namespace: finance
     - server: https://kubernetes.default.svc
       namespace: fleet
     - server: https://kubernetes.default.svc
@@ -61,9 +61,13 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: langfuse
     - server: https://kubernetes.default.svc
+      namespace: mastodon
+    - server: https://kubernetes.default.svc
       namespace: media
     - server: https://kubernetes.default.svc
       namespace: monitoring
+    - server: https://kubernetes.default.svc
+      namespace: nix-builder
     - server: https://kubernetes.default.svc
       namespace: nofx
     - server: https://kubernetes.default.svc

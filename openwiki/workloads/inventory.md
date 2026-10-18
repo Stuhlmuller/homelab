@@ -1,21 +1,51 @@
 ---
 type: workload
 title: "Workload Inventory"
-description: "Application and platform namespaces, GitOps paths, dependencies, resource and state contracts, and runtime readiness boundaries."
-tags: ["workloads", "argocd", "inventory"]
+description: "Application namespaces, GitOps paths, dependencies, state contracts and runtime readiness boundaries."
+tags: [workloads, argocd, inventory]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-50e1601d2f23b472521e5c0f
+    resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
     resource: repo://clusters/homelab/apps/cert-manager/values-v1.20.3.yaml
+  - id: openwiki-source-89de10646bdbebfd3e1ed075
+    resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-812216982d0b6a887bf09651
     resource: repo://clusters/homelab/apps/cordium/networkpolicy.yaml
   - id: openwiki-source-efd15335758af38c6e6af9ab
     resource: repo://clusters/homelab/apps/deluge/daemon-status.py
   - id: openwiki-source-653e94c230cb8a02b742f512
     resource: repo://clusters/homelab/apps/deluge/values.yaml
+  - id: openwiki-source-58caddf8069d72479935ea1e
+    resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-3ee445a5390585cab7a1edab
+    resource: repo://clusters/homelab/apps/langfuse/README.md
+  - id: openwiki-source-827cecf9eca9139ac8e7367a
+    resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-bb71538b4bc75dd401bfc1ec
+    resource: repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml
+  - id: openwiki-source-9909d58412f1a989bfab76c4
+    resource: repo://clusters/homelab/apps/mastodon/bootstrap-job.yaml
+  - id: openwiki-source-76c52b92a6019fb5db7199cb
+    resource: repo://clusters/homelab/apps/mastodon/launch.rb
+  - id: openwiki-source-dbeb78c2adb5040b8afe8540
+    resource: repo://clusters/homelab/apps/mastodon/migration.yaml
+  - id: openwiki-source-ffe9c2c54bc78625ce9efd78
+    resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-4301bd0984ddefae9a3aa9e4
+    resource: repo://clusters/homelab/apps/mastodon/storage.yaml
+  - id: openwiki-source-f63af960991dc66477879fc8
+    resource: repo://clusters/homelab/apps/mastodon/virtualservice.yaml
+  - id: openwiki-source-b7405e9378d7ba0db53f8842
+    resource: repo://clusters/homelab/apps/mastodon/workloads.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
+  - id: openwiki-source-eb9ba8868bbd263b0cd40e71
+    resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-19486243ca5f1efdd808adf2
@@ -32,6 +62,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/values.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
@@ -40,14 +72,24 @@ sources:
     resource: repo://IaC/stacks/argocd-image-updater/stack.hcl
   - id: openwiki-source-fc45eca2fc7797af796c61b6
     resource: repo://IaC/stacks/cert-manager/stack.hcl
+  - id: openwiki-source-8144ee95f00e2d4721210fcf
+    resource: repo://IaC/stacks/mastodon/stack.hcl
+  - id: openwiki-source-25c085c78b1cbef8c164f9f7
+    resource: repo://IaC/stacks/platform-image-policy/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+  - id: openwiki-source-388dfb5b8078e3e9f29dbd62
+    resource: repo://scripts/entra-owner-conversion.py
+  - id: openwiki-source-6a90d887ebbab5a858408f90
+    resource: repo://scripts/fleet-free-setup.py
+  - id: openwiki-source-87efd56c37d4fbd91671cd82
+    resource: repo://scripts/mastodon-public-dns.py
+generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:50:03.392Z
+    at: 2026-10-18T06:24:02.662Z
 ---
 
 # Workload Inventory
@@ -90,9 +132,11 @@ retained NFS; the APNs/provider setup and a real enrolled device remain separate
 acceptance gates. See the [Fleet runbook](../../clusters/homelab/apps/fleet/README.md).
 
 Fleet's [Free Entra setup](../../clusters/homelab/apps/fleet/FREE-ENTRA.md)
-separates native Microsoft Password Platform SSO from console SAML. Company
-Portal supplies the Mac extension; Fleet remains the MDM. A repository operator
-script delivers Mac and iPhone/iPad profiles with host-scoped commands. The
+keeps console SAML separate from the retired Fleet-only Company Portal/Platform
+SSO pilot. Fleet remains the Mac MDM. A repository operator script delivers
+Mac and iPhone/iPad baselines with host-scoped commands; Entra owner conversion
+is a separate reviewed identity operation, currently blocked by the federated
+target domain, not a workload rollout. The
 desired state retires the global **Family Mac security baseline** assignment;
 Fleet Free 4.92.2 sends global Apple profiles to phones as well as Macs, and
 [`TargetDeviceType=5` only rejects installation](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#mac-only-baseline-through-individual-installs).
@@ -197,7 +241,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `octelium-cluster`     | `istio-system`     | `clusters/homelab/apps/octelium-cluster`        | `IaC/live/argocd-apps/octelium-cluster`     | Istio front-proxy route for the self-hosted Octelium Cluster domain, portal, API hostnames, and direct Enterprise console hostname, plus an HTTP/2 upstream `DestinationRule` so Octelium CLI gRPC calls keep response trailers, and a scoped console login-return EnvoyFilter; the Octelium runtime namespace and workloads are installed by `scripts/octelium-cluster-bootstrap.sh` through `octops`, and the wrapper labels that namespace for privileged data-plane pods                                                                                                                                                                                                                                                                                                                                                  | istio, platform-multus, octelium-storage                                                                            |
 | `octelium-public`      | `octelium-public`  | `clusters/homelab/apps/octelium-public`         | `IaC/live/argocd-apps/octelium-public`      | stateless Cloudflare Tunnel connector for public Octelium browser control-plane and portal routes, app clientless access, the Enterprise console, and the policy-bound clientless CI Kubernetes hostname `kubernetes-api-ci.stinkyboi.com`; reads `/homelab/octelium/cloudflare-tunnel-credentials-json` and forwards public app hostnames such as `grafana.stinkyboi.com` directly to the Octelium ingress dataplane; browser gRPC-Web uses the HTTPS API Tunnel route; native TLS gRPC uses the separate TCP-over-WebSocket Tunnel carrier                                                                                                                                                                                                                                                                                  | external-secrets, istio, octelium-cluster                                                                           |
 | `octelium`             | `octelium-client`  | `clusters/homelab/apps/octelium`                | `IaC/live/argocd-apps/octelium`             | stateless TUN-mode Octelium client bridge pinned to Octelium dataplane nodes; private `kubernetes-api.homelab` Service for operator and restricted read-only Cordium Kubernetes access; public `*.stinkyboi.com` WEB Services with Octelium login except reviewed AFFiNE anonymous transport with application-owned authentication; Podinfo demo; SSM-backed client auth; Entra portal login; cutover gated by `scripts/octelium-e2e-check.sh`                                                                                                                                                                                                                                                                                                                                                                                | external-secrets, istio                                                                                             |
-| `octelium-enterprise`  | `octelium`         | `clusters/homelab/apps/octelium-enterprise`     | `IaC/live/argocd-apps/octelium-enterprise`  | Argo CD-owned Kubernetes steady state for Enterprise package `octeliumee` `0.22.0` after `scripts/octelium-enterprise-package.sh` install or upgrade; owns package Deployments, Services, ConfigMaps, ServiceAccounts, and PVC declarations for `octelium-rscstore`, `octelium-logstore`, and `octelium-metricstore`; ignores only controller-normalized generated service-proxy image fields; while both native dataplane nodes are NotReady, also owns 26 bounded emergency Deployments on `acer` for the control paths, CI API, and 18 added public WEB Services (19 with OctoBot); generated Secrets and license material stay outside git                                                                                                                                                                                | octelium-cluster, octelium-storage, platform-storage                                                                |
+| `octelium-enterprise`  | `octelium`         | `clusters/homelab/apps/octelium-enterprise`     | `IaC/live/argocd-apps/octelium-enterprise`  | Argo CD-owned Kubernetes steady state for Enterprise package `octeliumee` `0.22.0` after `scripts/octelium-enterprise-package.sh` install or upgrade; owns package Deployments, Services, ConfigMaps, ServiceAccounts, and PVC declarations for `octelium-rscstore`, `octelium-logstore`, and `octelium-metricstore`; ignores only controller-normalized generated service-proxy image fields; while both native dataplane nodes are NotReady, also owns 25 bounded emergency Deployments on `acer` for the control paths, CI API, and 18 added public WEB Services; generated Secrets and license material stay outside git                                                                                                                                                                                | octelium-cluster, octelium-storage, platform-storage                                                                |
 | `cordium`              | `octelium`         | `clusters/homelab/apps/cordium`                 | `IaC/live/argocd-apps/cordium`              | Cordium `0.12.7`; the parent converges prerequisites, then creates the `cordium-bootstrap` child at Sync wave 1. The child gets a fresh 15-minute operation budget with retries disabled. Its one-use privileged identity is created at PostSync wave -1; genesis is bounded to 12 minutes at wave 0; resourceName-scoped PostSync/SyncFail cleanup deletes that identity. Workspaces use the repo-owned `cordium` namespace, documented privileged Pod Security, disposable `cordium-local` storage on `zimaboard-1`, the Talos user-namespace patch, and a DaemonSet-managed sysctl. Browser access uses `cordium.stinkyboi.com` through the dedicated user; workspace subdomains use `*.cordium.stinkyboi.com`; agent automation uses the separate workload identity and credential-policy-restricted `ManagementService`. | external-secrets, octelium-cluster, octelium-enterprise, platform-storage                                           |
 | `prometheus`           | `monitoring`       | `clusters/homelab/apps/prometheus`              | `IaC/live/argocd-apps/prometheus`           | persistent metrics, Alertmanager state, Argo CD scrape config, Alertmanager Discord/OpenClaw notification secrets, hourly unresolved-alert reminders, and explicit recovery revisions for hung operator and kube-state-metrics pods                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | external-secrets, platform-storage                                                                                  |
 | `grafana`              | `monitoring`       | `clusters/homelab/apps/grafana`                 | `IaC/live/argocd-apps/grafana`              | persistent config; Homelab, Argo CD, GitHub PR, and aggregate Harbor-CVE security dashboards; platform and workload alerts with hourly reminders; Kubernetes, backup, node, and public GitHub API health monitoring                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | external-secrets, cert-manager, istio, prometheus, platform-storage                                                 |
@@ -217,7 +261,6 @@ CI transport remain until replacement client, callback and CI paths pass
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
-| `octobot`              | `finance`          | `clusters/homelab/apps/octobot`                 | `IaC/live/argocd-apps/octobot`              | UI-configured bot state, exchange credentials, logs, and Octelium-targeted UI access; a version-marked init container reconciles the pinned OctoBot 2.1.1 tentacle bundle without editing user configuration                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | cert-manager, istio, platform-storage                                                                               |
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were
@@ -234,7 +277,9 @@ a rollout gate;
 see [AI observability](../architecture/ai-observability.md).
 
 Langfuse web allows ten minutes for database migrations before liveness checks
-begin and reserves/caps memory at `2Gi`; worker and CPU budgets are unchanged.
+begin. Its stateless Pod is pinned to Acer with a `1280Mi` request and unchanged
+`2Gi` limit, freeing its former 2 GiB reservation on Cordium-eligible
+`zimaboard-1`; worker and CPU budgets are unchanged.
 Web, worker and Valkey return to one replica after the October 10 offline AOF
 repair. A credential-free inspector was used for capture and approved promotion;
 Argo pruned it in a separate revision before this writer restart. The separate 1Gi
@@ -372,6 +417,15 @@ data is disposable node-local state. Cluster limits allow four stored and one
 active workspace per user, including interactive users. Live execution and
 negative-policy acceptance remain pending; see [Cordium CI](../../docs/cordium-ci.md).
 
+The Actions runner pool and controller are staged separately. The pool remains
+disabled, no controller Deployment is registered, and no runner image has been
+published for consumption. The proposed controller uses `cordium-runners`
+credentials and per-Workspace UID isolation while verifying deletion of each
+runner, Workspace, Pod, PVC, and NetworkPolicy after one job. Existing hosted
+runner selectors remain in place until production enforcement, private image
+pulls, canary modes, and cleanup pass. See the
+[runner bootstrap](../../builds/cordium-runner/README.md).
+
 ### OpenClaw runtime readiness
 
 Bootstrap verifies the current offline backup, existing SQLite databases and
@@ -394,6 +448,11 @@ backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
 
+The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
+Application. Its cluster-scoped admission policy starts with `Warn, Audit` for
+Pod image references; it declares no storage or credentials. Live audit data
+and any later `Deny` promotion require separate acceptance.
+
 ## Recovery inventory (HOME-2)
 
 [Application recovery](../../docs/application-recovery.md) records per-workload durable
@@ -404,3 +463,58 @@ automatic capture. Candidate off-NAS publication and checks are not active.
 No new recovery coverage is claimed for runtime OAuth/PAT state, Langfuse, Harbor,
 n8n, NOFX or monitoring. Acceptance requires independent retrieval and isolated
 application behavior, not only a checksum or successful backup Job.
+
+## Mastodon
+
+The [Mastodon stack](../../IaC/stacks/mastodon/stack.hcl) registers namespace
+`mastodon` from `clusters/homelab/apps/mastodon`, following `main`. Dependencies
+are SSM, External Secrets, cert-manager, Istio, the retained public connector
+and platform storage. This is prepared source, not evidence of a live server.
+The instance and account domain are `mastodon.stinkyboi.com`; the private apex
+portal is preserved. The owner bootstrap declares `rodman`, with the existing
+repository owner email, and preserves an existing matching account.
+
+```mermaid
+flowchart TD
+  Client[Public Mastodon client] --> Edge[Cloudflare Tunnel]
+  Edge --> Gateway[Shared Istio gateway]
+  Gateway --> Web[Web on port 3000]
+  Gateway --> Streaming[Streaming on port 4000]
+  Web --> Database[Private PostgreSQL]
+  Streaming --> Database
+  Web --> Redis[Private Redis]
+  Streaming --> Redis
+  Worker[Sidekiq] --> Database
+  Worker --> Redis
+  Web --> Media[Retained NAS media]
+  Worker --> Media
+```
+
+The declared public connector and Istio route split website and streaming traffic.
+
+PostgreSQL 18 uses a retained 3 GiB local claim on `zimaboard-0`; Redis uses a
+separate retained 1 GiB local claim with AOF. These hostPath capacities are not
+quotas. Media uses a retained 50 GiB NAS claim, while checked nightly database
+dumps use a separate 30 GiB NAS claim with 14-day retention. NAS media and
+backups share a failure domain; they are not independent disaster recovery.
+Preserve the database, media and stable encryption/signing keys during rollback.
+
+SSM generates internal credentials and the bootstrap-only owner password.
+Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
+files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
+and runtime revisions after rotation. The launcher refuses SMTP placeholders.
+Schema preparation precedes owner bootstrap and application Deployments.
+
+The targeted Terragrunt saved-plan path checks upstream health, storage and
+secret-store permissions before SSM declarations and registration. The separate
+DNS workflow writes only the owned instance CNAME after Mastodon and the public
+connector are Synced/Healthy at its reviewed revision. STRICT mTLS and
+default-deny authorization/NetworkPolicy constrain the private backends.
+
+See the [workload runbook](../../clusters/homelab/apps/mastodon/README.md),
+[secret boundary](../architecture/secrets-and-identity.md#mastodon-credential-boundary),
+[publication boundary](../operations/harbor-oci.md#mastodon-publication-boundary)
+and [activation gates](../operations/validation-gates.md#mastodon-activation-gates).
+Merge, actual rollout, loaded-library checks, owner login, SMTP receipt,
+public website/media/streaming/federation and backup/isolated-restore acceptance
+remain distinct milestones.

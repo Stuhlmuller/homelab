@@ -149,9 +149,9 @@ class Denials(unittest.TestCase):
 
 class Context(unittest.TestCase):
     def test_real_fixed_contexts_are_required(self):
-        for mode in ("checks", "force-failure", "forbidden-method", "deny-ref", "deny-workflow"):
+        for mode in ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref", "deny-workflow"):
             acceptance.verify_context(mode, environment(mode))
-        for mode in ("checks", "force-failure", "forbidden-method"):
+        for mode in ("checks", "force-failure", "runner-probe", "forbidden-method"):
             with self.assertRaises(ValueError):
                 acceptance.verify_context(mode, environment("deny-ref"))
         with self.assertRaises(ValueError):
@@ -178,12 +178,12 @@ class Workflow(unittest.TestCase):
 
     def test_dispatch_gate_keeps_workspace_modes_on_main(self):
         run = self.job()["steps"][0]["run"]
-        for mode in ("checks", "force-failure", "forbidden-method", "deny-ref", "arbitrary"):
+        for mode in ("checks", "force-failure", "runner-probe", "forbidden-method", "deny-ref", "arbitrary"):
             for ref in ("refs/heads/main", DENIED_REF, "refs/heads/other"):
                 for expected in (SHA, "b" * 40):
                     allowed = (expected == SHA and
                                ((mode == "deny-ref" and ref == DENIED_REF) or
-                                (mode in ("checks", "force-failure", "forbidden-method")
+                                (mode in ("checks", "force-failure", "runner-probe", "forbidden-method")
                                  and ref == "refs/heads/main")))
                     result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", run],
                                             env={**os.environ, "CHECK_MODE": mode, "ACTUAL_REF": ref,
@@ -197,7 +197,7 @@ class Workflow(unittest.TestCase):
         for status, receipt, expected in ((42, True, 42), (42, False, 1), (1, True, 1), (0, True, 1)):
             with tempfile.TemporaryDirectory() as temporary:
                 binary = Path(temporary) / "nix"
-                binary.write_text("#!/bin/bash\nprintf '%s\\n' 'private-native-output'\n" +
+                binary.write_text("#!/usr/bin/env bash\nprintf '%s\\n' 'private-native-output'\n" +
                                   (f"printf '%s\\n' '{marker}'\n" if receipt else "") +
                                   f"exit {status}\n")
                 binary.chmod(0o700)

@@ -108,7 +108,7 @@ defaults match the External Secrets API to prevent persistent Argo drift.
 | NOFX | `/homelab/nofx/litellm-token` | Backend uses the internal gateway through a file-backed route and dedicated read-only token mount; its pinned image includes patch `0013`. |
 | n8n | `/homelab/n8n/litellm-token` | Secret-backed OpenAI credential override targets LiteLLM. The idempotent CLI migration keeps its credential and target-workflow exports as n8n's one-element arrays, then replaces the exact Bedrock node with `openrouter/free`. The gateway key never enters workflow JSON. |
 
-AFFiNE has no active AI workload. OctoBot's AI evaluators are disabled. Cordium
+AFFiNE has no active AI workload. Cordium
 may host user workloads and remains outside this cluster-owned routing contract.
 
 ## Current rollout dependency

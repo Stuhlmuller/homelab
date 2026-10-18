@@ -188,7 +188,7 @@ claim host filesystem, SMART, or full operating-system memory telemetry. Add a
 reviewed node-exporter path before adding those bare-metal alert families.
 
 The provisioning file also deletes the retired Octelium UPnP alert and the
-OctoBot- and Deluge-specific deployment availability rules. Explicit
+Deluge-specific deployment availability rules. Explicit
 `deleteRules` entries remove persisted rules from existing Grafana databases;
 removing them from `groups` alone leaves the old rules behind.
 

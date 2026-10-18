@@ -43,9 +43,9 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
 ## Cutover order
 
 1. Keep working operator access. Before changing Harbor DNS, verify the merged
-   Traefik registry policies allow the four exact LAN and four `cni0` bridge
-   addresses on port 9443. Host-to-ClusterIP SNAT can select a bridge source;
-   LAN-only allowances rejected the first mapped node before Traefik. Wait for
+   Traefik registry policies allow the four exact LAN, four `cni0` bridge and
+   four `flannel.1` overlay addresses on port 9443. Host-to-ClusterIP SNAT can
+   select a bridge source locally or an overlay source across nodes. Wait for
    Argo convergence, then use the reviewed Talos host-only helper, workers first,
    and prove uncached image pulls from every node. Do not advance the remaining
    nodes while the first pull fails. Converge internal CoreDNS, additive
@@ -155,6 +155,28 @@ POST-only callback paths answered safe OPTIONS without execution. Policy Bot's
 GET-only backend/root distinction passed after correcting the helper's expected
 status to match its pinned POST-only router. These checks prove transport and
 routing, not authenticated user flows, callback delivery, DNS cutover or CI.
+
+## Observed cross-node registry rejection
+
+On October 11, 2026 UTC, the reviewed host-only helper mapped
+`harbor.stinkyboi.com` to `10.96.0.50` on `zimaboard-2` without rebooting.
+Its pull timed out during 00:15:07–00:18:17. The ready Service endpoint was
+`10.244.3.219:9443` on `zimaboard-1`. Destination ztunnel logged six policy
+rejections from `10.244.4.0` during 00:15:11–00:17:21; Traefik received none.
+Authenticated Talos reads confirmed the remote Pod CIDR route used `flannel.1`,
+whose address was `10.244.4.0/32`, rather than `cni0` at `10.244.4.1`.
+
+The [AuthorizationPolicy](authorizationpolicy.yaml) and
+[NetworkPolicy](networkpolicy.yaml) now declare all four observed node overlay
+addresses as exact `/32` sources on registry port 9443. The
+[boundary test](../../../../scripts/ci/traefik-routes-test.py) verifies that
+inventory and rejects ordinary Pod and neighboring LAN addresses. These source
+changes are prepared; this incident is not successful pull acceptance. After
+GitOps convergence, repeat the worker-first
+[Talos helper](../../../../scripts/talos-harbor-mirrors.py) and correlate its
+successful pull with registry manifest/blob requests from the matching node's
+LAN, bridge or overlay address. A policy rejection requires the declared
+host-only rollback; do not change DNS or advance to the next node.
 
 ## Observed node readiness interruption
 

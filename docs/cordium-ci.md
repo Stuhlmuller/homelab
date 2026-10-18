@@ -36,6 +36,13 @@ workspace browser hostname or its wildcard certificate.
 
 ## Workspace lifecycle
 
+The fixed `runner-probe` mode tests the pinned Actions runner image and nested
+Docker inside a separate disposable Workspace. It uses the same exact-main
+checkout guard, dedicated CI identity, time budget, and verified deletion.
+It cannot register runners or receive GitHub App credentials. See the
+[runner probe](../builds/cordium-runner/README.md) for its capabilities,
+image prerequisite, command, acceptance, and rollback.
+
 `.cordium/workspace.yaml` pins the Nix image and public repository, with
 2 CPU, 2 GiB memory, and 10 GB local storage. The helper accepts only an exact
 40-character commit SHA, refuses a preexisting workspace inventory, creates

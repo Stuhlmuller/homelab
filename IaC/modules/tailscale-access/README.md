@@ -85,15 +85,21 @@ nix develop --command python3 -I scripts/tailscale-ci-configure.py --execute
 Signing uses `tailscale lock sign file:/dev/stdin`, passing the raw key through
 stdin without putting it in arguments or a temporary file. The sandboxed macOS
 Tailscale app cannot read the helper's private config-directory files; stdin keeps
-this path compatible with its sandbox. The helper requires exactly one new trusted
-credential signer with matching auth-key metadata
-and no unrelated trust changes. Wrapped keys and that separate public authority
-identity are saved at `~/.config/homelab/tailscale/ci-signed-keys.json` with mode `0600`
-in an owned `0700` directory before GitHub publication. Keep an encrypted private
-backup of that cache: retries reuse the same signatures instead of adding new
-trusted authorities. An uncached existing signature fails closed; restore the
-private cache before retrying. Never put it in git or an ordinary support bundle.
-An advisory file lock prevents concurrent publishers on this Mac.
+this path compatible with its sandbox. A successful sign can return before the
+Mac's local trusted-key list receives the update. The helper saves the validated
+wrapped output in private `ci-signing-receipt.json` before any post-sign readback,
+then checks up to 16 snapshots with two-second waits. It requires exactly one
+new credential signer with matching auth-key metadata and no unrelated trust
+changes. A timeout retains the receipt; rerunning resumes verification without
+signing again. Preview never promotes or removes a pending receipt.
+
+After verification, wrapped keys and their separate public authority identities
+are saved at `~/.config/homelab/tailscale/ci-signed-keys.json` before publication,
+then the pending receipt is removed. Both files require mode `0600` in the same
+owned `0700` directory. Keep an encrypted private backup; never put either file
+in git or an ordinary support bundle. An advisory lock prevents concurrent
+publishers on this Mac. Complete a pending receipt before changing generations
+or retiring previous authorities.
 
 The helper sends each wrapped key to `gh secret set` over stdin. GitHub can expose
 only secret metadata, so the helper checks presence and leaves actual key
@@ -110,6 +116,40 @@ protected environments; Cordium's separate repository secret supports trusted
 branch denial tests and has no Kubernetes RBAC binding. The workflow's exact-main
 and trusted-PR checks remain necessary: signed keys do not carry GitHub OIDC
 subject/workflow claims.
+
+## Interrupted signing recovery
+
+An older publisher could discard a successful CLI receipt when its immediate
+local readback was stale. Public authority metadata cannot reconstruct the
+wrapped key's delegated private key. Restore an existing private receipt/cache
+when available; normal publication refuses to sign an already-matching uncached
+authority. Do not remove broad groups of pre-auth authorities or disable lock.
+
+For an exact failed attempt without a receipt, preview this separate recovery
+command from reviewed source, using the recorded public authority and its exact
+`wrapper_createtime` Unix timestamp:
+
+```sh
+nix develop --command python3 -I scripts/tailscale-ci-configure.py \
+  --recover-orphan apply --authority '<exact-tlpub>' --created-at '<unix-timestamp>'
+```
+
+Only add `--execute` after reviewing that preview on clean signed current main.
+The fixed identity must match its current provider key, the authority must be
+unique with matching purpose, original auth-key stable ID, this Mac's node ID
+and a creation timestamp within the last day. Recovery refuses any local pending
+receipt, a matching cached key, or any of the three published GitHub secrets.
+It queries the official read-only affected-signature endpoint and requires an
+empty response before removing only that authority with `--re-sign=false`.
+Nonempty, malformed or failed lookups block removal; GitHub secret absence alone
+is insufficient. The query is a snapshot, so keep other signing/join activity
+paused through this narrow recovery.
+
+The helper waits for removal readback and verifies all other authorities and
+metadata remain unchanged. An already-absent target is a no-op. Recovery never
+signs or publishes; normal preview/execute remains a separate command afterward.
+The fixed failure path and private receipts preserve recovery if readback times
+out. No provider resource or generation change is required for this repair.
 
 ## Rotation and retirement
 
@@ -160,8 +200,10 @@ using ephemeral GitHub-hosted runners.
 Primary references: [pinned GitHub Action Tailnet Lock setup](https://github.com/tailscale/github-action/blob/d1b6cd204f8dceda5b3eaad7f1f767be390056cd/README.md#tailnet-lock),
 [CLI signing and authority removal](https://tailscale.com/docs/reference/tailscale-cli/lock),
 [provider auth-key resource](https://registry.terraform.io/providers/tailscale/tailscale/0.29.2/docs/resources/tailnet_key),
-[pinned CLI authority creation](https://github.com/tailscale/tailscale/blob/v1.102.3/cmd/tailscale/cli/tailnet-lock.go#L750-L783),
-[separate delegated key construction](https://github.com/tailscale/tailscale/blob/v1.102.3/ipn/ipnlocal/tailnet-lock.go#L1220-L1249).
+[pinned CLI authority creation](https://github.com/tailscale/tailscale/blob/v1.102.4/cmd/tailscale/cli/tailnet-lock.go#L750-L790),
+[separate delegated key construction](https://github.com/tailscale/tailscale/blob/v1.102.4/ipn/ipnlocal/tailnet-lock.go#L1220-L1249),
+[asynchronous authority sync](https://github.com/tailscale/tailscale/blob/v1.102.4/ipn/ipnlocal/tailnet-lock.go#L889-L966),
+[read-only affected-signature endpoint](https://github.com/tailscale/tailscale/blob/v1.102.4/ipn/localapi/tailnetlock.go#L292-L315).
 
 ## API proxy acceptance
 

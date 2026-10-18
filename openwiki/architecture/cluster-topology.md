@@ -5,23 +5,29 @@ description: "Talos node roles, API endpoints, scheduling capacity, Octelium rec
 tags: ["architecture", "talos", "kubernetes"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-11T00:10:17.563Z
+    at: 2026-10-17T22:13:58.169Z
 sources:
+  - id: openwiki-source-3ee445a5390585cab7a1edab
+    resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
+  - id: openwiki-source-0dd011c84b2dc53d92df4754
+    resource: repo://clusters/homelab/platform/crossplane/README.md
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-95ccd2be90fc4c1345dfbda6
+    resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-f585f8850806deb1619ec0c5
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-11T00:10:17.563Z" }
+generated: { by: "codex", at: "2026-10-17T22:13:58.169Z" }
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -163,6 +169,29 @@ Talos on `zimaboard-1` does not expose AppArmor enforcement, so repo-owned
 support Pods use RuntimeDefault seccomp and explicitly request an unconfined
 AppArmor profile to clear stale server-side-applied defaults.
 
+### October 17 Cordium capacity preparation
+
+Acer's measured allocatable memory was 15,260.7 MiB against 14,483 MiB of
+requests. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+records seven-day Pod-specific working-set peaks and proposes reclaiming
+1,664 MiB there: unused Crossplane core/RBAC controllers enter zero-replica
+standby, Multica backend/frontend/PostgreSQL requests become 128/320/320 MiB,
+and Langfuse PostgreSQL becomes 128 MiB. The stateless Langfuse web Pod moves
+from `zimaboard-1` to Acer with a 1280 MiB request against a 920.6 MiB peak.
+Its 2 GiB limit and all persistent storage stay unchanged. Acer's projected
+request headroom after the move is 1,161.7 MiB. Restore both Crossplane
+controllers before adding packages or compositions.
+
+`zimaboard-1` is the Cordium-eligible node. Its observed request headroom was
+710.5 MiB; removing the old 2 GiB Langfuse web reservation projects
+2,758.5 MiB before one 2 GiB Workspace and 710.5 MiB afterward. The chart's
+rolling web Deployment keeps the old Pod until the Acer replacement is Ready.
+These are desired-state projections, not live rollout proof. Before starting
+a Workspace, verify the new web Pod is Ready on Acer, the old Pod has left
+`zimaboard-1`, SQL and web behavior recover, and both nodes retain measured
+headroom without pressure. Preserve workspace PV bindings and run only one
+Workspace. See the [standby and rollback procedure](../../clusters/homelab/platform/crossplane/README.md#standby-for-cordium-capacity).
+
 ### Octelium dataplane capacity
 
 Terragrunt assigns the Octelium dataplane label only to `zimaboard-0`.
@@ -210,12 +239,11 @@ label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 ### Temporary August 2026 recovery
 
 For the outage of both labeled dataplane nodes,
-`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 26
+`clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` runs 25
 uniquely named temporary Deployments on `acer`: the Octelium ingress, shared
-Octovigil authorization service, Portal, login, Auth API, admin API, OctoBot,
-CI Kubernetes API, and 18 additional public WEB Service proxies. Including the
-existing OctoBot fallback, 19 public WEB proxies run during recovery. The
-additional public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
+Octovigil authorization service, Portal, login, Auth API, admin API,
+CI Kubernetes API, and 18 public WEB Service proxies. The
+public set is AFFiNE, Argo CD, Compass, Cordium, the Enterprise
 console, Deluge, Dispatcharr, Grafana, Kiali, LiteLLM, Multica, n8n, NOFX,
 OpenClaw, Policy Bot, Prowlarr, Radarr, and Sonarr. Existing Service selector
 labels restore these paths without a new Service, ingress, port, node label, or
@@ -316,7 +344,7 @@ Octelium does not provide a Talos-native Service mode.
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining
 canonical TLS names. Talos host pulls use the separate registry-only Service
-`10.96.0.50`; require the exact node/bridge policy and uncached pulls before
+`10.96.0.50`; require the exact LAN/bridge/overlay source policy and uncached pulls before
 external Harbor DNS changes. Source preparation does not prove live cutover.
 
 ## Source Files

@@ -53,6 +53,11 @@ The web container applies database schema upgrades before starting HTTP. Chart
 withholds traffic until the app is ready. The pinned-chart regression verifies
 this allowance and rendered replica counts.
 
+The worker chart has no startup or readiness probe. On `zimaboard-0`, its
+default 20-second liveness delay killed the process before port 3030 opened.
+Allow 180 seconds before liveness checks; verify `/api/health` and stable restart
+count after rollout because Pod readiness alone does not prove worker startup.
+
 `recovery-pvc.yaml` retains the `langfuse-migration-recovery` claim with
 `Prune=false,Delete=false`. Its private artifacts contain database DDL and
 schema history; do not remove this claim during workload cleanup. It is on the
@@ -141,14 +146,23 @@ On October 10, the approved candidate was installed and its live hashes
 verified. The first GitOps follow-up removed the inspector while all writers
 remained stopped. Argo observed merged `836e7f0f`, pruned the inspector, and
 reported Synced/Healthy at 22:05 UTC; no Pod mounted
-`langfuse-valkey-data`. This revision restores global/web/worker and Valkey
-replicas to one. Preserve the private original and all PVCs throughout
-recovery. Merely restarting the corrupt original does not restore service.
-Require stable Valkey and worker readiness, then fresh correlated Langfuse
-generations from each caller. Safety tests cover offline guards and candidate
+`langfuse-valkey-data`. PR #1261 then restored global/web/worker and Valkey
+replicas to one. Valkey loaded both the base RDB and repaired incremental AOF,
+reported Ready, and stayed restart-free; web and worker reached 1/1 Ready, with
+Argo Synced/Healthy at `ee807517`. Four fresh service-key generations appeared
+in Langfuse with correct caller attribution, route and usage. Preserve the
+private original and all PVCs until an independent restore drill; the 340,520
+discarded bytes cannot be translated to an event count. Native caller actions
+and browser UI remain separate acceptance gates. Safety tests cover offline
+guards and candidate
 isolation. Run the native checker fixture with
 `python3 -I scripts/ci/langfuse-valkey-recovery-test.py --checker <checker-path>`;
 synthetic corruption tests do not establish production recovery.
+
+The recovered worker still logs a periodic `V4LegacyApiUsageJob` error because
+its `system.query_log` query targets a table detached by the diagnostic
+quarantine below. Fresh generation ingestion succeeded; repair that job's
+compatibility separately before treating worker logs as clean.
 
 Source: [Valkey persistence and AOF corruption](https://valkey.io/topics/persistence/).
 
@@ -367,3 +381,18 @@ The activation PR must document rollback of any persisted caller settings,
 not just a Helm revert; retain Langfuse data and keys.
 The staging merge does not establish inference coverage or a datastore restore
 drill. Those acceptance gaps remain in the knowledge base.
+
+## Capacity reservation
+
+The October 17 [Acer capacity audit](../../../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
+sets PostgreSQL's memory request to 128 MiB, above its observed seven-day peak
+working set of 63.8 MiB. Its 1 GiB limit, storage, placement and replica count stay
+unchanged. The existing `Recreate` update briefly interrupts database access;
+require SQL readiness and recovery of web/worker before accepting the rollout.
+
+The stateless web Pod moves from `zimaboard-1` to Acer with a 1280 MiB request,
+above its 920.6 MiB seven-day peak; its 2 GiB limit stays. The chart renders
+one replica and no explicit strategy, so the old Pod remains while the new one
+waits for Acer capacity and becomes Ready. Verify the web Pod is Ready on Acer,
+the old Pod has exited `zimaboard-1`, and login/traces work before starting a
+Cordium Workspace. No Langfuse volume moves.

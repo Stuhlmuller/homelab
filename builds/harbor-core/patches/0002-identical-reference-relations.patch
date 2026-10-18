@@ -1,0 +1,45 @@
+diff --git a/src/pkg/artifact/manager.go b/src/pkg/artifact/manager.go
+index ec133c3..cb1b97f 100644
+--- a/src/pkg/artifact/manager.go
++++ b/src/pkg/artifact/manager.go
+@@ -16,6 +16,7 @@ package artifact
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"time"
+ 
+ 	"github.com/goharbor/harbor/src/lib/q"
+@@ -102,13 +103,31 @@ func (m *manager) GetByDigest(ctx context.Context, repository, digest string) (*
+ }
+ 
+ func (m *manager) Create(ctx context.Context, artifact *Artifact) (int64, error) {
++	// The database permits one relation per child; preserve identical index repetitions in the registry.
++	references := make([]*dao.ArtifactReference, 0, len(artifact.References))
++	seen := map[int64]*dao.ArtifactReference{}
++	for _, reference := range artifact.References {
++		candidate := reference.To()
++		if previous, exists := seen[candidate.ChildID]; exists {
++			if candidate.ChildDigest != previous.ChildDigest || candidate.Platform != previous.Platform ||
++				candidate.URLs != previous.URLs || candidate.Annotations != previous.Annotations {
++				return 0, errors.New("conflicting metadata for repeated child artifact")
++			}
++			continue
++		}
++		seen[candidate.ChildID] = candidate
++		references = append(references, candidate)
++	}
+ 	id, err := m.dao.Create(ctx, artifact.To())
+ 	if err != nil {
+ 		return 0, err
+ 	}
+ 	for _, reference := range artifact.References {
+ 		reference.ParentID = id
+-		if _, err = m.dao.CreateReference(ctx, reference.To()); err != nil {
++	}
++	for _, reference := range references {
++		reference.ParentID = id
++		if _, err = m.dao.CreateReference(ctx, reference); err != nil {
+ 			return 0, err
+ 		}
+ 	}
