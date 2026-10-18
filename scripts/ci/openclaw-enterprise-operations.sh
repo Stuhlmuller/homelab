@@ -110,6 +110,8 @@ lookup_baseline_versions() {
     if grep -Fq '(AccessDenied)' "$work/s3-error"; then phase=publication-lookup-denied; fi
     return 1
   fi
+  phase=publication-lookup-response
+  jq -e '.IsTruncated == false and ((.Versions // []) | type == "array") and ((.DeleteMarkers // []) | type == "array")' <<<"$versions" >/dev/null
 }
 
 case "$stage" in
@@ -180,8 +182,6 @@ case "$stage" in
     baseline_key="openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json"
     phase=publication-lookup
     lookup_baseline_versions
-    phase=publication-lookup-response
-    jq -e '.IsTruncated == false' <<<"$versions" >/dev/null
     count="$(jq --arg key "$baseline_key" '[(.Versions[]?, .DeleteMarkers[]?) | select(.Key == $key)] | length' <<<"$versions")"
     if [[ "$count" == 0 ]]; then
       phase=publication-upload

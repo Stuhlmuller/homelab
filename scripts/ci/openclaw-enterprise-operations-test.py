@@ -222,14 +222,19 @@ work="$2"
 bucket=example
 baseline_key=baseline.json
 phase=publication-lookup
-aws() { printf '%s\\n' "$LOOKUP_ERROR" >&2; return 1; }
+aws() {
+  if [[ "$LOOKUP_ERROR" == truncated ]]; then printf '{"IsTruncated":true}\\n'; return 0; fi
+  printf '%s\\n' "$LOOKUP_ERROR" >&2
+  return 1
+}
 if lookup_baseline_versions; then exit 1; fi
 printf '%s\\n' "$phase"
 '''
         with tempfile.TemporaryDirectory() as directory:
             for error, expected in (('An error occurred (AccessDenied)',
                                      'publication-lookup-denied'),
-                                    ('transport failed', 'publication-lookup-failed')):
+                                    ('transport failed', 'publication-lookup-failed'),
+                                    ('truncated', 'publication-lookup-response')):
                 result = subprocess.run(['bash', '-c', shell, 'bash', str(SCRIPT), directory],
                                         cwd=ROOT, env={**os.environ, 'LOOKUP_ERROR': error},
                                         capture_output=True, text=True, timeout=5)
