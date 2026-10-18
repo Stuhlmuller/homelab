@@ -10,10 +10,12 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
-generated: { by: "codex", at: "2026-10-18T19:53:38.444Z" }
+  - id: openwiki-source-9100b7266ad774f6eeda0265
+    resource: repo://scripts/ci/renovate-config-test.js
+generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:44.446Z
+    at: 2026-10-18T23:45:47.913Z
 ---
 
 # Storage And State
@@ -519,8 +521,12 @@ Renovate retains a 20 GiB `nfs-default` PVC in `automation` for datasource,
 private-package, and repository caches; its working files stay on ephemeral
 storage. The cache includes private package metadata, so restrict access to the
 volume and logs. It is replaceable and has no backup requirement. Argo CD does
-not prune the PVC; recover from corruption with a reviewed desired-state reset
-and let the next Job rebuild it. See [the workload runbook](../../clusters/homelab/apps/renovate/README.md).
+not prune the PVC. Before requesting a GitHub token, each run flushes a small
+write to the claim so a full or unwritable cache fails visibly. Expand the
+claim through reviewed GitOps only after checking backing NFS capacity. For
+corruption, suspend the CronJob, clear only cache contents with a reviewed
+temporary GitOps Job, then let the next run rebuild them. See [the workload
+runbook](../../clusters/homelab/apps/renovate/README.md).
 
 ## Staged independent application recovery (HOME-2)
 

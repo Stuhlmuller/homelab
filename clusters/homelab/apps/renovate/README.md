@@ -52,11 +52,41 @@ The retained `renovate-cache` 20 GiB `nfs-default` PVC holds Renovate's
 datasource, private-package, and repository-extraction caches. It contains
 private package metadata, so restrict volume access and
 logs. Repository clones and work files use an ephemeral `/tmp` volume. The
-cache can be rebuilt; it needs no backup. Argo CD does not prune the PVC. If
-it is corrupt, review a desired-state reset and allow the next Job to rebuild
-it. Do not delete the PVC by hand. The non-root container has a writable
-ephemeral root because the default Renovate image installs package-manager
-tools there for lockfile updates. No Service or ingress is exposed.
+cache can be rebuilt; it has no backup. Argo CD does not prune the PVC. The
+non-root container has a writable ephemeral root because the Renovate image
+installs package-manager tools there for lockfile updates. No Service or ingress
+is exposed.
+
+### Cache failure and recovery
+
+An unavailable claim leaves the Job Pod pending with a mount or scheduling
+event. Before GitHub access, the config writes and flushes a 4 KiB probe to
+the cache; a full or unwritable claim fails the Job with a storage error. Check
+the PVC, Pod events, Job condition, and restricted Job logs before changing
+state:
+
+```sh
+kubectl -n automation get pvc renovate-cache
+kubectl -n automation get pods -l app.kubernetes.io/name=renovate
+kubectl -n automation describe pod <renovate-pod>
+kubectl -n automation describe job <renovate-job>
+```
+
+For capacity, increase the request in `pvc.yaml` through a reviewed PR and
+Argo CD. `nfs-default` permits claim expansion; confirm the bound claim's
+reported capacity and the backing NFS share's free space before relying on the
+larger request. A larger claim does not repair a full NAS share.
+
+For a lost or corrupt cache, first suspend `cronjob.yaml` through a reviewed
+PR and confirm no active Renovate Job remains. Use a reviewed, temporary
+GitOps Job that mounts only `renovate-cache`, deletes only its contents, and
+has no App credential or cluster API token. Verify that Job completes, remove
+it through a second reviewed change, then unsuspend the CronJob. The next run
+rebuilds package data from upstream; open PRs and repository policy remain on
+GitHub. Do not delete the PVC or edit NFS files by hand. If the claim cannot
+mount or the backing share is full, restore the declared storage path before
+resuming scans. Record the failed cycle and verify the next scheduled run and
+freshness alerts recover.
 
 ## Validate and observe
 
@@ -94,6 +124,13 @@ cover a missed start, a cycle with no success by its deadline, and a missing
 CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
+
+The temporary acceptance observer stays suspended until its private sample is
+fixed before the seven-day window. It polls upstream without the Renovate
+cache or GitHub writes; its separate protected ledger retains private release
+brackets. Publish only aggregate results, then erase the ledger and retire its
+Job and claim through reviewed GitOps. A controlled canary is reported
+separately from natural release latency.
 
 Cutover is a two-repository sequence: after dry-run parity and the last old
 run, delete the complete legacy workflow including manual dispatch, verify no

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:fa028f1fecb08ebc77b949a49c6fd2552d5b91de4ac6e0b6d442295956de8203",
+  "pageVersion": "sha256:2a42192241d0997ac1c38e08d8b59f7b427766da19aebcaebdbca6f14aca18a1",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -106,7 +106,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/policy-bot/README.md",
-          "version": "repo-file-v1:sha256:e42e718ae91a084ef3b612f007b4456312a7c7cadb5505d0996648026bffd88d"
+          "version": "repo-file-v1:sha256:53b844d8a5914ad297e6e259d385a82509ad1e0dc8a5ac3cd76c763e9899f66e"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -304,7 +304,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:8d18745331be366456b6133fee551bf43f5ae2ea8319497bab812b0444169648"
+          "version": "repo-file-v1:sha256:668c0bdc4b12d5e61321ea81df78421f90bc87158b04249dd3afcdb2644ec06a"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -319,6 +319,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T21:31:10.787Z"
+    "at": "2026-10-18T23:45:47.913Z"
   }
 }

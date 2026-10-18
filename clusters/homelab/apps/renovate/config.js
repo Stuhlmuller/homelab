@@ -77,6 +77,12 @@ async function installationToken() {
 }
 
 module.exports = async function config() {
+  try {
+    fs.writeFileSync('/cache/renovate/.storage-probe', Buffer.alloc(4096), { flush: true });
+    fs.unlinkSync('/cache/renovate/.storage-probe');
+  } catch {
+    throw new Error('Renovate cache volume is unavailable or full');
+  }
   return {
     platform: 'github',
     token: await installationToken(),
