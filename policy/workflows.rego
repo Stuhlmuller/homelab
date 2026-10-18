@@ -189,7 +189,7 @@ approved_openclaw_legacy_operation if {
 	some step in job.steps
 	step.name == "Run Legacy Stage"
 	step.env.RUN_STAGE == "${{ inputs.legacy_stage }}"
-	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	contains(step.run, "bash scripts/ci/install-kubeconfig.sh --tailscale\n")
 	contains(step.run, "set -euo pipefail\numask 077\n")
 	contains(step.run, concat("", [`sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }

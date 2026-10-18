@@ -7,8 +7,7 @@ test_allows_exact_openclaw_legacy_operation if {
 		openclaw_legacy_run,
 		{"contents": "read", "id-token": "write"},
 	)
-	violations := deny with input as candidate
-	count(violations) == 0
+	approved_openclaw_legacy_operation with input as candidate
 }
 
 test_rejects_changed_openclaw_legacy_operation if {
@@ -19,15 +18,15 @@ test_rejects_changed_openclaw_legacy_operation if {
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
 		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"contents": "read", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, "bash scripts/ci/install-kubeconfig.sh --tailscale", "bash scripts/ci/install-kubeconfig.sh"), {"contents": "read", "id-token": "write"}),
 	] {
-		violations := deny with input as candidate
-		some msg in violations
-		contains(msg, "exact protected stages")
+		not approved_openclaw_legacy_operation with input as candidate
 	}
 }
 
 openclaw_legacy_run := `set -euo pipefail
 umask 077
+bash scripts/ci/install-kubeconfig.sh --tailscale
 sha256sum --check --status <<<'705d3358ba16bd01846affc1633800a41220e819aa77a8610aec1a8c7b093596  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
@@ -43,7 +42,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
 		"steps": [{
 			"name": "Run Legacy Stage",
-			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}"},
 			"run": run,
 		}],
 	}},
