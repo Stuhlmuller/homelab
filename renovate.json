@@ -13,8 +13,8 @@
       "description": "Image Updater exclusively owns enrolled Chainguard Harbor targets.",
       "matchDatasources": ["docker"],
       "matchPackageNames": [
-        "harbor.stinkyboi.com/homelab/chainguard-python",
-        "harbor.stinkyboi.com/homelab/chainguard-curl"
+        "harbor.stinkyboi.com/homelab/chainguard/python",
+        "harbor.stinkyboi.com/homelab/chainguard/curl"
       ],
       "enabled": false
     }

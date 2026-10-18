@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T17:42:33.479Z
+    at: 2026-10-18T20:41:22.820Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -71,7 +71,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:24:02.662Z" }
+generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
 ---
 
 # Secrets And Identity
@@ -767,7 +767,7 @@ mirror runbook](../../docs/harbor-image-mirroring.md).
 The reviewed Stage A saved plan created and metadata-verified the generated
 `/homelab/harbor/mirror-robot-pull-password` without reading its value. The
 Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
-to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+to `v4` and mounts the reader key in the Harbor bootstrap Job. After External
 Secrets materializes the target Secret, that Job can reconcile the separate
 read-only robot during execution; require successful PostSync completion before
 accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
@@ -796,11 +796,12 @@ Native-image activation waits for publication/scans, recovery clearance and
 ExternalSecret readiness. An `OnChange` annotation advance is required after
 credential rotation; upstream cold recovery remains.
 
-The native receipt scan robot separately needs the staged
-`/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
-grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
-creates the parameter and read-only metadata verifies it. This declaration
-creates no Harbor robot, receipt, or running workload change. See the
+The native receipt scan robot separately needs
+`/homelab/harbor/robot-scan-password` and its exact-ARN reader grant. The
+parameter is present as a version 1 `SecureString`; read-only IAM inspection
+verified the grant, and a targeted plan from `main` at `f6506136` found no
+changes on 2026-10-18. The parameter alone creates no Harbor robot or receipt.
+See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the

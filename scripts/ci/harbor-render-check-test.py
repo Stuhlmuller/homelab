@@ -264,8 +264,140 @@ class HarborRenderPrerequisites(unittest.TestCase):
             errors = CHECK.receipt_errors(resources, config, state)
             self.assertTrue(any("must pull native Harbor images" in error for error in errors))
             rendered_pod["imagePullSecrets"] = [{"name": CHECK.HARBOR_PULL_SECRET}]
+            self.assertFalse(any("must pull native Harbor images" in error for error in
+                                 CHECK.receipt_errors(resources, config, state)))
+
+    def test_enrolled_native_chainguard_image_requires_protected_evidence(self):
+        resources = [workload(pod={"imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}], "containers": [{
+            "name": "app", "image": "harbor.stinkyboi.com/homelab/chainguard/python:latest"
+        }]})]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            config = root / "config.json"
+            state = root / "state.json"
+            configured = json.loads(CHECK.DEFAULT_AUTOMATION.read_text())
+            next(consumer for consumer in configured["consumers"]
+                 if consumer["image_id"] == "chainguard-python")["automation_status"] = "enrolled"
+            next(consumer for consumer in configured["consumers"]
+                 if consumer["image_id"] == "chainguard-python")["migration_status"] = "migrated"
+            config.write_text(json.dumps(configured))
+            state.write_text(json.dumps({"receipts": {}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "destination_ref": "harbor.stinkyboi.com/homelab/chainguard/python:latest",
+                "consumer_access": True,
+            }}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            plan = next(plan for plan in CHECK.NATIVE_RECEIPT.build_plan(
+                configured,
+                CHECK.NATIVE_RECEIPT.read_json(CHECK.DEFAULT_CHAINGUARD_REPLICATION),
+                CHECK.NATIVE_RECEIPT.read_json(CHECK.DEFAULT_CHAINGUARD_CATALOG),
+            ) if plan["image_id"] == "chainguard-python")
+            receipt = {
+                "schema_version": 1,
+                "kind": "native-chainguard-v1",
+                "repository_sha": "a" * 40,
+                "config_digest": plan["config_digest"],
+                "image_id": plan["image_id"],
+                "source_ref": plan["source_ref"],
+                "source_digest": plan["source_digest"],
+                "destination_ref": plan["destination_ref"],
+                "destination_digest": plan["source_digest"],
+                "platforms": {"linux/amd64": "sha256:" + "a" * 64,
+                              "linux/arm64": "sha256:" + "b" * 64},
+                "scan_status": {"linux/amd64": "Success", "linux/arm64": "Success"},
+                "consumer_access": True,
+            }
+            state.write_text(json.dumps({"receipts": {"chainguard-python": receipt}}))
+            resources = [workload(pod={"imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}], "containers": [{
+                "name": "app",
+                "image": f'{plan["destination_repository"]}@{plan["source_digest"]}',
+            }]})]
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Native Chainguard consumer requires protected workflow evidence: chainguard-python"
+            ])
+
+            provenance = {
+                "repository": "Stuhlmuller/homelab",
+                "workflow_path": ".github/workflows/harbor-native-chainguard-receipt.yml",
+                "workflow_id": 1,
+                "run_id": 2,
+                "artifact_id": 3,
+                "artifact_sha256": "sha256:" + "c" * 64,
+            }
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "receipt": receipt, "provenance": provenance,
+            }}}))
             self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
 
+            candidate = next(consumer for consumer in configured["consumers"]
+                             if consumer["image_id"] == "chainguard-python")
+            candidate["automation_status"] = "not-enrolled"
+            candidate["migration_status"] = "candidate"
+            config.write_text(json.dumps(configured))
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Native Chainguard reference lacks migrated status: chainguard-python"
+            ])
+            candidate["migration_status"] = "migrated"
+            config.write_text(json.dumps(configured))
+
+            resources[0]["spec"]["template"]["spec"]["containers"].append({
+                "name": "unverified-copy",
+                "image": plan["destination_ref"],
+            })
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Native Chainguard consumer requires protected workflow evidence: chainguard-python"
+            ])
+            resources[0]["spec"]["template"]["spec"]["containers"].pop()
+
+            provenance["run_id"] = "invalid"
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "receipt": receipt, "provenance": provenance,
+            }}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+            provenance["run_id"] = 2
+
+            next(consumer for consumer in configured["consumers"]
+                 if consumer["image_id"] == "chainguard-python")["automation_status"] = "not-enrolled"
+            next(consumer for consumer in configured["consumers"]
+                 if consumer["image_id"] == "chainguard-python")["migration_status"] = "migrated"
+            config.write_text(json.dumps(configured))
+            state.write_text(json.dumps({"receipts": {}}))
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [
+                "Native Chainguard consumer requires protected workflow evidence: chainguard-python"
+            ])
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "receipt": receipt, "provenance": provenance,
+            }}}))
+            self.assertEqual(CHECK.receipt_errors(resources, config, state), [])
+
+            resources = [workload(pod={"imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}], "containers": [{
+                "name": "app", "image": plan["destination_ref"],
+            }]})]
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            resources = [workload(pod={"imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}], "containers": [{
+                "name": "app", "image": f'{plan["destination_repository"]}@sha256:{"0" * 64}',
+            }]})]
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            resources = [workload(pod={"imagePullSecrets": [{"name": CHECK.HARBOR_PULL_SECRET}], "containers": [{
+                "name": "app",
+                "image": f'{plan["destination_repository"]}@{plan["source_digest"]}',
+            }]})]
+            receipt["config_digest"] = "sha256:" + "0" * 64
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "receipt": receipt, "provenance": provenance,
+            }}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
+
+            receipt["config_digest"] = plan["config_digest"]
+            receipt["source_digest"] = "sha256:" + "0" * 64
+            state.write_text(json.dumps({"receipts": {"chainguard-python": {
+                "receipt": receipt, "provenance": provenance,
+            }}}))
+            self.assertTrue(CHECK.receipt_errors(resources, config, state))
 
 if __name__ == "__main__":
     unittest.main()
