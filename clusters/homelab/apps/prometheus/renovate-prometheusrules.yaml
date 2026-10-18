@@ -52,7 +52,7 @@ spec:
               and on (namespace, cronjob)
                 (max by (namespace, cronjob) (kube_cronjob_spec_suspend{job="kube-state-metrics",namespace="automation",cronjob="renovate"}) == 0)
             )
-          for: 5m
+          for: 1m
           labels:
             severity: warning
           annotations:

@@ -50,25 +50,27 @@ tests = [
 ]
 
 
-def completion_case(name, success=None, fires=True):
+def completion_case(name, success=None, fires=True, schedule="3600x199", at="121m"):
     inputs = [
-        metric("kube_cronjob_status_last_schedule_time", "3600x139"),
-        metric("kube_cronjob_spec_suspend", "0x139"),
+        metric("kube_cronjob_status_last_schedule_time", schedule),
+        metric("kube_cronjob_spec_suspend", "0x199"),
     ]
     if success is not None:
-        inputs.append(metric("kube_cronjob_status_last_successful_time", f"{success}x139"))
+        inputs.append(metric("kube_cronjob_status_last_successful_time", f"{success}x199"))
     return {
         "name": name, "interval": "1m", "input_series": inputs,
         "promql_expr_test": [{
             "expr": 'count by (namespace, cronjob) (ALERTS{alertname="RenovateHourlyCycleIncomplete",alertstate="firing"})',
-            "eval_time": "121m",
+            "eval_time": at,
             "exp_samples": [{"labels": '{namespace="automation",cronjob="renovate"}', "value": 1}] if fires else [],
         }],
     }
 
 
 tests.extend([
-    completion_case("deadline passed without success"),
+    completion_case("deadline passed before next schedule", schedule="3600x119 7200x79", at="118m"),
+    completion_case("next schedule resets previous failure", schedule="3600x119 7200x79", at="121m", fires=False),
+    completion_case("second failed cycle alerts", schedule="3600x119 7200x79", at="178m"),
     completion_case("successful schedule clears deadline", success=3600, fires=False),
     {
         "name": "Argo Application without CronJob", "interval": "1m",
