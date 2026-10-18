@@ -184,6 +184,10 @@ def main():
             expect_denied(create(mirror))
             node = json.loads(run(*kubectl, "get", "nodes", "-o", "json"))["items"][0]
             mirror["spec"]["nodeName"] = node["metadata"]["name"]
+            mirror["metadata"]["ownerReferences"] = [{
+                "apiVersion": "v1", "kind": "Node", "name": node["metadata"]["name"],
+                "uid": node["metadata"]["uid"], "controller": True,
+            }]
             expect_clean(invoke(*kubectl, "--as=system:node:" + node["metadata"]["name"],
                                 "--as-group=system:nodes", "--as-group=system:authenticated",
                                 "create", "--dry-run=server", "-f", "-", input=json.dumps(mirror)))
