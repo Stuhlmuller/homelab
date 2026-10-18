@@ -88,6 +88,27 @@ restricts inbound traffic for selected meshed workloads; it does not deny all
 outbound traffic. `Sidecar` resources do not configure ambient workloads, and
 `outboundTrafficPolicy: REGISTRY_ONLY` is not a security boundary.
 
+### Read-only readiness audit, 2026-10-12
+
+All four Flannel and ztunnel DaemonSet instances were Ready. That proves only
+dataplane availability: it does not make Kubernetes `NetworkPolicy` enforcing
+or add a default outbound deny.
+
+Gateway API CRDs and a `GatewayClass` are absent. The existing Istio
+`networking.istio.io` Gateway resources use the legacy API and cannot establish
+the Gateway API egress-gateway path. No NRI configuration or
+`kube-network-policies` deployment exists.
+
+No egress enforcement was activated. `zimaboard-2` is not a safe canary: it
+has no dedicated taint or isolation, about 1.28 GiB capacity, system DaemonSets
+and a live backup workload.
+
+Declare and validate these prerequisites before activation: supported Gateway
+API CRDs and `GatewayClass` for the pinned Istio release; a repository-owned
+NRI and policy-enforcing dataplane; and a capacity-isolated canary node. Then
+render the exact destination policies, run the private inventory audit, and
+prove both allowed traffic and denied bypasses through the GitOps rollout.
+
 The source-only [NRI fragment](../.talos/patches/nri-containerd.yaml) prepares
 an isolated CRI configuration part, but no node has received it and no NRI
 plugin or policy-enforcing dataplane is deployed. It has no rollout helper or

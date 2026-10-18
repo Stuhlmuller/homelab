@@ -69,12 +69,12 @@ Run the smallest validation that proves the change. For most infrastructure or
 GitOps changes, start with:
 
 ```sh
-terragrunt hcl fmt --check
-terragrunt hcl validate
-nix develop --command bash scripts/ci/static-checks.sh
-nix develop --command bash scripts/ci/conftest-policies.sh
-git diff --check
+nix run .#validate
 ```
+
+This generates the Terragrunt stack, then runs HCL formatting and validation,
+the static checks (including whitespace), and Conftest policies with the flake's
+pinned tools.
 
 For docs-only changes, focused Markdown and whitespace checks are usually
 enough:

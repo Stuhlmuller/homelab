@@ -3,9 +3,6 @@ type: architecture
 title: "Secrets And Identity"
 description: "SSM and External Secrets ownership, credential boundaries, Entra and Cordium identities, and application recovery access."
 tags: [architecture, secrets, identity]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-18T12:23:45.502Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
@@ -39,6 +36,8 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -71,11 +70,16 @@ sources:
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
+  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
+    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T12:23:45.502Z" }
+generated: { by: "codex", at: "2026-10-18T22:12:38.870Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T22:12:38.870Z
 ---
 
 # Secrets And Identity
@@ -164,8 +168,11 @@ until authenticated plan/apply and denial checks succeed over the new proxy.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
-recovery. The canonical DNS helper uses the existing scoped cert-manager DNS
-token to write only its fixed mesh A/AAAA inventory from reviewed current main.
+recovery. The separate tailnet resolver watches approved Kubernetes Services
+and needs no DNS write token. Only the later guarded retirement helper reads
+the existing scoped cert-manager Cloudflare token; it can delete public
+A/AAAA/CNAME records for the fixed 27 names after owner tailnet DNS handoff and
+client acceptance. It has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
 
@@ -771,7 +778,7 @@ mirror runbook](../../docs/harbor-image-mirroring.md).
 The reviewed Stage A saved plan created and metadata-verified the generated
 `/homelab/harbor/mirror-robot-pull-password` without reading its value. The
 Stage B desired-state consumer advances `harbor-secrets`' `OnChange` annotation
-to `v3` and mounts the reader key in the Harbor bootstrap Job. After External
+to `v4` and mounts the reader key in the Harbor bootstrap Job. After External
 Secrets materializes the target Secret, that Job can reconcile the separate
 read-only robot during execution; require successful PostSync completion before
 accepting reader-robot, authenticated-receipt, or Talos behavior. Parameter
@@ -800,11 +807,12 @@ Native-image activation waits for publication/scans, recovery clearance and
 ExternalSecret readiness. An `OnChange` annotation advance is required after
 credential rotation; upstream cold recovery remains.
 
-The native receipt scan robot separately needs the staged
-`/homelab/harbor/robot-scan-password` SSM parameter and its exact-ARN reader
-grant. The scan ExternalSecret consumer stays held until a reviewed saved plan
-creates the parameter and read-only metadata verifies it. This declaration
-creates no Harbor robot, receipt, or running workload change. See the
+The native receipt scan robot separately needs
+`/homelab/harbor/robot-scan-password` and its exact-ARN reader grant. The
+parameter is present as a version 1 `SecureString`; read-only IAM inspection
+verified the grant, and a targeted plan from `main` at `f6506136` found no
+changes on 2026-10-18. The parameter alone creates no Harbor robot or receipt.
+See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
 
 The staged Cordium Nocturne controller declares a generated copy of the

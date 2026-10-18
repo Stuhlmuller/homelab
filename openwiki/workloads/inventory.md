@@ -6,6 +6,8 @@ tags: [workloads, argocd, inventory]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-a1af3dbae268cb4278427934
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-53c124f58f39a2d917f17aaa
@@ -64,8 +66,14 @@ sources:
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-ae0b2b6cec91dbc3476c410b
+    resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
+    resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
+  - id: openwiki-source-f2b6230f4caf06e7eab9bc66
+    resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
   - id: openwiki-source-65bc6c080b599d8e6d572a31
@@ -76,6 +84,8 @@ sources:
     resource: repo://IaC/stacks/mastodon/stack.hcl
   - id: openwiki-source-25c085c78b1cbef8c164f9f7
     resource: repo://IaC/stacks/platform-image-policy/stack.hcl
+  - id: openwiki-source-612eb02105d61c48b6ba59bd
+    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
@@ -86,10 +96,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T10:55:26.804Z
+    at: 2026-10-18T22:12:38.870Z
 ---
 
 # Workload Inventory
@@ -173,6 +183,7 @@ and device connection tests.
 | App                     | Kind                      | Namespace               | GitOps path                                   | Terragrunt path                              | Depends on                                                  |
 | ----------------------- | ------------------------- | ----------------------- | --------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------- |
 | `traefik` | ingress foundation | `traefik` | `clusters/homelab/apps/traefik` | `IaC/live/argocd-apps/traefik` | cert-manager, istio, tailscale; operator policy before proxy registration |
+| `tailnet-dns` | tailnet application resolver | `tailnet-dns` | `clusters/homelab/platform/tailnet-dns` | `IaC/live/argocd-apps/tailnet-dns` | tailscale, traefik, published pinned Harbor DNS image |
 | `platform-dns`          | support                   | `kube-system`           | `clusters/homelab/platform/dns`               | `IaC/live/argocd-apps/platform-dns`          | Argo CD bootstrap                                           |
 | `platform-multus`       | support                   | `kube-system`           | `clusters/homelab/platform/multus`            | `IaC/live/argocd-apps/platform-multus`       | Octelium data-plane prerequisites                           |
 | `platform-storage`      | support                   | cluster-scoped          | `clusters/homelab/platform/storage`           | `IaC/live/argocd-apps/platform-storage`      | QNAP NFS export                                             |
@@ -192,6 +203,17 @@ a Service route for internal callers before external DNS moves to mesh addresses
 It now declares all six CoreDNS resources and pins the running image content,
 with a controlled rolling replacement. The Talos bootstrap handoff remains a
 separate, gated step; see [CoreDNS GitOps Ownership](../operations/coredns-gitops-ownership.md).
+
+`tailnet-dns` is a separate, stateless CoreDNS/k8s_gateway resolver for tailnet
+clients; it does not replace `platform-dns` or Traefik. Its Tailscale
+LoadBalancer exposes UDP/TCP 53 through the distinct `homelab-dns` proxy.
+The resolver watches the approved `traefik-private` Service's hostname
+annotation and published ingress IP; reviewed HTTPS routes must match those
+names. The first handoff checks all 27 migration names, while later paired
+route/annotation changes update DNS without a zone-record edit. Its two Pods
+need no PVC, DNS database, backup, or application secret. Direct signed-proxy
+and DNS checks precede the owner tailnet nameserver setting; public address
+records remain until separate client acceptance and guarded retirement.
 
 `platform-crossplane` installs Crossplane core `2.3.3` from the upstream stable
 Helm repository with default chart values. It intentionally does not install
@@ -447,6 +469,9 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
+The staged native Chainguard receipt targets private Python and curl imports;
+it neither publishes them nor moves consumers until protected receipt and
+provenance gates pass.
 
 The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
 Application. Its cluster-scoped admission policy starts with `Warn, Audit` for

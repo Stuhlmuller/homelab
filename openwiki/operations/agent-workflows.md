@@ -3,6 +3,21 @@ type: workflow
 title: "Agent Workflows"
 description: "Focused homelab skills and Spec Kit planning, validation, and rollback."
 tags: [agents, skills, spec-kit]
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T17:42:33.479Z
+sources:
+  - id: openwiki-source-b0a3b747268ffb4a3afe9b8b
+    resource: repo://.specify/extensions.yml
+  - id: openwiki-source-06bb1be2fc0a5796cdc353ee
+    resource: repo://.specify/extensions/assess/commands/speckit.assess.decide.md
+  - id: openwiki-source-fca4dd6930b3588ec83f834f
+    resource: repo://.specify/extensions/assess/commands/speckit.assess.research.md
+  - id: openwiki-source-35a262cf1ec77a810a576502
+    resource: repo://.specify/extensions/assess/extension.yml
+  - id: openwiki-source-23f4f29f42d3e5ba42a52b6a
+    resource: repo://.specify/extensions/assess/README.md
+generated: { by: "codex", at: "2026-10-18T17:42:33.479Z" }
 ---
 
 # Agent Workflows
@@ -21,10 +36,22 @@ lists the corpora, local indexing commands, and search examples.
 
 ## Spec Kit
 
-Spec Kit 0.15.1 adds ten `speckit-*` skills for specification, clarification,
-planning, task generation, analysis, implementation, convergence, checklists,
-constitution authoring, and issue creation. `.specify/init-options.json` records
-the Codex integration, Python helpers, and sequential feature numbering;
+Spec Kit 0.15.1 provides ten core `speckit-*` skills for specification,
+clarification, planning, task generation, analysis, implementation,
+convergence, checklists, constitution authoring, and issue creation.
+The local [`assess` extension](../../.specify/extensions/assess/README.md) adds
+five Codex skills for intake, research, problem definition, concept shaping,
+and a go / needs-clarification / kill decision. Its commands write to
+`.specify/assessments/<slug>/`; it registers no lifecycle hooks and hands a
+`go` decision to `speckit-specify` only when invoked. An automated
+needs-clarification result names the artifact to update. Existing artifacts
+require user-authorized interactive revision before the decision is rerun.
+`.specify/extensions.yml` enables the extension; `.specify/extensions/.registry`
+records its manifest hash and five commands. Run `specify extension list` to
+verify registration.
+
+`.specify/init-options.json` records the Codex integration, Python helpers,
+and sequential feature numbering;
 `.specify/templates/` and `.specify/workflows/speckit/workflow.yml` own the
 artifact templates and review gates. Feature selection is stored in
 `.specify/feature.json`; helpers ignore `SPECIFY_INIT_DIR`, `SPECIFY_FEATURE`,
@@ -41,8 +68,14 @@ rules; imported upstream files are not exempt. Run
 `python3 -I scripts/ci/speckit-check.py` before pushing. The static gate runs
 the latter against temporary projects, including paths with spaces, stale
 shell variables, missing selection, and existing-plan preservation.
+For assessment content, also lint the new Markdown skills and command files
+and run the repository's pre-commit checks.
 Installation manifests retain upstream hashes
 so local compatibility edits remain detectable during upgrades.
+
+To roll back the assessment extension, revert its source, registry, and five
+skills together in a PR, then rerun the checks above. Keep any authored
+`.specify/assessments/` records.
 
 To roll back an upgrade, open a PR with `git revert <spec-kit-upgrade-commit>`
 and run the checks above. This restores the skills, `.specify` helpers,

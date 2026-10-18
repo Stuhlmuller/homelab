@@ -3,6 +3,19 @@ type: runbook
 title: "AWS SSM Secret References"
 description: "SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume."
 tags: ["runbook", "secrets", "aws"]
+sources:
+  - id: openwiki-source-fd05994eb55b0e1cf42320bb
+    resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
+  - id: openwiki-source-64bca48d4f10b0676e24742b
+    resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-cf9e058040b1a15ca636bb42
+    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-18T22:12:38.870Z
 ---
 
 # AWS SSM Secret References
@@ -21,6 +34,15 @@ until then the updater stays at zero replicas and no ExternalSecret is enabled.
 Commit SSM paths, ExternalSecret contracts, and safe placeholders only. Runtime
 values stay outside git; External Secrets materializes application credentials
 after the repository-managed bootstrap secret is available.
+
+## Harbor native receipt prerequisite
+
+The generated `/homelab/harbor/robot-scan-password` parameter is present as a
+version 1 `SecureString`. Read-only IAM inspection confirmed its exact
+External Secrets reader grant, and a targeted plan from `main` at `f6506136`
+found no changes on 2026-10-18. The Harbor `OnChange` ExternalSecret still
+needs GitOps reconciliation and a successful PostSync bootstrap before the
+protected native receipt can run. See the [Harbor contract](../operations/harbor-oci.md).
 
 ## Multica PostgreSQL Password Rotation
 

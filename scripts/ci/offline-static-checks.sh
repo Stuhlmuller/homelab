@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091,SC2329 # sourced helper and test fixtures resolve names indirectly
 set -euo pipefail
 source scripts/ci/terragrunt-filter-base.sh
 terragrunt_generate_stack
@@ -835,6 +836,9 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
+    '.github/workflows/harbor-native-chainguard-receipt-provenance.yml:verify' \
+    '.github/workflows/harbor-native-chainguard-receipt.yml:receipt' \
+    '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
     '.github/workflows/image-automation.yml:fallback-pr' \
     '.github/workflows/image-automation.yml:image-update-gate' \
@@ -876,6 +880,18 @@ expected_credentialed_job_inventory="$({
   exit 1
 }
 
+for workflow in .github/workflows/*.yml; do
+  yq -o=json '.' "$workflow" | jq -e '
+    if (.on // {} | has("pull_request")) then
+      [.permissions, .jobs[].permissions] |
+      all(. != "write-all" and (type != "object" or .statuses != "write"))
+    else true end
+  ' >/dev/null || {
+    echo "Pull-request workflow can forge protected commit statuses: $workflow" >&2
+    exit 1
+  }
+done
+
 for promotion_job in image-update-gate promote fallback-pr; do
   yq -e ".jobs.\"${promotion_job}\".if | contains(\"IMAGE_AUTOMATION_PROMOTION_ENABLED\")" \
     .github/workflows/image-automation.yml >/dev/null || {
@@ -899,12 +915,14 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 428110a926702b48327103f18106d9eca0055455d269b6e82320e9df6d943782
+.github/workflows/harbor-mirror.yml 8409717ae7f533b6d8dd1a3ff2bcae40394494d8d56e44090b23f8ff6c38239f
+.github/workflows/harbor-native-chainguard-receipt-provenance.yml 53d2b15f3d23944b2f6322c14ec1f216ef1cc9d743156450e702facc7098de91
+.github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
+.github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
-.github/workflows/openclaw-enterprise-operations.yml e8250cd86f2657751762ce7316e250ea748295bd3546f38a0e0c94f0c05bc748
+.github/workflows/openclaw-enterprise-operations.yml b92e634e0e7b35409c4bbdb121bb3d4d68fca978f7aa8c1d216a44b891fc0f76
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -928,6 +946,7 @@ for workflow_job in \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
+  '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -951,6 +970,105 @@ for workflow_job in \
       (.jobs[$job].steps[0].run | contains("test \"${ACTUAL_SHA}\" = \"${EXPECTED_SHA}\""))
     ' >/dev/null
 done
+yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt.yml |
+  jq -e '
+    (.on | keys) == ["workflow_dispatch"] and
+    .on.workflow_dispatch.inputs == {
+      "expected_sha": {
+        "description": "Exact current main commit containing the reviewed native Chainguard contract",
+        "required": true,
+        "type": "string"
+      }
+    } and
+    .permissions == {} and
+    .env == {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"} and
+    (.jobs | keys | sort) == ["receipt", "static-policy"] and
+    .jobs["static-policy"].permissions == {"contents": "read"} and
+    .jobs.receipt.needs == ["static-policy"] and
+    .jobs.receipt.environment == {"name": "homelab-production"} and
+    .jobs.receipt.permissions == {"contents": "read", "id-token": "write"} and
+    .jobs.receipt.concurrency == {"group": "harbor-native-chainguard-receipt", "cancel-in-progress": false} and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")] | length) == 1 and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")][0].uses ==
+      "chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508") and
+    ([.jobs.receipt.steps[] | select(.name == "Configure Exact Receipt Credential Access")][0].with["inline-session-policy"] |
+      contains("parameter/homelab/harbor/robot-pull-password") and
+      contains("parameter/homelab/harbor/robot-scan-password") and
+      contains("ssm:GetParameter") and contains("kms:ViaService")) and
+    ([.jobs.receipt.steps[] | select(.name == "Verify Native Imports Without Exposing Transport Output")][0].env == {
+      "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+      "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+    }) and
+    ([.jobs.receipt.steps[] | select(.name == "Upload Native Receipt")][0].with == {
+      "name": "harbor-native-chainguard-receipt-${{ github.sha }}",
+      "path": "${{ runner.temp }}/harbor-native-chainguard-receipt.json",
+      "if-no-files-found": "error",
+      "retention-days": 30,
+      "include-hidden-files": false
+    })
+  ' >/dev/null
+yq -o=json '.' .github/workflows/harbor-native-chainguard-receipt-provenance.yml |
+  jq -e '
+    [.jobs.verify.steps[] | select(.name == "Check Out Trusted Base")] as $checkout |
+    [.jobs.verify.steps[] | select(.name == "Revalidate Open Pull Requests Against Current Main")] as $revalidate |
+    .name == "Verify Native Chainguard Receipt Provenance" and
+    (.on | keys | sort) == ["pull_request_target", "push"] and
+    .on.push == {"branches": ["main"]} and
+	.on.pull_request_target == {"branches": ["main"], "types": ["opened", "reopened", "synchronize", "edited"]} and
+    .permissions == {} and
+    .concurrency == {"group": "native-chainguard-receipt-provenance", "cancel-in-progress": false} and
+    .env == null and
+    (.jobs | keys) == ["verify"] and
+    .jobs.verify.name == "Native Chainguard Receipt Provenance" and
+    .jobs.verify["runs-on"] == "ubuntu-24.04" and
+    .jobs.verify["timeout-minutes"] == 20 and
+    .jobs.verify.permissions == {"actions": "read", "contents": "read", "pull-requests": "read", "statuses": "write"} and
+    .jobs.verify.environment == null and
+    .jobs.verify.env == null and
+    (.jobs.verify.steps | length) == 2 and
+    ($checkout | length) == 1 and
+    $checkout[0].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505" and
+    $checkout[0].with == {
+      "ref": "main",
+      "fetch-depth": 1,
+      "persist-credentials": false
+    } and
+    ($revalidate | length) == 1 and
+    $revalidate[0].if == null and
+    $revalidate[0].env == {"GH_TOKEN": "${{ github.token }}"} and
+    ($revalidate[0].run |
+      contains("set -euo pipefail") and
+      contains("base_sha=\"$(git rev-parse HEAD)\"") and
+      contains("repos/${GITHUB_REPOSITORY}/pulls?state=open&base=main&per_page=100") and
+      contains("jq -r '\''.[].head.sha'\''") and
+      contains("--base-sha \"$base_sha\" --head-sha \"$head_sha\"") and
+      contains("python3 -I scripts/ci/harbor-native-chainguard-receipt-import.py verify-pull-request") and
+      contains("repos/${GITHUB_REPOSITORY}/commits/main") and
+      contains("repos/${GITHUB_REPOSITORY}/statuses/${head_sha}"))
+  ' >/dev/null
+fixture_env=""
+if [[ -n "${NIX_BUILD_TOP:-}" && "$PWD" == "$NIX_BUILD_TOP/source" ]]; then
+  fixture_env="$(type -P env || true)"
+fi
+trusted_source_sha256() {
+  local source="$1" first_line
+  IFS= read -r first_line <"$source" || return 1
+  if [[ "$fixture_env" == /nix/store/*-coreutils-*/bin/env && "$first_line" == "#!$fixture_env python3" ]]; then
+    # Only the active Nix fixture rewrites this exact interpreter; production bytes stay pinned.
+    { printf '%s\n' '#!/usr/bin/env python3'; tail -n +2 "$source"; } | sha256sum | cut -d' ' -f1
+  else
+    sha256sum "$source" | cut -d' ' -f1
+  fi
+}
+while read -r source expected_hash; do
+  [[ "$(trusted_source_sha256 "$source")" == "$expected_hash" ]] || {
+    echo "Trusted native receipt provenance source changed; review it and update its exact security hash: $source" >&2
+    exit 1
+  }
+done <<'EOF'
+scripts/ci/harbor-native-chainguard-receipt-import.py c7a8b65baa2ae4a7a6f5afbd0b9b25a1e3f2638bdc5f8241e42590eef96e69d2
+scripts/ci/harbor-native-chainguard-receipt.py 7f623b4ca99a4a483bf0e5dc99b58f80f09eb719b608f535b3948696994c4688
+EOF
 yq -o=json '.' .github/workflows/terragrunt-apply-request.yml |
   jq -e '
     (.on | keys) == ["push"] and
