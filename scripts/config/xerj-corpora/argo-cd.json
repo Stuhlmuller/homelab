@@ -1,0 +1,21 @@
+{
+ "corpus": "argo-cd",
+ "cloned_at": "2026-10-13T06:34:26Z",
+ "repos": [
+  {
+   "repo": "argo-cd",
+   "url": "https://github.com/argoproj/argo-cd.git",
+   "licence": "Apache-2.0",
+   "sha": "03a10c74b1fdb7805bc4bd89a14a125494132965",
+   "files": 6154,
+   "bytes": 225121393,
+   "review": {
+    "spdx": "Apache-2.0",
+    "use": "adapt-with-attribution",
+    "by": "xerj-org",
+    "at": "2026-10-13",
+    "note": "licence host-verified (ok-spdx): Apache-2.0"
+   }
+  }
+ ]
+}
