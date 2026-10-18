@@ -1,18 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1b4e2db0f80f9f5fbde76c5048d64b3e7f9decb68df779cc63b6eba1adb0f981",
+  "pageVersion": "sha256:737f8e6788acffe176f3f828503870927d3588c9934996e51b5d898d3673eed2",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
-      "statement": "The Octelium Entra bootstrap, owner-mail module runbook and Fleet Free Entra runbook are the canonical sources for immutable identity migration, private mail-only operator updates and Mac SSO acceptance.",
+      "statement": "The Octelium Entra bootstrap retains immutable owner identity; the owner-mail module now documents a retired Graph PATCH and state-only removal. The Fleet runbook records retired Company Portal/Platform SSO and the separate guarded Entra owner conversion.",
       "evidence": [
         {
           "resource": "repo://IaC/modules/entra-owner-mail/README.md",
-          "version": "repo-file-v1:sha256:c98ab1090d7e322a727d700264aa67218050e3542f8266831e89aaf7d76ae308"
+          "version": "repo-file-v1:sha256:133992059c332d4630fdbc23331576eb6ae8e363d4382035da7b888567254c23"
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:3e6b9b0a3702b9734df4d58d0ce65f91cf801573b5b79c3a64477e3bda48eba7"
+          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
+        },
+        {
+          "resource": "repo://scripts/entra-owner-conversion.py",
+          "version": "repo-file-v1:sha256:8f7a3be17c80ce8acc306ff6583c17c4c1421d0d67f70c99bcc818f1a198da3e"
         },
         {
           "resource": "repo://scripts/octelium-entra-oidc.sh",
@@ -55,10 +59,50 @@
           "version": "repo-file-v1:sha256:8fa33f2929c8a7c6fe025793fe8745672426afcbda9d1e1a61740e9bd630f949"
         }
       ]
+    },
+    {
+      "id": "claim_98e5ba802ab443f3881f65ce87e2919e",
+      "statement": "Mastodon's workload runbook, stack inputs, shared SSM catalog and dedicated SMTP/DNS workflows own its runtime, registration, credential and public access contracts.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml",
+          "version": "repo-file-v1:sha256:5ec8b9c13900f72075c89c9c5b9393087daf14fc62c6244a07b9ba36012fe9fc"
+        },
+        {
+          "resource": "repo://.github/workflows/mastodon-smtp-credential.yml",
+          "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
+        },
+        {
+          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md",
+          "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
+        }
+      ]
+    },
+    {
+      "id": "claim_19d83438220445ea972185f0a6371a3b",
+      "statement": "Cordium runner source, fixed pool declaration, and protected workflow contracts are routed to CI, identity, and validation wiki pages.",
+      "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-11T09:10:40.150Z"
+    "at": "2026-10-18T06:24:02.662Z"
   }
 }

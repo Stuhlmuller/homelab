@@ -58,8 +58,7 @@ does not fight the controller-owned values.
 
 `emergency-dataplane.yaml` reuses each existing Octelium Service selector and
 runs a uniquely named, digest-pinned fallback Deployment on the primary
-Kubernetes network. The 18 newly added public WEB fallbacks extend the existing
-OctoBot fallback, giving 19 public WEB proxies in this recovery manifest.
+Kubernetes network. The recovery manifest includes 18 public WEB proxies.
 `default.cordium` and `console.octelium` include their required managed
 sidecars; Cordium also gets a bounded writable `/tmp` for its bbolt cache. Do
 not add the Multus annotation or a dataplane node label to these temporary

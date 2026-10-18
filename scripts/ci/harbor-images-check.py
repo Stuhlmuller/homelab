@@ -14,8 +14,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / "scripts/config/harbor-images.json"
 FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
+MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
+HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
 AUTOMATION_STATE = ROOT / "scripts/config/image-automation-state.json"
@@ -35,6 +37,19 @@ def normalize(image):
     if repository.startswith("docker.io/") and repository.count("/") == 1:
         repository = repository.replace("docker.io/", "docker.io/library/", 1)
     return repository + ("@" + digest if separator else ":" + tag)
+
+
+def catalog_reference(image):
+    """Compare a Harbor mirror ref with its reviewed upstream provenance."""
+    return normalize(image.removeprefix("harbor.stinkyboi.com/mirror/"))
+
+
+def mirror_reference(image):
+    """Keep the literal Harbor repository and digest; tags do not change either."""
+    repository, _, digest = image.partition("@")
+    if ":" in repository.rsplit("/", 1)[-1]:
+        repository = repository.rsplit(":", 1)[0]
+    return repository + "@" + digest
 
 
 def declared_images(value):
@@ -92,6 +107,28 @@ def declared_bazarr_images():
     documents = json.loads(subprocess.check_output(
         ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
     return declared_images(documents + yaml_documents([app / "values.yaml"]))[0]
+
+
+def declared_mastodon_images():
+    app = ROOT / "clusters/homelab/apps/mastodon"
+    if app.exists():
+        manifests = subprocess.check_output(["kubectl", "kustomize", str(app)], text=True)
+        documents = json.loads(subprocess.check_output(
+            ["yq", "ea", "-o=json", "-I=0", "[.]", "-"], input=manifests, text=True))
+        return declared_images(documents)[0]
+    # Publication precedes its consuming workload; compare the fixed four tags
+    # to the full reviewed catalog until the runtime overlay lands.
+    prefixes = (
+        "ghcr.io/mastodon/mastodon:v4.7.3@",
+        "ghcr.io/mastodon/mastodon-streaming:v4.7.3@",
+        "docker.io/library/postgres:18-bookworm@",
+        "docker.io/library/redis:7.4.11-alpine@",
+    )
+    sources = {item["source"] for item in json.loads(CATALOG.read_text())["images"]
+               if item["source"].startswith(prefixes)}
+    if len(sources) != 4:
+        raise RuntimeError("Mastodon publication prerequisite lacks its four reviewed runtime images")
+    return sources
 
 
 def chart_sources():
@@ -170,31 +207,45 @@ def ownership_errors():
 def check():
     catalog = json.loads(CATALOG.read_text())["images"]
     known = {normalize(item["source"]) for item in catalog}
+    known_mirrors = {mirror_reference("harbor.stinkyboi.com/mirror/" + item["source"])
+                     for item in catalog}
     known_digests = {item.rsplit("@", 1)[-1] for item in known if "@" in item}
     # An unpinned declaration needs its reviewed tag as well as a copied digest.
     known_tags = {normalize(item["source"].split("@", 1)[0]) for item in catalog
                   if ":" in item["source"].split("@", 1)[0].rsplit("/", 1)[-1]}
     paths = sorted((ROOT / "clusters").rglob("*.yaml")) + sorted((ROOT / ".talos/patches").glob("*.yaml"))
     images, digests = declared_images(yaml_documents(paths))
+    # Direct Harbor mirror references must retain the reviewed digest. Upstream
+    # provenance refs may use a reviewed tag because Talos resolves them through
+    # the strict Harbor mirror path.
     missing = sorted(normalize(image) for image in images
-                     if not image.startswith("harbor.stinkyboi.com/")
-                     and normalize(image) not in known | known_tags)
+                     if not image.startswith("harbor.stinkyboi.com/homelab/")
+                     and (mirror_reference(image) not in known_mirrors
+                          if image.startswith("harbor.stinkyboi.com/mirror/")
+                          else catalog_reference(image) not in known | known_tags))
     missing_digests = sorted(digests - known_digests - {
-        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/")})
+        image.rsplit("@", 1)[-1] for image in images if image.startswith("harbor.stinkyboi.com/homelab/")})
     errors = [*("Unmirrored declared image: " + image for image in missing),
               *("Unmirrored declared digest: " + digest for digest in missing_digests)]
     errors.extend(receipt_errors())
     errors.extend(ownership_errors())
     scope_counts = {}
+    harbor_runtime = {item["source"] for item in catalog
+                      if item["source"].startswith("docker.io/goharbor/")
+                      and ":v2.15.4@" in item["source"]}
+    if len(harbor_runtime) != 9:
+        errors.append("Harbor 2.15.4 runtime publication requires nine component digests")
     for name, path, required_images in (
         ("Fleet", FLEET_CATALOG, rendered_fleet_images()),
         ("Bazarr", BAZARR_CATALOG, declared_bazarr_images()),
+        ("Mastodon", MASTODON_CATALOG, declared_mastodon_images()),
         ("Chainguard", CHAINGUARD_CATALOG,
          {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
+        ("Harbor", HARBOR_RUNTIME_CATALOG, harbor_runtime),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
-        required = {normalize(image) for image in required_images}
+        required = {catalog_reference(image) for image in required_images}
         errors.extend(f"{name} mirror scope missing required image: " + image
                       for image in sorted(required - known_scope))
         errors.extend(f"{name} mirror scope has unused image: " + image
@@ -208,7 +259,10 @@ def check():
         "overridePath": True, "skipFallback": True,
     } for registry in registries}
     patch = yaml_documents([ROOT / ".talos/patches/harbor-mirrors.yaml"])[0]
-    if patch["machine"]["registries"]["mirrors"] != expected_mirrors:
+    registry_config = patch["machine"]["registries"]
+    if "config" in registry_config:
+        errors.append("Talos Harbor mirror patch must not contain registry authentication")
+    if registry_config["mirrors"] != expected_mirrors:
         errors.append("Talos mirror endpoints must cover exactly the catalog registries with overridePath and skipFallback enabled")
     if chart_sources() != json.loads(CHARTS.read_text()):
         errors.append("Chart sources changed: render the new versions, mirror their images, then refresh harbor-image-charts.json")

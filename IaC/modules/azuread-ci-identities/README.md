@@ -23,7 +23,9 @@ permission, Azure RBAC assignment, directory role, or license. Workload identity
 federation is available in [Entra Workload ID Free](https://learn.microsoft.com/en-us/azure/active-directory/workload-identities/workload-identities-faqs).
 
 The existing human tenant owner remains the sole owner of these two application
-registrations and service principals. A precondition rejects another caller.
+registrations and service principals. The unit resolves that owner by immutable
+object ID, so a supported UPN conversion does not transfer ownership. A
+precondition rejects another caller.
 CI must not own either CI identity or traverse this operator unit. Applications
 and service principals have `prevent_destroy`; deliberate retirement needs a
 reviewed code change.

@@ -162,16 +162,24 @@ spec:
             - name: http
               containerPort: 80
           readinessProbe:
-            httpGet:
-              path: /health
-              port: http
+            exec:
+              command:
+                - wget
+                - --no-verbose
+                - --tries=1
+                - --spider
+                - http://127.0.0.1/health
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 6
           livenessProbe:
-            httpGet:
-              path: /health
-              port: http
+            exec:
+              command:
+                - wget
+                - --no-verbose
+                - --tries=1
+                - --spider
+                - http://127.0.0.1/health
             periodSeconds: 30
             timeoutSeconds: 5
             failureThreshold: 3

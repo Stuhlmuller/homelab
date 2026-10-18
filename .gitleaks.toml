@@ -10,3 +10,16 @@ condition = "AND"
 paths = ['''clusters/homelab/apps/octelium-enterprise/resources\.yaml''']
 regexTarget = "line"
 regexes = ['''octelium\.com/secret-manager-config:\s+[0-9a-f]{64}''']
+
+[[allowlists]]
+description = "Verified public Go module checksum lines in the Harbor dependency patch"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(?m)^builds/harbor-core/patches/0003-security-dependencies\.patch$''']
+regexTarget = "line"
+regexes = [
+  '''(?m)^\-github\.com/docker/docker\-credential\-helpers\ v0\.9\.3\ h1:gAm/VtF9wgqJMoxzT3Gj5p4AqIjCBS4wrsOh9yRqcz8=$''',
+  '''(?m)^\+github\.com/docker/docker\-credential\-helpers\ v0\.9\.5\ h1:EFNN8DHvaiK8zVqFA2DT6BjXE0GzfLOZ38ggPTKePkY=$''',
+  '''(?m)^\ golang\.org/x/oauth2\ v0\.36\.0\ h1:peZ/1z27fi9hUOFCAZaHyrpWG5lwe0RJEEEeH0ThlIs=$''',
+  '''^\ k8s\.io/api\ v0\.37\.0\ h1:Z//Vj9N7RA/yS2sDmxyeo7h\+RR4zbUrd2vrd3Z0TbB4=$''',
+]
