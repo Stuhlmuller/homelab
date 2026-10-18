@@ -19,6 +19,11 @@ SHA and run IDs shown by GitHub Actions; never put private receipts in Git:
 ```sh
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=inventory
+# One-shot recovery for the successful scan from run 39127113354 whose
+# protected workflow failed before publishing its off-NAS baseline:
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-inventory \
+  -f baseline_ref=d55e2ab8521e427c059e07e34b270e476092a8a1/39127113354
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=archive \
   -f baseline_ref=<INVENTORY_SHA>/<INVENTORY_RUN_ID>
@@ -37,6 +42,12 @@ versioned backup bucket under
 `openclaw-enterprise/legacy/<SHA>/<RUN_ID>/diagnostic.log`. A missing marker or
 unfinished lock means the result is unknown; inspect the Pod and private log
 before attempting another scan.
+The fixed `publish-inventory` recovery accepts only the completed
+`d55e2ab/39127113354` scan. It requires the success marker, matching worker
+and retained baseline copies, current reader/PVC/root identity, and one exact
+versioned S3 object whose downloaded bytes match. It does not rescan or stop
+the old gateway. If publication fails or the object has multiple versions, keep
+shutdown blocked and inspect the private failure; do not overwrite a version.
 Unreadable zero-byte NAS files retain their empty hash and original mode in the
 archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and copies the complete
