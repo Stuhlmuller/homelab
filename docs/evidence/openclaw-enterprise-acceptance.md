@@ -10,7 +10,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
 | Stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Signed and fully pulled by protected workflow |
 | Full platform image catalog and transitive render | [main `d7c81d87`, mirror run `39105390894`](https://github.com/Stuhlmuller/homelab/actions/runs/39105390894) | — | Pending |
-| Legacy pre-shutdown inventory | [main `2928d3a3`, run `39119417122`](https://github.com/Stuhlmuller/homelab/actions/runs/39119417122) | — | Failed after a long NAS scan; no baseline was published. Reader roots and local tree passed separate read-only checks. Cause pending private diagnostic rerun; old writers remain active. |
+| Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354) | — | Private worker finished its full scan and matching retained baseline copies exist, but the protected workflow failed before an off-NAS object appeared. The prior [run `39119417122`](https://github.com/Stuhlmuller/homelab/actions/runs/39119417122) also failed. No baseline is accepted; old writers remain active. |
 | Legacy stopped with zero writers | Pending | — | Pending |
 | Full independent legacy archive/restore | Pending | — | Pending |
 | Capacity and isolated canary | Pending | — | Pending |
