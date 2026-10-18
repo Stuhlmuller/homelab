@@ -6,6 +6,7 @@ import json
 import os
 import sqlite3
 import stat
+import subprocess
 import tarfile
 import tempfile
 import time
@@ -100,6 +101,21 @@ class Retirement(unittest.TestCase):
             damaged.write(b'truncated-or-changed')
         with self.assertRaises(ValueError):
             retirement.verify_archive(self.config, receipt)
+
+    def test_workflow_archive_writes_private_receipt_locator(self):
+        config_path = self.archive_root / 'config.json'
+        config_path.write_text(json.dumps({'legacyRetention': self.config}))
+        result_path = self.archive_root / 'archive-result.json'
+        result = subprocess.run([
+            'python3', str(SOURCE), 'archive', '--config', str(config_path),
+            '--status', str(self.status_path), '--baseline', str(self.baseline_path),
+            '--destination', str(self.archive_root), '--output', str(result_path),
+        ], env={**os.environ, 'GITHUB_ACTIONS': 'true'}, capture_output=True, text=True,
+            timeout=30, check=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = Path(json.loads(result_path.read_text())['receipt'])
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertEqual(stat.S_IMODE(result_path.stat().st_mode), 0o600)
 
     def test_writer_uncertainty_or_source_identity_change_never_publishes(self):
         for key, value in [('replicas', 1), ('pods', 1), ('activeJobs', 1),

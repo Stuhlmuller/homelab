@@ -34,6 +34,8 @@ The declared off-NAS destination is the versioned, encrypted
 `716182248480`; staging its Terragrunt unit does not satisfy the archive gate.
 Verify the bucket and an upload/download restore before stopping the legacy
 writer. The separate application-backup service remains inactive.
+The fixed inventory/archive/verify dispatches and compatible old-service
+recovery order are in the [OpenClaw runbook](../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
 
 ## Fixed stages and stop gates
 

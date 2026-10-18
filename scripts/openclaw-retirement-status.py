@@ -109,6 +109,7 @@ def resources(config, query=kubectl):
     result = {
         'checkedAt': int(time.time()), 'namespace': namespace,
         'node': config['node'], 'nodeReady': ready,
+        'readerPod': reader['metadata']['name'], 'readerPodUid': reader['metadata']['uid'],
         'deployment': config['deployment'], 'image': containers[0]['image'],
         'assistantSha256': deployment['spec']['template'].get('metadata', {}).get(
             'annotations', {}).get('homelab.rst.io/openclaw-assistant-sha256'),

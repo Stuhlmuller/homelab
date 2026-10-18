@@ -74,25 +74,21 @@ verify zero writers, create the final multi-root archive and perform an isolated
 restore. Keep both local authoritative databases, NAS files, old full archives
 and historical runtime checkpoint in the protected inventory.
 
-**Implementation required:**
+The read-only status helper and protected stages are implemented, but the
+reader, offsite bucket and stopped desired state are not yet live. Validate the
+offline contracts first:
 
 ```sh
-python3 scripts/openclaw-retirement-status.py \
-  --config scripts/config/openclaw-enterprise.json \
-  --output /secure/oce-migration/legacy-live-status.json
-python3 scripts/openclaw-retirement.py inventory \
-  --config scripts/config/openclaw-enterprise.json \
-  --status /secure/oce-migration/legacy-live-status.json \
-  --output /secure/oce-migration/legacy-inventory.json
-python3 scripts/openclaw-retirement.py verify-archive \
-  --config scripts/config/openclaw-enterprise.json \
-  --receipt /secure/oce-migration/legacy-archive.json
+python3 scripts/ci/openclaw-retirement-test.py
+python3 scripts/ci/openclaw-retirement-status-test.py
+python3 scripts/ci/openclaw-enterprise-operations-test.py
+kubectl kustomize clusters/homelab/apps/openclaw >/dev/null
 ```
 
-`/secure/oce-migration` is an operator-selected private path, not repository
-content. The protected workflow produces the fresh private Kubernetes status
-file and checks PVC/PV UIDs against the pre-shutdown inventory. Mutation/archive
-jobs run only through that reviewed workflow.
+Follow the fixed `inventory`, `archive`, and `verify` dispatches in the
+[OpenClaw runbook](../../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
+The protected workflow produces the fresh private Kubernetes status and checks
+PVC/PV UIDs against the pre-shutdown inventory. Private files stay outside Git.
 Expected: all state roots verified, old gateway stopped, no messages/jobs/writes,
 retained volumes intact. Do not proceed on a partial archive or uncertain writer.
 Remeasure capacity after shutdown; do not assume it resolves all node deficits.

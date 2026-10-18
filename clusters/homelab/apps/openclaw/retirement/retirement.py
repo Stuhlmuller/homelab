@@ -311,7 +311,9 @@ def main():
                                         for name, item in observed['roots'].items()}
             write_private(args.output, observed)
         elif args.operation == 'archive' and args.status and args.baseline and args.destination:
-            archive(config, args.status, args.baseline, args.destination)
+            receipt = archive(config, args.status, args.baseline, args.destination)
+            if args.output:
+                write_private(args.output, {'receipt': str(receipt)})
             print('Verified private legacy archive')
         elif args.operation == 'verify-archive' and args.receipt:
             verify_archive(config, args.receipt)

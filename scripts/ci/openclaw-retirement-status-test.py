@@ -32,7 +32,7 @@ class Status(unittest.TestCase):
         self.cron = {'metadata': {'uid': 'cron-uid'}, 'spec': {'suspend': False}}
         self.node = {'status': {'conditions': [{'type': 'Ready', 'status': 'True'}]}}
         self.reader = {
-            'metadata': {'name': 'retirement-pod', 'labels': {
+            'metadata': {'name': 'retirement-pod', 'uid': 'reader-pod-uid', 'labels': {
                 'app.kubernetes.io/name': 'openclaw-retirement-reader'},
                 'ownerReferences': [{'kind': 'ReplicaSet', 'name': 'retirement-rs', 'uid': 'reader-rs-uid'}]},
             'spec': {'nodeName': CONFIG['node']},
@@ -91,6 +91,8 @@ class Status(unittest.TestCase):
         stopped = module.resources(CONFIG, self.query)
         self.assertEqual((stopped['replicas'], stopped['pods'], stopped['activeJobs']), (0, 0, 0))
         self.assertEqual(set(stopped['volumes']), set(self.pvcs))
+        self.assertEqual((stopped['readerPod'], stopped['readerPodUid']),
+                         ('retirement-pod', 'reader-pod-uid'))
 
     def test_unknown_reader_node_or_rebound_pv_fails_closed(self):
         self.reader['spec']['nodeName'] = 'other-node'
