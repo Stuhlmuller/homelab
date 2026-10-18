@@ -11,6 +11,7 @@ case "${1:-}" in
   *) echo 'Usage: static-checks.sh [--offline-verified]' >&2; exit 2 ;;
 esac
 python3 -I scripts/ci/nix-cache-signature-test.py
+python3 -I scripts/ci/openclaw-retirement-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"

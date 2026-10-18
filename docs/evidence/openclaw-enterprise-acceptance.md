@@ -28,6 +28,11 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 Do not infer a passed gate from a manifest, green Pod, local fixture or an
 empty receipt cell. Record the exact current-main SHA, workflow run and
 receipt digest beside each result after the corresponding protected stage.
+Read-only pre-shutdown sizing on 2026-10-18 found 21,799,200 KiB in the NAS
+claim and about 381 MiB in the local runtime; the NAS reported 853 GiB free.
+The archive needs a separate NAS-backed scratch claim and a verified off-NAS
+copy. Recheck source size, free space, placement and restore headroom immediately
+before shutdown; these observations do not pass the capacity or recovery gate.
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global

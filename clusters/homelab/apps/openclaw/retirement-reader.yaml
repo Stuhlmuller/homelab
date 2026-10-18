@@ -1,0 +1,138 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw-retirement-reader
+  namespace: ai
+  annotations:
+    checkov.io/skip1: CKV_K8S_40=UID 1000 must read the retained private local SQLite databases.
+  labels:
+    app.kubernetes.io/name: openclaw-retirement-reader
+    app.kubernetes.io/part-of: homelab-ai
+spec:
+  replicas: 0
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw-retirement-reader
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openclaw-retirement-reader
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: zimaboard-1
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: private-archive-directory
+          image: ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
+          command: [/bin/sh, -ec]
+          args:
+            - test ! -L /archive/private && mkdir -p /archive/private && chmod 700 /archive/private
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          volumeMounts:
+            - name: archive
+              mountPath: /archive
+      containers:
+        - name: reader
+          image: ghcr.io/openclaw/openclaw:2026.9.5@sha256:ea298b62be8955d3ef750e2004a610dd90c3a30e5f9886e5d654d78a0c573218
+          command: [python3, -c]
+          args: ["import time; time.sleep(10**9)"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - python3
+                - -c
+                - 'from pathlib import Path; assert Path("/runtime-volume/runtime/state/openclaw.sqlite").is_file() and Path("/data/openclaw-backups/pre-2026.9.2-runtime").is_dir()'
+            periodSeconds: 30
+          livenessProbe:
+            exec:
+              command: [python3, -c, 'import os; assert os.getpid() > 0']
+            periodSeconds: 60
+          volumeMounts:
+            - name: local
+              mountPath: /runtime-volume
+              readOnly: true
+            - name: state
+              mountPath: /legacy-state
+              readOnly: true
+            - name: agent
+              mountPath: /legacy-agent
+              readOnly: true
+            - name: nas
+              mountPath: /data
+              readOnly: true
+            - name: archive
+              mountPath: /archive
+            - name: private
+              mountPath: /private
+            - name: scripts
+              mountPath: /etc/openclaw-assistant
+              readOnly: true
+      volumes:
+        - name: local
+          persistentVolumeClaim:
+            claimName: openclaw-runtime-local
+            readOnly: true
+        - name: state
+          persistentVolumeClaim:
+            claimName: openclaw-runtime-state-local
+            readOnly: true
+        - name: agent
+          persistentVolumeClaim:
+            claimName: openclaw-runtime-agent-local
+            readOnly: true
+        - name: nas
+          persistentVolumeClaim:
+            claimName: openclaw
+            readOnly: true
+        - name: archive
+          persistentVolumeClaim:
+            claimName: openclaw-retirement-archive
+        - name: private
+          emptyDir: {}
+        - name: scripts
+          configMap:
+            name: openclaw-assistant
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: openclaw-retirement-reader
+  namespace: ai
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw-retirement-reader
+  policyTypes: [Ingress, Egress]

@@ -2,6 +2,7 @@
 """Inventory and independently restore-verify retained legacy OpenClaw state."""
 
 import argparse
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -21,27 +22,29 @@ runtime_storage = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runtime_storage)
 
 
-def private_dir(path):
+def private_dir(path, owner=None):
     path = Path(path)
     if not path.is_absolute() or path.is_symlink():
         raise ValueError('private destination must be an absolute, non-symlink directory')
     path = path.resolve(strict=True)
     info = path.stat()
-    if not path.is_dir() or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o700:
+    if not path.is_dir() or info.st_uid != (os.getuid() if owner is None else owner) \
+            or stat.S_IMODE(info.st_mode) != 0o700:
         raise ValueError('private destination must be owned by this user with mode 0700')
     if any((part / '.git').exists() for part in (path, *path.parents)):
         raise ValueError('private destination must be outside Git')
     return path
 
 
-def private_file(path):
+def private_file(path, owner=None):
     path = Path(path)
     if path.is_symlink():
         raise ValueError('private file cannot be a symlink')
     info = path.stat()
-    if not path.is_file() or info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) != 0o600:
+    if not path.is_file() or info.st_uid != (os.getuid() if owner is None else owner) \
+            or stat.S_IMODE(info.st_mode) != 0o600:
         raise ValueError('private file must be owned by this user with mode 0600')
-    private_dir(path.parent)
+    private_dir(path.parent, owner)
     return path
 
 
@@ -76,8 +79,8 @@ def tree(root):
     return {'entries': count, 'bytes': total, 'sha256': record.hexdigest()}
 
 
-def write_private(path, value):
-    private_dir(path.parent)
+def write_private(path, value, owner=None):
+    private_dir(path.parent, owner)
     with path.open('x', encoding='utf-8') as output:
         os.fchmod(output.fileno(), 0o600)
         json.dump(value, output, sort_keys=True, indent=2)
@@ -122,9 +125,33 @@ def roots(config):
     return local, nas
 
 
-def inventory(config):
+def volume_identity(status, config):
+    checked = status.get('checkedAt')
+    if (type(checked) is not int or not 0 <= time.time() - checked <= 120
+            or status.get('namespace') != config['namespace']
+            or status.get('deployment') != config['deployment']
+            or status.get('nodeReady') is not True):
+        raise ValueError('legacy Kubernetes inventory is stale or uncertain')
+    claims = {name: config[name] for name in ('localClaim', 'stateClaim', 'agentClaim', 'nasClaim')}
+    volumes = status.get('volumes')
+    if not isinstance(volumes, dict) or set(volumes) != set(claims.values()):
+        raise ValueError('legacy volume identity is incomplete')
+    for claim, item in volumes.items():
+        if (not isinstance(item, dict) or set(item) != {'pvcUid', 'pvName', 'pvUid'}
+                or any(not isinstance(value, str) or len(value) < 8 for value in item.values())
+                or claim != config['nasClaim'] and item['pvName'] != claim):
+            raise ValueError('legacy PVC/PV identity is incomplete or unexpected')
+    if (status.get('image') != config['image']
+            or status.get('assistantSha256') != config['assistantSha256']
+            or status.get('claims') != claims or status.get('node') != config['node']):
+        raise ValueError('legacy deployment or claim identity changed')
+    return {'image': status['image'], 'assistantSha256': status['assistantSha256'],
+            'volumes': volumes}
+
+
+def inventory(config, status=None):
     local, nas = roots(config)
-    return {
+    result = {
         'format': 1,
         'node': config['node'],
         'claims': {name: config[name] for name in ('localClaim', 'stateClaim', 'agentClaim', 'nasClaim')},
@@ -138,9 +165,16 @@ def inventory(config):
                              'sha256': digest(local / name)} for name in config['requiredLocal']},
         'requiredNas': config['requiredNas'],
     }
+    if status is not None:
+        result['kubernetes'] = volume_identity(status, config)
+        if not all(status.get('roots', {}).get(name) == {
+            key: result['roots'][name][key] for key in ('device', 'inode', 'uid')
+        } for name in ('local', 'nas')):
+            raise ValueError('legacy mounted root identity changed')
+    return result
 
 
-def stopped(status, config, observed):
+def stopped(status, config, observed, baseline):
     checked = status.get('checkedAt')
     roots_match = all(status.get('roots', {}).get(name) == {
         key: observed['roots'][name][key] for key in ('device', 'inode', 'uid')
@@ -158,6 +192,10 @@ def stopped(status, config, observed):
                     or status.get('cronJobAbsent') is True)
             or status.get('activeJobs') != 0
             or status.get('claims') != observed['claims']
+            or volume_identity(status, config) != observed.get('kubernetes')
+            or observed.get('kubernetes') != baseline.get('kubernetes')
+            or {name: {key: item[key] for key in ('device', 'inode', 'uid')}
+                for name, item in observed['roots'].items()} != baseline.get('rootIdentity')
             or not roots_match):
         raise ValueError('legacy writer or source identity is active, missing, or uncertain')
 
@@ -175,10 +213,11 @@ def add_tree(tar, root, label):
 
 
 def verify_bundle(bundle, expected, config):
-    private_file(bundle)
+    private_file(bundle, config['nasUid'])
     if digest(bundle) != expected:
         raise ValueError('archive checksum mismatch')
-    with tempfile.TemporaryDirectory(prefix='oce-legacy-restore-', dir=private_dir(bundle.parent)) as scratch:
+    with tempfile.TemporaryDirectory(prefix='oce-legacy-restore-',
+                                     dir=private_dir(bundle.parent, config['nasUid'])) as scratch:
         with tarfile.open(bundle, 'r:gz') as tar:
             members = tar.getmembers()
             if not members or any(PurePosixPath(m.name).parts[0] not in ('local', 'nas') for m in members):
@@ -194,26 +233,29 @@ def verify_bundle(bundle, expected, config):
         return {name: digest(local / name) for name in config['requiredLocal']}
 
 
-def archive(config, status_path, destination):
+def archive(config, status_path, baseline_path, destination):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('archive runs only in the protected workflow')
     status = json.loads(private_file(status_path).read_text())
-    observed = inventory(config)
-    stopped(status, config, observed)
-    destination = private_dir(destination)
+    baseline = json.loads(private_file(baseline_path).read_text())
+    observed = inventory(config, status)
+    stopped(status, config, observed, baseline)
+    destination = private_dir(destination, config['nasUid'])
     if any(destination.is_relative_to(root.resolve()) for root in roots(config)):
         raise ValueError('archive destination cannot share a source root')
     scratch = Path(tempfile.mkdtemp(prefix='.partial-oce-legacy-', dir=destination))
     bundle = scratch / 'legacy.tar.gz'
-    with tarfile.open(bundle, 'x:gz', dereference=False) as tar:
-        local, nas = roots(config)
-        add_tree(tar, local, 'local')
-        add_tree(tar, nas, 'nas')
+    with bundle.open('xb') as output:
+        with gzip.GzipFile(fileobj=output, mode='wb', mtime=0, filename='') as compressed:
+            with tarfile.open(fileobj=compressed, mode='w', dereference=False) as tar:
+                local, nas = roots(config)
+                add_tree(tar, local, 'local')
+                add_tree(tar, nas, 'nas')
     bundle.chmod(0o600)
     restored = verify_bundle(bundle, digest(bundle), config)
     if restored != {name: item['sha256'] for name, item in observed['databases'].items()}:
         raise ValueError('restored database differs from stopped source')
-    if inventory(config) != observed:
+    if inventory(config) != {key: value for key, value in observed.items() if key != 'kubernetes'}:
         raise ValueError('legacy source changed during archive')
     receipt = {'format': 1, 'inventory': observed, 'sha256': digest(bundle),
                'restoredDatabases': restored}
@@ -224,13 +266,13 @@ def archive(config, status_path, destination):
             raise ValueError('existing archive with this identity differs')
         shutil.rmtree(scratch)
         return existing
-    write_private(scratch / 'receipt.json', receipt)
+    write_private(scratch / 'receipt.json', receipt, config['nasUid'])
     os.rename(scratch, completed)
     return completed / 'receipt.json'
 
 
 def verify_archive(config, receipt_path):
-    receipt_path = private_file(receipt_path)
+    receipt_path = private_file(receipt_path, config['nasUid'])
     record = json.loads(receipt_path.read_text())
     identity = record.get('inventory', {})
     if (record.get('format') != 1
@@ -254,15 +296,20 @@ def main():
     parser.add_argument('--config', required=True, type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--status', type=Path)
+    parser.add_argument('--baseline', type=Path)
     parser.add_argument('--destination', type=Path)
     parser.add_argument('--receipt', type=Path)
     args = parser.parse_args()
     try:
         config = config_at(args.config)
-        if args.operation == 'inventory' and args.output:
-            write_private(args.output, inventory(config))
-        elif args.operation == 'archive' and args.status and args.destination:
-            archive(config, args.status, args.destination)
+        if args.operation == 'inventory' and args.output and args.status:
+            status = json.loads(private_file(args.status).read_text())
+            observed = inventory(config, status)
+            observed['rootIdentity'] = {name: {key: item[key] for key in ('device', 'inode', 'uid')}
+                                        for name, item in observed['roots'].items()}
+            write_private(args.output, observed)
+        elif args.operation == 'archive' and args.status and args.baseline and args.destination:
+            archive(config, args.status, args.baseline, args.destination)
             print('Verified private legacy archive')
         elif args.operation == 'verify-archive' and args.receipt:
             verify_archive(config, args.receipt)

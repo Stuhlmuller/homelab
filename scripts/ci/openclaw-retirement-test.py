@@ -64,15 +64,27 @@ class Retirement(unittest.TestCase):
             'replicas': 0, 'readyReplicas': 0, 'pods': 0,
             'cronJob': 'openclaw-runtime-backup', 'cronJobSuspended': True,
             'activeJobs': 0, 'claims': self.observed['claims'],
+            'volumes': {claim: {'pvcUid': 'pvc-uid-' + claim,
+                                'pvName': claim if claim != 'openclaw' else 'pvc-nas-volume',
+                                'pvUid': 'pv-uid-' + claim}
+                        for claim in self.observed['claims'].values()},
             'roots': {name: {key: item[key] for key in ('device', 'inode', 'uid')}
                       for name, item in self.observed['roots'].items()},
         }
+        self.observed = retirement.inventory(self.config, self.status)
+        self.baseline = {
+            'kubernetes': self.observed['kubernetes'],
+            'rootIdentity': self.status['roots'],
+        }
         self.status_path = self.archive_root / 'status.json'
+        self.baseline_path = self.archive_root / 'baseline.json'
         retirement.write_private(self.status_path, self.status)
+        retirement.write_private(self.baseline_path, self.baseline)
 
     def test_full_local_and_nas_archive_restores_checkpoint_and_databases(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
-            receipt = retirement.archive(self.config, self.status_path, self.archive_root)
+            receipt = retirement.archive(self.config, self.status_path, self.baseline_path,
+                                         self.archive_root)
         record = retirement.verify_archive(self.config, receipt)
         self.assertEqual(set(record['restoredDatabases']), set(self.config['requiredLocal']))
         self.assertEqual(stat.S_IMODE(receipt.stat().st_mode), 0o600)
@@ -82,7 +94,8 @@ class Retirement(unittest.TestCase):
         self.assertIn('nas/unlisted-configuration', names)
         self.assertIn('nas/openclaw-backups/pre-2026.9.2-runtime/retained', names)
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
-            self.assertEqual(retirement.archive(self.config, self.status_path, self.archive_root), receipt)
+            self.assertEqual(retirement.archive(self.config, self.status_path, self.baseline_path,
+                                                self.archive_root), receipt)
         with (receipt.parent / 'legacy.tar.gz').open('ab') as damaged:
             damaged.write(b'truncated-or-changed')
         with self.assertRaises(ValueError):
@@ -93,13 +106,25 @@ class Retirement(unittest.TestCase):
                            ('cronJobSuspended', False), ('nodeReady', False),
                            ('node', 'other-node'), ('image', 'other-image'),
                            ('assistantSha256', 'other-hash'), ('claims', {}), ('roots', {}),
+                           ('volumes', {}),
                            ('checkedAt', int(time.time()) - 121)]:
             with self.subTest(key=key):
                 changed = dict(self.status, **{key: value})
                 with self.assertRaises(ValueError):
-                    retirement.stopped(changed, self.config, self.observed)
+                    retirement.stopped(changed, self.config, self.observed, self.baseline)
         with self.assertRaises(ValueError), patch.dict(os.environ, {}, clear=True):
-            retirement.archive(self.config, self.status_path, self.archive_root)
+            retirement.archive(self.config, self.status_path, self.baseline_path,
+                               self.archive_root)
+        self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
+
+    def test_baseline_binds_pvc_and_pv_uids_before_shutdown(self):
+        changed = json.loads(json.dumps(self.baseline))
+        changed['kubernetes']['volumes']['openclaw-runtime-local']['pvUid'] = 'different-pv-uid'
+        with self.assertRaises(ValueError):
+            retirement.stopped(self.status, self.config, self.observed, changed)
+        stale = dict(self.status, checkedAt=int(time.time()) - 121)
+        with self.assertRaises(ValueError):
+            retirement.inventory(self.config, stale)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
 
     def test_missing_required_data_uid_and_overlap_fail_closed(self):
@@ -130,14 +155,16 @@ class Retirement(unittest.TestCase):
         (self.nas / 'openclaw' / 'escape').symlink_to('/private/unknown')
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
             with self.assertRaises(ValueError):
-                retirement.archive(self.config, self.status_path, self.archive_root)
+                retirement.archive(self.config, self.status_path, self.baseline_path,
+                                   self.archive_root)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
 
     def test_partial_failure_retains_private_diagnostics_without_marker(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
              patch.object(retirement, 'add_tree', side_effect=ValueError('fixture failure')):
             with self.assertRaises(ValueError):
-                retirement.archive(self.config, self.status_path, self.archive_root)
+                retirement.archive(self.config, self.status_path, self.baseline_path,
+                                   self.archive_root)
         self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
         pending = list(self.archive_root.glob('.partial-oce-legacy-*'))
         self.assertEqual(len(pending), 1)
@@ -156,9 +183,10 @@ class Retirement(unittest.TestCase):
 
     def test_already_retired_cronjob_is_idempotent_but_unknown_job_is_not(self):
         retirement.stopped(dict(self.status, cronJobSuspended=False, cronJobAbsent=True),
-                           self.config, self.observed)
+                           self.config, self.observed, self.baseline)
         with self.assertRaises(ValueError):
-            retirement.stopped(dict(self.status, activeJobs=None), self.config, self.observed)
+            retirement.stopped(dict(self.status, activeJobs=None), self.config, self.observed,
+                               self.baseline)
 
 
 if __name__ == '__main__':

@@ -590,6 +590,16 @@ archive. The checkpoint uses SQLite backup, hash, and integrity verification
 before its completion marker, and is separate from daily snapshot retention.
 See [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/).
 
+The Enterprise retirement preparation declares a zero-replica reader and a
+retained `openclaw-retirement-archive` claim. When activated by a reviewed
+GitOps change, the reader mounts the parent and both child local PVs separately
+from the NAS claim, so its archive contains the real NAS files and both local
+SQLite databases without an overlaid mount hiding either copy. The reader has
+no ServiceAccount token, no listener and a deny-all NetworkPolicy; it stays at
+zero replicas until its protected inventory/archive workflow and storage gate
+are validated. The archive claim is scratch on the same NAS, so an independently
+verified off-NAS copy is still required before retirement is accepted.
+
 The init-only `runtime-storage.py verify` requires both authoritative SQLite
 databases and checks integrity and foreign keys without modifying them. Missing
 or corrupt local state blocks startup and requires a verified snapshot restore.

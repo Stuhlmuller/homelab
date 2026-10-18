@@ -79,6 +79,7 @@ and historical runtime checkpoint in the protected inventory.
 ```sh
 python3 scripts/openclaw-retirement.py inventory \
   --config scripts/config/openclaw-enterprise.json \
+  --status /secure/oce-migration/legacy-live-status.json \
   --output /secure/oce-migration/legacy-inventory.json
 python3 scripts/openclaw-retirement.py verify-archive \
   --config scripts/config/openclaw-enterprise.json \
@@ -86,7 +87,9 @@ python3 scripts/openclaw-retirement.py verify-archive \
 ```
 
 `/secure/oce-migration` is an operator-selected private path, not repository
-content. Mutation/archive jobs run only through the reviewed workflow.
+content. The protected workflow produces the fresh private Kubernetes status
+file and checks PVC/PV UIDs against the pre-shutdown inventory. Mutation/archive
+jobs run only through that reviewed workflow.
 Expected: all state roots verified, old gateway stopped, no messages/jobs/writes,
 retained volumes intact. Do not proceed on a partial archive or uncertain writer.
 Remeasure capacity after shutdown; do not assume it resolves all node deficits.
