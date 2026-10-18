@@ -77,6 +77,9 @@ and historical runtime checkpoint in the protected inventory.
 **Implementation required:**
 
 ```sh
+python3 scripts/openclaw-retirement-status.py \
+  --config scripts/config/openclaw-enterprise.json \
+  --output /secure/oce-migration/legacy-live-status.json
 python3 scripts/openclaw-retirement.py inventory \
   --config scripts/config/openclaw-enterprise.json \
   --status /secure/oce-migration/legacy-live-status.json \

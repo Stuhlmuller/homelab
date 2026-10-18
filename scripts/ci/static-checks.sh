@@ -12,6 +12,7 @@ case "${1:-}" in
 esac
 python3 -I scripts/ci/nix-cache-signature-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
+python3 -I scripts/ci/openclaw-retirement-status-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/terragrunt-filter-base.sh"
