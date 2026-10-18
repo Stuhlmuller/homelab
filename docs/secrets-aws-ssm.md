@@ -72,10 +72,22 @@ only use the `us-east-1` state key will still fail during provider refresh with
 
 Fleet's five generated `/homelab/fleet/` parameters supply MySQL user/root
 passwords, a Redis password, the stable 32-byte server encryption key and the
-initial administrator password. Separate ExternalSecrets keep the root and
-administrator credentials out of Fleet server Pods. Preserve the encryption key
-with MySQL backups. Platform APNs/WSTEP identities are additional enrollment
-prerequisites; see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+local Fleet recovery-administrator password. It signs in
+`rodman@stinkyboi.com` before and after the Entra conversion; the target Fleet
+account is SSO-only. Separate ExternalSecrets keep the root and administrator
+credentials out of Fleet server Pods. Preserve the encryption key with MySQL
+backups. Platform APNs/WSTEP identities are additional enrollment prerequisites;
+see the [Fleet secret contract](../clusters/homelab/apps/fleet/README.md#secrets-and-storage).
+
+`/homelab/fleet/google-oauth` is a separate operator-only SecureString for the
+dedicated Google Workspace XCreds Web client JSON. It is excluded from External
+Secrets readers and has no Kubernetes consumer. After protected declaration and
+apply, `scripts/fleet-google-login.py store` validates an owner-only private
+JSON file and replaces the placeholder from clean, signed, current `main`.
+The same operator renders the device profile privately and sends it through
+Fleet to the exact local Mac. Rotation requires reapplying that profile on each
+configured Mac; SSM updates do not automatically refresh device profiles.
+See the [Google login runbook](../clusters/homelab/apps/fleet/GOOGLE-LOGIN.md).
 
 The `aws-ssm` ClusterSecretStore is constrained to namespaces with
 repository-owned ExternalSecrets: `ai`, `argocd`, `automation`, `cert-manager`,
@@ -107,6 +119,78 @@ expiry), then explicitly retire old cached signing authorities after CI
 acceptance. Expiring an auth key alone does not remove that authority. The
 [module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
 acceptance, rotation, and recovery commands.
+
+## Mastodon secret contract
+
+The undeployed Mastodon draft declares generated PostgreSQL, Redis, Rails,
+Active Record encryption, and P-256 VAPID keys under `/homelab/mastodon/`.
+`mastodon-datastores` mounts database/Redis passwords; `mastodon-runtime`
+templates mounted application configuration, the stable VAPID PEM, and the
+initial owner password. `/homelab/mastodon/admin-password` is generated for
+first bootstrap only; its file mounts only into the owner Job, not the web or
+worker containers. Later syncs never overwrite an existing account password. The
+namespace policy permits only its own SSM prefix. Keep generated encryption
+and signing keys with encrypted-state backups; do not recreate them on restore.
+
+Use `mastodon-smtp-credential.yml` with exact current `main` as `expected_sha`
+to populate the declared `/homelab/mastodon/smtp-password` SecureString from
+`MASTODON_SMTP_PASSWORD` in `homelab-production`. The workflow writes only that
+parameter, using a private temporary payload and scoped OIDC session. It
+withholds CLI errors and does not validate SMTP authentication. Never pass the
+password as a workflow input or argument. After transfer, remove the temporary
+GitHub secret and advance the committed runtime ExternalSecret/Deployment
+revisions. Verify actual email receipt before accepting the new credential.
+See the [Mastodon runbook](../clusters/homelab/apps/mastodon/README.md) for provider
+settings, activation, and rollback. This preparation is not live-secret proof.
+
+## OpenClaw Enterprise credential contract
+
+The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
+none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
+SSM unit generates the five internal values below in encrypted state and grants
+their exact parameter names to the External Secrets reader. The model key is a
+placeholder until a separate protected `homelab-production` credential workflow
+writes an owner-supplied OpenAI key. `REPLACE_ME` must block activation and any
+billable probe. That workflow must use the existing
+`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role, a fixed parameter name and an exact
+current-main SHA; it must not accept the key as a dispatch argument or print it.
+
+| SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
+| --- | --- | --- | --- |
+| `postgres-admin-password` | OpenTofu generated | `openclaw-system/occ-postgres-admin` `password` | PostgreSQL bootstrap and isolated recovery |
+| `postgres-migrator-password` | OpenTofu generated | `openclaw-system/occ-postgres-migrator` `password` | Schema migration Job |
+| `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
+| `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API/worker session signing |
+| `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
+| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Fresh agent's native model Secret only |
+
+The foundation must materialize the exact TLS-verified application and
+migration URLs in `openclaw-system/occ-database` without mounting the admin or
+migrator password in API/worker Pods. All six ExternalSecrets use `OnChange` and
+retained targets. A credential rotation requires advancing a committed revision,
+checking ExternalSecret readiness, then restarting only consumers that read the
+value once. A changed SSM value alone is not a rollout. Add `openclaw-system`
+and `openclaw-agents` to the `aws-ssm` ClusterSecretStore allow-list with their
+first ExternalSecrets; do not broaden the reader to a prefix wildcard.
+
+Bootstrap writes the initial administrator password and service key to the
+retained private bootstrap volume. Cert-manager owns the private gateway CA and
+listener certificate in separate Secrets; neither is an SSM password. Preserve
+the bootstrap files, CA Secret, auth key, gateway key, database roles and new
+agent state as one recovery set. The protected operations workflow must receive
+Talos client identity through its protected credential path, never a repo file
+or an SSM value projected into application Pods. No such live projection or
+credential write exists yet.
+
+The planned protected workflows use distinct `homelab-production` environment
+secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
+writer, and `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
+the fixed platform-maintenance job. Neither is a workflow dispatch input or an
+application environment variable. Cluster jobs reuse the existing
+`OCTELIUM_CI_AUTH_TOKEN` private route, and AWS writes use the existing
+`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling those jobs, verify
+their exact destinations and direct recovery access; the declarations above
+do not grant Talos or model access by themselves.
 
 ## AI gateway contract
 
@@ -229,6 +313,7 @@ cluster CA is intentionally rotated.
 | affine | `affine-secrets` | `affine-secrets` | `/homelab/affine/postgres-password`, `/homelab/affine/redis-password`, `/homelab/affine/private-key` |
 | cert-manager | `cert-manager-cloudflare-api-token` | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | cordium | `cordium-agent-auth` | `cordium-agent-auth-v1` | `/homelab/cordium/agent-auth-token` |
+| cordium-runners | `cordium-runner-credentials` | `cordium-runner-credentials` | `/homelab/cordium-runners/github-app-private-key`, `/homelab/cordium-runners/auth-token` |
 | external-secrets | Terragrunt-managed Kubernetes provider Secret | `aws-ssm-auth` | `/homelab/external-secrets/aws-ssm/access-key-id`, `/homelab/external-secrets/aws-ssm/secret-access-key` |
 | cert-manager | reserved for DNS-01 issuer | `cloudflare-api-token` | `/homelab/cert-manager/cloudflare-api-token` |
 | tailscale | `tailscale-oauth` | `operator-oauth` | `/homelab/tailscale/oauth-client-id`, `/homelab/tailscale/oauth-client-secret` |
@@ -243,6 +328,9 @@ cluster CA is intentionally rotated.
 | litellm | `litellm-app-keys`, `litellm-telemetry` | mounted only by LiteLLM | `/homelab/litellm/master-key`, `/homelab/litellm/openai-api-key`, `/homelab/openclaw/litellm-app-token`, `/homelab/{nofx,multica,n8n}/litellm-token`, `/homelab/langfuse/project-{public,secret}-key` |
 | deluge | `deluge-vpn` | `deluge-vpn` | `/homelab/deluge/vpn/wireguard-config` |
 | dispatcharr | `dispatcharr-postgres-env` | `dispatcharr-postgres-env` | `/homelab/media-postgres/dispatcharr-app-password` |
+| mastodon | `mastodon-datastores` | `mastodon-datastores` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password` |
+| mastodon | `mastodon-runtime` | `mastodon-runtime` | `/homelab/mastodon/postgres-password`, `/homelab/mastodon/redis-password`, `/homelab/mastodon/secret-key-base`, `/homelab/mastodon/encryption-primary-key`, `/homelab/mastodon/encryption-deterministic-key`, `/homelab/mastodon/encryption-salt`, `/homelab/mastodon/vapid-private-key`, `/homelab/mastodon/smtp-password` |
+| mastodon owner | `mastodon-runtime` | `mastodon-runtime` (Job-only file mount) | `/homelab/mastodon/admin-password` |
 | media-postgres | `media-postgres-auth`, `media-postgres-arr-env` | `media-postgres-auth`, `media-postgres-arr-env` | `/homelab/media-postgres/app-password` |
 | multica | `multica-secrets`, `multica-backend-secrets` | `multica-secrets` (database), `multica-backend-secrets` (backend) | `/homelab/multica/jwt-secret`, `/homelab/multica/postgres-password`, `/homelab/multica/dev-verification-code` |
 | langfuse | `langfuse-secrets` | `langfuse-secrets` | `/homelab/langfuse/*`, including app keys and S3 runtime credentials |
@@ -367,6 +455,26 @@ populated credential or later rotation replaces the declared placeholder
 without a manifest annotation bump. When populated before the stack apply,
 `scripts/ci/terragrunt-apply.sh` adopts the parameter into OpenTofu state.
 
+Cordium runner credentials have a separate restricted namespace, `cordium-runners`.
+The shared SSM catalog declares two external Standard SecureString slots; its
+existing reader IAM generator grants their exact ARNs. The ClusterSecretStore
+allowlist and source policy permit only `/homelab/cordium-runners/` there.
+`cordium-runner-credentials` polls every five minutes and retains its target on
+source deletion. The manager must mount both keys as read-only files; Workspaces
+receive neither key. Existing values are adopted before placeholder apply.
+
+The protected exact-main `cordium-runner-credentials.yml` intake validates the
+App private key against App `5270069`, validates the native token against the
+dedicated WORKLOAD User and exact forbidden-method denial, and verifies both slots' encryption
+metadata before writing. It accepts no parameter-name or command input. Only
+fixed slot names and version receipts reach public logs. Writes are not atomic:
+a partial failure is a failed intake and requires private inspection/retry.
+The pinned native logout can hide server logout failure; allow the one-hour
+session to expire or verify its revocation before starting the manager. Stop
+manager authentication before rotating the native credential because the User
+allows one session. Controller deployment and mounted-file refresh acceptance
+remain pending. See [runner bootstrap](../builds/cordium-runner/README.md).
+
 Octelium portal login uses Microsoft Entra OIDC. The Entra application is
 managed by `IaC/live/azuread-applications/octelium`, which writes generated
 client material to `/homelab/octelium/entra/*`. Those parameters are not
@@ -376,7 +484,7 @@ Secret `entra-oidc-client-secret` and IdentityProvider `entra` is applied. Pass
 `--admin-user-name`, `--admin-email` and `--admin-object-id` when creating the
 runtime-only HUMAN admin mapping. Email is contact metadata; the Entra `oid`
 claim supplies identity. Do not commit personal Entra identifiers into this
-public repo. Follow the [migration preflight](octelium.md#entra-identity-migration)
+public repo. Follow the [owner-conversion preflight](octelium.md#entra-owner-conversion)
 before refreshing an older email-based mapping.
 
 The legacy `octelium-public` Cloudflare Tunnel Deployment and its existing
@@ -522,11 +630,20 @@ Harbor PostSync bootstrap and the separately reviewed Talos path. See the
 [reader prerequisite](harbor-image-mirroring.md#mirror-reader-prerequisite) and
 [Harbor contract](../openwiki/operations/harbor-oci.md).
 
-The excluded [private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
-stages a separate `harbor/harbor-pull` Docker-config Secret from the existing
-`/homelab/harbor/robot-pull-password` parameter. Its ServiceAccount reference
-supplies kubelet pulls only; the credential is not mounted in app containers.
-The candidate itself adds no further SSM parameter, IAM permission or rotation.
-Activation waits
-for reviewed publication/scans/recovery clearance and ExternalSecret readiness;
-`OnChange` refresh requires a declared annotation revision after rotation.
+The native Chainguard receipt scan robot needs
+`/homelab/harbor/robot-scan-password` before its ExternalSecret consumer can
+merge. This declaration generates the password and adds its exact ARN to the
+existing External Secrets reader policy. Apply only a reviewed saved plan
+for the shared SSM unit, then verify parameter metadata without reading its
+value. This prerequisite alone does not refresh `harbor-secrets`, create the
+Harbor robot, or start a receipt workflow.
+
+The active Harbor Kustomization renders `harbor/harbor-pull`, a Docker-config
+Secret from the existing `/homelab/harbor/robot-pull-password` parameter. The
+vulnerability exporter references it only for kubelet pulls; the credential is
+not mounted in app containers. The held
+[private-core candidate](../clusters/homelab/apps/harbor/private-core-candidate/README.md)
+uses the same ready prerequisite. It adds no SSM parameter, IAM permission or
+rotation. Native-image activation still waits for reviewed publication, scans,
+recovery clearance and ExternalSecret readiness. `OnChange` refresh requires a
+declared annotation revision after rotation.

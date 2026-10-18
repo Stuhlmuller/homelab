@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:e5c50e5f9306c9b5051a1f11920de6da4a40f2a5c428cdc8b88b79ed3d29561e",
+  "claims": [
+    {
+      "id": "claim_34382a82571c444084b9118105fb700f",
+      "statement": "Optional NOFX image, OpenClaw native config, and Image automation PR events are removed; matching main pushes and reviewed manual dispatches remain, while the five-minute image observer schedule is removed.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/image-automation.yml",
+          "version": "repo-file-v1:sha256:d7c0ee3dc0c5c571b187ad9abbcd90bd50d00f3090d8affd5373484b6d61e9d2"
+        },
+        {
+          "resource": "repo://.github/workflows/nofx-images.yml",
+          "version": "repo-file-v1:sha256:b076f16676452f98d1abf6a084c4fe4583ddc4e7d77d2436962c1643adf7b3a6"
+        },
+        {
+          "resource": "repo://.github/workflows/openclaw-config.yml",
+          "version": "repo-file-v1:sha256:28ab72b380dc338ff504e0560053c26afab121a00fc43ae6aaa19761600e3535"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:a3ecc1cef14052140e828aa34a7537f087951e99cad8e90d44f4723b462aa776"
+        }
+      ]
+    },
+    {
+      "id": "claim_64b3256c37b048bd8c2f2a27ea52adb8",
+      "statement": "Cordium runner bootstrap stages exact-main credential, image-build, Harbor publication, and canary workflows; the pool and job selectors stay disabled until live isolation, publication, cold-pull, canary, and recovery acceptance support a reviewed cutover.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-credentials.yml",
+          "version": "repo-file-v1:sha256:333a6e986548d489ff23f1dc8bc8f65a8e8a27acc5b3e72c1597b41bcec024c4"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-images.yml",
+          "version": "repo-file-v1:sha256:794199d0f301c46137bd0a3c061cc6f2b6177b087ce64f6db042b68daa0ff860"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-publish.yml",
+          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+        },
+        {
+          "resource": "repo://builds/cordium-runner/README.md",
+          "version": "repo-file-v1:sha256:9a28631c6f72a4520aa1bd21c526dff2e8afa8c8fe459044609e75eda45a1f59"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-18T01:09:27.563Z"
+  }
+}

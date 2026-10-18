@@ -3,15 +3,14 @@ name: Image automation
 # checkov:skip=CKV_GHA_7: operation is a constrained verify/promote selector; promotion is separately disabled unless the repository activation variable is enabled.
 
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - '.github/workflows/image-automation.yml'
       - 'clusters/homelab/apps/argocd-image-updater/**'
       - 'clusters/homelab/apps/harbor/image-automation.json'
       - 'scripts/ci/image-automation*.py'
       - 'scripts/config/image-automation-state.json'
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       operation:
@@ -44,7 +43,7 @@ jobs:
         run: echo 'Image automation verification completed on main.' >> "$GITHUB_STEP_SUMMARY"
 
   observe:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.operation == 'verify' || inputs.operation == 'promote'))
+    if: github.event_name == 'workflow_dispatch' && (inputs.operation == 'verify' || inputs.operation == 'promote')
     needs: verify
     runs-on: ubuntu-latest
     permissions:
