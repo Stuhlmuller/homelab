@@ -36,6 +36,8 @@ sources:
     resource: repo://clusters/homelab/apps/deluge/README.md
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -78,6 +80,8 @@ sources:
     resource: repo://scripts/ci/entra-emergency-global-admin-plan-test.py
   - id: openwiki-source-71b17b13c9c25f4d36402204
     resource: repo://scripts/ci/entra-owner-conversion-test.py
+  - id: openwiki-source-c9d15e45ff607987f9820f38
+    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
@@ -150,10 +154,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T06:15:17.473Z" }
+generated: { by: "codex", at: "2026-10-18T06:50:05.633Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:24:02.662Z
+    at: 2026-10-18T06:50:05.633Z
 ---
 
 # Validation Gates
@@ -1734,6 +1738,14 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+The Harbor runtime check also asserts that chart 1.19.2 renders one
+`harbor-nginx` replica without an explicit Deployment strategy. Kubernetes'
+default rolling update keeps the old Pod while the replacement pulls; the
+check does not prove live registry availability. The component gate rejects
+mixed 2.15.4 runtime versions before the separate consumer upgrade. See the
+[render gate](../../scripts/ci/harbor-check.sh) and
+[catalog gate](../../scripts/ci/harbor-images-check.py).
 
 ## Mastodon activation gates
 

@@ -52,6 +52,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -94,8 +96,12 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-1882ca1e6f216149daf718a1
     resource: repo://IaC/modules/aws-ssm-parameters/main.tf
+  - id: openwiki-source-c9d15e45ff607987f9820f38
+    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
+  - id: openwiki-source-987548d3c95bf43aede062de
+    resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
@@ -116,10 +122,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T06:06:26.593Z" }
+generated: { by: "codex", at: "2026-10-18T06:50:05.633Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T06:06:26.593Z
+    at: 2026-10-18T06:50:05.633Z
 ---
 
 # Harbor Private OCI Registry
@@ -407,6 +413,17 @@ the separate consumer upgrade. The scoped receipt does not prove full-catalog
 coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
+
+The consumer branch keeps chart 1.19.2 while pinning all nine coupled runtime
+components to 2.15.4. The component gate rejects mixed versions. Database
+migration `0181` is forward-only: require verified database and registry-blob
+backups plus an isolated restore before rollout; do not downgrade that schema
+in place. Live registry/API and scan checks remain acceptance gates. The
+bundled Distribution v2 findings remain unresolved. The chart renders one
+`harbor-nginx` Pod without an explicit strategy, so Kubernetes' default
+rolling update retains the old Pod while the replacement pulls. See the
+[values](../../clusters/homelab/apps/harbor/values.yaml) and
+[render gate](../../scripts/ci/harbor-check.sh).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images
 must be cached before the old Pod stops. After protected publication, the
@@ -714,13 +731,15 @@ in the catalog; application runtime references must use Harbor.
 The full catalog stages the newer Dispatcharr `b7d695c5…` and n8n
 `3db21366…` digests while retaining prior digest-only references for rollback.
 The `latest` and `stable` aliases move only after protected publication verifies
-complete Harbor pulls. Their consuming Renovate PRs remain held until that
-publication and pull acceptance finish.
+complete Harbor pulls. Their consuming Renovate PRs remain held until
+publication, pull acceptance, and their independent recovery evidence finish.
 
 For a missing destination digest tag, the
-[publisher](../../scripts/ci/harbor-publish.sh) downloads all upstream platforms
+[publisher](../../scripts/ci/harbor-publish.sh) normally downloads all upstream platforms
 anonymously into a local directory image tree and checks the original manifest
-digest before authenticated Harbor upload. Existing destination tags resume
+digest before authenticated Harbor upload. If Skopeo cannot stage an OCI index
+without changing its digest, the publisher uses `regctl` for the copy and
+authenticated pull, then checks the same root digest. Existing destination tags resume
 only after exact hash verification. Aliases come from the verified Harbor digest;
 every selected artifact still needs a fresh complete authenticated destination pull.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks

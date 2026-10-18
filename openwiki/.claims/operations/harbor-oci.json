@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cacbb0152cd39ade8b06e3583468ad45edc25c5a4df92feff906f38323338376",
+  "pageVersion": "sha256:c7154cdcc4ab98b12467768b653e209bfa96725ae2509bc52189776bd8b314f6",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         }
       ]
     },
@@ -360,7 +360,7 @@
     },
     {
       "id": "claim_0a32a2a96b494440b84d3c41940a6533",
-      "statement": "Missing mirror artifacts are anonymously downloaded with all platforms into local directory staging and their original root manifest digest is verified before authenticated upload; fresh complete destination pulls and alias checks remain required, while the native offline fixture verifies multiple architectures and repeated descriptors without network transports.",
+      "statement": "Missing mirror artifacts normally use anonymous all-platform local directory staging and root-digest verification before authenticated upload; when Skopeo changes an OCI index digest, the fixed regctl fallback preserves and verifies the root digest. Fresh complete destination pulls and alias checks remain required, and offline fixtures do not prove live Harbor acceptance.",
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -430,7 +430,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -472,11 +472,11 @@
     },
     {
       "id": "claim_f2ba66acbd8f47958829bb4b5bb0a900",
-      "statement": "The full Harbor catalog stages the newer digest-pinned Dispatcharr and n8n sources while retaining their former digests for rollback. The consuming Renovate PRs remain held until protected publication and complete authenticated Harbor pulls verify the new destinations.",
+      "statement": "The full Harbor catalog stages newer Dispatcharr and n8n digests beside rollback references; their consuming Renovate PRs remain held for protected publication, complete authenticated Harbor pulls, and independent recovery evidence.",
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -486,19 +486,23 @@
     },
     {
       "id": "claim_3131fdd2b83d414b86f72c057b3d1d13",
-      "statement": "The full Harbor catalog stages nine Harbor 2.15.4 component digests beside active 2.15.2 entries without changing running Pods; protected fixed Harbor-scope publication and authenticated pull acceptance precede the separate consumer upgrade, which must preserve singleton nginx rolling-update availability. The scoped receipt does not prove full-catalog coverage while the LiteLLM duplicate-index failure remains.",
+      "statement": "The full catalog stages nine Harbor 2.15.4 digests beside active 2.15.2 entries, and the consumer branch pins all nine components while retaining chart 1.19.2. Protected publication, authenticated pulls, and node pre-pull are required before merge; the component gate rejects mixed runtime versions.",
       "evidence": [
         {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:4f7ef0bfc53b072dc72e09130928c15852655becfb8e43bb3af7f3cb65fd29e3"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
           "version": "repo-file-v1:sha256:2aee9a85bf5a47cfb3550079a0d5defb46444def800ab2dd1371647912a237c0"
-        },
-        {
-          "resource": "repo://scripts/config/harbor-runtime-images.json",
-          "version": "repo-file-v1:sha256:e69efee20a05e1b789cd7ee0d3915bf3e7686997e292d2de7b9051ad57b9a466"
         }
       ]
     },
@@ -526,7 +530,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -591,10 +595,28 @@
           "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
         }
       ]
+    },
+    {
+      "id": "claim_abbed4edcf0b4594a1a9041a79b80320",
+      "statement": "The Harbor 2.15.4 consumer includes forward-only database migration 0181 and requires verified database/blob backup, isolated restore, and live registry/API/scan acceptance; chart nginx uses the default rolling strategy, while bundled Distribution v2 findings remain unresolved.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-check.sh",
+          "version": "repo-file-v1:sha256:57329791bdab3d639223fe713b3db97a1b9b5b4259553d6c595f9aacc15a287d"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:06:26.593Z"
+    "at": "2026-10-18T06:50:05.633Z"
   }
 }

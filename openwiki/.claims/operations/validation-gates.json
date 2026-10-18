@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:15ea950be67ad280b108bd8eecaa9dd8a366170c5b120673a55c01ce18249ddf",
+  "pageVersion": "sha256:392b071c4fd47635f96915721a532d576ba72e31ed1bc3cdd240fddcdac86198",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:03a209e43b7c452c019d0283c6f513e0043a152f752cc06044f70f373b64973c"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:03a209e43b7c452c019d0283c6f513e0043a152f752cc06044f70f373b64973c"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:03a209e43b7c452c019d0283c6f513e0043a152f752cc06044f70f373b64973c"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:03a209e43b7c452c019d0283c6f513e0043a152f752cc06044f70f373b64973c"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:03a209e43b7c452c019d0283c6f513e0043a152f752cc06044f70f373b64973c"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:7cfaf0e04359ccdc24d074b682c5ce69a154564bd1289cba4df6ae0489bff3f1"
+          "version": "repo-file-v1:sha256:03a209e43b7c452c019d0283c6f513e0043a152f752cc06044f70f373b64973c"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -570,7 +570,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:08cd354840cf6c38e486f55f67769ba4adaa71adeba2e24c70ccf02b05a60afe"
+          "version": "repo-file-v1:sha256:4f7ef0bfc53b072dc72e09130928c15852655becfb8e43bb3af7f3cb65fd29e3"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5828d2da309e951ce0867ff3ddb325c66603cedad4190cff5edbb977ccbf5d7b"
+          "version": "repo-file-v1:sha256:e840227706df534510b3a9d7ad78117c695d8b5b0f37ad3c86e7a29c2afe1c1e"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -685,10 +685,28 @@
           "version": "repo-file-v1:sha256:02d43daba12c7c1b068a1f64ef493e92ed2a4d352ac1239740e7f0b4e43d8dcf"
         }
       ]
+    },
+    {
+      "id": "claim_4317745a61104559921c89205daae49b",
+      "statement": "The Harbor runtime render gate checks chart 1.19.2 has one nginx replica with default rolling strategy, and the component gate rejects mixed 2.15.4 runtime pins; source checks do not prove live registry availability.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-check.sh",
+          "version": "repo-file-v1:sha256:57329791bdab3d639223fe713b3db97a1b9b5b4259553d6c595f9aacc15a287d"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-images-check.py",
+          "version": "repo-file-v1:sha256:4f7ef0bfc53b072dc72e09130928c15852655becfb8e43bb3af7f3cb65fd29e3"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T06:24:02.662Z"
+    "at": "2026-10-18T06:50:05.633Z"
   }
 }
