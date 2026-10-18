@@ -17,10 +17,6 @@ locals {
     "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:policy/${var.parameter_reader_policy_name_prefix}${format("%02d", index)}"
   ]
   langfuse_blob_storage_user_arn = "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:user/homelab/homelab-langfuse-s3"
-  renovate_transfer_parameter_arns = [
-    "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/homelab/renovate/github-app/issuer-id",
-    "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/homelab/renovate/github-app/private-key",
-  ]
 }
 
 data "aws_iam_policy_document" "parameter_reader_administration" {
@@ -138,76 +134,6 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       ]
     }
   }
-}
-
-data "aws_iam_policy_document" "renovate_transfer_assume_role" {
-  statement {
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    effect  = "Allow"
-
-    principals {
-      identifiers = [data.aws_iam_openid_connect_provider.github_actions.arn]
-      type        = "Federated"
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:Stuhlmuller/renovate:ref:refs/heads/main"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "renovate_transfer" {
-  # DescribeParameters has no resource-level permissions. The transfer script
-  # filters exact names and reads metadata only, never parameter values.
-  statement {
-    sid       = "PreflightRenovateParameterMetadata"
-    actions   = ["ssm:DescribeParameters"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid       = "WriteRenovateAppCredentials"
-    actions   = ["ssm:PutParameter"]
-    resources = local.renovate_transfer_parameter_arns
-  }
-
-  statement {
-    sid       = "EncryptRenovateAppCredentialsThroughSsm"
-    actions   = ["kms:Encrypt"]
-    resources = [data.aws_kms_alias.runtime_secret.target_key_arn]
-
-    condition {
-      test     = "StringEquals"
-      variable = "kms:ViaService"
-      values   = ["ssm.${var.aws_region}.amazonaws.com"]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "kms:EncryptionContext:PARAMETER_ARN"
-      values   = local.renovate_transfer_parameter_arns
-    }
-  }
-}
-
-resource "aws_iam_role" "renovate_transfer" {
-  name               = "homelab-renovate-credential-transfer"
-  assume_role_policy = data.aws_iam_policy_document.renovate_transfer_assume_role.json
-  tags               = var.tags
-}
-
-resource "aws_iam_role_policy" "renovate_transfer" {
-  name   = "write-renovate-app-credentials"
-  role   = aws_iam_role.renovate_transfer.id
-  policy = data.aws_iam_policy_document.renovate_transfer.json
 }
 
 data "aws_iam_policy_document" "external_secrets_boundary" {
