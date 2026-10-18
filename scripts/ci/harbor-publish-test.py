@@ -124,7 +124,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.assertFalse(self.calls.exists(), "A refusal path reached a credential or service command")
         return result
 
-    def transport_mocks(self, failure=None, mirror=False, resume=False,
+    def transport_mocks(self, failure=None, mirror=False, resume=False, oci_index=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
                         source_error="toomanyrequests", core=False, cordium=False, enterprise=False):
         """Replace service clients and runner sudo; never modify real host routing."""
@@ -137,7 +137,8 @@ class HarborPublicationGates(unittest.TestCase):
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main"
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
-        published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
+        published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name,
+            **({"mediaType": "application/vnd.oci.image.index.v1+json"} if oci_index else {})}) for name in names}
         self.published_digests = {
             name: "sha256:" + hashlib.sha256(raw.encode()).hexdigest()
             for name, raw in published_manifests.items()
@@ -825,6 +826,17 @@ class HarborPublicationGates(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((self.root / "summary").exists())
                 self.assert_cleaned()
+
+    def test_renovate_existing_oci_index_uses_complete_regctl_pull(self):
+        self.transport_mocks(mirror=True, resume=True, oci_index=True)
+        self.renovate_mirror_manifest = {"images": [self.mirror_manifest["images"][1]]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        copies = [args[2:] for args in self.calls_for("regctl") if args[:2] == ["image", "copy"]]
+        self.assertEqual(len(copies), 1)
+        self.assertTrue(copies[0][-1].startswith("ocidir://"))
+        self.assertFalse([args for args in self.calls_for("skopeo") if args[0] == "copy"])
+        self.assert_cleaned()
 
     def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())
