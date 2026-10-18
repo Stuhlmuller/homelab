@@ -72,7 +72,10 @@ def tree(root):
                     'link' if stat.S_ISLNK(info.st_mode) else 'directory',
         }
         if stat.S_ISREG(info.st_mode):
-            value['sha256'] = digest(path)
+            # Zero-byte, unreadable NAS files still have exact known content.
+            value['sha256'] = (hashlib.sha256(b'').hexdigest()
+                               if info.st_size == 0 and not (info.st_mode & 0o444)
+                               else digest(path))
             total += info.st_size
         elif stat.S_ISLNK(info.st_mode):
             value['target'] = os.readlink(path)
@@ -210,6 +213,9 @@ def add_tree(tar, root, label):
         if member.issym() and (PurePosixPath(member.linkname).is_absolute()
                               or '..' in PurePosixPath(member.linkname).parts):
             raise ValueError('unsafe source symlink in legacy state')
+        if member.isfile() and member.size == 0 and not (member.mode & 0o444):
+            tar.addfile(member)
+            return None
         return member
 
     tar.add(root, arcname=label, recursive=True, filter=check)
