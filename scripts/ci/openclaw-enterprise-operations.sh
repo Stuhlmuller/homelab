@@ -35,11 +35,23 @@ require_absent_object() {
     jq -e --arg key "$1" '[.Versions[]?, .DeleteMarkers[]?] | all(.Key != $key)' >/dev/null
 }
 
-restore_version() {
+restore_version() (
+  pipe_dir="$(mktemp -d)"
+  trap 'rm -rf -- "$pipe_dir"' EXIT
+  mkfifo -m 600 "$pipe_dir/body"
+  exec 3<>"$pipe_dir/body"
   aws s3api get-object --bucket "$bucket" --key "$1" --version-id "$2" \
-    --output off /dev/stdout |
-    "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$3"
-}
+    "$pipe_dir/body" >/dev/null 3>&- &
+  source_pid=$!
+  "${reader_input[@]}" sh -c 'umask 077; cat > "$1"' sh "$3" \
+    <"$pipe_dir/body" 3>&- &
+  reader_pid=$!
+  source_result=0
+  wait "$source_pid" || source_result=$?
+  exec 3>&-
+  wait "$reader_pid"
+  exit "$source_result"
+)
 
 case "$stage" in
   inventory)
