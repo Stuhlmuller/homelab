@@ -237,7 +237,7 @@ def archive(config, status_path, baseline_path, destination):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('archive runs only in the protected workflow')
     status = json.loads(private_file(status_path).read_text())
-    baseline = json.loads(private_file(baseline_path).read_text())
+    baseline = json.loads(private_file(baseline_path, config['nasUid']).read_text())
     observed = inventory(config, status)
     stopped(status, config, observed, baseline)
     destination = private_dir(destination, config['nasUid'])
