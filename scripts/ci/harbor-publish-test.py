@@ -303,6 +303,10 @@ class HarborPublicationGates(unittest.TestCase):
                     elif FIXTURE["mirror"]:
                         assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
+                    if upstream and FIXTURE["failure"] == "mirror-oci-index":
+                        print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
+                              file=sys.stderr)
+                        raise SystemExit(17)
                     if upstream and FIXTURE["failure"] == "mirror-source":
                         print(FIXTURE["source_error"] + " private-test-credential-must-never-appear", file=sys.stderr)
                         raise SystemExit(17)
@@ -322,9 +326,10 @@ class HarborPublicationGates(unittest.TestCase):
                         assert ":" not in args[-2].removeprefix("docker://").split("@")[0], "Skopeo rejects tag@digest"
                     source = args[-2]
                     authfile = Path(args[args.index("--src-authfile") + 1])
-                    expected_auth = {"auths": {}} if source.startswith("dir:") else {"username": "robot$mirror+pull"}
+                    upstream = not source.startswith(("dir:", "docker://harbor.stinkyboi.com/"))
+                    expected_auth = {"auths": {}} if source.startswith("dir:") or upstream else {"username": "robot$mirror+pull"}
                     assert json.loads(authfile.read_text()) == expected_auth
-                    if source.startswith("dir:"):
+                    if source.startswith("dir:") or upstream:
                         assert "--src-no-creds" in args
                     else:
                         assert "--src-no-creds" not in args
@@ -679,6 +684,27 @@ class HarborPublicationGates(unittest.TestCase):
         self.renovate_mirror_manifest = {"images": [{"source": selected["source"].split("@", 1)[0]
                                                     + "@sha256:" + "0" * 64}]}
         self.rejected(mode="mirror-renovate")
+
+    def test_renovate_oci_index_uses_direct_copy_without_losing_digest_verification(self):
+        self.transport_mocks(failure="mirror-oci-index", mirror=True)
+        selected = self.mirror_manifest["images"][1]
+        self.renovate_mirror_manifest = {"images": [selected]}
+        result = self.run_helper(mode="mirror-renovate")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        source, digest = selected["source"].split("@")
+        repository = source.split(":")[0]
+        destination = f"harbor.stinkyboi.com/mirror/{repository}"
+        copies = [args for args in self.calls_for("skopeo") if args[0] == "copy"]
+        self.assertEqual(len(copies), 4)
+        self.assertEqual(self.calls_for("timeout")[0][2], "19800")
+        self.assertEqual(copies[0][-2], f"docker://{repository}@{digest}")
+        self.assertTrue(copies[0][-1].startswith("dir:"))
+        self.assertEqual(copies[1][-2:], [f"docker://{repository}@{digest}",
+                                         f"docker://{destination}:{digest[7:]}"])
+        self.assert_mirror_copy_credentials(copies)
+        self.assertEqual((self.root / "summary").read_text().splitlines(),
+                         [f"{destination}:{digest[7:]}@{digest}"])
+        self.assert_cleaned()
 
     def test_traefik_scope_declares_ingress_and_native_node_pull_prerequisites(self):
         selected = json.loads((ROOT / "scripts/config/harbor-traefik-images.json").read_text())
