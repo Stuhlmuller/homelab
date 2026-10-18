@@ -147,8 +147,11 @@ Write `ASSESS_DIR/decision.md`:
 - The path `.specify/assessments/<ASSESS_SLUG>/decision.md`.
 - The next step, by verdict:
   - **go** → `$speckit-specify` using the handoff summary as its input.
-  - **needs-clarification** → re-run the named stage (e.g.
-    `$speckit-assess-research slug=<ASSESS_SLUG>`).
+  - **needs-clarification** → name the blocking questions and the artifact for
+    the stage to revisit. If that artifact already exists, do not tell an
+    automated caller to re-run the stage: automated runs refuse to overwrite
+    it. Ask the user to authorize an interactive update, then re-run this
+    decision stage with confirmation to replace `decision.md`.
   - **kill** → none; the assessment is closed. The record remains for future
     reference.
 

@@ -144,8 +144,11 @@ Write `ASSESS_DIR/decision.md`:
 - The next step, by verdict:
   - **go** → `__SPECKIT_COMMAND_SPECIFY__` using the handoff summary as its
     input.
-  - **needs-clarification** → re-run the named stage (e.g.
-    `__SPECKIT_COMMAND_ASSESS_RESEARCH__ slug=<ASSESS_SLUG>`).
+  - **needs-clarification** → name the blocking questions and the artifact for
+    the stage to revisit. If that artifact already exists, do not tell an
+    automated caller to re-run the stage: automated runs refuse to overwrite
+    it. Ask the user to authorize an interactive update, then re-run this
+    decision stage with confirmation to replace `decision.md`.
   - **kill** → none; the assessment is closed. The record remains for future
     reference.
 
