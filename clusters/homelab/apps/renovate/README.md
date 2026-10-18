@@ -1,8 +1,7 @@
 # Renovate
 
-Renovate scans Stuhlmuller-owned GitHub repositories at 00 minutes past every
-hour, UTC. The `automation` CronJob is initially suspended, and its committed
-config uses Renovate's full dry-run mode. The old writer in
+The `automation` CronJob is scheduled for 00 minutes past every hour, UTC,
+and uses Renovate's full dry-run mode during cutover. The old writer in
 `Stuhlmuller/renovate` remains authoritative until dry-run parity is verified
 and its entire workflow is removed through a reviewed PR. Only then may a
 reviewed homelab change remove `dryRun: 'full'`.
@@ -120,11 +119,18 @@ kubectl kustomize clusters/homelab/apps/renovate
 Use the Terragrunt, static, Conftest, and protected private-plan gates in
 `specs/004-run-renovate-in-cluster/quickstart.md` before live reconciliation.
 While suspended, confirm the ExternalSecret is Ready, the target Secret exists,
-and no Job was created. Then unsuspend only through reviewed GitOps code. Two
-scheduled dry-run Pods must prove repository coverage, planned proposals,
+and no Job was created. Then unsuspend only through reviewed GitOps code.
+Scheduled dry-run Pods must prove repository coverage, planned proposals,
 unchanged App identity and merge policy, and a cache hit for the same datasource
-key across Pod UIDs. A shorter second run alone does not prove cache reuse.
-Keep detailed Renovate logs private.
+key across Pod UIDs. After a cold canary run, inspect restricted logs from
+two warm scheduled Pods with distinct UIDs. Confirm the exact `Returning cached
+value` marker for namespace `github-releases-datasource-v2` and key
+`https://api.github.com/:Stuhlmuller:renovate` in both. Only this marker is
+raised from TRACE to INFO. A shorter second run alone does not prove cache
+reuse. Keep detailed logs private because cache keys can contain repository or
+package names. Remove `logLevelRemap` through a reviewed PR after evidence is
+captured and before enabling writes; keep the hourly schedule and Renovate's
+normal cache freshness rules.
 
 Read-only status checks:
 
