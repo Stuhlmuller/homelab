@@ -101,7 +101,7 @@ They create:
 - Clientless `KUBERNETES` Service `kubernetes-api-ci`, forwarding to
   `https://10.1.0.199:6443` for CI Kubernetes API access.
 - Public `WEB` Services `affine`, `argocd`, `bazarr`, `compass`, `deluge`, `dispatcharr`,
-  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `octobot`, `openclaw`,
+  `grafana`, `kiali`, `litellm`, `langfuse`, `n8n`, `nofx`, `openclaw`,
   `policy-bot`, `prowlarr`, `radarr`, and `sonarr`. Their public FQDNs are the
   existing app hostnames, such as `https://grafana.stinkyboi.com`.
 - Bazarr's public `WEB` Service at `https://bazarr.stinkyboi.com` requires
@@ -351,38 +351,31 @@ aws ssm put-parameter \
   --value '<authentication-token>'
 ```
 
-### Entra identity migration
+### Entra owner conversion
 
-For an older `preferred_username` setup, keep an independent working operator
-session before changing the shared identity claim. Run the admin command above
-with `--dry-run` first, using the old login identifier for `--admin-email` and
-the owner's verified Entra object ID. This leaves the existing contact email
-unchanged, including retries after a partial migration. Preflight checks the
-complete live mapping inventory before reading the client secret or writing
-resources. It includes HUMAN users who rely on Octelium's default email fallback
-without an explicit Entra binding, and permits only the sole selected legacy
-user. Additional users require a separately reviewed migration. Never substitute
-a newly created user's object ID for the owner.
-An existing `oid` provider with email-only users also fails preflight; disabling
-their fallback requires a separately reviewed migration.
+Octelium binds privileged access to immutable Entra `oid` and has
+`disableEmailAsIdentity: true`. That binding must remain unchanged when the
+owner's external sign-in is converted in place to the internal
+`rodman@stuhlmuller.net` UPN: the Entra object ID remains the same, while email
+and `preferred_username` may change. Do not bind privileged access to the new
+UPN or a new pilot user.
 
-The user mapping changes before the IdP claim, so the transition is not atomic.
-Retain private copies of the current User and IdentityProvider for recovery;
-do not close the independent session until a fresh owner browser login works.
-Verify that the complete mapping inventory binds only the original owner's
-`oid` to owner access, the IdP has `disableEmailAsIdentity: true`, and there is
-no pilot `oid` binding. Only then reuse the
-owner's former email. After the pilot completes its required initial password
-change and MFA setup, test actual fresh login denial; an interrupted password
-or MFA flow is not proof of authorization denial. Plain secret refreshes also run the
-preflight and cannot silently switch a legacy mapping.
+Before conversion, retain an independent working Octelium session and create,
+then test, an independent cloud-only Entra Global Administrator. The complete
+live mapping inventory must bind only the original owner `oid` to owner access,
+show no email fallback, and contain no target-pilot binding. Do not close the
+working session until a fresh owner browser login with the converted internal
+identity renders the Services page.
 
 On October 7, 2026 UTC, the reviewed migration applied the original owner's
-`oid` binding and disabled email fallback. New owner sessions through Entra
-callbacks verified that same object ID and rendered the Services page, both
-before and after the separate directory-mail change. This verifies Octelium
-identity resolution and app access; the old SMTP alias remains reserved, so
-the [pilot rename remains blocked](../clusters/homelab/apps/fleet/FREE-ENTRA.md#owner-address-migration-alias-release-blocked).
+`oid` binding and disabled email fallback. Fresh owner sessions through Entra
+callbacks rendered the Services page before and after the separate directory-mail
+attempt. That proves the `oid` binding only. The mail attempt left the old SMTP
+alias reserved, so its alias-release and pilot-rename route is retired. The
+supported continuation is the in-place Entra conversion documented in the
+[Fleet runbook](../clusters/homelab/apps/fleet/FREE-ENTRA.md), followed by fresh
+Octelium and Fleet-console SAML sign-ins. No support case, Exchange
+license, or email-based identity workaround is needed.
 
 ## Cutover Gate
 
@@ -649,10 +642,9 @@ outside git.
 During the August 2026 two-node dataplane outage,
 `clusters/homelab/apps/octelium-enterprise/emergency-dataplane.yaml` provides a
 bounded fallback on `acer`. It restores the ingress and shared authorization
-service, the Portal and API control paths, OctoBot, the CI Kubernetes API, and
-18 additional public WEB Services—19 public WEB fallbacks including
-OctoBot—without adding the control-plane node to the native dataplane pool. The
-fallback service Pods use only the primary
+service, the Portal and API control paths, the CI Kubernetes API, and
+18 public WEB Services without adding the control-plane node to the native
+dataplane pool. The fallback service Pods use only the primary
 Kubernetes network and reuse the existing generated Service selectors;
 `default.cordium` and `console.octelium` include their required managed
 sidecars. Refresh a fallback UID whenever Octelium recreates its Service.
@@ -926,3 +918,41 @@ seconds for startup and 30 seconds of sustained failure after readiness, then
 reaps the client so launchd can restart it. Session expiration still requires
 login; the original client hang trigger remains unknown. The supervisor is
 copied into `~/.multica/octelium-client.py`, independent of worktree lifetime.
+
+## Retire an app Service
+
+Catalog apply does not prune removed Services. In a clean checkout of the
+reviewed current `main`, use the operator admin login:
+
+```sh
+python3 -I scripts/octelium-service-retire.py \
+  --service <removed-service> --homedir <private-admin-login-directory> \
+  --removal-sha <app-removal-commit>
+python3 -I scripts/octelium-service-retire.py \
+  --service <removed-service> --homedir <private-admin-login-directory> \
+  --removal-sha <app-removal-commit> --expected-sha <current-main-sha> --execute
+```
+
+The helper requires an ancestor removal commit whose parent catalog declares
+that public WEB Service, with no matching entry in current source. It also
+accepts `<app>.homelab` when the app directory remains removed and its prior
+README documents that exact legacy Service. Legacy retirement is limited to
+private TCP port 443 routed through the Istio ingress gateway. It verifies the
+pinned CLI, transport, live identity and contract, deletes that exact Service,
+and checks absence. Already absent succeeds.
+
+Retire its removed app DNS entry at the app-removal commit before other
+changes advance `main`:
+
+```sh
+scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> --dry-run
+scripts/tailscale-private-dns.sh --retire-hostname <removed-app-hostname> \
+  --execute --expected-sha <current-main-sha>
+```
+
+This deletes only A/AAAA/CNAME records for an active app hostname removed by
+the commit, preserves other records, and verifies absence. The retired
+CI/callback/carrier inventory remains excluded. Verify authoritative DNS
+and confirm the old URL no longer serves the app.
+Restore its catalog entry and apply the catalog to roll back; generated proxy
+UIDs must be refreshed after recreation.

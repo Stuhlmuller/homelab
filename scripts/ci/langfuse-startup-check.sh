@@ -16,10 +16,11 @@ helm template langfuse langfuse --repo https://langfuse.github.io/langfuse-k8s \
       (.metadata.name == "langfuse-web" or .metadata.name == "langfuse-worker"))] |
     length == 2 and
     all(.[]; .spec.replicas == (if .metadata.name == "langfuse-web" then $web else $worker end)) and
+    ([.[] | select(.metadata.name == "langfuse-web" and .spec.strategy == null)] | length == 1) and
     ([.[] | select(.metadata.name == "langfuse-web")
       | .spec.template.spec.containers[] | select(.name == "langfuse-web")] |
     length == 1 and (.[0] |
-      .resources.requests.memory == "2Gi" and
+      .resources.requests.memory == "1280Mi" and
       .resources.limits.memory == "2Gi" and
       .livenessProbe.initialDelaySeconds >= 600 and
       .livenessProbe.httpGet.path == "/api/public/health" and
@@ -27,6 +28,10 @@ helm template langfuse langfuse --repo https://langfuse.github.io/langfuse-k8s \
       .livenessProbe.failureThreshold == 3 and
       .readinessProbe.httpGet.path == "/api/public/ready" and
       .readinessProbe.initialDelaySeconds == 20)) and
+    ([.[] | select(.metadata.name == "langfuse-web")
+      | .spec.template.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[]?.matchExpressions[]?
+      | select(.key == "kubernetes.io/hostname" and .operator == "In" and
+          .values == ["acer"])] | length == 1) and
     ([.[] | select(.metadata.name == "langfuse-worker")
       | .spec.template.spec.containers[] | select(.name == "langfuse-worker")] |
     length == 1 and (.[0] |

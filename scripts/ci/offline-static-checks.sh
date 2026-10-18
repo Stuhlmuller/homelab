@@ -290,8 +290,6 @@ echo "::group::Cloudflare API response handling"
 echo "::endgroup::"
 
 echo "::group::Helm workload token contracts"
-yq -e '.controllers.octobot.pod.automountServiceAccountToken == false' \
-  clusters/homelab/apps/octobot/values.yaml >/dev/null
 yq -e '.automountServiceAccountToken == false' \
   clusters/homelab/apps/grafana/values.yaml >/dev/null
 echo "::endgroup::"
@@ -333,6 +331,45 @@ yq -e '
     contains("JSON.stringify(workflows)")
   )
 ' "$n8n_values" >/dev/null
+echo "::endgroup::"
+
+echo "::group::Kiali shell-free Prometheus readiness"
+kiali_values="clusters/homelab/apps/kiali/values.yaml"
+yq -o=json '.' "$kiali_values" |
+  jq -e '
+    [
+      .cr.spec.deployment.additional_pod_init_containers_yaml[]
+      | select(.name == "wait-for-prometheus")
+    ] | (
+      length == 1 and
+      (.[0].image | test("^curlimages/curl:[^@]+@sha256:[0-9a-f]{64}$")) and
+      .[0].imagePullPolicy == "IfNotPresent" and
+      .[0].command == ["curl"] and
+      .[0].args == [
+        "--fail", "--silent", "--show-error", "--max-time", "10", "--retry", "60",
+        "--retry-delay", "5", "--retry-all-errors",
+        "http://prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090/-/ready"
+      ] and
+      .[0].securityContext.runAsUser == 100 and
+      .[0].securityContext.runAsGroup == 101 and
+      .[0].securityContext.runAsNonRoot == true and
+      .[0].securityContext.allowPrivilegeEscalation == false and
+      .[0].securityContext.privileged == false and
+      .[0].securityContext.readOnlyRootFilesystem == true and
+      .[0].securityContext.capabilities.drop == ["ALL"] and
+      .[0].securityContext.seccompProfile.type == "RuntimeDefault"
+    )
+  ' >/dev/null
+jq -e '
+  [
+    .consumers[]
+    | select(.consumer_id == "kiali-prometheus-readiness")
+  ] |
+  length == 1 and
+  .[0].image_id == "chainguard-curl" and
+  .[0].migration_status == "candidate" and
+  .[0].automation_status == "not-enrolled"
+' clusters/homelab/apps/harbor/image-automation.json >/dev/null
 echo "::endgroup::"
 
 echo "::group::Kustomize overlays"
@@ -784,8 +821,16 @@ expected_credentialed_job_inventory="$({
   printf '%s\n' \
     '.github/workflows/codeql.yml:analyze-actions' \
     '.github/workflows/cordium-check.yml:check' \
+    '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/cordium-runner-credentials.yml:credential' \
+    '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+    '.github/workflows/cordium-runner-publish.yml:publish' \
+    '.github/workflows/cordium-runner-publish.yml:published-digests' \
+    '.github/workflows/cordium-runner-publish.yml:test-build' \
     '.github/workflows/entra-oidc-verify.yml:verify' \
+    '.github/workflows/harbor-core-images.yml:publish' \
+    '.github/workflows/harbor-core-images.yml:published-digest' \
     '.github/workflows/harbor-mirror.yml:mirror' \
     '.github/workflows/harbor-mirror.yml:static-policy' \
     '.github/workflows/homelab-diagnostics.yml:grafana' \
@@ -797,11 +842,16 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/lint.yml:build' \
     '.github/workflows/litellm-provider-credential.yml:credential' \
     '.github/workflows/litellm-provider-credential.yml:static-policy' \
+    '.github/workflows/mastodon-public-dns.yml:credential' \
+    '.github/workflows/mastodon-public-dns.yml:static-policy' \
+    '.github/workflows/mastodon-smtp-credential.yml:credential' \
+    '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
     '.github/workflows/nofx-images.yml:publish' \
     '.github/workflows/nofx-images.yml:published-digests' \
     '.github/workflows/nofx-images.yml:test-build' \
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-images.yml:publish' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/release.yml:release' \
@@ -836,34 +886,48 @@ while read -r workflow expected_hash; do
     exit 1
   }
 done <<'EOF'
-.github/workflows/cordium-check.yml 7cc3d5576e39f314a6d8269b7c6d80ef293685d3aa63a99c7b22c1677cd17d57
+.github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
+.github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
+.github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
+.github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
-.github/workflows/harbor-mirror.yml c608c1c2dc34c35f2b4700748fd3285bfc13543104afd4c2a557520e7fdceda7
+.github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
+.github/workflows/harbor-mirror.yml 909ee1855f52de7c5ec9c0a7f39f5edca32db3353e3c8e0d549dfb1f7baa0820
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
-.github/workflows/lint.yml 7d7ddebb91dbcd8530c8d405b68fb5136b1901cbcd45dc979ebe470efebc89a9
-.github/workflows/nofx-images.yml 1e641356d76b777a04b34a0d32c3bbfb0000ef76ca4ad8e2c1c23163b212921a
+.github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
+.github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
+.github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
+.github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
+.github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
 .github/workflows/octelium-private-kubernetes-apply.yml 5bccd9e772bb094397f69697a4153c754513e3c0dbb392c231b2f57dc748e5e1
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
 .github/workflows/terragrunt-apply.yml c458a1b2fa7f3a458b4d78f43258ea814406db4f7fce281c5b6485667e1b2fb2
-.github/workflows/terragrunt-plan.yml 4a5776ff31a91a45af8db3a80cf77a048676327b3f4bdcaba0b0d2ef7cb3f8ac
+.github/workflows/terragrunt-plan.yml e75bb8269572b5da2e9b923670b15a6c209dc6206c01a5f9e57799bb9af26022
 EOF
 echo "::endgroup::"
 
 echo "::group::Exact workflow dispatch commits"
 for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
+  '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/cordium-runner-credentials.yml:static-policy' \
+  '.github/workflows/cordium-runner-publish.yml:test-build' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
+  '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
   '.github/workflows/litellm-provider-credential.yml:static-policy' \
+  '.github/workflows/mastodon-public-dns.yml:static-policy' \
+  '.github/workflows/mastodon-smtp-credential.yml:static-policy' \
   '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
   '.github/workflows/terragrunt-apply.yml:static-policy'; do
   workflow="${workflow_job%%:*}"

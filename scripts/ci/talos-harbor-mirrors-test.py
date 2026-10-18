@@ -2,10 +2,12 @@
 """Check the fixed Talos mirror rollout without credentials or live mutations."""
 import contextlib
 import copy
+import base64
 import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import tempfile
 import subprocess
@@ -23,6 +25,7 @@ MANIFEST = '{"schemaVersion":2}'
 DIGEST = hashlib.sha256(MANIFEST.encode()).hexdigest()
 MIRRORS = {"docker.io": {"endpoints": ["https://harbor.stinkyboi.com/v2/mirror/docker.io"],
                          "overridePath": True, "skipFallback": True}}
+PRIVATE_REGISTRY_HOST = {"ip": "10.96.0.50", "aliases": [rollout.REGISTRY_HOST]}
 ORIGINAL = [{"version": "v1alpha1", "machine": {"type": "worker"},
              "cluster": {"secret": "PrivateSecret-do-not-log", "controlPlane": {"endpoint": "https://10.1.0.199:6443"}}},
             {"apiVersion": "v1alpha1", "kind": "UserVolumeConfig", "name": "keep-this-volume"}]
@@ -39,6 +42,18 @@ def resource_stream(current, *, persistent=True, version=1, mismatch=False):
             "type": "MachineConfigs.config.talos.dev", "version": version,
         }, "spec": json.dumps(value)}))
     return "\n".join(resources)
+
+
+def patch_operations(test, command):
+    test.assertEqual(command[4], "--patch")
+    value = command[5]
+    if value == "[]":
+        return []
+    test.assertTrue(value.startswith("@"))
+    path = Path(value[1:])
+    test.assertEqual(path.stat().st_mode & 0o777, 0o600)
+    test.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
+    return json.loads(path.read_text())
 
 
 class RolloutTest(unittest.TestCase):
@@ -119,7 +134,7 @@ class RolloutTest(unittest.TestCase):
                         return resource_stream(current)
                     if command[:3] == ("talosctl", "machineconfig", "patch"):
                         value = json.loads(Path(command[3]).read_text())
-                        for operation in json.loads(command[5]):
+                        for operation in patch_operations(self, command):
                             self.assertEqual(operation["path"], "/machine/network/extraHostEntries")
                             value[0]["machine"]["network"]["extraHostEntries"] = operation["value"]
                         Path(command[-1]).write_text(json.dumps(value))
@@ -151,6 +166,266 @@ class RolloutTest(unittest.TestCase):
                                  [other] + (declaration if execute and not rollback else []))
                 self.assertEqual(any("image" in command for command in calls), execute and not rollback)
 
+    def test_active_harbor_mirrors_requires_exact_private_route(self):
+        machine = {
+            "registries": {
+                "mirrors": copy.deepcopy(MIRRORS),
+                "config": {rollout.REGISTRY_HOST: {"auth": {
+                    "username": rollout.REGISTRY_USERNAME, "password": "fixture-reader"}}},
+            },
+            "network": {"extraHostEntries": [copy.deepcopy(rollout.PRIVATE_REGISTRY_HOST)]},
+        }
+        self.assertTrue(rollout.active_harbor_mirrors(machine, MIRRORS))
+        self.assertFalse(rollout.active_harbor_mirrors(None, MIRRORS))
+        for scenario in ("missing-mirrors", "fallback", "extra-mirror", "missing-reader",
+                         "wrong-reader", "insecure-tls", "missing-host", "wrong-host"):
+            with self.subTest(scenario=scenario):
+                candidate = copy.deepcopy(machine)
+                if scenario == "missing-mirrors":
+                    candidate["registries"].pop("mirrors")
+                elif scenario == "fallback":
+                    candidate["registries"]["mirrors"]["docker.io"]["skipFallback"] = False
+                elif scenario == "extra-mirror":
+                    candidate["registries"]["mirrors"]["quay.io"] = copy.deepcopy(MIRRORS["docker.io"])
+                elif scenario == "missing-reader":
+                    candidate["registries"].pop("config")
+                elif scenario == "wrong-reader":
+                    candidate["registries"]["config"][rollout.REGISTRY_HOST]["auth"]["username"] = "other"
+                elif scenario == "insecure-tls":
+                    candidate["registries"]["config"][rollout.REGISTRY_HOST]["tls"] = {"insecureSkipVerify": True}
+                elif scenario == "missing-host":
+                    candidate["network"]["extraHostEntries"] = []
+                else:
+                    candidate["network"]["extraHostEntries"][0]["ip"] = "10.96.0.51"
+                self.assertFalse(rollout.active_harbor_mirrors(candidate, MIRRORS))
+
+    def test_audit_reads_active_config_without_rendering_or_applying(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".talos/patches").mkdir(parents=True)
+            (root / ".talos/talosconfig").touch()
+            (root / ".talos/patches/harbor-mirrors.yaml").write_text(json.dumps(
+                {"machine": {"registries": {"mirrors": MIRRORS}}}))
+            current = copy.deepcopy(ORIGINAL)
+            current[0]["machine"]["registries"] = {
+                "mirrors": copy.deepcopy(MIRRORS),
+                "config": {rollout.REGISTRY_HOST: {"auth": {
+                    "username": rollout.REGISTRY_USERNAME, "password": "fixture-reader"}}},
+            }
+            current[0]["machine"]["network"] = {
+                "extraHostEntries": [copy.deepcopy(rollout.PRIVATE_REGISTRY_HOST)]}
+            calls = []
+
+            def run(*command, binary=False):
+                calls.append(command)
+                if command[:2] == ("git", "status"):
+                    return ""
+                if command[:2] in (("git", "rev-parse"), ("git", "ls-remote")):
+                    return SHA + "\n"
+                if command == ("talosctl", "version", "--client", "--short"):
+                    return "Client:\nTalos v1.11.3\n"
+                if command[:2] == ("kubectl", "get"):
+                    return json.dumps({"metadata": {"name": "zimaboard-2"}, "status": {
+                        "addresses": [{"type": "InternalIP", "address": "10.1.0.202"}],
+                        "conditions": [{"type": "Ready", "status": "True"}],
+                        "nodeInfo": {"bootID": "stable"}}})
+                if command[-4:] == ("get", "machineconfig", "-o", "json"):
+                    return resource_stream(current)
+                if command[0] == "yq":
+                    value = json.loads(Path(command[-1]).read_text())
+                    return json.dumps(value if isinstance(value, list) else [value])
+                raise AssertionError(command)
+
+            output = io.StringIO()
+            with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
+                    contextlib.redirect_stdout(output):
+                rollout.reconcile("10.1.0.202", False, SHA, False, audit=True)
+            self.assertEqual(output.getvalue(), "zimaboard-2: active Harbor mirror configuration matches declaration\n")
+            self.assertNotIn("PrivateSecret", output.getvalue())
+            self.assertFalse(any(command[0] in ("curl", "gh") for command in calls))
+            self.assertFalse(any("apply-config" in command or "image" in command for command in calls))
+            self.assertFalse(any(command[:3] == ("talosctl", "machineconfig", "patch") for command in calls))
+            self.assertFalse(any(command[:2] == ("talosctl", "validate") for command in calls))
+
+    def test_audit_rejects_dirty_source_before_cluster_access(self):
+        calls = []
+
+        def run(*command, binary=False):
+            calls.append(command)
+            if command[:2] == ("git", "status"):
+                return " M unsafe\n"
+            raise AssertionError(command)
+
+        with patch.object(rollout, "run", run):
+            with self.assertRaisesRegex(RuntimeError, "clean checkout"):
+                rollout.reconcile("10.1.0.202", False, SHA, False, audit=True)
+        self.assertEqual(calls, [("git", "status", "--porcelain=v1", "--untracked-files=all",
+                                  "--ignore-submodules=none")])
+
+    def test_audit_rejects_rollout_options_before_live_access(self):
+        for kwargs in ({"execute": True}, {"rollback": True}, {"registry_host_only": True},
+                       {"registry_auth_file": Path("/private/credential.json")}):
+            with self.subTest(kwargs=kwargs):
+                options = {"execute": False, "rollback": False, "registry_host_only": False,
+                           "registry_auth_file": None}
+                options.update(kwargs)
+                with self.assertRaisesRegex(RuntimeError, "audit cannot combine"):
+                    rollout.reconcile("10.1.0.202", options["execute"], None, options["rollback"],
+                                      registry_host_only=options["registry_host_only"],
+                                      registry_auth_file=options["registry_auth_file"], audit=True)
+
+    def test_registry_auth_is_private_scoped_and_rollback_removes_only_owned_auth(self):
+        password = "fixture"
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            root = base / "repo"
+            private = base / "private"
+            (root / "scripts/config").mkdir(parents=True)
+            (root / ".talos/patches").mkdir(parents=True)
+            (root / ".talos/talosconfig").touch()
+            private.mkdir()
+            private.chmod(0o700)
+            credential = private / "mirror-auth.json"
+            credential.write_text(json.dumps({"username": rollout.REGISTRY_USERNAME, "password": password}))
+            credential.chmod(0o600)
+            auth = {"username": rollout.REGISTRY_USERNAME, "password": password}
+            self.assertEqual(rollout.read_registry_auth(credential), auth)
+            credential.chmod(0o640)
+            with self.assertRaises(RuntimeError):
+                rollout.read_registry_auth(credential)
+            credential.chmod(0o600)
+            link = private / "link"
+            os.symlink(credential, link)
+            with self.assertRaises(RuntimeError):
+                rollout.read_registry_auth(link)
+
+            other_config = {"registry.example": {"auth": {"username": "other", "password": "keep"}},
+                            rollout.REGISTRY_HOST: {"tls": {"insecureSkipVerify": False}}}
+            configured = rollout.registry_auth_config({"config": other_config}, auth, False)
+            self.assertEqual(configured, {
+                "registry.example": {"auth": {"username": "other", "password": "keep"}},
+                rollout.REGISTRY_HOST: {"tls": {"insecureSkipVerify": False}, "auth": auth},
+            })
+            self.assertEqual(rollout.registry_auth_config({"config": configured}, None, True), other_config)
+            self.assertEqual(rollout.owned_registry_auth({"config": configured}), auth)
+            self.assertIsNone(rollout.owned_registry_auth({"config": other_config}))
+            self.assertIs(rollout.registry_auth_config({"config": {
+                rollout.REGISTRY_HOST: {"auth": {"username": "unrelated", "password": "keep"}}}}, None, True),
+                          rollout._UNCHANGED)
+            with self.assertRaisesRegex(RuntimeError, "unrelated"):
+                rollout.registry_auth_config({"config": {
+                    rollout.REGISTRY_HOST: {"auth": {"username": "unrelated", "password": "keep"}}}}, auth, False)
+
+            (root / ".talos/patches/harbor-mirrors.yaml").write_text(json.dumps(
+                {"machine": {"registries": {"mirrors": MIRRORS}}}))
+            rollback_mirrors = {"docker.io": {"endpoints": ["https://registry-1.docker.io/v2"],
+                                               "overridePath": True, "skipFallback": False}}
+            (root / ".talos/patches/harbor-mirrors-rollback.yaml").write_text(json.dumps(
+                {"machine": {"registries": {"mirrors": rollback_mirrors}}}))
+            current = copy.deepcopy(ORIGINAL)
+            current[0]["machine"]["registries"] = {"mirrors": {"old.example": {}}, "config": copy.deepcopy(other_config)}
+            calls, private_patches, operations_seen = [], [], []
+
+            def run(*command, binary=False):
+                nonlocal current
+                calls.append(command)
+                self.assertNotIn(password, " ".join(command))
+                if command == ("talosctl", "version", "--client", "--short"):
+                    return "Client:\nTalos v1.11.3\n"
+                if command[-4:] == ("get", "machineconfig", "-o", "json"):
+                    return resource_stream(current)
+                if command == ("talosctl", "--talosconfig", str((root / ".talos/talosconfig").resolve()),
+                               "--endpoints", "10.1.0.199", "--nodes", "10.1.0.202", "read",
+                               "/proc/sys/kernel/random/boot_id"):
+                    return "12345678-0000-0000-0000-000000000000"
+                if command[0] == "yq":
+                    value = json.loads(Path(command[-1]).read_text())
+                    return json.dumps(value if isinstance(value, list) else [value])
+                if command[:3] == ("talosctl", "machineconfig", "patch"):
+                    value = json.loads(Path(command[3]).read_text())
+                    operations = patch_operations(self, command)
+                    if operations:
+                        private_patches.append(Path(command[5][1:]))
+                        operations_seen.append(copy.deepcopy(operations))
+                    for operation in operations:
+                        if operation["path"] == "/machine/registries/mirrors":
+                            value[0]["machine"].setdefault("registries", {})["mirrors"] = operation["value"]
+                        elif operation["path"] == "/machine/registries/config":
+                            value[0]["machine"].setdefault("registries", {})["config"] = operation["value"]
+                        else:
+                            raise AssertionError(operation)
+                    Path(command[-1]).write_text(json.dumps(value))
+                    return ""
+                if command[:2] == ("kubectl", "get"):
+                    return json.dumps({"metadata": {"name": "zimaboard-2"}, "status": {
+                        "addresses": [{"type": "InternalIP", "address": "10.1.0.202"}],
+                        "conditions": [{"type": "Ready", "status": "True"}], "nodeInfo": {"bootID": "stable"}}})
+                if command[:2] == ("talosctl", "validate"):
+                    return ""
+                raise AssertionError(command)
+
+            output = io.StringIO()
+            with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
+                    contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+                rollout.reconcile("10.1.0.202", False, SHA, False, registry_auth_file=credential)
+                current[0]["machine"]["registries"]["config"] = copy.deepcopy(configured)
+                rollout.reconcile("10.1.0.202", False, SHA, True)
+                with self.assertRaisesRegex(RuntimeError, "cannot be combined"):
+                    rollout.reconcile("10.1.0.202", False, SHA, False, registry_host_only=True,
+                                      registry_auth_file=credential)
+            self.assertNotIn(password, output.getvalue())
+            self.assertEqual(len(private_patches), 2)
+            self.assertTrue(all(not path.exists() for path in private_patches))
+            self.assertEqual(operations_seen[0][-1], {
+                "op": "add", "path": "/machine/registries/config", "value": configured,
+            })
+            self.assertEqual(operations_seen[1][-1], {
+                "op": "add", "path": "/machine/registries/config", "value": other_config,
+            })
+
+    def test_authenticated_receipt_uses_a_private_header_file(self):
+        password = "fixture"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            (root / "scripts/config").mkdir(parents=True)
+            (root / "scripts/config/harbor-images.json").write_text(json.dumps(
+                {"images": [{"source": f"docker.io/library/alpine:3.22@sha256:{DIGEST}"}]}))
+            calls, headers = [], []
+
+            def run(*command, binary=False):
+                calls.append(command)
+                self.assertNotIn(password, " ".join(command))
+                self.assertNotIn("Authorization: Basic", " ".join(command))
+                if command[0] == "gh":
+                    return json.dumps([{"workflow_runs": [{"head_sha": SHA, "head_branch": "main",
+                        "event": "workflow_dispatch", "status": "completed", "conclusion": "success",
+                        "display_title": f"Mirror all @ {SHA}"}]}])
+                if command[:2] == ("git", "merge-base"):
+                    return ""
+                if command[:2] == ("git", "show"):
+                    return b"same"
+                if command[0] == "curl":
+                    if "/service/token?" in command[-1]:
+                        path = Path(command[command.index("--header") + 1].removeprefix("@"))
+                        self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                        self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
+                        self.assertEqual(base64.b64decode(path.read_text().split()[-1]),
+                                         f"{rollout.REGISTRY_USERNAME}:{password}".encode())
+                        headers.append(path)
+                        return json.dumps({"token": "test.anonymous-token"})
+                    path = Path(command[command.index("--header") + 1].removeprefix("@"))
+                    self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+                    self.assertIn("Authorization: Bearer test.anonymous-token", path.read_text())
+                    headers.append(path)
+                    self.assertTrue(binary)
+                    return MANIFEST.encode()
+                raise AssertionError(command)
+
+            with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run):
+                rollout.verify_copies(SHA, {"username": rollout.REGISTRY_USERNAME, "password": password})
+            self.assertTrue(headers)
+            self.assertTrue(all(not path.exists() for path in headers))
+
     def test_dry_run_execution_and_fail_closed_gates(self):
         for scenario in ("dry", "apply", "rollback", "unready", "wrong-client", "dirty", "workflow",
                          "digest", "scope", "multidoc", "race", "reboot", "readback", "rollback-reboot", "custom-config", "missing-config", "pull-failure", "token-injection",
@@ -158,11 +433,24 @@ class RolloutTest(unittest.TestCase):
                          "wrong-branch", "wrong-event", "wrong-status", "wrong-conclusion", "short-sha",
                          "fleet-only", "bazarr-only", "traefik-only", "untitled", "wrong-title-sha",
                          "fresh-boot", "pending-config", "try-without-persistent", "config-read-error",
-                         "duplicate-config", "missing-active"):
+                         "duplicate-config", "missing-active", "missing-reader-auth", "existing-reader-auth",
+                         "missing-private-route", "wrong-private-route"):
             with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as temporary:
-                root = Path(temporary)
+                base = Path(temporary).resolve()
+                root = base / "repo"
                 (root / "scripts/config").mkdir(parents=True)
                 (root / ".talos/patches").mkdir(parents=True)
+                private = base / "private"
+                private.mkdir()
+                private.chmod(0o700)
+                credential = private / "mirror-auth.json"
+                credential.write_text(json.dumps({"username": rollout.REGISTRY_USERNAME,
+                                                  "password": "fixture-reader"}))
+                credential.chmod(0o600)
+                registry_auth_file = credential if scenario in (
+                    "apply", "reboot", "readback", "custom-config", "pull-failure",
+                    "prior-success", "later-page-success", "fresh-boot",
+                    "missing-private-route", "wrong-private-route") else None
                 talosconfig = root / ("private-talosconfig" if scenario == "custom-config" else ".talos/talosconfig")
                 if scenario != "missing-config":
                     talosconfig.write_text("private test fixture")
@@ -175,6 +463,15 @@ class RolloutTest(unittest.TestCase):
                 for name in ("harbor-mirrors.yaml", "harbor-mirrors-rollback.yaml"):
                     (root / ".talos/patches" / name).write_text(json.dumps({"machine": {"registries": {"mirrors": wanted}}}))
                 current = copy.deepcopy(ORIGINAL)
+                if scenario == "existing-reader-auth":
+                    current[0]["machine"]["registries"] = {"config": {
+                        rollout.REGISTRY_HOST: {"auth": {"username": rollout.REGISTRY_USERNAME,
+                                                          "password": "test"}}}}
+                if scenario == "wrong-private-route":
+                    current[0]["machine"]["network"] = {"extraHostEntries": [
+                        {"ip": "10.96.0.51", "aliases": [rollout.REGISTRY_HOST]}]}
+                elif not scenario.startswith("rollback") and scenario not in ("dry", "missing-private-route"):
+                    current[0]["machine"]["network"] = {"extraHostEntries": [PRIVATE_REGISTRY_HOST]}
                 calls, captures = [], []
                 applied = False
 
@@ -234,6 +531,10 @@ class RolloutTest(unittest.TestCase):
                         self.assertNotIn("--location", command)
                         self.assertNotIn("test.anonymous-token", " ".join(command))
                         if "/service/token?" in command[-1]:
+                            if scenario == "existing-reader-auth":
+                                header = Path(command[command.index("--header") + 1].removeprefix("@"))
+                                self.assertEqual(base64.b64decode(header.read_text().split()[-1]),
+                                                 b"robot$mirror+pull:test")
                             self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlsplit(command[-1]).query),
                                              {"service": ["harbor-registry"], "scope": ["repository:mirror/docker.io/library/alpine:pull"]})
                             return json.dumps({"token": "unsafe\r\nInjected: header" if scenario == "token-injection" else "test.anonymous-token"})
@@ -280,10 +581,19 @@ class RolloutTest(unittest.TestCase):
                         path = Path(command[3])
                         self.assertEqual(path.parent.stat().st_mode & 0o777, 0o700)
                         value = json.loads(path.read_text())
-                        if command[5] != "[]":
-                            operations = json.loads(command[5])
-                            self.assertEqual(operations[-1], {"op": "add", "path": "/machine/registries/mirrors", "value": wanted})
-                            value[0]["machine"].setdefault("registries", {})["mirrors"] = operations[-1]["value"]
+                        operations = patch_operations(self, command)
+                        if operations:
+                            for operation in operations:
+                                if operation["path"] == "/machine/registries":
+                                    self.assertEqual(operation["value"], {})
+                                    value[0]["machine"].setdefault("registries", {})
+                                elif operation["path"] == "/machine/registries/mirrors":
+                                    self.assertEqual(operation["value"], wanted)
+                                    value[0]["machine"].setdefault("registries", {})["mirrors"] = operation["value"]
+                                elif operation["path"] == "/machine/registries/config":
+                                    value[0]["machine"].setdefault("registries", {})["config"] = operation["value"]
+                                else:
+                                    raise AssertionError(operation)
                             if scenario == "scope":
                                 value[0]["cluster"]["secret"] = "changed"
                             if scenario == "multidoc":
@@ -312,11 +622,17 @@ class RolloutTest(unittest.TestCase):
                 output = io.StringIO()
                 with patch.object(rollout, "ROOT", root), patch.object(rollout, "run", run), \
                         contextlib.redirect_stdout(output):
-                    if scenario in ("dry", "apply", "rollback", "custom-config", "prior-success", "later-page-success", "fresh-boot"):
-                        rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"), config_argument)
+                    if scenario in ("dry", "apply", "rollback", "custom-config", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"):
+                        rollout.reconcile("10.1.0.202", scenario != "dry", SHA, scenario.startswith("rollback"), config_argument,
+                                          registry_auth_file=registry_auth_file)
+                    elif scenario in ("missing-private-route", "wrong-private-route"):
+                        with self.assertRaisesRegex(RuntimeError, "exact private Harbor hostname mapping"):
+                            rollout.reconcile("10.1.0.202", True, SHA, False, config_argument,
+                                              registry_auth_file=registry_auth_file)
                     else:
                         with self.assertRaises(RuntimeError):
-                            rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"), config_argument)
+                            rollout.reconcile("10.1.0.202", True, SHA, scenario.startswith("rollback"), config_argument,
+                                              registry_auth_file=registry_auth_file)
                 self.assertNotIn("PrivateSecret", output.getvalue())
                 if scenario in ("prior-success", "later-page-success"):
                     self.assertEqual({call[2].split(":", 1)[1] for call in calls if call[:2] == ("git", "show")},
@@ -330,8 +646,16 @@ class RolloutTest(unittest.TestCase):
                     self.assertFalse(any(call[:2] == ("git", "merge-base") for call in calls))
                 if scenario == "missing-config":
                     self.assertEqual(calls, [])
-                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot"))
-                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot"))
+                self.assertEqual(applied, scenario in ("apply", "rollback", "reboot", "readback", "rollback-reboot", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"))
+                self.assertEqual(any("image" in call for call in calls), scenario in ("apply", "custom-config", "pull-failure", "prior-success", "later-page-success", "fresh-boot", "existing-reader-auth"))
+                if scenario == "missing-reader-auth":
+                    self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
+                    self.assertFalse(any(call[:3] == ("talosctl", "machineconfig", "patch")
+                                         and call[call.index("--patch") + 1].startswith("@")
+                                         for call in calls))
+                if scenario in ("missing-private-route", "wrong-private-route"):
+                    self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
+                    self.assertFalse(any("apply-config" in call for call in calls))
                 if scenario in ("dry", "rollback", "rollback-reboot"):
                     self.assertFalse(any(call[0] in ("gh", "curl") for call in calls))
                 if scenario.startswith("rollback"):
@@ -343,6 +667,52 @@ class RolloutTest(unittest.TestCase):
                                          "Private token header must be removed")
                     if call[:3] == ("talosctl", "machineconfig", "patch"):
                         self.assertFalse(Path(call[-1]).exists(), "Private temporary config must be removed")
+                        if call[5].startswith("@"):
+                            self.assertFalse(Path(call[5][1:]).exists(), "Private JSON patch must be removed")
+
+
+class RegistryPrepullTest(unittest.TestCase):
+    def test_pre_pull_rejects_changed_image_scope_before_talos_access(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            catalog = Path(temporary) / "scripts/config/harbor-runtime-images.json"
+            catalog.parent.mkdir(parents=True)
+            source = "docker.io/goharbor/registry-photon:v2.15.4@sha256:" + "a" * 64
+            catalog.write_text(json.dumps({"images": [{"source": source}, {"source": source}]}))
+            with patch.object(rollout, "ROOT", Path(temporary)), patch.object(rollout, "run") as run:
+                with self.assertRaises(RuntimeError):
+                    rollout.prepull_registry_runtime("10.1.0.199", False, None, Path("/private/talosconfig"))
+                run.assert_not_called()
+
+    def test_pre_pull_requires_reviewed_main_and_exact_cached_digests(self):
+        sources = [item["source"] for item in json.loads(
+            (ROOT / "scripts/config/harbor-runtime-images.json").read_text())["images"]
+            if "/registry-photon:" in item["source"] or "/harbor-registryctl:" in item["source"]]
+        aliases = [source.replace(":v2.15.4@", "@") for source in sources]
+        for mode in ("dry", "execute", "missing-after-pull", "cached"):
+            with self.subTest(mode=mode):
+                calls = []
+                cached = set(aliases if mode == "cached" else ())
+
+                def run(*command, binary=False):
+                    calls.append(command)
+                    if command[-2:] == ("image", "list"):
+                        return "NODE IMAGE DIGEST SIZE CREATED\n" + "\n".join(
+                            f"acer {alias} {alias.rsplit('@', 1)[1]} 1MB now" for alias in cached)
+                    if command[-2] == "pull":
+                        if mode != "missing-after-pull":
+                            cached.add(command[-1].replace(":v2.15.4@", "@"))
+                        return ""
+                    raise AssertionError(f"unexpected command: {command}")
+
+                with patch.object(rollout, "run", run), patch.object(rollout, "verify_main") as verify:
+                    if mode == "missing-after-pull":
+                        with self.assertRaises(RuntimeError):
+                            rollout.prepull_registry_runtime("10.1.0.199", True, SHA, Path("/private/talosconfig"))
+                    else:
+                        rollout.prepull_registry_runtime("10.1.0.199", mode != "dry", SHA, Path("/private/talosconfig"))
+                    self.assertEqual(verify.call_count, int(mode != "dry"))
+                    self.assertEqual(sum(command[-2] == "pull" for command in calls),
+                                     0 if mode in ("dry", "cached") else (1 if mode == "missing-after-pull" else 2))
 
 
 if __name__ == "__main__":
