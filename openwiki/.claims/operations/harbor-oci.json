@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cdd330933d6d25e43bc9ddab126154554f79bd12072fca14aa8cfef94e9a63bb",
+  "pageVersion": "sha256:4843506a23454ee5dca5e5a31139e8f1bdf552112e1638416e6c99680f0a756c",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -410,8 +410,20 @@
     },
     {
       "id": "claim_b86ae7f914824b40ae5176fa60e8e847",
-      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password with only the reader parameter and exact-ARN policy changes. Stage B advances harbor-secrets OnChange revision to v4 and mounts the reader key for bootstrap; ExternalSecret Ready and successful PostSync are required before reader acceptance. The parameter alone creates no robot, receipt, Talos or workload acceptance, and the mirror remains public until separately reviewed authenticated node pulls pass.",
+      "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v4 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
       "evidence": [
+        {
+          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:ea9936e9548a3ac52286956c24b5d8cb529ddb9965078ed329e1f0cc4626e15b"
+        },
+        {
+          "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
+          "version": "repo-file-v1:sha256:b3efabc48ca9aa05da6fcfdd97fd406c1ff7a152b909990ca7c679dccf0bda0c"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
+          "version": "repo-file-v1:sha256:e5a7ce8b96db1ba8efb7e3267db70b9f93f2fe98351df7fc2b44eab8b5f09941"
+        },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
           "version": "repo-file-v1:sha256:25f0156151755f74055bc5520f47a5c896d833c1cb3ae3247f88ed778ed859a9"
@@ -422,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:a0c36b6dfdb94b796205ef214d90e2b17faa0591dbb06c504b962f3cc829b8db"
+          "version": "repo-file-v1:sha256:43c911bae381f87df714be22c02ab2f220b2ba955e6d507a90f717305258a464"
         }
       ]
     },
@@ -496,7 +508,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:8a5d306f08847a0730ebcecfdd685766d8fdad24fa8fc343f7cc3cd296fb9a18"
+          "version": "repo-file-v1:sha256:ea9936e9548a3ac52286956c24b5d8cb529ddb9965078ed329e1f0cc4626e15b"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -504,7 +516,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:a0c36b6dfdb94b796205ef214d90e2b17faa0591dbb06c504b962f3cc829b8db"
+          "version": "repo-file-v1:sha256:43c911bae381f87df714be22c02ab2f220b2ba955e6d507a90f717305258a464"
         }
       ]
     },
@@ -621,8 +633,8 @@
       ]
     },
     {
-      "id": "claim_7572e5af884e4e378a03369d01f33bc2",
-      "statement": "The staged Cordium Nocturne publisher builds a checksum-pinned patched controller and permits only homelab-cordium-nocturne. Its shared publisher verifies digest, a fresh complete authenticated Harbor pull and signature; publication and workload consumption remain held until the excluded pull Secret's SSM copy and grant exist.",
+      "id": "claim_c98b5b9b913f4bdba28820aaaf321d17",
+      "statement": "The staged Nocturne publisher builds the checksum-pinned controller before credentials and limits publication to one fixed image, with digest, authenticated Harbor pull, and signature verification; no image is yet published or consumed.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/cordium-nocturne-publish.yml",
@@ -631,16 +643,12 @@
         {
           "resource": "repo://builds/cordium-nocturne/README.md",
           "version": "repo-file-v1:sha256:c0a12526371d2000d35d7d8d6cc2e9f934a57d25708d3a48e3f121db7f41ab8d"
-        },
-        {
-          "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:a0c36b6dfdb94b796205ef214d90e2b17faa0591dbb06c504b962f3cc829b8db"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:12:38.870Z"
+    "at": "2026-10-18T22:45:17.850Z"
   }
 }

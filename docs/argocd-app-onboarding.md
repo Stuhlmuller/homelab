@@ -58,6 +58,7 @@ destination, and resources.
 | mastodon              | requested (draft)         | `mastodon`              | `clusters/homelab/apps/mastodon`                | `IaC/live/argocd-apps/mastodon`              | Yes           | aws-ssm-parameters, external-secrets, cert-manager, istio, octelium-public, platform-storage       |
 | nofx                  | requested                 | `nofx`                  | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                  | Yes           | external-secrets, istio, octelium, litellm, platform-storage                                       |
 | policy-bot            | requested                 | `automation`            | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`            | Yes           | external-secrets, cert-manager, istio                                                              |
+| renovate              | requested                 | `automation`            | `clusters/homelab/apps/renovate`                | `IaC/live/argocd-apps/renovate`              | Yes           | aws-ssm-parameters, external-secrets, platform-storage                                             |
 
 ## Dependency Readiness
 
@@ -100,6 +101,13 @@ n8n is not considered ready until `n8n-postgres` is synced and healthy, the
 `n8n-postgres-auth` and `n8n-postgres-client` ExternalSecrets are ready, the
 `n8n` database exists, and any required SQLite export/import migration has been
 completed.
+
+Renovate registration initially creates a suspended, full dry-run CronJob.
+Readiness requires its App ExternalSecret, retained cache claim, and a successful
+dry-run parity check. The separate GitHub Actions runner remains the only writer
+until its complete workflow is removed and every unfinished run drains. See the
+[Renovate runbook](../clusters/homelab/apps/renovate/README.md) for cutover and
+rollback.
 
 AFFiNE is not considered ready until its ExternalSecret, PostgreSQL 16 with the
 pgvector extension, authenticated Redis, migration init container, four
@@ -182,7 +190,7 @@ Helm applications keep explicit chart repository, chart, pinned revision,
 release name, and values files in `spec.sources`; see
 [Helm chart organization](../openwiki/patterns/helm-chart-organization.md).
 Dependencies are relative to the sibling application directory: use an app name
-for another Application and `../../aws-ssm-parameters` for that shared AWS unit.
+for another Application and `../aws-ssm-parameters` for that shared AWS unit.
 Bootstrap installs Argo CD before its CRDs exist. Argo's self-management, Cordium's bootstrap
 child, and the two storage provisioner children retain their existing lifecycle
 owners; their parent deployments are registered by this same stack.

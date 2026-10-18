@@ -339,6 +339,7 @@ cluster CA is intentionally rotated.
 | openclaw (continued) | same as above | same as above | `/homelab/openclaw/github-app/id`, `/homelab/openclaw/github-app/installation-id`, `/homelab/openclaw/github-app/private-key` |
 | n8n | `n8n-secrets` | `n8n-secrets` | `/homelab/n8n/encryption-key`, `/homelab/n8n/litellm-token`, plus `n8n-postgres-client` from `n8n-postgres` |
 | policy-bot | `policy-bot-config` | `policy-bot-config` | `/homelab/policy-bot/github-app/integration-id`, `/homelab/policy-bot/github-app/webhook-secret`, `/homelab/policy-bot/github-app/private-key`, `/homelab/policy-bot/oauth/client-id`, `/homelab/policy-bot/oauth/client-secret`, `/homelab/policy-bot/sessions-key` |
+| renovate | `renovate` | `renovate` | `/homelab/renovate/github-app/issuer-id`, `/homelab/renovate/github-app/private-key` |
 
 The retired `/homelab/github-actions-runner/registration-token` parameter is
 not an active secret contract and has no ExternalSecret consumer. It remains in
@@ -608,6 +609,19 @@ Terragrunt; copy it from SSM into the GitHub App webhook settings so GitHub
 deliveries to `/api/github/hook` validate. The Deployment runs one replica
 after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
+
+Renovate reuses the App credentials held by the separate
+`Stuhlmuller/renovate` GitHub Actions runner. Its reviewed transfer workflow
+writes only the fixed issuer ID and private-key parameters through a dedicated,
+temporary OIDC role; no key appears in this repository or a workflow artifact.
+The `renovate` ExternalSecret in `automation` projects them into the `renovate`
+Secret as `issuer-id` and `private-key`, mounted read-only as files under
+`/var/run/secrets/renovate`. It refreshes every five minutes. Rotate through a
+reviewed temporary transfer grant, then verify a refresh after the transfer
+and confirm a later Job uses the same App identity before retiring the grant.
+Keep the CronJob suspended until a post-transfer refresh is confirmed and the
+transfer grant is removed. See the
+[Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
 ## Harbor private registry
 

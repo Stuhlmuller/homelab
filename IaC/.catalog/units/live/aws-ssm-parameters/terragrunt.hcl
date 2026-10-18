@@ -326,6 +326,14 @@ inputs = {
       description   = "Octelium authentication token used to apply the Cordium ClusterConfig."
       initial_value = local.placeholder
     }
+    "/homelab/renovate/github-app/issuer-id" = {
+      description   = "Existing Renovate GitHub App client ID used as the JWT issuer; transfer from the companion repository before activation."
+      initial_value = local.placeholder
+    }
+    "/homelab/renovate/github-app/private-key" = {
+      description   = "Existing Renovate GitHub App private key; transfer from the companion repository before activation."
+      initial_value = local.placeholder
+    }
     "/homelab/external-secrets/aws-ssm/access-key-id" = {
       description   = "AWS access key ID used by External Secrets to read homelab SSM parameters."
       initial_value = local.placeholder

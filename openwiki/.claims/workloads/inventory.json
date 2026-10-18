@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9a53b27f22c3ad5ed6e5361279ca58dea7ba1ad589520f0ff02e9fea75a6a19b",
+  "pageVersion": "sha256:c86ec6e67c1ebadfc2b7e45073a8c6554c47f9ca4b221aa5b6246775aaff4f22",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
+          "version": "repo-file-v1:sha256:7177b650f641a70858f303e2a1725fc011e884365ecdbc55779c5eb05ca034f5"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -218,7 +218,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:9dcd6a851f75369251a48c7ba91e7b7dc3e5626832c8d8aa96b5fde61c8df08c"
+          "version": "repo-file-v1:sha256:7177b650f641a70858f303e2a1725fc011e884365ecdbc55779c5eb05ca034f5"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -293,10 +293,32 @@
           "version": "repo-file-v1:sha256:cb74e07be1531ecddc6f791f28c02c4477621dd0e5bfe9337da4fff98aa6a4e0"
         }
       ]
+    },
+    {
+      "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
+      "statement": "The Renovate Application is staged in automation as a suspended hourly UTC CronJob in full dry-run mode, with a retained 20 Gi NFS cache and a protected App-key transfer prerequisite. Source registration does not establish live Job acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/stacks/renovate/stack.hcl",
+          "version": "repo-file-v1:sha256:04724af1dc2ae6e1ddb027dcb270d4704ad204c33aff015ca79428175f609ad8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:e8db2c19d1cd96d44cb8d4e79f95e8ef49e6708fa2e508ab69a0db65cdefbf05"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
+          "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:12:38.870Z"
+    "at": "2026-10-18T22:45:17.850Z"
   }
 }

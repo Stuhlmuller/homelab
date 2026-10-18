@@ -10,8 +10,6 @@ sources:
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
-  - id: openwiki-source-89de10646bdbebfd3e1ed075
-    resource: repo://clusters/homelab/apps/cordium/kustomization.yaml
   - id: openwiki-source-6155e2b0ac0be42ac6e4aa1d
     resource: repo://clusters/homelab/apps/cordium/nocturne-pull-secret.yaml
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -34,6 +32,12 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-6680389f3ee90f86c4c9a782
+    resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
     resource: repo://clusters/homelab/apps/tailscale/ci-rbac.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
@@ -50,6 +54,8 @@ sources:
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
     resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-4fa6e8b8348f9583e76afe30
+    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-326a085bf1ea3cb64a10924e
     resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
@@ -76,10 +82,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T22:12:38.870Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:12:38.870Z
+    at: 2026-10-18T22:45:17.850Z
 ---
 
 # Secrets And Identity
@@ -194,6 +200,15 @@ changing DNS alone does not authorize deleting those credentials.
   aggregate limit is 5,120 characters; the existing fixed-size inline policy
   retains only exact KMS-key permissions and is updated after the managed
   policies are attached.
+
+The staged [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
+reuses its existing GitHub App. IaC declares two SecureString placeholders for
+the App issuer and private key. A temporary role permits the companion
+repository to transfer only those two values; it cannot read them back. The
+`automation` ExternalSecret projects both as files and refreshes every five
+minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
+and removal of the temporary writer grant are verified. The current code is
+desired state, not evidence that the credentials have reached the cluster.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

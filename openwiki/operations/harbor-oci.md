@@ -50,6 +50,8 @@ sources:
     resource: repo://builds/harbor-core/source.json
   - id: openwiki-source-db4fcfb731a7d9f94926969c
     resource: repo://builds/harbor-core/token-trust_test.go
+  - id: openwiki-source-c9627a5536c3972ce48bf57a
+    resource: repo://clusters/homelab/apps/harbor/bootstrap.py
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
   - id: openwiki-source-caccd49b346c867666da5f50
@@ -98,6 +100,8 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
     resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-1882ca1e6f216149daf718a1
+    resource: repo://IaC/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
@@ -126,10 +130,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T22:12:38.870Z" }
+generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:12:38.870Z
+    at: 2026-10-18T22:45:17.850Z
 ---
 
 # Harbor Private OCI Registry
@@ -982,7 +986,7 @@ three IAM updates, with no deletions or existing-secret rotations. Its GitOps
 `generated-secret-revision` advanced to `v2` to reconcile the publisher
 credential. The reviewed reader parameter later existed as a separately scoped,
 metadata-verified Stage A apply. The current desired-state consumer advances to
-`v3`; it must report Ready and the PostSync bootstrap must finish before
+`v4`; it must report Ready and the PostSync bootstrap must finish before
 accepting reader-robot, authenticated-receipt, or Talos prerequisites. Keep
 `refreshPolicy: OnChange` to avoid periodically regenerating the salted bcrypt
 registry password hash; an annotation change alone is not readiness evidence.
