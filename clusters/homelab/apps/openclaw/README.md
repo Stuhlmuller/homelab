@@ -638,14 +638,16 @@ archive. The checkpoint uses SQLite backup, hash, and integrity verification
 before its completion marker, and is separate from daily snapshot retention.
 See [Talos mount propagation](https://www.talos.dev/v1.12/talos-guides/configuration/disk-management/user/).
 
-The Enterprise retirement preparation declares a zero-replica reader and a
-retained `openclaw-retirement-archive` claim. When activated by a reviewed
-GitOps change, the reader mounts the parent and both child local PVs separately
+The Enterprise retirement reader runs as one read-only Pod after this GitOps
+change and uses a retained `openclaw-retirement-archive` claim. It mounts the
+parent and both child local PVs separately
 from the NAS claim, so its archive contains the real NAS files and both local
 SQLite databases without an overlaid mount hiding either copy. The reader has
-no ServiceAccount token, no listener and a deny-all NetworkPolicy; it stays at
-zero replicas until its protected inventory/archive workflow and storage gate
-are validated. The archive claim is scratch on the same NAS, so an independently
+no ServiceAccount token, no listener and a deny-all NetworkPolicy. Verify the
+off-NAS bucket, reader readiness and retained PVC identity before running the
+protected inventory. If readiness or mount identity fails, return the reader to
+zero replicas through GitOps; keep the legacy writer active and do not archive
+or shut it down. The archive claim is scratch on the same NAS, so an independently
 verified off-NAS copy is still required before retirement is accepted.
 Provision the versioned off-NAS bucket through the protected Terragrunt Apply
 workflow on the current `main` SHA with `application_backup_storage=true` and
