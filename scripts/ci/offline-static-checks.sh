@@ -851,6 +851,7 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/nofx-images.yml:test-build' \
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-images.yml:publish' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
     '.github/workflows/release.yml:release' \
@@ -893,10 +894,11 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml 79052d1cb4bd64ac292c63f0cbf155d8f79f8484f8cee9354844ba16efb70cc2
+.github/workflows/harbor-mirror.yml 909ee1855f52de7c5ec9c0a7f39f5edca32db3353e3c8e0d549dfb1f7baa0820
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml a17f8dcc8c4ff6ec56119a7890e35584a50833562b62b993e7c86b9150c53e52
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
+.github/workflows/openclaw-enterprise-images.yml ad7b4b54f08673f711c009aa6c8f02381e9a6d851d3466df5a45a919191059b6
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -919,6 +921,7 @@ for workflow_job in \
   '.github/workflows/entra-oidc-verify.yml:verify' \
   '.github/workflows/harbor-core-images.yml:publish' \
   '.github/workflows/harbor-mirror.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \

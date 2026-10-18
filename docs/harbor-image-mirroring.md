@@ -32,6 +32,13 @@ protected mirror workflow has published and completely pulled its Harbor copy.
 The coverage gate resolves direct `harbor.stinkyboi.com/mirror/...` references
 back to the exact reviewed source digest and rejects digestless mirror tags;
 `homelab` remains reserved for custom builds.
+The protected `openclaw-enterprise-images.yml` workflow builds the stock
+controller and runtime Dockerfiles from the checksum-verified Enterprise source
+revision in `builds/openclaw-enterprise/source.json`. It verifies both revision
+labels before using Harbor credentials, then publishes, signs and completely
+pulls the paired images in the private `homelab` project. Dispatch it only with
+the current `main` SHA; use its immutable digest receipts for the Enterprise
+chart and CLI. A source revision change requires a new reviewed archive hash.
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public

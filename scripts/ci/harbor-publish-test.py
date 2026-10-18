@@ -126,12 +126,15 @@ class HarborPublicationGates(unittest.TestCase):
 
     def transport_mocks(self, failure=None, mirror=False, resume=False,
                         missing_error="manifest unknown", registries=("docker.io", "quay.io"),
-                        source_error="toomanyrequests", core=False, cordium=False):
+                        source_error="toomanyrequests", core=False, cordium=False, enterprise=False):
         """Replace service clients and runner sudo; never modify real host routing."""
         manifests = {}
         names = ["homelab-harbor-core"] if core else ["homelab-nofx-backend", "homelab-nofx-frontend"]
         if cordium:
             names = ["homelab-cordium-runner", "homelab-cordium-controller"]
+        if enterprise:
+            names = ["homelab-oce-controller", "homelab-oce-runtime"]
+            self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main"
         if core:
             self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/harbor-core-images.yml@refs/heads/main"
         published_manifests = {name: json.dumps({"schemaVersion": 2, "current_build": name}) for name in names}
@@ -1176,6 +1179,20 @@ class HarborPublicationGates(unittest.TestCase):
         for container in pod["initContainers"] + pod["containers"]:
             self.assertEqual(container["image"], "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/cosign:latest@sha256:3fad8be83b93869051c08bb98f36612afe81dabe06c288e70e41ce09a037ba18")
         self.assert_cleaned()
+
+    def test_enterprise_pair_publishes_only_from_its_workflow(self):
+        self.transport_mocks(enterprise=True)
+        result = self.run_helper(mode="publish-openclaw-enterprise")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = (self.root / "outputs").read_text()
+        for name, key in (("homelab-oce-controller", "controller"), ("homelab-oce-runtime", "runtime")):
+            self.assertIn(f"{key}=harbor.stinkyboi.com/homelab/{name}:homelab-{SHA}@", output)
+        self.assertEqual(len(self.calls_for("cosign")), 2)
+        self.assert_cleaned()
+
+    def test_enterprise_pair_refuses_other_workflow_before_credentials(self):
+        self.env["GITHUB_WORKFLOW_REF"] = "Stuhlmuller/homelab/.github/workflows/nofx-images.yml@refs/heads/main"
+        self.rejected(mode="publish-openclaw-enterprise")
 
     def test_core_refuses_implicit_push_publication_before_credentials(self):
         self.env["GITHUB_EVENT_NAME"] = "push"

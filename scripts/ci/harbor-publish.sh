@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate' >&2
+[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate' >&2
   exit 2
 }
 mode="$1"
@@ -22,6 +22,13 @@ if [[ "$mode" == publish-cordium ]]; then
   mode=publish
   publish_names=(homelab-cordium-runner homelab-cordium-controller)
   publish_outputs=(runner controller)
+fi
+if [[ "$mode" == publish-openclaw-enterprise ]]; then
+  [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]
+  [[ "${GITHUB_WORKFLOW_REF:-}" == Stuhlmuller/homelab/.github/workflows/openclaw-enterprise-images.yml@refs/heads/main ]]
+  mode=publish
+  publish_names=(homelab-oce-controller homelab-oce-runtime)
+  publish_outputs=(controller runtime)
 fi
 mirror_manifest=scripts/config/harbor-images.json
 if [[ "$mode" == mirror-fleet ]]; then
