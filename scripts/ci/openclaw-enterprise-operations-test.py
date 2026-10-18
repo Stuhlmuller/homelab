@@ -6,6 +6,7 @@ import json
 import subprocess
 import tempfile
 import unittest
+import stat
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
@@ -18,6 +19,17 @@ WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 
 
 class Operations(unittest.TestCase):
+    def test_private_directory_clears_inherited_setgid(self):
+        command = "umask 077; mkdir -p /private/legacy; chmod 700 /private/legacy; chmod g-s /private/legacy"
+        self.assertIn(command, SCRIPT.read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'legacy'
+            path.mkdir(mode=0o700)
+            path.chmod(0o2700)
+            subprocess.run(['sh', '-c', 'chmod 700 "$1"; chmod g-s "$1"', 'sh', str(path)],
+                           check=True, capture_output=True)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o700)
+
     def test_refresh_status_rechecks_writers_and_volume_identity(self):
         status = {'replicas': 0, 'readyReplicas': 0, 'pods': 0, 'activeJobs': 0,
                   'cronJobSuspended': True, 'readerPod': 'reader',
