@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "4e83b1055f5070eb933a95dde0d45e14e9883cfacfcb95a99107104105331d66", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "a2bca1a48d98dd83eee6a9d2ee2de12fa4bfa49929e358e6bd4b9c4c2ff87202", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -29,7 +29,7 @@ test_rejects_changed_openclaw_legacy_operation if {
 test_allows_fixed_openclaw_phase_tail if {
 	private_live_tail(`then
 phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
-case "$phase" in preflight|baseline|publication|verification)
+case "$phase" in preflight|baseline|publication|publication-lookup|publication-upload|publication-version|verification)
   echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;
 *) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;
 esac
@@ -50,7 +50,7 @@ echo "Legacy operation completed; private receipts withheld."`)
 openclaw_legacy_run := `set -euo pipefail
 umask 077
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'4e83b1055f5070eb933a95dde0d45e14e9883cfacfcb95a99107104105331d66  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'a2bca1a48d98dd83eee6a9d2ee2de12fa4bfa49929e358e6bd4b9c4c2ff87202  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 

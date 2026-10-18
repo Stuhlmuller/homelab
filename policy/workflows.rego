@@ -175,7 +175,7 @@ approved_openclaw_legacy_operation if {
 	step.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
 	contains(step.run, `export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"`)
 	contains(step.run, "set -euo pipefail\numask 077\n")
-	contains(step.run, concat("", [`sha256sum --check --status <<<'4e83b1055f5070eb933a95dde0d45e14e9883cfacfcb95a99107104105331d66  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
+	contains(step.run, concat("", [`sha256sum --check --status <<<'a2bca1a48d98dd83eee6a9d2ee2de12fa4bfa49929e358e6bd4b9c4c2ff87202  scripts/ci/openclaw-enterprise-operations.sh'`, "\n", `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, "\n"]))
 }
 
 encrypted_harbor_diagnostic(job_name, job, step) if {
@@ -475,7 +475,7 @@ private_live_tail(tail) if {
 	lines == [
 		"then",
 		`phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"`,
-		`case "$phase" in preflight|baseline|publication|verification)`,
+		`case "$phase" in preflight|baseline|publication|publication-lookup|publication-upload|publication-version|verification)`,
 		`echo "::error::Legacy operation failed in ${phase}; private cluster and archive diagnostics withheld." ;;`,
 		`*) echo "::error::Legacy operation failed; private cluster and archive diagnostics withheld." ;;`,
 		"esac",
