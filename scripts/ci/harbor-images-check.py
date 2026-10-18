@@ -17,6 +17,7 @@ FLEET_CATALOG = ROOT / "scripts/config/harbor-fleet-images.json"
 MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
+DNS_CATALOG = ROOT / "scripts/config/harbor-dns-images.json"
 HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
@@ -242,6 +243,8 @@ def check():
         ("Chainguard", CHAINGUARD_CATALOG,
          {item["source"] for item in catalog if item["source"].startswith("cgr.dev/chainguard/")}),
         ("Harbor", HARBOR_RUNTIME_CATALOG, harbor_runtime),
+        ("DNS", DNS_CATALOG,
+         {"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}
