@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d1ca9fb0ea9598c5f511bdff9d612e943b8ead249786a268a3bb6db75220c7ae",
+  "pageVersion": "sha256:ab29f7d0a6d2784f86984f25ca093fddfb7fbc1584afce2ae469f1ff36a3c165",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -26,15 +26,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:e390d2a25634bd8a34817ae77188ac47eae0e68526a98339c5c3a010dafefc91"
+          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345"
+          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -101,7 +101,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L287-L298",
+          "resource": "repo://docs/harbor-image-mirroring.md#L303-L314",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         }
       ]
     },
@@ -154,7 +154,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://builds/harbor-core/prepare-source.py",
@@ -200,7 +200,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
@@ -256,7 +256,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:23559a174e1db3fe525541545c91347c5be541512c89c78c3a49ed839bb8fc76"
+          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -354,21 +354,21 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:086f42e16facb45c89d41c1471bbcf8573c502ce07317e80fce59a6e8cfc0028"
+          "version": "repo-file-v1:sha256:6aab9f4eb15b3ceddb31d3afb43187aa4d2a2341f56d10955e7241d1629133c7"
         }
       ]
     },
     {
       "id": "claim_0a32a2a96b494440b84d3c41940a6533",
-      "statement": "Missing mirror artifacts are anonymously downloaded with all platforms into local directory staging and their original root manifest digest is verified before authenticated upload; fresh complete destination pulls and alias checks remain required, while the native offline fixture verifies multiple architectures and repeated descriptors without network transports.",
+      "statement": "Missing mirror artifacts normally stage all upstream platforms anonymously in a local directory and verify the source root digest before authenticated Harbor upload. If Skopeo cannot preserve an OCI index digest, the publisher uses regctl for the copy and a complete authenticated pull, then checks the same root digest. Existing tags require exact-hash checks, and source-tag aliases and fresh destination pulls remain mandatory.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:b181fc8dca999fa895be5299ca3e0f385d4b09c89926a2ece57de490d9240215"
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L719-L759",
+          "version": "repo-lines-v1:sha256:9582ced82f2b39373741b3bded7da16810214880a796d4d3f2a894cd801f103f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzNWQxYjE0YTk5NDVkMzE4NTFkMDIyMmYxYmIwOTMxMDQ4YzgyMjg5NjczYmM0ODg3MDg3ZTMzYTlhMzExYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhMDBiNzAzZGJiZmE0MjA4NjY5MGMxZDEyYjI3YjI0YjcxYjhkMzM1OTkzMTcwZjg3YmEzZDhkODQzMGE0NzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg3YTVmNDAyYmVlMTNkZDQ4NWNlNmU0YWZjNjEwZTJhMGVhNzI3NGUxZmYxN2Q3ZGZlNDk4ZjJkMDM4YTc3NGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzODE0ZjIzNTEwMTZmN2VhM2YxZTE2YjQ0YTRkNTYzNWEzOTEyYjUwMzE4ZmExYWZjOWJkZDc2ZjI2NzZjYTEifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345"
+          "resource": "repo://scripts/ci/harbor-publish.sh#L270-L363",
+          "version": "repo-lines-v1:sha256:0addabfe11ed138fb7f8bc91ef5b167b1536a325632a43f1d9f9e47abb730f7b:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjNmVjOGUwMjI2NWU4NTgxZjdiNWRlNmNmNDU3YmRhZmZjYzBlMjM2MWVjODg2N2E5NzVjYjlkZjEzNmY2MzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhODYxNDQ1MDNhMWRjNzFjNjk2NjYzZjgxMzEwYjBlMzY1OGViYzQwNDJkNGY4MGUxMWIwYTI4ZmMwZDc3YTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwMDU2MmZiOTc5NGViMjhmZTFhOWU1ZDM4MWEzODc4ODYwMWUyNjQyODczZDNjZTkwNGEyMTM2ZjJiNjMwMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwOTE5YWJiYjJlZGRhMmYxNDEyMDk5ZGQxMzZhOGMxZDAzNGQxMTNhYjhkZmE0MDVkZTZmN2YxMjIyMzc1MTQifQ"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:086f42e16facb45c89d41c1471bbcf8573c502ce07317e80fce59a6e8cfc0028"
+          "version": "repo-file-v1:sha256:6aab9f4eb15b3ceddb31d3afb43187aa4d2a2341f56d10955e7241d1629133c7"
         }
       ]
     },
@@ -404,7 +404,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345"
+          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
         }
       ]
     },
@@ -414,7 +414,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:2372399898e585179f5c62816daf4c5eef9545e3db9b5a76c437936f2a105d87"
+          "version": "repo-file-v1:sha256:739a0168d42e5b86f1336ac7d83cbf05223ed8942cbf61a040382e6254cb2076"
         },
         {
           "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
@@ -430,11 +430,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:88c96e834857a3889b40b54a4765f8f69d6b72aeb56994dfb5c848140bb7af54"
+          "version": "repo-file-v1:sha256:f8abd825bdea61186ac9321c26685b345a4634a10ed847a16817ac17acd0f4fe"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345"
+          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
@@ -466,21 +466,25 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345"
+          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
         }
       ]
     },
     {
       "id": "claim_f2ba66acbd8f47958829bb4b5bb0a900",
-      "statement": "The full Harbor catalog stages the newer digest-pinned Dispatcharr and n8n sources while retaining their former digests for rollback. The consuming Renovate PRs remain held until protected publication and complete authenticated Harbor pulls verify the new destinations.",
+      "statement": "The full Harbor catalog retains former Dispatcharr and n8n digests while staging newer pinned sources. Their consuming Renovate PRs require protected digest and complete-pull publication plus independent application recovery evidence before merge.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "resource": "repo://docs/application-recovery.md#L45-L54",
+          "version": "repo-lines-v1:sha256:180eea4ec35d0505c7f0e3418d7693cee26e1ce1e35633fa7603fba36a106a8b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk3NzA3MGQwMDM1YWQ2ZjQ0N2FhOGQyOTliYjRlNzEwYTYwNGYwZjhhOTUyZGZiNTc3OWNjNzZjMDlhYWJhNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwYzc0OThiY2E0NWYyNzY5YzcyYmIzY2QwZWNjYzRiNDUwOGJjM2JmODE5M2E3Y2JlMGQwYzZlMWEzZDBmNjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc2ZTJhZTlmMWFjNDVkMjNiMWFmNWUxOTY4MDdjOTE4MzVmZTA3ZGM4MzZiODExMzI2NjU2OWI3ODQyZDQ1OGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3ZDg0Y2RhZTc3NmI4ZmExOWYyNmZhZmQwM2M2N2Y4NmRiNjc4YzI2ZjE3Zjg0ZDFjMjkwYTNiY2Q2MmUxMjQifQ"
         },
         {
-          "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:086f42e16facb45c89d41c1471bbcf8573c502ce07317e80fce59a6e8cfc0028"
+          "resource": "repo://docs/harbor-image-mirroring.md#L124-L137",
+          "version": "repo-lines-v1:sha256:81b41a7e3e9b398bd414bcfc35359a30f4968fb17af09bce7b6b7c85566fa5c6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIxZjY1ZGMxZjBlMjM3OTQ2MjYxNWNiNDJmNzc4MDNjZjFhYWI1ZWIyMDQ1ODIyYmFhNzUzZmZkZDU0OWM0Y2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlZjQ5YjhlZjYzNzJlMDM1NGYzNzE2MThlMTJhMWQ0MjhjYjdlYWJkNWU4Njg2MDk3Y2E1MjA4MDEyMDQzZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkZjgxZWUzYWE4N2JhNDJjYmVmODg3NGU3ZTM5ZWFhZTk4N2Q5MjBiZDQ4YjM4ZjY2MWJkOGM1ZjIxYjY5MDMifQ"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json#L330-L375",
+          "version": "repo-lines-v1:sha256:ec1d9bbec1220d25c3090bfe84fd023ebb8939572de6d3460ad76f546fe1bc62:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2E4OTFiZmY3YWMxZjdjZWFhZTQwZWYwNTEwNjZiZTllZmU0N2I0ZTQyODFlODZjMzE5YmUyYzU1ZWJjZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5Y2E4OTFiZmY3YWMxZjdjZWFhZTQwZWYwNTEwNjZiZTllZmU0N2I0ZTQyODFlODZjMzE5YmUyYzU1ZWJjZTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5NjYxOTViOGU1YzQzZTJiNTA0ODI0YzdlZjlhMjVmY2IzNTVlOTkzNTZmMjQ3OTcxZmNmYWRjZWFiYTc2NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlMmE5Y2Y0ZjhiZTA5ZDk0MjA3OWM3NzNjNDliMWFiMDc0ZTMyNDQ5YTI0NTE3YTBlMDA0MzI0M2ZjNTY5MDAifQ"
         }
       ]
     },
@@ -490,11 +494,11 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:086f42e16facb45c89d41c1471bbcf8573c502ce07317e80fce59a6e8cfc0028"
+          "version": "repo-file-v1:sha256:6aab9f4eb15b3ceddb31d3afb43187aa4d2a2341f56d10955e7241d1629133c7"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -508,11 +512,11 @@
       "evidence": [
         {
           "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:2372399898e585179f5c62816daf4c5eef9545e3db9b5a76c437936f2a105d87"
+          "version": "repo-file-v1:sha256:739a0168d42e5b86f1336ac7d83cbf05223ed8942cbf61a040382e6254cb2076"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:88c96e834857a3889b40b54a4765f8f69d6b72aeb56994dfb5c848140bb7af54"
+          "version": "repo-file-v1:sha256:f8abd825bdea61186ac9321c26685b345a4634a10ed847a16817ac17acd0f4fe"
         }
       ]
     },
@@ -522,7 +526,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1b59f317a884149fe9d60d10a6bf3e0fd204214a71ec7a4106d3d00f066f29ef"
+          "version": "repo-file-v1:sha256:09e8a1a38b87e4301143995c75a2c8ae1fd74f1c6a18400346f25d220145ac01"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -576,21 +580,35 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:e390d2a25634bd8a34817ae77188ac47eae0e68526a98339c5c3a010dafefc91"
+          "version": "repo-file-v1:sha256:01b8172451dad6790752f0c45c0413144b0f2b7b14bcf99be8d7b7748ca6f4aa"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:84fe811b9b740c9fe1cd0a6990c426d725d0fb655346826d38506048a19a3345"
+          "version": "repo-file-v1:sha256:8c1ec23aa3ad97805ac790c22e41dd743414cf1dbf27edbd4f9d9a213d524b74"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
           "version": "repo-file-v1:sha256:074b451bb8ea669882b9a7950817a6412b9f407013eff5dc3f824f4cef4ad9a7"
         }
       ]
+    },
+    {
+      "id": "claim_bcbce881fc89457fab277507fe4645f1",
+      "statement": "The Harbor 2.15.4 consumer includes forward-only database migration 0181; acceptance requires a verified database-and-registry-blob backup, an isolated restore, and live registry/API/scan checks. Distribution v2 advisories remain unresolved rather than CVE-clear.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md#L449-L462",
+          "version": "repo-lines-v1:sha256:4ffd072dc8ee72fdeb61e7d615819e351514ac0160403dc11980d60bc15251c4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5NWNkMWNjYjg3OTk3ODRmZWFkZTBkNTg0ZWQxOTVkZTY0ZjQ2ODZjNzNkZWZlZmI1NzcyODNiMTVhZjE4YTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZjFkNTRiMGZhOTI2OTM2ZTdhZDY3MWQ1ZmQ0NWYyZWFjZTdhYzIzOGVjNmE5ZDM3NmMwZWJiNjZiOTQyYmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMwOThjNzA3N2VkNmU5N2FkMGM4YjY1N2Y1MjQxODhjZGE0ZTNhNjU1NTdjNGNkODVkNTVkNmJiNTI2YmY5OTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkNDI2ZjFjZDZjYWZhYzRkYjQyM2RjNzA3YjU2NjVmNDk4YmYxNTg2M2E5YzIyNWNhMDZlNzMwZDJiMTY4MmYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T01:55:27.595Z"
+    "at": "2026-10-18T05:36:06.343Z"
   }
 }

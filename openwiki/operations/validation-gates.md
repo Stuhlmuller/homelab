@@ -74,12 +74,16 @@ sources:
     resource: repo://scripts/ci/cordium-runner-test.py
   - id: openwiki-source-ebb70c48f85bc6100b070f01
     resource: repo://scripts/ci/deluge-daemon-status-test.py
+  - id: openwiki-source-c9d15e45ff607987f9820f38
+    resource: repo://scripts/ci/harbor-check.sh
   - id: openwiki-source-c6bd7de8d27299a6b6fb92d3
     resource: repo://scripts/ci/harbor-core-scan-check-test.py
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-0e4e3673c8be0ce1ef65beca
@@ -146,10 +150,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T01:55:27.595Z" }
+generated: { by: "codex", at: "2026-10-18T05:36:06.343Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T01:55:27.595Z
+    at: 2026-10-18T05:36:06.343Z
 ---
 
 # Validation Gates
@@ -1731,6 +1735,14 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+The Harbor runtime check also asserts chart 1.19.2 renders one
+`harbor-nginx` replica without an explicit Deployment strategy. That default
+rolling update keeps the old Pod available while the replacement pulls; the
+check does not prove live registry availability. The component gate rejects
+mixed 2.15.4 runtime versions before the separate consumer upgrade. See the
+[render gate](../../scripts/ci/harbor-check.sh) and
+[catalog gate](../../scripts/ci/harbor-images-check.py).
 
 ## Mastodon activation gates
 
