@@ -262,6 +262,9 @@ printf '%s\\n' "$phase"
         self.assertIn(hashlib.sha256(WORKER.read_bytes()).hexdigest(), script)
         self.assertIn('nohup sh /etc/openclaw-retirement/inventory-worker.sh', script)
         self.assertNotIn('"$worker" <scripts/ci/', script)
+        self.assertEqual(script.count('run_inventory_worker'), 3)
+        self.assertIn('observed="/private/legacy/baseline-${GITHUB_RUN_ID}.json"', script)
+        self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)
         self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
                       (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())
         self.assertIn('mkdir "$directory/inventory.lock"', script)
