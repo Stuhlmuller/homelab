@@ -50,6 +50,8 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -166,10 +168,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T20:54:44.446Z" }
+generated: { by: "codex", at: "2026-10-18T21:04:20.936Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:44.446Z
+    at: 2026-10-18T21:04:20.936Z
 ---
 
 # Validation Gates
@@ -1722,7 +1724,10 @@ The staged hourly Renovate runner has a credential-free config and discovery
 test in `static-checks.sh`. `offline-checks.sh` runs its Prometheus rule
 fixture, which checks missed starts, incomplete cycles, a missing CronJob,
 late prior-Job completion, and schedules before and after suspension. These
-checks verify declared behavior; the suspended runner still needs live Secret,
+fixtures also enforce that the 15-minute allowed late start plus the 40-minute
+Job runtime ends before the completion alert's 56-minute threshold and the next
+hourly slot. These checks verify declared behavior; the suspended runner still
+needs live cold-cache runtime, Secret,
 App inventory, cache, and scheduled-Job acceptance before GitHub writes move
 to the cluster.
 

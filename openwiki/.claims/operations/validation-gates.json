@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:87174f017a3a638effb59c6d11ebf23344a3aeb3ec509f800afd15837efbe869",
+  "pageVersion": "sha256:92bc87d241a8c62a481f336e894909bd33c7d101ef58f39ab66b891d7b89fda2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -734,11 +734,15 @@
     },
     {
       "id": "claim_368d59661a574c7a93d9427a067aa0ab",
-      "statement": "Static checks exercise Renovate's credential-free config and discovery path, while offline Prometheus fixtures validate missed starts, incomplete cycles, a missing CronJob, late prior-Job success, and suspension/resume behavior. These source checks do not establish live credential, cache, or scheduled-Job acceptance.",
+      "statement": "Static checks exercise Renovate's credential-free config and discovery path. Offline Prometheus fixtures validate missed starts, incomplete cycles, a missing CronJob, late prior-Job success, suspension/resume behavior, and the cross-file invariant that a 15-minute late start plus a 40-minute Job runtime ends before the 56-minute completion alert and next slot. These checks do not establish live cold-cache runtime, credential, cache, or scheduled-Job acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
-          "version": "repo-file-v1:sha256:7b25c188defdd2d8c4cf271c0eb138a905418233860f5362d7488d5ff84543e1"
+          "version": "repo-file-v1:sha256:f0b2885239e3b3f27926503f3928de22c121e7165688b1fc3781c82f582976d6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -746,7 +750,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
-          "version": "repo-file-v1:sha256:bce9ad9544000505b3ed4db2aeef93f4d08f1f9f606c6f8614d7e6ff8a92d12e"
+          "version": "repo-file-v1:sha256:9389f5fd29fc8a178651498bba75a5c1d9e6884a2aea9f518e20bf47ad3bc9eb"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
@@ -761,6 +765,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:54:44.446Z"
+    "at": "2026-10-18T21:04:20.936Z"
   }
 }

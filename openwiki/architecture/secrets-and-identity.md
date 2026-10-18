@@ -5,7 +5,7 @@ description: "SSM and External Secrets ownership, credential boundaries, Entra a
 tags: [architecture, secrets, identity]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T20:54:44.446Z
+    at: 2026-10-18T21:04:20.936Z
 sources:
   - id: openwiki-source-36db39acd9400bc022704939
     resource: repo://.github/workflows/cordium-runner-credentials.yml
