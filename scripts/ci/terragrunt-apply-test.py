@@ -212,7 +212,7 @@ else:
 
 
 class TerragruntApplyTest(unittest.TestCase):
-    def run_apply(self, target="langfuse", repair="false", **overrides):
+    def run_apply(self, target="langfuse", repair="false", scope="false", **overrides):
         project = json.loads(json.dumps(PROJECT))
         app_names = APPS
         crds = CRDS
@@ -265,7 +265,8 @@ class TerragruntApplyTest(unittest.TestCase):
                            "RUNNER_TEMP": str(root), "APPLY_BASE_SHA": "base",
                            "APPLY_HEAD_SHA": "head", "GITHUB_EVENT_NAME": "workflow_dispatch",
                            "TERRAGRUNT_ARGOCD_APP": target,
-                           "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair}
+                           "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE": repair,
+                           "TERRAGRUNT_APPLICATION_BACKUP_STORAGE": scope}
             if not config.get("without_azuread"):
                 environment.update(config.get("azuread_environment", {
                     "ARM_CLIENT_ID": "fixture", "ARM_CLIENT_SECRET": "fixture",
@@ -275,7 +276,8 @@ class TerragruntApplyTest(unittest.TestCase):
                 [str(binaries / "bash"), str(scripts / "terragrunt-apply.sh")],
                 cwd=root, env=environment,
                 text=True, capture_output=True, timeout=15, check=False)
-            calls = [json.loads(line) for line in (root / "calls.jsonl").read_text().splitlines()]
+            calls_file = root / "calls.jsonl"
+            calls = [json.loads(line) for line in calls_file.read_text().splitlines()] if calls_file.exists() else []
             self.assertNotIn("UNEXPECTED", [call["event"] for call in calls], result.stderr)
             self.assertNotIn("Traceback", result.stderr, result.stderr)
             self.assertFalse(list((root / "IaC").rglob("plan.out")))
@@ -482,6 +484,27 @@ class TerragruntApplyTest(unittest.TestCase):
             "archive-bucket.apply", "bootstrap.apply", "ssm.apply", "s3.apply", "nodes.apply", "azure.apply",
             "apps.apply", "namespace.apply", "secrets.apply",
         ])
+
+    def test_backup_storage_scope_is_isolated_and_checks_saved_plan(self):
+        result, events = self.run_apply(target="", scope="true", without_azuread=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(events, ["generate", "archive-bucket.init", "archive-bucket.plan",
+                                  "archive-bucket.show", "archive-bucket.policy", "archive-bucket.apply"])
+        for failure in ("archive-bucket.plan", "archive-bucket.policy"):
+            with self.subTest(failure=failure):
+                result, events = self.run_apply(target="", scope="true", fail=failure)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events[-1], failure)
+                self.assertNotIn("archive-bucket.apply", events)
+
+    def test_backup_storage_scope_rejects_other_targets_before_write(self):
+        for options in ({"target": "openclaw", "scope": "true"},
+                        {"target": "", "repair": "true", "scope": "true"},
+                        {"target": "", "scope": "invalid"}):
+            with self.subTest(options=options):
+                result, events = self.run_apply(**options)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, [])
 
 
 class AzureADCredentialsTest(unittest.TestCase):

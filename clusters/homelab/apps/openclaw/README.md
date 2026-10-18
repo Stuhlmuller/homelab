@@ -641,6 +641,10 @@ no ServiceAccount token, no listener and a deny-all NetworkPolicy; it stays at
 zero replicas until its protected inventory/archive workflow and storage gate
 are validated. The archive claim is scratch on the same NAS, so an independently
 verified off-NAS copy is still required before retirement is accepted.
+Provision the versioned off-NAS bucket through the protected Terragrunt Apply
+workflow on the current `main` SHA with `application_backup_storage=true` and
+an empty Argo CD target. Verify an upload and independent download before
+stopping the old writer; the reader's NAS scratch claim alone is insufficient.
 
 The init-only `runtime-storage.py verify` requires both authoritative SQLite
 databases and checks integrity and foreign keys without modifying them. Missing

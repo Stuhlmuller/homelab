@@ -215,7 +215,25 @@ plan_and_apply_argocd_apps() {
 }
 
 prepare_terragrunt_filter_base
+backup_storage_scope="${TERRAGRUNT_APPLICATION_BACKUP_STORAGE:-false}"
+case "$backup_storage_scope" in
+  true)
+    [[ -z "${TERRAGRUNT_ARGOCD_APP:-}" && "${TERRAGRUNT_REPAIR_ARGOCD_APP_STATE:-false}" == false ]] || {
+      echo "The backup-storage scope cannot be combined with an Argo CD target or state repair." >&2
+      exit 2
+    }
+    ;;
+  false) ;;
+  *) echo "Invalid backup-storage scope." >&2; exit 2 ;;
+esac
 terragrunt_generate_stack
+
+if [[ "$backup_storage_scope" == true ]]; then
+  echo "::group::OpenClaw legacy offsite bucket plan and apply"
+  plan_and_apply_application_backup_storage
+  echo "::endgroup::"
+  exit 0
+fi
 
 repair_argocd_app_state_unit="$(
   cd IaC/live/argocd-apps

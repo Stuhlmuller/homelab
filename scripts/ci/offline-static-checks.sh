@@ -909,7 +909,7 @@ done <<'EOF'
 .github/workflows/octelium-private-kubernetes-apply.yml 5bccd9e772bb094397f69697a4153c754513e3c0dbb392c231b2f57dc748e5e1
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml c458a1b2fa7f3a458b4d78f43258ea814406db4f7fce281c5b6485667e1b2fb2
+.github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
 .github/workflows/terragrunt-plan.yml e75bb8269572b5da2e9b923670b15a6c209dc6206c01a5f9e57799bb9af26022
 EOF
 echo "::endgroup::"
@@ -978,9 +978,15 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     (.concurrency == null) and
     (.on | keys) == ["workflow_dispatch"] and
     (.jobs | keys) == ["static-policy", "terragrunt-apply"] and
-    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}")) and
+    (."run-name" | contains("Full @ {0}") and contains("Targeted {0} @ {1}") and contains("Backup storage @ {0}")) and
     .on.workflow_dispatch.inputs.repair_argocd_app_state == {
       "description": "Untaint the selected Argo CD Application before reconciling it",
+      "required": false,
+      "default": false,
+      "type": "boolean"
+    } and
+    .on.workflow_dispatch.inputs.application_backup_storage == {
+      "description": "Apply only the versioned OpenClaw legacy archive bucket",
       "required": false,
       "default": false,
       "type": "boolean"
@@ -1001,11 +1007,13 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
     ([.jobs["terragrunt-apply"].steps[] |
       .env.ARM_CLIENT_SECRET // empty] | length) == 0 and
     (.jobs["terragrunt-apply"].env | keys | sort) == [
+      "TERRAGRUNT_APPLICATION_BACKUP_STORAGE",
       "TERRAGRUNT_ARGOCD_APP",
       "TERRAGRUNT_REPAIR_ARGOCD_APP_STATE"
     ] and
     (.jobs["terragrunt-apply"].env | tostring | contains("secrets") | not) and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_ARGOCD_APP == "${{ inputs.argocd_app }}" and
+    .jobs["terragrunt-apply"].env.TERRAGRUNT_APPLICATION_BACKUP_STORAGE == "${{ inputs.application_backup_storage }}" and
     .jobs["terragrunt-apply"].env.TERRAGRUNT_REPAIR_ARGOCD_APP_STATE == "${{ inputs.repair_argocd_app_state }}" and
     .jobs["terragrunt-apply"].concurrency == {
       "group": "terragrunt-apply-production",
