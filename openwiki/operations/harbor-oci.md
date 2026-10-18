@@ -116,10 +116,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T10:55:26.804Z" }
+generated: { by: "codex", at: "2026-10-18T20:10:23.845Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T17:42:33.479Z
+    at: 2026-10-18T20:10:23.845Z
 ---
 
 # Harbor Private OCI Registry
@@ -357,11 +357,12 @@ complete authenticated Harbor pulls. No caller-supplied image, path or destinati
 accepted. Successful publication is required before the consuming ingress
 rollout; it establishes only this subset's availability.
 
-The fixed `renovate` scope selects six cataloged update digests for Fleet,
-Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, and n8n from
-[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json).
+The fixed `renovate` scope selects seven cataloged update digests from
+[`harbor-renovate-images.json`](../../scripts/config/harbor-renovate-images.json):
+Fleet, Harbor PostgreSQL, Multica Python, Dispatcharr, Bazarr, n8n, and the
+Renovate runner.
 It retains the normal digest, alias, and fresh authenticated pull checks while
-the unrelated full catalog is held. Its success proves only these six images;
+the unrelated full catalog is held. Its success proves only these seven images;
 each consuming Renovate PR still needs its own validation and live acceptance.
 
 Run titles record the selected scope and full revision. Full-catalog Talos

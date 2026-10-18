@@ -156,10 +156,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T18:11:31.710Z" }
+generated: { by: "codex", at: "2026-10-18T20:10:23.845Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T18:11:31.710Z
+    at: 2026-10-18T20:10:23.845Z
 ---
 
 # Validation Gates
@@ -1702,11 +1702,11 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
-The fixed Renovate scope contains six cataloged update digests. Publisher
+The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
 updated with the new choice; a passing fixture does not publish the images or
-validate the six consuming applications.
+validate consuming workloads.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
