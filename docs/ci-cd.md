@@ -94,11 +94,8 @@ checks remain fresh.
 - Policy Bot reads this repository's `.policy.yml` and automatically approves
   PRs with `requires.count: 0`, so merging does not depend on a human review,
   Codex review, or thumbs-up comment. Required GitHub checks still gate merges.
-  Stuhlmuller organization members can explicitly disapprove a PR through a
-  changes-requested review or `👎` comment; that blocks Policy Bot approval.
   Policy Bot reads the policy from the target branch, so this behavior takes
-  effect after the policy change lands on `main`. Reverting `.policy.yml`
-  restores the previous review requirement.
+  effect after the policy change lands on `main`.
 - External GitHub Actions are pinned to full commit SHAs, checked by Conftest,
   and rejected by the repository when a workflow references a mutable tag.
 - The `main` ruleset requires pull requests, squash-only linear history,
