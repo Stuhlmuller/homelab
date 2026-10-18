@@ -58,6 +58,12 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-45967fd30b5845212c1a62be
+    resource: repo://clusters/homelab/platform/image-policy/binding.yaml
+  - id: openwiki-source-c14c7585bd2e583682b8b7f7
+    resource: repo://clusters/homelab/platform/image-policy/policy.yaml
+  - id: openwiki-source-e61e6d11d2a5c456a06bdb85
+    resource: repo://clusters/homelab/platform/image-policy/README.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -102,10 +108,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-17T22:53:57.740Z" }
+generated: { by: "codex", at: "2026-10-18T00:40:35.896Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-17T23:58:10.958Z
+    at: 2026-10-18T00:40:35.896Z
 ---
 
 # Harbor Private OCI Registry
@@ -735,6 +741,13 @@ Preserve DNS, API, HBONE, webhook, storage, and recovery paths and prove direct-
 alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
+
+The staged `harbor-only-images` ValidatingAdmissionPolicy audits Pod create and
+update, including init and ephemeral containers, across namespaces. Its binding
+uses `Warn, Audit`, so public image references remain admitted while inventory
+and mirror coverage are measured. A later `Deny` promotion requires clean
+static and live inventory, protected Harbor publication, and authenticated
+node-pull acceptance. See the [policy source](../../clusters/homelab/platform/image-policy/README.md).
 
 No consumer migration, full-catalog publication, zero-CVE result or live egress
 enforcement is established by these prerequisites. Image pulls remain

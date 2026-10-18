@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e9a564585f5f55275ed0f7ed65eeaf95a120a600baf449eeead7619f1905fdde",
+  "pageVersion": "sha256:e9700b779281c0d9efe36a5dcc23554fa1511d1e9c52341d5294f33bc7a62cf9",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -168,7 +168,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -274,7 +274,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:1ef27102e5e4a65d544121acc3a69999e8e0c2b4b00b41ffb038b5015f0d097d"
+          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -346,7 +346,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:bdb8c656fc7f9ed2eb1af1b17b525cc9c6f4493eb4b5bf9ee083002f26fdba66"
+          "version": "repo-file-v1:sha256:7884e53b4e1c1ba6b1d377984ed00e0bf570b86631e960964ade2ca49a16606f"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -378,7 +378,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:bdb8c656fc7f9ed2eb1af1b17b525cc9c6f4493eb4b5bf9ee083002f26fdba66"
+          "version": "repo-file-v1:sha256:7884e53b4e1c1ba6b1d377984ed00e0bf570b86631e960964ade2ca49a16606f"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -533,10 +533,28 @@
           "version": "repo-file-v1:sha256:6435f304b3dd3a96daad6abfeb3f7f99a9ca7040c66572bcfbbd6e43f5ca7961"
         }
       ]
+    },
+    {
+      "id": "claim_2857c7e25fd84614ab0bda08a77fad3a",
+      "statement": "The staged Harbor-only admission policy uses Warn and Audit for Pod image references, including init and ephemeral containers; Deny is held until live inventory, protected publication, and authenticated node-pull acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/README.md",
+          "version": "repo-file-v1:sha256:b41b4c909af5b6cc375e9db8c2ef1354692d2a3ae7cd65e41ef375e20ef5f3bf"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
+          "version": "repo-file-v1:sha256:c9ffa389cd458f804f5b3dd38db8d9120754311dc6dab226249e3d11347d5ebd"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/image-policy/policy.yaml",
+          "version": "repo-file-v1:sha256:10245e8a30201657e40b7159b7673101e09baa5ff656859f7d70f0cf8877d9cc"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-17T23:58:10.958Z"
+    "at": "2026-10-18T00:40:35.896Z"
   }
 }
