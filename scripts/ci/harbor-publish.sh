@@ -428,7 +428,13 @@ if [[ "$mode" == mirror ]]; then
       mirror_category="command-failed"
     fi
     mirror_phase="authenticated-pull"
-    for attempt in 1 2 3; do
+    pull_attempts=(1 2 3)
+    if "$oci_index_copy"; then
+      # OCI indexes use regctl here; give transient Harbor transport more time
+      # without relaxing digest verification or retrying hard failures.
+      pull_attempts=(1 2 3 4 5)
+    fi
+    for attempt in "${pull_attempts[@]}"; do
       pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
       if "$oci_index_copy"; then
         if REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
@@ -446,10 +452,20 @@ if [[ "$mode" == mirror ]]; then
         read_status=$?
       fi
       rm -rf -- "$pull_directory"
-      if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+      if [[ "$attempt" == "${#pull_attempts[@]}" ]]; then
+        if "$oci_index_copy" && mirror_retryable_transport; then
+          mirror_category="transport-retries-exhausted"
+        fi
         exit "$read_status"
       fi
-      sleep "$attempt"
+      if ! mirror_retryable_transport; then
+        exit "$read_status"
+      fi
+      if "$oci_index_copy"; then
+        sleep "$((1 << attempt))"
+      else
+        sleep "$attempt"
+      fi
     done
     if "$oci_index_copy"; then
       mirror_phase="pull-verify"
