@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:35bf7828cdca614e5ce6e988f890f718e732864b9350f38c4ed0c5a7274f9697",
+  "pageVersion": "sha256:f69024648dc97fe92e2e060d61903f2fa7072596d17dbbe9f65c78f4a65f8002",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -135,10 +135,28 @@
           "version": "repo-file-v1:sha256:148fae056906e7af902950403beba0c890b22a1c8e43fef0021682d3586e3e29"
         }
       ]
+    },
+    {
+      "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
+      "statement": "The unregistered OpenClaw Enterprise foundation directory owns dormant namespace, ExternalSecret, TLS and network policy declarations, while the Enterprise Python helper owns fail-closed API reconciliation and the focused CI test checks that foundation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
+          "version": "repo-file-v1:sha256:b2a3c458be7cd2c9b9a5bc9a1786b679c8c4574705fc3cb66277b133e14cbbdf"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L1-L104",
+          "version": "repo-lines-v1:sha256:95c055faa5f894110725bd5cd025c5e42fdcf804523828af6c4fb7c83c36bc1c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkNjgyY2JkYjRjOGIwNzUxOGJmNDg2YzU4OTkwZmMzOTE3ODNhYTIwYTkxNmJmYjI3YWQyMTFlYjFkNWMzNjQyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTYzM2ZhOTc1MjlmNjdiOGRmMDJjY2IwMDAxZGM0NzkxNWQ3MWRiNTc5NDU1YTI3ZDIwY2ZjM2UwYWJhY2Y2In0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:30:44.377Z"
+    "at": "2026-10-19T07:43:16.273Z"
   }
 }
