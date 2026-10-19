@@ -118,9 +118,17 @@ controllers:
               throw new Error('expected exactly the target workflow from n8n export');
             }
             const workflow = workflows[0];
-            if (!Array.isArray(workflow.nodes)) throw new Error('invalid n8n workflow nodes');
+            if (!Array.isArray(workflow.nodes) || !workflow.nodes.every(
+                (candidate) => candidate && typeof candidate === 'object' &&
+                  !Array.isArray(candidate) && typeof candidate.id === 'string')) {
+              throw new Error('invalid n8n workflow nodes');
+            }
             const matches = workflow.nodes.filter((candidate) => candidate.id === target[0]);
-            if (matches.length !== 1) throw new Error('expected exactly one n8n AI model node');
+            if (matches.length === 0) {
+              fs.writeFileSync('/tmp/ai-workflow-changed', 'skip');
+              process.exit(0);
+            }
+            if (matches.length !== 1) throw new Error('duplicate n8n AI model node');
             const node = matches[0];
             if (typeof node.type !== 'string' || !node.parameters ||
                 typeof node.parameters !== 'object' || Array.isArray(node.parameters)) {

@@ -85,6 +85,11 @@ with tempfile.TemporaryDirectory() as directory:
         changed[0]["nodes"].append(copy.deepcopy(changed[0]["nodes"][0]))
         run(workflow_id, changed, success=False)
         changed = copy.deepcopy(original)
+        changed[0]["nodes"] = [node for node in changed[0]["nodes"] if node["id"] != node_id]
+        run(workflow_id, changed, skipped=True)
+        changed[0]["nodes"].append(None)
+        run(workflow_id, changed, success=False)
+        changed = copy.deepcopy(original)
         changed[0]["nodes"][0]["parameters"] = None
         run(workflow_id, changed, success=False)
 
@@ -175,4 +180,15 @@ n8n() {
                             env=environment, capture_output=True, text=True, timeout=20)
     assert result.returncode != 0
     assert calls.read_text().splitlines() == ["credentials"]
+
+    removed = copy.deepcopy(originals["s1JVSbnvnmHMCbty"])
+    removed[0]["nodes"] = [node for node in removed[0]["nodes"]
+                           if node["id"] != "5c52f616-3b9e-4483-89e3-effffc393750"]
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(removed))
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert calls.read_text().splitlines() == ["credentials"]
+    assert "Skipping AI workflow migration for s1JVSbnvnmHMCbty" in result.stderr
 print("n8n AI migration: three targets, inactive preservation, arrays, idempotence and refusal guards passed")
