@@ -4,6 +4,7 @@ metadata:
   name: openclaw-system
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-10"
   labels:
     app.kubernetes.io/part-of: openclaw-enterprise
     pod-security.kubernetes.io/enforce: restricted
@@ -19,6 +20,7 @@ metadata:
   name: openclaw-agents
   annotations:
     argocd.argoproj.io/sync-options: Prune=false
+    argocd.argoproj.io/sync-wave: "-10"
     openclaw.dev/namespace-lifecycle: external
   labels:
     app.kubernetes.io/part-of: openclaw-enterprise

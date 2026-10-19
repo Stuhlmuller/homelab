@@ -30,7 +30,9 @@ class FoundationContract(unittest.TestCase):
         agent = self.resources["Namespace", "openclaw-agents"]["metadata"]
         self.assertEqual(agent["annotations"]["openclaw.dev/namespace-lifecycle"], "external")
         for name in ("openclaw-system", "openclaw-agents"):
-            labels = self.resources["Namespace", name]["metadata"]["labels"]
+            metadata = self.resources["Namespace", name]["metadata"]
+            self.assertEqual(metadata["annotations"]["argocd.argoproj.io/sync-wave"], "-10")
+            labels = metadata["labels"]
             for mode in ("enforce", "audit", "warn"):
                 self.assertEqual(labels[f"pod-security.kubernetes.io/{mode}"], "restricted")
             self.assertNotIn("istio.io/dataplane-mode", labels)
@@ -59,6 +61,26 @@ class FoundationContract(unittest.TestCase):
                 "kind": "ServiceAccount", "name": f"openclaw-enterprise-{account}",
                 "namespace": "openclaw-system"}])
 
+    def test_postgres_ca_is_private_retained_and_matches_verified_url(self):
+        root = self.resources["Certificate", "occ-postgres-root"]
+        self.assertEqual(root["metadata"]["namespace"], "openclaw-system")
+        self.assertEqual(root["metadata"]["annotations"]["argocd.argoproj.io/sync-options"],
+                         "Prune=false")
+        self.assertEqual(root["spec"]["secretName"], "occ-postgres-root")
+        self.assertTrue(root["spec"]["isCA"])
+        self.assertEqual(root["spec"]["privateKey"]["rotationPolicy"], "Never")
+        self.assertEqual(root["spec"]["issuerRef"], {
+            "name": "occ-postgres-selfsigned", "kind": "Issuer"})
+        ca = self.resources["Issuer", "occ-postgres-ca"]
+        self.assertEqual(ca["spec"]["ca"]["secretName"], "occ-postgres-root")
+        server = self.resources["Certificate", "occ-postgres-server"]
+        self.assertEqual(server["spec"]["secretName"], "occ-postgres-server-tls")
+        self.assertEqual(server["spec"]["dnsNames"], [
+            "occ-postgres.openclaw-system.svc.cluster.local"])
+        self.assertEqual(server["spec"]["issuerRef"], {
+            "name": "occ-postgres-ca", "kind": "Issuer"})
+        self.assertEqual(server["spec"]["usages"], ["server auth"])
+
     def test_secret_projections_are_exact_and_rotation_is_declared(self):
         expected = {
             "occ-postgres-admin": ("openclaw-system", "password", "postgres-admin-password"),
@@ -70,6 +92,7 @@ class FoundationContract(unittest.TestCase):
         }
         secrets = {name: item for (kind, name), item in self.resources.items()
                    if kind == "ExternalSecret"}
+        database = secrets.pop("occ-database")
         self.assertEqual(set(secrets), set(expected))
         for name, (namespace, key, parameter) in expected.items():
             secret = secrets[name]
@@ -85,6 +108,34 @@ class FoundationContract(unittest.TestCase):
             self.assertEqual(spec["data"], [{
                 "secretKey": key,
                 "remoteRef": {"key": f"/homelab/openclaw-enterprise/{parameter}"}}])
+        spec = database["spec"]
+        self.assertEqual(database["metadata"]["namespace"], "openclaw-system")
+        self.assertEqual(database["metadata"]["annotations"], {
+            "homelab.stuhlmuller.dev/generated-secret-revision": "v1"})
+        self.assertEqual(spec["refreshPolicy"], "OnChange")
+        self.assertEqual(spec["secretStoreRef"], {
+            "kind": "ClusterSecretStore", "name": "aws-ssm"})
+        self.assertEqual(spec["data"], [
+            {"secretKey": "app_password", "remoteRef": {
+                "key": "/homelab/openclaw-enterprise/postgres-app-password"}},
+            {"secretKey": "migrator_password", "remoteRef": {
+                "key": "/homelab/openclaw-enterprise/postgres-migrator-password"}},
+        ])
+        target = spec["target"]
+        self.assertEqual({key: target[key] for key in
+                          ("name", "creationPolicy", "deletionPolicy")}, {
+            "name": "occ-database", "creationPolicy": "Owner", "deletionPolicy": "Retain"})
+        template = target["template"]
+        self.assertEqual((template["engineVersion"], template["type"]), ("v2", "Opaque"))
+        self.assertEqual(template["data"], {
+            key: (f"postgresql://{role}:{{{{ .{source} }}}}"
+                  "@occ-postgres.openclaw-system.svc.cluster.local:5432/openclaw_enterprise"
+                  "?sslmode=verify-full&sslrootcert=/etc/openclaw/database-ca/tls.crt")
+            for key, role, source in (
+                ("application-url", "occ_app", "app_password"),
+                ("migration-url", "occ_migrator", "migrator_password"),
+            )
+        })
         store = documents(STORE.read_text())[0]
         allowed = store["spec"]["conditions"][0]["namespaces"]
         self.assertTrue({"openclaw-system", "openclaw-agents"} <= set(allowed))
