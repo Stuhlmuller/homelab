@@ -336,6 +336,14 @@ advance beyond the placeholders, a later ExternalSecret refresh, and no
 active Renovate Job. Keep the CronJob suspended until both projected keys are
 ready and the transfer grant is gone.
 
+On 2026-10-19, companion transfer run `39196912858` succeeded at reviewed
+`main` commit `9e2a9f98931022317c3ee8dc0cf9997fadb53201`. Both declared
+SecureStrings reached version 2. The `automation/renovate` ExternalSecret
+refreshed afterward at 03:56:19 UTC with `Ready=True`, and its target Secret
+resource version changed. The CronJob remained suspended with no Renovate Job.
+These metadata checks establish the transfer gate; removing the role still
+requires the exact saved-plan apply below.
+
 For retirement, repeat backend-free validation and the private, un-targeted
 saved-plan sequence above with this reviewed source. Replace the create gate
 with an exact deletion gate:
