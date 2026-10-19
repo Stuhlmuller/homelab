@@ -648,6 +648,9 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
     [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
+    [.[] | select(.kind == "Namespace" and .metadata.name == "oce")] as $oce_namespace |
+    [.[] | select(.kind == "Service" and .metadata.name == "console.oce")] as $oce_console |
+    [.[] | select(.kind == "Service" and .metadata.name == "openclaw")] as $openclaw_redirect |
     ($users | length) == 1 and
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
@@ -656,6 +659,30 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
     $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
+    ($oce_namespace | length) == 1 and
+    $oce_namespace[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    ($oce_console | length) == 1 and
+    $oce_console[0].spec.isPublic == true and
+    $oce_console[0].spec.isAnonymous == false and
+    $oce_console[0].spec.mode == "WEB" and
+    $oce_console[0].spec.port == 80 and
+    $oce_console[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $oce_console[0].spec.config.upstream.url == "http://openclaw-enterprise-api.openclaw-system.svc.cluster.local:8080" and
+    $oce_console[0].spec.config.http.header.host.preserve == true and
+    $oce_console[0].spec.config.http.header.removeRequestHeaders == [
+      "Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Port",
+      "X-Forwarded-Proto", "X-Real-IP"] and
+    ($openclaw_redirect | length) == 1 and
+    $openclaw_redirect[0].spec.isAnonymous == false and
+    $openclaw_redirect[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    ($openclaw_redirect[0].spec.config | has("upstream") | not) and
+    $openclaw_redirect[0].spec.config.http.plugins == [{
+      "name": "enterprise-redirect", "phase": "POST_AUTH",
+      "condition": {"matchAny": true},
+      "direct": {"statusCode": 303, "headers": [
+        {"key": "Location", "value": "https://console.oce.stinkyboi.com/"},
+        {"key": "Cache-Control", "value": "no-store"}]}
+    }] and
     ($human | length) == 1 and
     ($human[0].spec.rules[0].condition.all.of | any(.any.of == [
       {"match": "ctx.session.status.type == \"CLIENT\""},

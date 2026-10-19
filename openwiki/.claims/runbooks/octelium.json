@@ -1,18 +1,22 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:42e3160b76d09f607bd60ffad053d8aaf6d15538d0717a0fa6a3fa88e25c5470",
+  "pageVersion": "sha256:e1171ff3b6caba8feefea297ac019751f3b399cd12602969e26d48d1d605c2ba",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
-      "statement": "Phase2a removes legacy public DNS writers but retains the Tunnel, native catalog and carrier rollback until mesh DNS, authenticated application, callback, CI and Cordium acceptance; Octelium's final retained role is Cordium and required control endpoints.",
+      "statement": "Phase2a retains legacy Tunnel/native catalog and carrier rollback until mesh and application acceptance; Octelium's retained role includes Cordium control endpoints and staged authenticated OpenClaw Enterprise console and legacy redirect Services.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
           "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
         },
         {
-          "resource": "repo://docs/octelium.md#L3-L21",
-          "version": "repo-lines-v1:sha256:9092e765ae0d22a2a50a3fdeb5373f64d474bec64d3bf9d416d1b924ac38fc49:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+        },
+        {
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:1bba30bee41127c019494d738bcbc44956cdb4deac72a4ba2c365837f93372fd"
         }
       ]
     },
@@ -43,10 +47,32 @@
           "version": "repo-file-v1:sha256:1bba30bee41127c019494d738bcbc44956cdb4deac72a4ba2c365837f93372fd"
         }
       ]
+    },
+    {
+      "id": "claim_3d66acfb09eb477492bb0ef018c9bc4e",
+      "statement": "The staged Enterprise access reconciler applies only Namespace oce, Service console.oce, and Service openclaw.default from an exact clean current-main checkout, requires a no-change second apply and verifies authorization and redirect readback; native opaque Agent hosts route through private Traefik directly to OCE API.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-access.py",
+          "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T09:02:08.557Z"
   }
 }

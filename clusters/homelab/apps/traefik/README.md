@@ -120,8 +120,8 @@ ztunnel; trusted local-node probe traffic bypasses normal policy enforcement.
 [Ambient L4 policy](https://istio.io/latest/docs/ambient/usage/l4-policy/),
 [Istio ambient and NetworkPolicy](https://istio.io/latest/docs/ambient/usage/networkpolicy/).
 
-The certificate covers the apex, `*.stinkyboi.com`, and
-`*.cordium.stinkyboi.com`. ConfigMap and Secret files share one watched projected
+The certificate covers the apex, `*.stinkyboi.com`,
+`*.cordium.stinkyboi.com`, `console.oce.stinkyboi.com`, and `*.agents.oce.stinkyboi.com`. ConfigMap and Secret files share one watched projected
 directory. Kubernetes swaps its `..data` symlink on updates; watching the directory
 lets the file provider reload certificate changes. Do not replace the projection
 with a `subPath` mount. A plain update to an unwatched certificate file does not
@@ -130,8 +130,10 @@ reload Traefik.
 [certificate reload behavior](https://doc.traefik.io/traefik/getting-started/faq/#why-is-my-tls-certificate-not-reloaded-when-its-contents-change).
 
 Octelium's private API uses `h2c` to its ingress dataplane, preserving native
-HTTP/2 gRPC. Cordium, Multica, and OpenClaw retain WebSocket upgrades through
-their HTTP Services. Harbor receives the original Authorization header and
+HTTP/2 gRPC. The Enterprise console routes through Octelium; only exact opaque
+native Agent hosts reach Enterprise's API directly. The old OpenClaw hostname
+remains on the suspended legacy backend until the final cutover. The Agent
+route preserves Host and WebSocket upgrades. Harbor receives the original Authorization header and
 continues to authenticate registry clients itself.
 
 ## Validation and cutover

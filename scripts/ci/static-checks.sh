@@ -16,6 +16,7 @@ python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
 python3 -I scripts/ci/openclaw-enterprise-foundation-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
+python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py

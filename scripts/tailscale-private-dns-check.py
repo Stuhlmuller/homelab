@@ -21,6 +21,7 @@ INVENTORY = ROOT / "scripts/config/tailscale-private-dns.json"
 TARGET = "homelab-ingress.tail67beb.ts.net"
 MESH = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
 MIGRATION_NAMES_SHA256 = "4c4ce2ef575a18a2e18e6cc782a12228fc92fb4f3908c1ccc6a80da52f730b59"
+OCE_NAMES = ["console.oce.stinkyboi.com", "*.agents.oce.stinkyboi.com"]
 CRITICAL_PATHS = {"fleet_setup_denied", "harbor_node_pulls", "native_api", "cordium_reconnect", "public_callbacks"}
 APEX = "stinkyboi.com"
 ADDRESS_TYPES = {"A", "AAAA", "CNAME"}
@@ -41,19 +42,22 @@ def inventory():
         if not isinstance(value[key], list) or not value[key]:
             raise RuntimeError("DNS inventory requires explicit nonempty hostname lists")
         for host in value[key]:
-            if not isinstance(host, str) or not re.fullmatch(r"(?:[a-z0-9-]+\.)?stinkyboi\.com|\*\.cordium\.stinkyboi\.com", host):
+            if not isinstance(host, str) or not (re.fullmatch(
+                    r"(?:[a-z0-9-]+\.)?stinkyboi\.com|\*\.cordium\.stinkyboi\.com", host)
+                    or host in OCE_NAMES):
                 raise RuntimeError("DNS inventory includes a hostname outside the reviewed scope")
     names = value["hostnames"] + value["retired_hostnames"]
     if len(names) != len(set(names)):
         raise RuntimeError("DNS inventory includes duplicate or conflicting names")
-    digest = hashlib.sha256("\n".join(sorted(value["hostnames"])).encode()).hexdigest()
-    if len(value["hostnames"]) != 27 or digest != MIGRATION_NAMES_SHA256:
-        raise RuntimeError("The public retirement inventory must remain the fixed 27-name migration set")
+    migration = value["hostnames"][:27]
+    digest = hashlib.sha256("\n".join(sorted(migration)).encode()).hexdigest()
+    if digest != MIGRATION_NAMES_SHA256 or value["hostnames"][27:] != OCE_NAMES:
+        raise RuntimeError("The public retirement inventory must retain the fixed 27-name migration set and reviewed OCE names")
     return value
 
 
 def retirement_names(value):
-    names = value["hostnames"]
+    names = value["hostnames"][:27]
     if len(names) != 27 or names.count(APEX) != 1 or len(set(names)) != 27:
         raise RuntimeError("Public retirement requires the fixed 27-name private inventory")
     retired = [name for name in names if name != APEX]
@@ -156,15 +160,6 @@ def affine_suspended():
     return deployment_suspended("affine", "affine")
 
 
-def openclaw_suspended():
-    source = json.loads(run("yq", "-o=json", ".", str(ROOT / "clusters/homelab/apps/openclaw/values.yaml")))
-    controllers = source.get("controllers") if isinstance(source, dict) else None
-    controller = controllers.get("openclaw") if isinstance(controllers, dict) else None
-    if not isinstance(controller, dict) or type(controller.get("replicas")) is not int or controller["replicas"] != 0:
-        return False
-    return deployment_suspended("ai", "openclaw")
-
-
 def routes(value, address=None):
     for hostname in value["hostnames"]:
         if hostname == "octelium-api.stinkyboi.com":
@@ -178,8 +173,6 @@ def routes(value, address=None):
             accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and status == 404)
             if hostname == "affine.stinkyboi.com" and status in (500, 502, 503):
                 accepted = affine_suspended()
-            elif hostname == "openclaw.stinkyboi.com" and status == 502:
-                accepted = openclaw_suspended()
             if not accepted:
                 raise RuntimeError(f"Traefik TLS/upstream readiness failed for {hostname}: HTTP {status}")
             if hostname == "harbor.stinkyboi.com" and (status != 401 or not any(
@@ -418,7 +411,7 @@ def main():
     elif args.evidence or args.expected_sha:
         parser.error("--evidence and --expected-sha require --execute")
     if args.retire_private and not args.execute:
-        print("Fixed 26-name public retirement inventory verified; 27 private names retained")
+        print(f"Fixed 26-name public retirement inventory verified; {len(value['hostnames'])} private names retained")
         return
     addresses = mesh_addresses()
     if args.execute or args.check:

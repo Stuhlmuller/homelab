@@ -46,6 +46,31 @@ recovery order are in the [OpenClaw runbook](../clusters/homelab/apps/openclaw/R
 
 ## Fixed stages and stop gates
 
+The private console is `https://console.oce.stinkyboi.com` through Octelium.
+At final cutover, `https://openclaw.stinkyboi.com` must switch from the
+suspended legacy backend to the catalog's post-sign-in redirect.
+OCE returns each native Agent origin under `*.agents.oce.stinkyboi.com`;
+private Traefik accepts only its `agent-<32-hex>` hosts and sends them to the
+OCE API, which requires the shared `oce.stinkyboi.com` session and exact Agent
+`administer` permission. Apply and verify the Octelium catalog before switching
+the old Traefik route; a Git merge alone does not apply that catalog. Do not
+enable the Enterprise agent until the console, redirect, native TLS/WebSocket,
+and unauthorized-access probes pass.
+
+After the Enterprise API is ready, use an existing authenticated Octelium
+operator session from a clean `main` checkout to reconcile only the `oce`
+Namespace and two Enterprise Services:
+
+```sh
+python3 -I scripts/openclaw-enterprise-access.py
+python3 -I scripts/openclaw-enterprise-access.py --execute --expected-sha "$(git rev-parse HEAD)"
+```
+
+The script rechecks remote `main` before each write, applies Namespace before
+Service, and requires a second no-change apply and identity readback. A stale
+SHA, changed auth contract, or failed readback stops the cutover. Rerun it from
+the new reviewed `main` after a concurrent merge; do not bypass its guard.
+
 | Stage | Action | Required exit receipt |
 | --- | --- | --- |
 | Prepare | Confirm source/image pairing, publish all chart-rendered images to Harbor, inventory placement and recovery access | Exact digest and current-main receipts |

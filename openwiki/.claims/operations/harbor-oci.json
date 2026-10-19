@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:98c68789af65ec0bc6f6cdbace4ba61476c44375d422cfa7342ce7bf2a8668f8",
+  "pageVersion": "sha256:c5f596f07c76d893361118a61e9536ca6e699c08fafe048db6f129b43b5e117e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
+          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -78,7 +78,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
         }
       ]
     },
@@ -92,7 +92,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
+          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -486,7 +486,7 @@
       "evidence": [
         {
           "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:c92f8c2a16c65c49d3b0c040113718b07ebb5eedcae02f7195ba147782dff472"
+          "version": "repo-file-v1:sha256:1d94f8fee50916900530d36fccecfe2f9eda51a098b4a1f14e206c5116f6a578"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -749,6 +749,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T08:22:58.881Z"
+    "at": "2026-10-19T09:02:08.557Z"
   }
 }

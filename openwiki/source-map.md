@@ -28,8 +28,12 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
@@ -40,6 +44,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
+  - id: openwiki-source-4091442a62f62f0adc73ce96
+    resource: repo://scripts/ci/openclaw-enterprise-access-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
@@ -48,6 +54,8 @@ sources:
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
+  - id: openwiki-source-e293d5daa2ad090397b8923e
+    resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
@@ -58,10 +66,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T08:18:59.770Z" }
+generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T08:18:59.770Z
+    at: 2026-10-19T09:02:08.557Z
 ---
 
 # Source Map
@@ -99,6 +107,7 @@ desired state.
 | `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
+| `docs/examples/octelium/homelab-services.yaml`, `scripts/openclaw-enterprise-access.py`, and `scripts/ci/openclaw-enterprise-access-test.py` | [Staged Enterprise console and redirect catalog](runbooks/octelium.md#openclaw-enterprise-access-staging), [private native routes](runbooks/tailnet-ingress.md#route-boundaries) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/terragrunt-catalog/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
 | `scripts/entra-owner-conversion.py` and `scripts/ci/entra-owner-conversion-test.py` | [Owner conversion boundary](architecture/secrets-and-identity.md#fleet-free-identity-boundaries), [Fleet validation](operations/validation-gates.md#fleet-device-management-rollout) |

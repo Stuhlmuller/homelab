@@ -214,10 +214,13 @@ inference; do not adopt the example model or reuse LiteLLM/old assistant
 credentials. A real model probe is an inference action, not a read-only readiness test.
 
 Use `console.oce.stinkyboi.com` and returned per-agent origins under
-`agents.oce.stinkyboi.com`, cookie scope `oce.stinkyboi.com`. Keep both behind
-Octelium and route them to OCE API. OCE authorizes the exact agent and forwards
-through private Envoy to its gateway. Never expose private Envoy directly.
-Keep `openclaw.stinkyboi.com` as an authenticated redirect.
+`agents.oce.stinkyboi.com`, cookie scope `oce.stinkyboi.com`. The console stays
+behind an authenticated Octelium Service. Octelium's fixed Service FQDN cannot
+represent OCE's opaque per-Agent hosts, so private Tailscale/Traefik sends only
+`agent-<32-hex>.agents.oce.stinkyboi.com` to OCE API. OCE requires the shared
+session and exact Agent `administer` permission, then forwards through private
+Envoy to the gateway. Never expose private Envoy directly. Keep
+`openclaw.stinkyboi.com` as a post-Octelium-authentication redirect.
 
 Stock egress permits public TCP/443 and excludes private ranges. This feature
 proves the stock boundary; it does not claim domain-level internet filtering or
@@ -232,6 +235,7 @@ contradicts the owner's clarified scope.
 Sources: [database roles](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/settings/operations.md),
 [storage](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/drivers/kubernetes-compute/storage-and-credentials.md),
 [native admin](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/native-admin.md),
+[Octelium Service name handling](https://github.com/octelium/octelium/blob/v0.35.0/pkg/apiutils/ucorev1/ucorev1.go),
 [workspace routing](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/guides/deploy/workspace-routing.md).
 
 ## R7 — Reconcile through supported interfaces; retain independent archives

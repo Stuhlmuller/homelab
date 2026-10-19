@@ -27,7 +27,9 @@
     "console.stinkyboi.com",
     "octelium.stinkyboi.com",
     "octelium-api.stinkyboi.com",
-    "portal.stinkyboi.com"
+    "portal.stinkyboi.com",
+    "console.oce.stinkyboi.com",
+    "*.agents.oce.stinkyboi.com"
   ],
   "retired_hostnames": [
     "octelium-transport.stinkyboi.com",
