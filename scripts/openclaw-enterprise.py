@@ -445,6 +445,8 @@ def verify(config, api, kube):
     _require(all(isinstance(item, str) for item in (namespace_id, configuration_id, agent_id)) and
              state.get("pending") is None, "Enterprise tenant is incomplete")
     kube.tenant_prepared(namespace_id, require_claimed=True)
+    discover_exact(api.get("/namespaces"), config["namespace"]["logicalName"], namespace_id,
+                   {"existingNamespace": config["namespace"]["existingNamespace"]})
     namespace = api.get("/namespaces/" + namespace_id)
     _require(isinstance(namespace, dict) and
              namespace.get("id") == namespace_id and
@@ -454,6 +456,9 @@ def verify(config, api, kube):
     configuration = api.get(f"/namespaces/{namespace_id}/configurations/{configuration_id}")
     _assert_configuration(configuration, namespace_id, configuration_id,
                           desired_configuration(config), state.get("configurationGeneration"))
+    candidates = kube.configuration_candidates(namespace_id)
+    _require(len(candidates) == 1, "Configuration ConfigMap set is ambiguous")
+    recover_configuration(candidates, configuration, "openclaw-agents")
     agents = api.get(f"/namespaces/{namespace_id}/agents")
     discover_exact(agents, config["agent"]["name"], agent_id,
                    {"configurationId": configuration_id})
@@ -719,6 +724,8 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
         _require(exact.get("desiredRuntimeState") == "stopped" and
                  exact.get("activeRevisionId") is None and exact.get("harnessAuth") is None,
                  "new Enterprise Agent is not inactive")
+        discover_exact(api.get(path), name, agent_id,
+                       {"configurationId": configuration_id})
         state["agentId"] = agent_id
         state["servicePrincipalId"] = exact["servicePrincipalId"]
         state.pop("pending", None)

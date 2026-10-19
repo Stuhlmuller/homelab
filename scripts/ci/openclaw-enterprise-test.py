@@ -949,6 +949,24 @@ class InactiveAgentReconciliation(unittest.TestCase):
         self.assertEqual(len([call for call in self.api.calls if call[0] == "POST" and
                               call[1] == "/namespaces/ns_one/agents"]), 1)
 
+    def test_agent_create_rechecks_unique_name_before_journaling(self):
+        original_post = self.api.post
+
+        def create_with_competing_agent(path, body):
+            created = original_post(path, body)
+            if path.endswith("/agents"):
+                self.api.agents["agt_other"] = {**created, "id": "agt_other"}
+            return created
+
+        with patch.object(self.api, "post", side_effect=create_with_competing_agent):
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["pending"]["operation"], "agent-create")
+        self.assertNotIn("agentId", state)
+
     def test_definitively_rejected_configuration_clears_intent_only_after_absence(self):
         with patch.object(self.api, "post", side_effect=OCE.DefinitiveRejection("HTTP 403")):
             with self.assertRaisesRegex(OCE.DefinitiveRejection, "HTTP 403"):
@@ -1048,6 +1066,34 @@ class InactiveAgentReconciliation(unittest.TestCase):
             self.api.agents["agt_one"]["servicePrincipalId"] = "sp_foreign"
             with self.assertRaisesRegex(OCE.Blocked, "inactive Enterprise Agent changed"):
                 OCE.verify(self.config, self.api, self.kube)
+
+    def test_verify_rejects_duplicate_logical_namespace(self):
+        self._reconcile()
+        original_get = self.api.get
+
+        def competing_namespace(path):
+            result = original_get(path)
+            if path == "/namespaces":
+                result.append({**self.api.namespace, "id": "ns_other"})
+            return result
+
+        with patch.object(self.api, "get", side_effect=competing_namespace):
+            with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+                with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                    OCE.verify(self.config, self.api, self.kube)
+
+    def test_verify_rejects_configuration_ownership_drift(self):
+        self._reconcile()
+        candidates = self.kube.configuration_candidates("ns_one")
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            with patch.object(self.kube, "configuration_candidates", return_value=candidates * 2):
+                with self.assertRaisesRegex(OCE.Blocked, "Configuration ConfigMap set is ambiguous"):
+                    OCE.verify(self.config, self.api, self.kube)
+            drifted = copy.deepcopy(candidates[0])
+            drifted["metadata"]["labels"]["openclaw.dev/configuration"] = "cfg_foreign"
+            with patch.object(self.kube, "configuration_candidates", return_value=[drifted]):
+                with self.assertRaisesRegex(OCE.Blocked, "foreign Configuration recovery candidate"):
+                    OCE.verify(self.config, self.api, self.kube)
 
     def test_reconcile_rejects_auth_bound_to_journaled_stopped_agent(self):
         self._reconcile()
