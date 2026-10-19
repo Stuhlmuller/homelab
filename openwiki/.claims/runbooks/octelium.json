@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2f158a9f67fe4976c631ba46ac4609e39e132ff436ed0d040625aa06b9a896cb",
+  "pageVersion": "sha256:42e3160b76d09f607bd60ffad053d8aaf6d15538d0717a0fa6a3fa88e25c5470",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -8,11 +8,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
+          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
         },
         {
-          "resource": "repo://docs/octelium.md#L3-L20",
-          "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
+          "resource": "repo://docs/octelium.md#L3-L21",
+          "version": "repo-lines-v1:sha256:9092e765ae0d22a2a50a3fdeb5373f64d474bec64d3bf9d416d1b924ac38fc49:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
         }
       ]
     },
@@ -32,21 +32,21 @@
     },
     {
       "id": "claim_64b340417b304cf9b5cbd148af9dc5dc",
-      "statement": "The current tailnet DNS cutover deploys and signs a separate resolver, pauses for the owner to set its observed IP as restricted stinkyboi.com nameserver, and retains public app records until normal clients and application paths pass; a later fixed-27 guarded helper retires only public app address records.",
+      "statement": "The current tailnet DNS cutover deploys and signs a separate resolver for 27 private names, then the owner sets its observed IP as restricted stinkyboi.com nameserver. Public app records remain until normal clients and application paths pass; the later guarded helper retires public A/AAAA/CNAME for only 26 approved non-apex subdomains.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L9-L58",
-          "version": "repo-lines-v1:sha256:7213cbef1f7799960a9b934b5f0563aed195005ee819f1cdc168f25c1c0e576f:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhmN2Y2NzU4MmZlOGU1ZTE4NzIwODEwNTJlYjAxMWFjZDg4MjQ0OTBkYzZkYWE3MGE0ZmQ5MWM2YTk5MzI4YTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0N2VlZDEyMGQ0NDBjMjRmYzA5MjA2YWJmNzQ5MjEwOTU4ZGU5N2Q3MWZiODM0ODYxNGI3ZmNiOTNlNTljODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4OGM5NGNiMmMwZWIxMWRkNDMzNGM2MGVmNDEyZWVjODAxZTJmZjEyOTczZTM1M2NmMDJkMTgzZDI5YTY3NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImExYmIzMGJjYTEzNGMzYWNhNDg5NTgxOGZlZjVlN2MwOGEzM2Q0M2Y2M2RjYjBjNzg2MGFhYjEwZmVjYjQ0OTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
+          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
         },
         {
-          "resource": "repo://docs/octelium.md#L3-L20",
-          "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:1bba30bee41127c019494d738bcbc44956cdb4deac72a4ba2c365837f93372fd"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-19T05:01:55.414Z"
   }
 }

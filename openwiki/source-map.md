@@ -28,14 +28,14 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
-  - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
-  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
-  - id: openwiki-source-8144ee95f00e2d4721210fcf
+  - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
-  - id: openwiki-source-612eb02105d61c48b6ba59bd
+  - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
+  - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
+  - id: openwiki-source-13b48922f1b929b52f4a0233
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -53,7 +53,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Source Map

@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2b96cb309bc065a898c96a90dd7477397233c708c80ab6980a9300a8931f9c4e",
+  "pageVersion": "sha256:98fc65617076180410a4a94ff85cc6f92134bcec7d68837c7b73d4afab237b20",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
       "statement": "The Octelium Entra bootstrap retains immutable owner identity; the owner-mail module now documents a retired Graph PATCH and state-only removal. The Fleet runbook records retired Company Portal/Platform SSO and the separate guarded Entra owner conversion.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/entra-owner-mail/README.md",
+          "resource": "repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md",
           "version": "repo-file-v1:sha256:133992059c332d4630fdbc23331576eb6ae8e363d4382035da7b888567254c23"
         },
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
+          "version": "repo-file-v1:sha256:666cac04c8a446019f22c1244e8d5dcc7a86f28aa36fe1f63b725aa6e6165b65"
         },
         {
           "resource": "repo://scripts/entra-owner-conversion.py",
@@ -43,12 +43,12 @@
       "statement": "Traefik's explicit routes and README own staged mesh ingress and fixed node-signing prerequisites; the Tailscale module and CI publisher own provider policy adoption, scoped signed-key publication, interrupted-signature recovery, rotation and previous-authority retirement.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+          "resource": "repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md",
+          "version": "repo-file-v1:sha256:6737df409a10ba2e69d3e6e19128734679d28d48a78b31514107ad16dc574184"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
+          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
@@ -73,12 +73,12 @@
           "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
         },
         {
-          "resource": "repo://IaC/stacks/mastodon/stack.hcl",
+          "resource": "repo://IaC/mastodon/stack.hcl",
           "version": "repo-file-v1:sha256:6418882babc82ea0a167dd2c187438e262b45d77f3f17f558e48fa110ed316ab"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:ab7f4937bc6e2c7091be7eb8e01ba2f536b628590d5929bd8c35eaf3a1fdd703"
+          "version": "repo-file-v1:sha256:bb743191af5d81a378430caea6d4c72cf0cc248acc55ae1806afbf48f87c3be2"
         }
       ]
     },
@@ -119,12 +119,12 @@
       "statement": "The source map links the separate tailnet DNS resolver, its Terragrunt stack, direct DNS checker, and guarded public address retirement helper to their operational wiki pages.",
       "evidence": [
         {
-          "resource": "repo://IaC/stacks/tailnet-dns/stack.hcl",
+          "resource": "repo://IaC/tailnet-dns/stack.hcl",
           "version": "repo-file-v1:sha256:2c442ef0ced3277bb330dbeb73ada6c0a6c471674e9801028da99de671a741d6"
         },
         {
           "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
-          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
@@ -132,13 +132,13 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:b39004f10c5d7c5f4224f74702c49eae590a70acc8d26e6703a54bc779abff0f"
+          "version": "repo-file-v1:sha256:148fae056906e7af902950403beba0c890b22a1c8e43fef0021682d3586e3e29"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T02:17:09.125Z"
+    "at": "2026-10-19T05:01:55.414Z"
   }
 }

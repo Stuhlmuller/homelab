@@ -78,7 +78,7 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-e9bb34bdbee430c2456beb6d
+  - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
@@ -172,16 +172,20 @@ sources:
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
+  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
+    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Validation Gates
@@ -444,11 +448,12 @@ missing persistent after a later active change, duplicate resources, read failur
 and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
-The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
-the repository and live Deployment explicitly declare zero replicas and no
-live replicas remain. This accounts for Traefik's static ClusterIP backend
-while AFFiNE is suspended. All other application 5xx responses fail; this
-exception does not establish AFFiNE runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
+OpenClaw HTTP 502 only when each reviewed workload declaration and live
+Deployment specify zero replicas and no live replicas remain. Deployed Traefik
+routes and TLS must match the reviewed checkout. Other application 5xx
+responses fail. These exceptions check routing to intentionally stopped apps;
+they do not establish application runtime health.
 
 The DNS regression includes a dual-address peer whose LoadBalancer Service
 publishes only IPv4: it must produce A records and no AAAA. Probe each published
@@ -523,6 +528,35 @@ wildcard child. It compares public apex MX/TXT and an unrelated public name.
 These checks establish a handoff gate, not owner tailnet DNS configuration or
 normal client resolution. Leave public app records until those later checks
 pass; the `--retire-private` helper is deletion-only and separately guarded.
+
+### Public app subdomain retirement
+
+The [feature 005 cutover](../../specs/005-retire-public-app-dns/quickstart.md)
+is a separate live gate. Its public deletion set is the 26 approved non-apex
+app subdomains; private DNS and HTTPS checks still cover all 27 approved names.
+Run the focused retirement fixtures and fresh checks from reviewed `main`.
+Record a per-name off-tailnet decision, the exact Cloudflare record baseline,
+and the previous maximum TTL in private evidence. A 27-name public-retirement
+template is invalid.
+
+Before the first DELETE, inspect the complete paginated public-zone
+A/AAAA/CNAME/NS inventory. The helper blocks relevant child NS delegation and
+covering wildcard NS delegation such as `*.stinkyboi.com`, plus any out-of-set
+covering wildcard A/AAAA/CNAME; it does not traverse child zones.
+It checks Cloudflare authoritative answers for all 26 names and a concrete
+Cordium wildcard child. An unexplained answer, drift, or incomplete evidence
+blocks execution. A full-field target reread after the zone scan blocks changed
+content, proxy status, or TTL before the first DELETE. Preserve the public apex
+A/MX/TXT and any CAA, the zone, four legacy endpoint names, and unrelated
+public services. Confirm Cloudflare delegation, Ready DNS-01 ExternalSecret and
+ClusterIssuer, matching solver/Secret references, and Ready application
+Certificates before deletion and after the old TTL.
+
+After the old TTL, require no public A/AAAA/CNAME answers for the 26 names and
+Cordium child from authoritative and recursive resolvers. Recheck ordinary
+tailnet client answers and HTTPS routes. The fail-closed check applies to the
+retired subdomains; the apex keeps its public A answer. Resolver recovery
+restores private DNS without republishing app records.
 
 The CI boundary helper is
 `scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated

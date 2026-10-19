@@ -94,10 +94,10 @@ sources:
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-  - id: openwiki-source-1882ca1e6f216149daf718a1
+  - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
+  - id: openwiki-source-1f0ad12bbff1986d64be6620
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
@@ -129,7 +129,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Harbor Private OCI Registry

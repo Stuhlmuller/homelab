@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:98f91cd38016aab5ae7e0b61ebe8fef4c2d2a1db9a812bc42d7604fe4517ec5a",
+  "pageVersion": "sha256:50f1fd95706d9cf33861623cfb8b556363603393e24b55ce4c78c5a1bb4b5e60",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
+          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -84,11 +84,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
+          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:83d606d57f6dffe4eb11736cdcc14ad4f8e0215ed1ad3d44f8cf0d50381c1a32"
+          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -115,7 +115,7 @@
       "statement": "The October 11 zimaboard-2 host-only pull timed out with six destination ztunnel denials from overlay source 10.244.4.0 and no Traefik requests; the exact overlay source fix requires GitOps convergence and correlated successful registry requests before rollout acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L190-L210",
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L196-L216",
           "version": "repo-lines-v1:sha256:93a4ba98b55e6754691476e3c712a5c485b8697b16e5e3c70b9b61770ad9ae28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzAzYjYyZjNlN2U0Y2Q4NzdkOWJmNjJlMDQ2YjFhNTk1NmIxMDA5NWQyNTRjZWYzZTZiOTY5NjIwMzk2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2MzNTY0M2RjZWQ2YzgxYTNhOWNmZjczNzE1ZWE2OGNmNTdjNDk4ZTBjNWQ4MjMxMTk3M2FjYWQxOTQ2MDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1ZDk5NDlmMTRjYzNhNWVkYjJlODEyNDMyNTJhNTA3ODcwNGVjNjU5OWM0MmNlNzU4YTdkNjYwOWE2ODg4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         }
       ]
@@ -154,7 +154,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
+          "version": "repo-file-v1:sha256:93d7147c9989ac9fb90ee8d88393f7ec4c20db00434d16531a74ea7b5dc0d1c2"
         },
         {
           "resource": "repo://builds/harbor-core/prepare-source.py",
@@ -200,7 +200,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
+          "version": "repo-file-v1:sha256:93d7147c9989ac9fb90ee8d88393f7ec4c20db00434d16531a74ea7b5dc0d1c2"
         },
         {
           "resource": "repo://docs/evidence/harbor-core-base-scan-2026-10-11.json",
@@ -256,7 +256,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
+          "version": "repo-file-v1:sha256:93d7147c9989ac9fb90ee8d88393f7ec4c20db00434d16531a74ea7b5dc0d1c2"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -413,12 +413,12 @@
       "statement": "The reviewed Stage A saved plan created and metadata-verified /homelab/harbor/mirror-robot-pull-password without reading its value, limited to the reader parameter and exact-ARN reader-policy changes, including deterministic policy chunk creation or rebalancing. It requires stack generation before reader-plan review and separate approval for wider shared closure. Stage B desired state advances harbor-secrets OnChange revision to v4 and mounts the reader key in Harbor bootstrap; after External Secrets materializes the target Secret, a bootstrap execution can create or patch the reader robot, while ExternalSecret Ready and successful PostSync are required before acceptance. Stage A alone establishes no robot, receipt, Talos, workload, or privacy acceptance, and mirror remains public until authenticated node pulls pass before a separate reviewed privacy change.",
       "evidence": [
         {
-          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:c76bcae62f039eeebcc0c21f47693d1469808218d03108eb6852bf860fdca081"
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf",
+          "version": "repo-file-v1:sha256:b3efabc48ca9aa05da6fcfdd97fd406c1ff7a152b909990ca7c679dccf0bda0c"
         },
         {
-          "resource": "repo://IaC/modules/aws-ssm-parameters/main.tf",
-          "version": "repo-file-v1:sha256:b3efabc48ca9aa05da6fcfdd97fd406c1ff7a152b909990ca7c679dccf0bda0c"
+          "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:94d3d26814d2b6aa349c5045ad225f31164e801dbe7d4e29b84af185f16b35b7"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:94d4ca2c77829067bb4107e74ecbdab8fe2e6da74fb61d384463ced7482eec62"
+          "version": "repo-file-v1:sha256:0ffbbaa90a7ade9e45838ec966f4d6675128492d9afcb866d6e45ed9d8f08d28"
         }
       ]
     },
@@ -462,7 +462,7 @@
       "evidence": [
         {
           "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:64f9eb5ffad94a804aa82c3de1e2154746f1f21f9da081a51d70a482471b7d4b"
+          "version": "repo-file-v1:sha256:c92f8c2a16c65c49d3b0c040113718b07ebb5eedcae02f7195ba147782dff472"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -507,8 +507,8 @@
       "statement": "The native Harbor receipt scan robot depends on /homelab/harbor/robot-scan-password and an exact-ARN External Secrets reader grant. Read-only inspection verified the version 1 SecureString and grant, and a targeted plan from main at f6506136 found no changes on 2026-10-18. The parameter alone creates no robot or receipt.",
       "evidence": [
         {
-          "resource": "repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:c76bcae62f039eeebcc0c21f47693d1469808218d03108eb6852bf860fdca081"
+          "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
+          "version": "repo-file-v1:sha256:94d3d26814d2b6aa349c5045ad225f31164e801dbe7d4e29b84af185f16b35b7"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -516,7 +516,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:94d4ca2c77829067bb4107e74ecbdab8fe2e6da74fb61d384463ced7482eec62"
+          "version": "repo-file-v1:sha256:0ffbbaa90a7ade9e45838ec966f4d6675128492d9afcb866d6e45ed9d8f08d28"
         }
       ]
     },
@@ -635,6 +635,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T02:17:09.125Z"
+    "at": "2026-10-19T05:01:55.414Z"
   }
 }

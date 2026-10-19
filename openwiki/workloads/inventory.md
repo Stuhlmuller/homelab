@@ -82,22 +82,22 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
-  - id: openwiki-source-65bc6c080b599d8e6d572a31
+  - id: openwiki-source-59f51b5800f473496977b52a
     resource: repo://IaC/argocd-image-updater/stack.hcl
-  - id: openwiki-source-fc45eca2fc7797af796c61b6
+  - id: openwiki-source-1ee0d946130d3ad97636dfdc
     resource: repo://IaC/cert-manager/stack.hcl
-  - id: openwiki-source-8144ee95f00e2d4721210fcf
+  - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
-  - id: openwiki-source-25c085c78b1cbef8c164f9f7
+  - id: openwiki-source-73d9c28ed7b9740028ceb5c2
     resource: repo://IaC/platform-image-policy/stack.hcl
-  - id: openwiki-source-9bb89193cf7d1787e70a1647
+  - id: openwiki-source-9324a7b2a44defc4437d288b
     resource: repo://IaC/renovate/stack.hcl
-  - id: openwiki-source-612eb02105d61c48b6ba59bd
+  - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
-  - id: openwiki-source-da61504fb6ba4ceba279edb0
-    resource: repo://IaC/traefik/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
     resource: repo://IaC/terragrunt.stack.hcl
+  - id: openwiki-source-f5339d55c401403e74eef9ec
+    resource: repo://IaC/traefik/stack.hcl
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-6a90d887ebbab5a858408f90
@@ -107,7 +107,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Workload Inventory

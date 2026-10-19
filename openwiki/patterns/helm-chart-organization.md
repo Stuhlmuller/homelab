@@ -4,14 +4,14 @@ title: "Helm Chart Organization"
 description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
 generated: { by: "codex", at: "2026-10-10T19:05:45.723Z" }
+sources:
+  - id: openwiki-source-9828d67d6c8e28f372b28e0d
+    resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
+  - id: openwiki-source-f5339d55c401403e74eef9ec
+    resource: repo://IaC/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T19:05:45.723Z
-sources:
-  - id: openwiki-source-6b180a65c4c19509fe94c982
-    resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
-  - id: openwiki-source-da61504fb6ba4ceba279edb0
-    resource: repo://IaC/traefik/stack.hcl
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Helm Chart Organization

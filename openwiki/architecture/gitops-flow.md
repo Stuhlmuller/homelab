@@ -10,18 +10,22 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
-  - id: openwiki-source-77d110fdd1547564be86e611
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
-  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
-  - id: openwiki-source-612eb02105d61c48b6ba59bd
+  - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
-  - id: openwiki-source-da61504fb6ba4ceba279edb0
+  - id: openwiki-source-5edf712b7916c34ad7d2c410
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
+  - id: openwiki-source-13b48922f1b929b52f4a0233
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+  - id: openwiki-source-9754c9cae8bb1727dfa4e705
+    resource: repo://specs/005-retire-public-app-dns/plan.md
+generated: { by: "codex", at: "2026-10-19T03:27:33.881Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # GitOps Flow
@@ -131,9 +135,12 @@ does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
-writes remain behind the guarded 27-name retirement command after the separate
-`tailnet-dns` Application is Synced/Healthy, its Tailscale DNS proxy is signed,
-and the owner has set its observed IP as a restricted tailnet nameserver.
+writes remain behind the guarded [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
+for the 26 approved non-apex app subdomains. The resolver still serves all 27
+approved private names. The cutover preserves the public apex, mail, certificate
+validation, and unrelated public names. It follows the separate
+`tailnet-dns` Application reaching Synced/Healthy, signing its Tailscale DNS
+proxy, and the owner setting its observed IP as a restricted tailnet nameserver.
 The `tailnet-dns` Terragrunt unit depends on Tailscale and Traefik; Argo owns its
 stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunnel Deployment,
 old native catalog, credentials, and CI transport through their separate

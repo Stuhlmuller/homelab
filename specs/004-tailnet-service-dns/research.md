@@ -1,5 +1,9 @@
 # Research: Private Tailnet Service DNS
 
+Historical public-cutover assumption: retiring all 27 names is superseded by
+the [26-name app subdomain cutover](../005-retire-public-app-dns/quickstart.md).
+The 27-name private resolver findings remain.
+
 ## Decision: One stateless Kubernetes-aware DNS server
 
 Use [k8s_gateway](https://github.com/k8s-gateway/k8s_gateway) 1.9.0 / chart 4.0.0 in its own namespace. Its Service source reads a reviewed hostname annotation and LoadBalancer status, and its

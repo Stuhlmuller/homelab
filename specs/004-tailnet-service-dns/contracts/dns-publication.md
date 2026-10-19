@@ -1,5 +1,10 @@
 # DNS Publication Contract
 
+This contract remains current for all 27 approved **private resolver** answers,
+including the apex. Its original public retirement boundary is superseded by
+the [26-name app subdomain cutover](../../005-retire-public-app-dns/contracts/cutover.md):
+public apex records and the Cloudflare zone remain.
+
 ## Reviewed Kubernetes input
 
 Only `traefik/traefik-private`, a `type: LoadBalancer` Service with `loadBalancerClass: tailscale`, may publish private application names. It must carry:
@@ -33,7 +38,9 @@ The resolver accepts DNS on UDP 53 and TCP 53 at its Tailscale-assigned IPv4. It
 | Approved name AAAA | Expected NODATA while only the IPv4 ingress address is published; prove this with a direct runtime query before handoff. No public AAAA leakage. |
 | Unapproved name A/AAAA, including unrelated public Mastodon | Forwarded public answer, or public NXDOMAIN. Never a synthetic private Traefik A. |
 | Apex MX/TXT/CAA/NS/SOA and other non-address types | Forwarded public answer, retaining mail, verification and zone metadata. |
-| Approved name after public record retirement with no private resolver/record | No usable address; never a public application A/AAAA/CNAME. |
+| Retired non-apex approved name with no private resolver/record | No usable address; never a public application A/AAAA/CNAME. |
+
+The apex retains its public A record and is outside this fail-closed guarantee.
 
 The plugin TTL and cache maximum are 30 seconds. The permanent offline contract exercises paired add/change/remove declarations. At initial rollout, the repo-owned read-only check queries the observed
 resolver tailnet IP over UDP and TCP, compares all 27 newly registered names with live Service status, and verifies local authority/provenance. This proves the Service watch publishes the approved
