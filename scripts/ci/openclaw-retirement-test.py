@@ -169,6 +169,7 @@ class Retirement(unittest.TestCase):
         }
         for name, target in links.items():
             (self.nas / 'openclaw' / name).symlink_to(target)
+        os.link(self.nas / 'unlisted-configuration', self.nas / 'openclaw' / 'hardlink')
         observed = retirement.inventory(self.config, self.status)
         self.observed_path.unlink()
         retirement.write_private(self.observed_path,
@@ -181,10 +182,25 @@ class Retirement(unittest.TestCase):
             names = set(bundle.getnames())
             for name, target in links.items():
                 self.assertEqual(bundle.getmember(f'nas/openclaw/{name}').linkname, target)
+            self.assertTrue(any(member.islnk() for member in bundle.getmembers()))
             self.assertNotIn('nas/openclaw/external/sentinel', names)
         self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
         self.assertEqual(sentinel.read_text(), 'untouched')
         self.assertEqual(list(outside.iterdir()), [sentinel])
+
+    def test_symlink_only_required_directory_restores(self):
+        required = self.nas / 'openclaw'
+        (required / 'retained').unlink()
+        (required / 'only-link').symlink_to('/missing-external-target')
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
 
     def test_restore_rejects_duplicate_or_child_below_symlink(self):
         outside = self.archive_root / 'outside'
@@ -208,10 +224,59 @@ class Retirement(unittest.TestCase):
                         child.size = 1
                         tar.addfile(child, io.BytesIO(b'x'))
                 bundle.chmod(0o600)
-                with self.assertRaisesRegex(ValueError, 'duplicate' if unsafe == 'duplicate'
-                                            else 'unsafe symlink path'):
-                    retirement.verify_bundle(bundle, retirement.digest(bundle), self.config)
+                with patch.object(tarfile.TarFile, 'extractall', side_effect=AssertionError('extracted')):
+                    with self.assertRaisesRegex(ValueError, 'duplicate' if unsafe == 'duplicate'
+                                                else 'unsafe member path'):
+                        retirement.verify_bundle(bundle, retirement.digest(bundle), self.config,
+                                                 self.observed['roots'])
                 self.assertEqual(list(outside.iterdir()), [])
+
+    def test_restore_rejects_hardlink_to_symlink_before_extraction(self):
+        bundle = self.archive_root / 'hardlink-fallback.tar.gz'
+        with tarfile.open(bundle, 'w:gz') as tar:
+            for root in ('local', 'nas'):
+                member = tarfile.TarInfo(root)
+                member.type = tarfile.DIRTYPE
+                tar.addfile(member)
+            source = tarfile.TarInfo('nas/source-link')
+            source.type = tarfile.SYMTYPE
+            source.linkname = 'inside'
+            tar.addfile(source)
+            alias = tarfile.TarInfo('nas/alias')
+            alias.type = tarfile.LNKTYPE
+            alias.linkname = 'nas/source-link'
+            tar.addfile(alias)
+            injected = tarfile.TarInfo('nas/alias/injected')
+            injected.size = 1
+            tar.addfile(injected, io.BytesIO(b'x'))
+        bundle.chmod(0o600)
+        with patch.object(tarfile.TarFile, 'extractall', side_effect=AssertionError('extracted')):
+            with self.assertRaisesRegex(ValueError, 'unsafe hardlink'):
+                retirement.verify_bundle(bundle, retirement.digest(bundle), self.config,
+                                         self.observed['roots'])
+
+    def test_archive_rejects_omitted_or_changed_unlisted_nas_file(self):
+        original = retirement.add_tree
+        for change in ('omitted', 'changed'):
+            with self.subTest(change=change):
+                def incomplete(tar, root, label):
+                    if label != 'nas':
+                        return original(tar, root, label)
+                    tar.add(root, arcname=label, recursive=True,
+                            filter=lambda member: None if member.name == 'nas/unlisted-configuration'
+                            else member)
+                    if change == 'changed':
+                        member = tarfile.TarInfo('nas/unlisted-configuration')
+                        member.size = len(b'changed')
+                        tar.addfile(member, io.BytesIO(b'changed'))
+
+                with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
+                     patch.object(retirement, 'add_tree', side_effect=incomplete):
+                    with self.assertRaisesRegex(ValueError,
+                                                'archive content differs from stopped source'):
+                        retirement.archive(self.config, self.status_path, self.baseline_path,
+                                           self.observed_path, self.archive_root)
+                self.assertFalse(list(self.archive_root.glob('legacy-*/receipt.json')))
 
     def test_workflow_archive_writes_private_receipt_locator(self):
         config_path = self.archive_root / 'config.json'

@@ -64,9 +64,14 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def content_identity(value):
+    return json.dumps({key: value[key] for key in ('path', 'type', 'sha256', 'target')
+                       if key in value}, sort_keys=True).encode() + b'\n'
+
+
 def tree(root):
     """Bind every retained byte and permission, including historical archives."""
-    record = hashlib.sha256()
+    record, content = hashlib.sha256(), hashlib.sha256()
     count = total = 0
     for path in (root, *sorted(root.rglob('*'))):
         info = path.lstat()
@@ -89,8 +94,10 @@ def tree(root):
         elif stat.S_ISLNK(info.st_mode):
             value['target'] = os.readlink(path)
         record.update(json.dumps(value, sort_keys=True).encode() + b'\n')
+        content.update(content_identity(value))
         count += 1
-    return {'entries': count, 'bytes': total, 'sha256': record.hexdigest()}
+    return {'entries': count, 'bytes': total, 'sha256': record.hexdigest(),
+            'contentSha256': content.hexdigest()}
 
 
 def write_private(path, value, owner=None):
@@ -257,7 +264,7 @@ def add_tree(tar, root, label):
     tar.add(root, arcname=label, recursive=True, filter=check)
 
 
-def verify_bundle(bundle, expected, config):
+def verify_bundle(bundle, expected, config, expected_roots):
     private_file(bundle, config['nasUid'])
     if digest(bundle) != expected:
         raise ValueError('archive checksum mismatch')
@@ -265,7 +272,7 @@ def verify_bundle(bundle, expected, config):
                                      dir=private_dir(bundle.parent, config['nasUid'])) as scratch:
         with tarfile.open(bundle, 'r:gz') as tar:
             members = tar.getmembers()
-            names = set()
+            names = {}
             links = []
             for member in members:
                 name = PurePosixPath(member.name)
@@ -273,20 +280,42 @@ def verify_bundle(bundle, expected, config):
                         or '..' in name.parts or member.name != str(name) or name in names
                         or not (member.isfile() or member.isdir() or member.issym() or member.islnk())):
                     raise ValueError('archive contains unsafe or duplicate member')
-                names.add(name)
+                if member.islnk():
+                    target = PurePosixPath(member.linkname)
+                    if (not target.parts or target.is_absolute() or '..' in target.parts
+                            or member.linkname != str(target) or target.parts[0] != name.parts[0]
+                            or target not in names or not names[target].isfile()):
+                        raise ValueError('archive contains unsafe hardlink')
+                names[name] = member
                 if member.issym():
                     links.append(member)
-            link_names = {PurePosixPath(link.name) for link in links}
+            non_directories = {name for name, member in names.items() if not member.isdir()}
             if (not {'local', 'nas'} <= {m.name for m in members if m.isdir()}
-                    or any(any(parent in link_names for parent in name.parents) for name in names)):
-                raise ValueError('archive contains unsafe symlink path')
+                    or any(any(parent in non_directories for parent in name.parents) for name in names)):
+                raise ValueError('archive contains unsafe member path')
             tar.extractall(scratch, members=(m for m in members if not m.issym()), filter='data')
         local, nas = Path(scratch) / 'local', Path(scratch) / 'nas'
+        for label in ('local', 'nas'):
+            content = hashlib.sha256()
+            for member in sorted((m for m in members if PurePosixPath(m.name).parts[0] == label),
+                                 key=lambda m: PurePosixPath(m.name)):
+                value = {'path': str(PurePosixPath(member.name).relative_to(label)),
+                         'type': 'file' if member.isfile() or member.islnk() else
+                                 'link' if member.issym() else 'directory'}
+                if value['type'] == 'file':
+                    value['sha256'] = digest(Path(scratch) / member.name)
+                elif value['type'] == 'link':
+                    value['target'] = member.linkname
+                content.update(content_identity(value))
+            if content.hexdigest() != expected_roots[label]['tree'].get('contentSha256'):
+                raise ValueError('archive content differs from stopped source')
         for relative in config['requiredLocal']:
             verify_read_only_database(local / relative, config, config['nasUid'])
         for relative in config['requiredNas']:
             item = nas / relative
-            if not item.is_dir() or not any(item.iterdir()):
+            archive_dir = PurePosixPath('nas') / relative
+            if (item.is_symlink() or not item.is_dir()
+                    or not any(archive_dir in name.parents for name in names)):
                 raise ValueError('archive restore omitted required NAS state')
         restored = {name: digest(local / name) for name in config['requiredLocal']}
         link_paths = []
@@ -328,7 +357,7 @@ def archive(config, status_path, baseline_path, observed_path, destination):
                 add_tree(tar, local, 'local')
                 add_tree(tar, nas, 'nas')
     bundle.chmod(0o600)
-    restored = verify_bundle(bundle, digest(bundle), config)
+    restored = verify_bundle(bundle, digest(bundle), config, observed['roots'])
     if restored != {name: item['sha256'] for name, item in observed['databases'].items()}:
         raise ValueError('restored database differs from stopped source')
     if inventory(config) != {key: value for key, value in observed.items()
@@ -359,7 +388,8 @@ def verify_archive(config, receipt_path):
             or identity.get('claims') != {name: config[name] for name in (
                 'localClaim', 'stateClaim', 'agentClaim', 'nasClaim')}):
         raise ValueError('archive receipt does not match the committed recovery contract')
-    restored = verify_bundle(receipt_path.parent / 'legacy.tar.gz', record['sha256'], config)
+    restored = verify_bundle(receipt_path.parent / 'legacy.tar.gz', record['sha256'], config,
+                             identity['roots'])
     if restored != record['restoredDatabases'] or restored != {
         name: item['sha256'] for name, item in record['inventory']['databases'].items()
     }:
