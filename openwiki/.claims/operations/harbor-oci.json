@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bc597959eb8fade7629405016a88cfbabe0ce504e436ff9d941a9d55705829e0",
+  "pageVersion": "sha256:98c68789af65ec0bc6f6cdbace4ba61476c44375d422cfa7342ce7bf2a8668f8",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -458,7 +458,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:8ce6f5df81955fc96930ae9504ce65084987c47e05233ee8a04c617777a647af"
+          "version": "repo-file-v1:sha256:9d225bba40e466ddc3d22becee3d68fef6548aa98b4624d0860ac9469dbba27e"
         }
       ]
     },
@@ -540,7 +540,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:8ce6f5df81955fc96930ae9504ce65084987c47e05233ee8a04c617777a647af"
+          "version": "repo-file-v1:sha256:9d225bba40e466ddc3d22becee3d68fef6548aa98b4624d0860ac9469dbba27e"
         }
       ]
     },
@@ -731,10 +731,24 @@
           "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         }
       ]
+    },
+    {
+      "id": "claim_1ae7d021eb1540109148bb2d07fda36a",
+      "statement": "The signed stock OpenClaw Enterprise image pair is published separately from the unregistered foundation, which deploys neither image and does not release the Enterprise rollout.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:42:29.586Z"
+    "at": "2026-10-19T08:22:58.881Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f810691faed55cf87cc54ca84efa0cf5dc0e21ea77391e8bc9ebcd5da000815e",
+  "pageVersion": "sha256:440d10f36b8bfd81eb95df313b0c335f6e443903899c18f2b9ebb173a4bbdbce",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -87,10 +87,24 @@
           "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
         }
       ]
+    },
+    {
+      "id": "claim_c871d0721e9b4505ba49d56aaac6d745",
+      "statement": "The unregistered Enterprise foundation declares a retained nonrotating PostgreSQL CA, but does not create a PVC or live database; placement, roles, backups and isolated restore are still pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml#L1-L65",
+          "version": "repo-lines-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzZjdiMzVjZjkxMTQ1MDBkN2IyN2E5YjFhNTM3N2NiM2I4NDJlM2E4YzMwNTllN2Y0ZTk1ZjlhNjgyMGM0MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNmJiYmZhM2NlYjlkNzZhMGJkMDljNWRkM2FiZmUwYjY3NDM0M2JmZmQ1Yzk2YzJlYTY0OGZhMzQ1NzY4ZDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:42:29.586Z"
+    "at": "2026-10-19T08:22:58.881Z"
   }
 }

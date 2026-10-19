@@ -52,6 +52,18 @@ sources:
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-bf69918d51d510f8b19906f1
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
@@ -124,10 +136,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-19T07:42:29.586Z" }
+generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:42:29.586Z
+    at: 2026-10-19T08:22:58.881Z
 ---
 
 # Workload Inventory
@@ -322,10 +334,16 @@ CI transport remain until replacement client, callback and CI paths pass
 
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, or
-agent has been deployed. Its fresh agent will use a separate owner
+agent has been deployed. The unregistered
+[foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
+scoped tenant RoleBindings, seven retained `OnChange` secret projections,
+a system ingress deny, and a retained PostgreSQL CA plus private server
+certificate. It declares no running PostgreSQL, local volumes, private route,
+or Installation candidate. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
-The platform branch registers dormant `platform-network-policy`,
+The platform source declares dormant `platform-network-policy`,
 `platform-network-policy-canary`, `platform-network-policy-cleanup`, and
 `platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
 kube-router selects no node and the canary fixtures deploy nothing until

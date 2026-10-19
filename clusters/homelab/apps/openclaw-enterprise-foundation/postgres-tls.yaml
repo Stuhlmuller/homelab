@@ -1,0 +1,65 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: occ-postgres-selfsigned
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: occ-postgres-root
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  secretName: occ-postgres-root
+  commonName: occ-postgres-root
+  isCA: true
+  duration: 87600h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Never
+  usages: [cert sign, crl sign]
+  issuerRef:
+    name: occ-postgres-selfsigned
+    kind: Issuer
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: occ-postgres-ca
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  ca:
+    secretName: occ-postgres-root
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: occ-postgres-server
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  secretName: occ-postgres-server-tls
+  dnsNames:
+    - occ-postgres.openclaw-system.svc.cluster.local
+  duration: 2160h
+  renewBefore: 720h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+  usages: [server auth]
+  issuerRef:
+    name: occ-postgres-ca
+    kind: Issuer

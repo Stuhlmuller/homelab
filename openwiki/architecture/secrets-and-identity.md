@@ -14,6 +14,8 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
+  - id: openwiki-source-62b4804f94bc9a36375f5db0
+    resource: repo://clusters/homelab/apps/external-secrets/cluster-secret-store.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
@@ -32,6 +34,14 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -86,10 +96,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
+generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:42:29.586Z
+    at: 2026-10-19T08:22:58.881Z
 ---
 
 # Secrets And Identity
@@ -247,6 +257,24 @@ boundary. After repair, verify a controlled repository-driven refresh before
 rotating dependent credentials.
 See [AWS forward access sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html)
 and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-viaawsservice).
+
+### Dormant OpenClaw Enterprise boundary
+
+The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
+The `aws-ssm` store allow-list includes both; seven `OnChange` ExternalSecrets
+project only exact `/homelab/openclaw-enterprise/` parameters and retain target
+Secrets on deletion. The model key remains a placeholder until the protected
+workflow supplies a distinct OpenRouter key. These declarations do not prove
+materialization or authorize activation.
+
+`occ-database` templates separate `application-url` and `migration-url` keys
+from generated app and migrator passwords. Both URLs name the private
+`occ-postgres` Service and require `sslmode=verify-full` with the retained
+`occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
+password is a separate target. cert-manager declares that CA and a server
+certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
+and live TLS verification remain pending.
 
 ## Identity Notes
 

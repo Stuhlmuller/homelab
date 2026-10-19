@@ -242,6 +242,29 @@ server IDs. Use exact generation checks for updates; recover unknown outcomes
 before retrying creation/deployment. Embedded does not support the dedicated
 provision endpoint's idempotency protocol.
 
+The pinned `GET /installation` response schema contains only ID, name,
+creation time and optional capabilities. It does not report selected Compute,
+Configuration, Secret, IAM or Sandbox Driver identities/settings; `occ
+installation get` uses the same route. `GET /installation/deployment-inventory`
+reports deployment state, not Driver selection. Thus an API-only checker cannot
+prove the installation matches the intended profile. The reconciler must stop
+before mutation until a separate, repository-owned comparison of installed and
+reviewed Driver configuration is defined and validated; Embedded capability is
+insufficient evidence.
+
+The stock chart instead mounts one operator-created Installation Secret into
+the API, worker and initialization Job. Both serving components set
+`OCC_CONFIG_PATH` to that file and read it at startup; the chart can place the
+rendered Installation checksum on their Pod templates. A repository-owned
+read-only verifier can therefore compare a reviewed candidate with a
+version-named immutable Secret, then verify the current Ready Pods use that
+exact Secret/checksum and were created after it. Double-reading Secret UID,
+resource version and workload identities around `GET /installation` closes a
+normal rollout race. This is an inference from Kubernetes workload evidence,
+not an OCE API field. A mutable Secret, an old Pod, or candidate bytes not
+owned by the repository cannot establish the selected settings. T039 has not
+yet added the candidate source, so the current CLI remains fail-closed.
+
 Legacy recovery must cover both local databases and NAS content. Existing
 `openclaw-assistant-check.py`, `openclaw-runtime-storage-check.py`, and
 `openclaw-github-check.cjs` passed during research; these prove existing helpers,
@@ -253,6 +276,12 @@ unnecessary infrastructure. Blind create retries can duplicate resources.
 Keeping only daily database snapshots loses workspace and configuration coverage.
 
 Source: [OCE API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/api.md),
+[Installation response schema](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/resources.ts#L296-L352),
+[Installation routes](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/routes.ts#L381-L409),
+[chart startup volume and checksum](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/deployments.yaml#L37-L40),
+[startup file reader](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/composition/startup-file.ts#L87-L137),
+[upstream Secret comparison](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/scripts/upgrade-production-images#L470-L496),
+[Kubernetes immutable Secret behavior](https://kubernetes.io/docs/concepts/configuration/secret/#immutable-secrets),
 [legacy recovery contract](../../clusters/homelab/apps/openclaw/README.md#durable-runtime-state-and-recovery).
 
 ## R8 — Shared Gateway API ownership and supported private Envoy

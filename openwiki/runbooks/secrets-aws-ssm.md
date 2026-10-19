@@ -10,6 +10,10 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -24,10 +28,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
+generated: { by: "codex", at: "2026-10-19T07:43:16.273Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:08:11.339Z
+    at: 2026-10-19T07:43:16.273Z
 ---
 
 # AWS SSM Secret References
@@ -79,6 +83,16 @@ validates an owner-supplied OpenRouter key and binds the write to exact current
 supplied. The placeholder blocks activation and provider acceptance until a
 real key is transferred, projected, and tested. See the
 [canonical secret contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
+
+The dormant [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares seven retained `OnChange` ExternalSecret targets across
+`openclaw-system` and `openclaw-agents`. `occ-database` templates separate
+application and migration URLs from generated passwords; both require
+PostgreSQL `verify-full` TLS against the declared retained root CA. The admin
+password remains in its own Secret. Rotation needs a committed
+`generated-secret-revision` advance and consumer verification. The manifests
+are not registered with Argo, so source alone proves no SSM value, projected
+Secret, issued certificate, or running database.
 
 ## Harbor native receipt prerequisite
 

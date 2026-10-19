@@ -62,6 +62,8 @@ sources:
     resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -144,10 +146,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T07:42:29.586Z" }
+generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:42:29.586Z
+    at: 2026-10-19T08:22:58.881Z
 ---
 
 # Harbor Private OCI Registry
@@ -841,6 +843,7 @@ The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
 protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
+The dormant Enterprise foundation is unregistered and deploys neither image.
 See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned

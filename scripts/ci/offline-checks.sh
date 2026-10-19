@@ -61,6 +61,7 @@ python3 -I scripts/ci/fleet-google-login-test.py
 python3 -I scripts/ci/fleet-airvpn-setup-test.py
 python3 -I scripts/ci/harbor-publish-test.py
 python3 -I scripts/ci/openclaw-enterprise-image-test.py
+python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/harbor-encrypt-diagnostic-test.py
 python3 -I scripts/ci/static-checks-timeout-test.py
 python3 -I scripts/ci/harbor-native-chainguard-receipt-test.py

@@ -193,9 +193,11 @@ dispatch inputs and logs.
 | `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
 | `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Protected reconciler registers the key as the fresh Agent's OCC `harnessAuth` Secret; OCE projects `OPENAI_API_KEY` only to that agent |
 
-The foundation must materialize the exact TLS-verified application and
-migration URLs in `openclaw-system/occ-database` without mounting the admin or
-migrator password in API/worker Pods. All six ExternalSecrets use `OnChange` and
+The dormant foundation declares exact TLS-verified application and migration
+URLs in `openclaw-system/occ-database` without mounting the admin or migrator
+password in API/worker Pods. Its URL template relies on the committed
+alphanumeric-only password generator; change the template if that contract
+changes. All seven ExternalSecrets use `OnChange` and
 retained targets. A credential rotation requires advancing a committed revision,
 checking ExternalSecret readiness, then restarting only consumers that read the
 value once. A changed SSM value alone is not a rollout. Add `openclaw-system`
