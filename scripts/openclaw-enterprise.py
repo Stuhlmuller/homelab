@@ -684,8 +684,8 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
         if pending:
             baseline = set(pending["baselineAgentIds"])
             new = [item for item in agents if isinstance(item, dict) and
-                   item.get("id") not in baseline]
-            _require(len(new) == 1 and new[0].get("name") == name,
+                   item.get("id") not in baseline and item.get("name") == name]
+            _require(len(new) == 1,
                      "unknown Agent create outcome; do not retry")
             agent_id = new[0].get("id")
         else:

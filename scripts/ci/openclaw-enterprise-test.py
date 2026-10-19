@@ -945,6 +945,8 @@ class InactiveAgentReconciliation(unittest.TestCase):
                                     self.config["source"]["revision"],
                                     OCE._identity_hash(self.config))
         self.assertEqual(state["pending"]["operation"], "agent-create")
+        self.api.agents["agt_unrelated"] = {**self.api.agents["agt_one"],
+                                            "id": "agt_unrelated", "name": "other"}
         self.assertEqual(self._reconcile()["agentId"], "agt_one")
         self.assertEqual(len([call for call in self.api.calls if call[0] == "POST" and
                               call[1] == "/namespaces/ns_one/agents"]), 1)
