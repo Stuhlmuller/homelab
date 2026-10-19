@@ -25,7 +25,7 @@ sources:
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-f585f8850806deb1619ec0c5
-    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
 generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
@@ -238,7 +238,7 @@ with enough real memory and pod capacity for that retained fleet plus startup
 and rolling-update headroom. No hardware choice or sizing is declared yet.
 Before assigning its label, remove the stale services, set representative proxy
 requests, and validate the chosen node against measured use. The declarative
-label path is `IaC/.catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
+label path is `IaC/terragrunt-catalog/units/live/kubernetes-node-labels/terragrunt.hcl`.
 
 ### Temporary August 2026 recovery
 

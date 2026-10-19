@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-CONFIG = Path(__file__).resolve().parents[1] / "IaC/config/etcd-backup-storage.json"
+CONFIG = Path(__file__).resolve().parents[1] / "IaC/etcd-backup-storage.hcl"
 RECEIPT = "publication.json"
 FILES = ("etcd.snapshot", "manifest.json")
 spec = importlib.util.spec_from_file_location(
@@ -28,8 +28,21 @@ backup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(backup)
 
 
+def read_inputs(path):
+    lines = [line.strip() for line in path.read_text().splitlines() if line.strip()]
+    if not lines or lines[0] != "inputs = {" or lines[-1] != "}":
+        raise ValueError("invalid committed Terragrunt inputs")
+    value = {}
+    for line in lines[1:-1]:
+        match = re.fullmatch(r'(account_id|region|bucket)\s*=\s*"([A-Za-z0-9-]+)"', line)
+        if not match or match[1] in value:
+            raise ValueError("invalid committed Terragrunt inputs")
+        value[match[1]] = match[2]
+    return value
+
+
 def destination(path=CONFIG):
-    value = json.loads(path.read_text())
+    value = read_inputs(path)
     if (set(value) != {"account_id", "region", "bucket"}
             or not re.fullmatch(r"[0-9]{12}", value["account_id"])
             or value["region"] != "us-east-1"

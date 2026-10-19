@@ -39,7 +39,7 @@ sources:
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/modules/tailscale-access/README.md
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
     resource: repo://scripts/ci/tailnet-dns-test.py
   - id: openwiki-source-511191e55632b55651ad4318
@@ -79,7 +79,7 @@ acceptance; foundation source alone does not establish deployed traffic changes.
 Canonical desired state and validation:
 [Traefik README](../../clusters/homelab/apps/traefik/README.md),
 [route inventory](../../clusters/homelab/apps/traefik/routes.yaml), and
-[Tailscale provider runbook](../../IaC/modules/tailscale-access/README.md).
+[Tailscale provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 The [ingress runbook](../../docs/networking-tailnet-ingress.md) describes the
 phase 2a source and the separate external DNS and later CI cutover gates.
 
@@ -166,7 +166,7 @@ saves the validated wrapper in a private pending receipt. Bounded polling handle
 local trust-status lag; timeout retains the receipt and retry verifies it before
 any new signing. Preview and retirement never consume a pending receipt. If an
 older attempt lost its wrapper, use the separate
-[interrupted-signing recovery](../../IaC/modules/tailscale-access/README.md#interrupted-signing-recovery)
+[interrupted-signing recovery](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md#interrupted-signing-recovery)
 command: exact provider/Mac/time metadata, absent receipts and fixed secrets, and
 an empty read-only affected-signature query must precede removal of that one
 authority without re-signing. Pause other signing/join activity during recovery;
@@ -180,7 +180,7 @@ signature and all previous authority metadata before any removal. Execute
 rechecks each target and safely handles an already-absent previous authority;
 preview never signs, publishes or changes cache contents. Expired auth keys alone
 do not revoke the delegated signing capability.
-The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
+The [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
 tradeoff. Each CI job must supply a private `statedir` to the pinned action.
 

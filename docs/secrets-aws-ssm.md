@@ -117,7 +117,7 @@ publisher's `0600` cache, including its separate public authority identities,
 outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
 expiry), then explicitly retire old cached signing authorities after CI
 acceptance. Expiring an auth key alone does not remove that authority. The
-[module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
+[module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns preview, publication,
 acceptance, rotation, and recovery commands.
 
 ## Mastodon secret contract

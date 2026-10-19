@@ -79,7 +79,7 @@ sources:
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
-    resource: repo://IaC/modules/entra-owner-mail/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
@@ -305,7 +305,7 @@ overridden Applications from the real shared template, checking default
 inheritance, list replacement, historical backend keys, changed-unit selection,
 Azure credential isolation, and retirement ownership. Catalog fixtures carry
 shape only; production defaults belong in `IaC/stack-defaults.hcl`, with app
-inputs in `IaC/stacks/<app>/stack.hcl`.
+inputs in `IaC/<app>/stack.hcl`.
 For a stack refactor, also compare every affected generated unit's inputs,
 dependencies, backend configuration, provider generation, and module source
 against the pre-change revision. HCL validity alone does not prove equivalence.
@@ -472,7 +472,7 @@ The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
-[provider runbook](../../IaC/modules/tailscale-access/README.md).
+[provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind
@@ -1242,8 +1242,8 @@ details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
-units. When `IaC/terragrunt.stack.hcl`, `IaC/stacks`, `IaC/stack-defaults.hcl`,
-`IaC/.catalog`, or `IaC/modules` changes, the scripts plan or apply the matching
+units. When `IaC/terragrunt.stack.hcl`, `IaC/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
+`IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching
 generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
 files. Stack index/inputs/defaults, catalog, module, shared root/provider, and tracked generated-group

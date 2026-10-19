@@ -18,7 +18,7 @@ sources:
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-f585f8850806deb1619ec0c5
-    resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
+    resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
 generated: { by: "codex", at: "2026-10-11T00:16:41.141Z" }
 ---
 

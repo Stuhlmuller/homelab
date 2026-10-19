@@ -23,7 +23,7 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
-if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/stacks; then
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/; then
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
@@ -119,22 +119,22 @@ echo "::group::Terragrunt Azure credential gate"
 
   for changed_path in \
     IaC/live/azuread-applications/fleet/.terraform.lock.hcl \
-    IaC/.catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
-    IaC/modules/azuread-saml-application/main.tf \
-    IaC/modules/azuread-family-user/main.tf; do
+    IaC/terragrunt-catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
+    IaC/terragrunt-catalog/modules/azuread-saml-application/main.tf \
+    IaC/terragrunt-catalog/modules/azuread-family-user/main.tf; do
     if ! terragrunt_azuread_stack_changed; then
       echo "Azure credentials must be required for ${changed_path}." >&2
       exit 1
     fi
   done
   [[ "$(terragrunt_azuread_changed_filter)" == "*" ]]
-  changed_path="IaC/modules/argocd-application-kubernetes/main.tf"
+  changed_path="IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"
   if terragrunt_azuread_stack_changed; then
     echo "An unrelated module change must not require Azure credentials." >&2
     exit 1
   fi
   [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
-  changed_path="IaC/modules/entra-verified-family-user/main.tf"
+  changed_path="IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf"
   [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
   changed_path="scripts/ci/terragrunt-plan.sh"
   [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
@@ -161,7 +161,7 @@ echo "::group::Terragrunt deleted-unit ownership"
   git() {
     case "$1" in
       rev-parse) return 0 ;;
-      diff) printf '%s\n' IaC/.catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
+      diff) printf '%s\n' IaC/terragrunt-catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
       *) return 1 ;;
     esac
   }

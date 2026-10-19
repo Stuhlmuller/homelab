@@ -89,7 +89,7 @@ The `tailscale` Argo CD Application owns the operator and
 `homelab-exit-node` Connector. It advertises `10.1.0.0/24` and exit-node routing
 with `tag:k8s`. Keep it for remote Talos/LAN access. The provider-owned complete
 policy in `scripts/config/tailscale-policy.json` owns approvals and tag grants;
-use the [Tailscale operator unit](../IaC/modules/tailscale-access/README.md) for
+use the [Tailscale operator unit](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for
 reviewed policy changes instead of editing the admin console.
 
 ```sh
