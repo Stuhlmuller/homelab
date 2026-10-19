@@ -146,6 +146,23 @@ test_rejects_changed_openclaw_legacy_operation if {
 	}
 }
 
+test_rejects_changed_openclaw_enterprise_operation if {
+	job := openclaw_operations_fixture.jobs.enterprise
+	steps := job.steps
+	static := openclaw_operations_fixture.jobs["static-policy"]
+	every changed in [
+		object.union(openclaw_operations_fixture, {"true": {"workflow_dispatch": {"inputs": {"enterprise_stage": {"options": ["reconcile"]}}}}}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"static-policy": object.union(static, {"steps": [object.union(static.steps[0], {"run": "true"}), static.steps[1], static.steps[2], static.steps[3]]})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"permissions": {"contents": "write"}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"concurrency": {"group": "other"}})})}),
+		object.union(openclaw_operations_fixture, {"jobs": object.union(openclaw_operations_fixture.jobs, {"enterprise": object.union(job, {"steps": [steps[0], steps[1], object.union(steps[2], {"run": replace(openclaw_enterprise_blocked_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
+	] {
+		violations := deny with input as changed
+		some msg in violations
+		contains(msg, "Enterprise stages require exact dispatch")
+	}
+}
+
 test_allows_fixed_openclaw_phase_tail if {
 	private_live_tail(`then
 phase="$(cat "$OPENCLAW_PHASE_FILE" 2>/dev/null || true)"
@@ -176,20 +193,51 @@ bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 
 workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"name": "OpenClaw Enterprise Operations",
-	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]}}}},
-	"jobs": {"legacy": {
+	"permissions": {},
+	"true": {"workflow_dispatch": {"inputs": {
+		"expected_sha": {"required": true},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"], "default": "none"},
+		"enterprise_stage": {"options": ["none", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
+		"baseline_ref": {}, "archive_ref": {},
+	}}},
+	"jobs": {
+	"static-policy": {"permissions": {"contents": "read"}, "steps": [
+		{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "LEGACY_STAGE": "${{ inputs.legacy_stage }}", "ENTERPRISE_STAGE": "${{ inputs.enterprise_stage }}", "BASELINE_REF": "${{ inputs.baseline_ref }}", "ARCHIVE_REF": "${{ inputs.archive_ref }}"}, "run": openclaw_dispatch_guard},
+		{"name": "Check Out Repository"},
+		{"name": "Install Nix"},
+		{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
+	]},
+	"legacy": {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
-		"concurrency": {"group": "openclaw-enterprise-operations-production"},
+		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false},
 		"permissions": permissions,
-		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
 		"steps": [{
 			"name": "Run Legacy Stage",
 			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
 			"run": run,
 		}],
-	}},
+		},
+	"enterprise": {
+		"needs": ["static-policy"],
+		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none'",
+		"concurrency": {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false},
+		"environment": {"name": "homelab-production"},
+		"permissions": {"contents": "read"},
+		"steps": [
+			{"name": "Verify Current Main Commit Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": platform_maintenance_main_check},
+			{"name": "Check Out Repository", "uses": "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505", "with": {"persist-credentials": false}},
+			{"name": "Run Fixed Enterprise Stage", "env": {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": openclaw_enterprise_blocked_run},
+		],
+	},
+	},
 }
+
+openclaw_operations_fixture := workflow_with_openclaw_legacy_operation(
+	openclaw_legacy_run,
+	{"contents": "read", "id-token": "write"},
+)
 
 test_rejects_mutable_docker_action_image if {
 	violations := deny with input as workflow_with_images(

@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 import stat
+import textwrap
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from threading import Thread
@@ -17,11 +18,73 @@ from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-operations.sh'
+ENTERPRISE_SCRIPT = ROOT / 'scripts/ci/openclaw-enterprise-stage.sh'
 WORKFLOW = ROOT / '.github/workflows/openclaw-enterprise-operations.yml'
 WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 
 
 class Operations(unittest.TestCase):
+    def test_enterprise_stages_are_pinned_serialized_and_fail_closed(self):
+        workflow = WORKFLOW.read_text()
+        script = ENTERPRISE_SCRIPT.read_text()
+        digest = hashlib.sha256(ENTERPRISE_SCRIPT.read_bytes()).hexdigest()
+        self.assertIn(f"{digest}  scripts/ci/openclaw-enterprise-stage.sh", workflow)
+        self.assertIn('options: [none, full-sync, reconcile, stop, verification, '
+                      'restore, acceptance]', workflow)
+        self.assertIn('Choose exactly one fixed operation stage.', workflow)
+        self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 2)
+        self.assertIn("inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
+                      workflow)
+        self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none'",
+                      workflow)
+        self.assertIn('private diagnostics withheld', workflow)
+        self.assertIn('durable private journal runner is not declared', script)
+        self.assertNotIn('kubectl', script)
+        self.assertNotIn('argocd', script)
+        self.assertNotIn('openclaw-enterprise.py', script)
+
+        dispatch = re.search(r'      - name: Verify Dispatch Commit\n.*?        run: \|\n'
+                             r'(.*?)(?=\n      - name: Check Out Repository)',
+                             workflow, re.S)
+        self.assertIsNotNone(dispatch)
+        guard = textwrap.dedent(dispatch.group(1))
+        base = {**os.environ, 'ACTUAL_REF': 'refs/heads/main',
+                'ACTUAL_SHA': 'a' * 40, 'EXPECTED_SHA': 'a' * 40,
+                'BASELINE_REF': '', 'ARCHIVE_REF': ''}
+        for legacy, enterprise, baseline, expected in (
+            ('inventory', 'none', '', True), ('none', 'verification', '', True),
+            ('none', 'none', '', False), ('inventory', 'stop', '', False),
+            ('none', 'reconcile', 'unexpected', False),
+        ):
+            result = subprocess.run(['bash', '-c', guard], cwd=ROOT,
+                                    env={**base, 'LEGACY_STAGE': legacy,
+                                         'ENTERPRISE_STAGE': enterprise,
+                                         'BASELINE_REF': baseline},
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode == 0, expected,
+                             (legacy, enterprise, result.stderr))
+
+        sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                                      text=True).strip()
+        run_env = {**os.environ, 'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': sha,
+                   'EXPECTED_SHA': sha}
+        for stage in ('full-sync', 'reconcile', 'stop', 'verification',
+                      'restore', 'acceptance'):
+            with self.subTest(stage=stage):
+                result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,
+                                        env=run_env, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn('durable private journal runner is not declared', result.stderr)
+        for stage in ('', 'inventory', 'unknown', '../restore'):
+            with self.subTest(stage=stage):
+                result = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), stage], cwd=ROOT,
+                                        env=run_env, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 2)
+        stale = subprocess.run(['bash', str(ENTERPRISE_SCRIPT), 'verification'], cwd=ROOT,
+                               env={**run_env, 'EXPECTED_SHA': '0' * 40},
+                               capture_output=True, text=True, timeout=5)
+        self.assertEqual(stale.returncode, 2)
+
     def test_workflow_pins_current_operations_script(self):
         pins = re.findall(
             r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-operations\.sh'",
@@ -272,7 +335,7 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [inventory, publish-inventory, archive, publish-archive, verify]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',

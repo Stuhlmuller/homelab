@@ -27,6 +27,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Firewall canary and node expansion | Pending | — | Pending |
 | Envoy/Gateway API private route | Pending | — | Pending |
 | PostgreSQL roles/TLS and isolated restore | Pending | — | Pending |
+| Protected Enterprise operations stages | [workflow](../../.github/workflows/openclaw-enterprise-operations.yml), [stage guard](../../scripts/ci/openclaw-enterprise-stage.sh), [journal contract](../../scripts/config/openclaw-enterprise.json) | — | Source-only. Fixed dispatch is guarded and serialized; every Enterprise stage blocks because no durable private journal runner/mount exists. T043 and live outcomes remain pending. |
 | Enterprise install and hook failure matrix | Pending | — | Pending |
 | Inactive agent reconciliation and retry | Pending | — | Pending |
 | Model credential and real provider probe | Pending | — | Pending |
