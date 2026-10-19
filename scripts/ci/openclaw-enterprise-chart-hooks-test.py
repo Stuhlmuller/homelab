@@ -137,6 +137,17 @@ class ChartHooksContract(unittest.TestCase):
                              ("oce-initialization", "-10")]:
             item = next(item for item in self.chart if item["metadata"]["name"] == name)
             self.assertEqual(item["metadata"]["annotations"]["helm.sh/hook-weight"], weight)
+        database_egress = {"to": [{"ipBlock": {"cidr": "10.96.0.51/32"}}],
+                           "ports": [{"protocol": "TCP", "port": 5432}]}
+        cluster_egress = {"to": [{"ipBlock": {"cidr": "10.96.0.1/32"}},
+                                  {"ipBlock": {"cidr": "10.1.0.199/32"}}],
+                          "ports": [{"protocol": "TCP", "port": 443}]}
+        self.assertEqual(chart[("NetworkPolicy", "openclaw-enterprise-dependency-egress",
+                                "openclaw-system")]["spec"]["egress"][1:],
+                         [database_egress, cluster_egress])
+        self.assertEqual(chart[("NetworkPolicy", "oce-bootstrap-isolation",
+                                "openclaw-system")]["spec"]["egress"][1:],
+                         [database_egress])
         for component in ("api", "worker"):
             deployment = chart[("Deployment", f"openclaw-enterprise-{component}", "openclaw-system")]
             self.assertEqual(deployment["spec"]["replicas"], 1)

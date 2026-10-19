@@ -48,7 +48,8 @@ Envoy-to-agent source addresses before private route cutover.
 The Secret's `openclaw.dev/installation-id` annotation cannot be known until
 bootstrap. The T041 protected selected-Driver proof must set/check that annotation
 against `GET /installation` and verify both Ready Pods' exact startup binding
-before reconciliation. The current CLI remains fail closed without that proof.
+before reconciliation. The CLI's read-only `check` gathers that proof; the
+annotation binder is pending, and `reconcile`/tenant `verify` remain blocked.
 The chart's Kubernetes policy also needs nonempty reviewed `database.cidrs` and
 `cluster.cidrs`; this candidate has explicit destinations, but Service DNAT
 behavior still needs the isolated canary qualification.

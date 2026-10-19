@@ -62,9 +62,10 @@ any changed UID, resource version or Pod identity blocks. Do not log the Secret
 or candidate bytes. An immutable Secret must use a new name on rotation so an
 old Pod cannot silently retain a deleted Secret mount.
 
-`scripts/openclaw-enterprise.py` has an offline attestation helper for these
-conditions. The scoped Kubernetes proof path is not yet wired into its CLI, so
-reconciliation remains blocked before mutation or activation.
+`scripts/openclaw-enterprise.py check` now gathers scoped Kubernetes snapshots
+around `GET /installation` and applies the attestation. The post-bootstrap
+annotation binder and private credential/journal execution path remain pending;
+`reconcile` and tenant `verify` still block before mutation or activation.
 
 Use these actual upstream operations:
 
