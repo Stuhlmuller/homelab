@@ -24,6 +24,8 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
+  - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
+    resource: repo://clusters/homelab/apps/traefik/certificate.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -42,6 +44,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
@@ -68,10 +72,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
+generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T09:02:08.557Z
 ---
 
 # Tailnet And App Ingress
@@ -114,6 +118,14 @@ Separate listeners prevent public callbacks from selecting private routers.
 cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
+The staged OpenClaw Enterprise console uses `console.oce.stinkyboi.com` through
+an authenticated Octelium Service. Only exact
+`agent-<32 hex>.agents.oce.stinkyboi.com` hosts go directly to the OCE API on
+this private listener; OCE checks the session and Agent permission. The old
+`openclaw.stinkyboi.com` route still targets the suspended legacy Service until
+final cutover. The certificate explicitly includes the console name and the
+`*.agents.oce.stinkyboi.com` wildcard; `*.stinkyboi.com` cannot cover the
+two-label console name. These declarations do not establish live access.
 The current single-stack IPv4 Service publishes only `100.99.16.74`; its peer's
 IPv6 address has no matching application forwarding rule. The separate resolver
 uses the Traefik Service's published IPv4 for approved A answers and returns
@@ -255,8 +267,9 @@ Tailscale DNS. Check normal client DNS and HTTPS before removing any public
 records. The [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 limits the later `tailscale-private-dns.sh --retire-private` helper to public
 A/AAAA/CNAME records for the 26 approved non-apex app subdomains, including
-the Cordium wildcard owner. The resolver still answers all 27 approved private
-names. The helper cannot publish or restore records. Preserve the public apex
+the Cordium wildcard owner. The current source declares 29 private resolver
+names: the original 27-name migration set plus two Enterprise names. The helper
+cannot publish or restore records. Preserve the public apex
 A/MX/TXT and any CAA, DNS-01 validation, the public zone, four legacy callback/
 CI/carrier names, and unrelated public services. Keep the public records during
 this resolver handoff.
@@ -281,12 +294,13 @@ readiness before n8n restarts because it can register hooks during startup.
 Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
-The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-OpenClaw HTTP 502 only when each reviewed workload declaration and live
-Deployment specify zero replicas and no live replicas remain. Deployed Traefik
-routes and TLS must match the reviewed checkout. Other application 5xx
-responses fail. These exceptions check routing to intentionally stopped apps;
-they do not establish application runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 only
+when its reviewed declaration and live Deployment both specify zero replicas
+and no live replicas remain. OpenClaw no longer has a stopped-workload 502
+exception; its canonical route must pass normal readiness after Enterprise
+cutover. Deployed Traefik routes and TLS must match the reviewed checkout.
+Other application 5xx responses fail. The AFFiNE exception checks routing,
+not application runtime health.
 
 For the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most
@@ -336,7 +350,8 @@ current guard rejected AFFiNE HTTP 500 and OpenClaw HTTP 502 while both apps
 were deliberately at zero replicas, Fleet setup timed out, the latest n8n
 delivery check returned 404, and Policy Bot preview was unavailable. No public
 app records were deleted. The current [readiness guard](../../scripts/tailscale-private-dns-check.py)
-requires reviewed source and live zero replicas for those stopped-app responses.
+allows that stopped-app response only for AFFiNE with reviewed and live zero
+replicas; OpenClaw 502 now fails.
 Repeat the trusted CLI and normal-client checks, Fleet setup, n8n and Policy Bot
 callback checks, and every remaining [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 gate from reviewed `main` before any public deletion. This dated observation is

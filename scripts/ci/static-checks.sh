@@ -14,14 +14,29 @@ python3 -I scripts/ci/nix-cache-signature-test.py
 python3 -I scripts/ci/openclaw-retirement-test.py
 python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
+python3 -I scripts/ci/openclaw-enterprise-foundation-test.py
+python3 -I scripts/ci/openclaw-enterprise-chart-hooks-test.py
+python3 -I scripts/ci/openclaw-enterprise-lifecycle-test.py
+python3 -I scripts/ci/openclaw-enterprise-startup-test.py
+python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
+python3 -I scripts/ci/openclaw-enterprise-test.py
+python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
 python3 -I scripts/ci/tailnet-dns-test.py
+python3 -I scripts/ci/platform-maintenance-test.py
+python3 -I scripts/ci/platform-maintenance-stage-test.py
+python3 -I scripts/ci/network-policy-enforcement-test.py
+python3 -I scripts/ci/network-policy-qualification-test.py
+python3 -I scripts/ci/network-policy-cleanup-test.py
+python3 -I scripts/ci/envoy-gateway-prerequisite-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091 # Shared helper is linted separately.
 source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
+python3 -I scripts/ci/envoy-gateway-registration-test.py
+python3 -I scripts/ci/network-policy-registration-test.py
 
 echo "::group::Operator OpenTofu validation"
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
@@ -208,11 +223,31 @@ if command -v checkov >/dev/null 2>&1; then
     checkov_output="$(mktemp "${TMPDIR:-/tmp}/homelab-checkov.XXXXXX")"
     trap 'rm -f "$checkov_output"' EXIT
 
+    # These three exact findings are public PVC/Secret names in the pinned
+    # OpenClaw profile. Preserve Installation bytes while rejecting any wider
+    # secrets-scan baseline or changed finding fingerprint.
+    jq -e '.failed_checks == [
+      {"file":"/clusters/homelab/apps/openclaw-enterprise/installation.yaml","findings":[
+        {"resource":"b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd","check_ids":["CKV_SECRET_6"]}
+      ]},
+      {"file":"/clusters/homelab/apps/openclaw-enterprise/profile-input.json","findings":[
+        {"resource":"4c854688a8888c241dae89b2c0036f1014dd193b","check_ids":["CKV_SECRET_6"]},
+        {"resource":"b34905fb692e6b1b108a7dfa4d2c3b2b5ef683cd","check_ids":["CKV_SECRET_6"]}
+      ]}
+    ]' .checkov.baseline >/dev/null || {
+      echo "Checkov secrets baseline differs from the three reviewed public names." >&2
+      exit 1
+    }
+
     run_checkov() {
       local framework="$1"
       local directory="$2"
+      local -a extra_args=()
+      if [[ "$framework" == secrets ]]; then
+        extra_args+=(--baseline .checkov.baseline)
+      fi
 
-      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" >"$checkov_output" 2>&1; then
+      if ! checkov --config-file .checkov.yaml --framework "$framework" --directory "$directory" "${extra_args[@]}" >"$checkov_output" 2>&1; then
         echo "Checkov ${framework} scan failed; detailed output was withheld to prevent publishing a detected secret." >&2
         return 1
       fi

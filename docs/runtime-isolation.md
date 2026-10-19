@@ -10,9 +10,10 @@ rendered manifests, then let Argo CD converge them.
 
 The live audit on 2026-05-24 found kube-flannel as the only CNI DaemonSet.
 Flannel provides pod networking, but it does not enforce Kubernetes
-`NetworkPolicy`. Until this repo installs an enforcing CNI or a dedicated
-policy engine, `NetworkPolicy` objects are documentation placeholders rather
-than a reliable isolation control.
+`NetworkPolicy`. The firewall-only kube-router source is staged with automatic
+sync disabled and no admitted node; until it passes the canary gates below,
+`NetworkPolicy` objects are documentation placeholders rather than a reliable
+isolation control.
 
 Current enforced controls are therefore:
 
@@ -152,16 +153,23 @@ to `media`. The long-term hardening path is to move Deluge and its shared
 downloads contract into a dedicated privileged namespace or replace the VPN
 pattern with one that does not require privileged namespace admission.
 
-## Network Policy Placeholder
+## Staged NetworkPolicy enforcement
 
-Before adding `NetworkPolicy` manifests that are expected to enforce traffic,
-first add one of these repo-owned prerequisites:
+[`clusters/homelab/platform/network-policy/`](../clusters/homelab/platform/network-policy/README.md)
+owns the pinned kube-router firewall DaemonSet, isolated canary fixtures and
+ownership-limited cleanup. It leaves Flannel as the CNI and kube-proxy as the
+service proxy. The Argo registrations are dormant; no node is selected or
+tainted. The [policy review](evidence/openclaw-enterprise-policy-review.json)
+still has unreviewed generated policies and broad egress findings. The
+[acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
+existing node safely admits the isolated canary.
 
-- a CNI migration plan to a policy-enforcing CNI, with rollback notes; or
-- a policy-engine installation that can enforce equivalent L3/L4 controls.
-
-After enforcement exists, start with namespace default-deny policies and add
-the smallest allow rules for DNS, ingress gateway traffic, metrics scraping,
-and app-to-app dependencies. The first PR that makes `NetworkPolicy` effective
-must include a render check and a live read-only verification plan that proves
-denied traffic is actually denied.
+Before making policies effective, finish owner/render review, publish every
+fixture and controller image, admit a tainted node with measured memory and
+local storage, and prove allowed and denied traffic plus restart, API-loss,
+IP-reuse and reboot behavior on that node. Preserve DNS, API, mesh HBONE,
+webhook, NFS and recovery access. A candidate fixture's narrow deny result
+does not make the stock Enterprise agent's broad public TCP/443 egress a
+domain allowlist. Follow the [canary and cleanup runbook](../clusters/homelab/platform/network-policy/README.md)
+before expanding enforcement; deleting the DaemonSet alone may leave firewall
+rules behind.

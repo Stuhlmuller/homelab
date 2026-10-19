@@ -3,15 +3,21 @@ type: pattern
 title: "Helm Chart Organization"
 description: "Upstream Helm charts, local values, shared Terragrunt Application ownership, and the smallest source layout for deployment changes."
 tags: ["pattern", "helm", "argocd", "terragrunt"]
-generated: { by: "codex", at: "2026-10-10T19:05:45.723Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 sources:
+  - id: openwiki-source-d27624f754153b714543d8c4
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml
+  - id: openwiki-source-7965c9b2bfe3b80fc14078ae
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/kustomization.yaml
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-9828d67d6c8e28f372b28e0d
     resource: repo://IaC/terragrunt-catalog/units/live/argocd-app/terragrunt.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T14:01:19.597Z
 ---
 
 # Helm Chart Organization
@@ -77,6 +83,13 @@ Argo explicitly discourages using multiple sources to combine unrelated apps.
 This is a repository design decision, not a claim that one layout fits every
 deployment. It preserves the existing chart behavior while concentrating
 repetition in the Application registration layer.
+
+The dormant [OpenClaw Enterprise candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+keeps the pinned upstream chart intact. App-local `values.yaml` and reviewed
+`installation.yaml` supply site inputs; Kustomize holds lifecycle hook resources
+and a single EnvoyProxy image override. The focused renderer test compares
+profile output and rendered chart identities against the pinned upstream tree.
+No Argo Application or root Terragrunt unit registers this candidate yet.
 
 ## Generated Output and Upgrade Checks
 

@@ -2,8 +2,8 @@
 set -euo pipefail
 
 # Fixed production destinations; only ephemeral GitHub runner state is changed.
-[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns) ]] || {
-  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns' >&2
+[[ $# -eq 1 && ("$1" == publish-cordium || "$1" == publish || "$1" == publish-harbor-core || "$1" == publish-openclaw-enterprise || "$1" == mirror || "$1" == mirror-fleet || "$1" == mirror-bazarr || "$1" == mirror-traefik || "$1" == mirror-chainguard || "$1" == mirror-mastodon || "$1" == mirror-harbor || "$1" == mirror-renovate || "$1" == mirror-dns || "$1" == mirror-litellm) ]] || {
+  echo 'Usage: harbor-publish.sh publish|publish-cordium|publish-harbor-core|publish-openclaw-enterprise|mirror|mirror-fleet|mirror-bazarr|mirror-traefik|mirror-chainguard|mirror-mastodon|mirror-harbor|mirror-renovate|mirror-dns|mirror-litellm' >&2
   exit 2
 }
 mode="$1"
@@ -55,6 +55,9 @@ elif [[ "$mode" == mirror-chainguard ]]; then
 elif [[ "$mode" == mirror-dns ]]; then
   mode=mirror
   mirror_manifest=scripts/config/harbor-dns-images.json
+elif [[ "$mode" == mirror-litellm ]]; then
+  mode=mirror
+  mirror_manifest=scripts/config/harbor-litellm-images.json
 fi
 [[ "${GITHUB_ACTIONS:-}" == true && "$(uname -s)" == Linux ]]
 [[ "${GITHUB_REPOSITORY:-}" == Stuhlmuller/homelab ]]
@@ -94,6 +97,9 @@ if [[ "$mode" == mirror ]]; then
   ' "$manifest" >/dev/null
   if [[ "$manifest" == scripts/config/harbor-dns-images.json ]]; then
     jq --exit-status '.images == [{"source":"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}]' "$manifest" >/dev/null
+  fi
+  if [[ "$manifest" == scripts/config/harbor-litellm-images.json ]]; then
+    jq --exit-status '.images == [{"source":"ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"}]' "$manifest" >/dev/null
   fi
   if [[ "$manifest" != scripts/config/harbor-images.json ]]; then
     # The fixed rollout scope may only select exact reviewed catalog entries.
@@ -277,6 +283,10 @@ if [[ "$mode" == mirror ]]; then
   # Only anonymous upstream reads may populate this public project. Publish real
   # artifacts, not proxy-cache entries that remain dependent on upstream state.
   printf '%s\n' '{"auths":{}}' >"$scratch/anonymous-auth.json"
+  mirror_retryable_transport() {
+    grep -Eiq 'connection refused|connection reset|unexpected EOF|TLS handshake timeout|i/o timeout|context deadline exceeded' "$scratch/mirror-error" &&
+      ! grep -Eiq 'unauthorized|forbidden|denied|authentication required|manifest unknown|name unknown|not found|blob unknown|digest mismatch|digest invalid|hash mismatch|preserve digests|HTTP status|status code' "$scratch/mirror-error"
+  }
   while IFS= read -r source; do
     oci_index_copy=false
     source_digest="${source##*@}"
@@ -356,19 +366,26 @@ if [[ "$mode" == mirror ]]; then
       source_tag="${tagged_source##*:}"
       mirror_phase="alias-lookup"
       alias_needs_copy=true
-      if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
-        if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
-          alias_needs_copy=false
+      for attempt in 1 2 3; do
+        if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+          "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+          if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
+            alias_needs_copy=false
+          fi
+          break
+        else
+          lookup_status=$?
         fi
-      else
-        lookup_status=$?
-        if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" &&
-            ! grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" &&
-            ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+        if grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" ||
+            grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" ||
+            grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+          break
+        fi
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
           exit "$lookup_status"
         fi
-      fi
+        sleep "$attempt"
+      done
       if [[ "$alias_needs_copy" == true ]]; then
         mirror_phase="alias-copy"
         if "$oci_index_copy"; then
@@ -394,27 +411,53 @@ if [[ "$mode" == mirror ]]; then
         fi
       fi
       mirror_phase="alias-verify"
-      skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"
+      for attempt in 1 2 3; do
+        if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+          "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+          break
+        else
+          read_status=$?
+        fi
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+          exit "$read_status"
+        fi
+        sleep "$attempt"
+      done
       mirror_category="digest-mismatch"
       [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]
       mirror_category="command-failed"
     fi
     mirror_phase="authenticated-pull"
-    pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
+    for attempt in 1 2 3; do
+      pull_directory="$(mktemp -d "$scratch/pull.XXXXXX")"
+      if "$oci_index_copy"; then
+        if REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
+          regctl image copy "${destination}@${source_digest}" "ocidir://${pull_directory}:verify" \
+          2>"$scratch/mirror-error"; then
+          break
+        else
+          read_status=$?
+        fi
+      elif skopeo copy --all --preserve-digests \
+        --src-authfile "$scratch/mirror-pull-auth.json" \
+        "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"; then
+        break
+      else
+        read_status=$?
+      fi
+      rm -rf -- "$pull_directory"
+      if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
+        exit "$read_status"
+      fi
+      sleep "$attempt"
+    done
     if "$oci_index_copy"; then
-      REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
-        regctl image copy "${destination}@${source_digest}" "ocidir://${pull_directory}:verify" \
-        2>"$scratch/mirror-error"
       mirror_phase="pull-verify"
       pulled_digest="$(REGCTL_CONFIG="$scratch/regctl-pull.json" DOCKER_CONFIG="$scratch/regctl-empty-docker" \
         regctl image digest "ocidir://${pull_directory}:verify" 2>"$scratch/mirror-error")"
       mirror_category="digest-mismatch"
       [[ "$pulled_digest" == "$source_digest" ]]
     else
-      skopeo copy --all --preserve-digests \
-        --src-authfile "$scratch/mirror-pull-auth.json" \
-        "docker://${destination}@${source_digest}" "dir:${pull_directory}" 2>"$scratch/mirror-error"
       mirror_phase="pull-verify"
       skopeo inspect --raw "dir:${pull_directory}" >"$scratch/pulled-manifest.json" 2>"$scratch/mirror-error"
       mirror_category="digest-mismatch"

@@ -262,6 +262,14 @@ unit "argocd_apps_platform_dns" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/platform-dns/stack.hcl").inputs
 }
 
+unit "argocd_apps_platform_envoy_gateway" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-envoy-gateway"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-envoy-gateway/stack.hcl").inputs
+}
+
 unit "argocd_apps_platform_image_policy" {
   source                  = "./terragrunt-catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/platform-image-policy"
@@ -276,6 +284,30 @@ unit "argocd_apps_platform_multus" {
   no_dot_terragrunt_stack = true
 
   values = read_terragrunt_config("${get_terragrunt_dir()}/platform-multus/stack.hcl").inputs
+}
+
+unit "argocd_apps_platform_network_policy" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-network-policy"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-network-policy/stack.hcl").inputs
+}
+
+unit "argocd_apps_platform_network_policy_canary" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-network-policy-canary"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-network-policy-canary/stack.hcl").inputs
+}
+
+unit "argocd_apps_platform_network_policy_cleanup" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-network-policy-cleanup"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-network-policy-cleanup/stack.hcl").inputs
 }
 
 unit "argocd_apps_platform_storage" {

@@ -10,12 +10,20 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-e293d5daa2ad090397b8923e
+    resource: repo://scripts/openclaw-enterprise-access.py
+generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T09:02:08.557Z
 ---
 
 # Octelium
@@ -23,7 +31,8 @@ verified:
 Canonical runbook: [`docs/octelium.md`](../../docs/octelium.md)
 
 Octelium application, callback, and CI routes remain during staged Traefik
-cutover; final ownership is Cordium and its required control endpoints. Preserve
+cutover; its retained role includes Cordium control endpoints and the staged
+OpenClaw Enterprise console and authenticated legacy redirect. Preserve
 existing operator sessions and `kubernetes-api.homelab` access until replacement
 acceptance. Cordium retains its restricted native Kubernetes Service. Cluster
 bootstrap, Enterprise adoption, and Entra OIDC stay on their repository-owned
@@ -52,6 +61,26 @@ retained `cluster.local/ns/octelium-client/sa/octelium-client` principal only on
 and matching intended NetworkPolicy selector retire with the connector, not
 before it. New application routes belong in Traefik; the retained Octelium
 catalog is not a recipe to restore public app DNS or delete Cordium resources.
+
+## OpenClaw Enterprise access staging
+
+The [reviewed catalog](../../docs/examples/octelium/homelab-services.yaml)
+adds Namespace `oce`, authenticated Service `console.oce`, and a
+post-authentication 303 redirect in `openclaw.default`. The console proxies to
+the Enterprise API after Octelium human authorization; the old Traefik
+`openclaw.stinkyboi.com` route still points at the suspended legacy Service
+until final cutover. The scoped
+[`openclaw-enterprise-access.py`](../../scripts/openclaw-enterprise-access.py)
+reconciler checks clean exact current `main`, applies only those three catalog
+objects, verifies a no-change second apply, and reads back authorization and
+redirect state. This is staged source, not a live reconciliation receipt.
+
+OCE creates opaque per-Agent hosts that fixed Octelium Service names cannot
+represent. Only `agent-<32 hex>.agents.oce.stinkyboi.com` goes from the
+Tailscale-only Traefik listener directly to the OCE API. OCE enforces the
+authenticated session and exact Agent permission before reaching private
+Envoy. See [private ingress](tailnet-ingress.md) and the
+[Enterprise rollout](../../docs/openclaw-enterprise-rollout.md).
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 public WEB Service fallbacks on `acer` without Multus. Its generated Service UIDs must be

@@ -28,6 +28,10 @@ sources:
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-99b01b3b79f53a385f98fdf8
+    resource: repo://clusters/homelab/apps/litellm/README.md
+  - id: openwiki-source-bd06d6b0499111fbfe3b1e84
+    resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-bb71538b4bc75dd401bfc1ec
     resource: repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml
   - id: openwiki-source-9909d58412f1a989bfab76c4
@@ -48,6 +52,24 @@ sources:
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-eb9ba8868bbd263b0cd40e71
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-bf69918d51d510f8b19906f1
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/kustomization.yaml
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-855f2c27f3fa7ed6f006f4be
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/networkpolicy.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -78,10 +100,18 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
     resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
+  - id: openwiki-source-cb44bee82f523806d88ae83a
+    resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
@@ -92,8 +122,12 @@ sources:
     resource: repo://IaC/cert-manager/stack.hcl
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
+  - id: openwiki-source-00c8a32293c8aaa55d3daba4
+    resource: repo://IaC/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-73d9c28ed7b9740028ceb5c2
     resource: repo://IaC/platform-image-policy/stack.hcl
+  - id: openwiki-source-e3e84b128839afbc47f478f7
+    resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-9324a7b2a44defc4437d288b
     resource: repo://IaC/renovate/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
@@ -102,16 +136,18 @@ sources:
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-6a90d887ebbab5a858408f90
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T14:58:52.418Z
 ---
 
 # Workload Inventory
@@ -131,6 +167,13 @@ inside its existing `ai` Application, with a 20 GiB NFS claim and separate
 admin/app SSM credentials. This prerequisite is not live key migration;
 database readiness and native-auth cutover remain pending. See
 [AI observability](../architecture/ai-observability.md).
+
+LiteLLM's image pin selects the Linux amd64 child of an upstream OCI index
+that Harbor 2.15.2 rejects because it repeats child descriptors. The exact
+child passed the [protected scoped mirror receipt](../operations/harbor-oci.md#october-11-duplicate-index-failure)
+before the consumer source changed. All four observed nodes were amd64 on
+October 19; re-evaluate this pin before adding arm64 nodes. Full-catalog
+publication is still pending.
 
 ## Import Note
 
@@ -291,11 +334,37 @@ CI transport remain until replacement client, callback and CI paths pass
 | `litellm`              | `ai`               | `clusters/homelab/apps/litellm`                 | `IaC/live/argocd-apps/litellm`              | internal OpenAI-compatible gateway exposing only `openrouter/free`; the existing SSM `openai-api-key` is mounted only as its OpenRouter upstream credential, while OpenClaw, Multica, NOFX and n8n receive dedicated caller keys; guarded pre-auth admission exports trusted attribution to Langfuse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | external-secrets, cert-manager, istio, platform-storage                                                             |
 | `langfuse`             | `langfuse`         | `clusters/homelab/apps/langfuse`                | `IaC/live/argocd-apps/langfuse`             | operator UI for LiteLLM's trusted caller-attributed traces. Octelium-protected UI: `https://langfuse.stinkyboi.com`. Retained NFS PVCs: PostgreSQL `20Gi`, Valkey `8Gi`, ClickHouse `100Gi`; S3 raw events retain 30 days. No database operator/automatic logical backup; restore unverified.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | aws-ssm-parameters, external-secrets, cert-manager, istio, platform-storage, langfuse-blob-storage; Octelium for UI |
 | `multica`              | `ai`               | `clusters/homelab/apps/multica`                 | `IaC/live/argocd-apps/multica`              | Multica `v0.4.29` self-host chart with frontend, backend API/WebSocket server, dedicated pgvector PostgreSQL, generated JWT, database, and private fixed sign-in code secrets; development-mode authentication behind Octelium without email delivery; Postgres and uploads PVCs on `nfs-default`; UI at `https://multica.stinkyboi.com`; persistent OpenCode daemon on acer uses LiteLLM with its dedicated caller key, max one task.                                                                                                                                                                                                                                                                                                                                                                                        | external-secrets, cert-manager, istio, platform-storage                                                             |
-| `openclaw`             | `ai`               | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`             | NAS configuration/workspace; retained node-local SQLite state on zimaboard-1; daily verified NAS database snapshots; `6Gi` ephemeral cap; exact-image-version external Discord npm package with no floating fallback; a dedicated LiteLLM caller key and OpenAI-compatible internal endpoint provide `openrouter/free`; Kubernetes-only containment with sandboxing off until a supported Docker, SSH, or OpenShell backend exists; explicit agent resources; HTTP proxy probes; pinned to `zimaboard-1` for persistent local runtime state                                                                                                                                                                                                                                                                                   | external-secrets, cert-manager, istio, litellm, platform-storage                                                    |
+| `openclaw` | `ai` | `clusters/homelab/apps/openclaw` | `IaC/live/argocd-apps/openclaw` | Legacy gateway and backup writer stopped by GitOps; node-local SQLite, NAS workspace, snapshots, and four PVC/PV identities retained. Post-shutdown inventory passed; independent archive/restore pending. No Discord or LiteLLM state moves to Enterprise. | platform-storage, external-secrets (retained recovery only) |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
 | `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Staged hourly UTC CronJob, suspended in full dry-run mode; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action still writing pending dry-run parity and cutover; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache); dedicated no-token ServiceAccount and Pod-local Harbor alias target the registry-only Traefik listener; a manual dry run occurred, but the [Harbor lookup gap](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc) leaves live route and scheduled Job acceptance pending | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
+
+The OpenClaw Enterprise replacement is staged in source with
+`activationEnabled: false`; no Enterprise controller, gateway, or
+agent has been deployed. The unregistered
+[foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
+scoped tenant RoleBindings, seven retained `OnChange` secret projections,
+a system ingress deny, and a retained PostgreSQL CA plus private server
+certificate. It declares no running PostgreSQL, local volumes, or Installation
+workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+adds reviewed Installation bytes, versioned immutable startup Secret contract,
+local Helm values and lifecycle hooks. It has no Argo registration, and its
+placeholder administrator email, missing placement labels, and unfinished
+database/storage gates prevent activation. Separate staged Traefik and Octelium declarations provide an
+authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
+through the private OCE API; the old URL still targets the suspended legacy
+Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
+OpenRouter key after the archive, mirror, platform, isolation, and
+recovery gates pass. No dedicated canary node is available.
+The platform source declares dormant `platform-network-policy`,
+`platform-network-policy-canary`, `platform-network-policy-cleanup`, and
+`platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
+kube-router selects no node and the canary fixtures deploy nothing until
+placement, publication, policy review, and live qualification pass. Envoy's
+shared CRD source is ordered before the controller but no private route is
+accepted yet.
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were
@@ -326,9 +395,9 @@ Multica PostgreSQL uses SQL-query readiness, 30-minute recovery windows, and
 120-second shutdown grace on its retained NFS PVC. This is a probe hardening
 change; storage migration and restore verification remain separate work.
 
-OpenClaw's managed `gh` and Git HTTPS helper renew homelab-scoped GitHub App
+Before shutdown, legacy OpenClaw's managed `gh` and Git HTTPS helper renewed homelab-scoped GitHub App
 tokens from the existing mounted key, using temporary private CLI config files.
-OpenClaw also mounts a repository-managed assistant bundle using OpenRouter's
+It also mounted a repository-managed assistant bundle using OpenRouter's
 `openrouter/free` router: owner Discord
 briefings, daytime health checks, bounded daily improvements, and preserved
 personal memory. Interactive turns allow one hour; heartbeats and managed
@@ -336,8 +405,8 @@ jobs keep their separate shorter budgets. Its personal-assistant extension insta
 CLI and enables the Calendar skill, with scoped Marketplace outreach and private
 task/deal tracking. Google OAuth and a private Facebook browser/login remain
 unconfigured; see [OpenClaw personal assistant](../operations/openclaw-personal-assistant.md).
-Monitoring depends on Grafana: the OpenClaw mesh identity
-can reach the internal Grafana service, where its dedicated login authorizes
+Monitoring depended on Grafana: the legacy OpenClaw mesh identity
+could reach the internal Grafana service, where its dedicated login authorized
 datasource queries. No default Kubernetes context is provided.
 See [OpenClaw](application-notes.md#openclaw).
 
@@ -438,7 +507,7 @@ When a workload changes, update this note for:
 - New ExternalSecret or SSM parameter contract.
 - Persistent storage, backup, restore, or rollback behavior changes.
 
-OpenClaw keeps its UID-private identity coordinator on a shared Pod-local
+The stopped legacy OpenClaw kept its UID-private identity coordinator on a shared Pod-local
 16 MiB volume because the NAS reports anonymous ownership. Persistent identity,
 configuration, sessions, and backups remain on NFS. Its single-replica
 `Recreate` strategy and same-Pod writer restriction are required; see

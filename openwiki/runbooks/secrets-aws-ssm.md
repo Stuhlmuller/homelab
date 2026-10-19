@@ -4,10 +4,18 @@ title: "AWS SSM Secret References"
 description: "SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume."
 tags: ["runbook", "secrets", "aws"]
 sources:
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -22,10 +30,12 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-19T05:24:03.516Z" }
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:24:03.516Z
+    at: 2026-10-19T14:01:19.597Z
 ---
 
 # AWS SSM Secret References
@@ -62,12 +72,38 @@ reintroduction of the exact-scope grant. The hourly CronJob remains suspended
 in full dry-run mode; parity and the old-writer cutover remain separate gates.
 
 **Source finding (2026-10-19).** The [workload README](../../clusters/homelab/apps/renovate/README.md#credentials-and-storage)
-still phrases initial role application and credential transfer as future steps,
-while the [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
-records the transfer and the [IAM module](../../IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf)
-removes the role from desired state. Reconcile that README in a follow-up PR:
-mark the initial transfer and live role retirement complete, and retain the
-separate rotation and writer-cutover gates.
+now records completed credential transfer but still says live transfer-role
+deletion is pending. The [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records that deletion and a fresh no-change plan. Correct the workload README
+in a follow-up PR; rotation and writer cutover remain separate gates.
+
+## OpenClaw Enterprise model key
+
+The fresh Enterprise agent uses only
+`/homelab/openclaw-enterprise/model-api-key`. The protected
+[writer workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
+validates an owner-supplied OpenRouter key and binds the write to exact current
+`main`; it does not copy the old OpenClaw or LiteLLM values. No key has been
+supplied. The placeholder blocks activation and provider acceptance until a
+real key is transferred, projected, and tested. See the
+[canonical secret contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
+
+The dormant [foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares seven retained `OnChange` ExternalSecret targets across
+`openclaw-system` and `openclaw-agents`. `occ-database` templates separate
+application and migration URLs from generated passwords; both require
+PostgreSQL `verify-full` TLS against the declared retained root CA. The admin
+password remains in its own Secret. Rotation needs a committed
+`generated-secret-revision` advance and consumer verification. The manifests
+are not registered with Argo, so source alone proves no SSM value, projected
+Secret, issued certificate, or running database.
+
+The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
+contains non-secret startup configuration. It is separate from those seven SSM
+credentials. The protected startup workflow copies its exact bytes into a
+versioned immutable Kubernetes Secret because the stock chart mounts that
+Secret at startup. Initial creation precedes the installation ID; T041 must
+bind and attest that metadata after bootstrap before reconciliation can run.
 
 ## Harbor native receipt prerequisite
 

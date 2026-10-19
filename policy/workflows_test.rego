@@ -2,6 +2,126 @@ package main
 
 import rego.v1
 
+test_allows_exact_openclaw_startup if {
+	approved_openclaw_startup with input as openclaw_startup_fixture
+}
+
+test_rejects_changed_openclaw_startup if {
+	job := openclaw_startup_fixture.jobs.startup
+	every candidate in [
+		object.union(openclaw_startup_fixture, {"concurrency": {"group": "unprotected", "cancel-in-progress": false}}),
+		object.union(openclaw_startup_fixture, {"jobs": object.union(openclaw_startup_fixture.jobs, {"startup": object.union(job, {"environment": {"name": "unprotected"}})})}),
+		object.union(openclaw_startup_fixture, {"jobs": object.union(openclaw_startup_fixture.jobs, {"startup": object.union(job, {"steps": [job.steps[0], job.steps[1], job.steps[2], object.union(job.steps[3], {"run": replace(openclaw_startup_private_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
+	] {
+		not approved_openclaw_startup with input as candidate
+	}
+}
+
+openclaw_startup_fixture := {
+	"name": "OpenClaw Enterprise Startup Candidate",
+	"permissions": {},
+	"concurrency": {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false},
+	"true": {"workflow_dispatch": {"inputs": {"expected_sha": {"required": true}}}},
+	"jobs": {
+		"static-policy": {"permissions": {"contents": "read"}, "steps": [
+			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": `test "${ACTUAL_REF}" = refs/heads/main; test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`},
+			{"name": "Check Out Repository"},
+			{"name": "Install Nix"},
+			{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
+		]},
+		"startup": {
+			"needs": ["static-policy"],
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"environment": {"name": "homelab-production"},
+			"permissions": {"contents": "read"},
+			"steps": [
+				{"name": "Verify Current Main Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_startup_main_check},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Create Or Attest Fixed Startup Secret", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": openclaw_startup_private_run},
+			],
+		},
+	},
+}
+
+test_allows_protected_platform_maintenance if {
+	violations := deny with input as platform_maintenance_fixture
+	count(violations) == 0
+}
+
+test_rejects_changed_platform_maintenance if {
+	every candidate in [
+		object.union(platform_maintenance_fixture, {"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "owned-cleanup"]}}}}}),
+		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": object.union(platform_maintenance_fixture.jobs.maintenance, {"permissions": {"contents": "write", "id-token": "write"}})})}),
+		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": object.union(platform_maintenance_fixture.jobs.maintenance, {"environment": {"name": "unprotected"}})})}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
+test_rejects_missing_or_stale_main_recheck if {
+	steps := platform_maintenance_fixture.jobs.maintenance.steps
+	every changed in [
+		{"name": "Recheck Current Main Commit Before AWS Credentials", "env": steps[3].env, "run": "true"},
+		{"name": "Recheck Current Main Commit Before AWS Credentials", "env": steps[3].env, "run": `test "$ACTUAL_SHA" = "$EXPECTED_SHA"`},
+	] {
+		candidate_steps := [steps[0], steps[1], steps[2], changed, steps[4], steps[5]]
+		candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
+		candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
+test_rejects_unreviewed_platform_stage_helper if {
+	steps := platform_maintenance_fixture.jobs.maintenance.steps
+	changed := object.union(steps[5], {"run": replace(
+		platform_maintenance_private_run,
+		"75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971",
+		"0000000000000000000000000000000000000000000000000000000000000000",
+	)})
+	candidate_steps := [steps[0], steps[1], steps[2], steps[3], steps[4], changed]
+	candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
+	candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
+	violations := deny with input as candidate
+	some msg in violations
+	contains(msg, "Platform maintenance requires exact protected stages")
+}
+
+platform_maintenance_fixture := {
+	"name": "Platform Maintenance",
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}}}},
+	"jobs": {
+		"static-policy": {"permissions": {"contents": "read"}},
+		"maintenance": {
+			"needs": ["static-policy"],
+			"environment": {"name": "homelab-production"},
+			"concurrency": {"group": "platform-maintenance-production", "cancel-in-progress": false},
+			"permissions": {"contents": "read", "id-token": "write"},
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"steps": [
+				{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Recheck Current Main Commit Before AWS Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+				{"name": "Configure AWS Credentials"},
+				{"name": "Run Reviewed Platform Stage", "env": {
+					"RUN_STAGE": "${{ inputs.stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+					"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
+					"OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}",
+					"OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}",
+				}, "run": platform_maintenance_private_run},
+			],
+		},
+	},
+}
+
+platform_maintenance_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+
 test_allows_exact_openclaw_legacy_operation if {
 	candidate := workflow_with_openclaw_legacy_operation(
 		openclaw_legacy_run,
@@ -580,10 +700,11 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
+		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-litellm", "harbor-publish.sh mirror-other"),
 		replace(harbor_mirror_private_run, `>"$private_log" 2>&1`, ""),
 		replace(harbor_mirror_private_run, "umask 077", "umask 022"),
 		sprintf("%s\necho extra", [harbor_mirror_private_run]),

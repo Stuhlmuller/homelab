@@ -58,8 +58,18 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
+  - id: openwiki-source-bd06d6b0499111fbfe3b1e84
+    resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-d27624f754153b714543d8c4
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -82,6 +92,8 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e61e6d11d2a5c456a06bdb85
     resource: repo://clusters/homelab/platform/image-policy/README.md
+  - id: openwiki-source-994a8289757a8dfdfff70e1b
+    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -94,6 +106,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json
   - id: openwiki-source-291f8c32edb318126465429b
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -102,6 +116,8 @@ sources:
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-e3e84b128839afbc47f478f7
+    resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
@@ -124,6 +140,8 @@ sources:
     resource: repo://scripts/config/harbor-dns-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
+  - id: openwiki-source-f9b3281815e3adb0fb2d9b59
+    resource: repo://scripts/config/harbor-litellm-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
@@ -134,10 +152,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
+generated: { by: "codex", at: "2026-10-19T14:58:52.418Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T14:58:52.418Z
 ---
 
 # Harbor Private OCI Registry
@@ -451,8 +469,23 @@ Child writes succeeded, but the parent was unavailable by digest and either tag.
 Keep immutable source bytes and attestations intact; no live schema repair or
 index normalization is part of the ingress cutover.
 
-The two-image Traefik scope can publish the native probe independently of this
-full-catalog incompatibility. A scoped receipt still proves only selected image
+A fresh full-catalog attempt on October 19 (run `39190983355`)
+hit the same index and PostgreSQL constraint. The upstream index repeats the
+Linux amd64 child `sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8`;
+all four observed nodes use amd64. The fixed
+[LiteLLM scope](../../scripts/config/harbor-litellm-images.json) published that
+digest-only child while the original consumer remained intact. The exact-main
+[protected run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
+passed the source digest check and complete authenticated Harbor pull. The
+[consumer source](../../clusters/homelab/apps/litellm/values.yaml) now pins this
+child and the full catalog excludes the failing index. This retains the image
+selected by the current amd64 nodes, but omits arm64 and attestation
+descriptors; re-evaluate before adding arm64 nodes. Re-run the full catalog
+after this consumer/catalog change merges. The scoped receipt alone does not
+prove full coverage or authorize strict Talos mirrors.
+
+The two-image Traefik scope can publish the native probe independently of the
+pending full-catalog receipt. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
@@ -464,8 +497,9 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
-rolling update, so its existing Pod serves Harbor while the replacement pulls.
+coverage; the revised LiteLLM catalog still needs a successful `all` run. That
+upgrade must verify singleton nginx retains a rolling update, so its existing
+Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images
@@ -788,6 +822,10 @@ Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
 `regctl` retries that alias from Harbor. These exact conversion fallbacks use
 `regctl` for the fresh complete authenticated pull. Other copy errors stop
 publication, and every selected artifact still needs digest and alias checks.
+Before copying an alias, the publisher retries a transient Harbor alias lookup
+up to three times. An expected missing-alias response proceeds to copy; an
+authentication error or other hard lookup failure stops publication. A retry
+does not replace the final digest, alias, and authenticated pull checks.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
@@ -811,16 +849,29 @@ flowchart TD
 Missing-artifact publication verifies source bytes before upload and independently
 checks the complete destination download.
 
+The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
+protected publication with complete Harbor pulls. The full platform image
+catalog and transitive render still lack a complete publication receipt;
+publishing the stock pair alone does not release the Enterprise rollout.
+The dormant Enterprise foundation is unregistered and deploys neither image.
+The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+references the published controller/runtime digests and overrides only the
+stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. Its local
+render comparison does not prove that every transitive image is published or
+that any Enterprise Pod has pulled from Harbor.
+See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
+
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned
-Image Updater v1.3.0 and Kubernetes SIG Network `kube-network-policies` v1.1.2.
-Image Updater stays paused at zero replicas, and neither cataloging nor publishing
-the enforcer activates a DaemonSet. Flannel remains the transport and does not
-enforce existing NetworkPolicies. The enforcer is the proposed L3/L4 boundary
-behind Istio egress waypoints; activation requires repository-owned Talos NRI
-configuration, live socket/plugin registration, negative startup/bypass tests,
-review of every NetworkPolicy, and a fail-closed strict-mode worker canary.
-Preserve DNS, API, HBONE, webhook, storage, and recovery paths and prove direct-IP,
-alternate-port, IPv6, and gateway bypass denial before expansion. See
+Image Updater v1.3.0 and the older Kubernetes SIG Network
+`kube-network-policies` v1.1.2 source. Image Updater stays paused at zero
+replicas. The [staged enforcer](../../clusters/homelab/platform/network-policy/README.md)
+instead uses pinned firewall-only kube-router; its Argo Application is dormant
+and selects no node. Flannel remains the CNI and kube-proxy the service proxy.
+Cataloging an image does not activate enforcement. Activation needs published
+images, review of every rendered and generated policy, measured isolated-canary
+placement, and live allowed/denied traffic plus restart, API-loss, IP-reuse and
+reboot checks. Preserve DNS, API, HBONE, webhook, storage, and recovery paths and
+prove direct-IP, alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
 

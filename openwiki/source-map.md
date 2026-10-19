@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-c0ca5e405a32db452e0a5896
+    resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-efd15335758af38c6e6af9ab
@@ -24,10 +26,18 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
@@ -38,10 +48,22 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
+  - id: openwiki-source-4091442a62f62f0adc73ce96
+    resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-18423e8d68f98d1e991a1691
+    resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
+  - id: openwiki-source-80b544ebc719878ac3f31bac
+    resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
+    resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
     resource: repo://scripts/octelium-entra-oidc.sh
+  - id: openwiki-source-e293d5daa2ad090397b8923e
+    resource: repo://scripts/openclaw-enterprise-access.py
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -50,10 +72,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-19T14:01:19.597Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T14:01:19.597Z
 ---
 
 # Source Map
@@ -91,6 +113,7 @@ desired state.
 | `.github/workflows/harbor-native-chainguard-receipt.yml` and `scripts/ci/harbor-native-chainguard-receipt.py` | [Native Chainguard receipt](operations/harbor-oci.md), [validation gates](operations/validation-gates.md#harbor-oci-rollout) |
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
+| `docs/examples/octelium/homelab-services.yaml`, `scripts/openclaw-enterprise-access.py`, and `scripts/ci/openclaw-enterprise-access-test.py` | [Staged Enterprise console and redirect catalog](runbooks/octelium.md#openclaw-enterprise-access-staging), [private native routes](runbooks/tailnet-ingress.md#route-boundaries) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
 | `IaC/terragrunt-catalog/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
 | `scripts/entra-owner-conversion.py` and `scripts/ci/entra-owner-conversion-test.py` | [Owner conversion boundary](architecture/secrets-and-identity.md#fleet-free-identity-boundaries), [Fleet validation](operations/validation-gates.md#fleet-device-management-rollout) |
@@ -110,6 +133,11 @@ desired state.
 | --- | --- |
 | `clusters/homelab/apps/README.md` | [Application Notes](workloads/application-notes.md) |
 | `clusters/homelab/apps/*/README.md` | [Application Notes](workloads/application-notes.md) |
+| `clusters/homelab/apps/openclaw-enterprise-foundation/` | [Dormant workload boundary](workloads/inventory.md), [secrets and TLS](architecture/secrets-and-identity.md#dormant-openclaw-enterprise-boundary) |
+| `clusters/homelab/apps/openclaw-enterprise/` | [Dormant stock chart candidate](workloads/inventory.md), [chart ownership](patterns/helm-chart-organization.md) |
+| `.github/workflows/openclaw-enterprise-startup.yml` and `scripts/openclaw-enterprise-startup.py` | [Protected exact-main startup Secret](runbooks/ci-cd.md), [secret boundary](runbooks/secrets-aws-ssm.md#openclaw-enterprise-model-key) |
+| `scripts/ci/openclaw-enterprise-chart-hooks-test.py`, `scripts/ci/openclaw-enterprise-startup-test.py`, and `scripts/ci/openclaw-enterprise-quiesce-test.py` | [Dormant chart and lifecycle fixtures](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
+| `scripts/openclaw-enterprise.py`, `scripts/ci/openclaw-enterprise-foundation-test.py`, and `scripts/ci/openclaw-enterprise-test.py` | [Guarded Namespace reconciliation and source gates](operations/validation-gates.md#openclaw-enterprise-replacement-gates) |
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |

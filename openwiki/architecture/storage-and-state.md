@@ -4,20 +4,34 @@ title: "Storage And State"
 description: "Etcd recovery, QNAP NFS and local volumes, workload backup ownership, and unresolved storage and restore gates."
 tags: ["architecture", "storage", "stateful"]
 sources:
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-20275bab1ec480742e28a50f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-d65575b694fbbe7e37dd04e6
+    resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T14:01:19.597Z
 ---
 
 # Storage And State
@@ -246,18 +260,33 @@ Redis, blob storage, and config state; Prometheus, Grafana, Deluge, Dispatcharr
 with dedicated PostgreSQL, media-postgres, Multica with pgvector PostgreSQL and
 backend upload PVCs, n8n-postgres, octelium-storage PostgreSQL/Redis, Octelium
 Enterprise package stores (`octelium-rscstore`, `octelium-logstore`,
-`octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, OpenClaw, n8n,
-and NOFX SQLite state. OpenClaw keeps configuration and workspace on
-its retained NAS claim, but its global state, per-agent SQLite databases, and
-native Codex home use `openclaw-runtime-local` on `zimaboard-1`. The
-platform-storage application owns its StorageClass and PV;
-the namespaced OpenClaw application owns its PVC. This permits
-local WAL and preserves native bindings across Pod replacement. Daily SQLite
-online backups keep
-seven database snapshots on the NAS. The local hostPath survives Pod replacement
+`octelium-metricstore`), Prowlarr, Radarr, Sonarr, LiteLLM, n8n,
+and NOFX SQLite state. The stopped legacy OpenClaw keeps configuration and
+workspace on its retained NAS claim, while its global state, per-agent SQLite
+databases, and native Codex home remain on `openclaw-runtime-local` on
+`zimaboard-1`. The platform-storage application owns its StorageClass and PV;
+the namespaced OpenClaw application owns its PVC. This permitted local WAL and
+native bindings across Pod replacement. The backup CronJob is suspended;
+historical SQLite snapshots remain on the NAS. The local hostPath survives Pod replacement
 but not node-disk loss; there is no automatic node failover and recovery can lose
 writes since the last backup. Native caches are reconstructed on disaster restore.
+The post-shutdown inventory passed, but a complete independent archive/restore
+and any new Enterprise recovery set remain unverified; keep all retained claims.
 See the OpenClaw app README and [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
+The dormant [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares a cert-manager `occ-postgres-root` CA with Argo `Prune=false` and a
+nonrotating private key. Preserve that Secret with any eventual database
+recovery set. The foundation is not registered with Argo; node placement,
+distinct storage, PostgreSQL roles, database and agent backups, and isolated
+restore remain pending. No new Enterprise PVC or live database exists from
+this source alone.
+The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+names local agent storage and a private bootstrap password claim. Its preflight
+requires `occ-bootstrap-admin-password` to be Bound to
+`openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
+before chart initialization. The required retained local classes, claims,
+dedicated PostgreSQL and restore proof are still absent; the candidate does not
+adopt legacy OpenClaw state.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`
@@ -479,7 +508,7 @@ failures so stale catalog state cannot trigger a silent redownload.
 
 ## OpenClaw identity coordinator ownership
 
-OpenClaw uses a shared Pod-local coordinator directory owned by UID/GID `1000`,
+The stopped legacy OpenClaw used a shared Pod-local coordinator directory owned by UID/GID `1000`,
 mode `0700`, because the NFS export reports anonymous ownership. Persistent
 state and recovery limits are documented in [OpenClaw Runtime State](../operations/openclaw-runtime-state.md).
 Keep the single-replica `Recreate` strategy and same-Pod writer boundary.

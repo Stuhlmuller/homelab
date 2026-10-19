@@ -59,7 +59,9 @@
   },
   "model": {
     "provider": "openai",
-    "id": null
+    "id": "openrouter/free",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "api": "openai-completions"
   },
   "privateJournal": {
     "required": true,
@@ -109,8 +111,8 @@
     ]
   },
   "executionBlockers": [
-    "Matching published controller/runtime images and source-built CLI are not verified",
-    "Model ID and dedicated credential are not configured",
+    "Full platform image catalog and source-built CLI are not verified",
+    "Dedicated OpenRouter credential is not configured",
     "Storage placement and private recovery paths are not validated"
   ],
   "installationPhases": [

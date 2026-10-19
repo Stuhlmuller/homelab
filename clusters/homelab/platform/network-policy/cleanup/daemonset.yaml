@@ -1,0 +1,64 @@
+# Separate, opt-in Argo source; do not register this with automatic sync.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-router-network-policy-cleanup
+  namespace: kube-system
+  annotations:
+    checkov.io/skip1: CKV_K8S_37=Owned firewall cleanup requires host network capabilities.
+    checkov.io/skip2: CKV_K8S_31=Host firewall control needs the privileged platform seccomp boundary.
+    checkov.io/skip3: CKV_K8S_20=Privileged firewall control requires privilege escalation.
+    checkov.io/skip4: CKV_K8S_40=Host firewall control requires root.
+    checkov.io/skip5: CKV_K8S_16=This reviewed cleanup exception must program host iptables.
+    checkov.io/skip6: CKV_K8S_19=Firewall cleanup must run in the host network namespace.
+    checkov.io/skip7: CKV_K8S_22=The pinned upstream tool image has not been qualified with a read-only root filesystem.
+    checkov.io/skip8: CKV_K8S_28=Host firewall cleanup requires the privileged capability set.
+    checkov.io/skip9: CKV_K8S_29=The explicit privileged context is a reviewed platform exception.
+    checkov.io/skip10: CKV_K8S_11=CPU throttling can interrupt time-bound recovery.
+    checkov.io/skip11: CKV_K8S_8=The idle cleanup Pod has no service health endpoint; the workflow checks Pod readiness.
+    checkov.io/skip12: CKV_K8S_9=The workflow validates this idle Pod before any firewall operation.
+    checkov.io/skip13: CKV_K8S_23=Host firewall cleanup requires root.
+    checkov.io/skip14: CKV2_K8S_6=Host-network firewall cleanup is outside Pod NetworkPolicy enforcement.
+  labels:
+    app.kubernetes.io/name: kube-router-network-policy-cleanup
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-router-network-policy-cleanup
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kube-router-network-policy-cleanup
+    spec:
+      automountServiceAccountToken: false
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        homelab.stinkyboi.com/network-policy-canary: "true"
+      tolerations:
+        - key: homelab.stinkyboi.com/network-policy-canary
+          operator: Equal
+          value: "true"
+          effect: NoSchedule
+      containers:
+        - name: cleanup
+          image: harbor.stinkyboi.com/mirror/docker.io/cloudnativelabs/kube-router:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a@sha256:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a
+          imagePullPolicy: IfNotPresent
+          command: [/bin/sh, -c]
+          args: ["sleep 86400"]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: xtables-lock
+              mountPath: /run/xtables.lock
+      volumes:
+        - name: xtables-lock
+          hostPath:
+            path: /run/xtables.lock
+            type: FileOrCreate

@@ -122,6 +122,44 @@ class Retirement(unittest.TestCase):
         with self.assertRaises(ValueError):
             retirement.verify_archive(self.config, receipt)
 
+    def test_restore_supports_reader_tarfile_without_filter_argument(self):
+        extract = tarfile.TarFile.extract
+
+        def reader_extract(tar, member, path='', set_attrs=True, *, numeric_owner=False):
+            return extract(tar, member, path, set_attrs, numeric_owner=numeric_owner,
+                           filter='data')
+
+        with patch.object(tarfile.TarFile, 'extract', reader_extract), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
+    def test_large_archive_verifies_without_caching_tar_members(self):
+        retained = self.nas / 'openclaw'
+        for number in range(4000):
+            (retained / f'entry-{number:04d}').write_bytes(b'x')
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.object(tarfile.TarFile, 'getmembers',
+                          side_effect=AssertionError('tar headers cached in RAM')):
+            with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+                receipt = retirement.archive(self.config, self.status_path,
+                                             self.baseline_path, self.observed_path,
+                                             self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+
+    def test_tree_walk_keeps_path_order_and_does_not_follow_links(self):
+        (self.nas / 'prefix').mkdir()
+        (self.nas / 'prefix' / 'child').write_bytes(b'x')
+        (self.nas / 'prefix.sibling').write_bytes(b'y')
+        (self.nas / 'external-link').symlink_to(self.local, target_is_directory=True)
+        expected = [self.nas, *sorted(self.nas.rglob('*'))]
+        self.assertEqual([path for path, _ in retirement.tree_paths(self.nas)], expected)
+
     def test_unreadable_empty_nas_file_keeps_mode_and_archive_entry(self):
         path = self.nas / 'unreadable-empty'
         path.touch()
@@ -224,7 +262,7 @@ class Retirement(unittest.TestCase):
                         child.size = 1
                         tar.addfile(child, io.BytesIO(b'x'))
                 bundle.chmod(0o600)
-                with patch.object(tarfile.TarFile, 'extractall', side_effect=AssertionError('extracted')):
+                with patch.object(tarfile.TarFile, 'extract', side_effect=AssertionError('extracted')):
                     with self.assertRaisesRegex(ValueError, 'duplicate' if unsafe == 'duplicate'
                                                 else 'unsafe member path'):
                         retirement.verify_bundle(bundle, retirement.digest(bundle), self.config,
@@ -250,7 +288,7 @@ class Retirement(unittest.TestCase):
             injected.size = 1
             tar.addfile(injected, io.BytesIO(b'x'))
         bundle.chmod(0o600)
-        with patch.object(tarfile.TarFile, 'extractall', side_effect=AssertionError('extracted')):
+        with patch.object(tarfile.TarFile, 'extract', side_effect=AssertionError('extracted')):
             with self.assertRaisesRegex(ValueError, 'unsafe hardlink'):
                 retirement.verify_bundle(bundle, retirement.digest(bundle), self.config,
                                          self.observed['roots'])

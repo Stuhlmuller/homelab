@@ -112,6 +112,22 @@ spec:
 ---
 kind: Policy
 metadata:
+  name: homelab-platform-talos-ci-access
+spec:
+  rules:
+    - name: protected-maintenance-client
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-ci"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENT"
+            - match: ctx.service.metadata.name == "talos-api-ci.homelab"
+            - match: ctx.service.spec.mode == "TCP"
+---
+kind: Policy
+metadata:
   name: homelab-cordium-user-access
 spec:
   rules:
@@ -157,6 +173,14 @@ kind: Namespace
 metadata:
   name: ci
 spec: {}
+---
+kind: Namespace
+metadata:
+  name: oce
+spec:
+  authorization:
+    policies:
+      - homelab-human-web-access
 ---
 kind: User
 metadata:
@@ -517,6 +541,22 @@ spec:
 ---
 kind: Service
 metadata:
+  name: talos-api-ci.homelab
+spec:
+  displayName: Protected CI Talos API
+  isPublic: false
+  isTLS: false
+  mode: TCP
+  port: 50000
+  authorization:
+    policies:
+      - homelab-platform-talos-ci-access
+  config:
+    upstream:
+      url: tcp://10.1.0.199:50000
+---
+kind: Service
+metadata:
   name: litellm
 spec:
   displayName: LiteLLM
@@ -667,8 +707,36 @@ kind: Service
 metadata:
   name: openclaw
 spec:
-  displayName: OpenClaw
+  displayName: OpenClaw Enterprise Redirect
   isPublic: true
+  isAnonymous: false
+  mode: WEB
+  port: 80
+  authorization:
+    policies:
+      - homelab-human-web-access
+  config:
+    http:
+      plugins:
+        - name: enterprise-redirect
+          phase: POST_AUTH
+          condition:
+            matchAny: true
+          direct:
+            statusCode: 303
+            headers:
+              - key: Location
+                value: https://console.oce.stinkyboi.com/
+              - key: Cache-Control
+                value: no-store
+---
+kind: Service
+metadata:
+  name: console.oce
+spec:
+  displayName: OpenClaw Enterprise Console
+  isPublic: true
+  isAnonymous: false
   mode: WEB
   port: 80
   authorization:
@@ -676,21 +744,18 @@ spec:
       - homelab-human-web-access
   config:
     upstream:
-      url: https://istio-ingressgateway.istio-system.svc.cluster.local:443
-    tls:
-      insecureSkipVerify: true
+      url: http://openclaw-enterprise-api.openclaw-system.svc.cluster.local:8080
     http:
       header:
-        forwardedMode: TRANSPARENT
         host:
-          value: openclaw.stinkyboi.com
-        addRequestHeaders:
-          - key: X-Forwarded-Host
-            value: openclaw.stinkyboi.com
-          - key: X-Forwarded-Port
-            value: "443"
-          - key: X-Forwarded-Proto
-            value: https
+          preserve: true
+        removeRequestHeaders:
+          - Forwarded
+          - X-Forwarded-For
+          - X-Forwarded-Host
+          - X-Forwarded-Port
+          - X-Forwarded-Proto
+          - X-Real-IP
 ---
 kind: Service
 metadata:

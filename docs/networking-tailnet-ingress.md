@@ -70,6 +70,8 @@ before changing Harbor's global DNS.
 | Application UIs, including Fleet | Existing `*.stinkyboi.com` application names | Tailscale private Traefik listener to Kubernetes Services |
 | Octelium control plane for Cordium | Apex, `octelium`, `portal`, `console`, and `octelium-api` names | Private Traefik routes; native API uses HTTP/2 gRPC |
 | Cordium workspaces | `*.cordium.stinkyboi.com` | Private Traefik to retained Cordium/Octelium Services |
+| OpenClaw Enterprise console and old URL | `console.oce.stinkyboi.com`, `openclaw.stinkyboi.com` | Private Traefik to authenticated Octelium Services; old URL switches at final cutover |
+| OpenClaw Enterprise native Agent | `agent-<32-hex>.agents.oce.stinkyboi.com` | Private Traefik to Enterprise API; OCE checks the exact Agent permission |
 | Kubernetes for Cordium | Private `kubernetes-api.homelab` Service | Existing restricted Octelium client session |
 | CI Kubernetes after phase 2b | `homelab-tailscale-operator.tail67beb.ts.net` | Authenticated operator API proxy with scoped CI tags and Kubernetes RBAC |
 | n8n webhooks | `n8n-webhook.tail67beb.ts.net` | Funnel to Traefik's separate callback listener |
@@ -77,8 +79,8 @@ before changing Harbor's global DNS.
 
 [`routes.yaml`](../clusters/homelab/apps/traefik/routes.yaml) is the explicit
 host/backend source. The file provider does not discover arbitrary Services.
-Traefik's certificate covers the apex, `*.stinkyboi.com`, and the Cordium
-workspace wildcard. Application authentication remains at each backend;
+Traefik's certificate covers the apex, `*.stinkyboi.com`, the Cordium
+workspace wildcard, `console.oce.stinkyboi.com`, and `*.agents.oce.stinkyboi.com`. Application authentication remains at each backend;
 Tailscale limits network access. AFFiNE native login and Harbor OCI credentials
 continue to reach the application unchanged. Prometheus has no ingress.
 

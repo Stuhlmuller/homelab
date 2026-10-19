@@ -131,6 +131,7 @@ with tempfile.TemporaryDirectory() as directory:
     check.MASTODON_CATALOG = check.ROOT / "mastodon-images.json"
     check.CHAINGUARD_CATALOG = check.ROOT / "chainguard-images.json"
     check.DNS_CATALOG = check.ROOT / "dns-images.json"
+    check.LITELLM_CATALOG = check.ROOT / "litellm-images.json"
     check.HARBOR_RUNTIME_CATALOG = check.ROOT / "harbor-runtime-images.json"
     runtime_images = json.loads((original_root / "scripts/config/harbor-runtime-images.json").read_text())["images"]
     check.HARBOR_RUNTIME_CATALOG.write_text(json.dumps({"images": runtime_images}))
@@ -140,19 +141,22 @@ with tempfile.TemporaryDirectory() as directory:
         {"source": "docker.io/library/busybox:1.38@" + digest},
         {"source": "quay.io/example/operator@" + digest}]}
     dns_source = "codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"
-    catalog = {"images": [*base_catalog["images"], *runtime_images, {"source": dns_source}]}
+    litellm_source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
+    catalog = {"images": [*base_catalog["images"], *runtime_images, {"source": dns_source},
+                          {"source": litellm_source}]}
     check.CATALOG.write_text(json.dumps(catalog))
     check.FLEET_CATALOG.write_text(json.dumps(base_catalog))
     check.BAZARR_CATALOG.write_text(json.dumps(base_catalog))
     check.MASTODON_CATALOG.write_text(json.dumps(base_catalog))
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source}]}))
+    check.LITELLM_CATALOG.write_text(json.dumps({"images": [{"source": litellm_source}]}))
     check.declared_mastodon_images = lambda: images
     check.rendered_fleet_images = lambda: images
     check.declared_bazarr_images = lambda: images
     check.CHARTS.write_text("[]")
     mirrors = {registry: {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
                           "overridePath": True, "skipFallback": True}
-               for registry in ("docker.io", "quay.io", "codeberg.org")}
+               for registry in ("docker.io", "quay.io", "codeberg.org", "ghcr.io")}
     mirror_patch = {"machine": {"registries": {"mirrors": mirrors}}}
     check.yaml_documents = lambda paths: (
         [mirror_patch] if paths and paths[0].name == "harbor-mirrors.yaml" else documents)
@@ -168,6 +172,15 @@ with tempfile.TemporaryDirectory() as directory:
     else:
         raise AssertionError("Unreviewed DNS publication scope passed")
     check.DNS_CATALOG.write_text(json.dumps({"images": [{"source": dns_source}]}))
+    check.LITELLM_CATALOG.write_text(json.dumps({"images": [{"source": litellm_source.replace("2791e", "2791f")}]}))
+    try:
+        check.check()
+    except SystemExit as error:
+        assert "LiteLLM mirror scope missing required image" in str(error)
+        assert "LiteLLM mirror scope source absent from full catalog" in str(error)
+    else:
+        raise AssertionError("Unreviewed LiteLLM publication scope passed")
+    check.LITELLM_CATALOG.write_text(json.dumps({"images": [{"source": litellm_source}]}))
     original_image = documents[0]["initContainers"][0]["image"]
     documents[0]["initContainers"][0]["image"] = "busybox:1.38"
     with contextlib.redirect_stdout(io.StringIO()):

@@ -163,6 +163,120 @@ deny contains msg if {
 	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
 }
 
+deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Startup Candidate"
+	not approved_openclaw_startup
+	msg := "OpenClaw Enterprise startup requires exact-main protected create, fixed source hash, and private output"
+}
+
+approved_openclaw_startup if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(dispatch.inputs) == 1
+	dispatch.inputs.expected_sha.required == true
+	input.permissions == {}
+	input.concurrency == {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false}
+	count(input.jobs) == 2
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	static.steps[0].name == "Verify Dispatch Commit"
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	contains(static.steps[0].run, `test "${ACTUAL_REF}" = refs/heads/main`)
+	contains(static.steps[0].run, `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`)
+	static.steps[3].name == "Run Static Checks"
+	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
+	job := input.jobs.startup
+	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.environment.name == "homelab-production"
+	job.permissions == {"contents": "read"}
+	count(job.steps) == 4
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Before Credentials", "Check Out Repository", "Install Nix", "Create Or Attest Fixed Startup Secret"]
+	verify := job.steps[0]
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == openclaw_startup_main_check
+	run := job.steps[3]
+	run.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(run.run, "\n") == openclaw_startup_private_run
+}
+
+openclaw_startup_main_check := `set -euo pipefail
+test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+openclaw_startup_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+sha256sum --check --status <<<'08de19e4a74ae7521889d600edaae58b500bb9bdd6d9f5e7e2464d7fe45fb289  scripts/openclaw-enterprise-startup.py'
+python3 -I scripts/openclaw-enterprise-startup.py --execute --expected-sha "$EXPECTED_SHA"
+EOF
+then
+  echo "::error::Startup candidate blocked; private cluster diagnostics withheld."
+  exit 1
+fi
+echo "Reviewed startup Secret created or attested; private details withheld."`
+
+deny contains msg if {
+	object.get(input, "name", "") == "Platform Maintenance"
+	not approved_platform_maintenance
+	msg := "Platform maintenance requires exact protected stages, current-main verification, permissions, and script hash"
+}
+
+approved_platform_maintenance if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	dispatch.inputs.stage.options == ["inspect", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	job := input.jobs.maintenance
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency == {"group": "platform-maintenance-production", "cancel-in-progress": false}
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	count(job.steps) == 6
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
+	verify := job.steps[0]
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == platform_maintenance_main_check
+	recheck := job.steps[3]
+	recheck.env == verify.env
+	trim(recheck.run, "\n") == platform_maintenance_main_check
+	some run in job.steps
+	run.name == "Run Reviewed Platform Stage"
+	run.env.RUN_STAGE == "${{ inputs.stage }}"
+	run.env.EXPECTED_SHA == "${{ inputs.expected_sha }}"
+	run.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	run.env.OCE_OCTELIUM_CLIENT_AUTH_TOKEN == "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}"
+	run.env.OCE_TALOSCONFIG_B64 == "${{ secrets.OCE_TALOSCONFIG_B64 }}"
+	trim(run.run, "\n") == platform_maintenance_private_run
+}
+
+platform_maintenance_main_check := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+platform_maintenance_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+talosctl version --client >/dev/null
+sha256sum --check --status <<<'75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971  scripts/ci/platform-maintenance-stage.sh'
+bash scripts/ci/platform-maintenance-stage.sh
+EOF
+then
+  echo "::error::Platform stage blocked; private transport, receipt, and cluster diagnostics withheld."
+  exit 1
+fi
+echo "Platform stage completed; private receipts withheld."`
+
 approved_openclaw_legacy_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]
@@ -582,11 +696,14 @@ case "$IMAGE_SCOPE" in
   dns)
     bash scripts/ci/harbor-publish.sh mirror-dns
     ;;
+  litellm)
+    bash scripts/ci/harbor-publish.sh mirror-litellm
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."
