@@ -108,10 +108,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
+generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:48:56.298Z
+    at: 2026-10-19T00:11:26.455Z
 ---
 
 # Workload Inventory
@@ -294,7 +294,7 @@ CI transport remain until replacement client, callback and CI paths pass
 | `openclaw`             | `ai`               | `clusters/homelab/apps/openclaw`                | `IaC/live/argocd-apps/openclaw`             | NAS configuration/workspace; retained node-local SQLite state on zimaboard-1; daily verified NAS database snapshots; `6Gi` ephemeral cap; exact-image-version external Discord npm package with no floating fallback; a dedicated LiteLLM caller key and OpenAI-compatible internal endpoint provide `openrouter/free`; Kubernetes-only containment with sandboxing off until a supported Docker, SSH, or OpenShell backend exists; explicit agent resources; HTTP proxy probes; pinned to `zimaboard-1` for persistent local runtime state                                                                                                                                                                                                                                                                                   | external-secrets, cert-manager, istio, litellm, platform-storage                                                    |
 | `n8n`                  | `automation`       | `clusters/homelab/apps/n8n`                     | `IaC/live/argocd-apps/n8n`                  | persistent workflows, credential metadata, users, and execution history in n8n-postgres; instance settings and file-backed runtime data on PVC; SSM key bootstraps fresh PVCs only; a dedicated LiteLLM token supplies an internal OpenAI credential override without serializing it in workflows; phase 2a advertises `https://n8n-webhook.tail67beb.ts.net` through path-limited Funnel; existing registrations move through the guarded callback helper after public readiness; authenticated self-API calls use the plain-HTTP in-cluster Service and are limited to the n8n workload identity; database-aware readiness and liveness recycle n8n when a PostgreSQL interruption leaves its connection pool stale; restricted runtime uses app UID/GID 1000, init UID/GID 65534, RuntimeDefault seccomp, no escalation or capabilities                                            | external-secrets, cert-manager, istio, platform-storage, n8n-postgres, litellm                                      |
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
-| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/live/argocd-apps/renovate` | Staged hourly UTC CronJob, suspended in full dry-run mode pending protected App-key transfer and parity checks; retained 20 Gi NFS cache; no live Job acceptance yet | aws-ssm-parameters, external-secrets, platform-storage |
+| `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/live/argocd-apps/renovate` | Staged hourly UTC CronJob, suspended in full dry-run mode pending protected App-key transfer and parity checks; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache); no live Job acceptance yet | aws-ssm-parameters, external-secrets, platform-storage |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
@@ -482,12 +482,13 @@ Its database uses retained local storage on `acer`; registry blobs and logical
 backups use retained NFS. See [Harbor Private OCI Registry](../operations/harbor-oci.md) for secret,
 networking, publication and acceptance boundaries. Live readiness remains subject
 to the evidence recorded there.
-The separate consumer branch proposes nine digest-pinned Harbor 2.15.4 runtime
-components while retaining chart 1.19.2. It requires nine-image publication,
-node cache checks, and a verified database-and-blob restore before rollout.
 The staged native Chainguard receipt targets private Python and curl imports;
 it neither publishes them nor moves consumers until protected receipt and
 provenance gates pass.
+
+The separate Harbor consumer branch proposes nine digest-pinned 2.15.4 runtime
+components while retaining chart 1.19.2. It requires nine-image publication,
+node cache checks, and a verified database-and-blob restore before rollout.
 
 The root Terragrunt stack declares a separate `platform-image-policy` Argo CD
 Application. Its cluster-scoped admission policy starts with `Warn, Audit` for

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c1166b9c649673c063edf38530d412dedfb0f67ae09328059c711ba5a432bf9f",
+  "pageVersion": "sha256:a32d8e97d60287c73e0cff3f443970b2068fcf0a8dacbb3c28da4be910dd4ce3",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -304,7 +304,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e8db2c19d1cd96d44cb8d4e79f95e8ef49e6708fa2e508ab69a0db65cdefbf05"
+          "version": "repo-file-v1:sha256:26aad704d54b8c245eb2ecb864186d3cba4f00cbcd634fdba3aebb271ff9f66b"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -317,8 +317,8 @@
       ]
     },
     {
-      "id": "claim_9f8273e30cf84c3c9bf6af0b370a607d",
-      "statement": "The held Harbor consumer branch proposes nine digest-pinned 2.15.4 components with chart 1.19.2; nine-image publication, node cache checks, and verified database and blob restore are required before rollout.",
+      "id": "claim_825581ea853240a6ae2df265abe18ff9",
+      "statement": "The separate Harbor consumer branch proposes nine digest-pinned 2.15.4 runtime components while retaining chart 1.19.2 and requires publication, node cache checks, and verified database-and-blob restore before rollout.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/harbor/README.md",
@@ -327,12 +327,16 @@
         {
           "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
           "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:48:56.298Z"
+    "at": "2026-10-19T00:11:26.455Z"
   }
 }
