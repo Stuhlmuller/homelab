@@ -4,6 +4,7 @@
 import os
 import json
 import hashlib
+import re
 import subprocess
 import tempfile
 import unittest
@@ -21,6 +22,13 @@ WORKER = ROOT / 'clusters/homelab/apps/openclaw/retirement/inventory-worker.sh'
 
 
 class Operations(unittest.TestCase):
+    def test_workflow_pins_current_operations_script(self):
+        pins = re.findall(
+            r"sha256sum --check --status <<<'([0-9a-f]{64})  scripts/ci/openclaw-enterprise-operations\.sh'",
+            WORKFLOW.read_text(),
+        )
+        self.assertEqual(pins, [hashlib.sha256(SCRIPT.read_bytes()).hexdigest()])
+
     def test_inventory_worker_finishes_without_exec_stream_and_records_failure_privately(self):
         with tempfile.TemporaryDirectory() as directory:
             private = Path(directory)
