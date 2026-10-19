@@ -270,6 +270,14 @@ unit "argocd_apps_platform_image_policy" {
   values = read_terragrunt_config("${get_terragrunt_dir()}/platform-image-policy/stack.hcl").inputs
 }
 
+unit "argocd_apps_platform_network_policy_enforcer" {
+  source                  = "./terragrunt-catalog/units/live/argocd-app"
+  path                    = "live/argocd-apps/platform-network-policy-enforcer"
+  no_dot_terragrunt_stack = true
+
+  values = read_terragrunt_config("${get_terragrunt_dir()}/platform-network-policy-enforcer/stack.hcl").inputs
+}
+
 unit "argocd_apps_platform_multus" {
   source                  = "./terragrunt-catalog/units/live/argocd-app"
   path                    = "live/argocd-apps/platform-multus"

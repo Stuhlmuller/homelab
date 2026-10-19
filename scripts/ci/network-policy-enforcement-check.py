@@ -2,6 +2,7 @@
 """Prove policy enforcement in disposable Kind; never load homelab credentials."""
 
 import json
+import runpy
 import select
 import subprocess
 import tempfile
@@ -130,6 +131,9 @@ def main():
             for namespace, addresses in targets.items():
                 dual_stack(addresses, namespace + " target")
             pod("clients", "client", "worker")
+            pod("clients", "local-client", "control-plane")
+            pod("blocked", "local-attacker", "control-plane")
+            pod("blocked", "remote-attacker", "worker")
             svc = {"apiVersion": "v1", "kind": "Service", "metadata": {"name": "web", "namespace": "allowed"},
                    "spec": {"selector": {"app": "web"}, "ipFamilyPolicy": "RequireDualStack", "ports": [{"port": 80, "targetPort": 8080}]}}
             run(*kubectl, "apply", "-f", "-", input=json.dumps(svc))
@@ -140,9 +144,14 @@ def main():
                           {"to": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}}, "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}}],
                            "ports": [{"protocol": "UDP", "port": 53}, {"protocol": "TCP", "port": 53}]}]}}
             run(*kubectl, "apply", "-f", "-", input=json.dumps(policy))
+            ingress = {"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": {"name": "approved-source", "namespace": "allowed"},
+                       "spec": {"podSelector": {"matchLabels": {"app": "web"}}, "policyTypes": ["Ingress"], "ingress": [
+                           {"from": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "clients"}}}],
+                            "ports": [{"protocol": "TCP", "port": 8080}]}]}}
+            run(*kubectl, "apply", "-f", "-", input=json.dumps(ingress))
 
-            def probe(address, port=8080, protocol="TCP", client="client"):
-                return subprocess.run([*kubectl, "-n", "clients", "exec", client, "--", "/usr/bin/python3", "-c", PROBE, address, str(port), protocol],
+            def probe(address, port=8080, protocol="TCP", client="client", namespace="clients"):
+                return subprocess.run([*kubectl, "-n", namespace, "exec", client, "--", "/usr/bin/python3", "-c", PROBE, address, str(port), protocol],
                                       capture_output=True, text=True, timeout=30)
 
             for ips in targets.values():
@@ -150,6 +159,9 @@ def main():
                     for port, protocol in ((8080, "TCP"), (9090, "TCP"), (8080, "UDP")):
                         result = probe(address, port, protocol)
                         assert result.returncode == 0, "Baseline is not unrestricted: " + result.stderr
+            for client in ("local-attacker", "remote-attacker"):
+                for address in targets["allowed"]:
+                    assert probe(address, client=client, namespace="blocked").returncode == 0, "Ingress baseline is not unrestricted"
             print("Policies alone do not enforce the fixture transport", flush=True)
             run(*kubectl, "apply", "-f", str(ROOT / "scripts/ci/fixtures/network-policy-enforcer.yaml"))
             run(*kubectl, "-n", "kube-system", "rollout", "status", "daemonset/kube-network-policies", "--timeout=120s")
@@ -164,7 +176,9 @@ def main():
             while True:
                 logs = agent_logs()
                 result = probe(targets["blocked"][0])
-                if all("Synchronized state with the runtime" in log for log in logs.values()) and result.returncode == 7:
+                denied = all(probe(targets["allowed"][0], client=client, namespace="blocked").returncode == 7
+                             for client in ("local-attacker", "remote-attacker"))
+                if all("Synchronized state with the runtime" in log for log in logs.values()) and result.returncode == 7 and denied:
                     break
                 if time.monotonic() >= deadline:
                     raise AssertionError("NRI registration and enforcement did not converge: " + "\n".join(logs.values()))
@@ -177,10 +191,27 @@ def main():
                         allowed = namespace == "allowed" and port == 8080 and protocol == "TCP"
                         assert result.returncode == (0 if allowed else 7), (namespace, address, port, protocol, result.stdout, result.stderr)
                         count += 1
+            ingress_count = 0
+            for address in targets["allowed"]:
+                result = probe(address, client="local-client")
+                assert result.returncode == 0, ("local-client", address, result.stdout, result.stderr)
+                ingress_count += 1
+            for client in ("local-attacker", "remote-attacker"):
+                for address in targets["allowed"]:
+                    result = probe(address, client=client, namespace="blocked")
+                    assert result.returncode == 7, (client, address, result.stdout, result.stderr)
+                    ingress_count += 1
             services = json.loads(run(*kubectl, "-n", "allowed", "get", "service", "web", "-o", "json"))["spec"]["clusterIPs"]
             dual_stack(services, "Service")
             for address in services:
                 assert probe(address, 80).returncode == 0, "Service DNAT must preserve allowed access"
+                result = probe(address, 80, client="local-client")
+                assert result.returncode == 0, ("local-client", address, result.stdout, result.stderr)
+                ingress_count += 1
+                for client in ("local-attacker", "remote-attacker"):
+                    result = probe(address, 80, client=client, namespace="blocked")
+                    assert result.returncode == 7, (client, address, result.stdout, result.stderr)
+                    ingress_count += 1
             resolved = json.loads(run(*kubectl, "-n", "clients", "exec", "client", "--", "/usr/bin/python3", "-c",
                                       RESOLVE, "web.allowed.svc.cluster.local"))
             assert set(resolved) == set(services), "DNS must return both Service address families"
@@ -247,10 +278,14 @@ def main():
                     assert probe(address, 9090).returncode == 7, "Selected flow bypassed policy while worker enforcer stopped"
             finally:
                 run("docker", "exec", node, "kill", "-CONT", str(pid))
-            print(f"Passed {count} dual-stack destination/port/protocol checks, Service/DNS access, first-packet isolation, established-connection revocation and agent-loss denial", flush=True)
+            print(f"Passed {count} dual-stack destination/port/protocol checks, {ingress_count} same/cross-node ingress checks, Service/DNS access, first-packet isolation, established-connection revocation and agent-loss denial", flush=True)
+            runpy.run_path(str(ROOT / "scripts/ci/istio-egress-routing-check.py"))["check"](kubectl, root, PYTHON)
         except Exception:
             for args in (("get", "pods", "-A", "-o", "wide"),
+                         ("-n", "egress-clients", "describe", "pods"),
                          ("get", "events", "-A", "--sort-by=.lastTimestamp"),
+                         ("-n", "istio-system", "logs", "-l", "k8s-app=istio-cni-node", "--prefix=true", "--tail=120"),
+                         ("-n", "istio-system", "logs", "-l", "app=ztunnel", "--prefix=true", "--tail=80"),
                          ("-n", "kube-system", "logs", "-l", "app=kube-network-policies", "--prefix=true", "--tail=100")):
                 result = subprocess.run([*kubectl, *args], capture_output=True, text=True, timeout=30)
                 print(result.stdout or result.stderr, flush=True)

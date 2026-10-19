@@ -9,8 +9,9 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PATCH = ROOT / ".talos/patches/nri-containerd.yaml"
-NRI_FILE = "/etc/cri/conf.d/30-nri.part"
+PATCH = ROOT / ".talos/patches/network-policy-nri.yaml"
+ROLLBACK = ROOT / ".talos/patches/network-policy-nri-rollback.yaml"
+NRI_FILE = "/etc/cri/conf.d/20-network-policy-nri.part"
 
 
 def run(*args):
@@ -27,7 +28,7 @@ def run(*args):
 
 def check():
     if any(NRI_FILE in path.read_text() for path in (ROOT / ".talos/patches").glob("*.yaml")
-           if path != PATCH):
+           if path not in (PATCH, ROLLBACK)):
         raise ValueError("NRI customization path already has an owner")
     with tempfile.TemporaryDirectory(prefix="talos-nri-preparation-") as directory:
         output = Path(directory)
@@ -38,7 +39,8 @@ def check():
         if not isinstance(files, list) or len(files) != 1:
             raise ValueError("NRI declaration must own exactly one file")
         fragment = files[0]
-        expected = {"plugins": {"io.containerd.nri.v1.nri": {"disable": False}}}
+        expected = {"plugins": {"io.containerd.nri.v1.nri": {
+            "disable": False, "socket_path": "/var/run/nri/nri.sock"}}}
         if (not isinstance(fragment, dict) or set(fragment) != {"path", "op", "permissions", "content"}
                 or fragment["path"] != NRI_FILE or fragment["op"] != "create"
                 or fragment["permissions"] != 0o644 or tomllib.loads(fragment["content"]) != expected):

@@ -78,6 +78,8 @@ python3 -I scripts/ci/harbor-images-check.py
 python3 -I scripts/ci/network-policy-inventory-test.py
 python3 -I scripts/ci/talos-harbor-mirror-credential-test.py
 python3 -I scripts/ci/talos-harbor-mirrors-test.py
+python3 -I scripts/ci/talos-nri-config-check.py
+python3 -I scripts/ci/talos-nri-canary-test.py
 python3 -I scripts/ci/talos-nri-preparation-check-test.py
 python3 -I scripts/ci/talos-nri-preparation-check.py
 python3 -I scripts/ci/talos-nix-builder-seccomp-test.py
