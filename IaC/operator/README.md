@@ -273,10 +273,10 @@ user require an un-targeted operator plan. Import
 when that address is absent, then review and apply the same full saved plan.
 Do not use the trust-only target for those changes.
 
-### Temporary Renovate App credential transfer
+### Renovate App credential transfer and role retirement
 
-The same operator unit temporarily declares
-`homelab-renovate-credential-transfer`. Its OIDC trust accepts only
+The one-time transfer uses the temporary
+`homelab-renovate-credential-transfer` role. Its OIDC trust accepts only
 `Stuhlmuller/renovate` on `refs/heads/main`; that repository's active main
 ruleset and the transfer workflow's exact-current-SHA check guard dispatch.
 The companion repository has no protected GitHub environment. The role can
@@ -287,13 +287,16 @@ two exact names. It can only write the two declared
 the current SSM KMS key. It has no `GetParameter`, decrypt, or IAM grant. The
 companion workflow carries the role ARN directly
 in reviewed source. Do not grant that repository the existing
-`Github-TF-State` apply role.
+`Github-TF-State` apply role. This module removes the temporary role after
+the credential transfer; later rotation requires a reviewed reintroduction
+with the same scope.
 
-After the homelab change merges, generate the stack, run backend-free validation
-and `boundary.tftest.hcl`, then use an administrator profile for a private,
-un-targeted saved plan. This must show exactly the new transfer role and its
-inline policy being created; stop on unrelated changes. Review the private
-plan before applying the saved bytes. Do not attach it to a public PR.
+For a later rotation, restore the exact role and policy in a reviewed PR.
+After that change merges, generate the stack, run backend-free validation and
+`boundary.tftest.hcl`, then use an administrator profile for a private,
+un-targeted saved plan. It must show exactly the transfer role and inline
+policy being created; stop on unrelated changes. Review the private plan
+before applying the saved bytes. Do not attach it to a public PR.
 
 ```sh
 cd IaC
@@ -328,12 +331,35 @@ First verify the SSM unit created both placeholders as `SecureString` under
 `alias/aws/ssm` through its own reviewed apply. Then merge the companion
 transfer workflow, dispatch it with the exact current `main` SHA, and verify
 only SSM parameter versions and ExternalSecret readiness; never print values.
-Keep the CronJob suspended until both projected keys are ready. After the
-transfer, remove the temporary role, policy, output, and policy tests through a
-reviewed change. Repeat the private full-unit plan gate, requiring exactly
-those two resource deletions, and apply only those saved bytes. A later rotation
-requires a reviewed reintroduction of the same limited role before dispatch.
-Delete the private plan directory after review and application.
+Before merging this retirement change, require both parameter versions to
+advance beyond the placeholders, a later ExternalSecret refresh, and no
+active Renovate Job. Keep the CronJob suspended until both projected keys are
+ready and the transfer grant is gone.
+
+On 2026-10-19, companion transfer run `39196912858` succeeded at reviewed
+`main` commit `9e2a9f98931022317c3ee8dc0cf9997fadb53201`. Both declared
+SecureStrings reached version 2. The `automation/renovate` ExternalSecret
+refreshed afterward at 03:56:19 UTC with `Ready=True`, and its target Secret
+resource version changed. The CronJob remained suspended with no Renovate Job.
+These metadata checks establish the transfer gate; removing the role still
+requires the exact saved-plan apply below.
+
+For retirement, repeat backend-free validation and the private, un-targeted
+saved-plan sequence above with this reviewed source. Replace the create gate
+with an exact deletion gate:
+
+```sh
+jq -e '
+  [.resource_changes[] | select(.mode == "managed" and .change.actions != ["no-op"])
+   | {address, actions: .change.actions}] | sort_by(.address) == [
+    {address: "aws_iam_role.renovate_transfer", actions: ["delete"]},
+    {address: "aws_iam_role_policy.renovate_transfer", actions: ["delete"]}
+  ]
+' "$transfer_plan_dir/plan.json"
+```
+
+Stop on unrelated changes. Apply only the reviewed saved bytes, verify a
+fresh full-unit no-op plan, then delete the private plan directory.
 
 The September 29, 2026 Langfuse apply reached SSM refresh but failed because
 the workflow role's KMS grant still named the former runtime key, not the

@@ -92,64 +92,22 @@ run "apply_role_reads_only_langfuse_blob_storage_identity" {
   }
 }
 
-run "renovate_transfer_trusts_only_companion_main" {
+run "operator_role_excludes_companion_renovate" {
   command = plan
 
   plan_options {
     refresh = false
-    target  = [data.aws_iam_policy_document.renovate_transfer_assume_role]
+    target  = [data.aws_iam_policy_document.github_actions_assume_role]
   }
 
   assert {
-    condition = (
-      length(jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement) == 1 &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Effect == "Allow" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Action == "sts:AssumeRoleWithWebIdentity" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Principal.Federated == "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:aud"] == "sts.amazonaws.com" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"] == "repo:Stuhlmuller/renovate:ref:refs/heads/main"
-    )
-    error_message = "Renovate transfer must trust only GitHub OIDC from the companion repository's main branch."
-  }
-}
-
-run "renovate_transfer_can_write_only_two_declared_parameters" {
-  command = plan
-
-  plan_options {
-    refresh = false
-    target  = [data.aws_iam_policy_document.renovate_transfer]
-  }
-
-  assert {
-    condition = (
-      length(jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement) == 3 &&
-      alltrue([
-        for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
-        statement.Effect == "Allow"
-      ]) &&
-      toset(flatten([
-        for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
-        flatten([statement.Action])
-      ])) == toset(["ssm:DescribeParameters", "ssm:PutParameter", "kms:Encrypt"]) &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[0].Sid == "PreflightRenovateParameterMetadata" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[0].Action == "ssm:DescribeParameters" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[0].Resource == "*" &&
-      toset(flatten([
-        for statement in jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement :
-        flatten([statement.Resource]) if statement.Sid == "WriteRenovateAppCredentials"
-        ])) == toset([
-        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/issuer-id",
-        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/private-key",
-      ]) &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[2].Resource == "arn:aws:kms:us-west-2:123456789012:key/test" &&
-      jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[2].Condition.StringEquals["kms:ViaService"] == "ssm.us-west-2.amazonaws.com" &&
-      toset(flatten([jsondecode(data.aws_iam_policy_document.renovate_transfer.json).Statement[2].Condition.StringEquals["kms:EncryptionContext:PARAMETER_ARN"]])) == toset([
-        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/issuer-id",
-        "arn:aws:ssm:us-west-2:123456789012:parameter/homelab/renovate/github-app/private-key",
-      ])
-    )
-    error_message = "Renovate transfer may describe metadata, write only its two declared parameters, and encrypt their values through SSM."
+    condition = toset(jsondecode(data.aws_iam_policy_document.github_actions_assume_role.json).Statement[0].Condition.StringEquals["token.actions.githubusercontent.com:sub"]) == toset([
+      "repo:Stuhlmuller/github-iac:environment:github-iac-plan",
+      "repo:Stuhlmuller/github-iac:environment:github-iac-production",
+      "repo:Stuhlmuller/homelab:environment:homelab-plan",
+      "repo:Stuhlmuller/homelab:environment:homelab-production",
+    ])
+    error_message = "The operator apply role must not trust the companion Renovate repository after credential transfer."
   }
 }
 
