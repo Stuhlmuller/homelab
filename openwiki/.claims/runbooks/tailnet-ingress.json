@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:43a7e50990cceb57502e4e5ec642a050ac54d3192d167b5f785b2e0b038407e7",
+  "pageVersion": "sha256:bfd12085ca232f66b88cf47bb997fa19b72c1be66d616fa786b590d5df770c83",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -218,7 +218,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
-          "version": "repo-file-v1:sha256:2ef50b92d14ccbdcc052bcf2810562b8cd13008754a32e9808997e1fb8f05c8b"
+          "version": "repo-file-v1:sha256:bda0cb28f98f4cd0c1343408b5254b7f11dc2dfaa8205378bdcf211ca10b06fc"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
@@ -338,7 +338,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
@@ -379,6 +379,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T15:59:51.049Z"
+    "at": "2026-10-19T17:05:04.757Z"
   }
 }

@@ -32,10 +32,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T14:01:19.597Z
+    at: 2026-10-19T17:05:04.757Z
 ---
 
 # AWS SSM Secret References
@@ -68,14 +68,9 @@ desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
-reintroduction of the exact-scope grant. The hourly CronJob remains suspended
-in full dry-run mode; parity and the old-writer cutover remain separate gates.
-
-**Source finding (2026-10-19).** The [workload README](../../clusters/homelab/apps/renovate/README.md#credentials-and-storage)
-now records completed credential transfer but still says live transfer-role
-deletion is pending. The [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
-records that deletion and a fresh no-change plan. Correct the workload README
-in a follow-up PR; rotation and writer cutover remain separate gates.
+reintroduction of the exact-scope grant. The hourly CronJob is now declared
+unsuspended in full dry-run mode; scheduled-run parity and the old-writer
+cutover remain separate gates.
 
 ## OpenClaw Enterprise model key
 
