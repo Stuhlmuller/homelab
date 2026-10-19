@@ -25,7 +25,7 @@ spec:
               <= on (namespace, cronjob)
               homelab_renovate:last_suspended_sample:seconds
             )
-        # shortcut: 60-second resume cushion assumes kube-state-metrics is scraped at most every 30 seconds; revisit if scrape interval grows.
+        # shortcut: last suspended scrape approximates resume; revisit if scrape gaps can outlast the 15-minute start deadline.
         - alert: RenovateHourlyCycleMissing
           expr: |
             (
@@ -34,7 +34,7 @@ spec:
                 or
                 (
                   (time() - (floor((
-                    (homelab_renovate:last_suspended_sample:seconds + 60)
+                    homelab_renovate:last_suspended_sample:seconds
                     or on (namespace, cronjob)
                     min by (namespace, cronjob) (kube_cronjob_created{job="kube-state-metrics",namespace="automation",cronjob="renovate"})
                   ) / 3600) * 3600 + 3600) > 900)

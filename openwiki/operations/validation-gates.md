@@ -52,8 +52,8 @@ sources:
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
-  - id: openwiki-source-c728e68797517895d00bd9f9
-    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -128,6 +128,8 @@ sources:
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
     resource: repo://scripts/ci/renovate-alert-check.py
+  - id: openwiki-source-b7865f8f7c461f149710edda
+    resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
@@ -176,10 +178,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
+generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T02:17:09.125Z
 ---
 
 # Validation Gates
@@ -1765,6 +1767,13 @@ hourly slot. These checks verify declared behavior; the suspended runner still
 needs live cold-cache runtime, Secret,
 App inventory, cache, and scheduled-Job acceptance before GitHub writes move
 to the cluster.
+The alert fixture also checks a resume just before an hour boundary: it stays
+quiet during the first slot's grace period and alerts if that slot is missed.
+The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
+and malformed package and repository cache entries. Neither fixture proves
+the live PVC or a scheduled cluster run. Credential transfer, two-Pod cache
+evidence, dry-run parity, and a separate seven-day acceptance window remain
+open gates.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

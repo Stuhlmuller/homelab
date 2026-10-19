@@ -63,8 +63,8 @@ tests = [
     case("recent run resets freshness", schedule=7200, at="140m", fires=False),
     case("repeated suspension resumed at half hour", suspend_values="1x89 0x29 1x89 0x110", at="215m", fires=False),
     case("first enabled slot missed after repeated suspension", suspend_values="1x89 0x29 1x89 0x110", at="261m"),
-    case("resume at hour boundary does not warn early", suspend_values="1x59 0x260", at="95m", fires=False),
-    case("first slot missed after boundary resume", suspend_values="1x59 0x260", at="141m"),
+    case("resume before hour boundary does not warn early", suspend_values="1x59 0x260", at="75m", fires=False),
+    case("first slot missed after boundary resume", suspend_values="1x59 0x260", at="81m"),
     case("old schedule does not warn after maintenance", schedule=3600, suspend_values="0x89 1x119 0x110", at="215m", fires=False),
     case("missed slot after maintenance alerts", schedule=3600, suspend_values="0x89 1x119 0x110", at="261m"),
 ]
