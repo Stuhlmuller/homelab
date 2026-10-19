@@ -207,6 +207,10 @@ if azuread_credentials_available; then
     fi
   done < <(find IaC/live/azuread-applications -mindepth 2 -maxdepth 2 -name terragrunt.hcl -print | sort)
 else
+  if terragrunt_azuread_stack_changed; then
+    echo "AzureAD credentials are required because IaC/live/azuread-applications changed or the plan diff could not be determined." >&2
+    exit 1
+  fi
   echo "::warning::Skipping AzureAD application registration plan because client/tenant IDs and a complete GitHub OIDC session (or explicit client-secret authentication) are not configured for this plan run."
 fi
 echo "::endgroup::"
