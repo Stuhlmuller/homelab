@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:200b8c07e23cdd9d2c90028c0f6f9ef0522194f637bf655390eb79c3a16857e7",
+  "pageVersion": "sha256:6872e4bfeb79797c6f06a846fd9e9aa16e53c9a1d8b2d9311989e9f99324b2c5",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -27,6 +27,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:42:29.586Z"
+    "at": "2026-10-19T09:44:12.806Z"
   }
 }

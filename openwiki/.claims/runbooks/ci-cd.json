@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b8e486a31a7bf7dfbd24ac56864de88576143fbc27e06cc6c23bab81c2620aab",
+  "pageVersion": "sha256:766d4d205a2846133502d7c3b24c456410ff13aac59ef21abc50e8246a27e47c",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:22e6470aed06446d38f40d4cab5359c8ba82b948d18256eae4c501abc282222b"
+          "version": "repo-file-v1:sha256:4af49badc2ebc87dab9b511e5cfab21f8c188b042600656d54daa0a5052bd90a"
         }
       ]
     },
@@ -85,10 +85,28 @@
           "version": "repo-file-v1:sha256:9d225bba40e466ddc3d22becee3d68fef6548aa98b4624d0860ac9469dbba27e"
         }
       ]
+    },
+    {
+      "id": "claim_d118ebae6e7644838de312b3b1c718f2",
+      "statement": "The Platform Maintenance workflow accepts fixed stages only from exact current main, runs static checks before its protected job, rechecks main before AWS credentials and verifies its pinned stage helper; configuration keeps upgrade activation and canary placement disabled pending private recovery and publication evidence.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:aacc3aaabef52fdfd0b0d0c3d3308aa65cb75a284f735c5733dc4b72ec9b7167"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:02:08.557Z"
+    "at": "2026-10-19T09:44:12.806Z"
   }
 }
