@@ -11,7 +11,8 @@
 
 **Purpose**: Establish the existing runner's identity, scope, and image source before changing desired state.
 
-- [ ] T001 Record the Stuhlmuller/renovate workflow and global-config commit, latest successful run, App PR author, owned-versus-App-accessible repository counts, all-repositories installation selection, archived/fork behavior, actual App permissions, and any legacy private-registry credential inputs in clusters/homelab/apps/renovate/README.md; keep private repository names and credentials out of public text.
+- [X] T001 Record the Stuhlmuller/renovate workflow and global-config commit, latest successful run, App PR author, owned-versus-App-accessible repository counts, all-repositories installation selection, archived/fork behavior, actual App permissions, and any legacy private-registry credential inputs in clusters/homelab/apps/renovate/README.md; keep private repository names and credentials out of public text.
+  Evidence: 2026-10-19 owner API inventory found 18 owned repositories, eight eligible and ten archived, with no forks; the last observed legacy App-token scan finished all eight. GitHub's organization installation API confirmed the active all-repositories selection and effective grants. Direct installation-token repository enumeration remains unavailable, so scheduled cluster discovery still gates cutover.
 - [X] T002 [P] Add the selected upstream Renovate image and verified Harbor mirror digest to scripts/config/harbor-images.json, and publish that exact digest through the repository image workflow before any CronJob references it.
 
 **Checkpoint**: The parity baseline and immutable image are known; any missing App access or legacy registry credential has an explicit resolution path.

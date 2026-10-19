@@ -23,18 +23,19 @@ and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
 dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
 bot username and Git author so startup needs no account lookup. The legacy
 workflow and global config reference no separate private-registry credential
-input; the workflow uses only the existing App secrets. The public App
-definition currently requests repository Checks, Contents, Issues, Pull
-requests, Commit statuses, and Workflows write; Metadata and Dependabot alerts
-read; and organization Members and Administration read. It lacks repository
-Administration read from
-Renovate's recommended grants. This does not block discovery, but a repository
-override using automatic rebasing may lose branch-protection awareness. The
-operator credential cannot enumerate the current installation-token repository
-list or confirm effective installation grants; compare its eligible count of
-eight, effective grants and repository overrides, and the existing PR author
-with the first cluster dry run before cutover. Keep private repository names out
-of public reports.
+input; the workflow uses only the existing App secrets. The GitHub
+organization installation API confirmed on 2026-10-19 that the active App
+selects all repositories and has effective repository Checks, Contents, Issues,
+Pull requests, Commit statuses, and Workflows write; Metadata and Dependabot
+alerts read; and organization Members and Administration read. It lacks
+repository Administration read from Renovate's recommended grants. This does
+not block discovery, but a repository override using automatic rebasing may
+lose branch-protection awareness. The operator credential cannot enumerate the
+current installation-token repository list; all-repositories selection, the
+owner inventory, and the eight-of-eight legacy App-token scan imply coverage.
+Compare actual cluster discovery, repository overrides, and existing PR author
+with the first scheduled dry run before cutover. Keep private repository names
+out of public reports.
 
 ## Credentials and storage
 
@@ -141,11 +142,22 @@ Before activation, the ExternalSecret was Ready, the target Secret existed,
 and the CronJob was suspended. A manual full dry run finished all eight eligible
 repositories without a new bot PR, but its Harbor lookups failed before the
 registry-only route was deployed. It does not prove scheduled operation or
-cache reuse. Two scheduled dry-run Pods must prove repository coverage, planned
+cache reuse. Scheduled dry-run Pods must prove repository coverage, planned
 proposals, unchanged App identity and merge policy, and a cache hit for the
-same datasource key across Pod UIDs. A shorter second run alone does not prove
-cache reuse.
-Keep detailed Renovate logs private.
+same datasource key across Pod UIDs. After a cold canary lookup, inspect
+restricted logs from two warm scheduled Pods with distinct UIDs. Confirm the
+exact `Returning cached value` marker for namespace
+`github-releases-datasource-v2` and key
+`https://api.github.com/:Stuhlmuller:renovate` in both. Only this marker is
+raised from TRACE to INFO. A shorter second run alone does not prove cache
+reuse. The INFO marker includes `namespace` and `key`, which can contain
+private repository or package names. Restrict Pod-log access; keep raw records
+out of public PRs, issues, and CI output. Publish only aggregate cache-hit
+results and distinct Pod UIDs. Remove `logLevelRemap` through a reviewed PR
+after evidence is captured and before enabling writes; keep the hourly schedule
+and Renovate's normal cache freshness rules.
+`scripts/ci/renovate-log-remap-test.mjs` verifies the INFO record and its
+metadata against an installed copy of pinned Renovate 44.167.4.
 
 Read-only status checks:
 
