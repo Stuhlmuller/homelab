@@ -51,14 +51,23 @@ against `GET /installation` and verify both Ready Pods' exact startup binding
 before reconciliation. The CLI's read-only `check` gathers that proof; the
 annotation binder is pending. With its protected credential file, exact main
 SHA and journal, `reconcile` can create/adopt the logical `claw` Namespace in
-the prepared `openclaw-agents` namespace, then exits blocked while Agent work
-remains unfinished. A failed `reconcile` may therefore have changed Enterprise
-and Kubernetes state. Inspect the journaled Namespace ID, exact API GET and
-owned Kubernetes Namespace/NetworkPolicies before retrying with the same
-journal; unknown creates are not reposted. Keep activation false and preserve
-the journal for rollback. Removing this logical Namespace needs a reviewed
-repository-owned cleanup path; do not delete the physical tenant Namespace.
-Tenant `verify` remains read-only and blocked.
+the prepared `openclaw-agents` namespace, one native Agent Configuration, and
+one stopped Embedded Agent. The Configuration uses native model reference
+`openai/openrouter/free` so OCE selects its supported `openai` Harness provider;
+the OpenRouter wire model remains `openrouter/free`. The dedicated model key is
+still absent, so the agent has no `harnessAuth` binding and cannot be deployed.
+`verify` checks the journaled identities, complete Configuration values,
+generation and stopped Agent without sending inference. A failed `reconcile`
+may have changed Enterprise and Kubernetes state. Inspect the journal and exact
+API objects before retrying; unknown creates are recovered from owned reads,
+not reposted. Keep activation false and preserve the journal for rollback.
+Removing this logical Namespace needs a reviewed repository-owned cleanup path;
+do not delete the physical tenant Namespace.
+
+At the pinned upstream revision, `native-admin` requires an authenticated
+human session with exact Agent `administer`. Service keys cannot inspect its
+origin. T048 records the returned `data.origin` during browser acceptance;
+the service-key reconciler cannot supply that receipt.
 The chart's Kubernetes policy also needs nonempty reviewed `database.cidrs` and
 `cluster.cidrs`; this candidate has explicit destinations, but Service DNAT
 behavior still needs the isolated canary qualification.

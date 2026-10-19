@@ -84,6 +84,84 @@ class NamespaceAPI:
         return copy.deepcopy(item)
 
 
+class TenantAPI:
+    """Small pinned-shape store; mutation failures happen after persistence."""
+
+    def __init__(self):
+        self.namespace = {"id": "ns_one", "name": "claw",
+                          "existingNamespace": "openclaw-agents", "status": "ready"}
+        self.configurations = {}
+        self.agents = {}
+        self.calls = []
+        self.lose = None
+
+    def get(self, path):
+        self.calls.append(("GET", path))
+        if path == "/namespaces":
+            return [copy.deepcopy(self.namespace)]
+        if path == "/namespaces/ns_one":
+            return copy.deepcopy(self.namespace)
+        if path == "/namespaces/ns_one/agents":
+            return [copy.deepcopy(item) for item in self.agents.values()]
+        if path.startswith("/namespaces/ns_one/configurations/"):
+            return copy.deepcopy(self.configurations[path.rsplit("/", 1)[-1]])
+        if path.startswith("/namespaces/ns_one/agents/"):
+            return copy.deepcopy(self.agents[path.rsplit("/", 1)[-1]])
+        raise AssertionError("unexpected API path: " + path)
+
+    def post(self, path, body):
+        self.calls.append(("POST", path, copy.deepcopy(body)))
+        if path == "/namespaces/ns_one/configurations":
+            item = {"id": "cfg_one", "namespaceId": "ns_one", "kind": "agent",
+                    "createdAt": "2026-10-19T00:00:00.000Z", "generation": 1,
+                    "values": copy.deepcopy(body["values"])}
+            self.configurations[item["id"]] = item
+            operation = "configuration"
+        elif path == "/namespaces/ns_one/agents":
+            item = {"id": "agt_one", "namespaceId": "ns_one", "name": body["name"],
+                    "configurationId": body["configurationId"], "executionMode": "embedded",
+                    "backendId": None, "status": "active", "desiredRuntimeState": "stopped",
+                    "activeRevisionId": None, "harnessAuth": None,
+                    "servicePrincipalId": "sp_one"}
+            self.agents[item["id"]] = item
+            operation = "agent"
+        else:
+            raise AssertionError("unexpected mutation: " + path)
+        if self.lose == operation:
+            self.lose = None
+            raise OCE.Blocked("Enterprise API request failed or returned invalid JSON")
+        return copy.deepcopy(item)
+
+
+class TenantKubernetes:
+    def __init__(self, api):
+        self.api = api
+        self.calls = []
+
+    def tenant_prepared(self, namespace_id=None, require_claimed=False):
+        self.calls.append(("tenant-prepared", namespace_id, require_claimed))
+
+    def configuration_candidates(self, namespace_id):
+        self.calls.append(("configuration-candidates", namespace_id))
+        result = []
+        for item in self.api.configurations.values():
+            configuration_id = item["id"]
+            result.append({"metadata": {
+                "uid": "kube-" + configuration_id,
+                "name": OCE.configuration_configmap_name(configuration_id),
+                "namespace": "openclaw-agents",
+                "labels": {"app.kubernetes.io/managed-by": "openclaw-enterprise",
+                           "openclaw.dev/namespace": namespace_id,
+                           "openclaw.dev/configuration": configuration_id},
+                "annotations": {"openclaw.dev/namespace-id": namespace_id,
+                                "openclaw.dev/configuration-id": configuration_id,
+                                "openclaw.dev/configuration-kind": "agent",
+                                "openclaw.dev/configuration-generation": str(item["generation"]),
+                                "openclaw.dev/configuration-created-at": item["createdAt"]}},
+                "data": {"openclaw.json": json.dumps(item["values"])}})
+        return result
+
+
 class EnterpriseReconciliation(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="oce-reconciler-")
@@ -362,7 +440,7 @@ class EnterpriseReconciliation(unittest.TestCase):
         kube = FakeKubernetes([copy.deepcopy(snapshot) for _ in range(4)])
         with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
             self.assertEqual(OCE.check(self.config, api, kube)["installationId"], "ins_one")
-            with self.assertRaisesRegex(OCE.Blocked, "tenant verification is not implemented"):
+            with self.assertRaisesRegex(OCE.Blocked, "journal is missing"):
                 OCE.verify(self.config, api, kube)
         self.assertEqual(api.calls, [("GET", "/installation")] * 2)
         self.assertEqual(kube.calls, [digest] * 4)
@@ -384,7 +462,7 @@ class EnterpriseReconciliation(unittest.TestCase):
             OCE._validate_config(active)
         active["model"] = copy.deepcopy(self.config["model"])
         active["secrets"]["modelApiKey"] = "/homelab/litellm/openrouter-api-key"
-        with self.assertRaisesRegex(OCE.Blocked, "dedicated key"):
+        with self.assertRaisesRegex(OCE.Blocked, "dedicated model key"):
             OCE._validate_config(active)
         active["secrets"]["modelApiKey"] = "/homelab/openclaw-enterprise/model-api-key"
         OCE._validate_config(active)
@@ -549,18 +627,17 @@ class EnterpriseReconciliation(unittest.TestCase):
                 pass
 
     def test_namespace_reconcile_persists_exact_identity_without_recreating(self):
-        document, digest, image, snapshot = self._installation_snapshot()
         api = NamespaceAPI()
-        kube = FakeKubernetes([copy.deepcopy(snapshot) for _ in range(4)])
-        with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
+        kube = FakeKubernetes([])
+        with OCE.ProtectedJournal(self.private / "journal.json", self.config["source"]["revision"],
+                                  OCE._identity_hash(self.config)) as journal:
             for _ in range(2):
-                with self.assertRaisesRegex(OCE.Blocked, "Agent reconciliation is not implemented"):
-                    OCE.reconcile(self.config, api, kube, "a" * 40)
+                self.assertEqual(OCE.reconcile_namespace(self.config, api, journal, kube), "ns_one")
         self.assertEqual([call for call in api.calls if call[0] == "POST"],
                          [("POST", "/namespaces", {"name": "claw",
                                                   "existingNamespace": "openclaw-agents"})])
         state = json.loads((self.private / "journal.json").read_text())["state"]
-        self.assertEqual(state, {"installationId": "ins_one", "namespaceId": "ns_one"})
+        self.assertEqual(state, {"namespaceId": "ns_one"})
         self.assertEqual([call for call in kube.calls if isinstance(call, tuple)],
                          [("tenant-prepared", None, False),
                           ("tenant-prepared", "ns_one", False),
@@ -798,6 +875,107 @@ class EnterpriseReconciliation(unittest.TestCase):
         with patch.object(OCE.Kubernetes, "_json", side_effect=broad):
             with self.assertRaisesRegex(OCE.Blocked, "ClusterRole"):
                 OCE.Kubernetes().tenant_prepared()
+
+
+class InactiveAgentReconciliation(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="oce-agent-")
+        self.addCleanup(self.temp.cleanup)
+        private = Path(self.temp.name).resolve() / "private"
+        private.mkdir(mode=0o700)
+        self.config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
+        self.config["privateJournal"]["mountPath"] = str(private / "journal.json")
+        self.api = TenantAPI()
+        self.kube = TenantKubernetes(self.api)
+        with OCE.ProtectedJournal(private / "journal.json", self.config["source"]["revision"],
+                                  OCE._identity_hash(self.config)) as journal:
+            journal.save({"installationId": "ins_one", "namespaceId": "ns_one"})
+
+    def _reconcile(self):
+        with patch.object(OCE, "prove_driver_identity", return_value={"installationId": "ins_one"}):
+            return OCE.reconcile(self.config, self.api, self.kube, "a" * 40)
+
+    def test_openrouter_wire_id_has_supported_native_provider(self):
+        values = OCE.desired_configuration(self.config)
+        self.assertEqual(values["agents"]["defaults"]["model"], "openai/openrouter/free")
+        self.assertEqual(values["agents"]["defaults"]["models"], {
+            "openai/openrouter/free": {"agentRuntime": {"id": "openclaw"}}})
+        self.assertEqual(values["models"]["providers"], {"openai": {
+            "baseUrl": "https://openrouter.ai/api/v1", "api": "openai-completions",
+            "models": [{"id": "openrouter/free", "name": "openrouter/free"}]}})
+        bad = copy.deepcopy(self.config)
+        bad["model"]["provider"] = "openrouter"
+        with self.assertRaisesRegex(OCE.Blocked, "approved OpenRouter transport"):
+            OCE.desired_configuration(bad)
+
+    def test_inactive_first_reconcile_is_idempotent_and_verify_has_no_mutation(self):
+        self.assertEqual(self._reconcile()["desiredRuntimeState"], "stopped")
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+        writes = [call for call in self.api.calls if call[0] == "POST"]
+        self.assertEqual([call[1] for call in writes], [
+            "/namespaces/ns_one/configurations", "/namespaces/ns_one/agents"])
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            self.assertEqual(OCE.verify(self.config, self.api, self.kube)["agentId"], "agt_one")
+        self.assertEqual([call for call in self.api.calls if call[0] == "POST"], writes)
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["configurationGeneration"], 1)
+        self.assertEqual(state["servicePrincipalId"], "sp_one")
+        self.assertNotIn("pending", state)
+
+    def test_lost_configuration_response_adopts_owned_configmap_without_repost(self):
+        self.api.lose = "configuration"
+        with self.assertRaisesRegex(OCE.Blocked, "request failed"):
+            self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["pending"]["operation"], "configuration-create")
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+        posts = [call for call in self.api.calls if call[0] == "POST"]
+        self.assertEqual([call[1] for call in posts], [
+            "/namespaces/ns_one/configurations", "/namespaces/ns_one/agents"])
+
+    def test_lost_agent_response_adopts_exact_stopped_agent_without_repost(self):
+        self.api.lose = "agent"
+        with self.assertRaisesRegex(OCE.Blocked, "request failed"):
+            self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["pending"]["operation"], "agent-create")
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+        self.assertEqual(len([call for call in self.api.calls if call[0] == "POST" and
+                              call[1] == "/namespaces/ns_one/agents"]), 1)
+
+    def test_foreign_configuration_and_changed_generation_block(self):
+        self.api.configurations["cfg_foreign"] = {
+            "id": "cfg_foreign", "namespaceId": "ns_one", "kind": "agent",
+            "createdAt": "2026-10-19T00:00:00.000Z", "generation": 1, "values": {}}
+        with self.assertRaisesRegex(OCE.Blocked, "unjournaled Enterprise Configuration"):
+            self._reconcile()
+        self.api.configurations.clear()
+        self._reconcile()
+        self.api.configurations["cfg_one"]["generation"] = 2
+        with self.assertRaisesRegex(OCE.Blocked, "Configuration readback changed"):
+            self._reconcile()
+
+    def test_unknown_configuration_create_does_not_repost(self):
+        with patch.object(self.api, "post", side_effect=OCE.Blocked("lost response")) as post:
+            with self.assertRaisesRegex(OCE.Blocked, "lost response"):
+                self._reconcile()
+            with self.assertRaisesRegex(OCE.Blocked, "unknown Configuration create outcome"):
+                self._reconcile()
+        post.assert_called_once()
+
+    def test_configuration_candidate_lookup_is_scoped(self):
+        with patch.object(OCE.Kubernetes, "_json", return_value={"items": []}) as read:
+            self.assertEqual(OCE.Kubernetes().configuration_candidates("ns_one"), [])
+        read.assert_called_once_with(
+            "-n", "openclaw-agents", "get", "configmaps", "-l",
+            "app.kubernetes.io/managed-by=openclaw-enterprise,openclaw.dev/namespace=ns_one",
+            "-o=json")
 
 
 if __name__ == "__main__":
