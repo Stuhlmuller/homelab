@@ -39,6 +39,7 @@ class HarborPublicationGates(unittest.TestCase):
         self.renovate_mirror_manifest = None
         self.chainguard_mirror_manifest = None
         self.dns_mirror_manifest = None
+        self.litellm_mirror_manifest = None
         self.calls = self.root / "external-calls"
         self.env = {
             "PATH": f"{self.root / 'bin'}:{os.environ['PATH']}",
@@ -107,6 +108,11 @@ class HarborPublicationGates(unittest.TestCase):
             dns_path.unlink(missing_ok=True)
         else:
             dns_path.write_text(json.dumps(self.dns_mirror_manifest))
+        litellm_path = self.root / "scripts/config/harbor-litellm-images.json"
+        if self.litellm_mirror_manifest is None:
+            litellm_path.unlink(missing_ok=True)
+        else:
+            litellm_path.write_text(json.dumps(self.litellm_mirror_manifest))
         result = subprocess.run(
             ["bash", str(self.root / "scripts/ci/harbor-publish.sh"), mode],
             cwd=self.root,
@@ -554,6 +560,33 @@ class HarborPublicationGates(unittest.TestCase):
         del self.env["OCTELIUM_AUTH_TOKEN"]
         result = self.rejected(mode="mirror-dns")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
+
+    def test_litellm_scope_pins_exact_amd64_child_without_changing_consumer(self):
+        source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
+        selected = json.loads((ROOT / "scripts/config/harbor-litellm-images.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
+        self.assertEqual(selected, {"images": [{"source": source}]})
+        self.assertIn(selected["images"][0], catalog["images"])
+        self.assertIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
+                      (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
+        self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
+        self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm)", workflow)
+
+    def test_litellm_scope_rejects_tampering_before_credentials(self):
+        source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
+        valid = {"source": source}
+        self.mirror_manifest = {"images": [valid]}
+        for scope in (None, {"images": []}, {"images": [valid, valid]},
+                      {"images": [{"source": source.replace("2791e", "2791f")}]},
+                      {"images": [{"source": source.replace("litellm-database", "other")}]},
+                      {"images": [valid], "destination": "other"}):
+            with self.subTest(scope=scope):
+                self.litellm_mirror_manifest = scope
+                self.rejected(mode="mirror-litellm")
+        self.litellm_mirror_manifest = {"images": [valid]}
+        self.mirror_manifest = {"images": []}
+        self.rejected(mode="mirror-litellm")
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
         self.transport_mocks(mirror=True, registries=("docker.io", "codeberg.org"))

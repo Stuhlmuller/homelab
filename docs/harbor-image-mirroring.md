@@ -156,7 +156,7 @@ retain registry blobs together with Harbor database/encryption-key backups.
    authenticated Harbor pull before merging the resolver Application.
 
    `image_scope` accepts only `all`, `fleet`, `bazarr`, `mastodon`, `traefik`,
-   `dns`, `chainguard`, `harbor`, or `renovate`; no image,
+   `dns`, `litellm`, `chainguard`, `harbor`, or `renovate`; no image,
    digest, inventory path, or destination can be supplied by the caller.
    `scripts/config/harbor-traefik-images.json` selects the pinned public Traefik
    image and the pinned `pause:3.10` image used by native Talos pull acceptance.
@@ -654,13 +654,33 @@ Its eight descriptors reference four child digests twice. The second failure
 correlates with Harbor PostgreSQL's `unique_reference` violation at
 `08:53:38.389Z`; registry child writes succeeded but the parent was unavailable.
 This matches [upstream Harbor issue #16718](https://github.com/goharbor/harbor/issues/16718).
+A fresh full-catalog attempt on October 19 (`39190983355`) reached the same
+pinned index and PostgreSQL constraint while its child writes succeeded.
 
-Keep the source index, attestations and pinned digest intact. Do not alter the
-live database schema to bypass this failure. Compatible full-catalog publication
-requires a separately reviewed repair. The fixed Traefik scope publishes the
+The source index lists the same Linux amd64 child digest
+`sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8`
+twice. An anonymous GHCR GET verified the child manifest's bytes against that
+digest; all four observed Kubernetes nodes were Linux amd64 on October 19.
+The fixed `litellm` mirror scope copies and completely pulls that exact child
+without changing the running LiteLLM workload:
+
+```sh
+gh workflow run harbor-mirror.yml --ref main -f expected_sha="<reviewed-current-main-sha>" -f image_scope=litellm
+```
+
+Require a successful exact-current-main scoped receipt before a separate PR
+pins LiteLLM to the same child and removes the failing index from the full
+catalog. That later pin retains the image these nodes select but excludes arm64
+and attestation descriptors; re-evaluate it before adding arm64 nodes. A scoped
+receipt does not establish full-catalog coverage or authorize strict Talos
+mirrors. Re-run `image_scope=all` after the consumer/catalog PR merges.
+
+Until that later PR, keep the running source index pin intact. Do not alter the
+live database schema to bypass this failure. The fixed Traefik scope publishes the
 native pause probe independently; its success authorizes only those artifacts.
 Node hostname migration still requires successful native pulls from every node.
 Cluster-wide `skipFallback` mirrors remain gated on successful full publication.
+
 ## Custom-image publication acceptance
 
 The fixed custom-image publisher completely downloads each pushed private

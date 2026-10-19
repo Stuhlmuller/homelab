@@ -582,11 +582,14 @@ case "$IMAGE_SCOPE" in
   dns)
     bash scripts/ci/harbor-publish.sh mirror-dns
     ;;
+  litellm)
+    bash scripts/ci/harbor-publish.sh mirror-litellm
+    ;;
   *) exit 2 ;;
 esac
 EOF
 then
-  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+  if [[ -f "$public_status" ]] && sha256sum --check --status <<<'a61e553ad7acf3f365fec1002c9b8c7a93b96b912ea8b5775a73d59ffd2a9a96  scripts/ci/harbor-publish.sh' 2>/dev/null; then
     cat "$public_status"
   fi
   echo "::error::Harbor mirror failed; private transport and registry output withheld."

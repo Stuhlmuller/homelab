@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:ff6e4391163071caaa7ac91bac0f14a8ba311a4f585c1726acad67ad3ed2c67a",
+  "pageVersion": "sha256:c07d1114e8ac72565f2481de141fa1df40f84048856583dfaad161c663d4673b",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:98e68025f56c540531f819875e36d2e864f4b1d9f0c77e6bf1cea386c018ac2d"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -570,11 +570,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:e25f21479f0bfeb8634d5f20b24144b33bc27e160a936ea70c119c6a66c4c5c9"
+          "version": "repo-file-v1:sha256:a9fd4eca1f44b80928fe2f5169578f04a1bc65ec34716a889865cd5ebad3bf00"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -666,19 +666,19 @@
     },
     {
       "id": "claim_eb3bfe17176d4c108710c0f205d04fb2",
-      "statement": "The fixed Renovate scope contains seven reviewed catalog digests, including the runner. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash is updated to admit only this reviewed scope.",
+      "statement": "The fixed Renovate scope contains seven reviewed catalog digests, including the runner. Publisher fixtures reject unreviewed entries and exercise selected-image copy and authenticated pull behavior; the credentialed workflow exact hash locks the reviewed fixed scopes.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:61c7fde07352eccbc71dfe69598e7f1e836ef837f4c67ce435ec11708814a318"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:b5a6cb19b4915421099ebd4458022711867f6bcdb9e97da731abf512a7604f78"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
-        },
-        {
-          "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -691,11 +691,11 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L860-L925",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L893-L958",
           "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
+          "resource": "repo://scripts/ci/harbor-publish.sh#L309-L398",
           "version": "repo-lines-v1:sha256:ec12ba9fcd206767aec57c3c89c926b83df6aa3cd14eead3fb972208fb6a2c46:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
         }
       ]
@@ -728,7 +728,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:98e68025f56c540531f819875e36d2e864f4b1d9f0c77e6bf1cea386c018ac2d"
         }
       ]
     },
@@ -833,10 +833,36 @@
           "version": "repo-lines-v1:sha256:799d5fe07072d35726b04dd9847ca9f4ec92b4cbe26b8cc57d8594626fdde9dd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkODFkZjFlY2VlY2Y1OWFkOThkZmFjYzgwYWExMTY5MGM2ZGYxNzA4ZjBlYmQwYWYyZTcwNWJjZGQyNDkwYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzNWUzMTcwOTczNWU4MmU4YmFjOGJhM2Y2NWI1MjNhMGU4ZmMzNWM3MzE1OTlhNDhmMjIyYTE5ZTBlNTZkNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3MTJkMmFmMmFiMTk2MTcxMDVlMjI3MTQ1MjA2Mzc0NjA5ZWVkZTA2YWFmMjI5OGNiM2FjZDg4MDAxZGEyNjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_31bc470a71b64dffa328e35ac9146249",
+      "statement": "The fixed LiteLLM scope selects one reviewed Linux amd64 child digest while the catalog retains the running index. Coverage and publisher fixtures reject missing, altered, or extra scope entries before credentials; the shared publisher verifies source digest bytes and a fresh complete authenticated Harbor pull. Local fixtures do not prove scoped publication or full-catalog coverage.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-images-check-test.py",
+          "version": "repo-file-v1:sha256:83f92c85e85a27d429670e646e8d9eecea284b04e5557e506d2f8e483fe87ccf"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:a61e553ad7acf3f365fec1002c9b8c7a93b96b912ea8b5775a73d59ffd2a9a96"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+        },
+        {
+          "resource": "repo://scripts/config/harbor-litellm-images.json",
+          "version": "repo-file-v1:sha256:04b6f987c031d00622391dfbfea25cb58ea3ea7c520c1e2487225c840383c403"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:30:44.377Z"
+    "at": "2026-10-19T06:14:05.634Z"
   }
 }
