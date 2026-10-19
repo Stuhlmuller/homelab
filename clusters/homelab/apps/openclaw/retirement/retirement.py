@@ -354,9 +354,6 @@ def verify_bundle(bundle, expected, config, expected_roots):
                             (Path(scratch) / member.name).chmod(member.mode & 0o777)
             if index.execute('SELECT 1 FROM members WHERE extracted = 0 LIMIT 1').fetchone():
                 raise ValueError('archive changed during restore')
-            for name, mode in index.execute("SELECT name, mode FROM members WHERE kind = 'directory' "
-                                            'ORDER BY length(name) DESC'):
-                (Path(scratch) / name).chmod(mode & 0o777)
             for name, target in index.execute('SELECT name, link FROM members '
                                               "WHERE kind = 'symlink' ORDER BY name"):
                 path = Path(scratch) / name
@@ -370,6 +367,9 @@ def verify_bundle(bundle, expected, config, expected_roots):
                 os.symlink(target, path)
                 if not stat.S_ISLNK(path.lstat().st_mode) or os.readlink(path) != target:
                     raise ValueError('archive symlink differs from source metadata')
+            for name, mode in index.execute("SELECT name, mode FROM members WHERE kind = 'directory' "
+                                            'ORDER BY length(name) DESC'):
+                (Path(scratch) / name).chmod(mode & 0o777)
         local, nas = Path(scratch) / 'local', Path(scratch) / 'nas'
         for label in ('local', 'nas'):
             if tree(Path(scratch) / label)['contentSha256'] != expected_roots[label]['tree'].get('contentSha256'):
