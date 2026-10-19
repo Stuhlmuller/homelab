@@ -31,10 +31,12 @@ def pod(namespace, name, labels, pod_ips=(), pod_ip=None, **spec):
             "status": status}
 
 
-def policy(namespace, name, selector, egress=None, policy_types=None):
+def policy(namespace, name, selector, egress=None, policy_types=None, ingress=None):
     spec = {"podSelector": selector}
     if egress is not None:
         spec["egress"] = egress
+    if ingress is not None:
+        spec["ingress"] = ingress
     if policy_types is not None:
         spec["policyTypes"] = policy_types
     return {
@@ -155,6 +157,93 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
             "ports": [{"port": 443}],
         }], ["Egress"])
         result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
+        self.assertEqual(result["driftedPolicies"], [])
+
+    def test_generated_ingress_only_policy_blocks_missing_or_drifted_source(self):
+        selected = {"matchLabels": {"app": "octelium"}}
+        workload = pod("octelium", "workload", {"app": "octelium"})
+        deny_egress = policy("octelium", "deny-egress", selected, [], ["Egress"])
+        generated = policy("octelium", "generated", selected, policy_types=["Ingress"],
+                           ingress=[{"from": [{"podSelector": selected}],
+                                     "ports": [{"protocol": "TCP", "port": 8080}]}])
+        review = {"policies": [{
+            "namespace": "octelium", "name": "deny-egress",
+            "sha256": inventory.policy_fingerprint(inventory.normalized_policy(deny_egress)),
+        }]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, value in (("pods", [workload]),
+                                ("policies", [deny_egress, generated]),
+                                ("render", [deny_egress]), ("review", review)):
+                (root / f"{name}.json").write_text(json.dumps(value))
+            command = [sys.executable, str(ROOT / "scripts/network-policy-inventory.py"),
+                       "--pods", str(root / "pods.json"),
+                       "--policies", str(root / "policies.json"),
+                       "--render", str(root / "render.json"),
+                       "--review", str(root / "review.json"), "--fail-on-findings"]
+            missing = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(missing.returncode, 1, missing.stderr)
+            self.assertEqual(json.loads(missing.stdout)["findings"], [{
+                "kind": "unowned-ingress-policy", "policy": "octelium/generated",
+            }])
+            changed = policy("octelium", "generated", selected, policy_types=["Ingress"],
+                             ingress=[{"from": [{"podSelector": selected}],
+                                       "ports": [{"port": 9090}]}])
+            (root / "render.json").write_text(json.dumps([deny_egress, changed]))
+            drifted = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(drifted.returncode, 1, drifted.stderr)
+            self.assertEqual(json.loads(drifted.stdout)["findings"], [{
+                "kind": "drifted-ingress-policy", "policy": "octelium/generated",
+            }])
+            self.assertNotEqual(
+                inventory.policy_fingerprint(inventory.normalized_policy(generated)),
+                inventory.policy_fingerprint(inventory.normalized_policy(changed)),
+            )
+            changed["spec"]["ingress"][0]["ports"][0]["port"] = 8080
+            (root / "render.json").write_text(json.dumps([deny_egress, changed]))
+            matched = subprocess.run(command, capture_output=True, text=True, check=False)
+            self.assertEqual(matched.returncode, 0, matched.stdout + matched.stderr)
+
+    def test_mixed_policy_ingress_drift_has_direction_neutral_finding(self):
+        selected = {"matchLabels": {"app": "client"}}
+        live = policy("apps", "mixed", selected, [], ["Ingress", "Egress"],
+                      [{"ports": [{"port": 8080}]}])
+        rendered = policy("apps", "mixed", selected, [], ["Ingress", "Egress"],
+                          [{"ports": [{"port": 9090}]}])
+        result = inventory.audit([pod("apps", "client", {"app": "client"})],
+                                 [live], [[rendered]])
+        self.assertEqual(result["driftedPolicies"], ["apps/mixed"])
+        self.assertEqual([item for item in result["findings"]
+                          if item["kind"].startswith("drifted-")],
+                         [{"kind": "drifted-policy", "policy": "apps/mixed"}])
+
+    def test_policy_type_transition_has_direction_neutral_finding(self):
+        selected = {"matchLabels": {"app": "client"}}
+        ingress = [{"ports": [{"port": 8080}]}]
+        live = policy("apps", "transition", selected, policy_types=["Ingress"],
+                      ingress=ingress)
+        rendered = policy("apps", "transition", selected, [], ["Ingress", "Egress"],
+                          ingress)
+        result = inventory.audit([pod("apps", "client", {"app": "client"})],
+                                 [live], [[rendered]])
+        self.assertEqual(result["driftedPolicies"], ["apps/transition"])
+        self.assertEqual([item for item in result["findings"]
+                          if item["kind"].startswith("drifted-")],
+                         [{"kind": "drifted-policy", "policy": "apps/transition"}])
+
+    def test_omitted_policy_types_with_empty_egress_defaults_to_ingress(self):
+        live = policy("apps", "empty-egress", {}, [], ["Ingress"])
+        rendered = policy("apps", "empty-egress", {}, [])
+        result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
+        self.assertEqual(inventory.normalized_policy(rendered)["policyTypes"], ["Ingress"])
+        self.assertEqual(result["driftedPolicies"], [])
+
+    def test_empty_policy_types_defaults_from_nonempty_egress(self):
+        live = policy("apps", "empty-types", {}, [{}], ["Ingress", "Egress"])
+        rendered = policy("apps", "empty-types", {}, [{}], [])
+        result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
+        self.assertEqual(inventory.normalized_policy(rendered)["policyTypes"],
+                         ["Egress", "Ingress"])
         self.assertEqual(result["driftedPolicies"], [])
 
     def test_not_in_selector_requires_label_presence(self):

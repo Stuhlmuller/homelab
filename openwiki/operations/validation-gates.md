@@ -94,6 +94,8 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-e6fd9160ab2341143a5d45c8
+    resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -144,6 +146,8 @@ sources:
     resource: repo://scripts/ci/n8n-ai-migration-check.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
+  - id: openwiki-source-28fa6202184199322ab68bca
+    resource: repo://scripts/ci/network-policy-inventory-test.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -212,6 +216,8 @@ sources:
     resource: repo://scripts/config/harbor-runtime-images.json
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-221eda5e9e283a2549066105
+    resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
@@ -238,10 +244,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
+generated: { by: "codex", at: "2026-10-19T21:02:46.926Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T20:01:23.259Z
+    at: 2026-10-19T21:17:22.223Z
 ---
 
 # Validation Gates
@@ -550,6 +556,19 @@ TCP/UDP port 53 peers to select only `kube-system` Pods labeled
 `k8s-app=kube-dns`. It also checks that the `kube-dns` Service selector and
 CoreDNS Deployment Pod selector contain exactly that label. These source checks
 do not qualify DNS traffic on the isolated enforcement canary.
+
+The read-only [NetworkPolicy inventory](../../scripts/network-policy-inventory.py)
+compares normalized ingress and egress rules with rendered source and hashes
+both directions for private review. `--fail-on-findings` flags live-only,
+drifted, and source-only ingress policies as well as egress policies. Refresh
+older private review hashes before relying on them. The check cannot supply
+missing generator renders or prove live enforcement. Mixed Ingress/Egress
+policies use direction-neutral `unowned-policy`, `drifted-policy`, or
+`source-only-policy` findings; single-direction names keep ingress or egress.
+Drift labels consider both live and rendered policy types, so a transition
+between single-direction and mixed also uses `drifted-policy`. Omitted or empty
+`policyTypes` defaults to Ingress and adds Egress only when `egress` has rules;
+an empty `egress` field alone does not add Egress.
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind
