@@ -443,6 +443,21 @@ class EnterpriseReconciliation(unittest.TestCase):
             OCE.exact_model_grant([role], [{**binding, "resourceId": "sec_other"}],
                                   "ns_one", "sp_one", "sec_one")
 
+    def test_extra_agent_principal_grant_blocks_deployment(self):
+        role = {"id": "role_one", "namespaceId": "ns_one",
+                "permissions": [{"action": "operate", "resourceKind": "secret"}]}
+        binding = {"id": "binding_one", "namespaceId": "ns_one",
+                   "subjectKind": "identity", "subjectId": "sp_one", "roleId": "role_one",
+                   "resourceKind": "secret", "resourceId": "sec_one"}
+        broader_role = {"id": "role_admin", "namespaceId": "ns_one",
+                        "permissions": [{"action": "administer", "resourceKind": "namespace"}]}
+        for extra in ({**binding, "id": "binding_other", "resourceId": "sec_other"},
+                      {**binding, "id": "binding_admin", "roleId": "role_admin",
+                       "resourceKind": "namespace", "resourceId": "ns_one"}):
+            with self.subTest(extra=extra["id"]), self.assertRaisesRegex(OCE.Blocked, "grant"):
+                OCE.exact_model_grant([role, broader_role], [binding, extra],
+                                      "ns_one", "sp_one", "sec_one")
+
     def test_protected_journal_rejects_permissions_symlinks_and_changed_source(self):
         path = self.private / "journal.json"
         with OCE.ProtectedJournal(path, "a" * 40, "b" * 64) as journal:
