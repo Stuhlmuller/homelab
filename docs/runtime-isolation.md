@@ -173,3 +173,9 @@ does not make the stock Enterprise agent's broad public TCP/443 egress a
 domain allowlist. Follow the [canary and cleanup runbook](../clusters/homelab/platform/network-policy/README.md)
 before expanding enforcement; deleting the DaemonSet alone may leave firewall
 rules behind.
+
+Six [source-owned DNS policies](evidence/openclaw-enterprise-policy-review.json)
+now require CoreDNS Pods labeled `k8s-app=kube-dns` in `kube-system`. Changing
+the `kube-dns` Service selector or CoreDNS Pod labels requires updating those
+policies together, then proving TCP and UDP 53 through the Service on the
+isolated canary before firewall enforcement.
