@@ -30,11 +30,11 @@
       "completedRunId": "26328575-d690-4e94-b81c-2aa6baefa44e"
     },
     "/openwiki/architecture/secrets-and-identity.md": {
+      "gitHead": "8dd98909ffb69b36aef879e3081a7b6f97352bb2",
+      "sourceFingerprint": "sha256:c9afaca7000d05248e3baec2167718ff625d89a01bd9309ba66669b9a66bcfdb",
       "pageVersion": "sha256:c39cdc3ce90a145d71b43c0b2e628d7d1466b4918afbf82ba57c980ee6ce24c6",
       "completedBy": "codex",
-      "completedRunId": "4df239fc-c83a-417b-b974-f51cf3d78c13",
-      "gitHead": "8dd98909ffb69b36aef879e3081a7b6f97352bb2",
-      "sourceFingerprint": "sha256:c9afaca7000d05248e3baec2167718ff625d89a01bd9309ba66669b9a66bcfdb"
+      "completedRunId": "4df239fc-c83a-417b-b974-f51cf3d78c13"
     },
     "/openwiki/architecture/storage-and-state.md": {
       "pageVersion": "sha256:ee566008c64c859b1501abad6c1cef7bbe3117e6387cfe63d622cd3a60b1e495",
@@ -121,11 +121,11 @@
       "completedRunId": "8c55ea97-a813-4c38-8a2f-f37edfed2bb2"
     },
     "/openwiki/runbooks/ci-cd.md": {
+      "gitHead": "8dd98909ffb69b36aef879e3081a7b6f97352bb2",
+      "sourceFingerprint": "sha256:c9afaca7000d05248e3baec2167718ff625d89a01bd9309ba66669b9a66bcfdb",
       "pageVersion": "sha256:accec4423d94a9de59119bf391efcfae76e6354e9574468aec4d199318ba13c5",
       "completedBy": "codex",
-      "completedRunId": "4df239fc-c83a-417b-b974-f51cf3d78c13",
-      "gitHead": "8dd98909ffb69b36aef879e3081a7b6f97352bb2",
-      "sourceFingerprint": "sha256:c9afaca7000d05248e3baec2167718ff625d89a01bd9309ba66669b9a66bcfdb"
+      "completedRunId": "4df239fc-c83a-417b-b974-f51cf3d78c13"
     },
     "/openwiki/runbooks/octelium.md": {
       "pageVersion": "sha256:209b881cc4c751fe7498c417c04edb14376f28237d294fe3c4a7220d0bd2b290",
