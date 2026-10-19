@@ -196,7 +196,13 @@ class HarborPublicationGates(unittest.TestCase):
                 marker = root / (kind + "-failed")
                 if failure.endswith("-once") and marker.exists():
                     return
-                marker.touch()
+                if failure.endswith("-four"):
+                    failures = int(marker.read_text()) if marker.exists() else 0
+                    if failures == 4:
+                        return
+                    marker.write_text(str(failures + 1))
+                else:
+                    marker.touch()
                 if partial is not None:
                     (partial / "partial").write_text("incomplete")
                 print(messages[failure] + " private-test-credential-must-never-appear", file=sys.stderr)
@@ -265,6 +271,8 @@ class HarborPublicationGates(unittest.TestCase):
                     time.sleep(0.2)
                     raise SystemExit(7)
                 print("401", end="")
+            elif command == "sleep":
+                assert args[0].isdigit()
             elif command == "aws":
                 assert args[0] == "ssm", "No cloud signing calls allowed"
                 print("private-test-credential-must-never-appear")
@@ -351,7 +359,7 @@ class HarborPublicationGates(unittest.TestCase):
                     elif FIXTURE["mirror"]:
                         assert "--src-no-creds" not in args
                     name = reference.rsplit("/", 1)[1].split("@", 1)[0]
-                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-auth"):
+                    if upstream and FIXTURE["failure"] in ("mirror-oci-index", "mirror-regctl-pull", "mirror-regctl-digest", "mirror-regctl-pull-once", "mirror-regctl-pull-four", "mirror-regctl-pull-always", "mirror-regctl-pull-auth"):
                         print('Manifest list must be converted to type OCI index; Instructed to preserve digests',
                               file=sys.stderr)
                         raise SystemExit(17)
@@ -447,6 +455,8 @@ class HarborPublicationGates(unittest.TestCase):
                         assert list(directory.iterdir()) == []
                         fail_read("regctl-pull", {
                             "mirror-regctl-pull-once": "TLS handshake timeout",
+                            "mirror-regctl-pull-four": "TLS handshake timeout",
+                            "mirror-regctl-pull-always": "TLS handshake timeout",
                             "mirror-regctl-pull-auth": "unauthorized; TLS handshake timeout",
                         }, directory)
                         (directory / "digest").write_text(source.rsplit("@", 1)[1])
@@ -482,7 +492,7 @@ class HarborPublicationGates(unittest.TestCase):
             else:
                 raise SystemExit(94)
             ''')
-        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "timeout", "cosign"):
+        for command in ("aws", "skopeo", "regctl", "docker", "kubectl", "sudo", "curl", "sleep", "timeout", "cosign"):
             path = self.root / "bin" / command
             path.write_text(mock)
             path.chmod(0o700)
@@ -1264,6 +1274,34 @@ class HarborPublicationGates(unittest.TestCase):
                     self.assertEqual(len(reads), 3)
                     self.assertEqual(len(set(reads)), 3)
                 self.assert_cleaned()
+
+    def test_mirror_index_pull_recovers_after_four_transport_failures(self):
+        self.transport_mocks(failure="mirror-regctl-pull-four", mirror=True,
+                             registries=("docker.io",))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        pulls = [args[-1] for args in self.calls_for("regctl")
+                 if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+        self.assertEqual(len(pulls), 5)
+        self.assertEqual(len(set(pulls)), 5)
+        self.assertEqual([args[0] for args in self.calls_for("sleep")], ["2", "4", "8", "16"])
+        self.assertEqual(len((self.root / "summary").read_text().splitlines()), 1)
+        self.assert_cleaned()
+
+    def test_mirror_index_pull_stops_after_five_transport_failures(self):
+        self.transport_mocks(failure="mirror-regctl-pull-always", mirror=True,
+                             registries=("docker.io",))
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 22)
+        pulls = [args[-1] for args in self.calls_for("regctl")
+                 if args[:2] == ["image", "copy"] and args[-1].startswith("ocidir://")]
+        self.assertEqual(len(pulls), 5)
+        self.assertEqual(len(set(pulls)), 5)
+        self.assertEqual([args[0] for args in self.calls_for("sleep")], ["2", "4", "8", "16"])
+        self.assertFalse((self.root / "summary").exists())
+        self.assertIn("phase=authenticated-pull\n", self.public_status)
+        self.assertIn("category=transport-retries-exhausted\n", self.public_status)
+        self.assert_cleaned()
 
     def test_mirror_verification_does_not_retry_hard_failures(self):
         for failure, phase, count in (
