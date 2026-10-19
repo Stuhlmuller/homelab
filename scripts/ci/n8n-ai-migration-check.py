@@ -24,7 +24,8 @@ assert 'n8n export:workflow --id="$workflow_id"' in command
 assert 'n8n import:workflow --input=/tmp/ai-workflow.json' in command
 assert 'workflow_ids="$(n8n list:workflow --onlyId)"' in command
 assert 'if ! printf' in command
-assert 'if ! node - "$workflow_id"' in command
+assert 'node - "$workflow_id" <<' in command
+assert 'if ! node - "$workflow_id"' not in command
 targets = [
     ("s1JVSbnvnmHMCbty", "5c52f616-3b9e-4483-89e3-effffc393750", True, "lmChatAwsBedrock", "anthropic.claude-3-sonnet-20240229-v1:0"),
     ("xaUDsbylSwaveMQ5", "d8f30a03-c3a1-4bdd-b733-8e33da04b004", False, "lmChatOpenAi", "gpt-5.5"),
@@ -36,14 +37,16 @@ with tempfile.TemporaryDirectory() as directory:
     path = root / "ai-workflow.json"
     originals = {}
 
-    def run(workflow_id, data, success=True):
+    def run(workflow_id, data, success=True, skipped=False):
         path.write_text(json.dumps(data))
         before = path.read_bytes()
         result = subprocess.run(["node", "-", workflow_id], input=source,
                                 text=True, capture_output=True, timeout=10)
         assert (result.returncode == 0) == success, result.stderr
-        if not success:
+        if not success or skipped:
             assert path.read_bytes() == before
+        if skipped:
+            assert (root / "ai-workflow-changed").read_text() == "skip"
         return json.loads(path.read_text())
 
     for workflow_id, node_id, active, kind, model in targets:
@@ -77,9 +80,12 @@ with tempfile.TemporaryDirectory() as directory:
                              ("builtInTools", {"webSearch": True})):
             changed = copy.deepcopy(original)
             changed[0]["nodes"][0]["parameters"][field] = value
-            run(workflow_id, changed, success=False)
+            run(workflow_id, changed, skipped=True)
         changed = copy.deepcopy(original)
         changed[0]["nodes"].append(copy.deepcopy(changed[0]["nodes"][0]))
+        run(workflow_id, changed, success=False)
+        changed = copy.deepcopy(original)
+        changed[0]["nodes"][0]["parameters"] = None
         run(workflow_id, changed, success=False)
 
     exports = root / "exports"
@@ -149,6 +155,24 @@ n8n() {
     result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
                             env={**environment, "LIST_FAIL": "true"},
                             capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    (exports / "s1JVSbnvnmHMCbty.json").write_text("{invalid-json")
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    write_failure_command = fixture_command.replace(
+        "fs.writeFileSync(path, JSON.stringify(workflows));",
+        f"fs.writeFileSync({json.dumps(str(root / 'missing-parent' / 'workflow.json'))}, JSON.stringify(workflows));")
+    assert write_failure_command != fixture_command
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + write_failure_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
     assert result.returncode != 0
     assert calls.read_text().splitlines() == ["credentials"]
 print("n8n AI migration: three targets, inactive preservation, arrays, idempotence and refusal guards passed")
