@@ -53,6 +53,9 @@ class LifecycleOrder(unittest.TestCase):
             self.assertIn(name, scenarios)
         for name in ("migration-failed", "cancelled-after-quiesce"):
             self.assertEqual(scenarios[name]["replicasAfterQuiesce"], {"api": 0, "worker": 0})
+        self.assertEqual(scenarios["cancelled-after-quiesce"]["expected"],
+                         "retry-preflight-then-initialization")
+        self.assertNotIn("previousJob", scenarios["cancelled-after-quiesce"])
 
     def test_local_hooks_follow_helm_stages_and_block_migration_on_failure(self):
         expected = {int(weight): set(names) for weight, names in

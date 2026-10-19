@@ -40,7 +40,7 @@ scenarios:
     expected: writers-remain-stopped
   - name: cancelled-after-quiesce
     replicasAfterQuiesce: {api: 0, worker: 0}
-    expected: retry-blocked-until-prior-initialization-terminal
+    expected: retry-preflight-then-initialization
   - name: successful-upgrade
     replicasBefore: {api: 1, worker: 1}
     replicasAfterQuiesce: {api: 0, worker: 0}
