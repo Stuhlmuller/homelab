@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:888ed7c550dc34b943ee2240a9f52e2283bd9bc69328c8dd6750cf4f2a8e893e",
+  "pageVersion": "sha256:883a91ef6738af307ef8d5ea887beba9da3fb5d7979fd3aee52f339fad8a1e59",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -40,11 +40,15 @@
     },
     {
       "id": "claim_5ccef82fce4f413da7827acd753341d3",
-      "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns; six were narrowed in this review, while harbor-vulnerability-exporter, harbor-image-signing, and nofx-frontend already had this selector. Live reconciliation and enforced canary traffic remain unverified.",
+      "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns; six were narrowed in this review, while harbor-vulnerability-exporter, harbor-image-signing, and nofx-frontend already had this selector. The static gate checks all nine policies and matching kube-dns Service and CoreDNS Deployment selectors. Live reconciliation and enforced canary traffic remain unverified.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml#L1-L27",
           "version": "repo-lines-v1:sha256:506024b3a5e3f4cdceb6e49b5fcc16c60c43322779dcb82ce98188fbd2ebca07:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViYTI1NzVlMzQ2ODk3MjNlYWM2ZGNjYWM1ZGY2ODAxNTdhODQ5Y2YyZTlmMTE0MzgzYjhlZDYzMDQxYmNmOTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMmE5YTU4ZjhiOWJjZDBmNDM5YzczZmY5ZTEwZGQ2Mjc1MzY4MmM4ZjFjODViYjU3ZDU4YzhlYTc5ODI4YjQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-deployment.yaml#L23-L35",
+          "version": "repo-lines-v1:sha256:65e2d2f67a383a684e4db260abd3e553891f3dd7465195f476ed84e27f0dcd9a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczN2Y4YmI1MDgzMTkyZTgzYzc2ZjBkZmQ4Y2UyNTA5NDEwMzVlOThjMDA5NTBmMGI5MmZjNDU5OTBkNWFjYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNjQ3YTNmN2QxNDIxMmM2OTNjYjQ5MmU1ZWYwNzY4Njc3NjdkYzQ1Mzk5ODQ5YzI3ZGFjMmQ5NjA4OGQ2MDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3ZjJhNmE5NWI3OWU0NmY1NzUyOTY5ZWQ3NTVkYjJmNDlhNzUwMTI4YTFlYzlmYWY3YTJjMjE1NjgwOGYxMGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUwOTczM2JkNDM5YzE0OTM2YjE0MGNkNDcwNzA1OGU5YmRkYzJjNzUxMzJiNDFlM2IxZjJiZDgyNTMyMTgxYTEifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-service.yaml#L23-L38",
@@ -55,14 +59,14 @@
           "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
         },
         {
-          "resource": "repo://scripts/ci/offline-static-checks.sh#L474-L507",
-          "version": "repo-lines-v1:sha256:cd9910738daa3c643107bda6516d68896f660cbcc5c7919bf561d00abd05d88b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNmM4MWYxOWExMjgyNDQwYzMyOTVkMjU0MmEyYjU5Y2Y4YmVmZjU3ZWUyZGQ4YzljYjY2OWM3YThiMGQ2NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MzBiMjM1ODQ3Y2JhYmFhMmI2ZWQ1ZjNmOTA3ZTE2YjhjYmYyYjJkMmViMWZjZGE1MWExZjdiNDg0ODRhNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MDQyYjc5M2IxY2MyYzIwNmQ2OWVhOTAxMjFiY2U0MjMxZGNkZTAzMTgwMmM4ZTg2MzI0NWVkY2ZjNGNlNTEifQ"
+          "resource": "repo://scripts/ci/offline-static-checks.sh#L474-L513",
+          "version": "repo-lines-v1:sha256:ed3c59cc4d265c4d3658144fa30be89ad58fab63586e1842903f539028e2151c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNmM4MWYxOWExMjgyNDQwYzMyOTVkMjU0MmEyYjU5Y2Y4YmVmZjU3ZWUyZGQ4YzljYjY2OWM3YThiMGQ2NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MzBiMjM1ODQ3Y2JhYmFhMmI2ZWQ1ZjNmOTA3ZTE2YjhjYmYyYjJkMmViMWZjZGE1MWExZjdiNDg0ODRhNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MDQyYjc5M2IxY2MyYzIwNmQ2OWVhOTAxMjFiY2U0MjMxZGNkZTAzMTgwMmM4ZTg2MzI0NWVkY2ZjNGNlNTEifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T19:40:37.007Z"
+    "at": "2026-10-19T19:50:26.593Z"
   }
 }
