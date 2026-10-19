@@ -1,12 +1,13 @@
 # OpenClaw Enterprise Foundation
 
 This directory prepares dormant namespace, secret and PostgreSQL TLS boundaries.
-No Argo Application currently registers it. `openclaw-agents` is an external
+Its Argo Application and root Terragrunt unit are declared with automatic sync
+disabled; they have not been applied. `openclaw-agents` is an external
 namespace reserved for one fresh OCE tenant. The upstream worker rejects a
 foreign NetworkPolicy there. OCE owns its tenant policies and eventual agent claim.
 
 The three tenant RoleBindings assume Helm release `oce` in `openclaw-system`.
-Keep that release name when adding the Enterprise Application. The eight
+Keep that release name in the declared Enterprise Application. The eight
 ExternalSecrets use exact SSM parameters and `OnChange`; advance their
 `generated-secret-revision` annotations during rotation. The model parameter
 still contains a placeholder until the owner's protected credential workflow
@@ -27,7 +28,7 @@ is mounted only by the PostgreSQL bootstrap and the future backup job.
 Readiness requires the database's last-statement bootstrap marker; if first-run
 SQL stops after `PG_VERSION` is written, restart remains unready and retains the
 PVC. There is no automatic replay or declared repair workflow yet; keep this
-foundation unregistered until recovery is reviewed. PostgreSQL password rotation
+foundation unsynced until recovery is reviewed. PostgreSQL password rotation
 needs a declared `ALTER ROLE` path;
 changing an ExternalSecret or restarting the Pod does not rerun initial
 bootstrap SQL.
@@ -41,7 +42,7 @@ pair. The reviewed `occ-plugin` startup bytes live at
 `../openclaw-enterprise/installation.yaml`. The protected
 `openclaw-enterprise-startup` workflow creates and verifies only the immutable
 `occ-installation-startup-980de11bbc688a33741a19c9093f613e` Secret after
-this namespace exists and before the Enterprise Application is registered.
+this namespace exists and before the Enterprise Application's first sync.
 The application PreSync hook checks its exact bytes and chart checksum. No raw
 Secret is rendered or committed. `backup.sh` refuses an incomplete
 `/recovery-material` tree: `recovery.json`, all four DB password references,
@@ -59,7 +60,7 @@ and keeps only the restored database and private diagnostics in scratch. T051
 must publish completed directories without further writes; any change detected
 during a drill fails its final hash check. Storage
 placement and 24Gi restore scratch headroom need measured admission;
-private routes, registration and live recovery remain gated.
+private routes, applying the registration and live recovery remain gated.
 Validate this dormant boundary with
 `nix develop --command python3 -I scripts/ci/openclaw-enterprise-foundation-test.py`.
 Run `nix develop --command python3 -I scripts/ci/openclaw-enterprise-postgres-test.py`

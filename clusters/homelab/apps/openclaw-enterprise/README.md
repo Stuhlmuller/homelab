@@ -1,7 +1,8 @@
 # OpenClaw Enterprise application candidate
 
-This is a dormant local source for release `oce` in `openclaw-system`. No Argo
-Application or root Terragrunt unit registers it. Agent activation remains false
+This is a dormant local source for release `oce` in `openclaw-system`. Its Argo
+Application and root Terragrunt unit are declared with automatic sync disabled;
+they have not been applied. Agent activation remains false
 in `scripts/config/openclaw-enterprise.json`. The stock chart comes from upstream
 commit `33bb74590a749f37934da4502fca6035cd234a55`; this directory supplies
 values, one EnvoyProxy image override, and Helm-style lifecycle hooks.
@@ -31,17 +32,16 @@ claim, or PostgreSQL without a ready endpoint. Quiesce scales only the two
 identified Deployments through `deployments/scale`, waits for every matching
 Pod to disappear, and leaves writers stopped if migration or a later step
 fails. Only a later normal full Sync restores one replica of each. No selective
-sync, skip-hook option, self-heal, or independent writer can be allowed when
-the Application is registered.
+sync, skip-hook option, self-heal, or independent writer can be allowed during
+an Application sync.
 
 The candidate intentionally cannot run yet. `operator@oce.example.invalid`
 is an administrator placeholder rejected by preflight. No node has the
-`oce-role` placement labels, and the dedicated PostgreSQL Service, local
-storage classes/bootstrap claim, credential and capacity gates are unfinished.
-The proposed PostgreSQL Service address `10.96.0.51` is reserved in source but
-must be declared by T036 and qualified under the real Talos network policy
-before registration. The bounded trusted-proxy CIDRs are the four observed
-node PodCIDRs; chart API ingress additionally selects the exact Octelium
+`oce-role` placement labels, and the local storage classes/bootstrap claim,
+credential and capacity gates are unfinished. The foundation declares its
+PostgreSQL Service at `10.96.0.51`; qualify that address under the real Talos
+network policy before first sync. The bounded trusted-proxy CIDRs are the four
+observed node PodCIDRs; chart API ingress additionally selects the exact Octelium
 console Service and Traefik Pods. Verify proxy header rewriting and the actual
 Envoy-to-agent source addresses before private route cutover.
 
@@ -81,4 +81,4 @@ python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 The chart comparison asserts exactly one repeated resource identity, the
 `oce-private-gateway` EnvoyProxy, and exact equality after adding only its
 mirrored Envoy image. Actual Argo `RepeatedResourceWarning` count and the
-installed Argo hook failure matrix remain live gates before registration.
+installed Argo hook failure matrix remain live gates before first sync.
