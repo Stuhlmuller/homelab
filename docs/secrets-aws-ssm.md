@@ -189,7 +189,7 @@ dispatch inputs and logs.
 | `postgres-admin-password` | OpenTofu generated | `openclaw-system/occ-postgres-admin` `password` | PostgreSQL bootstrap and isolated recovery |
 | `postgres-migrator-password` | OpenTofu generated | `openclaw-system/occ-postgres-migrator` `password` | Schema migration Job |
 | `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
-| `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API/worker session signing |
+| `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API and initialization bootstrap session signing |
 | `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
 | `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Protected reconciler registers the key as the fresh Agent's OCC `harnessAuth` Secret; OCE projects `OPENAI_API_KEY` only to that agent |
 
