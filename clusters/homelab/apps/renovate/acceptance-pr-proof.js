@@ -71,7 +71,8 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch) 
       !Array.isArray(files) || !Number.isSafeInteger(pull?.changed_files) ||
       pull.changed_files !== files.length || pull.number !== match.number ||
       pull.user?.login !== bot || pull.base?.repo?.full_name !== item.repository ||
-      pull.head?.repo?.full_name !== item.repository || pull.base?.ref !== baseBranch ||
+      pull.head?.repo?.full_name !== item.repository ||
+      pull.head?.ref !== match.branch.branchName || pull.base?.ref !== baseBranch ||
       !/^[a-f0-9]{40}$/.test(pull.head?.sha || '') ||
       !validTime(pull.created_at) || Date.parse(pull.created_at) > Date.parse(observedAt)) return null;
   const escaped = event.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -87,7 +88,8 @@ function proposalProof(item, event, match, pull, files, observedAt, baseBranch) 
     claim: { kind: 'proposal', at: observedAt, verifiedAt: observedAt },
     material: { provenance: 'github-pr-file-snapshot-v1', repository: item.repository,
       pullNumber: pull.number, createdAt: pull.created_at, observedAt,
-      headSha: pull.head.sha, reportPodUid: match.receipt.podUid,
+      branchName: match.branch.branchName, headSha: pull.head.sha,
+      reportPodUid: match.receipt.podUid,
       reportSha256: match.receipt.report.sha256, packageFile: item.packageFile,
       patch: file.patch },
   };

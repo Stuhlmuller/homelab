@@ -15,13 +15,14 @@ const event = { version: '1.1.0', lastAbsent: '2026-10-19T00:00:00.000Z',
   firstPresent: '2026-10-19T00:15:00.000Z' };
 const receipt = { schema: 1, podUid: uid, image: 'renovate:44.167.4',
   startedAt: '2026-10-19T00:20:00.000Z', completedAt: '2026-10-19T00:22:00.000Z' };
-const branch = { prNo: 42, upgrades: [{ datasource: 'npm', depName: 'fixture-package',
+const branch = { branchName: 'renovate/fixture-package-1.x', prNo: 42,
+  upgrades: [{ datasource: 'npm', depName: 'fixture-package',
   packageFile: 'package.json', newVersion: '1.1.0' }] };
 const report = { problems: [], repositories: { [repository]: { branches: [branch] } } };
 const pull = { number: 42, changed_files: 1,
   created_at: '2026-10-19T00:21:00.000Z', user: { login: 'rstuhlmuller-renovate[bot]' },
   base: { ref: 'main', repo: { full_name: repository } },
-  head: { sha: 'a'.repeat(40), repo: { full_name: repository } } };
+  head: { ref: branch.branchName, sha: 'a'.repeat(40), repo: { full_name: repository } } };
 const files = [{ filename: 'package.json', patch: '@@ -1 +1 @@\n-"fixture-package":"1.0.0"\n+"fixture-package":"1.1.0"' }];
 const observedAt = '2026-10-19T00:30:00.000Z';
 
@@ -59,6 +60,8 @@ test('GitHub PR patch proves an exact version only at the read time upper bound'
     changed_files: 2 }, files, observedAt, 'main'), null);
   assert.equal(proof.proposalProof(item, event, match, { ...pull,
     base: { ref: 'other', repo: { full_name: repository } } }, files, observedAt, 'main'), null);
+  assert.equal(proof.proposalProof(item, event, match, { ...pull,
+    head: { ...pull.head, ref: 'unrelated' } }, files, observedAt, 'main'), null);
 });
 
 test('report reader requires private exact bytes and pinned image receipt', () => {
