@@ -627,6 +627,19 @@ Keep the CronJob suspended until a post-transfer refresh is confirmed and the
 transfer grant is removed. See the
 [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
+At cutover, deleting the old workflow is insufficient: GitHub can rerun a
+historical workflow revision while its repository Actions private-key secret
+still exists. After the old workflow and all unfinished runs are gone, use the
+reviewed fixed-target script in `Stuhlmuller/renovate` to retire only
+`RENOVATE_PRIVATE_KEY`. Require its current-main receipt proving the SSM
+SecureStrings are past placeholder versions, the ExternalSecret refreshed
+after transfer, the Actions key is absent, and no old run remains. Only then
+enable cluster writes through GitOps. For rollback, first suspend the cluster
+CronJob through reviewed GitOps and verify all Renovate Jobs and Pods drained.
+The reviewed companion restore script can then read the fixed SSM private-key
+path and restore only the repository Actions secret, even if External Secrets
+is unavailable; restore the old workflow through a reviewed PR afterward.
+
 ## Harbor private registry
 
 The generated `/homelab/harbor/` contract owns administrator, encryption,

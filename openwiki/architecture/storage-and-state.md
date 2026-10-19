@@ -10,12 +10,14 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-b7865f8f7c461f149710edda
+    resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
+generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T02:17:09.125Z
 ---
 
 # Storage And State
@@ -527,6 +529,11 @@ claim through reviewed GitOps only after checking backing NFS capacity. For
 corruption, suspend the CronJob, clear only cache contents with a reviewed
 temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
+The pinned Renovate recovery fixture confirms missing or malformed package and
+repository cache entries can be rebuilt; the config test confirms a full-claim
+probe stops GitHub access. These are local checks. A live failed cycle and the
+next scheduled recovery still need to be observed before accepting the storage
+behavior.
 
 ## Staged independent application recovery (HOME-2)
 

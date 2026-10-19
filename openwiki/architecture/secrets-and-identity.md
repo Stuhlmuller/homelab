@@ -80,10 +80,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
+generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T02:17:09.125Z
 ---
 
 # Secrets And Identity
@@ -207,6 +207,14 @@ repository to transfer only those two values; it cannot read them back. The
 minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
 and removal of the temporary writer grant are verified. The current code is
 desired state, not evidence that the credentials have reached the cluster.
+After dry-run parity and removal of the entire legacy workflow, a guarded
+companion script retires the repository Actions private key only after checking
+the SSM versions, later ExternalSecret projection, absence of same-name
+organization or environment secrets, and drained old runs. Cluster writes then
+require a separate reviewed GitOps change. Rollback first suspends and drains
+cluster Jobs; the guarded companion restore script can restore the repository
+Actions key from SSM before a reviewed PR restores the old workflow. This
+cutover has not occurred.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when
