@@ -138,7 +138,7 @@ class FoundationContract(unittest.TestCase):
         })
         store = documents(STORE.read_text())[0]
         allowed = store["spec"]["conditions"][0]["namespaces"]
-        self.assertTrue({"openclaw-system", "openclaw-agents"} <= set(allowed))
+        self.assertLessEqual({"openclaw-system", "openclaw-agents"}, set(allowed))
         config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         self.assertFalse(config["activationEnabled"])
 
