@@ -170,7 +170,7 @@ jobs:
           esac
           EOF
           then
-            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773  scripts/ci/harbor-publish.sh' 2>/dev/null; then
+            if [[ -f "$public_status" ]] && sha256sum --check --status <<<'5f328435ab464805a15557daf0e1552dc39d3f847b73d92379f1501b9d0dca7a  scripts/ci/harbor-publish.sh' 2>/dev/null; then
               cat "$public_status"
             fi
             echo "::error::Harbor mirror failed; private transport and registry output withheld."

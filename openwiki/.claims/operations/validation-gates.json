@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:432fae75825d295012c540a65d58645c24ab8250429578d4f04b21ba3cba75bf",
+  "pageVersion": "sha256:be47d992c247598179d44310c588791944b7b9d91ea5190967ce76b6f3c76a4f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:09e70e5a14bf1ae8157a44b6c47db35ec19455200c70e4cd5afb23779d977a77"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:a3b381cacacbde4b4b5a2804a3aa8472e35c264eeb28877f311492b3879ea6ab"
         }
       ]
     },
@@ -394,7 +394,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:09e70e5a14bf1ae8157a44b6c47db35ec19455200c70e4cd5afb23779d977a77"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -566,7 +566,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:09e70e5a14bf1ae8157a44b6c47db35ec19455200c70e4cd5afb23779d977a77"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -662,15 +662,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:8409717ae7f533b6d8dd1a3ff2bcae40394494d8d56e44090b23f8ff6c38239f"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:09e70e5a14bf1ae8157a44b6c47db35ec19455200c70e4cd5afb23779d977a77"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:a3b381cacacbde4b4b5a2804a3aa8472e35c264eeb28877f311492b3879ea6ab"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -683,11 +683,11 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L860-L925",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L864-L929",
           "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
+          "resource": "repo://scripts/ci/harbor-publish.sh#L311-L400",
           "version": "repo-lines-v1:sha256:ec12ba9fcd206767aec57c3c89c926b83df6aa3cd14eead3fb972208fb6a2c46:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
         }
       ]
@@ -720,7 +720,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:a3b381cacacbde4b4b5a2804a3aa8472e35c264eeb28877f311492b3879ea6ab"
         }
       ]
     },
@@ -777,18 +777,40 @@
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L88",
-          "version": "repo-lines-v1:sha256:f32a4bf6e3e6980ea082dee2db89385ee53221cf8887321690b4ab5db7bc3106:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
+          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:593f37f2e0f54e2849efe5a31adaf9751224d6d204c106f873d89c93bfb69c05"
+          "version": "repo-file-v1:sha256:519abc68e6fdb381de7c09891dda3365684f774937442ba3411ffb98f537e7fa"
+        }
+      ]
+    },
+    {
+      "id": "claim_3e6042da9bf144f7818d2d2c78ec62e7",
+      "statement": "The staged Nocturne controller patch reserves configured workspace CPU and memory limits with a separate Pod user namespace; its pinned build and publisher fixtures test the source and publication contracts without proving live capacity or rollout.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-nocturne-publish.yml",
+          "version": "repo-file-v1:sha256:60566fad8d31d44337094fade5b812ea58dbb80dd0ded52245dd83b24d682cf2"
+        },
+        {
+          "resource": "repo://builds/cordium-nocturne/workspace-reservations.patch",
+          "version": "repo-file-v1:sha256:4a21a870ed2f953873a4cad4a4e80ccb177a681371456a6a84f353a062ccaec0"
+        },
+        {
+          "resource": "repo://builds/cordium-nocturne/workspace_requests_test.go",
+          "version": "repo-file-v1:sha256:0cf619ccbb8489f20f1121d4ad54f447a2793627d584d45c5a5066caf55715e3"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:09e70e5a14bf1ae8157a44b6c47db35ec19455200c70e4cd5afb23779d977a77"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T00:06:32.446Z"
   }
 }

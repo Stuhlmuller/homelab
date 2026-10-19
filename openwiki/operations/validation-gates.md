@@ -6,6 +6,8 @@ tags: [operations, validation]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-f3920ab8ec322c64d84a889b
+    resource: repo://.github/workflows/cordium-nocturne-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
@@ -18,6 +20,10 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
+  - id: openwiki-source-9dee84e0aa3dcfac7517e754
+    resource: repo://builds/cordium-nocturne/workspace_requests_test.go
+  - id: openwiki-source-237698dc6fcf523aaaa3095e
+    resource: repo://builds/cordium-nocturne/workspace-reservations.patch
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
@@ -176,10 +182,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
+generated: { by: "codex", at: "2026-10-19T00:06:32.446Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:06:32.446Z
 ---
 
 # Validation Gates
@@ -1674,6 +1680,14 @@ still requires the new web Pod Ready on Acer, the old web Pod gone from
 `zimaboard-1`, recovered SQL/web behavior, and fresh node headroom and pressure
 readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 is a projection, not rollout acceptance.
+
+The staged Nocturne controller patch reserves configured workspace CPU and
+memory limits and uses a separate Pod user namespace. Its pinned build
+reproduces the old request defect before patching and checks the generator
+afterward. Publisher fixtures require one fixed Nocturne image, exact workflow
+and current-main binding, complete authenticated Harbor pull, signature
+verification, and withheld outputs on failure. These checks do not establish
+publication, Acer capacity, Talos application, or live workspace execution.
 
 ## Harbor OCI rollout
 

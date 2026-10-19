@@ -6,6 +6,8 @@ tags: [harbor, images, registry, security]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-f3920ab8ec322c64d84a889b
+    resource: repo://.github/workflows/cordium-nocturne-publish.yml
   - id: openwiki-source-a793a7dd08d0dc13de84207b
     resource: repo://.github/workflows/cordium-runner-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
@@ -20,6 +22,8 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-1daf47fd9af9a465c8f39005
     resource: repo://.talos/patches/harbor-registry-host.yaml
+  - id: openwiki-source-b7a8f502eac27f334c6bfc5f
+    resource: repo://builds/cordium-nocturne/README.md
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
@@ -129,7 +133,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:31:10.787Z
+    at: 2026-10-18T22:45:17.850Z
 ---
 
 # Harbor Private OCI Registry
@@ -441,6 +445,16 @@ the reviewed registry and registryctl pins into each node's CRI cache from
 exact reviewed `main`; it verifies cache aliases after each pull. Audit all
 four node caches again immediately before the consumer merge. This cache gate
 does not establish rollout health. See the [operator steps](../../docs/harbor-image-mirroring.md).
+
+### Staged Nocturne controller image
+
+The separate [Nocturne publisher](../../.github/workflows/cordium-nocturne-publish.yml)
+builds the checksum-pinned patched controller before credentials and permits
+only `homelab-cordium-nocturne`. The shared publisher verifies the transferred
+digest, a fresh complete authenticated Harbor pull, and the signature before
+emitting the immutable reference. No image has been published or consumed;
+the excluded namespace-local pull Secret first needs its SSM copy and grant.
+See the [controller build](../../builds/cordium-nocturne/README.md).
 
 ### Identical-reference core repair candidate
 

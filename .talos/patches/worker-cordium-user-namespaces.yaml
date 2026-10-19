@@ -1,3 +1,8 @@
 machine:
+  kubelet:
+    extraConfig:
+      userNamespaces:
+        # Supervisor UID 543210 plus its 65536 subordinate IDs must fit.
+        idsPerPod: 1048576
   sysctls:
     user.max_user_namespaces: "28633"

@@ -10,6 +10,8 @@ sources:
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
+  - id: openwiki-source-6155e2b0ac0be42ac6e4aa1d
+    resource: repo://clusters/homelab/apps/cordium/nocturne-pull-secret.yaml
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
@@ -83,7 +85,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:08:58.879Z
 ---
 
 # Secrets And Identity
@@ -827,6 +829,15 @@ verified the grant, and a targeted plan from `main` at `f6506136` found no
 changes on 2026-10-18. The parameter alone creates no Harbor robot or receipt.
 See the
 [SSM contract](../../docs/secrets-aws-ssm.md).
+
+The staged Cordium Nocturne controller declares a generated copy of the
+existing Harbor pull-robot password at
+`/homelab/cordium/nocturne-harbor-pull-password`. Its exact reader grant and
+copy require a reviewed private saved plan. The namespace-local
+`octelium/cordium-nocturne-pull` ExternalSecret remains excluded from Kustomize
+until then; eventual Pods use it only through `imagePullSecrets`. This stage
+does not publish or deploy the controller. See the
+[Nocturne pull contract](../../docs/secrets-aws-ssm.md#cordium-nocturne-custom-controller-pull).
 
 Harbor OCI signing uses a separate cert-manager-generated P-256 key in the
 `harbor-image-signing` Kubernetes Secret, with key rotation disabled during

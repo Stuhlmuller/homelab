@@ -824,6 +824,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/cordium-check.yml:check' \
     '.github/workflows/cordium-runner-canary.yml:canary' \
     '.github/workflows/cordium-login-denial.yml:deny' \
+    '.github/workflows/cordium-nocturne-publish.yml:publish' \
+    '.github/workflows/cordium-nocturne-publish.yml:published-digest' \
     '.github/workflows/cordium-runner-credentials.yml:credential' \
     '.github/workflows/cordium-runner-credentials.yml:static-policy' \
     '.github/workflows/cordium-runner-publish.yml:publish' \
@@ -907,12 +909,13 @@ done <<'EOF'
 .github/workflows/cordium-check.yml 957fe1074da565fc355d2727727a71984ff13ad8023ceac60dbcab048eeba22c
 .github/workflows/cordium-runner-canary.yml 40b543a204a539d85bdaf481670ff53742c623c8fed7e3299b19842383284396
 .github/workflows/cordium-login-denial.yml 1eb78dd60cec6f3be11729a9403aeae11c1a2e7e99117e7ffb3d043d697b6b6c
+.github/workflows/cordium-nocturne-publish.yml 1e539ce76fa1a0118c347803fe41eea25abbfba5d9cc0551ed5e977d44d86fb9
 .github/workflows/cordium-runner-credentials.yml d3b62fe8d9915f819c9ab105f9107a635cc8e7b0e0e289af5c188a2751a6b03f
 .github/workflows/cordium-runner-publish.yml 0e4b0e23476d215c46be8156a1c4d3f59bc2a5be50ba71fed88450e77faea108
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml d6b78f1ee170a7bfecc1185339fe4ef8dbdd9d89ff43a2cdb085026c1d026664
+.github/workflows/harbor-mirror.yml 882e89208c8cda8bdd369d9095eb90004b7ca638e72a8fe6dc48e9f305925b06
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 53d2b15f3d23944b2f6322c14ec1f216ef1cc9d743156450e702facc7098de91
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
@@ -937,6 +940,7 @@ for workflow_job in \
   '.github/workflows/cordium-check.yml:check' \
   '.github/workflows/cordium-runner-canary.yml:canary' \
   '.github/workflows/cordium-login-denial.yml:deny' \
+  '.github/workflows/cordium-nocturne-publish.yml:publish' \
   '.github/workflows/cordium-runner-credentials.yml:static-policy' \
   '.github/workflows/cordium-runner-publish.yml:test-build' \
   '.github/workflows/entra-oidc-verify.yml:verify' \
