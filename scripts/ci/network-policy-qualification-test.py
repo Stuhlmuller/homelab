@@ -79,22 +79,32 @@ class CanaryQualificationTests(unittest.TestCase):
             return subprocess.CompletedProcess([], 0 if permitted else 7,
                                                (marker or ("NPQ_ALLOWED" if permitted else "NPQ_DENIED")) + "\n", "")
         expected = [response(case[-1]) for case in self.module.CASES]
-        with patch.object(self.module, "probe", side_effect=expected) as probe:
-            self.assertEqual(len(self.module.traffic_matrix(pods)), len(expected))
+        dns = [{"source": "npq-client", "target": "kube-dns", "port": 53,
+                "protocol": protocol, "permitted": True} for protocol in ("TCP", "UDP")]
+        with (patch.object(self.module, "probe", side_effect=expected) as probe,
+              patch.object(self.module, "dns_matrix", return_value=dns) as dns_probe):
+            result = self.module.traffic_matrix(pods)
+            self.assertEqual(len(result), len(expected) + 2)
+            self.assertEqual(result[-2:], dns)
             self.assertEqual(probe.call_count, len(expected))
+            dns_probe.assert_called_once_with()
         for index in (0, 5, 7):
             wrong = list(expected)
             wrong[index] = response(not self.module.CASES[index][-1])
-            with self.subTest(index=index), patch.object(self.module, "probe", side_effect=wrong):
+            with (self.subTest(index=index),
+                  patch.object(self.module, "probe", side_effect=wrong),
+                  patch.object(self.module, "dns_matrix", return_value=dns)):
                 with self.assertRaisesRegex(ValueError, "traffic mismatch"):
                     self.module.traffic_matrix(pods)
-        with patch.object(self.module, "probe", side_effect=[
-                subprocess.CompletedProcess([], 1, "", "kubectl failed"), *expected[1:]]):
+        with (patch.object(self.module, "probe", side_effect=[
+                subprocess.CompletedProcess([], 1, "", "kubectl failed"), *expected[1:]]),
+              patch.object(self.module, "dns_matrix", return_value=dns)):
             with self.assertRaisesRegex(ValueError, "traffic mismatch"):
                 self.module.traffic_matrix(pods)
         wrong = list(expected)
         wrong[5] = response(False, "kubectl failed")
-        with patch.object(self.module, "probe", side_effect=wrong):
+        with (patch.object(self.module, "probe", side_effect=wrong),
+              patch.object(self.module, "dns_matrix", return_value=dns)):
             with self.assertRaisesRegex(ValueError, "traffic mismatch"):
                 self.module.traffic_matrix(pods)
 
