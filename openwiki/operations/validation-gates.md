@@ -244,10 +244,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T20:40:44.909Z" }
+generated: { by: "codex", at: "2026-10-19T20:57:55.425Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T20:40:44.909Z
+    at: 2026-10-19T20:57:55.425Z
 ---
 
 # Validation Gates
@@ -562,7 +562,9 @@ compares normalized ingress and egress rules with rendered source and hashes
 both directions for private review. `--fail-on-findings` flags live-only,
 drifted, and source-only ingress policies as well as egress policies. Refresh
 older private review hashes before relying on them. The check cannot supply
-missing generator renders or prove live enforcement.
+missing generator renders or prove live enforcement. Mixed Ingress/Egress
+policies use direction-neutral `unowned-policy`, `drifted-policy`, or
+`source-only-policy` findings; single-direction names keep ingress or egress.
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind

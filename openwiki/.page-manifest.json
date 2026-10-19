@@ -72,11 +72,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
+      "gitHead": "abf78c30330cf10786df7e8b9171d0d7ba9a2ed6",
+      "sourceFingerprint": "sha256:c93798c57ce5db43c87b112c361952163a20d0a6d937e72871b8ac66c1d4b4a4",
       "pageVersion": "sha256:5a2c18e506f2add373594c11ed776b076fde6554bad7edacb1166b9cd05e4a33",
       "completedBy": "codex",
-      "completedRunId": "60ff4e85-f87c-4d9f-a96c-5dd6feb6d85e",
-      "gitHead": "abf78c30330cf10786df7e8b9171d0d7ba9a2ed6",
-      "sourceFingerprint": "sha256:c93798c57ce5db43c87b112c361952163a20d0a6d937e72871b8ac66c1d4b4a4"
+      "completedRunId": "60ff4e85-f87c-4d9f-a96c-5dd6feb6d85e"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -86,11 +86,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:910299006641ddc39eb532cb0041548ab0549fdc610e5eb782ff767bd58e4d90",
+      "pageVersion": "sha256:c970fb1bbc1319663dcf1548934598808e8ccdd668855582fc4d80636a7c9321",
       "completedBy": "codex",
-      "completedRunId": "60ff4e85-f87c-4d9f-a96c-5dd6feb6d85e",
-      "gitHead": "abf78c30330cf10786df7e8b9171d0d7ba9a2ed6",
-      "sourceFingerprint": "sha256:c93798c57ce5db43c87b112c361952163a20d0a6d937e72871b8ac66c1d4b4a4"
+      "completedRunId": "7c5647c3-f5a9-4259-8577-6e6bf9cbb764",
+      "gitHead": "87f2c4cf30db591c0966b8b37dbe81312b1138e9",
+      "sourceFingerprint": "sha256:87d0336534a410df33fe38ee3113e9fa38121937d54033b8948e5630151acbc1"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -135,11 +135,11 @@
       "completedRunId": "56f610dc-e14c-4455-95fb-0dadb7fd6fc9"
     },
     "/openwiki/runbooks/runtime-isolation.md": {
-      "pageVersion": "sha256:282c8e9805d6626da74e280fccd8e16b045e4935882acac1c677fbdf7e579920",
+      "pageVersion": "sha256:8c6511aa4bd6c082a3668dd56c6b4511a758f1049a28701024313f130eee6eaf",
       "completedBy": "codex",
-      "completedRunId": "60ff4e85-f87c-4d9f-a96c-5dd6feb6d85e",
-      "gitHead": "abf78c30330cf10786df7e8b9171d0d7ba9a2ed6",
-      "sourceFingerprint": "sha256:c93798c57ce5db43c87b112c361952163a20d0a6d937e72871b8ac66c1d4b4a4"
+      "completedRunId": "7c5647c3-f5a9-4259-8577-6e6bf9cbb764",
+      "gitHead": "87f2c4cf30db591c0966b8b37dbe81312b1138e9",
+      "sourceFingerprint": "sha256:87d0336534a410df33fe38ee3113e9fa38121937d54033b8948e5630151acbc1"
     },
     "/openwiki/runbooks/secrets-aws-ssm.md": {
       "gitHead": "5a382a73fd8ae5c3ad28aa6242d3fbe0e5615389",
