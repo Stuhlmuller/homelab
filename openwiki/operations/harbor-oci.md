@@ -155,7 +155,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T10:28:14.477Z
+    at: 2026-10-19T14:01:19.597Z
 ---
 
 # Harbor Private OCI Registry

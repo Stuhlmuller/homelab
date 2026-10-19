@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2c71e72002c7074e2939ec1a72a9a8ce77550fa779d0e7d51882fcbdf7d496c5",
+  "pageVersion": "sha256:3caf62dc69519b0768686c3109c2c34e3467f08d2adf6be89b217f00e7220222",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,7 +68,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:bfeb6b16f16d33c2b685c6ad7f1e81774658635faa7e9e355d06055ec26273e9"
+          "version": "repo-file-v1:sha256:e81796d886ebeef49fdbda41730924372df60aebad2e5420a75a358fd3e94860"
         }
       ]
     },
@@ -82,7 +82,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:9d225bba40e466ddc3d22becee3d68fef6548aa98b4624d0860ac9469dbba27e"
+          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
         }
       ]
     },
@@ -121,6 +121,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T10:28:14.477Z"
+    "at": "2026-10-19T14:01:19.597Z"
   }
 }

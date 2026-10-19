@@ -39,10 +39,10 @@ At pinned source `33bb745`, `GET /installation` exposes identity and optional
 capabilities, but no selected Compute, Configuration, Secret, IAM or Sandbox
 Driver identities/settings. `occ installation get` reads that same operation;
 `installation deployment-inventory` only reports namespace/agent deployment
-state. These reads cannot establish the intended Driver selection. Until a
-repository-owned verification path compares the installed selection with the
-reviewed candidate, `check` and `reconcile` must fail closed before any API
-mutation. Capability support for Embedded is not that proof.
+state. These reads cannot establish the intended Driver selection. The
+repository-owned proof below instead binds the reviewed startup bytes to the
+current controller workloads; without it, `check` and `reconcile` fail closed
+before any API mutation. Capability support for Embedded is not that proof.
 
 The chart provides a read-only Kubernetes proof path. T039 must declare the
 exact reviewed `installation.yaml` bytes in source. A protected, exact-main,
@@ -62,10 +62,27 @@ any changed UID, resource version or Pod identity blocks. Do not log the Secret
 or candidate bytes. An immutable Secret must use a new name on rotation so an
 old Pod cannot silently retain a deleted Secret mount.
 
-`scripts/openclaw-enterprise.py check` now gathers scoped Kubernetes snapshots
-around `GET /installation` and applies the attestation. The post-bootstrap
-annotation binder and private credential/journal execution path remain pending;
-`reconcile` and tenant `verify` still block before mutation or activation.
+`scripts/openclaw-enterprise.py check` gathers scoped Kubernetes snapshots
+around `GET /installation` and applies the attestation. With a protected
+credential file, exact main SHA and durable journal, `reconcile` can POST the
+logical `claw` Namespace with `existingNamespace: openclaw-agents` after exact
+Namespace, Pod Security, NetworkPolicy and RBAC preflight. It verifies the
+ready API object and Kubernetes ownership before journaling its ID. The command
+then exits blocked because Agent reconciliation is unfinished; that failure
+does **not** imply that no mutation occurred. `verify` remains read-only and
+blocked. The post-bootstrap annotation binder and later credential/deployment
+flows remain pending.
+
+After a blocked `reconcile`, inspect the protected journal's `namespaceId`,
+`GET /namespaces/:id`, and the owned `openclaw-agents` Namespace/NetworkPolicies
+with read-only Kubernetes access. Retry only with the same journal and exact
+source identity: an unknown POST result is recovered by exact list/GET and
+Kubernetes ownership reads without reposting. A confirmed 401/403 admission
+rejection clears the pending create only after a fresh list shows no logical
+Namespace. Keep `activationEnabled: false` during rollback; preserve the
+journal and add a reviewed repository-owned deletion path before removing the
+logical Namespace. Never delete the pre-existing physical `openclaw-agents`
+Namespace to undo this step.
 
 Use these actual upstream operations:
 

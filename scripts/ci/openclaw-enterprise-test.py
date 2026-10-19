@@ -5,6 +5,7 @@ import base64
 import copy
 import hashlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import stat
@@ -12,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from urllib.error import HTTPError
 from unittest.mock import patch
 
 
@@ -49,6 +51,38 @@ class FakeKubernetes:
         self.calls.append(digest)
         return next(self.snapshots)
 
+    def tenant_prepared(self, namespace_id=None, require_claimed=False):
+        self.calls.append(("tenant-prepared", namespace_id, require_claimed))
+
+
+class NamespaceAPI:
+    def __init__(self, existing=None, lost_response=False):
+        self.namespaces = list(existing or [])
+        self.lost_response = lost_response
+        self.calls = []
+
+    def get(self, path):
+        self.calls.append(("GET", path))
+        if path == "/installation":
+            return {"id": "ins_one"}
+        if path == "/namespaces":
+            return copy.deepcopy(self.namespaces)
+        for item in self.namespaces:
+            if path == "/namespaces/" + item["id"]:
+                return copy.deepcopy(item)
+        raise AssertionError("unexpected API path: " + path)
+
+    def post(self, path, body):
+        self.calls.append(("POST", path, copy.deepcopy(body)))
+        if path != "/namespaces":
+            raise AssertionError("unexpected mutation: " + path)
+        item = {"id": "ns_one", "name": body["name"],
+                "existingNamespace": body["existingNamespace"], "status": "ready"}
+        self.namespaces.append(item)
+        if self.lost_response:
+            raise OCE.Blocked("Enterprise API request failed or returned invalid JSON")
+        return copy.deepcopy(item)
+
 
 class EnterpriseReconciliation(unittest.TestCase):
     def setUp(self):
@@ -78,6 +112,40 @@ class EnterpriseReconciliation(unittest.TestCase):
         changed["privateOrigins"]["console"] = "https://unexpected.example"
         with self.assertRaisesRegex(OCE.Blocked, "console origin changed"):
             OCE._validate_config(changed)
+
+    def test_api_post_uses_pinned_origin_and_hides_failure_body(self):
+        api = OCE.API(OCE.CONSOLE_ORIGIN, "private-service-key")
+
+        class Response(io.BytesIO):
+            status = 201
+
+        requests = []
+
+        def respond(request, timeout):
+            requests.append((request, timeout))
+            return Response(b'{"data":{"id":"ns_one"}}')
+
+        with patch.object(api.opener, "open", side_effect=respond):
+            self.assertEqual(api.post("/namespaces", {"name": "claw"}), {"id": "ns_one"})
+        request, timeout = requests[0]
+        self.assertEqual(request.full_url, OCE.CONSOLE_ORIGIN + "/namespaces")
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(json.loads(request.data), {"name": "claw"})
+        self.assertEqual(timeout, 15)
+        private_body = b"private-service-key"
+        error = HTTPError(OCE.CONSOLE_ORIGIN + "/namespaces", 409, "conflict", {}, io.BytesIO(private_body))
+        self.addCleanup(error.close)
+        with patch.object(api.opener, "open", side_effect=error):
+            with self.assertRaisesRegex(OCE.Blocked, "HTTP 409") as raised:
+                api.post("/namespaces", {"name": "claw"})
+        self.assertNotIn(private_body.decode(), str(raised.exception))
+        denied = HTTPError(OCE.CONSOLE_ORIGIN + "/namespaces", 403, "forbidden", {},
+                           io.BytesIO(private_body))
+        self.addCleanup(denied.close)
+        with patch.object(api.opener, "open", side_effect=denied):
+            with self.assertRaisesRegex(OCE.DefinitiveRejection, "HTTP 403") as raised:
+                api.post("/namespaces", {"name": "claw"})
+        self.assertNotIn(private_body.decode(), str(raised.exception))
 
     def test_reviewed_installation_must_match_chart_secret_checksum_and_image(self):
         candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
@@ -287,19 +355,17 @@ class EnterpriseReconciliation(unittest.TestCase):
             with self.assertRaisesRegex(OCE.Blocked, "invalid JSON"):
                 OCE.Kubernetes._json("get", "secret", "example")
 
-    def test_check_proves_stable_current_pods_and_reconcile_remains_read_only(self):
+    def test_check_proves_stable_current_pods_and_verify_remains_read_only(self):
         document, digest, image, snapshot = self._installation_snapshot()
         api = FakeAPI({"/installation": {"id": "ins_one", "name": "oce",
                                          "capabilities": {"openclaw": {"executionModes": ["embedded"]}}}})
-        kube = FakeKubernetes([copy.deepcopy(snapshot) for _ in range(6)])
+        kube = FakeKubernetes([copy.deepcopy(snapshot) for _ in range(4)])
         with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
             self.assertEqual(OCE.check(self.config, api, kube)["installationId"], "ins_one")
-            with self.assertRaisesRegex(OCE.Blocked, "reconciliation is not implemented"):
-                OCE.reconcile(self.config, api, kube, self.config["source"]["revision"])
             with self.assertRaisesRegex(OCE.Blocked, "tenant verification is not implemented"):
                 OCE.verify(self.config, api, kube)
-        self.assertEqual(api.calls, [("GET", "/installation")] * 3)
-        self.assertEqual(kube.calls, [digest] * 6)
+        self.assertEqual(api.calls, [("GET", "/installation")] * 2)
+        self.assertEqual(kube.calls, [digest] * 4)
         self.assertFalse((self.private / "journal.json").exists())
 
         unbound = copy.deepcopy(snapshot)
@@ -347,8 +413,7 @@ class EnterpriseReconciliation(unittest.TestCase):
         document, digest, image, snapshot = self._installation_snapshot()
         kube = FakeKubernetes([snapshot, copy.deepcopy(snapshot)])
         with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
-            with self.assertRaisesRegex(OCE.Blocked, "reconciliation is not implemented"):
-                OCE.reconcile(config, api, kube, self.config["source"]["revision"])
+            self.assertEqual(OCE.check(config, api, kube)["installationId"], "ins_one")
         self.assertEqual(api.calls, [("GET", "/installation")])
 
     def test_duplicate_or_unjournaled_logical_identity_is_foreign(self):
@@ -482,6 +547,257 @@ class EnterpriseReconciliation(unittest.TestCase):
         with self.assertRaisesRegex(OCE.Blocked, "symlink"):
             with OCE.ProtectedJournal(path, "a" * 40, "b" * 64):
                 pass
+
+    def test_namespace_reconcile_persists_exact_identity_without_recreating(self):
+        document, digest, image, snapshot = self._installation_snapshot()
+        api = NamespaceAPI()
+        kube = FakeKubernetes([copy.deepcopy(snapshot) for _ in range(4)])
+        with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
+            for _ in range(2):
+                with self.assertRaisesRegex(OCE.Blocked, "Agent reconciliation is not implemented"):
+                    OCE.reconcile(self.config, api, kube, "a" * 40)
+        self.assertEqual([call for call in api.calls if call[0] == "POST"],
+                         [("POST", "/namespaces", {"name": "claw",
+                                                  "existingNamespace": "openclaw-agents"})])
+        state = json.loads((self.private / "journal.json").read_text())["state"]
+        self.assertEqual(state, {"installationId": "ins_one", "namespaceId": "ns_one"})
+        self.assertEqual([call for call in kube.calls if isinstance(call, tuple)],
+                         [("tenant-prepared", None, False),
+                          ("tenant-prepared", "ns_one", False),
+                          ("tenant-prepared", "ns_one", True),
+                          ("tenant-prepared", "ns_one", False),
+                          ("tenant-prepared", "ns_one", True)])
+        changed_model = copy.deepcopy(self.config)
+        changed_model["activationEnabled"] = True
+        self.assertEqual(OCE._identity_hash(self.config), OCE._identity_hash(changed_model))
+
+    def test_lost_namespace_create_recovers_once_and_never_reposts(self):
+        source = self.config["source"]["revision"]
+        identity = OCE._identity_hash(self.config)
+        path = self.private / "journal.json"
+        api = NamespaceAPI(lost_response=True)
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            with self.assertRaisesRegex(OCE.Blocked, "request failed"):
+                OCE.reconcile_namespace(self.config, api, journal, FakeKubernetes([]))
+            self.assertEqual(journal.state["pending"], {"operation": "namespace-create"})
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            self.assertEqual(OCE.reconcile_namespace(self.config, api, journal,
+                                                     FakeKubernetes([])), "ns_one")
+            self.assertNotIn("pending", journal.state)
+        self.assertEqual(sum(call[0] == "POST" for call in api.calls), 1)
+
+    def test_namespace_preflight_blocks_first_post_and_pending_foreign_recovery(self):
+        source = self.config["source"]["revision"]
+        identity = OCE._identity_hash(self.config)
+        path = self.private / "journal.json"
+        api = NamespaceAPI()
+
+        class RejectingKubernetes(FakeKubernetes):
+            def tenant_prepared(self, namespace_id=None, require_claimed=False):
+                super().tenant_prepared(namespace_id, require_claimed)
+                raise OCE.Blocked("prepared tenant has a foreign NetworkPolicy")
+
+        kube = RejectingKubernetes([])
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            with self.assertRaisesRegex(OCE.Blocked, "foreign NetworkPolicy"):
+                OCE.reconcile_namespace(self.config, api, journal, kube)
+            self.assertEqual(journal.state, {})
+        self.assertEqual(kube.calls, [("tenant-prepared", None, False)])
+        self.assertEqual(api.calls, [("GET", "/namespaces")])
+
+        api = NamespaceAPI([{"id": "ns_one", "name": "claw",
+                             "existingNamespace": "openclaw-agents", "status": "ready"}])
+        kube = RejectingKubernetes([])
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            journal.save({"pending": {"operation": "namespace-create"}})
+            with self.assertRaisesRegex(OCE.Blocked, "foreign NetworkPolicy"):
+                OCE.reconcile_namespace(self.config, api, journal, kube)
+            self.assertEqual(journal.state, {"pending": {"operation": "namespace-create"}})
+        self.assertEqual(kube.calls, [("tenant-prepared", "ns_one", False)])
+        self.assertEqual(api.calls, [("GET", "/namespaces")])
+
+    def test_definitive_create_rejection_clears_pending_only_after_empty_readback(self):
+        source = self.config["source"]["revision"]
+        identity = OCE._identity_hash(self.config)
+        path = self.private / "journal.json"
+
+        class RejectedNamespaceAPI(NamespaceAPI):
+            def post(self, path, body):
+                self.calls.append(("POST", path, copy.deepcopy(body)))
+                raise OCE.DefinitiveRejection("Enterprise API returned HTTP 403")
+
+        api = RejectedNamespaceAPI()
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            with self.assertRaisesRegex(OCE.DefinitiveRejection, "HTTP 403"):
+                OCE.reconcile_namespace(self.config, api, journal, FakeKubernetes([]))
+            self.assertEqual(journal.state, {})
+            self.assertEqual(api.calls[0], ("GET", "/namespaces"))
+            self.assertEqual(api.calls[-1], ("GET", "/namespaces"))
+            self.assertEqual(sum(call[0] == "POST" for call in api.calls), 1)
+            live_api = NamespaceAPI()
+            self.assertEqual(OCE.reconcile_namespace(self.config, live_api, journal,
+                                                     FakeKubernetes([])), "ns_one")
+            self.assertEqual(sum(call[0] == "POST" for call in live_api.calls), 1)
+
+        class AppearingNamespaceAPI(RejectedNamespaceAPI):
+            def post(self, path, body):
+                self.namespaces.append({"id": "ns_other", "name": "claw",
+                                        "existingNamespace": "openclaw-agents", "status": "ready"})
+                return super().post(path, body)
+
+        other_path = self.private / "other-journal.json"
+        with OCE.ProtectedJournal(other_path, source, identity) as journal:
+            with self.assertRaisesRegex(OCE.Blocked, "outcome changed"):
+                OCE.reconcile_namespace(self.config, AppearingNamespaceAPI(), journal,
+                                        FakeKubernetes([]))
+            self.assertEqual(journal.state, {"pending": {"operation": "namespace-create"}})
+
+    def test_unknown_or_foreign_namespace_create_stays_pending(self):
+        source = self.config["source"]["revision"]
+        identity = OCE._identity_hash(self.config)
+        path = self.private / "journal.json"
+        foreign = {"id": "ns_foreign", "name": "claw",
+                   "existingNamespace": "other", "status": "ready"}
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            with self.assertRaisesRegex(OCE.Blocked, "unjournaled"):
+                OCE.reconcile_namespace(self.config, NamespaceAPI([foreign]), journal,
+                                        FakeKubernetes([]))
+            self.assertEqual(journal.state, {})
+            journal.save({"pending": {"operation": "namespace-create"}})
+        for existing, message in (([], "unknown"), ([foreign], "foreign"),
+                                  ([foreign, foreign], "unknown")):
+            api = NamespaceAPI(existing)
+            with self.subTest(existing=existing), OCE.ProtectedJournal(path, source, identity) as journal:
+                with self.assertRaisesRegex(OCE.Blocked, message):
+                    OCE.reconcile_namespace(self.config, api, journal, FakeKubernetes([]))
+                self.assertEqual(sum(call[0] == "POST" for call in api.calls), 0)
+        malformed = NamespaceAPI([{"id": "ns_one/installation", "name": "claw",
+                                   "existingNamespace": "openclaw-agents", "status": "ready"}])
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            with self.assertRaisesRegex(OCE.Blocked, "Namespace ID is invalid"):
+                OCE.reconcile_namespace(self.config, malformed, journal, FakeKubernetes([]))
+        self.assertEqual(malformed.calls, [("GET", "/namespaces")])
+
+    def test_namespace_exact_readback_and_journal_source_are_required(self):
+        source = self.config["source"]["revision"]
+        identity = OCE._identity_hash(self.config)
+        path = self.private / "journal.json"
+        api = NamespaceAPI([{"id": "ns_one", "name": "claw",
+                             "existingNamespace": "openclaw-agents", "status": "provisioning"}])
+        with OCE.ProtectedJournal(path, source, identity) as journal:
+            journal.save({"namespaceId": "ns_one"})
+            with self.assertRaisesRegex(OCE.Blocked, "readback"):
+                OCE.reconcile_namespace(self.config, api, journal, FakeKubernetes([]))
+        changed = copy.deepcopy(self.config)
+        changed["namespace"]["existingNamespace"] = "foreign"
+        with self.assertRaisesRegex(OCE.Blocked, "source"):
+            with OCE.ProtectedJournal(path, source, OCE._identity_hash(changed)):
+                pass
+
+    def test_prepared_namespace_and_rbac_are_exact(self):
+        context = {"clusters": [{"cluster": {"server": OCE.KUBE_SERVER}}]}
+        namespace = {"metadata": {"name": "openclaw-agents", "resourceVersion": "17",
+                                  "annotations": {"openclaw.dev/namespace-lifecycle": "external"},
+                                  "labels": {"pod-security.kubernetes.io/enforce": "restricted",
+                                             "pod-security.kubernetes.io/audit": "restricted",
+                                             "pod-security.kubernetes.io/warn": "restricted"}},
+                     "status": {"phase": "Active"}}
+        policies = {"items": []}
+        roles = (("openclaw-enterprise-worker", "oce-openclaw-tenant-worker", "openclaw-enterprise-worker"),
+                 ("openclaw-enterprise-api-secrets", "oce-openclaw-tenant-api", "openclaw-enterprise-api"),
+                 ("openclaw-enterprise-api-configuration", "oce-openclaw-tenant-configuration", "openclaw-enterprise-api"))
+        bindings = [{"metadata": {"name": name, "namespace": "openclaw-agents"},
+                     "roleRef": {"apiGroup": "rbac.authorization.k8s.io",
+                                 "kind": "ClusterRole", "name": role},
+                     "subjects": [{"kind": "ServiceAccount", "name": subject,
+                                   "namespace": "openclaw-system"}]}
+                    for name, role, subject in roles]
+        cluster_roles = [
+            {"metadata": {"name": role},
+             "rules": [{"apiGroups": [group], "resources": list(resources),
+                        "verbs": list(verbs)}
+                       for group, resources, verbs in OCE.TENANT_ROLE_RULES[role]]}
+            for _, role, _ in roles]
+        prepared = [context, namespace, policies]
+        for cluster_role, binding in zip(cluster_roles, bindings):
+            prepared.extend((cluster_role, binding))
+        with patch.object(OCE.Kubernetes, "_json", side_effect=prepared):
+            OCE.Kubernetes().tenant_prepared()
+        terminating = copy.deepcopy(namespace)
+        terminating["metadata"]["deletionTimestamp"] = "2026-10-19T00:00:00Z"
+        with patch.object(OCE.Kubernetes, "_json", side_effect=[context, terminating]):
+            with self.assertRaisesRegex(OCE.Blocked, "Namespace is absent or changed"):
+                OCE.Kubernetes().tenant_prepared()
+        for mode in ("enforce", "audit", "warn"):
+            wrong_namespace = copy.deepcopy(namespace)
+            wrong_namespace["metadata"]["labels"].pop("pod-security.kubernetes.io/" + mode)
+            with self.subTest(mode=mode), patch.object(
+                    OCE.Kubernetes, "_json", side_effect=[context, wrong_namespace]):
+                with self.assertRaisesRegex(OCE.Blocked, "Namespace is absent or changed"):
+                    OCE.Kubernetes().tenant_prepared()
+        foreign_namespace = copy.deepcopy(namespace)
+        foreign_namespace["metadata"]["labels"]["openclaw.dev/namespace"] = "ns_other"
+        with patch.object(OCE.Kubernetes, "_json", side_effect=[context, foreign_namespace]):
+            with self.assertRaisesRegex(OCE.Blocked, "foreign ownership"):
+                OCE.Kubernetes().tenant_prepared()
+        claimed = copy.deepcopy(namespace)
+        claimed["metadata"]["labels"].update({"openclaw.dev/namespace": "ns_one",
+                                                 "openclaw.dev/gateway-namespace": "ns_one"})
+        claimed["metadata"]["annotations"]["openclaw.dev/namespace-id"] = "ns_one"
+        owned_policies = [
+            {"kind": "NetworkPolicy", "metadata": {
+                "name": name, "namespace": "openclaw-agents",
+                "labels": {"app.kubernetes.io/managed-by": "openclaw-enterprise",
+                           "openclaw.dev/namespace": "ns_one"},
+                "annotations": {"openclaw.dev/namespace-id": "ns_one"}},
+             "spec": copy.deepcopy(spec)}
+            for name, spec in OCE.REQUIRED_TENANT_POLICY_SPECS.items()]
+        replay = [context, claimed, {"items": owned_policies}] + prepared[3:]
+        with patch.object(OCE.Kubernetes, "_json", side_effect=replay):
+            OCE.Kubernetes().tenant_prepared("ns_one", require_claimed=True)
+        extra_policy = copy.deepcopy(owned_policies[0])
+        extra_policy["metadata"]["name"] = "allow-all"
+        extra_policy["spec"] = {"podSelector": {}, "policyTypes": ["Ingress"],
+                                "ingress": [{}]}
+        for changed_policies in ([], owned_policies[1:],
+                                 [*owned_policies, extra_policy],
+                                 [{**owned_policies[0], "spec": {"podSelector": {},
+                                   "policyTypes": ["Ingress"]}}, *owned_policies[1:]]):
+            with self.subTest(count=len(changed_policies)), patch.object(
+                    OCE.Kubernetes, "_json",
+                    side_effect=[context, claimed, {"items": changed_policies}] + prepared[3:]):
+                with self.assertRaisesRegex(OCE.Blocked, "NetworkPolicy (set )?is absent or changed"):
+                    OCE.Kubernetes().tenant_prepared("ns_one", require_claimed=True)
+        with patch.object(OCE.Kubernetes, "_json", side_effect=[context, namespace,
+                                                                 {"items": [owned_policies[0]]}]):
+            with self.assertRaisesRegex(OCE.Blocked, "foreign NetworkPolicy"):
+                OCE.Kubernetes().tenant_prepared()
+        foreign_policy = copy.deepcopy(owned_policies[0])
+        foreign_policy["metadata"]["annotations"]["openclaw.dev/namespace-id"] = "ns_other"
+        with patch.object(OCE.Kubernetes, "_json", side_effect=[context, claimed,
+                                                                 {"items": [foreign_policy]}]):
+            with self.assertRaisesRegex(OCE.Blocked, "foreign NetworkPolicy"):
+                OCE.Kubernetes().tenant_prepared("ns_one")
+        unclaimed = [context, namespace, policies] + prepared[3:]
+        with patch.object(OCE.Kubernetes, "_json", side_effect=unclaimed):
+            with self.assertRaisesRegex(OCE.Blocked, "has not been claimed"):
+                OCE.Kubernetes().tenant_prepared("ns_one", require_claimed=True)
+        wrong = copy.deepcopy(bindings)
+        wrong[1]["roleRef"]["name"] = "cluster-admin"
+        malformed = [context, namespace, policies]
+        for cluster_role, binding in zip(cluster_roles, wrong):
+            malformed.extend((cluster_role, binding))
+        with patch.object(OCE.Kubernetes, "_json", side_effect=malformed):
+            with self.assertRaisesRegex(OCE.Blocked, "RBAC"):
+                OCE.Kubernetes().tenant_prepared()
+        broad_roles = copy.deepcopy(cluster_roles)
+        broad_roles[0]["rules"][0]["verbs"].append("*")
+        broad = [context, namespace, policies]
+        for cluster_role, binding in zip(broad_roles, bindings):
+            broad.extend((cluster_role, binding))
+        with patch.object(OCE.Kubernetes, "_json", side_effect=broad):
+            with self.assertRaisesRegex(OCE.Blocked, "ClusterRole"):
+                OCE.Kubernetes().tenant_prepared()
 
 
 if __name__ == "__main__":
