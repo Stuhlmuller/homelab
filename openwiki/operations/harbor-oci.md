@@ -70,6 +70,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-52536621afbfff1f8abeed59
+    resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -152,10 +154,12 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T14:58:52.418Z" }
+  - id: openwiki-source-a44b67b396abfe9ddff04314
+    resource: repo://specs/004-run-renovate-in-cluster/tasks.md
+generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T18:14:29.076Z
+    at: 2026-10-19T19:09:44.607Z
 ---
 
 # Harbor Private OCI Registry
@@ -276,12 +280,15 @@ identity and resolved Harbor through the shared private Traefik listener on
 [authorization policy](../../clusters/homelab/apps/traefik/authorizationpolicy.yaml)
 before they reached Traefik; Renovate reported TLS `ECANCELED`. The
 [repository-owned repair](../../clusters/homelab/apps/renovate/README.md)
-gives the suspended CronJob a dedicated no-token ServiceAccount and a Pod-local
+gives the unsuspended full dry-run CronJob a dedicated no-token ServiceAccount
+and a Pod-local
 alias for `harbor.stinkyboi.com` to the registry-only `10.96.0.50:443` Service.
 Istio admits that exact identity only on port 9443. The listener still routes
-only OCI and token paths. Local route tests and rendering pass; a later Job
-after GitOps convergence must prove transport, expected public/unauthorized
-responses, and actual eligible version discovery before writer cutover. If an
+only OCI and token paths. Local route tests and rendering pass. The successful
+18:00 UTC scheduled dry run establishes repository coverage, but does not
+establish Harbor transport or version discovery. An eligible post-convergence
+Job must prove transport, expected public/unauthorized responses, and actual
+eligible version discovery before writer cutover. If an
 eligible private source needs a Harbor credential, add a reviewed secret
 contract before enabling writes.
 
