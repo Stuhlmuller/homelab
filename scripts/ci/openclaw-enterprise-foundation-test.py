@@ -2,6 +2,7 @@
 """Check the dormant Enterprise namespace and secret boundary."""
 
 import json
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -110,19 +111,36 @@ class FoundationContract(unittest.TestCase):
 
     def test_postgres_cert_renewal_invalidates_health_probes_until_restart(self):
         container = self.resources["StatefulSet", "occ-postgres"]["spec"]["template"]["spec"]["containers"][0]
-        snapshot = container["lifecycle"]["postStart"]["exec"]["command"]
-        self.assertEqual(snapshot[:2], ["/bin/sh", "-ec"])
+        start = container["command"]
+        self.assertEqual(start[:2], ["/bin/sh", "-ec"])
+        self.assertEqual(start[3], "postgres-tls-snapshot")
+        self.assertIn('exec /usr/local/bin/docker-entrypoint.sh postgres "$@"', start[2])
+        self.assertNotIn("lifecycle", container)
         with tempfile.TemporaryDirectory() as directory:
             cert = Path(directory) / "tls.crt"
             key = Path(directory) / "tls.key"
             marker = Path(directory) / "startup-tls.sha256"
+            entrypoint = Path(directory) / "docker-entrypoint.sh"
+            rotate = Path(directory) / "rotate-during-start"
             cert.write_text("original certificate")
             key.write_text("original key")
+            entrypoint.write_text(
+                "#!/bin/sh\nset -eu\n"
+                f"test -s {shlex.quote(str(marker))}\n"
+                'test "$1" = postgres && test "$2" = -c\n'
+                f"if test -e {shlex.quote(str(rotate))}; then "
+                f"printf renewed-during-start > {shlex.quote(str(key))}; fi\n")
+            entrypoint.chmod(0o700)
 
             def localize(script):
                 return (script.replace("/run/postgres-tls/tls.crt", str(cert))
                         .replace("/run/postgres-tls/tls.key", str(key))
-                        .replace("/tmp/occ-postgres-startup-tls.sha256", str(marker)))
+                        .replace("/tmp/occ-postgres-startup-tls.sha256", str(marker))
+                        .replace("/usr/local/bin/docker-entrypoint.sh", str(entrypoint)))
+
+            def restart():
+                subprocess.run(["/bin/sh", "-ec", localize(start[2]),
+                                start[3], *container["args"]], check=True)
 
             def probe_result(name):
                 command = container[name]["exec"]["command"]
@@ -132,21 +150,25 @@ class FoundationContract(unittest.TestCase):
                 return subprocess.run(["/bin/sh", "-ec", localize(check)],
                                       capture_output=True, text=True).returncode
 
-            subprocess.run(["/bin/sh", "-ec", localize(snapshot[2])], check=True)
+            restart()
             for name in ("readinessProbe", "livenessProbe"):
                 self.assertEqual(probe_result(name), 0)
             key.write_text("renewed key")
             for name in ("readinessProbe", "livenessProbe"):
                 self.assertNotEqual(probe_result(name), 0)
-            subprocess.run(["/bin/sh", "-ec", localize(snapshot[2])], check=True)
+            restart()
             for name in ("readinessProbe", "livenessProbe"):
                 self.assertEqual(probe_result(name), 0)
             cert.write_text("renewed certificate")
             for name in ("readinessProbe", "livenessProbe"):
                 self.assertNotEqual(probe_result(name), 0)
-            subprocess.run(["/bin/sh", "-ec", localize(snapshot[2])], check=True)
+            restart()
             for name in ("readinessProbe", "livenessProbe"):
                 self.assertEqual(probe_result(name), 0)
+            rotate.touch()
+            restart()
+            for name in ("readinessProbe", "livenessProbe"):
+                self.assertNotEqual(probe_result(name), 0)
 
     def test_tenant_roles_follow_fixed_oce_release(self):
         expected = {

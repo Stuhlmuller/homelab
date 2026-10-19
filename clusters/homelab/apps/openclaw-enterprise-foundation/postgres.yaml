@@ -68,6 +68,15 @@ spec:
         - name: postgres
           image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
           imagePullPolicy: IfNotPresent
+          # Snapshot before the image entrypoint can load TLS; PostStart races it.
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              sha256sum /run/postgres-tls/tls.crt /run/postgres-tls/tls.key \
+                > /tmp/occ-postgres-startup-tls.sha256
+              exec /usr/local/bin/docker-entrypoint.sh postgres "$@"
+            - postgres-tls-snapshot
           args:
             - -c
             - ssl=on
@@ -97,17 +106,6 @@ spec:
           ports:
             - name: postgres
               containerPort: 5432
-          # A projected cert-manager renewal does not reload PostgreSQL. Record
-          # the cert/key loaded at container start; probes restart on a change.
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                  - /bin/sh
-                  - -ec
-                  - |
-                    sha256sum /run/postgres-tls/tls.crt /run/postgres-tls/tls.key \
-                      > /tmp/occ-postgres-startup-tls.sha256
           startupProbe:
             exec:
               command: [pg_isready, -h, /var/run/postgresql, -U, occ_admin, -d, openclaw_enterprise]

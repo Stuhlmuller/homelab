@@ -34,10 +34,10 @@ bootstrap SQL.
 
 The separate `occ-postgres-root` certificate is retained as database recovery
 material; cert-manager issues a server certificate only for the private Service
-FQDN in the URL. The PostgreSQL container snapshots the projected server
-certificate and key on each start. A renewal first fails readiness, then
-liveness restarts the container so PostgreSQL loads the new pair. The reviewed
-`occ-plugin` startup bytes live at
+FQDN in the URL. A wrapper snapshots the projected server certificate and key
+before invoking the image entrypoint on each start. A renewal first fails
+readiness, then liveness restarts the container so PostgreSQL loads the new
+pair. The reviewed `occ-plugin` startup bytes live at
 `../openclaw-enterprise/installation.yaml`. The protected
 `openclaw-enterprise-startup` workflow creates and verifies only the immutable
 `occ-installation-startup-980de11bbc688a33741a19c9093f613e` Secret after
