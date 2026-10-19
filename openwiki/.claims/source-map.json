@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:89aeecb8b8b5b26d9687d9f205593f5b00e8c6909211940956d569f1a994080f",
+  "pageVersion": "sha256:a86bdeec24cadb6184cc47b273d9aea7e5b9fa69b1d5dd95b421534ac08f15c2",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -201,10 +201,40 @@
           "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         }
       ]
+    },
+    {
+      "id": "claim_36d14391a66a4fb8b6849ce1bd47c56b",
+      "statement": "The Renovate acceptance implementation places private inventory selection, upstream observer/reporting, dry-run report capture, and version-bound PR proof under the Renovate app source and runs their focused tests from the static-checks entrypoint; only the suspended observer is included in Kustomize.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-inventory.js",
+          "version": "repo-file-v1:sha256:3d1036c1df48f278ea8f66dfeba3c4b994e139f729edd6110c4f11163d925147"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer.js",
+          "version": "repo-file-v1:sha256:2cf53537da3c7db8885b6f41c85a7eee8a5cb85a60318026aabb32ca65344092"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-pr-proof.js",
+          "version": "repo-file-v1:sha256:9c025ba2429853d0e7044daed1abff79b581fb1f17bcfed682881dfe61197a46"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-report-runner.js",
+          "version": "repo-file-v1:sha256:880322862416d7598f996fecdb63a612d1d01b391fbd2f923273cb8d03e3ed4a"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml#L1-L19",
+          "version": "repo-lines-v1:sha256:b0b217bce37547cfe6ccf33122e76d4ba675c461839c1169d624d06b9f5ba272:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZDIzMjMxZjEyNmYxNWIzYzM2NjE0YTM0NWY1OGM4NTkwN2Q0MmY3NjVmZmRiZTdjMDFmNGEwZjJmZmI5NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5MTJmYjBhYmM1YWY3ZTI4ZWM1NzUzYjlkNzY0OWZmMmFkYWRhMzgzMTFiMmY5NzFmNTVhNzk0MWI4Mjg5OGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVhM2ZmZmE5ZWU2OGI4YjE2OTU2NzE3YzllMTZmYjI2ZGI3ZjE3MmM0YmEyMDIxODNjY2MxNDZlOWJjNzFmZjEifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L24-L28",
+          "version": "repo-lines-v1:sha256:8bc67486fc9623201ecb3901039f676816907d897cb5373e55aab5ce4eebf8c0:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNGU1NTVhYTg1MDI4OTU4YWQ0YjgxYjNlYjdjZmIzZDYwM2U0YjllOTUwYzNlYTA5Njk4OTQzOWJhOTMxZjZmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2JlZjRmNzlhNDFkZTAxNTIwZDUxMmExM2YyMzg3OTUyZGEwNzEzNmUzOTJlYjE5ZDNiODVhZDRiODRiZmJmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYThhYmNmMWIzZDI5NTAyMDc3ZDBhODk0OGNkOWQ4MjRjOGI4MzA5MGUyZTBkYTE0MDAzYTZjMGJiM2MwYjk4YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0MjdiMDYxZDFhNWY2NjkxMWE5MGU5NTllYmVkZTFiYjE3MTAyMWY3OTE1YjM0ZmMwMTc2OWNlNzFjZDVhYSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T19:40:37.007Z"
+    "at": "2026-10-19T22:55:02.087Z"
   }
 }

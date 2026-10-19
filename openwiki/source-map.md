@@ -30,6 +30,16 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-db3b61e5caa8db8ce3f82f60
+    resource: repo://clusters/homelab/apps/renovate/acceptance-inventory.js
+  - id: openwiki-source-699113cfd35bf2732550bb50
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer.js
+  - id: openwiki-source-685a9b24f5ad950bfe54dee5
+    resource: repo://clusters/homelab/apps/renovate/acceptance-pr-proof.js
+  - id: openwiki-source-84c321df15c77ed602f1ecee
+    resource: repo://clusters/homelab/apps/renovate/acceptance-report-runner.js
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
@@ -56,6 +66,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-7f41167da18dbfa043cfc3ca
+    resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
@@ -72,10 +84,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T14:01:19.597Z" }
+generated: { by: "codex", at: "2026-10-19T22:55:02.087Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T19:40:37.007Z
+    at: 2026-10-19T22:55:02.087Z
 ---
 
 # Source Map
@@ -141,6 +153,16 @@ desired state.
 | `clusters/homelab/apps/deluge/daemon-status.py` and Deluge `README.md` | [Daemon health incident](operations/deluge-cpu-audit-2026-09-05.md#october-8-daemon-health-failure), [health verification](operations/validation-gates.md#deluge-daemon-health) |
 | `clusters/homelab/platform/*/README.md` | [Application Notes](workloads/application-notes.md) |
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
+
+Renovate acceptance source: the
+[workload runbook](../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer),
+[private inventory seed](../clusters/homelab/apps/renovate/acceptance-inventory.js),
+[upstream observer and aggregate report](../clusters/homelab/apps/renovate/acceptance-observer.js),
+[dry-run report producer](../clusters/homelab/apps/renovate/acceptance-report-runner.js),
+and [version-bound PR proof](../clusters/homelab/apps/renovate/acceptance-pr-proof.js).
+Their focused tests are wired through [static checks](../scripts/ci/static-checks.sh).
+The observer is suspended; the one-shot Jobs are omitted from Kustomize. See
+[acceptance gates](operations/validation-gates.md#renovate-acceptance-evidence).
 
 Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
 [registration](../IaC/mastodon/stack.hcl),
