@@ -113,7 +113,7 @@ def config_at(path):
     return config
 
 
-def verify_read_only_database(path, config):
+def verify_read_only_database(path, config, expected_uid=None):
     # SQLite must rebuild WAL shared memory; the retained source mount is read-only.
     with tempfile.TemporaryDirectory(prefix='sqlite-', dir=private_dir(
             Path(config['scratchRoot']))) as directory:
@@ -132,7 +132,8 @@ def verify_read_only_database(path, config):
                 raise
             with os.fdopen(descriptor, 'rb') as original:
                 info = os.fstat(original.fileno())
-                if (not stat.S_ISREG(info.st_mode) or info.st_uid != config['localUid']
+                if (not stat.S_ISREG(info.st_mode) or info.st_uid != (
+                        config['localUid'] if expected_uid is None else expected_uid)
                         or info.st_nlink != 1):
                     raise ValueError('untrusted legacy SQLite source')
                 with target.open('xb') as writable:
@@ -247,9 +248,7 @@ def add_tree(tar, root, label):
     def check(member):
         if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
             raise ValueError('unsupported special file in legacy state')
-        if member.issym() and (PurePosixPath(member.linkname).is_absolute()
-                              or '..' in PurePosixPath(member.linkname).parts):
-            raise ValueError('unsafe source symlink in legacy state')
+        # Retain raw link targets; independent restore creates links only after data verification.
         if member.isfile() and member.size == 0 and not (member.mode & 0o444):
             tar.addfile(member)
             return None
@@ -266,17 +265,46 @@ def verify_bundle(bundle, expected, config):
                                      dir=private_dir(bundle.parent, config['nasUid'])) as scratch:
         with tarfile.open(bundle, 'r:gz') as tar:
             members = tar.getmembers()
-            if not members or any(PurePosixPath(m.name).parts[0] not in ('local', 'nas') for m in members):
-                raise ValueError('archive contains unexpected root')
-            tar.extractall(scratch, filter='data')
+            names = set()
+            links = []
+            for member in members:
+                name = PurePosixPath(member.name)
+                if (not name.parts or name.is_absolute() or name.parts[0] not in ('local', 'nas')
+                        or '..' in name.parts or member.name != str(name) or name in names
+                        or not (member.isfile() or member.isdir() or member.issym() or member.islnk())):
+                    raise ValueError('archive contains unsafe or duplicate member')
+                names.add(name)
+                if member.issym():
+                    links.append(member)
+            link_names = {PurePosixPath(link.name) for link in links}
+            if (not {'local', 'nas'} <= {m.name for m in members if m.isdir()}
+                    or any(any(parent in link_names for parent in name.parents) for name in names)):
+                raise ValueError('archive contains unsafe symlink path')
+            tar.extractall(scratch, members=(m for m in members if not m.issym()), filter='data')
         local, nas = Path(scratch) / 'local', Path(scratch) / 'nas'
         for relative in config['requiredLocal']:
-            verify_read_only_database(local / relative, config)
+            verify_read_only_database(local / relative, config, config['nasUid'])
         for relative in config['requiredNas']:
             item = nas / relative
             if not item.is_dir() or not any(item.iterdir()):
                 raise ValueError('archive restore omitted required NAS state')
-        return {name: digest(local / name) for name in config['requiredLocal']}
+        restored = {name: digest(local / name) for name in config['requiredLocal']}
+        link_paths = []
+        for member in links:
+            path = Path(scratch).joinpath(*PurePosixPath(member.name).parts)
+            parent = path.parent
+            while parent != Path(scratch):
+                if parent.is_symlink() or not parent.is_dir():
+                    raise ValueError('archive symlink has unsafe parent')
+                parent = parent.parent
+            if path.is_symlink() or path.exists():
+                raise ValueError('archive symlink replaces restored data')
+            link_paths.append((path, member.linkname))
+        for path, target in link_paths:
+            os.symlink(target, path)
+            if not stat.S_ISLNK(path.lstat().st_mode) or os.readlink(path) != target:
+                raise ValueError('archive symlink differs from source metadata')
+        return restored
 
 
 def archive(config, status_path, baseline_path, observed_path, destination):

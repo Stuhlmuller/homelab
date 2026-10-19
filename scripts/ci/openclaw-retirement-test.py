@@ -146,6 +146,73 @@ class Retirement(unittest.TestCase):
         with self.assertRaises(PermissionError):
             retirement.inventory(self.config, self.status)
 
+    def test_restored_database_uses_archive_owner_not_original_source_owner(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        restored_config = dict(self.config, localUid=os.getuid() + 1)
+        with self.assertRaises(ValueError):
+            retirement.verify_read_only_database(
+                self.local / self.config['requiredLocal'][0], restored_config)
+        self.assertEqual(retirement.verify_archive(restored_config, receipt)['format'], 1)
+
+    def test_symlink_targets_are_preserved_without_following_external_data(self):
+        outside = self.archive_root / 'outside'
+        outside.mkdir()
+        sentinel = outside / 'sentinel'
+        sentinel.write_text('untouched')
+        links = {
+            'external': str(outside),
+            'absolute-contained': str(self.nas / 'unlisted-configuration'),
+            'parent-contained': '../unlisted-configuration',
+        }
+        for name, target in links.items():
+            (self.nas / 'openclaw' / name).symlink_to(target)
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        with tarfile.open(receipt.parent / 'legacy.tar.gz', 'r:gz') as bundle:
+            names = set(bundle.getnames())
+            for name, target in links.items():
+                self.assertEqual(bundle.getmember(f'nas/openclaw/{name}').linkname, target)
+            self.assertNotIn('nas/openclaw/external/sentinel', names)
+        self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertEqual(sentinel.read_text(), 'untouched')
+        self.assertEqual(list(outside.iterdir()), [sentinel])
+
+    def test_restore_rejects_duplicate_or_child_below_symlink(self):
+        outside = self.archive_root / 'outside'
+        outside.mkdir()
+        for unsafe in ('duplicate', 'child'):
+            with self.subTest(unsafe=unsafe):
+                bundle = self.archive_root / f'{unsafe}.tar.gz'
+                with tarfile.open(bundle, 'w:gz') as tar:
+                    for root in ('local', 'nas'):
+                        member = tarfile.TarInfo(root)
+                        member.type = tarfile.DIRTYPE
+                        tar.addfile(member)
+                    link = tarfile.TarInfo('nas/external')
+                    link.type = tarfile.SYMTYPE
+                    link.linkname = str(outside)
+                    tar.addfile(link)
+                    if unsafe == 'duplicate':
+                        tar.addfile(link)
+                    else:
+                        child = tarfile.TarInfo('nas/external/child')
+                        child.size = 1
+                        tar.addfile(child, io.BytesIO(b'x'))
+                bundle.chmod(0o600)
+                with self.assertRaisesRegex(ValueError, 'duplicate' if unsafe == 'duplicate'
+                                            else 'unsafe symlink path'):
+                    retirement.verify_bundle(bundle, retirement.digest(bundle), self.config)
+                self.assertEqual(list(outside.iterdir()), [])
+
     def test_workflow_archive_writes_private_receipt_locator(self):
         config_path = self.archive_root / 'config.json'
         config_path.write_text(json.dumps({'legacyRetention': self.config}))
