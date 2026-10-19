@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a392088a7a92622daa55cb1d89d59e78c529871eddde66ae3cb29efe4d9bdea4",
+  "pageVersion": "sha256:379ae9f5756077184411c869c41b6860360394074d7be73e28c5ec83c682eaa1",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f581a0522c7d3ca3cfd108dfa4a594c28ac1524c18888a6ab288dbdf3c81c263"
+          "version": "repo-file-v1:sha256:13bf5b2ecb16034fd9e663a3250faf6f98e127fb877057d015dde3162d88e985"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e81796d886ebeef49fdbda41730924372df60aebad2e5420a75a358fd3e94860"
+          "version": "repo-file-v1:sha256:a752aa7a3be36c1156ba3460889c4122418aad2fb1f5980ae096725f3fb2a936"
         }
       ]
     },
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f581a0522c7d3ca3cfd108dfa4a594c28ac1524c18888a6ab288dbdf3c81c263"
+          "version": "repo-file-v1:sha256:13bf5b2ecb16034fd9e663a3250faf6f98e127fb877057d015dde3162d88e985"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -570,7 +570,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
+          "version": "repo-file-v1:sha256:d7c98ab28f419c3e8cfbbb35e0712ff25d12c56f4fe4eeef20058d1e4e0e4e8c"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
@@ -578,7 +578,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f581a0522c7d3ca3cfd108dfa4a594c28ac1524c18888a6ab288dbdf3c81c263"
+          "version": "repo-file-v1:sha256:13bf5b2ecb16034fd9e663a3250faf6f98e127fb877057d015dde3162d88e985"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -592,7 +592,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
+          "version": "repo-file-v1:sha256:d7c98ab28f419c3e8cfbbb35e0712ff25d12c56f4fe4eeef20058d1e4e0e4e8c"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -674,15 +674,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:729152a51b148937171e9b2c31e92bb7f98570a293283be503c335b7ab4d8685"
+          "version": "repo-file-v1:sha256:60824abbf33ec9127336c48e88848269ba1689216506668d988b30680744abc1"
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:9bba2f9a77f92bf098240ac78b3e8210db03da0588724ce45f6c42ea6c8c52a5"
+          "version": "repo-file-v1:sha256:607b2efa6399f0d7a25372adc95512e499509cdb39cc9c905e1fad4b6034d184"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f581a0522c7d3ca3cfd108dfa4a594c28ac1524c18888a6ab288dbdf3c81c263"
+          "version": "repo-file-v1:sha256:13bf5b2ecb16034fd9e663a3250faf6f98e127fb877057d015dde3162d88e985"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -695,12 +695,12 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L930-L995",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L934-L999",
           "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L313-L402",
-          "version": "repo-lines-v1:sha256:ec12ba9fcd206767aec57c3c89c926b83df6aa3cd14eead3fb972208fb6a2c46:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
+          "resource": "repo://scripts/ci/harbor-publish.sh#L313-L409",
+          "version": "repo-lines-v1:sha256:5c0907f1fe131f4f72c971861ecad030beb84467dfd985fea3fe6306f918f5ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
         }
       ]
     },
@@ -732,7 +732,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:e81796d886ebeef49fdbda41730924372df60aebad2e5420a75a358fd3e94860"
+          "version": "repo-file-v1:sha256:a752aa7a3be36c1156ba3460889c4122418aad2fb1f5980ae096725f3fb2a936"
         }
       ]
     },
@@ -852,11 +852,11 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:f581a0522c7d3ca3cfd108dfa4a594c28ac1524c18888a6ab288dbdf3c81c263"
+          "version": "repo-file-v1:sha256:13bf5b2ecb16034fd9e663a3250faf6f98e127fb877057d015dde3162d88e985"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:6ca11c0e1ac054d77327ca2be637d3b783967f980da9fb34725f04f8be486a34"
+          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -1055,10 +1055,20 @@
           "version": "repo-lines-v1:sha256:8ec5089fe6ec8a456525967788ef2854e0e375a975511b824193c75b23a02090:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzNjVlZjgyN2Q1Yzk3ZWM1ZmZhN2U5ZTU5ZDYwNjczNDJkYjRhN2QwNTc5OThlNjk2MDY3ZGY5NGVhMmYzNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4NGY4MGE0YThiZTFlZDRjNzVkNDU3NmQ2MTNiY2Y5NjcxNWQyMWU0NmJkOTU5NTA5YWQ4Zjg1NzYwYzhiYTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4NmZmMDA3MWY5M2UwMzZkMjUyMzQxZTg2OWNhODNhYTM5ZWFkYzA4NjEyNzY3NmQwMWZjY2ZiYWYzODg5OGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlODU0YmFmNzA2NTUyYjcwNjZiOGQ0N2VjZDE2MWYyNzkxNGQzYWFkMmQzNGQxNGVlNTBmZTM5MjNlNzJmN2MifQ"
         }
       ]
+    },
+    {
+      "id": "claim_5fc500e9d52c4275ab498776999edce1",
+      "statement": "Harbor publication fixtures require a transient destination alias lookup to recover on retry, while an authorization failure stops the lookup without retry; fixture success does not prove protected publication.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L1239-L1281",
+          "version": "repo-lines-v1:sha256:fbbccc0f52101a1e84d1287ef6c54125b628a2b1550b29f32372230878c95ba9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzMDI2ZGM5OTQwNGQ2YTBjMmQzZTRiODMzNjllMjhiMzhmYWVhYTNiOTAxNTYyMGMwMzJhNjViZDY3MzhiZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNzcwMDY5NGYxZTY3NTlhYjVmOWU1MWYzMDdlYzYxY2FjNmU4OTkzNzM4NTlkYTQwNzM4MjY1YTE4Mzg4MTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2YjgwZjA0MmY2NWM1NDEzMzYzMGU5YWVmNGRiOGUyZjEzMTAxN2UyNGQyMzEzZWEwYWEzZjdjOTA0Yzg1M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhN2ZkNDEyOTA3ZDEyODc2NWVlMjI2NDI1MDBkNDdlZWFmMDBhNGJjYjEyZTcwYjkzNDIyYTVhNTUzNzllMzUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T14:01:19.597Z"
+    "at": "2026-10-19T14:58:52.418Z"
   }
 }

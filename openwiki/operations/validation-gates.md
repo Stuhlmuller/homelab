@@ -230,10 +230,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T14:01:19.597Z" }
+generated: { by: "codex", at: "2026-10-19T14:58:52.418Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T14:01:19.597Z
+    at: 2026-10-19T14:58:52.418Z
 ---
 
 # Validation Gates
@@ -1949,8 +1949,10 @@ require separate acceptance.
 Mocked transport fixtures cover the exact OCI conversion failure at destination
 upload and at alias copy after a resumed digest tag. Both require the `regctl`
 fallback, unchanged root digest and alias, and a complete authenticated pull;
-generic destination errors still fail closed. These fixtures do not establish
-that the protected full-catalog publication succeeded.
+generic destination errors still fail closed. Alias lookup fixtures also require
+one transient read to recover and an authorization failure to stop without a
+retry. These fixtures do not establish that the protected full-catalog
+publication succeeded.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child
