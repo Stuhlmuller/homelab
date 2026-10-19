@@ -1,10 +1,10 @@
 # Renovate
 
 Renovate scans Stuhlmuller-owned GitHub repositories at 00 minutes past every
-hour, UTC. The `automation` CronJob runs in Renovate's full dry-run mode. The
-old writer in `Stuhlmuller/renovate` remains authoritative until dry-run parity
-is verified and its entire workflow is removed through a reviewed PR. Only
-then may a reviewed homelab change remove `dryRun: 'full'`.
+hour, UTC. After the old workflow is removed and its Actions private key is
+retired, the reviewed activation change removes full dry-run mode. The
+`automation` CronJob becomes the sole GitHub writer after Argo CD syncs that
+change from `main`; until then, the running CronJob stays in full dry-run mode.
 
 The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
@@ -60,8 +60,9 @@ The operator then removed the temporary transfer role through the reviewed
 saved-plan path and verified an IAM `NoSuchEntity` lookup and a fresh no-op plan.
 The [operator receipt](../../../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
 records the checks without credential values. A manual full dry run minted an
-App token and finished all eight eligible repositories; scheduled scans must
-still prove parity and cache reuse. For rotation, reintroduce the same limited
+App token and finished all eight eligible repositories; scheduled scans provide
+parity and cache-reuse evidence before activation. For rotation, reintroduce
+the same limited
 role through a reviewed change, transfer new values, wait for a later
 ExternalSecret refresh, verify a later Job under the same App, and retire the
 grant again.
@@ -145,22 +146,24 @@ Before activation, the ExternalSecret was Ready, the target Secret existed,
 and the CronJob was suspended. A manual full dry run finished all eight eligible
 repositories without a new bot PR, but its Harbor lookups failed before the
 registry-only route was deployed. It does not prove scheduled operation or
-cache reuse. Scheduled dry-run Pods must prove repository coverage, planned
+cache reuse. Before write activation, scheduled dry-run Pods must prove
+repository coverage, planned
 proposals, unchanged App identity and merge policy, and a cache hit for the
 same datasource key across Pod UIDs. After a cold canary lookup, inspect
 restricted logs from two warm scheduled Pods with distinct UIDs. Confirm the
 exact `Returning cached value` marker for namespace
 `github-releases-datasource-v2` and key
-`https://api.github.com/:Stuhlmuller:renovate` in both. Only this marker is
-raised from TRACE to INFO. A shorter second run alone does not prove cache
-reuse. The INFO marker includes `namespace` and `key`, which can contain
+`https://api.github.com/:Stuhlmuller:renovate` in both. For this proof, only
+that marker is temporarily raised from TRACE to INFO. A shorter second run
+alone does not prove cache reuse. The INFO marker includes `namespace` and
+`key`, which can contain
 private repository or package names. Restrict Pod-log access; keep raw records
 out of public PRs, issues, and CI output. Publish only aggregate cache-hit
-results and distinct Pod UIDs. Remove `logLevelRemap` through a reviewed PR
-after evidence is captured and before enabling writes; keep the hourly schedule
-and Renovate's normal cache freshness rules.
-`scripts/ci/renovate-log-remap-test.mjs` verifies the INFO record and its
-metadata against an installed copy of pinned Renovate 44.167.4.
+results and distinct Pod UIDs. The activation change removes the temporary log
+remap and its local `scripts/ci/renovate-log-remap-test.mjs` fixture before
+enabling writes; the hourly schedule and Renovate's normal cache freshness
+rules remain. Keep the companion canary manager, fixture, and workflow through
+the first write-enabled canary PR; remove them in companion #53 after acceptance.
 
 Read-only status checks:
 
@@ -192,7 +195,8 @@ guarded `scripts/retire-renovate-actions-key.py` and require a current receipt
 that the SSM values and later ExternalSecret projection are ready, no same-name
 organization or environment secret exists, the repository Actions private key
 is absent, and old runs are drained. Then enable cluster writes through a
-reviewed homelab change. Historical workflow revisions can be rerun while the
+reviewed homelab change while the companion canary remains available for the
+first write-enabled scan. Historical workflow revisions can be rerun while the
 old key exists. For rollback, first suspend the cluster CronJob through
 reviewed GitOps, verify Argo CD synced and no pending or active Renovate Job or
 Pod remains, then use the guarded companion

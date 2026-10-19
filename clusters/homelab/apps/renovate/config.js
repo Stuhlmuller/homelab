@@ -112,7 +112,5 @@ module.exports = async function config() {
     cacheDir: '/cache/renovate',
     repositoryCache: 'enabled',
     cachePrivatePackages: true,
-    logLevelRemap: [{ matchMessage: '/^Returning cached value$/', newLogLevel: 'info' }],
-    dryRun: 'full',
   };
 };

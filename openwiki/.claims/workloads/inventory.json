@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e53ca94e75cdec36319c13469b1a21ef63aaceda11a1618ed50d1d79af13ad13",
+  "pageVersion": "sha256:d87c2680e0f03414c3a76a04af2a21ee298c1d00d0a4cedcb11019dcf7b5e4dc",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,15 +292,27 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while Harbor transport and version discovery, two-Pod cache evidence, full dry-run parity, and reviewed cutover remain open.",
+      "statement": "Renovate uses an unsuspended hourly UTC CronJob, retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Pod-local Harbor alias. It was staged in full dry-run after App-key transfer and temporary grant retirement; activation removes dry-run and temporary cache logging after protected legacy workflow/key retirement, and cluster writes begin only after Argo CD syncs reviewed main. The companion canary stays through the first write-enabled PR and is removed by reviewed #53 after acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
+          "version": "repo-lines-v1:sha256:e3f38492c87607640f95d32af90aa637b62f9c545634a099d6feeb2df6c2ed4f:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTVjODk2ZTAyNjM0NDAyMjZjMTkyOTZlM2NiMjM0NGRkMTllYjY5MmRkYjg5NWIzNTNhOWJhZGRiZWY5ZTdjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L156-L166",
+          "version": "repo-lines-v1:sha256:18ab5eda704800c554f142da6574d595b8ef0e335771682d4065f955b0c8fe8e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE4OGI5NzczMzMzMTdhOWYwZDk1ZTdkNmY1ZWM3OGYwNDAzOTFhZDA3NDZmNWQxNWM2ZDljNGE1M2VkYzA4MTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4NzlkZTVlM2EwNTA4NTRlYTQwNDdiN2EyMzQyNTFlZDlkZjQ5NjhmNjg4YzhjODlmMzA5NDMzMThjMTExODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRkZDQwNDA0MWQ1N2FjZjJiNWJmNmU3MWNiZWJmY2MyZDIxMDdkYTdjZWUxODlhMzQ4MmQyOTQ3MDY1NGNmNGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhkNmE2MDY4MTg2ZjdlYTRmNWNmZjAxZGNjNzI2Y2QwZjcwYTE1MTY2MzBiZWFiZDg3ZmI1OWRjNWM2OTk1OTAifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L191-L203",
+          "version": "repo-lines-v1:sha256:07656d98fa539a9f3e71a194d0b45c8b902f3c8f20de99d47bcd3bd71304c939:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjZDQ5ZDBiMzI5YTIwZWM1M2Y4N2NkZmU4NDQyMGE4YWI4OWViOGM0MTA2YmU1NTA0ZjliZWQ0MzExN2JiZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxYjFmMzQ0MzA1Yjg0YTk4MTg2NDg2ZTdmZjU3YjQ0ZDBiNjA1MTNlYmRiYTQyNDUwYTgyZWU2ZmJhZjc2MTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiMjdiZjhiNTM2YTY1NTFlYWZmMjc4M2MzMjhmZjdkN2Y2Y2U3N2QwNDhiMzhlZDQ5YWFhNDNlZDU5YmI2MmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjZjUxYzlmMWZjNzUwM2ZmMDYxZDRjYWMxOWRkMzA0Njg0NDdhMDI4NjVjYzgwMDk5Y2U2MDc4YzcyYTA0MjMifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L106-L116",
+          "version": "repo-lines-v1:sha256:b4370e755b54cee906ce08253681646dc71bfce6770543eb823aaa5d8dfaf6f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3ZWEwN2Y4NzhkOWE5MmI2YWEyZWU4M2I2Nzk3NDE2YTJkNzIzMDU2YmVmNDg1OTUzZTEyMGNhNDUwYTdiNGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiY2FhNTEyYmZjOTk0YzNmNjY5MGUxYzA0ZjFhYTRiZjcxZWNmZmFiNTYyZGQwMjZkZDYwZGRlZGQ2MTI4MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L11-L35",
+          "version": "repo-lines-v1:sha256:ae1f00ffc845509d06c0109e7ffcfb77df560e4c5f4f76b98f107a8e78c48bfb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlOTFlNTFjZTUzOGVmMTIwZWUyMGNiZGY5NDE1OGJhY2UxY2MxMTc5MDZmODY0ZmVkMmQ5NGUzNzExMGNiMjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5NGNjOGI4MmM5ZDdmNWIyYzgzOGY1MWNkYzkwNmFkMTVhYzJhYjI5OTY0Y2JiN2FhOGMxNzFiNTE0MGE3MmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEwNTU4NzAzZmZjYzBkYzJlMzZkNDI5OWEwMjE3Zjc0Njk2ZmY3Yjc3YjMxZGMwYzI5ZTE1ODM3NDQyOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMTVlOWQzNmRiM2M2MjQzOWMyODFhOGJiZjdlMzJhNjQ0ZDM2MThmOWExZDk5ODJhYjQ4N2E0NDkzZjlmMDEifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
@@ -311,16 +323,8 @@
           "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
         },
         {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
-          "version": "repo-lines-v1:sha256:c79c28a4dd7e7e10bc2ede27c0daebb097152f1ca5a90586893e7cc429a8d0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMwYjYxY2IxOTg5MDlmMzU5OWZkMmU1YWEwMjJhYjVlN2M2MDhiZGFjMTk3OTdlNmVmMTFmYTI4N2Q3MjllMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjc3MTczNzQ5ZDMxODdjMmRmOGQyODhlNDg3NWFlYWVlZmY1YzRiNWY2N2JlOGQ3ZGUzZDhkNWMwZTUxNWMyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU3NmIxODJlY2I1Y2JkYzI1ZWQ4YzI4NjlkMDU2ZTY3YTU2OWYyZTI1NTA2MWFjZjQyZDBkOGE0ZDFjNTI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
-          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
-          "version": "repo-lines-v1:sha256:c9d6c2f54666e24e71341487098fd7c416852d126832707f8a184a09f6ec544e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlZTAzNmE1YWY2MDcxZWJhMzM4YTg4YjA2NDUzYTFmYzE2NzVmMjU2MjQxYjYwMmQ3NDA3MjQzNjRhYjAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MjU3NmY4MWIyNmRiMmE0ZjAwOTQ3NzM3YmIyNTIxYWRiNmViOTM1YmFkMzcyMGQwMGU4ZTU1OWVkNjRiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY5ODZmOTdiOWIwYzY3MTczZGU2ZWI1YmMwZDllZTJhMDc5MjgwOTZmOWVlMzA5NDk0OGUyMzBiNWUyYmE2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJjODBhMjk5ZjU0NDJkMDYyNmFiZjg3OWQ1N2NkMDE4ZjRhMGU3ODJmNTNjNzM1ZjMyYTZmMDhkMWY5NjJmNyJ9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L93-L95",
+          "version": "repo-lines-v1:sha256:7e63ea47ec1ae90ff09c7b8f4bf36b48868c4a100d43a775b3c89d2ef5b4ec3c:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGM4ZmU0MzJkNTc0YTMyNjQ4OWVhYjAwNTNkNWIwNjgxZjAzZTUxYmZmYzRlMDBjMmU4NWEwNzliMDAwMmJlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjFlNjg4YjJkOTBmOTljNTBmNjYyZTkzNjk0OWI4MWFlNzkxNTY0OWZkMTA3MmY5OTQxODkyMTlkOGJkZTI0YSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2Y0MzIyYmJkZDU0ZDQ4MzExZmU3MWVhM2VhODdmYjVkMTYzZDU5NDkzMTBmZTZiMjY1MTQ3NGUwOTEwMDY2OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGMxYjllZmJhMjFlMTkwNzhhODZmMTM4YmRhM2NjNDUyNWM1NTJjYTM1MzQ2MjIwNGNjZDg0YjY1ZDAwZjQ0YyJ9"
         }
       ]
     },
@@ -338,7 +342,7 @@
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:ed8ab9c4732f5fe6247ca3595b2193eea14902521be7df15e76c9122dac14e55"
+          "version": "repo-file-v1:sha256:8f2b12a2cba37d431e85edaa2cae0f816e8f1b366ec8ea67e8dc45886fbe9e56"
         }
       ]
     },
@@ -434,7 +438,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
+          "version": "repo-file-v1:sha256:59c359720a35d1fba4e52db563152f3570ae82f11e67246cc6c5d659350bfb29"
         }
       ]
     },
@@ -452,7 +456,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
+          "version": "repo-file-v1:sha256:59c359720a35d1fba4e52db563152f3570ae82f11e67246cc6c5d659350bfb29"
         }
       ]
     },
@@ -488,13 +492,13 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
+          "version": "repo-file-v1:sha256:d8e4d501a5ba1633f112b44732d6321cb2b46860a04b29a98eb220ee0410578f"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T20:01:23.259Z"
+    "at": "2026-10-19T21:43:06.282Z"
   }
 }
