@@ -54,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/README.md
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
@@ -228,10 +230,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-19T14:01:19.597Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T10:28:14.477Z
+    at: 2026-10-19T14:01:19.597Z
 ---
 
 # Validation Gates
@@ -1540,9 +1542,20 @@ requested, it requires the exact `openai` transport, OpenRouter base URL,
 fixtures reject changed, missing, and extra model fields. The stable
 receipt compares nonempty resource versions for the immutable Secret,
 Deployments, ReplicaSets, and Pods across two read-only snapshots. The
-entrypoint still refuses mutation because pinned `GET /installation` does not
-reveal selected Drivers. Local tests do not prove Secret readiness, certificate
-issuance, PostgreSQL TLS, network-policy enforcement, hooks, routes, or restore.
+read-only `check` uses those snapshots to prove the selected Drivers; `verify`
+also remains read-only and blocked. With a file-backed service key and protected
+journal, `reconcile` can POST the logical `claw` Namespace for the prepared
+`openclaw-agents` namespace. It checks the external namespace, restricted PSA,
+exact tenant RBAC and policy ownership before the first POST, records pending
+intent first, and recovers an uncertain response only through unique API
+readback. A ready result needs exact API and owned Kubernetes readback,
+including exactly the three pinned base NetworkPolicies. Reconciliation then
+blocks before Agent creation or activation. A blocked run may already have
+changed Enterprise and Kubernetes state: inspect the journal, exact API object,
+namespace and policies before retrying. Rollback needs a reviewed cleanup path
+for the logical Namespace; retain the physical tenant Namespace. These local
+tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
+network-policy enforcement, hooks, routes, Namespace adoption or restore.
 The dormant chart gate renders pinned upstream Helm values with the reviewed
 Installation bytes, fixed immutable startup Secret name, and the single local
 Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
