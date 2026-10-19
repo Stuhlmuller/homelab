@@ -40,9 +40,9 @@
     "method": "Read-only Kubernetes managedFields inspection; 18 generator-managed policies remain absent from repository Kustomize renders",
     "repositoryOwnerCandidates": [
       "clusters/homelab/apps/cordium-bootstrap/genesis.yaml",
-      "IaC/stacks/cordium/stack.hcl",
-      "IaC/stacks/octelium/stack.hcl",
-      "IaC/stacks/octelium-enterprise/stack.hcl",
+      "IaC/cordium/stack.hcl",
+      "IaC/octelium/stack.hcl",
+      "IaC/octelium-enterprise/stack.hcl",
       "clusters/homelab/apps/kiali/values.yaml"
     ]
   },
@@ -66,8 +66,9 @@
   "plannedEnterpriseFindings": [
     {
       "finding": "Empty database.cidrs or cluster.cidrs renders a destination-free TCP 5432 or 443 egress rule; Kubernetes treats an empty or missing to field as all destinations.",
-      "requiredCorrection": "Set both lists to reviewed nonempty destinations, assert their effective renders, and qualify Service DNAT behavior on the Talos canary before deployment.",
+      "requiredCorrection": "Qualify Service DNAT behavior for these exact destinations on the isolated Talos canary before deployment.",
       "source": "openclaw/openclaw-enterprise@33bb74590a749f37934da4502fca6035cd234a55/deploy/helm/openclaw-enterprise/templates/networkpolicies.yaml",
+      "sourceCorrection": "clusters/homelab/apps/openclaw-enterprise/profile-input.json and values.yaml set nonempty database and cluster host CIDRs; scripts/ci/openclaw-enterprise-chart-hooks-test.py asserts the exact rendered dependency and bootstrap egress peers.",
       "status": "deployment-blocking"
     }
   ],
