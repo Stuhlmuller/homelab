@@ -56,13 +56,19 @@ class CanaryQualificationTests(unittest.TestCase):
         pods = {}
         for name, role in (("npq-client", "client"), ("npq-allowed", "allowed"),
                            ("npq-denied", "denied")):
-            pods[name] = {"metadata": {"uid": f"{name}-uid", "labels": {"role": role}},
+            pods[name] = {"metadata": {"name": name, "uid": f"{name}-uid",
+                                      "labels": {"role": role}},
                           "spec": {"nodeName": "zimaboard-0",
                                    "containers": [{"image": self.module.IMAGE}]},
                           "status": {"phase": "Running", "podIP": "10.42.0.2",
                                      "conditions": [{"type": "Ready", "status": "True"}]}}
-        firewall = {"status": {"desiredNumberScheduled": 1, "numberReady": 1}}
-        firewall_pod = {"metadata": {"uid": "firewall-uid"},
+        firewall = {"metadata": {"uid": "daemonset-uid", "generation": 2},
+                    "status": {"observedGeneration": 2, "desiredNumberScheduled": 1,
+                               "updatedNumberScheduled": 1, "numberReady": 1}}
+        firewall_pod = {"metadata": {"uid": "firewall-uid", "ownerReferences": [{
+                            "apiVersion": "apps/v1", "kind": "DaemonSet",
+                            "name": "kube-router-network-policy", "uid": "daemonset-uid",
+                            "controller": True, "blockOwnerDeletion": True}]},
                         "spec": {"nodeName": "zimaboard-0",
                                  "containers": [{"image": self.module.FIREWALL_IMAGE}]},
                         "status": {"phase": "Running", "conditions": [
@@ -75,13 +81,20 @@ class CanaryQualificationTests(unittest.TestCase):
             ("-n", "kube-system", "get", "pods", "-l",
              "app.kubernetes.io/name=kube-router-network-policy"): {"items": [firewall_pod]},
             ("-n", self.module.NAMESPACE, "get", "networkpolicies"): {"items": [policy]},
+            ("-n", self.module.NAMESPACE, "get", "pods"): {"items": list(pods.values())},
         }
         for name, pod in pods.items():
             objects[("-n", self.module.NAMESPACE, "get", "pod", name)] = pod
         config = {"activationEnabled": True, "canary": {"node": "zimaboard-0"},
                   "nodeOrder": ["zimaboard-0", "acer"]}
-        with patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]):
+        with patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]), \
+                patch.object(self.module, "inspect_firewall_source", return_value=firewall):
             self.assertEqual(self.module.inspect(config)[0]["metadata"]["uid"], "node-uid")
+            objects[("-n", self.module.NAMESPACE, "get", "pods")]["items"].append({
+                "metadata": {"name": "foreign"}})
+            with self.assertRaisesRegex(ValueError, "foreign or missing Pods"):
+                self.module.inspect(config)
+            objects[("-n", self.module.NAMESPACE, "get", "pods")]["items"].pop()
             objects[("-n", self.module.NAMESPACE, "get", "networkpolicies")]["items"].append(
                 {"kind": "NetworkPolicy", "metadata": {"name": "foreign"}})
             with self.assertRaises(ValueError):
@@ -90,14 +103,97 @@ class CanaryQualificationTests(unittest.TestCase):
             node["spec"]["taints"] = []
             with self.assertRaisesRegex(ValueError, "taint"):
                 self.module.inspect(config)
+            node["spec"]["taints"] = [{"key": self.module.CANARY_KEY,
+                                         "value": "true", "effect": "NoSchedule"}]
+            firewall["status"]["updatedNumberScheduled"] = 0
+            with self.assertRaisesRegex(ValueError, "firewall is not ready"):
+                self.module.inspect(config)
+            firewall["status"]["updatedNumberScheduled"] = 1
+            firewall_pod["metadata"]["ownerReferences"][0]["uid"] = "foreign"
+            with self.assertRaisesRegex(ValueError, "firewall is not ready"):
+                self.module.inspect(config)
+
+    def test_live_firewall_source_rejects_router_or_rbac_drift(self):
+        name = "kube-router-network-policy"
+        role = {"metadata": {"name": name}, "rules": [
+            {"apiGroups": [""], "resources": ["namespaces", "pods", "services", "nodes", "endpoints"],
+             "verbs": ["get", "list", "watch"]},
+            {"apiGroups": ["networking.k8s.io"], "resources": ["networkpolicies"],
+             "verbs": ["get", "list", "watch"]},
+            {"apiGroups": ["discovery.k8s.io"], "resources": ["endpointslices"],
+             "verbs": ["get", "list", "watch"]},
+            {"apiGroups": ["coordination.k8s.io"], "resources": ["leases"],
+             "verbs": ["get", "create", "update"]},
+        ]}
+        template = {"serviceAccountName": name, "hostNetwork": True,
+                    "dnsPolicy": "ClusterFirstWithHostNet",
+                    "priorityClassName": "system-node-critical",
+                    "nodeSelector": {self.module.CANARY_KEY: "true"},
+                    "tolerations": [{"key": self.module.CANARY_KEY, "operator": "Equal",
+                                     "value": "true", "effect": "NoSchedule"}],
+                    "volumes": [{"name": "xtables-lock", "hostPath": {
+                        "path": "/run/xtables.lock", "type": "FileOrCreate"}}],
+                    "containers": [{"image": self.module.FIREWALL_IMAGE,
+                                    "args": sorted(self.module.FIREWALL_FLAGS),
+                                    "env": [{"name": "NODE_NAME", "valueFrom": {"fieldRef": {
+                                        "fieldPath": "spec.nodeName"}}},
+                                            {"name": "POD_NAME", "valueFrom": {"fieldRef": {
+                                                "fieldPath": "metadata.name"}}}],
+                                    "livenessProbe": {"httpGet": {"host": "127.0.0.1"}},
+                                    "readinessProbe": {"httpGet": {"host": "127.0.0.1"}},
+                                    "volumeMounts": [{"name": "xtables-lock",
+                                                      "mountPath": "/run/xtables.lock"}],
+                                    "securityContext": {"privileged": True}}]}
+        daemonset = {"metadata": {"name": name, "namespace": "kube-system"},
+                     "spec": {"selector": {"matchLabels": {"app.kubernetes.io/name": name}},
+                              "template": {"spec": template}}}
+        objects = {
+            ("-n", "kube-system", "get", "serviceaccount", name):
+                {"metadata": {"name": name, "namespace": "kube-system"}},
+            ("get", "clusterrole", name): role,
+            ("get", "clusterrolebinding", name):
+                {"metadata": {"name": name},
+                 "roleRef": {"apiGroup": "rbac.authorization.k8s.io",
+                             "kind": "ClusterRole", "name": name},
+                 "subjects": [{"kind": "ServiceAccount", "name": name,
+                               "namespace": "kube-system"}]},
+            ("-n", "kube-system", "get", "daemonset", name): daemonset,
+        }
+        with patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]):
+            self.assertIs(self.module.inspect_firewall_source(), daemonset)
+            template["containers"][0]["args"].remove("--run-router=false")
+            template["containers"][0]["args"].append("--run-router=true")
+            with self.assertRaisesRegex(ValueError, "firewall-only"):
+                self.module.inspect_firewall_source()
+            template["containers"][0]["args"].remove("--run-router=true")
+            template["containers"][0]["args"].append("--run-router=false")
+            role["rules"][0]["verbs"].append("update")
+            with self.assertRaisesRegex(ValueError, "RBAC"):
+                self.module.inspect_firewall_source()
+
+    def test_protected_source_is_required_before_receipt(self):
+        with patch.dict(self.module.os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "protected current-main"):
+                self.module.require_protected_source()
 
     def test_receipt_is_private_exclusive_and_not_a_lifecycle_pass(self):
+        node = {"metadata": {"name": "zimaboard-0", "uid": "node-uid"},
+                "status": {"nodeInfo": {"bootID": "boot-id"}}}
+        pods = {"npq-client": {"metadata": {"uid": "client-uid"}}}
+        firewall = {"metadata": {"uid": "firewall-uid"}}
+        receipt = self.module.traffic_receipt(
+            "a" * 40, node, pods, firewall, "b" * 64, [{"permitted": False}])
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "probe.json"
-            self.module.private_output(path, {"result": "traffic-probe-passed-lifecycle-unverified"})
+            self.module.private_output(path, receipt)
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
             self.assertEqual(json.loads(path.read_text())["result"],
                              "traffic-probe-passed-lifecycle-unverified")
+            self.assertEqual(receipt["unverifiedLifecycleScenarios"], [
+                "cold-bootstrap", "first-application-packet", "enforcer-graceful-stop",
+                "enforcer-crash-restart", "api-loss", "policy-change-and-conntrack",
+                "pod-reschedule-and-ip-reuse", "cold-node-reboot", "ipv6-absence"])
+            self.assertNotIn("verified", receipt)
             with self.assertRaises(ValueError):
                 self.module.private_output(path, {})
 

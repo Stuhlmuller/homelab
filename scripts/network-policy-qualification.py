@@ -17,6 +17,17 @@ NAMESPACE = "network-policy-canary"
 CANARY_KEY = "homelab.stinkyboi.com/network-policy-canary"
 IMAGE = "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
 FIREWALL_IMAGE = "harbor.stinkyboi.com/mirror/docker.io/cloudnativelabs/kube-router:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a@sha256:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a"
+FIREWALL_FLAGS = {
+    "--run-router=false", "--run-service-proxy=false", "--run-loadbalancer=false",
+    "--run-firewall=true", "--enable-cni=false", "--netpol-default-deny=true",
+    "--use-nftables-for-netpol=false", "--enable-ipv4=true", "--enable-ipv6=false",
+    "--health-addr=127.0.0.1",
+}
+LIFECYCLE_SCENARIOS = (
+    "cold-bootstrap", "first-application-packet", "enforcer-graceful-stop",
+    "enforcer-crash-restart", "api-loss", "policy-change-and-conntrack",
+    "pod-reschedule-and-ip-reuse", "cold-node-reboot", "ipv6-absence",
+)
 PROBE = """import socket,sys
 address,port,protocol=sys.argv[1],int(sys.argv[2]),sys.argv[3]
 try:
@@ -69,6 +80,84 @@ def ready(pod):
                 for item in pod.get("status", {}).get("conditions", [])))
 
 
+def require_protected_source():
+    source_sha = os.environ.get("GITHUB_SHA", "")
+    platform = runpy.run_path(str(ROOT / "scripts/platform-maintenance.py"))
+    platform["protected_context"](source_sha)
+    if (command("git", "-C", str(ROOT), "rev-parse", "HEAD").strip() != source_sha or
+            platform["current_main_sha"]() != source_sha):
+        raise ValueError("qualification source is not exact current main")
+    return source_sha
+
+
+def inspect_firewall_source():
+    name = "kube-router-network-policy"
+    service_account = kubernetes_json("-n", "kube-system", "get", "serviceaccount", name)
+    role = kubernetes_json("get", "clusterrole", name)
+    binding = kubernetes_json("get", "clusterrolebinding", name)
+    daemonset = kubernetes_json("-n", "kube-system", "get", "daemonset", name)
+    rules = {(tuple(rule.get("apiGroups", [])), tuple(rule.get("resources", [])),
+              tuple(rule.get("verbs", []))) for rule in role.get("rules", [])}
+    expected_rules = {
+        (("",), ("namespaces", "pods", "services", "nodes", "endpoints"),
+         ("get", "list", "watch")),
+        (("networking.k8s.io",), ("networkpolicies",), ("get", "list", "watch")),
+        (("discovery.k8s.io",), ("endpointslices",), ("get", "list", "watch")),
+        (("coordination.k8s.io",), ("leases",), ("get", "create", "update")),
+    }
+    subjects = binding.get("subjects", [])
+    if (service_account.get("metadata", {}).get("name") != name or
+            service_account["metadata"].get("namespace") != "kube-system" or
+            role.get("metadata", {}).get("name") != name or
+            len(role.get("rules", [])) != len(expected_rules) or rules != expected_rules or
+            binding.get("metadata", {}).get("name") != name or
+            binding.get("roleRef") != {"apiGroup": "rbac.authorization.k8s.io",
+                                       "kind": "ClusterRole", "name": name} or
+            len(subjects) != 1 or subjects[0].get("kind") != "ServiceAccount" or
+            subjects[0].get("name") != name or
+            subjects[0].get("namespace") != "kube-system" or
+            subjects[0].get("apiGroup") not in (None, "")):
+        raise ValueError("firewall service account or RBAC differs from reviewed source")
+    template = daemonset["spec"]["template"]["spec"]
+    containers = template.get("containers", [])
+    if len(containers) != 1:
+        raise ValueError("firewall container count differs from reviewed source")
+    container, = containers
+    args = container.get("args", [])
+    environment = container.get("env", [])
+    fields = {item.get("name"): item.get("valueFrom", {}).get("fieldRef", {}).get("fieldPath")
+              for item in environment}
+    if (daemonset.get("metadata", {}).get("name") != name or
+            daemonset["metadata"].get("namespace") != "kube-system" or
+            daemonset["spec"].get("selector", {}).get("matchLabels") !=
+            {"app.kubernetes.io/name": name} or
+            template.get("serviceAccountName") != name or
+            template.get("hostNetwork") is not True or
+            template.get("dnsPolicy") != "ClusterFirstWithHostNet" or
+            template.get("priorityClassName") != "system-node-critical" or
+            template.get("hostPID") is True or template.get("hostIPC") is True or
+            template.get("initContainers") or
+            template.get("nodeSelector") != {CANARY_KEY: "true"} or
+            template.get("tolerations") != [{"key": CANARY_KEY, "operator": "Equal",
+                                            "value": "true", "effect": "NoSchedule"}] or
+            template.get("volumes") != [{"name": "xtables-lock", "hostPath": {
+                "path": "/run/xtables.lock", "type": "FileOrCreate"}}] or
+            container.get("volumeMounts") != [{"name": "xtables-lock",
+                                               "mountPath": "/run/xtables.lock"}] or
+            container.get("image") != FIREWALL_IMAGE or
+            container.get("command") or
+            len(environment) != 2 or fields != {"NODE_NAME": "spec.nodeName",
+                                                 "POD_NAME": "metadata.name"} or
+            len(args) != len(FIREWALL_FLAGS) or set(args) != FIREWALL_FLAGS or
+            container.get("securityContext", {}).get("privileged") is not True or
+            container.get("livenessProbe", {}).get("httpGet", {}).get("host") !=
+            "127.0.0.1" or
+            container.get("readinessProbe", {}).get("httpGet", {}).get("host") !=
+            "127.0.0.1"):
+        raise ValueError("live firewall DaemonSet differs from firewall-only source")
+    return daemonset
+
+
 def inspect(config):
     canary = config.get("canary", {})
     node_name = canary.get("node")
@@ -89,6 +178,10 @@ def inspect(config):
     if (namespace_labels.get("pod-security.kubernetes.io/enforce") != "restricted" or
             namespace_labels.get("istio.io/dataplane-mode") == "ambient"):
         raise ValueError("canary namespace security boundary differs")
+    fixture_pods = kubernetes_json("-n", NAMESPACE, "get", "pods").get("items", [])
+    if {pod.get("metadata", {}).get("name") for pod in fixture_pods} != {
+            "npq-client", "npq-allowed", "npq-denied"} or len(fixture_pods) != 3:
+        raise ValueError("canary namespace contains foreign or missing Pods")
     pods = {}
     for name, role in (("npq-client", "client"), ("npq-allowed", "allowed"),
                        ("npq-denied", "denied")):
@@ -99,15 +192,25 @@ def inspect(config):
                 not pod["metadata"].get("uid") or not pod["status"].get("podIP")):
             raise ValueError(f"canary fixture identity or readiness differs: {name}")
         pods[name] = pod
-    firewall = kubernetes_json("-n", "kube-system", "get", "daemonset",
-                               "kube-router-network-policy")
+    firewall = inspect_firewall_source()
     firewall_pods = kubernetes_json("-n", "kube-system", "get", "pods", "-l",
                                     "app.kubernetes.io/name=kube-router-network-policy")
-    if (firewall["status"].get("desiredNumberScheduled") != 1 or
+    owners = [item for pod in firewall_pods.get("items", [])
+              for item in pod.get("metadata", {}).get("ownerReferences", [])
+              if item.get("controller") is True]
+    if (not firewall.get("metadata", {}).get("uid") or
+            firewall["status"].get("observedGeneration") !=
+            firewall["metadata"].get("generation") or
+            firewall["status"].get("desiredNumberScheduled") != 1 or
+            firewall["status"].get("updatedNumberScheduled") != 1 or
             firewall["status"].get("numberReady") != 1 or
             len(firewall_pods.get("items", [])) != 1 or
             firewall_pods["items"][0]["spec"].get("nodeName") != node_name or
             firewall_pods["items"][0]["spec"]["containers"][0].get("image") != FIREWALL_IMAGE or
+            len(owners) != 1 or owners[0].get("apiVersion") != "apps/v1" or
+            owners[0].get("kind") != "DaemonSet" or
+            owners[0].get("name") != "kube-router-network-policy" or
+            owners[0].get("uid") != firewall["metadata"]["uid"] or
             not ready(firewall_pods["items"][0])):
         raise ValueError("firewall is not ready only on the admitted canary")
     inventory = runpy.run_path(str(ROOT / "scripts/network-policy-inventory.py"))
@@ -161,6 +264,21 @@ def private_output(path, record):
         os.close(parent_fd)
 
 
+def traffic_receipt(source_sha, node, pods, firewall, policy_hash, cases):
+    """Record fixture probes without implying that lifecycle qualification passed."""
+    return {
+        "format": 1, "result": "traffic-probe-passed-lifecycle-unverified",
+        "capturedAt": datetime.now(timezone.utc).isoformat(),
+        "sourceSha": source_sha,
+        "node": node["metadata"]["name"], "nodeUid": node["metadata"]["uid"],
+        "bootID": node["status"]["nodeInfo"]["bootID"],
+        "firewallPodUid": firewall["metadata"]["uid"],
+        "fixturePodUids": {name: pod["metadata"]["uid"] for name, pod in pods.items()},
+        "policySha256": policy_hash, "cases": cases,
+        "unverifiedLifecycleScenarios": list(LIFECYCLE_SCENARIOS),
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path,
@@ -168,6 +286,7 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     try:
+        source_sha = require_protected_source()
         config = json.loads(args.config.read_text())
         runpy.run_path(str(ROOT / "scripts/platform-maintenance.py"))["validate_config"](config)
         node, pods, firewall, policy_hash = inspect(config)
@@ -180,16 +299,8 @@ def main():
                 any(pods_after[name]["metadata"]["uid"] != pod["metadata"]["uid"]
                     for name, pod in pods.items())):
             raise ValueError("canary identity changed during the traffic matrix")
-        private_output(args.output, {
-            "format": 1, "result": "traffic-probe-passed-lifecycle-unverified",
-            "capturedAt": datetime.now(timezone.utc).isoformat(),
-            "sourceSha": command("git", "-C", str(ROOT), "rev-parse", "HEAD").strip(),
-            "node": node["metadata"]["name"], "nodeUid": node["metadata"]["uid"],
-            "bootID": node["status"]["nodeInfo"]["bootID"],
-            "firewallPodUid": firewall["metadata"]["uid"],
-            "fixturePodUids": {name: pod["metadata"]["uid"] for name, pod in pods.items()},
-            "policySha256": policy_hash, "cases": cases,
-        })
+        private_output(args.output, traffic_receipt(
+            source_sha, node, pods, firewall, policy_hash, cases))
         print("Canary traffic probe passed; lifecycle and real workload qualification remain pending")
         return 0
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError,

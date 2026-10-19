@@ -37,9 +37,15 @@ then merge a final change disabling automatic sync and pruning and resetting
 remains. This GitOps sequence uses Argo CD ownership; `qualify` never creates
 or removes Kubernetes resources. T019/T027 still require an admitted isolated
 canary and live lifecycle evidence.
-`scripts/network-policy-qualification.py` checks the fixed allow/deny traffic
-matrix and stores a private probe receipt. That receipt alone never accepts
-restart, API-loss, IP-reuse, reboot, or real-workload isolation scenarios.
+`scripts/network-policy-qualification.py` runs only from the protected exact-main
+workflow. It checks the live firewall DaemonSet's firewall-only flags, node
+selector, host mounts, service account, and read/watch RBAC before probing the
+fixed TCP/UDP allow/deny matrix. It rejects extra fixture Pods and stores a
+private receipt listing each still-unverified lifecycle scenario. A successful
+fixture probe is not Talos qualification: cold bootstrap, first packets,
+enforcer stop/restart, API loss, policy/conntrack changes, Pod reschedule/IP
+reuse, node reboot, IPv6 absence, and real workload paths remain T027/T028
+acceptance gates.
 Removing the DaemonSet alone can leave firewall rules behind. The separately
 registered `platform-network-policy-cleanup` Application has automatic sync
 disabled and schedules only on the admitted tainted canary. After Enterprise
@@ -52,7 +58,8 @@ That ownership receipt must contain `format: 1`, `verified: true`, the exact
 `sourceSha`, `node`, `nodeUid`, `bootID`, `snapshotSha256`, and `reviewedAt`.
 No repository workflow produces or approves it yet; keep cleanup blocked until
 the ownership review and private receipt path are implemented.
-The helper checks live node identity and that exact snapshot before deleting
+The helper runs only in the protected exact-main workflow and checks live node
+identity and that exact snapshot before deleting
 the pinned controller's filter chains and ipsets. It refuses unknown prefixes,
 foreign references, snapshot drift, and active tenants; never run
 kube-router's all-controller cleanup against this Flannel/kube-proxy cluster.

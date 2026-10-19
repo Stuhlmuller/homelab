@@ -3,9 +3,6 @@ type: runbook
 title: "Argo CD App Onboarding"
 description: "Application registration through shared Terragrunt inputs, repository source ownership, and ordering versus runtime readiness."
 tags: ["runbook", "argocd", "applications"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-19T07:08:11.339Z
 sources:
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
@@ -16,6 +13,9 @@ sources:
   - id: openwiki-source-e3e84b128839afbc47f478f7
     resource: repo://IaC/platform-network-policy/stack.hcl
 generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-19T09:33:00.928Z
 ---
 
 # Argo CD App Onboarding
