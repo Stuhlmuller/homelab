@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8d82e407eb7d6fc0223c4d760faaaa9f1d02804837db32f90c8ac030aac0f67d",
+  "pageVersion": "sha256:0f8f11edce81b65e9084ad5487548e933a6cc66682f81a5035900dfc2aa124b0",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -25,12 +25,12 @@
       "statement": "Phase2a removes the legacy public DNS helper and restoration workflow while retaining the Cloudflare Tunnel Deployment and old CI/native routes until replacement acceptance; Fleet moves only to private mesh DNS.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L95-L134",
-          "version": "repo-lines-v1:sha256:95740e8a58f9381005f69e87c610d69ac634a5d4c9f8ff0d843d97790e637c58:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L139",
+          "version": "repo-lines-v1:sha256:f5cbe033b6aa181782f292c8b2c960dafe9c5e8e0e386287719f34e74621c2ca:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzYTc4N2E3NWVhNTQyZWFkMWY1YjBhOGJkOThlOWNkODk1NmQyZjFhNWVkOTdkYzZiZjE2YmJhYWZlNTU3YzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMTI5ZmE4M2IzZTJkYWRlZGNhZDgxNzkxMTA1MzQwYWVkMDBlNjgwZWY1MTE1ZDI5MjNhZWRjYWI3ZTE4MTQifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
         }
       ]
     },
@@ -50,21 +50,21 @@
     },
     {
       "id": "claim_aab599791b604fa485e782086911111d",
-      "statement": "Feature 005 plans public A/AAAA/CNAME retirement for the 26 approved non-apex app subdomains while the private resolver continues to serve the 27-name inventory and the public apex, mail, certificate validation, and unrelated names remain in scope for preservation.",
+      "statement": "Feature 005 selects only the 26 non-apex names from the fixed first 27 migration entries for public A/AAAA/CNAME retirement; the private resolver serves all 29 current approved names, and the public apex, mail, certificate validation, and unrelated names are preserved.",
       "evidence": [
         {
-          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L17",
-          "version": "repo-lines-v1:sha256:c981376f0fbaf3cfeeb8261f2880b7bb6e13d5558b25cf3e026c1529d544dbfc:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDdjMDZjNTYxZDVjMzI3MzQzNjg1MjY4YTQ2YjMzOTFmMzk5OGVlZTg5MGQyYmU1MWYwZDIxY2M0YTUzYWU2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjJlNjkxNTJhZjZmMTRiODUxM2M5OTUxNGZjNTk0NDI5NmZiZjI0ZDdhNjA5ZGVjMzEzMzk2YjVmOTI4NzI2OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzQ2ZjU5MmQ3NWQxOTk2NThkNDg0OTRjMzFiM2IzZTY5NTAzZTRiNTU4YzFiNWIzN2M1Y2I5MzVlOWM4NzRlOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWE3MDYyYmUwOWQzOTIyN2MzZDE0MTA2MTk4M2FjMWZjZmRkYWNlN2NmNzVhMDE2ZDM0NjI0ZWY5ZGE0NmJiYSJ9"
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L34",
+          "version": "repo-lines-v1:sha256:e946754f3b740525429184e83d01cca7127e2937ac7b15567425f9743e1ed020:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhMGE5NDJhMWQ0MzEwNGQyYTg0MWQ3MWIxYmJmZTYwZmJlYjIxN2NjNDRiMTQwMzJlNDE1NmVmODEyYTA3Y2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5OTU5YWI4MWIyNWI3OTFiNDUzYzgzZjIyM2U4ODI3NTY1Y2IwYTBiYTdjY2MwNjU5MjVhNTIzMDgwMTIxNDQifQ"
         },
         {
-          "resource": "repo://specs/005-retire-public-app-dns/plan.md#L76-L114",
-          "version": "repo-lines-v1:sha256:98c8bc57fc813af5ab1f5f61681ce729cbe3b97e3a63384c205f243f803acc1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NDMxZWRlOTU2YzI3YzdmZTE2Y2FlN2RiY2E1MGEwNWI4N2FiMTIxYzI2NGJjYzVkYTAxNjE1MTVkNjVlMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzZjc0ODM4ZDYwNGQ1YTM5ZWMyMTI5YjgwNzJiN2I4OGJkNzQ2ZjZhMDJkOTc2Yzg3Y2RjM2FlNGIzYjk4YWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjE0ODMyYzM4ZDE0OTY3ZmM2OTQ4YWY1Y2QyOThmZjEwYTliODQwNjNkNmZhYTkwODI2MTUzN2E3YjNhY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwMjRmNTQ4Y2RmZjBjMTM3MWZkMTcyYWRkYjFkZTI4MzkyMzNkYjQwY2Y2MWM2ZWU0ZTAzMzY2YjljZjIzYzIifQ"
+          "resource": "repo://specs/005-retire-public-app-dns/data-model.md#L3-L25",
+          "version": "repo-lines-v1:sha256:88516d4c612429553048f1c6bf7cd155097911a27b40892a186d28c6a45f7cab:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2MjI0Y2E4Yjg2YTRlYjQyMThkOGExODk4OGQ0ODdmOWVjYjZiMWRhYjYwYmQ2NjQxY2I0MGMxOTlkNWMwMjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVkYWQxOGMwMjcwMTFmY2Q5YTc0ZTk0NDBkMTJmOWYxY2JmZTgzYTI0YzkzZTU3MWY4NTEzMDI4ODI4NjdmZjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzNzIxMzMzNTAzN2FjZjIzM2NkZTdlMWZhMWZmZjZhNzNkMmJhMDQ4ZmFmYjBmYmE2M2Y3NzNkOWU0MzA2M2MifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T15:59:51.049Z"
   }
 }

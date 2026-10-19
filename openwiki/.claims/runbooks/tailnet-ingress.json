@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e914f217431cad8b49c21065577859e8b743521357548d67d4589636e3e30c17",
+  "pageVersion": "sha256:43a7e50990cceb57502e4e5ec642a050ac54d3192d167b5f785b2e0b038407e7",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -12,11 +12,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/values.yaml",
-          "version": "repo-file-v1:sha256:2a77618d5f16f93020e5737ee925317a956634e9ddf46dd01185e7a564e0801b"
+          "version": "repo-file-v1:sha256:cc67b37fc0d6b65dfeca3b95f733ecfca45f3a72adab2aa83a06d247be3b6b3d"
         }
       ]
     },
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
         }
       ]
     },
@@ -40,7 +40,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
+          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
         },
         {
           "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:148fae056906e7af902950403beba0c890b22a1c8e43fef0021682d3586e3e29"
+          "version": "repo-file-v1:sha256:bf2a6a9e4309725e30df462a4f1d5ae04ae07ccdef4cd4b399a7ec7b7222b0f6"
         }
       ]
     },
@@ -80,7 +80,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
+          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
         },
         {
           "resource": "repo://scripts/multica-desktop-connect.py",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
+          "version": "repo-file-v1:sha256:9afda1c4d74fe8231099dd278030e6579da5c2fa3714609f4aa08c23983460ae"
         }
       ]
     },
@@ -120,7 +120,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
+          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -133,16 +133,16 @@
       "statement": "Traefik permits unauthenticated registry traffic on port 9443 only from four fixed LAN node addresses, four verified cni0 bridges and four flannel.1 overlay /32s; node-to-Service SNAT selects bridge or overlay by destination, and every node must pass an uncached pull after policy convergence before Harbor DNS cutover.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L196-L216",
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L201-L221",
           "version": "repo-lines-v1:sha256:93a4ba98b55e6754691476e3c712a5c485b8697b16e5e3c70b9b61770ad9ae28:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MzAzYjYyZjNlN2U0Y2Q4NzdkOWJmNjJlMDQ2YjFhNTk1NmIxMDA5NWQyNTRjZWYzZTZiOTY5NjIwMzk2ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2MzNTY0M2RjZWQ2YzgxYTNhOWNmZjczNzE1ZWE2OGNmNTdjNDk4ZTBjNWQ4MjMxMTk3M2FjYWQxOTQ2MDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc1ZDk5NDlmMTRjYzNhNWVkYjJlODEyNDMyNTJhNTA3ODcwNGVjNjU5OWM0MmNlNzU4YTdkNjYwOWE2ODg4NzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:a2e7b7fa8e1068fe4a6cafd829406b2d46dfa5352fbc153f22cbd5173c0b1e98"
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
+          "version": "repo-file-v1:sha256:a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
         }
       ]
     },
@@ -166,11 +166,11 @@
       "evidence": [
         {
           "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:c92f8c2a16c65c49d3b0c040113718b07ebb5eedcae02f7195ba147782dff472"
+          "version": "repo-file-v1:sha256:b52c530a4c2358e2e5267e7f2c0ae305fa7358c13be7301aa7d26e1c76c61efe"
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-test.py",
-          "version": "repo-file-v1:sha256:38d315393fd39d82aa657eb6c9aed70f6e9eaa08a7f539b989a44c3c18f3e15b"
+          "version": "repo-file-v1:sha256:12c2659828a0a727b17ad4d27c2e4c8c606240004e437f50405201a549e474af"
         }
       ]
     },
@@ -207,7 +207,7 @@
       "statement": "The October10 read-only preflight recorded28 canonical IPv4 strict-TLS route successes,20 public negative denials, two non-executing n8n OPTIONS responses and corrected PolicyBot GET success; normal DNS, authenticated flows and signed delivery acceptance remained pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L175-L194",
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L180-L199",
           "version": "repo-lines-v1:sha256:96185bb86350960a9bf1282c8886723910220df993f03c18589771dfbec81141:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4NDgxMTMxYTFlYzI3MjA1ODA4MjYzYzM1YjNhZjQwNTQ3OTYwMzNjZDIxMWE1YjI2M2JiYTc4YWM3ZWE3MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ODA2N2ZkZWRiNjFiMDhjOGQxY2ZmMzVhNzNhOTFhYTVkZmE3NTQ5YmZiZjYyZmY0ZThhZjJhOGM4MDA5ZWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNDFhM2RiZjkzYmVmNjJjOTFkZTkwY2EwODVjYmI0NmE5M2Y0ZDYyMTMxNDc3ODZjYWVjNTllNDNiOWViZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhZWFiZTk3MjVmY2U0NGQzN2JhNjgwMTExMDQ1ZWFjZDI4NGRjMDQ0YmYyMDAzMzgyNDBkMzEzMWE1M2Q2ZjgifQ"
         }
       ]
@@ -222,7 +222,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
+          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml",
@@ -232,15 +232,19 @@
     },
     {
       "id": "claim_c80762a9eeaf4f7aba82ea07caabdde9",
-      "statement": "The private DNS checker accepts AFFiNE HTTP 500/502/503 and OpenClaw HTTP 502 only when each reviewed workload source and live Deployment explicitly declares zero replicas. Deployed Traefik routes and TLS must match the reviewed checkout; other app 5xx responses fail, and suspended-route acceptance does not establish app runtime health.",
+      "statement": "The private DNS checker accepts AFFiNE 500/502/503 and legacy OpenClaw 502 only with reviewed and live zero replicas, requires deployed Traefik route/TLS parity, and rejects other application 5xx. Retirement HTTPS readiness covers the fixed first 27 migration names; full route readiness also probes two staged Enterprise names, using a matching Agent host and rejecting edge 404. These checks do not establish stopped-app runtime health.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L135-L220",
-          "version": "repo-lines-v1:sha256:8b3e0d8259494147e041189318fecbf50639c29c24b234c5420aa91a2d3db498:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzYjE5NzNkYzIzZjAwZTlmNWYzYTk0MmJkMzE0ODY2YmQ4NTc3ZTcwM2YyNzMxZWVlMzUwYmE2OTZmYzY0MTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YzdmMDlkN2Q4MDY4MDMxNWIwNGY0OWJhMjU4OTgxZjMxODUxMzJiMGM0MTBhOTI3NDRlODIxZjRjMGVmMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ODU1M2UwOTJlMTk2Y2VkYTYyYzZmYzM5MTJlNDNhOWQ1YzE5YzllYWYyZDhmYjhmNjI2ZWU5MGViOWFkYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MjZjYzU0MDQzNGIzMzI5MWRlYTdmZTk3ZGVjYjM0NTZhOTBiZmRmMzM0OGFlN2VkNGM3NDZhOGIzZDA0NTMifQ"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L136-L265",
+          "version": "repo-lines-v1:sha256:91f2f9af0751cbb6a1e58c6f904103ce73cde20834a0d7a5b0955b1927909fa9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiM2IxOTczZGMyM2YwMGU5ZjVmM2E5NDJiZDMxNDg2NmJkODU3N2U3MDNmMjczMWVlZTM1MGJhNjk2ZmM2NDE1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5ZDRkNDNmYmJiZTQwZmI3NGQ0ZDgzOWVlZjY1NDJkODRkMmU1MGQ0NTU1Yjg0Y2VlYTcwZGY3MWM5MmFiYWRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmNzg1NTNlMDkyZTE5NmNlZGE2MmM2ZmMzOTEyZTQzYTlkNWMxOWM5ZWFmMmQ4ZmI4ZjYyNmVlOTBlYjlhZGM2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjZGZjNjU2MWRlODFlZDAxZjFlYzhhYTZlZTI1YzA0NGQwN2FmNzkwMmQ4NmRlNzk0ZTQzNmIxOTcwMzg5YmM1In0"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py#L136-L186",
-          "version": "repo-lines-v1:sha256:95b8aff0f5a1fa1bb6cb819b72e99bdf6d2b71f8abbe0e3d5e38e285a4285731:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3ZmUyZGU5NjU3OTJiMjRjODNmYzE3YWJkMzVmYWJiMmUwMGY1MDQ5M2VjZmJkYmRmMTI1ZGRkMTgwODMwNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1YTEyZDAxYWQ3ZTExZWVkMDFiOWM5NGM1MjdhYjc5ZDk3ZjRiODRkODg1NzdiOTQ3MDQ2ODg0ZDcwMjFjZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiOWZkNzczN2QxNjFhZjNjZGYxNmQwYTc3MTE1NmJkZTQyMDUzNjU1NWJhNGEzZjkwNDc0ODI2NjEzNjczYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYjBkZGJkNzgzY2Q0YzNjNWY4MzkxMjI0MmEyMjcwM2RmYzJiNTFkMDYwYTdjMTU1YWMxZjY3Y2FiMmE4MmYifQ"
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L147-L191",
+          "version": "repo-lines-v1:sha256:fe14d77452b642fc870e814cadb2b3f81d1491f70cd2a4069a3dbaad5265573f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5NjdiY2VjMmZiMTRhMzllNWMwMDA2Zjk0ZGI4MDA2MDcwYWMxNDNhYjI2N2E4M2Q0NjZkNTkxNDI1ODQzNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1YTEyZDAxYWQ3ZTExZWVkMDFiOWM5NGM1MjdhYjc5ZDk3ZjRiODRkODg1NzdiOTQ3MDQ2ODg0ZDcwMjFjZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQzYjQ0MzYxODIzZmFlY2RmZTZmYzZjZTFjZDExMjdhNGNkNDY2MDA3ODNlM2E5ODE0YWRiMjUyZTQ5ZDlhNTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYjBkZGJkNzgzY2Q0YzNjNWY4MzkxMjI0MmEyMjcwM2RmYzJiNTFkMDYwYTdjMTU1YWMxZjY3Y2FiMmE4MmYifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L369-L446",
+          "version": "repo-lines-v1:sha256:42c58f7ce1284a3b32ba7774a41cdf333f7b275e6ca26d4f8c7bf21a590ff903:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4OTU1NDFmZjJmZTdjMzExYmU0ZDc2NzNmODQ4NGU3OGVmMDRmMzE1ZGQ1N2E0Njg3Mzg1ZDc5YTU2YmI4ZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmYTIwODU4YWY2NDI0N2FhNDdmMzFkMWUwMDQ0ZjcxMDc1NmJkMjc0Y2Y1MmYwODk3ZjgxNTU3YzU1MjViZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNGFhOGYwMWQ2OTU4YTgwYWEwMmY0NDQ2ZGY1NmNjOGZlYTA5MzliYzFlZTk2NTM5YTkyMjY2NDRlNmY5ODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -249,16 +253,16 @@
       "statement": "During the staged CoreDNS switch, the retained Octelium connector is explicitly permitted only on Traefik private TLS port8443 by its exact ambient principal and intended namespace-plus-pod-label NetworkPolicy peer; this allowance is removed with the connector after acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L20-L27",
-          "version": "repo-lines-v1:sha256:896ef74b88bba93ad867e8df53e66e831d2a5c9b4f9ed656e8735644c102d86e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNhNTk2MjdhN2NjNzQ4ZTQ5ZGMwZjhkODUyYjFiZjU3OGU4ZjFiMmIzZjU5NDJhNDgxMjMyYWQ2ZDg2M2QzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU5OWQwYTMzYjJiNGY1MmI4ZTk5NmMwNzAxNTY0NGVmMTVhNmJiNmFkMGMxZTM5YzZhYmM0N2MxYjU3YjBjMSJ9"
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L20-L26",
+          "version": "repo-lines-v1:sha256:ffbd629e8db260be7ab274828548d5d06fb4c41d93329f738f3767e4c4685e0e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGRhOWNmYjQyMDVjMTEwN2M0MGQ0ZWJjNDlkNmYxM2VkZjNkMTQ2YmQ4OTM1YzcxMWNjODc3NDYyMjczZDMzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWQwZWRmZTdlZmNhZDE5NDUyZjI1NDEzYjViNmIyZmE3ZjA2NWZjOTBjMzNiYjMxNDJlYjcxNTQ5ZjM1NDI4NiJ9"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L42-L52",
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
-          "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L183-L219",
+          "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
         }
       ]
     },
@@ -286,19 +290,19 @@
     },
     {
       "id": "claim_e2160e5471854bff9880bc47354a7845",
-      "statement": "The tailnet-dns Application provides a separate stateless CoreDNS/k8s_gateway resolver behind a distinct signed homelab-dns Tailscale proxy on UDP/TCP 53. It derives fixed approved names from the private Traefik Service annotation, forwards other DNS to public resolvers, and requires direct read-only UDP/TCP proof at its observed IP before owner nameserver configuration. Public records remain until later accepted cutover and guarded deletion.",
+      "statement": "The tailnet-dns Application provides a separate stateless CoreDNS/k8s_gateway resolver behind a distinct signed homelab-dns Tailscale proxy on UDP/TCP 53. It derives approved private names from the reviewed Traefik Service annotation, forwards other DNS to public resolvers, and requires direct read-only UDP/TCP proof at its observed IP before owner nameserver configuration. Public records remain until later accepted cutover and guarded deletion.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
-          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
+          "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md#L1-L28",
+          "version": "repo-lines-v1:sha256:f0f4b0042febc3ffff0b5e1836f8b0cb8241d545773f33d114dedb26348e8169:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIwMDEzYzlhZjkwNTFjNzdkZmY0NzQ2M2ZlOTI4ODAyYjU3MTMzMDVhNzljNmRiN2M0NDhhZWE1NTljNDBhOTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkNWE1YjM3YjhmMTJkMTY0NzczZWE5ZmMwYWEzNmM5Y2RhZGYzYWNiYjgxNGY2MGEzNWE2MDgwOGM4NDk3OTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYwNzc4NzFhNmE5YzQyOWEzZjc4NTU0MWRiM2I2NWRjNmMzZTU2ZjExZWQzN2Q5YjVhZTJkYTMzZDFiNjJkZGEifQ"
         },
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:c92f8c2a16c65c49d3b0c040113718b07ebb5eedcae02f7195ba147782dff472"
+          "resource": "repo://docs/networking-tailnet-ingress.md#L35-L58",
+          "version": "repo-lines-v1:sha256:59c8619a42062538e7a10ab61dc9ce3b0067ccdfed465e38af503d8b6f3ccf9d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjYTE5M2ZlMjY0YWIyNTMwOThjMmFkN2U5YzcxOTNmMDkwNDg1MWQ3MzI1NDNkN2ZhMDI5MTIwYzQwNTYwOGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRmZmJkNjYxZDMwODNjYmQ0ZTUwNzE1ODAyODlmNzk1YWIzZTE4YTRkMDdkZjRjNTRjMDExMzNiNGMzOTM1NDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJiMjIyM2U3YWE3ODNlOWZiYjM1MzE3MTY3MWM4OGYzYzg3MDFmM2JiN2MxYjZiMGIyYzUwNzY3OWYxNGIwOGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ5MzQwODRhOTI5MWM4NmIyZTlmMTMyZjc0M2Q0NGY0NjdmMjlhZGI2NmQ2MjE4ZDIwNjQwYmYxMmJmM2ZiYjQifQ"
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+          "version": "repo-file-v1:sha256:4fcdd662b1bb132bc101e7d54fd6b33002d8a84068a805397640d6a417e94806"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -308,33 +312,73 @@
     },
     {
       "id": "claim_5da78df7e10044cb88e01e334462c36d",
-      "statement": "Feature 005 retires public A/AAAA/CNAME only for 26 approved non-apex subdomains, keeping 27 private resolver names, the public apex, DNS-01, four legacy endpoints, and unrelated public services. Before any DELETE, the helper blocks relevant child NS delegation, including a covering wildcard NS owner, and out-of-set covering wildcard A/AAAA/CNAME from the complete public-zone scan; the regression asserts no write. It checks authoritative answers without traversing child zones, then requires post-TTL public absence verification.",
+      "statement": "Feature 005 retires public A/AAAA/CNAME only for the original 26 approved non-apex subdomains while the current private resolver source declares 29 names, adding two Enterprise names to the fixed 27-name migration set; public apex, DNS-01, four legacy endpoints, and unrelated services remain. The helper rejects child delegation and out-of-set covering wildcard records before DELETE and requires post-TTL public absence proof.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L399-L416",
-          "version": "repo-lines-v1:sha256:5988c21070999a35b307e015484ac66e1dc6848e2ab2c404e5fec6bd1ca36a67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZGIzMjVjMTA3NzhiMTVmMTlkYzIwMDJmMDE2ZTYyODM3ZjFjYjQzNzM1YmRiZWEwOWY5NjlmMjhhYmQzZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5N2M5ZWMzMDhmNjIwYTEyYmE5YjM3Y2U4ZmJkZWVhMDkzYTA2YjRiM2RhZTc5YmQ2ZjIzZDJiODAwZDcyODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjODE5MmFlZGY5YTg1Nzg4ZDk2YjcxM2IyZDA4ZDU3MjhjNThhZTU1MDhjY2IzMjlkMmY3NzUxNjhjODJhNGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3M2FjYWQ5Zjk5NmJjNWFhYzQ4MWE4NzlmN2Y4NjIxM2JhMDhhYWFhYjIxNWY0YTc0Y2Y3ZDhkYmU5OGMyYmUifQ"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:9a09c9fe6c0d07cd5e268b375567f91fe6876a028953d1f5a1c37543a89a193e"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L634-L643",
-          "version": "repo-lines-v1:sha256:40ba51922a2c9e9d43ae4cbb553e700f490fa338b7fab55363725a5bc3468be3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTI0ZWUwMmJlMTU4ZDA0ZTM2NDEyMWI5YzI0Y2M2MjQwODRmZjNlZTQ5MzhlYjJhYjk4MGM5NjJkMzY1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMzNmNGZlNDVlNjUzMWFhNmI3MzdlZGVjMDFlM2ViZjhlYmY0OTQxNTA2NjY1OGFiNzUxNDQzMjMzOWM5NDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxY2ZmZmY4NzkyZjllNDNmZTdiM2Y4ZTExMThlMjQwYTZmOTUzNWQyMTNiMGZkYjZjZDc4MGNiM2Q4ODQ2MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMWQzOTNmZGQyNDhlYjZlY2E3NjZmNGIwNDVkMTlhMDNhOTQzNzliNWE4MGU5MzQwOTM0ZTBkODg0ODQzZDEifQ"
+          "resource": "repo://scripts/config/tailscale-private-dns.json",
+          "version": "repo-file-v1:sha256:fa891cef61c8f8547441baa95700a1b59b9356c64ea61e8c09e62c8e54d17b5d"
         },
         {
-          "resource": "repo://scripts/config/tailscale-private-dns.json#L1-L38",
-          "version": "repo-lines-v1:sha256:776f3092c2c329474f8120a7082bbd8597356141ac4c1087c98d4836cc427500:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://scripts/tailscale-private-dns-check.py",
+          "version": "repo-file-v1:sha256:1d84e5cba1674433f3628a4d980adef39e8cbc87a552719b495d6408b55846bd"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py#L273-L317",
-          "version": "repo-lines-v1:sha256:8e0cec6fb3c3f236740580d63e9890647a6cf6b3af101887ac2dcfd4496c9f6c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjlhOTM2ZDE2NDAyZDk0MmUyZDVlM2ZmNjBiMTM3M2E5YTk4NWZhOTBkMjcwMWQ0MDcwZDNhZTJmZDA0MzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMzZiOGFkOGQ1MzFhZTlmMzZjZmJjYmViZTFhNGU5OTFmZjgzNTAxZmJmMzA2ODA1MDNmODlmZjYwYjllZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkNmQzMTE3NmFjZDg3MDA3MTY2MThiOWZmZDA2MDhjNDdlNTVkYzI2NDNkYWIyZGIyYjU4NjE5OGIyMjBjZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwMWIyMmEyNDA4ODUwYjc0ZGY5N2QwNGZlNzMyNTZmNjk3YWIxYzg1NjcwMjFiYzkxNzM2MTA1NGQ0NTJiNDcifQ"
+          "resource": "repo://scripts/tailscale-private-dns.sh",
+          "version": "repo-file-v1:sha256:bf2a6a9e4309725e30df462a4f1d5ae04ae07ccdef4cd4b399a7ec7b7222b0f6"
+        }
+      ]
+    },
+    {
+      "id": "claim_5ac309e5cdf740fb8027e2b5038faf80",
+      "statement": "The dedicated tokenless Renovate Pod uses a host alias to send the canonical Harbor TLS hostname to the registry-only Traefik Service at 10.96.0.50:443; Istio admits only its exact service-account principal on port 9443 and excludes it from the shared private listener.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns.sh#L129-L185",
-          "version": "repo-lines-v1:sha256:20c11ae14effa0d01a2aeff59ced04119125ecced0d143be414bf9b2c0926e06:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjg1M2JhMWQ4NTU2NmU2NTg5YjlmNDFhNThkZDlkYTU4NTkwZTQwODcwZGE4MDI1YjM2NjljYTE2NTcxYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjQwYWUxZjk0MzNmZGEyOWViMDAyZmIzMjUwNDU2OGMxYzAwODkyNTA3NzRmM2UzNzNlNzkwMmMzMjhmMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmNTQ3NmUxZjBlMjBhN2EwYzkwZTY2ZWVjODJiMTdiZjAwN2U1MDZlMWU0NWI2NmE1MWQxMDQ0M2Q0MDM2NmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3ODg1ZGZlNmI0YzE3NzE5NTEyZDNmZDZhMWJmN2FiZmYwYzk4NDNkNjc2OWJiODM3NmYzN2U2Y2Q3Zjk1NGYifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
+        }
+      ]
+    },
+    {
+      "id": "claim_82f218677e844dd79a1091389602d15f",
+      "statement": "The staged private Traefik routes send the Enterprise console host to authenticated Octelium and exact 32-hex Agent hosts to OCE API on the Tailscale-only listener, while the old OpenClaw host remains on suspended legacy Service until cutover; the certificate includes explicit console and Agent wildcard SANs and source alone does not prove live access.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/certificate.yaml",
+          "version": "repo-file-v1:sha256:7d3d5a8d3b873cef8121f614e6941c098f0e5ed436d9b9ad0b10eedbb6cbd615"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+        },
+        {
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:b52c530a4c2358e2e5267e7f2c0ae305fa7358c13be7301aa7d26e1c76c61efe"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T15:59:51.049Z"
   }
 }

@@ -8,7 +8,7 @@ pass. Fleet has no Funnel route; its application hostname uses private mesh DNS.
 ## Current tailnet DNS cutover
 
 The separate [tailnet resolver](../../platform/tailnet-dns/README.md) serves all
-27 approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
+29 current approved names, including `stinkyboi.com`; Traefik retains HTTPS and host
 routing. Confirm its signed proxy, observed Service IP, and direct UDP/TCP
 answers:
 
@@ -18,7 +18,7 @@ python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-hand
 
 Confirm the owner enabled that IP as the restricted `stinkyboi.com` nameserver
 in tailnet DNS, with **Use with exit node** when needed. An ordinary client's OS
-DNS path must answer all 27 names privately. The
+DNS path must answer all 29 names privately. The
 [current public cutover](../../../../specs/005-retire-public-app-dns/quickstart.md)
 then removes only A/AAAA/CNAME records for the 26 approved non-apex app
 subdomains. It preserves the public apex, mail and DNS-01 records, Cloudflare
@@ -27,6 +27,10 @@ HTTPS, Fleet, Harbor node pulls, native clients, and Funnel restrictions first.
 For an intentionally stopped app, confirm zero replicas in both reviewed source
 and the live Deployment; its backend HTTP error is then expected while its DNS
 name remains private. Serving routes must still pass.
+Run `python3 -I scripts/tailscale-private-dns-check.py --retire-private --check`
+for the original 27 migration routes. Bare `--check` also probes the two staged
+Enterprise routes; their backend readiness is separate from this public
+record retirement.
 For every one of the 26 names, record whether off-tailnet callers were
 `migrated` or `accepted_loss`. A missing decision blocks deletion.
 
@@ -115,10 +119,11 @@ nix develop --command python3 -I scripts/ci/n8n-github-webhooks-test.py
    The old public DNS publication preview is superseded by the current tailnet
    DNS cutover above.
 
-   AFFiNE may return 502 or 503 while suspended because Traefik uses its static
-   ClusterIP backend. The check accepts either status only when the repository
-   and live Deployment both explicitly declare zero replicas and no live replicas
-   remain. Other application 5xx responses still fail readiness.
+   AFFiNE may return 500, 502, or 503, and legacy OpenClaw may return 502,
+   while suspended behind their static ClusterIP backends. The check accepts
+   these statuses only when the repository and live Deployment both explicitly
+   declare zero replicas and no live replicas remain. Other application 5xx
+   responses still fail readiness.
 
 4. The previous public application A/AAAA publication step is retired. Do not
    run it as part of the new resolver rollout.

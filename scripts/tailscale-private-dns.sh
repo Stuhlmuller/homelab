@@ -111,7 +111,7 @@ zone_id="$(jq -er --arg name "$zone_name" '.result | select(length == 1) | .[0] 
 zone_nameservers="$(jq -c --arg name "$zone_name" '.result | select(length == 1) | .[0] | select(.name == $name) | .name_servers' <<<"$zone_response")"
 "${preflight[@]}" --zone-name-servers "$zone_nameservers"
 inventory="$root/scripts/config/tailscale-private-dns.json"
-checked_names="$(jq -ce '[.hostnames[] | select(. != "stinkyboi.com")]' "$inventory")"
+checked_names="$(jq -ce '[.hostnames[:27][] | select(. != "stinkyboi.com")]' "$inventory")"
 names="$(jq -r '.[]' <<<"$checked_names")"
 
 records_for() {

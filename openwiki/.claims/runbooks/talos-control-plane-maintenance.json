@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6e3779575b2eb25793ee98a1b63fe9b4ed6d937c0cb4b793888bfae17b0e2ae8",
+  "pageVersion": "sha256:20b98e27cd44a2803ccfe14dc41eeb22a3d36ca04e3ed9839d546ddbb5f24699",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
       "statement": "The first 2026-10-10 zimaboard-2 stall involved NFS-backed n8n PostgreSQL and NOFX Pods, so the no-PVC remote-reboot exception did not apply; a physical power-cycle recovered the worker.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L902-L910",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1013-L1021",
           "version": "repo-lines-v1:sha256:8ddb89afc2ddedf13089ad08ca1770687ec67bab1e008749c64164b3b00e4586:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzkzYzAxM2JhNjI0MzY4OTBmNWY2ZGJlNjg4MzY0NDk5MGZhZGMyODgwMjU2OGI0YTBlODkxNjVjYThjMTc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBmNDEzY2Y1MTJiNzZmYTUxMjI3MzkyZTc1ZDcxMTFjZTQwODBiNTFjMjcwOGZlNTViNzFmNzU3MTZjNjE5YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2I1NTdmMDY3YzhkNWY5Y2Y1MjExNWJiMjI4OGE2NTY5MDA0YjA3ZTc4YTg4MWFlNzcyYmY1MzRkY2JjNmJmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDhjMjNkOWFkOGNlYjhlYmMwNjYwY2RiMDg4OTc0MTU1ZjM5YzdlM2U2NWI5Y2Y3YzdlZTJiMjZhNjA1YzM1NiJ9"
         }
       ]
@@ -29,7 +29,7 @@
           "version": "repo-lines-v1:sha256:ae9b60e40aac1039466761279e2049d285dc168fbf80d53c09c7714f6373184c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNThmYmFkNmJlYmI0YjdjYTUyYjA3MzhjNTEwMTBhNzU3Mzk4NGZjMjk4M2ViOTMzZmNhNTNjMGJjOTAzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTFhOWVhNWJmN2UwYTFiNzcyZjA1YmMxMjkwODhiYzFiYWI3MmZiMzkxZmFhMjM5NGVmZjUzM2EyOTZmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L911-L913",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1022-L1024",
           "version": "repo-lines-v1:sha256:08c23d9ad8ceb8ebc0660cdb088974155f39c7e3e65b9cf7c7ee2b26a605c356:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDNjNmM2OTEzZjc4MTQ4YzcyMzI5ODc4N2Q0NmMzMmNlMmRjODJkMDczOGE5YTM1ODlhMjI1MzA3ZTQwODYyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZkOTgwY2ExODE3YjA0NGQ4MTM2NDdhZDBkZjI4ZjRkMDczZjFhZjU5MzU1OTRjMDNmYmI2M2E1NTc1ZjE4MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE3MjVmNTBhMjQ1NzVkMmU1YzYxY2E5MTgzMzAyZTkxYThjZDhkMWM0YzhhNzU4ZWIwNDFlMzczODI0N2I5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NjNhNDkxZGNmNDY5ZTMwZWQ2MzdmZmZiNWQ1MDAwZmM1Y2M5NmNhNDRmN2UyZWUxOTVhMTNiNTMyYjgzOSJ9"
         }
       ]
@@ -51,10 +51,54 @@
           "version": "repo-lines-v1:sha256:25d4468bfe61c9b65e4302def838de4c66f2a58be905915e447723d074da5a24:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkNDBmMzNmMjQ3MjkzM2RjMzY1ZmJjZGVjZDc5M2Q4NWUzYzBlNGFlZTAwNzkyMDZiYTYyMDEzZTNlY2M5OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2Y3MmJlMzRiYmYwNzU2M2U3YjYzYmM0NGM0YjU3MmI5MTE3MjdmMzQzMjczZjE3ZGZjYTdhZDA2OGJjZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4NDRhMjRjNDhjZTY2YTBhYmU3OTFhOTIzYWEyZTcwNTAwYjI4Njk2ZTQzZjgzMWJmYzI4NDY3NjQxMDhhMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzMjFlZmZkYmI2ZGFiMTc1ZWQ5ZWUyMGQxZGM4MDZkNjY4NmY4Mzg5NjU3NDY5ZWYxMmQ4ZTBmY2RlMWJhNGYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_aee080632cde4d8c8fa4b41eab1888f4",
+      "statement": "The protected OpenClaw Enterprise maintenance workflow declares the ordered Talos and Kubernetes ladder and now invokes its source-pinned executor for fixed upgrade stages, but the committed activation flag is false and the canary is unset; no live upgrade is accepted from this source alone.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml#L1-L31",
+          "version": "repo-lines-v1:sha256:253af3fcd67ef938aa1975908a75cc67400fb28f0e30737bcc0ec634f675722b:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI3M2RhNzc1MjUyYTFjYTU2NzU4ZTE0NGMxNzIwNzI5NDVkMWU5NmZiN2UxNDI5NGIxM2Y0NDRlNGJjOGY1ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MGFlNjhhMmIzYjc3ZjllZmQ5MTc2MTE2YjU2NGJjNzE5ZTIzYTI2MTJiNWQ4YmM0OWYwYjUzNTU3OTc0OTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ2NjJlMjY1MWUxYmExODBjOWMyOWQxMWM5YTJiNTM1ODQxNmQ0MzhhYTdhNWYzNDE4MGNlYjE0MTk5OThmMGYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh#L135-L153",
+          "version": "repo-lines-v1:sha256:d397f2fd86a7dbc512dbfd06a13fef7761ba00a72288d8476193408f90b3a2ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4OGNkMmIzN2RjYjg0ZjQ5OTNkYjE1ZjFmNmZkNThkZTUzZTQwN2ZjZDU0MGI2YmQzN2NmNmZjODkwMGFkOGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJmMzA0NjhlNTliZjc3YTVlZGQ5ZWVjMzQzNGQ1ODU0MTU3MDg1ZmU0MmViYzExMmUzOWNiYzk5OWFiOWVlZjgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkMjNlYWQ4YTI0MjI0N2RjODE2ZjgyOTgzYWNmZjQxNzdiZmM2ZjcxYTFkZGQ0NjM5OGE4M2IxZDQ5NTRiZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0YTJiZWNmZjhhZmIzNGRiMjYwZGFiYzk2OTE1ZmZlY2ZkZTg0ODkyOTU0MWM2MTkzZGU2ZDE2NGMyMWU4ZGEifQ"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json#L1-L4",
+          "version": "repo-lines-v1:sha256:3ccf0cdfdfaccdd79466688b29dbf0fa98883975ca447bcd9d9566df662414ac:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTZmYjA4ZmRhMWFjYjk1N2I2MTE2YmQzNzgxMWExZmU0MWEwMTYxMWMwNjMxZWRiZjc4NmQ2ODg5YTI3YTU1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTFjZGQ1Njg5NzI0ZTViY2NiYTBmZDM2NzUyMTkwYTYxMWY4NzgzNGQ2Njk3MTY4MDQ0MDhiMjQ5MmU2ZDljMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjNmYTMxYmVkYWUwZWUyMGNhNjllYmU0ZTM1MjBlMmZkNGRlZDJlM2RlNDk3NzA3NjY0ODY1NTk0ZDJkM2E5NyJ9"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json#L110-L116",
+          "version": "repo-lines-v1:sha256:7dc03c4377f56fc5dcc62e5d678572587bb5ecca8034dd956fde26753ef95640:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2UwMTE1ZTFmODJkNjEwZjczOGI3NjZmNWI1NDU3YjhhMjYxZWVmY2U2YTU5ZDlkN2I0MWFlOGZlYzcyMjUwOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzQ3YjhiOWMwMTE3NDEwYjM3ZWZhZGI1Y2ZlZDM4ODhjNGNhMTA3NzczOThiNDlhOWQ4OTE4MjU5NTU0YjA3ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTI2NjJkZjA2NTRlYWQxMGRiMzk4OGU4ODM3YWJjNmVjZjE3ZjJiZmNkN2E5NTc1NjdhNDhlOGUzMDY2ZTA2OSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d70c51c6921f42729858c53d36f0a0b8",
+      "statement": "The maintenance executor restores current-SHA versioned recovery and publication evidence before changes, refuses ambiguous durable receipts, compares Talos machine identity across serial upgrades, and requires immutable digest-matched Harbor aliases plus no-fallback mirrors before Kubernetes upgrade.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L205-L246",
+          "version": "repo-lines-v1:sha256:ead7f6ac386c438b1e28f55e255ef7eb50054f6253561c61ca8572b61db22e9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhMzJmNzFmZTE2OTkxMzRlMmY5NWZiZDdjZTcxNzZjMzYzZTBiOTIyOGM2NDQwYzkzYzVlMzE0NmQxYjlhZGMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjODY2NmZjYjc0ZDk1ZTRkNzQ0ZjFjMmE0ZDEzYTQ0OTU3NzE2ODMwYjI0OWQxNDk0NzYyYjM2ODQzMGU1YjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMzMGI4ZTRiYzgxNDY4N2JjZjlhNDc2NzlmZDJmMzc5YTVlY2E4MDJkNjhhNWJmMGM3MjU3ZDAxZWE5MjRiMjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxNzc2ZDI3ZmJmNzE3MzdkOTJmNDgzZDI4YTc0MGFmYTJiMjE0MjllNWM4NWRlOTZhMDAwNDc5MDhiMGYzOGMifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L295-L340",
+          "version": "repo-lines-v1:sha256:a542e6f1613b2e19b2174e6efd236a34925625b3ad0761ea52ce8e6b7f42a87e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2OWMyNzEzY2RmZjI5NGY2OWFkOWI2YWI2MTZhZDdjMzI1ZDQxYTRiOTk5MjIyOGUzZmE3NjU3MDg4OTE4ODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUxZDVkZGYwNTkxYWU4NTYzZTk1NmJhNTdlYjNjZjllZDc1MDhkNDBiMTAyOGVmOGViMTc2MGZlOTYxZmQ2NWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhjODRkMjE0MmEyM2NjYTNjOWQ5MjdlYWQyZTRiMTg1NmM3NzFmNTVjZGZhZTZkMGIzYTY2ODQxNWJhNzhlMmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNjNWEzOWQyZGE5ZTMxNmMyYjBkZjU5NzU2MGMwMjcwZjAyMGUzYjRhZTZlMjkyM2U5NmY3ZmRhZGM3MmZjNmYifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L719-L778",
+          "version": "repo-lines-v1:sha256:c794b1e7a8203708429ea9f16a11d3306e5bf3e2daede5b74d6eed3da4fcd8a9:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEyNDQ2N2E4YzliYjBmNjE1MjQ2NzI3NGViNTdlY2Q2MjlhNmUwNzNkNjZjNjA0OGE2ZmE1YjI2NTQzYTBjNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmNDc3NjQ4NDcxNGMzNDdmYTc2M2ZjMjY3YmNhOThlMmY0NGY0MDBlMTE1MjkzNjQxZThmMDVjMTE3ZDcwZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjczNWQ2ZmIwZGY0NGQwYzFkYzdiMDY3YThkODRiODllMjY5NWE3YzljNmM1MWJjYmU0NTE2NzdmMjZkNDJkZTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkyM2M1YWE2ODc2MjQwZjAzYzgwZTVhZDU2M2FhYjMxOTgzYjM1OGY2NDhlYTY3NWFkYzIyMWZlYjI1YzE1YzYifQ"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py#L796-L830",
+          "version": "repo-lines-v1:sha256:67ea2c9a115ec02cc304ee8448079d43aecd138fd1d37364f7c493e7601136f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU4MzFiNWVkMjE3YTM4NjExNjM4ODgxZGRmZmZkNTA0YzBkMDdjZTgxNTg2OWYyNDdjODZhYTdmMjhlYjhjZTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExNzJiZTAwOTNkNDViYTYwNzQxOGM5MDk3MTdjYjNhZWFhNzQ2MDkzNmU4MjQ0OTk4ZDQwOTFmNDY0OGVjYzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc0NGI1ZjA1NmFkMGY4MzBjMDYyNTc2MjgzYjUwYWJlOTA4YjEyNDkyMmUwZDFlNGJiZGFjZTNhYWMzNzU3YWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU2NGRlYzQ3Y2ZjNDIwODU0NzhmMjdjNzM2NWRjMTY0OTExMDdlYmI4NDY3ZWZmMzk5MDA4NGFjODliY2UwODgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T09:44:12.806Z"
   }
 }

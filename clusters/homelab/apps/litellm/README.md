@@ -67,6 +67,13 @@ Telemetry admission covers management and model-discovery routes too: native
 authentication failures can parse their bodies before logging. Model/provider
 restrictions apply only to inference, preserving native key-management bodies.
 
+The image pin selects the Linux amd64 child of the upstream OCI index because
+Harbor 2.15.2 rejects that index's repeated child descriptors. All four observed
+nodes were amd64 on October 19, 2026. The exact child passed the protected
+[Harbor publication and full-pull receipt](../../../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure)
+before this consumer changed. Re-evaluate the pin before adding arm64 nodes;
+the full-catalog mirror receipt remains pending.
+
 The pinned image is affected by
 [GHSA-4xpc-pv4p-pm3w](https://github.com/BerriAI/litellm/security/advisories/GHSA-4xpc-pv4p-pm3w).
 Admission rejects malformed or duplicate Host headers on every HTTP route

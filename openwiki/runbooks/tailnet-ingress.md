@@ -18,8 +18,14 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/networkpolicy.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
+    resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
+  - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
+    resource: repo://clusters/homelab/apps/traefik/certificate.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -38,6 +44,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
@@ -64,10 +72,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Tailnet And App Ingress
@@ -98,6 +106,7 @@ flowchart LR
     Funnel --> HTTP[Traefik callback listener]
     HTTP --> Hooks[n8n and Policy Bot webhooks]
     Nodes[Talos nodes] --> Registry[Traefik registry listener]
+    Renovate[Renovate Pod] --> Registry
     Registry --> Harbor[Harbor OCI and token endpoints]
 ```
 
@@ -109,6 +118,14 @@ Separate listeners prevent public callbacks from selecting private routers.
 cert-manager supplies their public-trust TLS certificate. `homelab-ingress` is
 the Tailscale device name. Explicit file-provider routes select fixed Services;
 Traefik does not discover arbitrary workloads. Fleet's setup paths remain denied.
+The staged OpenClaw Enterprise console uses `console.oce.stinkyboi.com` through
+an authenticated Octelium Service. Only exact
+`agent-<32 hex>.agents.oce.stinkyboi.com` hosts go directly to the OCE API on
+this private listener; OCE checks the session and Agent permission. The old
+`openclaw.stinkyboi.com` route still targets the suspended legacy Service until
+final cutover. The certificate explicitly includes the console name and the
+`*.agents.oce.stinkyboi.com` wildcard; `*.stinkyboi.com` cannot cover the
+two-label console name. These declarations do not establish live access.
 The current single-stack IPv4 Service publishes only `100.99.16.74`; its peer's
 IPv6 address has no matching application forwarding rule. The separate resolver
 uses the Traefik Service's published IPv4 for approved A answers and returns
@@ -130,9 +147,14 @@ separate from the direct application proxy routes.
 Talos uses a dedicated `10.96.0.50:443` registry Service and host-only DNS patch;
 see [Harbor](../operations/harbor-oci.md). It exposes OCI/token paths only, not
 Harbor management or unrelated application hosts. Registry port 9443 permits
-only the four fixed LAN node addresses, four verified `cni0` bridge `/32`s
+the four fixed LAN node addresses, four verified `cni0` bridge `/32`s
 (`10.244.1.1` through `10.244.4.1`) and four `flannel.1` overlay `/32`s
-(`10.244.1.0` through `10.244.4.0`), with no authenticated mesh principal.
+(`10.244.1.0` through `10.244.4.0`) as unauthenticated sources. The exact
+`cluster.local/ns/automation/sa/renovate` mesh identity is the only
+authenticated Pod principal allowed on 9443; it has no access to the shared
+private listener on 8443. Its tokenless ServiceAccount and Pod-local host alias
+send the canonical Harbor TLS name to `10.96.0.50:443` without changing node or
+cluster DNS. The registry listener exposes OCI and token paths only.
 Talos host-to-Service SNAT selects a bridge locally or overlay across nodes;
 ordinary Pod CIDRs are not allowed. Converge these policies before the worker-first host-only mapping,
 then require an uncached successful pull from every node before Harbor DNS
@@ -245,8 +267,9 @@ Tailscale DNS. Check normal client DNS and HTTPS before removing any public
 records. The [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 limits the later `tailscale-private-dns.sh --retire-private` helper to public
 A/AAAA/CNAME records for the 26 approved non-apex app subdomains, including
-the Cordium wildcard owner. The resolver still answers all 27 approved private
-names. The helper cannot publish or restore records. Preserve the public apex
+the Cordium wildcard owner. The current source declares 29 private resolver
+names: the original 27-name migration set plus two Enterprise names. The helper
+cannot publish or restore records. Preserve the public apex
 A/MX/TXT and any CAA, DNS-01 validation, the public zone, four legacy callback/
 CI/carrier names, and unrelated public services. Keep the public records during
 this resolver handoff.
@@ -272,11 +295,15 @@ Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-OpenClaw HTTP 502 only when each reviewed workload declaration and live
-Deployment specify zero replicas and no live replicas remain. Deployed Traefik
-routes and TLS must match the reviewed checkout. Other application 5xx
-responses fail. These exceptions check routing to intentionally stopped apps;
-they do not establish application runtime health.
+legacy OpenClaw HTTP 502 only when each reviewed declaration and live
+Deployment specifies zero replicas and no live replicas remain. Other
+application 5xx responses fail. These exceptions check routing, not runtime
+health. Deployed Traefik routes and TLS must match the reviewed checkout.
+`--retire-private --check` probes the original 27 migration HTTPS routes;
+bare `--check` also probes both staged Enterprise routes. The Agent probe uses
+a concrete `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's
+router and rejects edge 404. All 29 current names still require private DNS
+answers before retirement; staged Enterprise backend readiness is separate.
 
 For the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most
@@ -326,7 +353,7 @@ current guard rejected AFFiNE HTTP 500 and OpenClaw HTTP 502 while both apps
 were deliberately at zero replicas, Fleet setup timed out, the latest n8n
 delivery check returned 404, and Policy Bot preview was unavailable. No public
 app records were deleted. The current [readiness guard](../../scripts/tailscale-private-dns-check.py)
-requires reviewed source and live zero replicas for those stopped-app responses.
+accepts those stopped-app responses only with reviewed and live zero replicas.
 Repeat the trusted CLI and normal-client checks, Fleet setup, n8n and Policy Bot
 callback checks, and every remaining [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 gate from reviewed `main` before any public deletion. This dated observation is

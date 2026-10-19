@@ -60,10 +60,12 @@ class DirectDnsCheck(unittest.TestCase):
     def test_initial_handoff_checks_all_names_and_both_transports(self):
         with redirect_stdout(io.StringIO()) as output:
             CHECK.verify(SERVER, initial=True)
-        self.assertIn("27 approved names", output.getvalue())
+        self.assertIn("29 approved names", output.getvalue())
         calls = CHECK.dns_answer.call_args_list
         for kind in ("A", "AAAA"):
             self.assertTrue(any(call.args[1:] == ("dns-preflight.cordium.stinkyboi.com", kind, True)
+                                for call in calls))
+            self.assertTrue(any(call.args[1:] == ("dns-preflight.agents.oce.stinkyboi.com", kind, True)
                                 for call in calls))
 
     def test_routine_check_follows_later_approved_names(self):
@@ -72,7 +74,7 @@ class DirectDnsCheck(unittest.TestCase):
         CHECK.verify(SERVER)
         self.assertTrue(any(call.args[1] == "new-app.foo.stinkyboi.com"
                             for call in CHECK.dns_answer.call_args_list))
-        with self.assertRaisesRegex(RuntimeError, "27-name"):
+        with self.assertRaisesRegex(RuntimeError, "reviewed private hostname"):
             CHECK.verify(SERVER, initial=True)
 
     def test_wrong_service_or_peer_identity_fails_before_dns(self):

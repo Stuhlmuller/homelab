@@ -4,8 +4,9 @@ Use [the cutover contract](contracts/cutover.md) for the exact scope and
 evidence fields. This guide starts after the private resolver, restricted
 tailnet DNS setting, and Traefik routes from
 [`004-tailnet-service-dns`](../004-tailnet-service-dns/) are deployed.
-The 27-name private resolver check includes the apex; public deletion selects
-only the 26 non-apex names.
+The current private resolver check covers 29 names, including the apex and two
+staged Enterprise names. Public deletion selects only the 26 non-apex names
+from the fixed first 27 migration entries.
 
 ## Local checks before the retirement PR
 
@@ -21,7 +22,7 @@ nix develop --command bash scripts/ci/static-checks.sh --offline-verified
 
 Expected: the helper is syntactically valid; the retirement fixtures prove
 that only 26 exact names' A/AAAA/CNAME can be deleted, while the apex and
-unrelated records survive; the private resolver still approves all 27 names;
+unrelated records survive; the private resolver still approves all 29 names;
 repository validation passes. Record unavailable tools or checks rather than
 claiming they passed.
 
@@ -36,16 +37,18 @@ kubectl -n argocd get application tailnet-dns traefik
 kubectl -n tailnet-dns get deployment,service,pod
 kubectl -n tailnet-dns get service tailnet-dns -o json
 python3 -I scripts/tailnet-dns-check.py --server DNS_TAILNET_IPV4
-python3 -I scripts/tailscale-private-dns-check.py --check
+python3 -I scripts/tailscale-private-dns-check.py --retire-private --check
 ```
 
 Replace `DNS_TAILNET_IPV4` with the observed Service tailnet IPv4. The direct
-checker verifies the signed proxy and all 27 approved answers over UDP/TCP;
-the route check verifies current Traefik Service addresses and HTTPS paths.
+checker verifies the signed proxy and all 29 current approved answers over UDP/TCP;
+the retirement route check verifies current Traefik Service addresses and the
+original 27 HTTPS paths. Bare `--check` also probes the two staged Enterprise
+backends; their readiness is a separate rollout gate.
 It accepts a backend error for an intentionally stopped app only when reviewed
 source and the live Deployment both declare zero replicas.
 Confirm the owner's restricted `stinkyboi.com` nameserver is active, then test
-all 27 names through an ordinary client's OS DNS path, including a concrete
+all 29 names through an ordinary client's OS DNS path, including a concrete
 Cordium wildcard child. Record Fleet setup denial and device check-in, fresh
 Harbor node pulls, native API, Cordium reconnect, and public callback results
 using the [ingress runbook](../../clusters/homelab/apps/traefik/CUTOVER.md).

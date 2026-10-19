@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:85e50c32d6ed8479133fdd1e164374d6928cfba488737fe538829ba4195a7044",
+  "pageVersion": "sha256:259c1aad3c466caf504bad94eddc2d32a65727be42ab3cd1b821ad84bb781524",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,13 +68,59 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:a752aa7a3be36c1156ba3460889c4122418aad2fb1f5980ae096725f3fb2a936"
+        }
+      ]
+    },
+    {
+      "id": "claim_5a4ca0c942b24b31bb9ec49ecc83fe60",
+      "statement": "The protected OpenClaw Enterprise model-credential workflow accepts exact current-main dispatch, validates an owner-supplied OpenRouter key, and writes only its separate Enterprise SSM parameter; it has not run without that key.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-model-credential.yml",
+          "version": "repo-file-v1:sha256:be0b014fb7de7d184a44d232ef7a443c84b33e4486051f876708b69233679fc4"
+        },
+        {
+          "resource": "repo://docs/secrets-aws-ssm.md",
+          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
+        }
+      ]
+    },
+    {
+      "id": "claim_d118ebae6e7644838de312b3b1c718f2",
+      "statement": "The Platform Maintenance workflow accepts fixed stages only from exact current main, runs static checks before its protected job, rechecks main before AWS credentials and verifies its pinned stage helper; configuration keeps upgrade activation and canary placement disabled pending private recovery and publication evidence.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:aacc3aaabef52fdfd0b0d0c3d3308aa65cb75a284f735c5733dc4b72ec9b7167"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-stage.sh",
+          "version": "repo-file-v1:sha256:75d2372a1514b31caf5fa608c057e33d26334d69609643f15e26673a85d59971"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
+    },
+    {
+      "id": "claim_bf65f69f8a424b3da8d89728481688ee",
+      "statement": "The Enterprise startup workflow accepts only an exact current-main dispatch, runs static checks, then uses the production environment to create or attest the fixed immutable startup Secret without registering the Application.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-startup.yml",
+          "version": "repo-file-v1:sha256:98c4c8c37bcc3d0647c9be5f27dc75483e2ef0d229de79c1dcfa56a070136512"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-startup.py",
+          "version": "repo-file-v1:sha256:08de19e4a74ae7521889d600edaae58b500bb9bdd6d9f5e7e2464d7fe45fb289"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T14:58:52.418Z"
   }
 }

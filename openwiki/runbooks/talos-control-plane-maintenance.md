@@ -4,6 +4,8 @@ title: "Talos Control-Plane Maintenance"
 description: "Authenticated Talos maintenance, etcd snapshot integrity, macOS backup scheduling, retention, offsite publication, and recovery limits."
 tags: ["runbook", "talos", "maintenance"]
 sources:
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-2d8396976c82220440798f1a
@@ -16,10 +18,16 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-11T00:16:41.141Z" }
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
+generated: { by: "codex", at: "2026-10-19T09:06:14.696Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T09:44:12.806Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -153,5 +161,29 @@ Do not invent limits while metrics are unavailable.
 The canonical runbook also owns the dated 2026-08-25 corrupt-object recovery.
 That recovery is exact-key and snapshot-first, with a Talos snapshot-restore
 rollback; do not generalize it into a routine etcd mutation path.
+
+## Staged Enterprise platform maintenance
+
+The [platform maintenance workflow](../../.github/workflows/platform-maintenance.yml)
+and [committed ladder](../../scripts/config/platform-maintenance.json) define
+Talos `1.11.3 → 1.11.6 → 1.12.12 → 1.13.11 → 1.14.4`, followed by a separately
+gated Kubernetes `1.34.11 → 1.35.9` stage. The protected lane requires exact
+current `main`, a distinct Octelium client tunnel and Talos mTLS. Inspect and
+offline validation do not execute upgrades. The protected upgrade branch now
+invokes the ordered executor after strict role-specific Talos config validation.
+It restores exactly one checksummed, versioned, current-SHA copy of placement,
+direct-LAN Talos recovery, fresh off-node etcd and image-publication receipts.
+Before each Talos node command, it records a durable start marker; a verified
+marker follows node and cluster health, with active/persistent machine role,
+disk and mirror configuration unchanged. An ambiguous or interrupted marker
+stops automatic retry and requires direct-LAN review.
+
+Talos appends target version tags during `upgrade-k8s`. The executor verifies
+the five Harbor aliases are digest-matched and immutable, and that every node
+has the no-fallback Harbor routes before that command. The tag lock, protected
+recovery receipt producer, isolated canary, and Istio completions remain open
+gates; `activationEnabled` is still false. No live node or control-plane
+upgrade is accepted from this source alone. The canonical runbook gives the
+direct-LAN commands and stop conditions.
 
 See [Cluster Topology](../architecture/cluster-topology.md) and [Validation](validation.md).

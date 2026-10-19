@@ -8,6 +8,13 @@ variables {
   node_annotations = {
     test-node = { "octelium.com/override-gw-ip" = "192.0.2.10" }
   }
+  node_taints = {
+    test-node = {
+      key    = "homelab.stinkyboi.com/network-policy-canary"
+      value  = "true"
+      effect = "NoSchedule"
+    }
+  }
 }
 
 run "independent_node_metadata_ownership" {
@@ -19,6 +26,16 @@ run "independent_node_metadata_ownership" {
       kubernetes_annotations.nodes["test-node"].field_manager != kubernetes_labels.nodes["test-node"].field_manager
     )
     error_message = "Separate metadata apply requests must use distinct managers while retaining existing label ownership."
+  }
+
+  assert {
+    condition = (
+      kubernetes_node_taint.nodes["test-node"].field_manager == "terragrunt-node-taints" &&
+      kubernetes_node_taint.nodes["test-node"].force == false &&
+      kubernetes_node_taint.nodes["test-node"].taint[0].key == var.node_taints["test-node"].key &&
+      kubernetes_node_taint.nodes["test-node"].taint[0].effect == "NoSchedule"
+    )
+    error_message = "The canary taint must use a separate non-forcing metadata owner."
   }
 
   assert {

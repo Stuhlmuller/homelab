@@ -648,6 +648,9 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
     [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
+    [.[] | select(.kind == "Namespace" and .metadata.name == "oce")] as $oce_namespace |
+    [.[] | select(.kind == "Service" and .metadata.name == "console.oce")] as $oce_console |
+    [.[] | select(.kind == "Service" and .metadata.name == "openclaw")] as $openclaw_redirect |
     ($users | length) == 1 and
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
@@ -656,6 +659,30 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
     $nofx[0].spec.config.http.header.authorizationMode == "PASS" and
+    ($oce_namespace | length) == 1 and
+    $oce_namespace[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    ($oce_console | length) == 1 and
+    $oce_console[0].spec.isPublic == true and
+    $oce_console[0].spec.isAnonymous == false and
+    $oce_console[0].spec.mode == "WEB" and
+    $oce_console[0].spec.port == 80 and
+    $oce_console[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    $oce_console[0].spec.config.upstream.url == "http://openclaw-enterprise-api.openclaw-system.svc.cluster.local:8080" and
+    $oce_console[0].spec.config.http.header.host.preserve == true and
+    $oce_console[0].spec.config.http.header.removeRequestHeaders == [
+      "Forwarded", "X-Forwarded-For", "X-Forwarded-Host", "X-Forwarded-Port",
+      "X-Forwarded-Proto", "X-Real-IP"] and
+    ($openclaw_redirect | length) == 1 and
+    $openclaw_redirect[0].spec.isAnonymous == false and
+    $openclaw_redirect[0].spec.authorization.policies == ["homelab-human-web-access"] and
+    ($openclaw_redirect[0].spec.config | has("upstream") | not) and
+    $openclaw_redirect[0].spec.config.http.plugins == [{
+      "name": "enterprise-redirect", "phase": "POST_AUTH",
+      "condition": {"matchAny": true},
+      "direct": {"statusCode": 303, "headers": [
+        {"key": "Location", "value": "https://console.oce.stinkyboi.com/"},
+        {"key": "Cache-Control", "value": "no-store"}]}
+    }] and
     ($human | length) == 1 and
     ($human[0].spec.rules[0].condition.all.of | any(.any.of == [
       {"match": "ctx.session.status.type == \"CLIENT\""},
@@ -856,10 +883,16 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/nofx-registry-credential.yml:credential' \
     '.github/workflows/nofx-registry-credential.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-images.yml:publish' \
+    '.github/workflows/openclaw-enterprise-model-credential.yml:credential' \
+    '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
     '.github/workflows/openclaw-enterprise-operations.yml:legacy' \
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
+    '.github/workflows/openclaw-enterprise-startup.yml:startup' \
+    '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
+    '.github/workflows/platform-maintenance.yml:maintenance' \
+    '.github/workflows/platform-maintenance.yml:static-policy' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -912,14 +945,17 @@ done <<'EOF'
 .github/workflows/entra-oidc-verify.yml bbbdb8c357cc218504342f2625d881b8a60602f0833219b00ab4d1d4e0f12df6
 .github/workflows/codeql.yml 2f9ae4a36bfeb9c87369c4ad7736c01aa6dc04d2cfa2952296771ae06a586c91
 .github/workflows/harbor-core-images.yml 0ae0df62b75f82932376b53644d91e6dd178bdbf97d04c764e4afeca2e6cfac7
-.github/workflows/harbor-mirror.yml d6b78f1ee170a7bfecc1185339fe4ef8dbdd9d89ff43a2cdb085026c1d026664
+.github/workflows/harbor-mirror.yml 0cbee7b77703c4caf23759cf1426b37a76acba55d97aa741a432d2edb837f529
 .github/workflows/harbor-native-chainguard-receipt-provenance.yml 53d2b15f3d23944b2f6322c14ec1f216ef1cc9d743156450e702facc7098de91
 .github/workflows/harbor-native-chainguard-receipt.yml 578cf0f546ad41d88567aa696e907eff5d195a0565bd538dd2be918cefbf68ea
 .github/workflows/homelab-diagnostics.yml 9dfe84e22398747434092b2791403ffb1132c0ef9bf3dc73b7c60e120bbf71c3
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
-.github/workflows/openclaw-enterprise-operations.yml e14b4f19bff115e02a2ac9dcf507e5c6db9d4bfd96b7609c5fcb340f2caa8a9f
+.github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
+.github/workflows/openclaw-enterprise-operations.yml a2f9195795f78e66450fd9c74fb8bdae3bba594809f5cf19cb5f3586d71e78ed
+.github/workflows/openclaw-enterprise-startup.yml fa532be5d92086f46d805cfbe10bd1230076ecc42827f483a79a1f1d23e76e5c
+.github/workflows/platform-maintenance.yml 28718f0008dd166c6cada1c6fb88fd1fbbb854acdef796ed636590b4a2089edd
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -944,7 +980,10 @@ for workflow_job in \
   '.github/workflows/harbor-mirror.yml:static-policy' \
   '.github/workflows/harbor-native-chainguard-receipt.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
+  '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
+  '.github/workflows/openclaw-enterprise-startup.yml:static-policy' \
+  '.github/workflows/platform-maintenance.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
@@ -1247,7 +1286,7 @@ bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "b91ccb55d0e1e689d3c49a17309a575c4e1ffe2458900b02d2790761dd5b0518" ]] || {
+  "f91c07dbf100ff0ea84837c4968f632939696eaccbe235a3380cacfcebb11a50" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }
@@ -1271,6 +1310,8 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-talos-access")] as $talos_policies |
     [.[] | select(.kind == "Service" and .metadata.name == "talos-api.homelab")] as $talos_services |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-platform-talos-ci-access")] as $talos_ci_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "talos-api-ci.homelab")] as $talos_ci_services |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
@@ -1349,6 +1390,30 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     } and
     ($talos_services[0].spec.config.tls // null) == null and
     ($talos_services[0].spec.config.clientCertificate // null) == null and
+    ($talos_ci_policies | length) == 1 and
+    $talos_ci_policies[0].spec.rules == [{
+      "name": "protected-maintenance-client",
+      "effect": "ALLOW",
+      "condition": {"all": {"of": [
+        {"match": "ctx.user.metadata.name == \"homelab-ci\""},
+        {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+        {"match": "ctx.session.status.type == \"CLIENT\""},
+        {"match": "ctx.service.metadata.name == \"talos-api-ci.homelab\""},
+        {"match": "ctx.service.spec.mode == \"TCP\""}
+      ]}}
+    }] and
+    ($talos_ci_services | length) == 1 and
+    $talos_ci_services[0].spec == {
+      "displayName": "Protected CI Talos API",
+      "isPublic": false,
+      "isTLS": false,
+      "mode": "TCP",
+      "port": 50000,
+      "authorization": {"policies": ["homelab-platform-talos-ci-access"]},
+      "config": {"upstream": {"url": "tcp://10.1.0.199:50000"}}
+    } and
+    ($talos_ci_services[0].spec.config.tls // null) == null and
+    ($talos_ci_services[0].spec.config.clientCertificate // null) == null and
     ($catalog_users | length) == 1 and
     $catalog_users[0].spec == {
       "type": "WORKLOAD",
