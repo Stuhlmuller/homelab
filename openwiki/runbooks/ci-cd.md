@@ -4,6 +4,8 @@ title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-729acf039d34520f724d5bfe
     resource: repo://.github/workflows/cordium-check.yml
   - id: openwiki-source-28a7f340da431caf1c218c7d
@@ -30,10 +32,10 @@ sources:
     resource: repo://docs/ci-cd.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-18T22:31:54.698Z" }
+generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:36:24.435Z
+    at: 2026-10-19T00:13:27.328Z
 ---
 
 # CI/CD

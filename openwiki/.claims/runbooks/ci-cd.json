@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1d3bbe182cc0885e242f115356fab6ecac4b2655a99647bb289ab0e5e891546c",
+  "pageVersion": "sha256:7730b52db1474c25ab0513272da57a0f0db6d5a8c691927a56c2e9b5d416d6c0",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -73,9 +73,13 @@
       ]
     },
     {
-      "id": "claim_f9248f1d338749c5b3cd7aea3a431d34",
-      "statement": "Draft PR #1276 stages regular job selectors for the Cordium pool while bootstrap publication, credential jobs, and the required native receipt provenance status job stay hosted; the canary keeps its isolated label and the pool remains disabled.",
+      "id": "claim_de2c63b2f1c24934a537d1701712d8ed",
+      "statement": "The Cordium runner pool remains disabled while draft PR 1276 stages regular job selectors, keeping bootstrap and credential jobs hosted, the canary isolated, and native receipt provenance hosted until live acceptance.",
       "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
         {
           "resource": "repo://.github/workflows/cordium-check.yml",
           "version": "repo-file-v1:sha256:d9bd5b88fde5ae4fc8d5866128accf4c24538f7da4b6480bcba1596410cb1795"
@@ -93,6 +97,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:36:24.435Z"
+    "at": "2026-10-19T00:13:27.328Z"
   }
 }
