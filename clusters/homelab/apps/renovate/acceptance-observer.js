@@ -27,7 +27,9 @@ function sourceKey(item) {
     throw new Error('invalid-registry');
   }
   const registry = `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
-  return [item.datasource, item.packageName, registry].join('\0');
+  const packageName = ['github-releases', 'github-tags'].includes(item.datasource) ?
+    item.packageName.toLowerCase() : item.packageName;
+  return [item.datasource, packageName, registry].join('\0');
 }
 
 function selectSample(inventory) {

@@ -142,10 +142,19 @@ test('seed deduplicates one upstream source across repositories before freezing'
   assert.throws(() => observer.selectSample(source), /invalid-registry/);
 });
 
+test('GitHub repository case variants are one upstream source', () => {
+  const source = inventory();
+  source.dependencies.push(dependency('github-releases', 'public', 'EXAMPLE/TOOL'));
+  const sample = observer.selectSample(source).sample;
+  assert.equal(sample.length, 3);
+  assert.equal(sample.filter((item) => item.datasource === 'github-releases').length, 1);
+});
+
 test('report counts one independent release and requires every sampled consumer outcome', () => {
   const { ledger, receipts } = observedReleases();
-  const first = ledger.sample[0];
+  const first = ledger.sample.find((item) => item.datasource === 'github-releases');
   const duplicate = { ...first, repository: 'Stuhlmuller/second', key: 'second-consumer',
+    packageName: first.packageName.toUpperCase(),
     events: first.events.map((event) => ({ ...event })) };
   ledger.sample.push(duplicate);
   for (const receipt of receipts.receipts.filter((entry) => entry.key === first.key)) {
