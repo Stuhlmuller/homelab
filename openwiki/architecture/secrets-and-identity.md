@@ -50,10 +50,16 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
+  - id: openwiki-source-c1b7364dfb35a5f4ad9a3931
+    resource: repo://clusters/homelab/apps/renovate/acceptance-inventory-job.yaml
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-ce0cca7cf82efeb87c709d2b
@@ -106,10 +112,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T17:11:24.506Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:56.824Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:56.824Z
 ---
 
 # Secrets And Identity
@@ -249,6 +255,13 @@ require a separate reviewed GitOps change. Rollback first suspends and drains
 cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
 writer cutover has not occurred.
+
+The draft [Renovate acceptance observer](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer)
+reuses the projected App files to mint a read-scoped installation token. Its
+15-minute CronJob is suspended and mounts no Kubernetes API token; the
+separate inventory Job is also suspended and omitted from Kustomize. Neither
+acceptance workload is authorized to start until the private sample and
+source-bound review input pass the workload gates.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

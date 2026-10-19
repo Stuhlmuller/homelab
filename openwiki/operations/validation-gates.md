@@ -60,10 +60,16 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
+  - id: openwiki-source-699113cfd35bf2732550bb50
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer.js
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-c9b031fe359a7f1e47ab686b
+    resource: repo://clusters/homelab/apps/renovate/kustomization.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
@@ -244,10 +250,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T21:02:46.926Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:56.824Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:56.824Z
 ---
 
 # Validation Gates
@@ -1976,13 +1982,13 @@ Job runtime ends before the completion alert's 56-minute threshold and the next
 hourly slot. These checks verify declared behavior. The unsuspended full
 dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
 17:00 registry mutex timeout; that result does not establish live cache
-recovery, two-Pod cache reuse, full owner/App parity, or write safety.
+recovery, full owner/App parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
-retirement are complete; two-Pod cache evidence, dry-run parity, and a
+retirement are complete; normal-release refresh, dry-run parity, and a
 separate seven-day acceptance window remain open gates.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
@@ -2038,6 +2044,23 @@ then combined with the owned manifests to validate prerequisite references and
 sync ordering. A narrow policy exception accepts only the six exact empty or
 public-configuration Secret payloads emitted by chart 1.19.2; actual credential
 data or an added field still fails the raw-Secret gate.
+
+## Renovate acceptance evidence
+
+Run the four focused `renovate-acceptance-*` Node suites in
+[`static-checks.sh`](../../scripts/ci/static-checks.sh). They cover extraction
+inventory, fixed sample, upstream polling, report conservatism, and version-bound
+PR proof. A Kustomize render must retain the observer CronJob as suspended and
+omit the suspended inventory and report Jobs. These are source checks.
+
+The observer uses uncached 15-minute upstream polls and keeps private identity
+and timing brackets on its separate ledger. The offline report counts missing
+eligible outcomes and measures four hours from the conservative `lastAbsent`
+bound. Fewer than ten eligible natural releases, ambiguous evidence, or missing
+outcomes make the result inconclusive; its best local status is
+`review-required`. Protected independent owner and policy receipts, seven
+healthy days, and actual proposal or deferral source verification remain open.
+See the [workload contract](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer).
 
 ## Mastodon activation gates
 

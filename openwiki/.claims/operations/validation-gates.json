@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4eab6339a4f32c44eff56a8a448f41a7750942b490cb2997c444d50f4a66fb6c",
+  "pageVersion": "sha256:4157e5f048de6a04ae8db6f997408e60fee542984bd93ce4b18d8dbfb0732e93",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -789,8 +789,8 @@
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
-          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L82",
+          "version": "repo-lines-v1:sha256:5e746b9aa571e76c1673238d511ee226ca37a8f68a076a98d7525e5d3d9a6b4b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjExNjA1YWZiZmE0N2ViMjAxNjY0OWM4MmQ4M2Q1OWQ3ZmQ1NDNiNGFiYjQ5YTJlODg1ZGM5YzIzZjQyMmJjYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODYxYWZhOTZlODNiNzM0ZDc4ZjBiMmZlYWVkNmY4NGU3MThhNGI4MjYzNzAxZjVhZmI4MDkyMzk3YmMwNmU1NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjM4ZTdkOTQyYmM2MWExY2I0NjUzNDYzZWFkOWYyYWFlOWEzZDUyZjcwYjc2YTZlN2RlMWVhNmZjYzEzNzlhNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGRlZmM1YTc3NWFkMzU3ODYzNjc0ZWY3MzNjNTM4NTg3MzY1Nzc5MDVjODEzZjYzZTlhNTcyZTcyNjlkNzFhYyJ9"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
@@ -800,15 +800,19 @@
     },
     {
       "id": "claim_02a584a3dde4474b927244b8e203a5f3",
-      "statement": "The pinned Renovate 44.167.4 local cache fixture verifies rebuilding missing and malformed package and repository cache entries; live PVC recovery, two-Pod cache evidence, and seven-day acceptance remain pending.",
+      "statement": "The pinned Renovate 44.167.4 local cache fixture verifies rebuilding missing and malformed package and repository cache entries; live PVC failure recovery, normal-release refresh, and seven-day acceptance remain pending.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L108-L128",
+          "version": "repo-lines-v1:sha256:c60b3e3ca1521351f45225369270c5dd6ff55d00966e85b37c2ca33fc9999d62:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjZjZhMzU1ODQ2MTE4OGE5N2Y5NzU4NjgwZTRiMzkwNjA0MzY5ZjBhOTVmZjM3MTNjYmZiYmY2NWM4Mzk5MDIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2Yjk4YjE5NTg5YmNiNmMzZmFjNjJjMDdkMzBiMzdiOGZlMzYwOWYyNGM5MzkxOTkzMzhiNWQ0Mzg0NzU2NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY3M2JkOTcxNDFjN2UxZDdmMGFhZmE3OTk5NDAzNzNhY2IxZTY0MjAzYTU4NjE4NjdjNmJjZTA0MGExYjdhZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YjAzY2NhZDI5ZWFkYTc0YWZlYmRhNzc3ZGVmNjUzOGVmMDAzMDk4NjRlMmI2ZTMwODhhMGQzYjM4ZDBkYWEifQ"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
           "version": "repo-file-v1:sha256:8251f2bfd72061617175cb232cb12c2b8ea43d54242637f02869332a89136444"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L130-L138",
+          "version": "repo-lines-v1:sha256:8004047862f3cceaf4c5582b8cd5f981fe596576ba8b02381c48a99d56eacf4a:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmFmNjA3MTcxZDcxNGY2MTExODIwOTIxZTM2MGNmYzAxNzNkMGY3NzVhNjQwMTIwMWEyM2FhOTRhNzg2Mzc1NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzBjOTEwNmEwZDE4M2U1OTNlNzJmYTZmNjVlNDJhZWJmNWM5ZTY3YjQ4OTA1YWNmODhiMzE0YTFhMDVhYTA5MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWFjYjY1MjdkMmVjZDUxMWMzNjBkNWY2NmMxMjg0ZTA2ZGI5NWVjYzAzYmNlZGRiNmYyZGY4YWU4YmQ0YWU1YSJ9"
         }
       ]
     },
@@ -918,7 +922,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -1030,7 +1034,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:25284578164ed526c8b517b32ef01e05436cb3d04fdef0a312c1b50d694be278"
+          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
         }
       ]
     },
@@ -1151,10 +1155,42 @@
           "version": "repo-lines-v1:sha256:6999aec1d9be9808d513b0eab6e97299a0c409968a46a4a7ceb6364145243678:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5ZThhOTk1NmM3NDRjODBmZWMzZDAwNzM2NDgyMzMzNTcxNjY1YjljZjYxMTJmNzdhYTQ2N2Y3OWE1NDQyYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4ZDQ4Zjg4MzE4YWMzZmFjYzA2Yzk5MTNkZWFkNzg3NDYyMzg4Y2VhYjA1YTJhYjA1NTRkN2Q3MjlkMGQ5Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyODNmNjFhODZmMzI5YzhlMmVkN2Q3OWE4ZDZhNjRjZmY4OGZmNzRmYjVjMDkwZDFlNWI3MTE3NjU3MjdmZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1M2I4Y2M3OGQ5ZTVjNjM0MTUxZjlmMGY0NjhlOGQ3NWYyOWQ0OTI3NDlkZGRhNDFkZjZhZTlkNTgwYTQ2NWUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_34832db383da4f5494d408b36740b4ad",
+      "statement": "The staged Renovate acceptance observer and inventory have focused static suites, while the observer CronJob is suspended and the inventory and report Jobs are omitted from Kustomize.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml#L1-L13",
+          "version": "repo-lines-v1:sha256:a4b8e70485cb614a89327eefe79768dc417f30939d85534fb02216d0cded49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OTBiZGMxZjg3YWI4MjBjMzU5ZGFmZDA1YjNjZDNjMzQ0MDVlODM2MWExNTYyZmE0YzQ0NTM5NzE1MDgxMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYWVlYjBiNGEzOThiMzNhNWU4NzlkZDNlZGFkZDZhZGYyMzcyMDlmMjNhNmY3N2Y0MjVhMWI3ODVmZWIyNzEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml#L1-L11",
+          "version": "repo-lines-v1:sha256:dcf4fc93f1ab65022cf7f58e9a495c3a0e943751a21adc40b2eb80c7975404d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZDIzMjMxZjEyNmYxNWIzYzM2NjE0YTM0NWY1OGM4NTkwN2Q0MmY3NjVmZmRiZTdjMDFmNGEwZjJmZmI5NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjcwOGNlYjY1YTk3NjhkN2ZhYWEzNzRmYjE0MGQ2ZTU4MzVkODc2YWNhYjQyNmM5NmQ0MjdjMTZlY2U0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMjIxMTM0MDkyMTFlMzMxMDZiOWIyMTY1MDg3NWMyN2FhZTIxNzZlOTRjYmZmYjA2ODg4NTkxMGY5YTI0NjYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L25-L28",
+          "version": "repo-lines-v1:sha256:9ecf15bb292098dc9ce77b74bb842fd82eb3978ab55288859eb69656be951a39:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2ZmZjMDg3MTVmODZlYjA0MzU0Y2U1OTk2MTAxOThhZWI3OGVlOWM5MjMxY2JkZjQwZWQ0YTUwY2ZmZGUyYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2JlZjRmNzlhNDFkZTAxNTIwZDUxMmExM2YyMzg3OTUyZGEwNzEzNmUzOTJlYjE5ZDNiODVhZDRiODRiZmJmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk1NWUzZmJjOWYwMGM0ZmJkNWY3ZTdiMmMwNzNmZjBhOTMyMDQ2NDk1MzMxYTUzNjBhOGQ4NDNmMDQzZmMwNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0MjdiMDYxZDFhNWY2NjkxMWE5MGU5NTllYmVkZTFiYjE3MTAyMWY3OTE1YjM0ZmMwMTc2OWNlNzFjZDVhYSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e7d396d312094978ab20ed0274ebf775",
+      "statement": "Renovate's offline acceptance report counts missing eligible outcomes, uses the conservative last-absent bound, and stays inconclusive with fewer than ten eligible natural releases or ambiguous evidence; even a passing local result requires independent review.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L348-L371",
+          "version": "repo-lines-v1:sha256:d735f0852a9c91e0f75a1f4b3684b84c1235d642fb7fdb141e5ac897f97bd372:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyOGZiNDgyYjEwOWQ3ZTQ1OTAyMzQyZWFiOTgyZGYwNDFhMzYzNDFiM2NiODQ0MDhjZGExYmY3ZTkyODQyOTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVmMWY4M2Y0YjcxN2RmNDUwMTUzYzZhMTAzMWI5YTdiOTY1MDQzOWQzODFmNTY3ODI4Zjc5ODU2Y2E3YmM2NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5YzY3NGYxZDUxYTYwZjIwZGUxMGU3NWE3Y2VlMTQzZDY4ZTA2NDQ2YjJmY2UyZjEwYjlmMDAwYTlmNjMzYTEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer.js#L260-L370",
+          "version": "repo-lines-v1:sha256:5a4bb6181216a78f7824662e9579d62ed981820ddf180ff5be3640542d3a6aaf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ODk3YTQzYjU0MmNmYmE1MjhmMmI1YjkzZWU1OWExNTA3NTYyZGY2ODE1OTQyN2ZmMWIwY2M2MmVkYmNmMWNhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlYWYwY2EzYTk3YWQ5MzIzMzBjMTg2NjIzNTQ5Mzg5NTA0ZWVlZWYzMmY0ZGE4ZWZkMzYxMDhhMGI5M2QzNThlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMmJlMDdhZWQxNmI1NjlkYjgzZDM4NWRmZGM2MjdlYzA4YmMzMDcwZWE4MmQ2ZDIyZmVhZDIzMDhmMTMyMjJjIn0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:56.824Z"
   }
 }

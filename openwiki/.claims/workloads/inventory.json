@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6cca6570b4c6e27030939d3e23991d594955177e99f76b433babbae18891f01d",
+  "pageVersion": "sha256:6f9c2befcaa8c11bcda903c031d6cc332f5c3045f7770c7daeb7ed51106a471b",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,11 +292,11 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while Harbor transport and version discovery, two-Pod cache evidence, full dry-run parity, and reviewed cutover remain open.",
+      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled scan after the failed 17:00 slot. The legacy Action remains the writer while normal version discovery, full dry-run parity, and reviewed cutover remain open.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L35",
+          "version": "repo-lines-v1:sha256:09069b906e3b51842cbf3c27c412bd1da584b2e28b0a940f3340069b2fbc3785:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2NzE5M2JjMTY1NDc5ZTVjMjZiYzEwNDNjMmUxODIyYTZhM2IwOTAzZWVlYTk4NmM0NDQ3NzJiYTE4NmI2NjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBmYjI3MjFkNjhhYTk3YzExMjhiNWJmZDJmMjZiZmViNjY1MmFlOWE3ODBiOGQ1OWIxNWU1ZDRjMGEyZGEwODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFlZDUxOGM2NWMzZTMyOWMxYmJkOGIwZTkyNGIwZjM0ZGJiM2E0OTE2YzE0NjBhNDU4NzMzNWEzY2JkMDVmMTYifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -307,16 +307,12 @@
           "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
-          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L130-L138",
+          "version": "repo-lines-v1:sha256:8004047862f3cceaf4c5582b8cd5f981fe596576ba8b02381c48a99d56eacf4a:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmFmNjA3MTcxZDcxNGY2MTExODIwOTIxZTM2MGNmYzAxNzNkMGY3NzVhNjQwMTIwMWEyM2FhOTRhNzg2Mzc1NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNzBjOTEwNmEwZDE4M2U1OTNlNzJmYTZmNjVlNDJhZWJmNWM5ZTY3YjQ4OTA1YWNmODhiMzE0YTFhMDVhYTA5MCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWFjYjY1MjdkMmVjZDUxMWMzNjBkNWY2NmMxMjg0ZTA2ZGI5NWVjYzAzYmNlZGRiNmYyZGY4YWU4YmQ0YWU1YSJ9"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
           "version": "repo-lines-v1:sha256:c79c28a4dd7e7e10bc2ede27c0daebb097152f1ca5a90586893e7cc429a8d0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMwYjYxY2IxOTg5MDlmMzU5OWZkMmU1YWEwMjJhYjVlN2M2MDhiZGFjMTk3OTdlNmVmMTFmYTI4N2Q3MjllMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjc3MTczNzQ5ZDMxODdjMmRmOGQyODhlNDg3NWFlYWVlZmY1YzRiNWY2N2JlOGQ3ZGUzZDhkNWMwZTUxNWMyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU3NmIxODJlY2I1Y2JkYzI1ZWQ4YzI4NjlkMDU2ZTY3YTU2OWYyZTI1NTA2MWFjZjQyZDBkOGE0ZDFjNTI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSJ9"
-        },
-        {
-          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
-          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
         },
         {
           "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
@@ -491,10 +487,32 @@
           "version": "repo-file-v1:sha256:d8e4d501a5ba1633f112b44732d6321cb2b46860a04b29a98eb220ee0410578f"
         }
       ]
+    },
+    {
+      "id": "claim_ce26863bd48f4348aecceed07892a406",
+      "statement": "The draft Renovate acceptance source declares a suspended 15-minute observer and separate 2 Gi private ledger while leaving the inventory and report Jobs outside Kustomize pending private sample and seven-day acceptance gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L194-L218",
+          "version": "repo-lines-v1:sha256:ba0192871a0f668c90890a245c8276de94d441413e6c69576eb64757dcfce97c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlODBhZmQ5NjdjZWRiNjIxMDNmMDg5MGE3MzU1NzdmMTMwYTI4Nzg4NmRkMDQ0MTM5Y2RlYjZhZDdlOWUyNTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5ZGM2MDNlNDg4NjRmYzlmMWRkMDZmNmQ3NDU1OWI2NTAxYzk4YzdiN2I2MjI0ZjAyNzkxZGRkZGE2ZGE3MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNiMDhlN2Y0NTlkOGZlZDc4MThhNjkzMThiZTVhOTk4NjFlNTQyOTg4YmNiODBhOWYyYzRhY2M3MTgzMDQwMmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzYTYyZThmNzdlNjA2Nzc4NjNmNmFjNjE1MDk4Y2Q5NjQxZmFjZjliZDM0MmUyOGZkMGI1M2NmYjEwMjhlODAifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml#L1-L19",
+          "version": "repo-lines-v1:sha256:1c2e6039204e9d8cc13fb2e753383093b8d0a37e13396947c74ecd32812ed285:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3ZjI4Y2Y1NjRkMWY0MzI1ZDZmZTQzMDdiZDYzZTdhOWQwMTY2OGQzOTE5NzVmZGRmMTZiYmFjMTZiZWQ3NDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml#L1-L13",
+          "version": "repo-lines-v1:sha256:a4b8e70485cb614a89327eefe79768dc417f30939d85534fb02216d0cded49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OTBiZGMxZjg3YWI4MjBjMzU5ZGFmZDA1YjNjZDNjMzQ0MDVlODM2MWExNTYyZmE0YzQ0NTM5NzE1MDgxMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYWVlYjBiNGEzOThiMzNhNWU4NzlkZDNlZGFkZDZhZGYyMzcyMDlmMjNhNmY3N2Y0MjVhMWI3ODVmZWIyNzEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml#L1-L11",
+          "version": "repo-lines-v1:sha256:dcf4fc93f1ab65022cf7f58e9a495c3a0e943751a21adc40b2eb80c7975404d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZDIzMjMxZjEyNmYxNWIzYzM2NjE0YTM0NWY1OGM4NTkwN2Q0MmY3NjVmZmRiZTdjMDFmNGEwZjJmZmI5NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjcwOGNlYjY1YTk3NjhkN2ZhYWEzNzRmYjE0MGQ2ZTU4MzVkODc2YWNhYjQyNmM5NmQ0MjdjMTZlY2U0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMjIxMTM0MDkyMTFlMzMxMDZiOWIyMTY1MDg3NWMyN2FhZTIxNzZlOTRjYmZmYjA2ODg4NTkxMGY5YTI0NjYifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:56.824Z"
   }
 }
