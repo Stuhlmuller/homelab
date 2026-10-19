@@ -2,6 +2,48 @@ package main
 
 import rego.v1
 
+test_allows_exact_openclaw_startup if {
+	approved_openclaw_startup with input as openclaw_startup_fixture
+}
+
+test_rejects_changed_openclaw_startup if {
+	job := openclaw_startup_fixture.jobs.startup
+	every candidate in [
+		object.union(openclaw_startup_fixture, {"concurrency": {"group": "unprotected", "cancel-in-progress": false}}),
+		object.union(openclaw_startup_fixture, {"jobs": object.union(openclaw_startup_fixture.jobs, {"startup": object.union(job, {"environment": {"name": "unprotected"}})})}),
+		object.union(openclaw_startup_fixture, {"jobs": object.union(openclaw_startup_fixture.jobs, {"startup": object.union(job, {"steps": [job.steps[0], job.steps[1], job.steps[2], object.union(job.steps[3], {"run": replace(openclaw_startup_private_run, "sha256sum --check --status", "true # sha256sum --check --status")})]})})}),
+	] {
+		not approved_openclaw_startup with input as candidate
+	}
+}
+
+openclaw_startup_fixture := {
+	"name": "OpenClaw Enterprise Startup Candidate",
+	"permissions": {},
+	"concurrency": {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false},
+	"true": {"workflow_dispatch": {"inputs": {"expected_sha": {"required": true}}}},
+	"jobs": {
+		"static-policy": {"permissions": {"contents": "read"}, "steps": [
+			{"name": "Verify Dispatch Commit", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": `test "$GITHUB_SHA" = "$EXPECTED_SHA"`},
+			{"name": "Check Out Repository"},
+			{"name": "Install Nix"},
+			{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
+		]},
+		"startup": {
+			"needs": ["static-policy"],
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"environment": {"name": "homelab-production"},
+			"permissions": {"contents": "read"},
+			"steps": [
+				{"name": "Verify Current Main Before Credentials", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_startup_main_check},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Create Or Attest Fixed Startup Secret", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": openclaw_startup_private_run},
+			],
+		},
+	},
+}
+
 test_allows_protected_platform_maintenance if {
 	violations := deny with input as platform_maintenance_fixture
 	count(violations) == 0
