@@ -13,6 +13,7 @@ const dependency = (datasource, sourceVisibility, packageName) => ({
   datasource,
   sourceVisibility,
   packageName,
+  packageFile: 'package.json',
   registryUrl: datasource === 'npm' ? 'https://registry.example.com' : 'https://api.github.com',
 });
 
@@ -171,7 +172,7 @@ test('report counts one independent release and requires every sampled consumer 
   assert.equal(missing.naturalEvents, 10);
   assert.equal(missing.missingOutcomes, 1);
   assert.equal(missing.onTime, 9);
-  assert.equal(missing.status, 'criteria-not-met');
+  assert.equal(missing.status, 'inconclusive');
   duplicated.outcome = receipts.receipts.find((receipt) => receipt.key === first.key &&
     receipt.version === duplicated.version).outcome;
   duplicated.outcome = { ...duplicated.outcome, at: new Date(
@@ -210,7 +211,7 @@ test('offline report joins exact private receipts and counts missing outcomes in
   assert.equal(incomplete.late, 1);
   assert.equal(incomplete.onTime, 8);
   assert.equal(incomplete.onTimePercent, 80);
-  assert.equal(incomplete.status, 'criteria-not-met');
+  assert.equal(incomplete.status, 'inconclusive');
 });
 
 test('report stays inconclusive for low sample, ambiguity, unknown, or incomplete evidence', () => {

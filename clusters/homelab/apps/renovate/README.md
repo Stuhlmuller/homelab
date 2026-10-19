@@ -248,6 +248,19 @@ version-bound initial diff or retain the first read-only observation of that
 version in the PR diff. A deferral needs the matching branch result, receipt
 completion time, and effective-policy evidence. Missing proof stays unknown.
 
+`acceptance-pr-proof-job.yaml` stages a read-only GitHub proof path. It is
+omitted from Kustomize and suspended. It verifies a pinned report and private
+hash receipt, matches an exact sampled package, file, and version to one
+Renovate PR number, then reads that PR and its complete GitHub file diff with
+a read-scoped App token. A matching added line must contain both the package
+and version. It requires GitHub's response clock to agree within one minute,
+then writes the private diff snapshot and hashed outcome receipt to the ledger;
+Pod logs contain counts only. Its read time plus that minute is a conservative
+**upper bound** for the proposal. Reads more than four hours after the
+last-absent bound, missing patches, and ambiguous PR matches remain unknown.
+PR `created_at` is retained only as context. Deferrals remain unknown. The
+seven-day window still needs a reviewed recurring report and proof cadence.
+
 Before starting this CronJob, freeze a private inventory from the pinned
 Renovate image's actual repository-extraction cache. Full dry-run skips cache
 persistence, so this requires a successful later write-enabled scan. The
@@ -296,7 +309,9 @@ policy and registry-access verification; the Job alone cannot prove them.
 The independent owner/policy/source receipt-production and review-file delivery
 paths are not yet declared, so the Job must remain
 omitted/suspended. Do not place the file on the volume with an ad hoc live
-command. Use a reviewed cleanup/reset path if the baseline must be rebuilt.
+command. SSM delivery needs new exact-name External Secrets reader grants and
+enough bounded SecureString capacity for the private review; neither is
+declared here. Use a reviewed cleanup/reset path if the baseline must be rebuilt.
 
 The seed first selects one deterministic repository for each upstream datasource,
 package, and normalized registry URL, rejecting conflicting visibility for the
@@ -344,7 +359,8 @@ and verification are required.
 The report joins exact events, counts eligible events without an outcome in the
 denominator, and measures four hours from the conservative `lastAbsent` bound.
 It emits only aggregate counts and a rate. Unknown eligibility, incomplete
-evidence fields, ambiguous brackets, or fewer than ten eligible natural releases
+evidence fields, missing eligible outcomes, ambiguous brackets, or fewer than
+ten eligible natural releases
 make the result inconclusive. Below 95% on-time gives `criteria-not-met` using
 integer counts; the displayed rate is floored to two decimals. The best script
 status is `review-required`: locally bound receipts alone cannot prove their
@@ -352,9 +368,9 @@ GitHub PR or restricted policy-log source. A reviewed
 private receipt-production and independent source-verification path remains a
 gate before any SC-002 acceptance claim; do not commit private receipt content
 or inject it through an ad hoc live command.
-The verifier must check the PR head/diff and first creation or synchronize
-timestamp, or the exact version-bound effective-policy deferral, against the
-stored material.
+The staged PR verifier checks an exact version in a GitHub diff and uses its
+first read time as the timing upper bound. A private reviewer must still check
+the stored material; no policy-deferral verifier is declared.
 `review-required` also does not prove seven healthy days: separately verify the
 observer poll span, excluded intervals, hourly runner slots, and reviewable
 proposal or policy-deferral sources before publishing acceptance.

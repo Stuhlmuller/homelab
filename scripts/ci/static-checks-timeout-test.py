@@ -29,6 +29,7 @@ class Timeout(unittest.TestCase):
                          "renovate-config-test.js", "renovate-acceptance-observer-test.js",
                          "renovate-acceptance-inventory-test.js",
                          "renovate-acceptance-report-test.js",
+                         "renovate-acceptance-pr-proof-test.js",
                          "tailnet-dns-test.py",
                          "openclaw-enterprise-foundation-test.py",
                          "openclaw-enterprise-chart-hooks-test.py",

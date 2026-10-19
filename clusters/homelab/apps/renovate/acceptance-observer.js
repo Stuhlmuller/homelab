@@ -65,6 +65,7 @@ function selectSample(inventory) {
     if (typeof item.repository !== 'string' || !item.repository.startsWith(`${owner}/`) ||
         !heads.has(item.repository) ||
         !classes.has(item.datasource) || typeof item.packageName !== 'string' || !item.packageName ||
+        typeof item.packageFile !== 'string' || !item.packageFile ||
         !['public', 'private'].includes(item.sourceVisibility) ||
         (item.currentValue && typeof item.currentValue !== 'string')) {
       throw new Error('invalid-dependency');
@@ -88,6 +89,7 @@ function selectSample(inventory) {
       registryUrl: item.registryUrl || null,
       currentValue: item.currentValue || null,
       sourceVisibility: item.sourceVisibility,
+      packageFile: item.packageFile,
       key: digest(key),
       seen: [],
       lastHealthyAt: null,
@@ -191,7 +193,7 @@ function verifyFrozenSample(ledger) {
     throw new Error('invalid-ledger');
   }
   const fields = ['repository', 'datasource', 'packageName', 'registryUrl',
-    'currentValue', 'sourceVisibility', 'key'];
+    'currentValue', 'sourceVisibility', 'packageFile', 'key'];
   const identities = (items) => items.map((item) => fields.map((field) => item?.[field]));
   if (!isDeepStrictEqual(identities(ledger.sample), identities(selectSample(ledger.inventory).sample))) {
     throw new Error('sample-changed');
@@ -356,7 +358,7 @@ function aggregateReport(ledger, outcomes, evidence = new Set()) {
   }
   let status = 'review-required';
   if (counts.eligibleEvents < 10 || counts.ambiguousEvents || counts.unknownEvents ||
-      counts.incompleteEvidence) status = 'inconclusive';
+      counts.incompleteEvidence || counts.missingOutcomes) status = 'inconclusive';
   else if (counts.onTime * 100 < counts.eligibleEvents * 95) status = 'criteria-not-met';
   return {
     mode: 'report',
