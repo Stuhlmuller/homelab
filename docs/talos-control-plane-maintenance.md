@@ -397,35 +397,51 @@ the firewall helper, so an unavailable final receipt still leaves a private
 attempt marker. No repository-owned process attests the ownership receipt yet;
 keep cleanup disabled until that review path exists. Do not infer completion
 from a partially deleted chain set.
-The Talos/Kubernetes helper now writes a `started` marker to the KMS-encrypted,
-versioned backup bucket under `openclaw-enterprise/platform/upgrade/<stage>/`
-and reads back its exact version and checksum before each Talos node command or
-the Kubernetes cluster command. It writes separate per-node `verified` markers
-only after node and cluster health checks.
-On another runner it restores prior stage and node receipts from S3; an unknown
-write outcome, missing completion, changed local copy, duplicate version, or
-delete marker stops the retry for direct-LAN recovery review. The protected
-workflow's upgrade branch still exits before calling this helper. Keep it
-disabled until fresh off-node etcd backup and direct-LAN recovery receipts are
-verified, role-specific Talos configs pass strict validation, and a safe canary
-is admitted. `activationEnabled` and canary placement in
-`scripts/config/platform-maintenance.json` remain disabled.
-Node markers also bind the pinned platform ladder digest. After an unrelated
-merge, a new exact-current-`main` run may skip earlier verified nodes only when
-their durable start/completion pair, pinned inputs, live version, boot ID and
-health still match. Fresh recovery and image-publication receipts must bind the
-new SHA; a started-only node still stops for direct recovery review. The
-workflow's upgrade branch remains disabled: no protected producer/transfer yet
-provides those current-SHA prerequisites or the Istio completion receipts
-needed before Kubernetes.
-The current Kubernetes upgrade command also reduces catalog digest references
-to base image names for `talosctl upgrade-k8s`. Talos v1.14.4 appends
-`:v<target>` to these image bases for [control-plane images](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L175)
-and [kubelet](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/kubelet.go#L207),
-so a digest cannot be passed directly. The repo does not enforce immutable
-Harbor tags or verify that a version tag still resolves to the reviewed digest.
-Keep the T016 stage disabled until a reviewed immutable-tag and digest-readback
-contract or upstream digest support closes this gap.
+The protected upgrade branch now connects through the same authenticated Talos
+tunnel, strictly validates both private role configs with the committed
+image-only patches, and invokes the ordered Talos or Kubernetes upgrade API.
+The image-only Talos patches cannot alter `machine.install.disk`; the executor
+also compares each node's active and persistent role, disk, and registry mirror
+configuration before and after a Talos hop. It checks node/API health between
+serial workers and the sole control plane. It never applies the Kubernetes
+version patches to live nodes.
+
+Before execution, the helper downloads exactly one checksummed, KMS-encrypted
+S3 version of each `placement`, `direct-recovery`, `off-node-etcd-backup`, and
+`artifact-publication` receipt from
+`openclaw-enterprise/platform/receipts/<current-main-sha>/`. The placement
+receipt must attest measured capacity and the admitted isolated canary. Direct
+recovery must attest authenticated Talos access to `10.1.0.199:50000` and all
+four named nodes from the LAN. The off-node etcd receipt must bind a snapshot
+SHA-256 and versioned object with an offline restore check. The latter two
+checks must be at most six hours old; all four receipts must be verified and
+bound to the dispatched SHA. A protected producer and review path for these
+receipts remains T023 work, so no operator should set `activationEnabled` or
+the canary node yet.
+
+The executor writes a `started` marker to the KMS-encrypted, versioned backup
+bucket under `openclaw-enterprise/platform/upgrade/<stage>/` and reads back its
+exact version and checksum before each Talos node command or the Kubernetes
+cluster command. Separate per-node `verified` markers follow node and cluster
+health checks. On another runner it restores prior stage and node receipts;
+an unknown write outcome, missing completion, changed local copy, duplicate
+version, or delete marker stops the retry for direct-LAN recovery review.
+After an unrelated merge, a new exact-current-`main` run may skip earlier
+verified nodes only when their durable marker pair, pinned ladder, live version,
+boot ID, and health still match. Istio completion receipts for the three
+reviewed stages must also be published once under
+`openclaw-enterprise/platform/stages/istio-<version>/verified.json` before the
+Kubernetes stage; T025 owns their production.
+
+Talos v1.14.4 appends `:v<target>` to the five `upgrade-k8s` image bases for
+[control-plane images](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L175)
+and [kubelet](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/kubelet.go#L207).
+The executor checks each resulting public Harbor tag's digest and immutable
+status against the reviewed catalog and checks the active no-fallback Harbor
+mirror routes on all nodes before invoking that API. The exact five-tag Harbor
+lock is still disabled in bootstrap. T023 must enable and verify it after a
+full-catalog mirror receipt and Harbor restore proof. The source lane alone is
+not authorization for a live upgrade.
 
 After the control-plane patch and Octelium catalog workflow both complete,
 validate from an off-LAN workstation before withdrawing the Tailscale subnet
@@ -441,6 +457,25 @@ talosctl --talosconfig .talos/talosconfig \
 
 The node addresses select Talos API targets; the client connection itself uses
 the Octelium Service endpoint. Keep direct IP access as the LAN recovery path.
+
+Before any protected upgrade, verify the independent direct path from a LAN
+machine with the current private Talos client config:
+
+```sh
+talosctl --talosconfig /path/to/private/talosconfig \
+  --endpoints 10.1.0.199 \
+  --nodes 10.1.0.199,10.1.0.200,10.1.0.201,10.1.0.202 version
+talosctl --talosconfig /path/to/private/talosconfig \
+  --endpoints 10.1.0.199 --nodes 10.1.0.199 etcd status
+```
+
+Expect all four server versions and a healthy etcd member. If direct mTLS,
+etcd, the fresh off-node snapshot, any node's disk/role, or the private receipt
+readback fails, stop the workflow. Do not rerun a stage with a `started` marker
+and no matching `verified` marker; inspect the node through direct LAN access,
+preserve the previous compatible Talos boot image, and record a new reviewed
+recovery decision before attempting another change. A Kubernetes partial
+upgrade requires separate recovery review; this workflow never downgrades it.
 
 ## Remote Worker Reboot
 

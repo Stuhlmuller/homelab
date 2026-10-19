@@ -5,12 +5,14 @@ import copy
 import base64
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -34,15 +36,50 @@ class PlatformMaintenance(unittest.TestCase):
         cls.module = load_module()
         cls.config = json.loads(CONFIG.read_text())
 
+    def setUp(self):
+        self.machine_state_function = self.module.active_machine_state
+        self.mirror_tag_function = self.module.verify_kubernetes_mirror_tags
+        mirrors = {registry: {"endpoints": [
+            f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
+            "overridePath": True, "skipFallback": True}
+            for registry in ("ghcr.io", "factory.talos.dev")}
+        for name, kwargs in (
+            ("active_machine_state", {"return_value": {"role": "worker", "disk": "/dev/sda",
+                                                       "mirrors": mirrors}}),
+            ("verify_kubernetes_mirror_routes", {}),
+            ("verify_kubernetes_mirror_tags", {}),
+        ):
+            replacement = patch.object(self.module, name, **kwargs)
+            replacement.start()
+            self.addCleanup(replacement.stop)
+
+    def prerequisites(self, sha, config=None):
+        config = config or self.config
+        captured = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        return {
+            "placement": {"sourceSha": sha, "verified": True,
+                          "canaryNode": config["canary"]["node"], "measured": True,
+                          "isolatedTaint": config["canary"]["taint"]},
+            "direct-recovery": {"sourceSha": sha, "verified": True,
+                                "capturedAt": captured, "transport": "direct-lan-authenticated-talos",
+                                "endpoint": "10.1.0.199:50000", "nodes": list(self.module.NODES),
+                                "talosMtls": True},
+            "off-node-etcd-backup": {"sourceSha": sha, "verified": True,
+                                     "capturedAt": captured, "offNode": True,
+                                     "offlineRestoreVerified": True,
+                                     "snapshotSha256": "a" * 64, "objectVersionId": "version-1"},
+            "artifact-publication": {"sourceSha": sha, "verified": True,
+                                     "talosImages": {f"talos-{item['to']}": item["installerImage"]
+                                                     for item in config["talosStages"]},
+                                     "kubernetesImages": config["kubernetesStage"]["images"]},
+        }
+
     def write_publication(self, directory, sha):
+        for name, record in self.prerequisites(sha).items():
+            path = Path(directory) / f"{name}.json"
+            path.write_text(json.dumps(record))
+            path.chmod(0o600)
         receipt = Path(directory) / "artifact-publication.json"
-        receipt.write_text(json.dumps({
-            "sourceSha": sha, "verified": True,
-            "talosImages": {f"talos-{item['to']}": item["installerImage"]
-                            for item in self.config["talosStages"]},
-            "kubernetesImages": self.config["kubernetesStage"]["images"],
-        }))
-        receipt.chmod(0o600)
         return receipt
 
     def test_committed_ladder_is_valid_but_not_activated(self):
@@ -75,11 +112,10 @@ class PlatformMaintenance(unittest.TestCase):
 
     def test_exact_main_stage_and_recovery_receipts_are_required(self):
         sha = "a" * 40
-        receipts = {name: {"sourceSha": sha, "verified": True}
-                    for name in self.config["requiredPrivateReceipts"]}
         candidate = copy.deepcopy(self.config)
         candidate["activationEnabled"] = True
         candidate["canary"]["node"] = "zimaboard-0"
+        receipts = self.prerequisites(sha, candidate)
         self.module.authorize_stage(candidate, "talos-1.11.6", sha, sha, receipts)
         for stage, expected, current, evidence in (
             ("talos-1.12.12", sha, sha, receipts),
@@ -93,23 +129,40 @@ class PlatformMaintenance(unittest.TestCase):
 
     def test_unadmitted_canary_blocks_execution(self):
         sha = "a" * 40
-        receipts = {name: {"sourceSha": sha, "verified": True}
-                    for name in self.config["requiredPrivateReceipts"]}
+        receipts = self.prerequisites(sha)
         with self.assertRaises(ValueError):
             self.module.authorize_stage(self.config, "talos-1.11.6", sha, sha, receipts)
 
     def test_later_stage_requires_verified_prior_receipt_from_its_own_reviewed_sha(self):
         sha = "a" * 40
-        receipts = {name: {"sourceSha": sha, "verified": True}
-                    for name in self.config["requiredPrivateReceipts"]}
         candidate = copy.deepcopy(self.config)
         candidate["activationEnabled"] = True
         candidate["canary"]["node"] = "zimaboard-0"
+        receipts = self.prerequisites(sha, candidate)
         receipts["talos-1.11.6"] = {"sourceSha": "b" * 40, "verified": True}
         self.module.authorize_stage(candidate, "talos-1.12.12", sha, sha, receipts)
         receipts["talos-1.11.6"]["verified"] = False
         with self.assertRaises(ValueError):
             self.module.authorize_stage(candidate, "talos-1.12.12", sha, sha, receipts)
+
+    def test_kubernetes_stage_requires_ladder_bound_istio_receipts(self):
+        sha = "a" * 40
+        candidate = copy.deepcopy(self.config)
+        candidate["activationEnabled"] = True
+        candidate["canary"]["node"] = "zimaboard-0"
+        receipts = self.prerequisites(sha, candidate)
+        for item in candidate["talosStages"]:
+            receipts[f"talos-{item['to']}"] = {"sourceSha": sha, "verified": True}
+        for item in candidate["istioStages"]:
+            stage = f"istio-{item['to']}"
+            receipts[stage] = {"sourceSha": "b" * 40, "verified": True,
+                               "stage": stage, "pinSha256": self.module.PIN_SHA256,
+                               "observedVersion": item["to"]}
+        stage = "kubernetes-1.35.9"
+        self.module.authorize_stage(candidate, stage, sha, sha, receipts)
+        receipts["istio-1.29.9"]["pinSha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "Istio stage"):
+            self.module.authorize_stage(candidate, stage, sha, sha, receipts)
 
     def test_retry_never_guesses_after_interruption_or_node_substitution(self):
         decide = self.module.node_action
@@ -736,6 +789,130 @@ class PlatformMaintenance(unittest.TestCase):
                     self.module.execute_kubernetes_stage(
                         self.config, stage, sha, Path("/private/talosconfig"), path)
             self.assertEqual(len(attempts), 1)
+
+    def test_current_sha_prerequisites_are_restored_from_one_verified_version(self):
+        sha = "a" * 40
+        target = self.module.receipt_target()
+        store = self.module.DurableReceipts(target)
+        records = self.prerequisites(sha)
+
+        def versions(_service, operation, arguments=()):
+            self.assertEqual(operation, "list-object-versions")
+            key = arguments[-1]
+            return {"IsTruncated": False, "Versions": [
+                {"Key": key, "VersionId": "version-1", "IsLatest": True}]}
+
+        def download(key, version, _directory):
+            self.assertEqual(version, "version-1")
+            return json.dumps(records[Path(key).stem]).encode()
+
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(store, "call", side_effect=versions), \
+                patch.object(store, "download", side_effect=download):
+            store.load_prerequisites(sha, Path(directory))
+            self.assertEqual(self.module.read_receipts(Path(directory)), records)
+            with self.assertRaisesRegex(ValueError, "differs"):
+                (Path(directory) / "placement.json").write_text("{}")
+                store.load_prerequisites(sha, Path(directory))
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(store, "call", return_value={"IsTruncated": False,
+                    "Versions": [{"Key": f"{self.module.PREREQUISITE_PREFIX}/{sha}/placement.json",
+                                  "VersionId": "v1", "IsLatest": False}]}), \
+                self.assertRaisesRegex(ValueError, "ambiguous"):
+            store.load_prerequisites(sha, Path(directory))
+
+    def test_recovery_prerequisites_require_fresh_direct_and_off_node_proof(self):
+        sha = "a" * 40
+        receipts = self.prerequisites(sha)
+        self.module.verify_prerequisites(self.config, sha, receipts)
+        for name, field, value in (
+            ("direct-recovery", "transport", "octelium"),
+            ("direct-recovery", "capturedAt", "2000-01-01T00:00:00Z"),
+            ("off-node-etcd-backup", "offlineRestoreVerified", False),
+            ("off-node-etcd-backup", "objectVersionId", "null"),
+            ("placement", "measured", False),
+        ):
+            changed = copy.deepcopy(receipts)
+            changed[name][field] = value
+            with self.subTest(name=name, field=field), self.assertRaises(ValueError):
+                self.module.verify_prerequisites(self.config, sha, changed)
+
+    def test_active_machine_state_requires_role_disk_and_persistent_parity(self):
+        machine = {"type": "worker", "install": {"disk": "/dev/sda"},
+                   "registries": {"mirrors": {}}}
+        resources = [{"metadata": {"id": "v1alpha1", "namespace": "config",
+                                   "type": "MachineConfigs.config.talos.dev", "phase": "running",
+                                   "version": 1},
+                      "spec": "active"}]
+
+        def run(command, **kwargs):
+            if command[0] == "talosctl":
+                return subprocess.CompletedProcess(command, 0,
+                    "\n".join(json.dumps(resource) for resource in resources), "")
+            self.assertEqual(command[0], "yq")
+            decoded = copy.deepcopy(machine)
+            if kwargs.get("input") == "changed":
+                decoded["install"]["disk"] = "/dev/nvme0n1"
+            return subprocess.CompletedProcess(command, 0,
+                json.dumps([{"version": "v1alpha1", "machine": decoded}]), "")
+
+        with patch.object(self.module.subprocess, "run", side_effect=run):
+            state = self.machine_state_function(self.config, Path("/private/talosconfig"),
+                                                "zimaboard-0")
+            self.assertEqual((state["role"], state["disk"]), ("worker", "/dev/sda"))
+            machine["install"]["disk"] = ""
+            with self.assertRaisesRegex(ValueError, "install disk"):
+                self.machine_state_function(self.config, Path("/private/talosconfig"),
+                                            "zimaboard-0")
+            machine["install"]["disk"] = "/dev/sda"
+            resources.append({**resources[0], "metadata": {**resources[0]["metadata"],
+                              "id": "persistent"}, "spec": "changed"})
+            with self.assertRaisesRegex(ValueError, "differ"):
+                self.machine_state_function(self.config, Path("/private/talosconfig"),
+                                            "zimaboard-0")
+
+    def test_kubernetes_mirror_tags_require_reviewed_digest_and_immutable_flag(self):
+        sources = list(self.config["kubernetesStage"]["images"].values())
+        expected = [source.rsplit("@", 1)[1] for source in sources]
+        calls = []
+
+        def open_tag(url, **_kwargs):
+            calls.append(url)
+            digest = expected[len(calls) - 1]
+            return io.BytesIO(json.dumps({"digest": digest, "tags": [
+                {"name": "v1.35.9", "immutable": True}]}).encode())
+
+        with patch.object(self.module.urllib.request, "urlopen", side_effect=open_tag):
+            self.mirror_tag_function(self.config)
+        self.assertEqual(len(calls), 5)
+        self.assertTrue(all("with_immutable_status=true" in url for url in calls))
+
+        def unlocked(_url, **_kwargs):
+            return io.BytesIO(json.dumps({"digest": expected[0], "tags": [
+                {"name": "v1.35.9", "immutable": False}]}).encode())
+
+        with patch.object(self.module.urllib.request, "urlopen", side_effect=unlocked), \
+                self.assertRaisesRegex(ValueError, "not locked"):
+            self.mirror_tag_function(self.config)
+
+    def test_target_patches_only_change_pinned_images_for_each_role(self):
+        self.module.validate_target_patches(self.config)
+        changed = copy.deepcopy(self.config)
+        changed["kubernetesStage"]["offlineRenderPatches"]["worker"] = (
+            changed["kubernetesStage"]["offlineRenderPatches"]["controlPlane"])
+        with self.assertRaisesRegex(ValueError, "worker target patch"):
+            self.module.validate_target_patches(changed)
+
+    def test_installer_requires_no_fallback_mirror_on_the_selected_node(self):
+        machine = {"mirrors": {"ghcr.io": {"endpoints": [
+            "https://harbor.stinkyboi.com/v2/mirror/ghcr.io"],
+            "overridePath": True, "skipFallback": True}}}
+        self.module.verify_installer_mirror_route(machine,
+            self.config["talosStages"][0]["installerImage"])
+        machine["mirrors"]["ghcr.io"]["skipFallback"] = False
+        with self.assertRaisesRegex(ValueError, "no-fallback"):
+            self.module.verify_installer_mirror_route(machine,
+                self.config["talosStages"][0]["installerImage"])
 
 
 if __name__ == "__main__":

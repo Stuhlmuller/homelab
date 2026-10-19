@@ -11,6 +11,8 @@ import stat
 import subprocess
 import sys
 import tempfile
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -22,6 +24,8 @@ ADDRESSES = ("10.1.0.200", "10.1.0.201", "10.1.0.202", "10.1.0.199")
 RECEIPTS = ("placement", "direct-recovery", "off-node-etcd-backup", "artifact-publication")
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 RECEIPT_PREFIX = "openclaw-enterprise/platform/upgrade"
+PREREQUISITE_PREFIX = "openclaw-enterprise/platform/receipts"
+MAX_RECOVERY_AGE_SECONDS = 6 * 60 * 60
 
 
 def receipt_target():
@@ -200,6 +204,43 @@ class DurableReceipts:
                 output.flush()
                 os.fsync(output.fileno())
 
+    def load_one(self, key, path):
+        result = self.call("s3api", "list-object-versions", ["--prefix", key])
+        versions = result.get("Versions", [])
+        if (result.get("IsTruncated") is True or result.get("DeleteMarkers") or
+                not isinstance(versions, list) or len(versions) != 1 or
+                versions[0].get("Key") != key or
+                versions[0].get("IsLatest") is not True or
+                not isinstance(versions[0].get("VersionId"), str) or
+                versions[0]["VersionId"] in ("", "null")):
+            raise ValueError("private prerequisite is missing or has ambiguous history")
+        content = self.download(key, versions[0]["VersionId"], path.parent)
+        if path.exists() or path.is_symlink():
+            if read_private_json(path) != json.loads(content) or path.read_bytes() != content:
+                raise ValueError("runner-local prerequisite differs from durable copy")
+            return
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "wb") as output:
+            output.write(content)
+            output.flush()
+            os.fsync(output.fileno())
+
+    def load_prerequisites(self, source_sha, directory):
+        """Restore one immutable, checksummed version of each current-SHA gate."""
+        if not isinstance(source_sha, str) or not SHA.fullmatch(source_sha):
+            raise ValueError("invalid prerequisite source revision")
+        directory = private_directory(directory)
+        for name in RECEIPTS:
+            key = f"{PREREQUISITE_PREFIX}/{source_sha}/{name}.json"
+            self.load_one(key, directory / f"{name}.json")
+
+    def load_istio_completions(self, config, directory):
+        directory = private_directory(directory)
+        for item in config["istioStages"]:
+            stage = f"istio-{item['to']}"
+            key = f"openclaw-enterprise/platform/stages/{stage}/verified.json"
+            self.load_one(key, directory / f"{stage}.json")
+
 
 def validate_config(config):
     if not isinstance(config, dict) or config.get("schemaVersion") != 1:
@@ -242,6 +283,44 @@ def validate_config(config):
     return config
 
 
+def fresh_recovery_time(value):
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", value):
+        raise ValueError("private recovery timestamp is invalid")
+    captured = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    age = (datetime.now(timezone.utc) - captured).total_seconds()
+    if not 0 <= age <= MAX_RECOVERY_AGE_SECONDS:
+        raise ValueError("private recovery evidence is stale or in the future")
+
+
+def verify_prerequisites(config, source_sha, receipts):
+    if (not isinstance(receipts, dict) or
+            any(not isinstance(receipts.get(name), dict) or
+                receipts[name].get("sourceSha") != source_sha or
+                receipts[name].get("verified") is not True for name in RECEIPTS)):
+        raise ValueError("private recovery evidence is missing or stale")
+    placement = receipts["placement"]
+    if (placement.get("canaryNode") != config["canary"]["node"] or
+            placement.get("measured") is not True or
+            placement.get("isolatedTaint") != config["canary"]["taint"]):
+        raise ValueError("measured isolated canary placement is missing")
+    recovery = receipts["direct-recovery"]
+    fresh_recovery_time(recovery.get("capturedAt"))
+    if (recovery.get("transport") != "direct-lan-authenticated-talos" or
+            recovery.get("endpoint") != "10.1.0.199:50000" or
+            recovery.get("nodes") != list(NODES) or
+            recovery.get("talosMtls") is not True):
+        raise ValueError("direct-LAN Talos recovery was not proved")
+    backup = receipts["off-node-etcd-backup"]
+    fresh_recovery_time(backup.get("capturedAt"))
+    if (backup.get("offNode") is not True or
+            backup.get("offlineRestoreVerified") is not True or
+            not isinstance(backup.get("snapshotSha256"), str) or
+            not re.fullmatch(r"[0-9a-f]{64}", backup["snapshotSha256"]) or
+            not isinstance(backup.get("objectVersionId"), str) or
+            backup["objectVersionId"] in ("", "null")):
+        raise ValueError("fresh off-node etcd recovery proof is incomplete")
+
+
 def authorize_stage(config, stage, expected_sha, current_sha, receipts):
     validate_config(config)
     stages = [f"talos-{item['to']}" for item in config["talosStages"]]
@@ -258,11 +337,16 @@ def authorize_stage(config, stage, expected_sha, current_sha, receipts):
         if (not isinstance(receipt, dict) or receipt.get("sourceSha") != expected_sha or
                 receipt.get("verified") is not True):
             raise ValueError("private recovery evidence is missing or stale")
+    verify_prerequisites(config, expected_sha, receipts)
     for prior in stages[:stages.index(stage)]:
         receipt = receipts.get(prior)
         if (not isinstance(receipt, dict) or not isinstance(receipt.get("sourceSha"), str) or
                 not SHA.fullmatch(receipt["sourceSha"]) or receipt.get("verified") is not True):
             raise ValueError("preceding maintenance stage is unverified")
+        if prior.startswith("istio-") and (
+                receipt.get("stage") != prior or receipt.get("pinSha256") != PIN_SHA256 or
+                receipt.get("observedVersion") != prior.removeprefix("istio-")):
+            raise ValueError("preceding Istio stage is not bound to the reviewed ladder")
     return stage
 
 
@@ -431,6 +515,105 @@ def kubernetes_upgrade_command(config, talosconfig, catalog):
     return command
 
 
+def active_machine_state(config, talosconfig, node):
+    """Read the active and persistent Talos config without exposing its secrets."""
+    address = config["expectedStart"]["nodes"][node]["address"]
+    result = subprocess.run(
+        ["talosctl", "--talosconfig", str(talosconfig), "--endpoints",
+         config["protectedTalosEndpoint"], "--nodes", address,
+         "get", "machineconfig", "-o", "json"],
+        capture_output=True, text=True, timeout=60, check=True)
+    decoder = json.JSONDecoder()
+    stream = result.stdout.strip()
+    resources = {}
+    while stream:
+        resource, consumed = decoder.raw_decode(stream)
+        metadata = resource.get("metadata", {})
+        identity = metadata.get("id")
+        if (identity not in ("v1alpha1", "persistent") or identity in resources or
+                metadata.get("namespace") != "config" or
+                metadata.get("type") != "MachineConfigs.config.talos.dev" or
+                metadata.get("phase") != "running" or
+                not isinstance(resource.get("spec"), str)):
+            raise ValueError("Talos machine config state is ambiguous")
+        resources[identity] = resource
+        stream = stream[consumed:].strip()
+    if "v1alpha1" not in resources:
+        raise ValueError("active Talos machine config is missing")
+    if ("persistent" not in resources and
+            resources["v1alpha1"]["metadata"].get("version") != 1):
+        raise ValueError("active Talos machine config has no persistent counterpart")
+
+    def decode_machine(source):
+        rendered = subprocess.run(
+            ["yq", "ea", "-o=json", "-I=0",
+             ". as $item ireduce ([]; . + [$item])", "-"], input=source,
+            capture_output=True, text=True, timeout=30, check=True)
+        documents = json.loads(rendered.stdout)
+        configs = [item for item in documents if isinstance(item, dict) and
+                   item.get("version") == "v1alpha1"]
+        if len(configs) != 1 or not isinstance(configs[0].get("machine"), dict):
+            raise ValueError("Talos machine config has no unique machine document")
+        return documents, configs[0]["machine"]
+
+    active_docs, machine = decode_machine(resources["v1alpha1"]["spec"])
+    if ("persistent" in resources and
+            decode_machine(resources["persistent"]["spec"])[0] != active_docs):
+        raise ValueError("active and persistent Talos machine configs differ")
+    role = "controlplane" if node == "acer" else "worker"
+    install = machine.get("install", {})
+    disk = install.get("disk") if isinstance(install, dict) else None
+    if (machine.get("type") != role or not isinstance(disk, str) or
+            not disk.startswith("/dev/") or disk == "/dev/"):
+        raise ValueError("Talos role or install disk differs from reviewed node")
+    registries = machine.get("registries", {})
+    if not isinstance(registries, dict) or not isinstance(registries.get("mirrors", {}), dict):
+        raise ValueError("Talos registry mirror config is malformed")
+    return {"role": role, "disk": disk, "mirrors": registries.get("mirrors", {})}
+
+
+def verify_kubernetes_mirror_tags(config):
+    """Require the five Talos-generated tags to be locked to reviewed digests."""
+    version = config["kubernetesStage"]["to"]
+    for source in config["kubernetesStage"]["images"].values():
+        repository, digest = source.split(f":v{version}@", 1)
+        mirror = f"mirror/{repository}"
+        encoded = urllib.parse.quote(urllib.parse.quote(repository, safe=""), safe="")
+        url = ("https://harbor.stinkyboi.com/api/v2.0/projects/mirror/repositories/"
+               f"{encoded}/artifacts/v{version}?with_tag=true&with_immutable_status=true")
+        with urllib.request.urlopen(url, timeout=30) as response:
+            payload = response.read(1048577)
+        if len(payload) > 1048576:
+            raise ValueError("Harbor Kubernetes tag response is oversized")
+        artifact = json.loads(payload)
+        tags = artifact.get("tags") if isinstance(artifact, dict) else None
+        if (not isinstance(artifact, dict) or artifact.get("digest") != digest or
+                not isinstance(tags, list) or
+                len([tag for tag in tags if isinstance(tag, dict) and
+                     tag.get("name") == f"v{version}" and tag.get("immutable") is True]) != 1):
+            raise ValueError(f"Harbor Kubernetes tag is not locked: {mirror}")
+
+
+def verify_kubernetes_mirror_routes(config, talosconfig):
+    for node in NODES:
+        mirrors = active_machine_state(config, talosconfig, node)["mirrors"]
+        for registry in ("ghcr.io", "registry.k8s.io"):
+            expected = {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
+                        "overridePath": True, "skipFallback": True}
+            if mirrors.get(registry) != expected:
+                raise ValueError("Talos node lacks the reviewed no-fallback Harbor mirror")
+
+
+def verify_installer_mirror_route(machine, image):
+    registry = image.split("/", 1)[0]
+    if registry not in ("ghcr.io", "factory.talos.dev"):
+        raise ValueError("Talos installer registry is not reviewed")
+    expected = {"endpoints": [f"https://harbor.stinkyboi.com/v2/mirror/{registry}"],
+                "overridePath": True, "skipFallback": True}
+    if machine["mirrors"].get(registry) != expected:
+        raise ValueError("Talos installer lacks the reviewed no-fallback Harbor mirror")
+
+
 def verify_stage_receipt(config, stage, summary, receipt_dir):
     target = next((item for item in config["talosStages"]
                    if stage == f"talos-{item['to']}"), None)
@@ -541,8 +724,9 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
                    if stage == f"talos-{item['to']}"), None)
     if target is None:
         raise ValueError("only reviewed Talos stages use node upgrade execution")
-    require_publication(config, source_sha,
-                        read_receipts(receipt_dir).get("artifact-publication"))
+    receipts = read_receipts(receipt_dir)
+    verify_prerequisites(config, source_sha, receipts)
+    require_publication(config, source_sha, receipts.get("artifact-publication"))
     observed = read_only_inspection(config, talosconfig)
     stage_file = private_output(receipt_dir / f"{stage}.json")
     if stage_file.exists():
@@ -571,6 +755,9 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
             continue
         if current_main_sha() != source_sha:
             raise ValueError("main advanced before Talos node upgrade")
+        verify_prerequisites(config, source_sha, read_receipts(receipt_dir))
+        machine_before = active_machine_state(config, talosconfig, node)
+        verify_installer_mirror_route(machine_before, target["installerImage"])
         start_node_receipt(receipt_dir, stage, node, target["from"], target["to"], source_sha,
                            store)
         if current_main_sha() != source_sha:
@@ -581,6 +768,8 @@ def execute_talos_stage(config, stage, source_sha, talosconfig, receipt_dir, sto
                        check=True)
         observed = read_only_inspection(config, talosconfig)
         current = observed["nodes"][node]
+        if active_machine_state(config, talosconfig, node) != machine_before:
+            raise ValueError("Talos upgrade changed machine role, install disk, or mirror map")
         if (current["talos"] != target["to"] or not current["ready"] or
                 current["kubelet"] != "v1.34.11"):
             raise ValueError("Talos node did not reach the reviewed target")
@@ -611,8 +800,9 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
     target = config["kubernetesStage"]
     if stage != f"kubernetes-{target['to']}":
         raise ValueError("unreviewed Kubernetes upgrade stage")
-    require_publication(config, source_sha,
-                        read_receipts(receipt_dir).get("artifact-publication"))
+    receipts = read_receipts(receipt_dir)
+    verify_prerequisites(config, source_sha, receipts)
+    require_publication(config, source_sha, receipts.get("artifact-publication"))
     catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
     command = kubernetes_upgrade_command(config, talosconfig, catalog)
     observed = read_only_inspection(config, talosconfig)
@@ -632,6 +822,8 @@ def execute_kubernetes_stage(config, stage, source_sha, talosconfig, receipt_dir
                 not observed["nodes"][node]["ready"] for node in NODES)):
         raise ValueError("Kubernetes upgrade baseline is not uniformly ready")
     cluster_health(config, talosconfig)
+    verify_kubernetes_mirror_routes(config, talosconfig)
+    verify_kubernetes_mirror_tags(config)
     if current_main_sha() != source_sha:
         raise ValueError("main advanced before Kubernetes upgrade")
     save_inspection(stage_file, {"format": 1, "stage": stage, "sourceSha": source_sha,
@@ -729,6 +921,7 @@ def save_inspection(path, record):
 
 def validate_rendered_configs(config, control_plane, worker):
     """Strictly validate private bases and every reviewed offline target patch."""
+    validate_target_patches(config)
     for path in (control_plane, worker):
         if (not path.is_file() or path.stat().st_uid != os.getuid() or
                 stat.S_IMODE(path.stat().st_mode) != 0o600):
@@ -757,6 +950,34 @@ def validate_rendered_configs(config, control_plane, worker):
                 subprocess.run(["talosctl", "validate", "--config", str(destination),
                                 "--mode", "metal", "--strict"],
                                capture_output=True, text=True, timeout=60, check=True)
+
+
+def validate_target_patches(config):
+    """Image-only OS patches preserve each private base's install disk."""
+    def lines(path):
+        return [line.rstrip() for line in path.read_text().splitlines()
+                if line.strip() and not line.lstrip().startswith("#")]
+
+    for stage in config["talosStages"]:
+        patch = ROOT / f'.talos/patches/talos-{stage["to"]}.yaml'
+        if lines(patch) != ["machine:", "  install:",
+                            f'    image: {stage["installerImage"]}']:
+            raise ValueError("Talos target patch changes more than the pinned installer image")
+    target = config["kubernetesStage"]
+    images = {component: source.split("@sha256:", 1)[0]
+              for component, source in target["images"].items()}
+    worker = ROOT / target["offlineRenderPatches"]["worker"]
+    control = ROOT / target["offlineRenderPatches"]["controlPlane"]
+    kubelet = ["machine:", "  kubelet:", f'    image: {images["kubelet"]}']
+    if lines(worker) != kubelet:
+        raise ValueError("worker target patch changes more than the pinned kubelet image")
+    expected_control = kubelet + ["cluster:", "  apiServer:",
+        f'    image: {images["kube-apiserver"]}', "  controllerManager:",
+        f'    image: {images["kube-controller-manager"]}', "  scheduler:",
+        f'    image: {images["kube-scheduler"]}', "  proxy:",
+        f'    image: {images["kube-proxy"]}']
+    if lines(control) != expected_control:
+        raise ValueError("control-plane target patch differs from pinned Kubernetes images")
 
 
 def main():
@@ -801,6 +1022,9 @@ def main():
                 raise ValueError("platform maintenance is not activated")
             store = DurableReceipts(receipt_target())
             store.check()
+            store.load_prerequisites(args.expected_sha, args.receipt_dir)
+            if args.stage.startswith("kubernetes-"):
+                store.load_istio_completions(config, args.receipt_dir)
             for item in config["talosStages"]:
                 prior = f"talos-{item['to']}"
                 if prior == args.stage:
