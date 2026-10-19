@@ -80,7 +80,9 @@ def rotate():
                                      headers={'Authorization': 'Bearer ' + key})
     with urllib.request.build_opener(NoRedirect()).open(request, timeout=20) as response:
         data = json.loads(response.read(1048576))['data']
-    if not isinstance(data, dict) or not isinstance(data.get('label'), str):
+    if (not isinstance(data, dict) or not isinstance(data.get('label'), str)
+            or data.get('is_management_key') is not False
+            or data.get('is_provisioning_key') is not False):
         raise RuntimeError('Provider validation failed')
     validate_context()
     result = store(key, parameter)

@@ -50,6 +50,9 @@ with patch.dict(os.environ, {'LITELLM_OPENROUTER_API_KEY': key, 'OCE_MODEL_API_K
 
 
 class ProviderResponse:
+    def __init__(self, data):
+        self.data = data
+
     def __enter__(self):
         return self
 
@@ -57,14 +60,19 @@ class ProviderResponse:
         return False
 
     def read(self, limit):
-        return b'{"data":{"label":"enterprise-test"}}'
+        return json.dumps({'data': self.data}).encode()
 
 
 class ProviderOpener:
+    def __init__(self, data=None):
+        self.data = data if data is not None else {
+            'label': 'enterprise-test', 'is_management_key': False,
+            'is_provisioning_key': False}
+
     def open(self, request, timeout):
         assert request.full_url == 'https://openrouter.ai/api/v1/key'
         assert request.get_header('Authorization') == 'Bearer ' + key
-        return ProviderResponse()
+        return ProviderResponse(self.data)
 
 
 metadata = {'Parameters': [{'Name': module.ENTERPRISE_PARAMETER,
@@ -80,6 +88,23 @@ with patch.dict(os.environ, {'OCE_MODEL_API_KEY': key}), \
     assert any(module.ENTERPRISE_PARAMETER in item for item in command.call_args.args[0])
     store.assert_called_once_with(key, module.ENTERPRISE_PARAMETER)
     assert 'OCE_MODEL_API_KEY' not in os.environ
+
+for invalid_data in (
+        {'label': 'management', 'is_management_key': True, 'is_provisioning_key': False},
+        {'label': 'provisioning', 'is_management_key': False, 'is_provisioning_key': True},
+        {'label': 'missing-flags'}):
+    with patch.dict(os.environ, {'OCE_MODEL_API_KEY': key}), \
+            patch.object(sys, 'argv', [str(source), '--openclaw-enterprise']), \
+            patch.object(module, 'validate_context'), \
+            patch.object(module, 'command', return_value=json.dumps(metadata)), \
+            patch.object(module.urllib.request, 'build_opener',
+                         return_value=ProviderOpener(invalid_data)), \
+            patch.object(module, 'store') as store:
+        try:
+            module.rotate()
+            raise AssertionError('Non-inference credential accepted')
+        except RuntimeError:
+            assert not store.called
 
 legacy_metadata = {'Parameters': [{'Name': module.PARAMETER,
                                    'Type': 'SecureString', 'KeyId': 'alias/aws/ssm'}]}
