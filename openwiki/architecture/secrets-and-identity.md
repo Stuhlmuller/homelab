@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -68,6 +70,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -82,10 +86,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T05:20:35.611Z" }
+generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:59:29.575Z
+    at: 2026-10-19T06:36:33.438Z
 ---
 
 # Secrets And Identity
@@ -580,7 +584,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `/homelab/n8n/postgres-app-password` values; n8n receives only the app
   password through `n8n-postgres-client` and
   `DB_POSTGRESDB_PASSWORD_FILE`.
-- OpenClaw uses `/homelab/openclaw/app-secret` as
+- The stopped legacy OpenClaw retains `/homelab/openclaw/app-secret` as
   `OPENCLAW_GATEWAY_TOKEN`; bootstrap configures gateway auth with an OpenClaw
   SecretRef to that environment value instead of a generated file under the
   container user's home directory. OpenClaw uses
@@ -600,6 +604,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   that key for a homelab-only installation token on each CLI/Git invocation.
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
+- Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
+  contract. OpenTofu generates five internal values; the model key stays a
+  placeholder until the owner supplies a distinct OpenRouter inference key to
+  the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
+  It verifies the key and writes only the new SSM path. The selected
+  `openrouter/free` model uses OCE's OpenAI-compatible provider configuration.
+  Activation remains disabled until the key, consumer refresh, and real model
+  probe pass. No legacy OpenClaw or LiteLLM credential is an alias for this
+  agent. See the [SSM contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure

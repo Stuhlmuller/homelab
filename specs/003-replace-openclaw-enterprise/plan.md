@@ -55,7 +55,7 @@ DNS, access, storage, controllers, or shared applications.
 **Constraints**: Capacity/canary allocation currently blocks execution. No manual
 live fixes, unverified image substitutions, automatic Kubernetes downgrade,
 secret disclosure, or old-data deletion. Fresh agent activation requires explicit
-model/key configuration; deployment includes a real model probe.
+model/key configuration and a real model probe.
 
 The 2026-10-17 read-only refresh in [research.md](research.md#r4--capacity-is-a-real-execution-gate)
 confirmed the starting versions and no canary/CRDs. Istio 1.27.9 is unnecessary

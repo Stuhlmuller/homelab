@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:979ddfbeba38d5ae5a71a01c4b74234ecc6dca380a3c211b6e219600abcdfc6b",
+  "pageVersion": "sha256:7a42d700ff2a34a9136e1a5330161417fc0c19f61e358e9a64a322f3d582d5c9",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -68,13 +68,27 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:98e68025f56c540531f819875e36d2e864f4b1d9f0c77e6bf1cea386c018ac2d"
+          "version": "repo-file-v1:sha256:ce0f96d0857c48116c130a2bf5a3d9a8a28590e23df5c2fb6cdb7d1c13af51c4"
+        }
+      ]
+    },
+    {
+      "id": "claim_5a4ca0c942b24b31bb9ec49ecc83fe60",
+      "statement": "The protected OpenClaw Enterprise model-credential workflow accepts exact current-main dispatch, validates an owner-supplied OpenRouter key, and writes only its separate Enterprise SSM parameter; it has not run without that key.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-model-credential.yml",
+          "version": "repo-file-v1:sha256:be0b014fb7de7d184a44d232ef7a443c84b33e4486051f876708b69233679fc4"
+        },
+        {
+          "resource": "repo://docs/secrets-aws-ssm.md",
+          "version": "repo-file-v1:sha256:ebab95e51be87738be4308bbdcca93d3ee02956f7cb85b34f661fbbccb5ab56d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T06:14:05.634Z"
+    "at": "2026-10-19T06:36:33.438Z"
   }
 }

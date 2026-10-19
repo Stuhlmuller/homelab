@@ -22,16 +22,20 @@ sources:
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-2170f836209310971c5e7b70
+    resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
+generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:14:05.634Z
+    at: 2026-10-19T06:36:33.438Z
 ---
 
 # CI/CD
@@ -66,6 +70,12 @@ verification now run on matching `main` pushes or reviewed manual dispatches,
 without optional pull-request runs. Image automation no longer observes every
 five minutes; dispatch its `verify` operation from `main` for a deliberate
 journal check. Required pull-request checks retain their existing producers.
+
+The separate [OpenClaw Enterprise model-credential workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
+accepts only an exact current-`main` dispatch into `homelab-production`. Its
+protected job validates the owner-supplied OpenRouter key, then writes only the
+new Enterprise SSM parameter. It has not run because the key is not yet supplied;
+this source change does not activate Enterprise.
 
 See [Validation Gates](../operations/validation-gates.md) and [GitOps Flow](../architecture/gitops-flow.md).
 

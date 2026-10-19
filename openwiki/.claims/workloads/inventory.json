@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:39705b6f5bddc11c893a131db08898279129b3859ae5ea21d20364246d096de9",
+  "pageVersion": "sha256:5c638e4656014cb770be273a5c38247662a3c28349d5b3604df4fcf4326b82b5",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -300,7 +300,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
+          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -323,10 +323,28 @@
           "version": "repo-lines-v1:sha256:504abc8d5e74ffccee77f0ac7f3561473a70018d486ade05db1e6ae4f5268678:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5ZWQzYmNmYTc1YTc0YmQ3MTc3ZDMyMDFmYjRjNzA0NWFjMTJiMGMyNzNkYTcyYzFkOGYyZTEwNjMyYTI1NzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3ZWFiMTdmMjlmNmM4NjhmMGE5ZWQ5MzFhOTcxZTAyYmNlMzQ4YzhiZTFiOGZkYjczOTRhZjgxYmU0ZjY4ZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4MDJhZWI5NGNlODI0M2Q4NWQ5OTI1ZGY2MDJhYTVkMmE3ZDdhNDIwNDhmOGU3N2RhNzJlZGExYTdjNzU5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5YTI1YjJmNDI2OGFmMTNlZmQxZWE4MzE1MGJmYjBjNDhkMmUyZmViOTE0MTRlYWM4MzJlODZhNWM1YmY3ZTMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_af434c04a9eb4187b151af1658217b9b",
+      "statement": "Legacy OpenClaw's gateway and backup writer are stopped by GitOps, its local/NAS state and four PVC/PV identities are retained, and independent archive/restore is pending; the Enterprise replacement remains source-staged with activation disabled and no dedicated canary node.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw/README.md",
+          "version": "repo-file-v1:sha256:6711188198c0e4d1d4f68d95548814c9bbb972fa23d72b501ee4d6d30308d286"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:2c91d138947ca944ea4a0dd892d28a4c51caa2e5ee4855ca25910a99be75cad7"
+        },
+        {
+          "resource": "repo://scripts/config/openclaw-enterprise.json",
+          "version": "repo-file-v1:sha256:2889f1a61e11e04123322e1d69e566019daa3a22b7a7010d9ee41fec32ddb0f2"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:30:44.377Z"
+    "at": "2026-10-19T06:36:33.438Z"
   }
 }

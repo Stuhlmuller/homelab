@@ -607,7 +607,7 @@ inputs = {
       }
     }
     "/homelab/openclaw-enterprise/model-api-key" = {
-      description   = "Fresh OpenClaw Enterprise agent OpenAI credential; operator-supplied through a protected workflow."
+      description   = "Fresh OpenClaw Enterprise agent OpenRouter key through OCE OpenAI-compatible transport; supplied through a protected workflow."
       initial_value = local.placeholder
     }
     "/homelab/nofx/ghcr-read-token" = {

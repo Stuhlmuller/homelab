@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -72,12 +74,16 @@ sources:
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -192,10 +198,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
+generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:14:05.634Z
+    at: 2026-10-19T06:36:33.438Z
 ---
 
 # Validation Gates
@@ -1469,6 +1475,17 @@ declared contract: live NRI enforcement, denied traffic, credential refresh,
 cold pulls, canary cleanup, and workflow execution remain gates before
 enabling registration or changing job selectors. See the
 [runner source contract](../../builds/cordium-runner/README.md).
+
+## OpenClaw Enterprise replacement gates
+
+The Enterprise model-credential workflow is protected by exact current-`main`
+source checks and validates an owner-supplied OpenRouter key before writing only
+`/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
+The stopped legacy inventory is verified, but the independent archive/restore,
+full image catalog, isolated canary, platform upgrades, and new-state restore
+remain acceptance gates. Source-only static checks do not activate the agent.
+See the [rollout runbook](../../docs/openclaw-enterprise-rollout.md) and
+[acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
 ## OpenClaw bootstrap gates
 

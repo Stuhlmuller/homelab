@@ -149,11 +149,40 @@ The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
 none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
 SSM unit generates the five internal values below in encrypted state and grants
 their exact parameter names to the External Secrets reader. The model key is a
-placeholder until a separate protected `homelab-production` credential workflow
-writes an owner-supplied OpenAI key. `REPLACE_ME` must block activation and any
-billable probe. That workflow must use the existing
-`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role, a fixed parameter name and an exact
-current-main SHA; it must not accept the key as a dispatch argument or print it.
+placeholder until `openclaw-enterprise-model-credential.yml` in the protected
+`homelab-production` environment writes an owner-supplied OpenRouter API key.
+`REPLACE_ME` must block activation and any provider probe, but not foundation
+or stopped Agent creation. Never register a placeholder as an OCC `harnessAuth`
+Secret. The workflow uses the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role,
+a fixed parameter name and an exact current-main SHA; it never accepts the key
+as a dispatch argument or prints it.
+
+Temporarily store the new owner OpenRouter key in the `homelab-production`
+environment secret `OCE_MODEL_API_KEY`, then dispatch the
+[fixed credential workflow](../.github/workflows/openclaw-enterprise-model-credential.yml)
+on `main` with its exact current commit as `expected_sha`. Its
+[writer](../scripts/litellm-provider-credential.py) checks OpenRouter
+authentication and writes only `/homelab/openclaw-enterprise/model-api-key`;
+it never copies the LiteLLM credential. Verify the SSM version receipt,
+advance the committed `OnChange` ExternalSecret revision, and check the target
+Secret and OCC `harnessAuth` binding. After reviewed activation, verify real
+inference from the Agent on that consumer revision. Authentication at
+`/api/v1/key` alone is not acceptance. Remove the temporary GitHub secret only
+after that end-to-end check succeeds.
+
+Before rotating a working key, retain its known-good owner copy privately until
+the replacement passes. If the first key fails a pre-activation check, keep
+[`activationEnabled: false`](../scripts/config/openclaw-enterprise.json),
+replace the temporary GitHub input with a corrected owner key, and repeat the
+same protected workflow; do not activate or delete unverified input. If the
+first activation or an active rotation fails real inference, stop the Agent
+through reviewed reconciliation and use the same fixed workflow to restore the
+still-safe known-good owner key. If none exists or it is unsafe, use a corrected
+new owner key instead. Verify the newer SSM version, commit another
+ExternalSecret revision, reconcile the OCC Secret and Agent, and confirm real
+inference on the restored consumer revision before deleting the temporary
+GitHub input or revoking the failed key. Keep all key values out of git,
+dispatch inputs and logs.
 
 | SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
 | --- | --- | --- | --- |
@@ -162,7 +191,7 @@ current-main SHA; it must not accept the key as a dispatch argument or print it.
 | `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
 | `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API/worker session signing |
 | `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
-| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Fresh agent's native model Secret only |
+| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Protected reconciler registers the key as the fresh Agent's OCC `harnessAuth` Secret; OCE projects `OPENAI_API_KEY` only to that agent |
 
 The foundation must materialize the exact TLS-verified application and
 migration URLs in `openclaw-system/occ-database` without mounting the admin or
@@ -179,10 +208,10 @@ listener certificate in separate Secrets; neither is an SSM password. Preserve
 the bootstrap files, CA Secret, auth key, gateway key, database roles and new
 agent state as one recovery set. The protected operations workflow must receive
 Talos client identity through its protected credential path, never a repo file
-or an SSM value projected into application Pods. No such live projection or
-credential write exists yet.
+or an SSM value projected into application Pods. No live Talos projection or
+Enterprise model-credential write has occurred yet.
 
-The planned protected workflows use distinct `homelab-production` environment
+The protected workflows use distinct `homelab-production` environment
 secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
 writer, and `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
 the fixed platform-maintenance job. Neither is a workflow dispatch input or an
@@ -614,17 +643,22 @@ after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
 
 Renovate reuses the App credentials held by the separate
-`Stuhlmuller/renovate` GitHub Actions runner. Its reviewed transfer workflow
-writes only the fixed issuer ID and private-key parameters through a dedicated,
-temporary OIDC role; no key appears in this repository or a workflow artifact.
+`Stuhlmuller/renovate` GitHub Actions runner. Protected transfer run
+`39196912858` on 2026-10-19 wrote only the fixed issuer ID and private-key
+parameters through the temporary OIDC role. Both SecureStrings reached version
+2, and no key entered this repository or a workflow artifact.
 The `renovate` ExternalSecret in `automation` projects them into the `renovate`
 Secret as `issuer-id` and `private-key`, mounted read-only as files under
-`/var/run/secrets/renovate`. It refreshes every five minutes. Rotate through a
-reviewed temporary transfer grant, then verify a refresh after the transfer
-and confirm a later Job uses the same App identity before retiring the grant.
-Keep the CronJob suspended until a post-transfer refresh is confirmed and the
-transfer grant is removed. See the
-[Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+`/var/run/secrets/renovate`. It refreshes every five minutes. After transfer,
+it refreshed at 03:56:19 UTC with `Ready=True` and a changed target Secret
+resource version. At that check, the CronJob was suspended with no Job. The
+transfer role is absent from current IaC source. Live deletion still needs the
+exact saved-plan apply and a fresh no-op plan in the
+[operator runbook](operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement).
+Keep the CronJob suspended until deletion is verified. Rotation requires a
+reviewed reintroduction of the same limited role, a later ExternalSecret
+refresh, and a Job using the same App identity before retiring the grant again.
+See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret

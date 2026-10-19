@@ -96,6 +96,8 @@ sources:
     resource: repo://docs/evidence/harbor-core-full-runtime-audit-2026-10-11.json
   - id: openwiki-source-291f8c32edb318126465429b
     resource: repo://docs/evidence/harbor-core-registry-fixture-2026-10-11.json
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
@@ -138,10 +140,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
+generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:14:05.634Z
+    at: 2026-10-19T06:36:33.438Z
 ---
 
 # Harbor Private OCI Registry
@@ -825,6 +827,12 @@ flowchart TD
 
 Missing-artifact publication verifies source bytes before upload and independently
 checks the complete destination download.
+
+The pinned stock OpenClaw Enterprise controller and runtime pair has a signed
+protected publication with complete Harbor pulls. The full platform image
+catalog and transitive render still lack a complete publication receipt;
+publishing the stock pair alone does not release the Enterprise rollout.
+See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned
 Image Updater v1.3.0 and Kubernetes SIG Network `kube-network-policies` v1.1.2.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c07d1114e8ac72565f2481de141fa1df40f84048856583dfaad161c663d4673b",
+  "pageVersion": "sha256:5f286ce22ed8f7dfeab6e5ba6841dd1463e17bf656792a9d6e17153c70700fbd",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:98e68025f56c540531f819875e36d2e864f4b1d9f0c77e6bf1cea386c018ac2d"
+          "version": "repo-file-v1:sha256:ce0f96d0857c48116c130a2bf5a3d9a8a28590e23df5c2fb6cdb7d1c13af51c4"
         }
       ]
     },
@@ -728,7 +728,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:98e68025f56c540531f819875e36d2e864f4b1d9f0c77e6bf1cea386c018ac2d"
+          "version": "repo-file-v1:sha256:ce0f96d0857c48116c130a2bf5a3d9a8a28590e23df5c2fb6cdb7d1c13af51c4"
         }
       ]
     },
@@ -796,7 +796,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
+          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -859,10 +859,28 @@
           "version": "repo-file-v1:sha256:04b6f987c031d00622391dfbfea25cb58ea3ea7c520c1e2487225c840383c403"
         }
       ]
+    },
+    {
+      "id": "claim_c77965dc42ad4f329385376a55d6e76e",
+      "statement": "The OpenClaw Enterprise model-credential workflow binds to exact current main and validates an owner-supplied OpenRouter key before writing only its distinct SSM path; the archive/restore, full image catalog, isolated canary, platform upgrades, and new-state restore remain acceptance gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-model-credential.yml",
+          "version": "repo-file-v1:sha256:be0b014fb7de7d184a44d232ef7a443c84b33e4486051f876708b69233679fc4"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:2c91d138947ca944ea4a0dd892d28a4c51caa2e5ee4855ca25910a99be75cad7"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:2e5ea96cde46fcc2ecfad16a9300922789686a39bfdc3275383edd253681b568"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T06:14:05.634Z"
+    "at": "2026-10-19T06:36:33.438Z"
   }
 }

@@ -189,10 +189,17 @@ the default NFS StorageClass is not suitable for its authoritative SQLite state.
 
 Use native IAM/password login and one fresh Embedded OpenClaw agent. No channels,
 repository broker, optional collector, Slack proxy, Backend, or Codex Harness.
-Provider is the stock supported OpenAI path; model identifier and a dedicated
-provider key must be supplied explicitly before activation. Do not adopt the
-example model or reuse LiteLLM/old assistant credentials. Agent deployment runs a
-real model probe, so it is an inference action, not a free readiness test.
+Use OpenRouter's `openrouter/free` model through the pinned OCE driver's
+supported `openai` provider, `openai-completions` API and
+`https://openrouter.ai/api/v1` base URL. OCE's model reference is
+`openai/openrouter/free`; the upstream wire model remains `openrouter/free`.
+Direct `openrouter/free` as an OCE reference is rejected by the
+[pinned Kubernetes driver](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/apps/controller/src/drivers/compute/kubernetes/index.ts#L2267-L2275), while its
+[conformance test](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/tests/conformance/kubernetes-compute.test.mjs#L8248-L8255) accepts nested model IDs under `openai`.
+[OpenRouter's free-router contract](https://openrouter.ai/docs/guides/routing/routers/free-router) uses `openrouter/free` on the wire.
+A dedicated OpenRouter key must be supplied through Agent `harnessAuth` before
+inference; do not adopt the example model or reuse LiteLLM/old assistant
+credentials. A real model probe is an inference action, not a read-only readiness test.
 
 Use `console.oce.stinkyboi.com` and returned per-agent origins under
 `agents.oce.stinkyboi.com`, cookie scope `oce.stinkyboi.com`. Keep both behind
@@ -274,5 +281,5 @@ Sources: [Envoy compatibility](https://gateway.envoyproxy.io/news/releases/matri
 Product-scope questions are resolved by the owner's clarification. No technical
 selection remains unspecified. Execution gates remain: capacity/canary allocation,
 immutable artifact receipts, actual platform compatibility and isolation tests,
-provider model/key input, full restores, and real browser/inference acceptance.
+the dedicated OpenRouter key, full restores, and real browser/inference acceptance.
 These must fail closed during implementation; this document does not mark them passed.
