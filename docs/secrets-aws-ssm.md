@@ -654,7 +654,7 @@ it refreshed at 03:56:19 UTC with `Ready=True` and a changed target Secret
 resource version. At that check, the CronJob was suspended with no Job. The
 transfer role is absent from current IaC source. Live deletion still needs the
 exact saved-plan apply and a fresh no-op plan in the
-[operator runbook](../IaC/operator/README.md#renovate-app-credential-transfer-and-role-retirement).
+[operator runbook](operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement).
 Keep the CronJob suspended until deletion is verified. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.

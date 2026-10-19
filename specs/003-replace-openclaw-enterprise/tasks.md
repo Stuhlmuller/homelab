@@ -51,7 +51,7 @@ before any story implementation; they do not imply platform or app readiness.
 
 - [ ] T004 [P] Extend `scripts/config/harbor-images.json` and use `.github/workflows/harbor-mirror.yml` to publish and verify every selected platform/controller/runtime/CLI/init/database/proxy/test image; inventory transitive images from exact chart renders, preserve source/build pairing, and record immutable receipts in `docs/evidence/openclaw-enterprise-acceptance.md` before
   consumers reference them.
-- [X] T005 [P] Declare the exact new SSM producer/reader/consumer contracts in `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl` and `docs/secrets-aws-ssm.md`, including `/homelab/openclaw-enterprise/model-api-key`, separate DB roles, auth/bootstrap/gateway identity and protected workflow credentials; use references or protected generation/injection, never secret
+- [X] T005 [P] Declare the exact new SSM producer/reader/consumer contracts in `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl` and `docs/secrets-aws-ssm.md`, including `/homelab/openclaw-enterprise/model-api-key`, separate DB roles, auth/bootstrap/gateway identity and protected workflow credentials; use references or protected generation/injection, never secret
   values or old credential aliases.
 - [X] T006 [P] Create `docs/openclaw-enterprise-rollout.md` and the sanitized receipt ledger `docs/evidence/openclaw-enterprise-acceptance.md`; define fixed release stages, private journal/diagnostic retention, evidence hashes, stop/recovery gates, separate legacy/new archives and current-main checks using existing CI/CD and backup patterns; keep all unrun scenarios pending.
 
