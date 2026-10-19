@@ -76,12 +76,12 @@ except OSError:
 if data!=b'npq-ok': sys.exit(8)
 print('NPQ_ALLOWED')
 """
-DNS_PROBE = """import socket,struct,sys
+DNS_PROBE = """import os,socket,struct,sys
 address,protocol,expected,port=sys.argv[1:]
 port=int(port)
 name=b''.join(bytes([len(part)])+part.encode() for part in 'kubernetes.default.svc.cluster.local'.split('.'))+b'\\0'
 question=name+b'\\0\\x01\\0\\x01'
-query=b'\\x12\\x34\\x01\\0\\0\\x01\\0\\0\\0\\0\\0\\0'+question
+query=os.urandom(2)+b'\\x01\\0\\0\\x01\\0\\0\\0\\0\\0\\0'+question
 def receive(connection,count):
  data=b''
  while len(data)<count:
@@ -99,8 +99,9 @@ try:
    reply=receive(connection,struct.unpack('!H',receive(connection,2))[0])
   else:
    connection.sendto(query,(address,port))
-   reply,_=connection.recvfrom(4096)
+   reply,source=connection.recvfrom(4096)
 except OSError: sys.exit(7)
+if protocol=='UDP' and source!=(address,port): sys.exit(8)
 if (len(reply)<12+len(question) or reply[:2]!=query[:2] or
     not reply[2]&0x80 or reply[2]&0x02 or reply[3]&0x0f or
     int.from_bytes(reply[4:6],'big')!=1 or

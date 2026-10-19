@@ -134,7 +134,7 @@ class CanaryQualificationTests(unittest.TestCase):
                 self.module.dns_matrix()
 
     def test_dns_probe_requires_complete_expected_a_record(self):
-        def run_probe(protocol, answer):
+        def run_probe(protocol, answer, spoof=False):
             kind = socket.SOCK_STREAM if protocol == "TCP" else socket.SOCK_DGRAM
             with socket.socket(socket.AF_INET, kind) as listener:
                 listener.bind(("127.0.0.1", 0))
@@ -153,7 +153,12 @@ class CanaryQualificationTests(unittest.TestCase):
                             connection.sendall(struct.pack("!H", len(response)) + response)
                     else:
                         query, address = listener.recvfrom(4096)
-                        listener.sendto(answer(query), address)
+                        if spoof:
+                            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as other:
+                                other.bind(("127.0.0.1", 0))
+                                other.sendto(answer(query), address)
+                        else:
+                            listener.sendto(answer(query), address)
                 thread = threading.Thread(target=serve, daemon=True)
                 thread.start()
                 result = subprocess.run(
@@ -185,6 +190,8 @@ class CanaryQualificationTests(unittest.TestCase):
                     self.assertEqual(result.returncode, expected_code, result.stderr)
                     self.assertEqual(result.stdout.strip(),
                                      "NPQ_DNS_ALLOWED" if expected_code == 0 else "")
+        result = run_probe("UDP", lambda query: response(query, "10.96.0.1"), spoof=True)
+        self.assertEqual(result.returncode, 8, result.stderr)
 
     def test_inspection_refuses_foreign_policy_or_untainted_node(self):
         node = {"metadata": {"name": "zimaboard-0", "uid": "node-uid",
