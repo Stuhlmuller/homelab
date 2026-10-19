@@ -122,17 +122,24 @@ class ChartHooksContract(unittest.TestCase):
             self.assertEqual(subprocess.check_output(["git", "rev-parse", "HEAD"],
                              cwd=UPSTREAM, text=True).strip(),
                              self.config["source"]["revision"])
+        effective = {}
+        repeated = []
+        for item in self.chart + self.app:
+            key = identity(item)
+            if key in effective:
+                repeated.append(key)
+            effective[key] = item
         chart = {identity(item): item for item in self.chart}
-        duplicates = set(chart) & set(self.local)
         key = ("EnvoyProxy", "oce-private-gateway", "openclaw-system")
-        self.assertEqual(duplicates, {key})
+        self.assertEqual(repeated, [key])
+        self.assertEqual(len(effective), len(self.chart) + len(self.app) - 1)
         expected = copy.deepcopy(chart[key])
         expected["spec"]["provider"]["kubernetes"]["envoyDeployment"]["container"] = {
             "image": "harbor.stinkyboi.com/mirror/docker.io/envoyproxy/envoy:"
                      "7369b033550a14997e5d698677b7b51f0210a80754f5d084c5caa1a78268267b"
                      "@sha256:7369b033550a14997e5d698677b7b51f0210a80754f5d084c5caa1a78268267b"
         }
-        self.assertEqual(self.local[key], expected)
+        self.assertEqual(effective[key], expected)
         for name, weight in [("oce-bootstrap-isolation", "-30"),
                              ("oce-initialization", "-10")]:
             item = next(item for item in self.chart if item["metadata"]["name"] == name)
