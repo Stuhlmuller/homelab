@@ -178,9 +178,9 @@ CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
 
-A temporary acceptance observer is declared but remains suspended. Once enabled,
-keep it suspended until its private sample is fixed before the seven-day
-window. It must poll upstream without the Renovate cache or GitHub writes;
+The temporary acceptance observer is staged suspended. Keep it suspended
+until its private sample is fixed before the seven-day window. It must poll
+upstream without the Renovate cache or GitHub writes;
 its separate protected ledger retains private release brackets. Publish only
 aggregate results, then erase the ledger and retire its Job and claim through
 reviewed GitOps. Report a controlled canary separately from natural releases.
@@ -211,16 +211,18 @@ Its own GitHub POST mints that token; datasource clients may POST read-only
 GraphQL queries. The observer calls the pinned Renovate image's datasource
 implementations directly, bypassing the
 package-cache wrapper. Any datasource-local cache is confined to one Pod's
-ephemeral `/tmp`; the next poll uses a new Pod. It has no Kubernetes API token
-or inbound Service.
+ephemeral `/tmp`; the next poll uses a new Pod. It uses the dedicated no-token
+`renovate` ServiceAccount and Pod-local registry route; it has no Kubernetes API
+token or inbound Service.
 
 Before starting this CronJob, freeze a private inventory from the pinned
 Renovate image's actual repository-extraction cache. Full dry-run skips cache
 persistence, so this requires a successful later write-enabled scan. The
 `acceptance-inventory-job.yaml` Job is deliberately omitted from Kustomize and
-has `suspend: true`; merging this source cannot start it. Its cache mount is
-read-only, it has no Kubernetes API token, and it writes only to the separate
-protected ledger. Activate it through a reviewed GitOps change only after the
+has `suspend: true`; merging this source cannot start it. It uses the same
+no-token `renovate` ServiceAccount and Pod-local registry route. Its cache mount
+is read-only, and it writes only to the separate protected ledger. Activate it
+through a reviewed GitOps change only after the
 App transfer, write cutover, and private review input are ready.
 
 The private `/ledger/private/review.json` input must be a mode `0600` regular

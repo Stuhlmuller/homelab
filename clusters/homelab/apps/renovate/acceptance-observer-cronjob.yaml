@@ -29,6 +29,11 @@ spec:
             app.kubernetes.io/part-of: homelab-automation
         spec:
           automountServiceAccountToken: false
+          serviceAccountName: renovate
+          # Match the runner's registry-only route while keeping TLS hostname validation.
+          hostAliases:
+            - ip: 10.96.0.50
+              hostnames: [harbor.stinkyboi.com]
           restartPolicy: Never
           securityContext:
             runAsUser: 12021
