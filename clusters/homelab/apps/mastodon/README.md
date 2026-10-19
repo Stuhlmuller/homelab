@@ -68,7 +68,9 @@ requires its native UID/GID 991; application containers use those IDs with
 supplementary filesystem group 65534 for shared volumes. The datastore and
 backup containers retain UID/GID 65534. PostgreSQL rolls in wave -1 before
 database-role provisioning in wave 0, schema preparation in wave 1, owner
-bootstrap in wave 2, and the Deployments start in wave 3. Web and Sidekiq mount the retained media
+bootstrap in wave 2, and the Deployments start in wave 3. Migration Secret
+projection requires the `runtime-v2` key, rendered atomically with the app-role
+credentials; an old Ready status cannot let the hook mount v1 credentials. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
 small homelab. Sidekiq startup/readiness checks use the upstream job-processing

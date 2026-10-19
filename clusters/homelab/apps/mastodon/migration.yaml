@@ -81,6 +81,16 @@ spec:
         - name: runtime
           secret:
             secretName: mastodon-runtime
+            # This key appears atomically with the app-role credentials on upgrade.
+            items:
+              - key: runtime-v2
+                path: runtime-v2
+              - key: .env.production
+                path: .env.production
+              - key: vapid.pem
+                path: vapid.pem
+              - key: smtp-password
+                path: smtp-password
         - name: launcher
           configMap:
             name: mastodon-launcher

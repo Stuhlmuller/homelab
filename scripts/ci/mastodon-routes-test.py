@@ -53,6 +53,14 @@ class Routes(unittest.TestCase):
         self.assertLess(int(postgres["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]),
                         int(role["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]))
         runtime = documents("runtime-externalsecret.yaml")[0]["spec"]
+        self.assertEqual(runtime["target"]["template"]["data"]["runtime-v2"], "ready")
+        migration = documents("migration.yaml")[0]["spec"]["template"]["spec"]
+        projection = next(v["secret"] for v in migration["volumes"] if v["name"] == "runtime")
+        self.assertEqual(projection["secretName"], runtime["target"]["name"])
+        self.assertFalse(projection.get("optional", False))
+        self.assertEqual({item["key"] for item in projection["items"]}, {
+            "runtime-v2", ".env.production", "vapid.pem", "smtp-password",
+        })
         paths = {item["remoteRef"]["key"] for item in runtime["data"]}
         self.assertIn("/homelab/mastodon/postgres-app-password", paths)
         self.assertNotIn("/homelab/mastodon/postgres-password", paths)
