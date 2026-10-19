@@ -3,9 +3,6 @@ type: architecture
 title: "AI observability"
 description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attribution, and per-caller telemetry acceptance gates."
 tags: ["homelab", "navigation"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-19T16:44:49.508Z
 sources:
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
@@ -14,6 +11,9 @@ sources:
   - id: openwiki-source-16c66cdb690dec6706cb1de1
     resource: repo://scripts/ci/n8n-ai-migration-check.py
 generated: { by: "codex", at: "2026-10-19T16:44:49.508Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-19T16:49:06.466Z
 ---
 
 # AI observability

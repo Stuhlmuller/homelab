@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:af785b43e23a62a7bb7c41194b9502011cbff64b00ab5892c15277dd4ff27aec",
+  "pageVersion": "sha256:e50646ce6d62ec901ae6a1d5466ad5b6e09069a13088f8b2147a29294738bbf2",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -286,7 +286,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -362,7 +362,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -552,15 +552,19 @@
     },
     {
       "id": "claim_248c462ddf6541d5b73a72beb0979e84",
-      "statement": "The validate workflow runs a 30-minute disposable dual-stack Kind network-policy job on pull requests and main pushes. It checks unrestricted baseline traffic, NRI registration, denied startup connections, allowed Service/DNS access, established-connection revocation, and denial while the worker enforcer process is paused without cleanup. Passing proves fixture behavior, not production Flannel enforcement or rollout acceptance.",
+      "statement": "The validate workflow retains a disposable dual-stack Kind NRI enforcement fixture for pull requests and main pushes. It checks baseline, startup denial, allowed Service/DNS traffic, connection revocation and denial while the worker process is paused. This legacy fixture is separate from the staged, dormant kube-router firewall path and does not qualify its canary or prove production enforcement.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "resource": "repo://.github/workflows/validate.yml#L24-L37",
+          "version": "repo-lines-v1:sha256:abb4548fcad718c086aa8e2544915a4adfd265452568234e0590753180a5f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdmMzkzMTdhZGU5YTRiYzJjNjBhZTBkNGMyOTI3Mzg4ZTFmOWNkMzY2MzZmMTdlM2M0MDdiMTBkNDZkYzcwYzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxMTc1ODA2OWUxYmM2NzkyZDFhNzBjYjI5ZDFhOGNmY2U2MDFiM2I2Y2EwZTVjNTBlNWI0ZTBhY2E3NjUyMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2ZWM0Y2Y5MjdlYzc4NDYyYjNmZTUyMzNiYzk2OGYzZjVhNTFmY2U3YTk2YWQ0YWJmMDkwMThhOThlZDdhOTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdlYTBlM2Y5MDI4ZjgwNTE0YmU1NjBjODdmYzIwODAxYmE3OWYxNGIwMDU5ZTUxYjI5MWIwZDUwZWEzODg2YTQifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
-          "version": "repo-file-v1:sha256:7c609cc0163c4147695ba37c6f752fe5a1785d09277da9de7392aaaa436f16d4"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L1-L14",
+          "version": "repo-lines-v1:sha256:4f3079bf06090cc0fd9b83016de15bb9cbbeac0ad9c70934aa03b51a7fa06d56:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzNiZDU3MmRjMzMyNDJmMTM0MDMyMGEzMDA5NGVmZDQxMGQyN2JlNTM3YWY4MGE1YzQ1MzAzNTliZTViODYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5MTE5OTFlNjQ1YmM1OGE1NDMwY2Y0MTVlOGVhODAyOTQ4YjE0M2VjMWU3YWRkYWQwZjExZGRhYjU5OGE1YjEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU5MjNlMmQ4YzU1MjRlNjZlODY3YWI3MTlkMzcyYTM3MGYxZThmYjJkNTg2MzJkM2ZhZjRlYjI4ZGRmM2VhYWQifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-enforcement-check.py#L136-L252",
+          "version": "repo-lines-v1:sha256:e25f51bf59445df9d36dfe442be7699495f9398526fd1422f9a80f6284b6327c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTE3LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiODNlYmUyNjAzYzY3YmJlZWNiZDA1Mzk3MjdmYTViYmRiZWRiNGZjYmFjNWY2NzZhZjMyZGI5MTdlNjlmYjc2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIxMDdjYWE1YWVmMTI1YjAzNDMwM2M5YjNkMjQxMzM5NDllNWRkZDhkYzE1MmJmMjgzNTNlYzAxMGJmODBkMTFiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMjE0YzYzOTJkNGNlYjk0N2MxNTcxNWU0NjhiZWE4MWNjZjM0ZjA0ZmUxYzc4MDkwNWYwMTQ2OGE3MDhjNmI5IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3ZTJjZTMwYTc5Yjc0NmE1NzljY2Q1MGEyOTVhZjkxZGRjNWI3OTExYTVhMDcxNWNkNWQyOWE3NzVkYWVjN2JlIn0"
         }
       ]
     },
@@ -1057,10 +1061,30 @@
           "version": "repo-lines-v1:sha256:fbbccc0f52101a1e84d1287ef6c54125b628a2b1550b29f32372230878c95ba9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMzMDI2ZGM5OTQwNGQ2YTBjMmQzZTRiODMzNjllMjhiMzhmYWVhYTNiOTAxNTYyMGMwMzJhNjViZDY3MzhiZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNzcwMDY5NGYxZTY3NTlhYjVmOWU1MWYzMDdlYzYxY2FjNmU4OTkzNzM4NTlkYTQwNzM4MjY1YTE4Mzg4MTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY2YjgwZjA0MmY2NWM1NDEzMzYzMGU5YWVmNGRiOGUyZjEzMTAxN2UyNGQyMzEzZWEwYWEzZjdjOTA0Yzg1M2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhN2ZkNDEyOTA3ZDEyODc2NWVlMjI2NDI1MDBkNDdlZWFmMDBhNGJjYjEyZTcwYjkzNDIyYTVhNTUzNzllMzUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_e204f96cfa6a4fff9b100b6dfe1dfb1b",
+      "statement": "The validate whitespace step diffs the pull-request base or push before SHA against HEAD, using the empty tree for a new-branch push, so changed lines are checked on a clean checkout.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml#L70-L122",
+          "version": "repo-lines-v1:sha256:8b671394b0ecb710ca53106952e25d06b1c9da3097ffdb8c831ac58c78291580:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM4OTk5MTEwM2Y2YmE4ODhlM2RlNzY1MWM1YTMwNWM3N2U1NTQ3Njc3M2FiYTgzOTU5MWVjYzViZDBmMmFiMWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRhN2U2ZDkzMmUxNGRjZDk3NTQ3MWUzMWY5ZjRjZjQzYjlhZmI2ZThmMGRmOGVjMjkyZmY3NTFhNTJiYjMyMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFkYWU5MmMwYWVkZWQ5NmMwNTVhOGVlMWJhNGM4YWU1NjVkM2IzYjBjYjdiOGU1MjM5ZjQ4MGE3YzhjNTAxYmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBmZmRlODU2Y2QyMDA3YjBhMGE2MzkzNThkMjM5MDk3MzYwZWU3Y2I3YTkzMjkwYmU1NzE0OTBjNjNhMmIzZGQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_15a6664b8b36416e9fbf42ceaca43880",
+      "statement": "The n8n AI migration check exercises the rendered init shell with synthetic exports, verifying exact conversions, inactive and idempotent behavior, continuation for absent or edited workflows, and startup failure for a failed ID listing or failed export of a present workflow.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L1-L154",
+          "version": "repo-lines-v1:sha256:3128dc38a259ed3dbbe0905065045d7bef3948492e28738e8aa314a7897a17ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3OWUwZmFiY2JjMTEyZWI3ZWZmNmQ4OTYzMmJjMDNmYWEwOTQ0ZTFjMWFmNDM4NWU4ODFjYTE1OTU3YTU1NWZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhNDc0Y2Y1NGFmMTU4YTkxNGVmMGU1ZDlhNTk1OTQ0NjE5NDEwMWY4MWE4NmMxYTcwMjY0ZDBiNWI0MGE1MTE5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T15:59:51.049Z"
+    "at": "2026-10-19T16:49:06.466Z"
   }
 }

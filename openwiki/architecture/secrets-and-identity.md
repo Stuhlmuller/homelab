@@ -34,6 +34,10 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-da9a8209d90a2a569457a808
+    resource: repo://clusters/homelab/apps/multica/README.md
+  - id: openwiki-source-846efb58b681f5ac619edfd7
+    resource: repo://clusters/homelab/apps/multica/runtime/bootstrap.py
   - id: openwiki-source-584942349e9deaf323c58e09
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-9cb199d7fd0a511b7c7d689f
@@ -102,10 +106,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-19T16:49:06.466Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T15:59:51.049Z
+    at: 2026-10-19T16:49:06.466Z
 ---
 
 # Secrets And Identity
@@ -441,8 +445,9 @@ remain separate from these startup bytes.
   an unsafe public credential.
   The server runtime uses only the fixed-code key in an init container to
   bootstrap a 90-day Rodman PAT, then retains that PAT privately on its own
-  local PVC. The daemon renews it; revoked or expired tokens fail startup
-  rather than silently creating a replacement. The main container exposes only
+  local PVC. The pinned daemon asks the backend to renew that token in place
+  when seven days or less remain; revoked or expired tokens fail startup rather
+  than silently creating a replacement. The main container exposes only
   its own profile, including native ChatGPT OAuth state retained on the runtime
   PVC; it does not mount the backend JWT, database password, fixed code, or a
   model API key. This remains a trusted operator runtime because tasks can read

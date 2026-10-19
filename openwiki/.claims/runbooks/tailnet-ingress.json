@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:43a7e50990cceb57502e4e5ec642a050ac54d3192d167b5f785b2e0b038407e7",
+  "pageVersion": "sha256:0e9de9b8d6ce7f93d763884d44f2773b49dc46aeab1fad81ba3bc88111eac4cc",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -218,7 +218,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
-          "version": "repo-file-v1:sha256:2ef50b92d14ccbdcc052bcf2810562b8cd13008754a32e9808997e1fb8f05c8b"
+          "version": "repo-file-v1:sha256:9e78d7be200a896d2ecd94c28000ebf98d0121d6fcde4b452b3b20a54e445d5d"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
@@ -379,6 +379,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T15:59:51.049Z"
+    "at": "2026-10-19T16:49:06.466Z"
   }
 }

@@ -76,6 +76,8 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
+  - id: openwiki-source-994a8289757a8dfdfff70e1b
+    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
@@ -134,6 +136,8 @@ sources:
     resource: repo://scripts/ci/langfuse-startup-check.sh
   - id: openwiki-source-9572753e0a38126e57fa7042
     resource: repo://scripts/ci/multica-desktop-connect-test.py
+  - id: openwiki-source-16c66cdb690dec6706cb1de1
+    resource: repo://scripts/ci/n8n-ai-migration-check.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
   - id: openwiki-source-47792446a9e092544c3c1857
@@ -228,10 +232,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-19T16:49:06.466Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T15:59:51.049Z
+    at: 2026-10-19T16:49:06.466Z
 ---
 
 # Validation Gates
@@ -349,6 +353,10 @@ nix develop --command bash scripts/ci/static-checks.sh
 nix develop --command bash scripts/ci/conftest-policies.sh
 git diff --check
 ```
+
+In CI, `validate` checks whitespace from the event's pull-request base or push
+`before` SHA to `HEAD`, using the empty tree for a new-branch push. This checks
+changed lines even in the clean checkout.
 
 The static gate's `scripts/ci/terragrunt-stack-test.py` generates sparse and
 overridden Applications from the real shared template, checking default
@@ -537,8 +545,10 @@ runs a 30-minute disposable dual-stack Kind
 pull requests and `main` pushes. It checks unrestricted baseline traffic,
 NRI registration, denied startup connections, allowed Service and DNS traffic,
 established-connection revocation, and denial while the worker enforcer process
-is paused without cleanup. A passing fixture does not establish production
-Flannel enforcement or approve a worker rollout.
+is paused without cleanup. This retained NRI fixture is separate from the
+staged, dormant firewall-only kube-router path. A passing fixture does not
+qualify the kube-router canary, establish production Flannel enforcement, or
+approve a worker rollout.
 
 The `image-policy` job in the same workflow runs a disposable Kind admission
 check. It verifies that the shipped `Warn, Audit` binding admits public images
@@ -807,6 +817,11 @@ live replacement; fixture success alone is not production recovery.
 
 AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
+`scripts/ci/n8n-ai-migration-check.py` runs the rendered n8n init shell with
+synthetic exports. It checks the three exact target nodes, unchanged inactive
+state, idempotence, continued startup for absent or edited workflows, and
+startup failure for a failed ID listing or failed export of a present workflow.
+It does not prove deployment or live workflow execution.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and
 route restrictions against an in-memory store. It does not prove database
