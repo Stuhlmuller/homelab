@@ -20,7 +20,7 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
 | Full independent legacy archive/restore | [earlier attempts `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916), [`39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077); [detached attempt `39181763037`](https://github.com/Stuhlmuller/homelab/actions/runs/39181763037); [merged repair #1401](https://github.com/Stuhlmuller/homelab/pull/1401); [main `2f94bec3`, retry `39204434898`](https://github.com/Stuhlmuller/homelab/actions/runs/39204434898); [checksum repair #1416](https://github.com/Stuhlmuller/homelab/pull/1416); [archive launcher `39207560733`](https://github.com/Stuhlmuller/homelab/actions/runs/39207560733); [archive launcher `39261391546`](https://github.com/Stuhlmuller/homelab/actions/runs/39261391546) | — | Pending. `39204434898` failed before worker creation because the workflow's pinned helper checksum was stale; #1416 updated that guard. Launcher `39207560733` passed, but its detached worker was OOM-killed during local `verify_bundle` under the reader's 512 MiB limit. The later detached worker finished the second archive pass, then failed during local restore with `OperationalError`, without an OOM or result marker; the specific SQLite operation was not logged. No private result or offsite restore receipt exists. Keep the original sources and unpublished partial scratch intact pending a tested retry. |
-| Capacity and isolated canary | Read-only node/top/Talos mount snapshots through 2026-10-19 17:07 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
+| Capacity and isolated canary | Read-only node/top/Talos disk snapshots through 2026-10-19 19:50 UTC | — | Blocked: no isolated canary or admitted local-storage and memory placement. Admission and platform activation remain disabled. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -136,6 +136,29 @@ Langfuse PostgreSQL with `Recreate` rollout; tainting that node would expose
 them to canary enforcement or strand their replacements, while relocating the
 database would interrupt it. These snapshots are not peak measurements and do
 not admit T022, T035, an isolated canary, or Enterprise activation.
+
+At 2026-10-19 19:50 UTC, read-only node allocation, `kubectl top`, kubelet
+filesystem statistics and authenticated Talos disk inventory still found
+`acer` 13,459 / 15,261 MiB requested / allocatable, with 411.89 GB free on
+its 500 GB disk. Its 1,802 MiB unreserved RAM is over 502 MiB short of the
+2,304 MiB PostgreSQL-plus-gateway minimum. The three workers still have only
+one writable 31 GB eMMC each, with 5.39, 10.01 and 9.29 GB filesystem free;
+none can hold one new 10 GiB claim. Adding at least 503 MiB usable RAM to
+`acer` would address only that request deficit, not transient headroom or the
+separate isolated-canary requirement; hardware expansion feasibility is
+unverified.
+
+`zimaboard-2` still has only 102 MiB unreserved. Its five ordinary Pods
+request 672 MiB and 410m CPU in total. Removing them through reviewed source
+changes would leave about 774 MiB and 1,450m for the policy enforcer and
+qualification Pods. `zimaboard-1` has 4,038 MiB unreserved, enough by request
+arithmetic for those Pods and a 768 MiB Grafana relocation from `acer`.
+That would leave only about 266 MiB above Enterprise's minimum on `acer` and,
+at current observed use, about 800 MiB on `zimaboard-1` before peaks and
+rolling overlap. Grafana and Langfuse PostgreSQL are single-replica
+`Recreate` workloads; moving them would interrupt unrelated services. No
+such move is authorized, no peak or transient fit is proven, and a taint alone
+would not remove already-running Pods. This candidate does not admit T022.
 
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
