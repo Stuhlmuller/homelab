@@ -538,7 +538,10 @@ SSM generates internal credentials and the bootstrap-only owner password.
 Google Workspace SMTP uses the protected fixed-slot injection workflow. Mounted
 files, `OnChange` ExternalSecrets and subPath consumers require declared refresh
 and runtime revisions after rotation. The launcher refuses SMTP placeholders.
-Schema preparation precedes owner bootstrap and application Deployments.
+A wave-0 local-socket hook provisions limited `mastodon_app`; PostgreSQL's
+protected bootstrap administrator remains separate. Schema preparation precedes
+owner bootstrap and application Deployments. Application containers use native
+image UID/GID 991 with filesystem group 65534; datastores use UID/GID 65534.
 
 The targeted Terragrunt saved-plan path checks upstream health, storage and
 secret-store permissions before SSM declarations and registration. The separate

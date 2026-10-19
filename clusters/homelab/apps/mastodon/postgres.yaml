@@ -191,6 +191,11 @@ spec:
         - name: auth
           secret:
             secretName: mastodon-datastores
+            items:
+              - key: POSTGRES_PASSWORD
+                path: POSTGRES_PASSWORD
+              - key: POSTGRES_APP_PASSWORD
+                path: POSTGRES_APP_PASSWORD
         - name: local-data
           persistentVolumeClaim:
             claimName: mastodon-postgres-local

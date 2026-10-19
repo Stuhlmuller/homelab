@@ -43,18 +43,31 @@ Grow or move storage before consuming its headroom.
 
 A bounded root init container changes only the mounted directory's ownership;
 PostgreSQL and Redis run as UID/GID 65534. PostgreSQL initializes `pg_trgm` and
-`unaccent`, then removes superuser privileges from the application role.
+`unaccent`. PostgreSQL 18 protects the bootstrap role `mastodon` from demotion;
+its administrator credential stays in the datastore Secret and PostgreSQL Pod.
+A wave-0 database-role hook provisions the separate `mastodon_app` role with
+its own generated password and no superuser, role-creation, database-creation,
+replication, or RLS-bypass privileges. It uses the local database socket, keeps
+system-catalog ownership intact, and never resets the data directory. Unexpected
+bootstrap-owned application objects stop the hook for a reviewed ownership
+migration rather than silently changing existing data.
 
 Terragrunt generates `/homelab/mastodon/postgres-password` and
-`/homelab/mastodon/redis-password` in encrypted state/SSM. The ExternalSecret
-mounts the credentials as files. Its namespace policy permits only the
+`/homelab/mastodon/redis-password` in encrypted state/SSM. The separate
+`/homelab/mastodon/postgres-app-password` supplies `mastodon_app`; only that
+PostgreSQL credential enters application configuration. Redis mounts only its
+own password key. The ExternalSecrets mount credentials as files. Its namespace policy permits only the
 Mastodon prefix. Rotation needs a declared ExternalSecret revision and workload
 restart through GitOps, plus database/Redis password coordination.
 
 ## Server configuration
 
 The official 4.7.3 image serves compiled static files and media through Puma;
-streaming runs separately on port 4000. Schema preparation runs in wave 1, owner bootstrap in wave 2, and the
+streaming runs separately on port 4000. The image's private application directory
+requires its native UID/GID 991; application containers use those IDs with
+supplementary filesystem group 65534 for shared volumes. The datastore and
+backup containers retain UID/GID 65534. Database-role provisioning runs in
+wave 0, schema preparation in wave 1, owner bootstrap in wave 2, and the
 Deployments start in wave 3. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
@@ -87,6 +100,15 @@ then send and receive a real email. Failed delivery is an activation failure.
 The workflow is also the password-rotation path; preserve the prior protected
 credential until the new value works, so it can be restored through this path.
 
+The first 2026-10-18 rollout confirmed PostgreSQL 18 rejects demoting its
+bootstrap superuser, and the upstream application directory rejects UID 65534.
+The database still had zero application tables. The role split and native-image
+UID fix preserve that cluster; the PostgreSQL regression test verifies password
+authentication, limited privileges, repeat preservation, catalog ownership and
+fail-closed handling of unexpected existing data. It runs in the offline gate;
+`--pg-bin /path/to/postgresql-18/bin` selects a PostgreSQL 18 installation for
+the protected-bootstrap regression.
+
 ## Initial owner
 
 The wave-2 `mastodon-owner-bootstrap` hook uses the upstream account-creation
@@ -115,9 +137,11 @@ and backups share a NAS and do not protect against NAS loss.
 
 Before acceptance, prove a successful scheduled backup and restore the newest
 dump into an isolated PostgreSQL instance. Verify tables, accounts, and media
-references before trusting the restore. Recreate the non-superuser role and
-extensions from `initdb-configmap.yaml`; restore with `pg_restore --no-owner`
-into the initialized `mastodon` database. Stop application writes through
+references before trusting the restore. Initialize the extensions and limited application role from
+`initdb-configmap.yaml`; restore with
+`pg_restore --no-owner --no-comments --role=mastodon_app` into the initialized
+`mastodon` database. The bootstrap administrator owns the extensions; their
+comments are omitted rather than granting the application administrator rights. Stop application writes through
 repository-owned desired state before a production restore. Never overwrite an
 active writer's database. Preserve local claims until recovery is verified.
 

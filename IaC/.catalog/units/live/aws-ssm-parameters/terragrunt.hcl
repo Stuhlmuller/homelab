@@ -97,7 +97,14 @@ inputs = {
       initial_value = local.placeholder
     }
     "/homelab/mastodon/postgres-password" = {
-      description = "Mastodon dedicated postgres password."
+      description = "Mastodon PostgreSQL bootstrap administrator password; not an application credential."
+      generated = {
+        length  = 40
+        special = false
+      }
+    }
+    "/homelab/mastodon/postgres-app-password" = {
+      description = "Mastodon limited PostgreSQL application role password."
       generated = {
         length  = 40
         special = false

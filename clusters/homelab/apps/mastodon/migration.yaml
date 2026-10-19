@@ -7,6 +7,7 @@ metadata:
     app.kubernetes.io/name: mastodon-migrate
     app.kubernetes.io/part-of: mastodon
   annotations:
+    checkov.io/skip1: CKV_K8S_40=The pinned upstream Mastodon image requires its unprivileged UID 991 to access its private application directory.
     argocd.argoproj.io/sync-wave: '1'
     argocd.argoproj.io/hook: Sync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -22,8 +23,8 @@ spec:
       automountServiceAccountToken: false
       restartPolicy: Never
       securityContext:
-        runAsUser: 65534
-        runAsGroup: 65534
+        runAsUser: 991
+        runAsGroup: 991
         runAsNonRoot: true
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch

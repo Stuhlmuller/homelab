@@ -39,6 +39,26 @@ class Routes(unittest.TestCase):
         entries = dict(line.split("=", 1) for line in environment.splitlines() if "=" in line)
         self.assertEqual(entries["TRUSTED_PROXY_IP"], "loopback,uniquelocal")
 
+    def test_application_credentials_and_native_image_user(self):
+        for name in ("workloads.yaml", "migration.yaml", "bootstrap-job.yaml"):
+            for resource in documents(name):
+                if resource["kind"] not in ("Deployment", "Job"):
+                    continue
+                context = resource["spec"]["template"]["spec"]["securityContext"]
+                self.assertEqual(context["runAsUser"], 991)
+                self.assertEqual(context["runAsGroup"], 991)
+                self.assertEqual(context["fsGroup"], 65534)
+        runtime = documents("runtime-externalsecret.yaml")[0]["spec"]
+        paths = {item["remoteRef"]["key"] for item in runtime["data"]}
+        self.assertIn("/homelab/mastodon/postgres-app-password", paths)
+        self.assertNotIn("/homelab/mastodon/postgres-password", paths)
+        for environment in documents("configmap.yaml")[0]["data"].values():
+            self.assertIn("DB_USER=mastodon_app\n", environment)
+            self.assertIn("DB_PASS={{ .postgres_app_password }}", environment)
+        redis = documents("redis.yaml")[1]["spec"]["template"]["spec"]
+        auth = next(v["secret"] for v in redis["volumes"] if v["name"] == "auth")
+        self.assertEqual(auth["items"], [{"key": "REDIS_PASSWORD", "path": "REDIS_PASSWORD"}])
+
     def test_gateway_cannot_reach_datastore_ports(self):
         peer, default, allowed = documents("authorizationpolicy.yaml")
         self.assertEqual(peer["spec"]["mtls"]["mode"], "STRICT")
