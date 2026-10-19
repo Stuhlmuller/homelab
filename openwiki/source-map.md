@@ -29,13 +29,13 @@ sources:
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/modules/tailscale-access/README.md
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-8144ee95f00e2d4721210fcf
-    resource: repo://IaC/stacks/mastodon/stack.hcl
+    resource: repo://IaC/mastodon/stack.hcl
   - id: openwiki-source-612eb02105d61c48b6ba59bd
-    resource: repo://IaC/stacks/tailnet-dns/stack.hcl
+    resource: repo://IaC/tailnet-dns/stack.hcl
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -80,10 +80,10 @@ desired state.
 | `docs/ci-cd.md` | [CI/CD](runbooks/ci-cd.md) |
 | `builds/cordium-runner/README.md`, `.cordium/runner-pool.json`, and `cordium-runner-*.yml` workflows | [Staged runner workflow](runbooks/ci-cd.md), [identity](architecture/secrets-and-identity.md#dedicated-cordium-ci-assertion), and [validation gates](operations/validation-gates.md#cordium-remote-repository-gate) |
 | `clusters/homelab/apps/traefik/README.md` and `routes.yaml` | [Staged mesh ingress and callbacks](runbooks/tailnet-ingress.md) |
-| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/stacks/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
+| `clusters/homelab/platform/tailnet-dns/README.md`, `values.yaml`, and `IaC/tailnet-dns/stack.hcl` | [Separate tailnet resolver ownership](runbooks/tailnet-ingress.md#cutover-utilities), [topology](architecture/cluster-topology.md#canonical-endpoints) |
 | `scripts/tailnet-dns-check.py` and `scripts/ci/tailnet-dns-test.py` | [Direct DNS handoff and declaration checks](operations/validation-gates.md#tailnet-dns-resolver-handoff) |
 | `scripts/tailscale-private-dns.sh` | [Guarded later public address retirement](runbooks/tailnet-ingress.md#cutover-utilities) |
-| `IaC/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
+| `IaC/terragrunt-catalog/modules/tailscale-access/README.md` and `scripts/config/tailscale-policy.json` | [Tailscale provider and signed CI key ownership](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `scripts/tailscale-ingress-sign.py` | [Fixed proxy Tailnet Lock signing](runbooks/tailnet-ingress.md#tailnet-lock) |
 | `scripts/tailscale-ci-configure.py` | [Scoped CI signing, interrupted-signature recovery and authority retirement](architecture/secrets-and-identity.md#tailscale-provider-foundation) |
 | `clusters/homelab/apps/traefik/CUTOVER.md` | [Ordered DNS, Mac, callback and CI acceptance](runbooks/tailnet-ingress.md#cutover-utilities) |
@@ -92,7 +92,7 @@ desired state.
 | `docs/networking-tailnet-ingress.md` | [Tailnet And App Ingress](runbooks/tailnet-ingress.md) |
 | `docs/octelium.md` | [Octelium](runbooks/octelium.md) |
 | `scripts/octelium-entra-oidc.sh` | [Immutable Entra identity bindings](architecture/secrets-and-identity.md) |
-| `IaC/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
+| `IaC/terragrunt-catalog/modules/entra-owner-mail/README.md` | [Retired owner-mail PATCH](architecture/secrets-and-identity.md) |
 | `scripts/entra-owner-conversion.py` and `scripts/ci/entra-owner-conversion-test.py` | [Owner conversion boundary](architecture/secrets-and-identity.md#fleet-free-identity-boundaries), [Fleet validation](operations/validation-gates.md#fleet-device-management-rollout) |
 | `clusters/homelab/apps/fleet/FREE-ENTRA.md` | [Retired Platform SSO boundary and historical identity evidence](architecture/secrets-and-identity.md#fleet-free-identity-boundaries) |
 | `docs/rollback-argocd-apps.md` | [Argo CD App Rollback](runbooks/rollback.md) |
@@ -115,8 +115,8 @@ desired state.
 | `IaC/live/argocd-apps/README.md` | [Argo CD App Onboarding](runbooks/argocd-app-onboarding.md) |
 
 Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/README.md),
-[registration](../IaC/stacks/mastodon/stack.hcl),
-[secret declarations](../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
+[registration](../IaC/mastodon/stack.hcl),
+[secret declarations](../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl),
 [protected SMTP injection](../.github/workflows/mastodon-smtp-credential.yml), and
 [public DNS publication](../.github/workflows/mastodon-public-dns.yml).
 See the [inventory](workloads/inventory.md),

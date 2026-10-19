@@ -95,9 +95,9 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-1882ca1e6f216149daf718a1
-    resource: repo://IaC/modules/aws-ssm-parameters/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-6bf00c52458ec78a0c3b6077
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
@@ -136,7 +136,7 @@ verified:
 
 ## Ownership And Access
 
-Harbor registration inputs are declared in `IaC/stacks/harbor/stack.hcl`;
+Harbor registration inputs are declared in `IaC/harbor/stack.hcl`;
 runtime state lives in
 `clusters/homelab/apps/harbor`. The official chart is pinned to `1.19.2`
 (Harbor `2.15.2`). Upstream component references remain digest-pinned; the

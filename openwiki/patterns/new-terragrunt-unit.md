@@ -19,11 +19,11 @@ Use this checklist before adding or changing a Terragrunt unit.
 
 ## Implementation Shape
 
-1. Reuse an existing template under `IaC/.catalog/units/...`, or add the
+1. Reuse an existing template under `IaC/terragrunt-catalog/units/...`, or add the
    smallest new one when the existing templates do not fit. Argo CD workloads
    and platform services share `live/argocd-app`; common inputs belong in the
    shared `IaC/stack-defaults.hcl`, with per-app inputs in
-   `IaC/stacks/<app>/stack.hcl`.
+   `IaC/<app>/stack.hcl`.
 2. Register the unit in `IaC/terragrunt.stack.hcl` with its historical live
    path and `no_dot_terragrunt_stack = true`. For Applications, load the app
    file's `inputs` with `read_terragrunt_config` as the unit's `values`. Keep

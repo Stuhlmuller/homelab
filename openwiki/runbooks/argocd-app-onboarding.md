@@ -10,8 +10,8 @@ tags: ["runbook", "argocd", "applications"]
 Canonical runbook: [`docs/argocd-app-onboarding.md`](../../docs/argocd-app-onboarding.md)
 
 Register applications in `IaC/terragrunt.stack.hcl` with the shared
-`IaC/.catalog/units/live/argocd-app` template. Put per-app inputs in
-`IaC/stacks/<app>/stack.hcl`, load common defaults from `IaC/stack-defaults.hcl`,
+`IaC/terragrunt-catalog/units/live/argocd-app` template. Put per-app inputs in
+`IaC/<app>/stack.hcl`, load common defaults from `IaC/stack-defaults.hcl`,
 and keep runtime state under
 `clusters/homelab/apps/<app>` or `clusters/homelab/platform/<service>`. Use
 `main` for repository-backed sources and treat Terragrunt dependencies as

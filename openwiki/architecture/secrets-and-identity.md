@@ -49,23 +49,23 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-aef98a0b80c0ff330c310ed1
-    resource: repo://IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+    resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-4fa6e8b8348f9583e76afe30
-    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-326a085bf1ea3cb64a10924e
-    resource: repo://IaC/modules/entra-google-workspace-federation/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-e9bb34bdbee430c2456beb6d
-    resource: repo://IaC/modules/entra-owner-mail/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-b17e212516ed4cf97993dd01
-    resource: repo://IaC/modules/entra-owner-mail/README.md
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
   - id: openwiki-source-77d110fdd1547564be86e611
-    resource: repo://IaC/modules/tailscale-access/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
-    resource: repo://IaC/modules/tailscale-access/README.md
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
-    resource: repo://IaC/modules/tailscale-access/variables.tf
+    resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/variables.tf
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -110,7 +110,7 @@ recovery archive retention.
 ## Tailscale provider foundation
 
 The staged ingress migration uses `tailscale/tailscale` 0.29.2 in the operator-only
-[`tailscale-access` module](../../IaC/modules/tailscale-access/README.md).
+[`tailscale-access` module](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 It adopts the complete existing policy before changing it; applying an additive
 fragment would overwrite unrelated access. The committed policy preserves legacy
 users, tags, SSH and route approvals while giving new CI tags only explicit grants.
@@ -153,7 +153,7 @@ signers. Preview and execution validate every cached current signature and all
 previous authority metadata before any removal. Execution rechecks each target;
 an already-absent previous authority remains safe to retry. Preview never signs,
 publishes or changes cache contents. Keep an encrypted private cache backup and use the
-[module runbook](../../IaC/modules/tailscale-access/README.md) for rotation and
+[module runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md) for rotation and
 recovery. If an older publisher lost the wrapper before saving a receipt, the
 separate orphan-recovery mode requires the exact current provider identity,
 unique authority, this Mac's signer metadata and a timestamp within one day.
@@ -364,7 +364,7 @@ and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_p
   `refreshPolicy: OnChange` and `deletionPolicy: Retain`. The new backend Secret
   prevents starting before the fixed code is present; PostgreSQL retains its
   original Secret. Rotate generated JWT and PostgreSQL values through
-  the committed `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
+  the committed `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`
   catalog source and regenerated `IaC/live/aws-ssm-parameters` OpenTofu stack;
   do not hand-edit
   `/homelab/multica/postgres-password`, because future applies restore the
@@ -485,7 +485,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   grant. Trust is limited to `homelab-plan`, `homelab-production`,
   `github-iac-plan`, and `github-iac-production`. Apply trust changes only with
   a reviewed administrator session and the single-role saved-plan gate in
-  `IaC/operator/README.md`; the first rollout must import the existing role
+  `docs/operator-infrastructure.md`; the first rollout must import the existing role
   before planning. CI must not traverse `IaC/operator` or gain permission to
   replace its own attachment. The
   grant is bounded to policy slots `00` through `09` and the exact
@@ -495,7 +495,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   runtime key. The correction reuses the operator-owned policy and attachment;
   it adds no cryptographic or key-administration permission. Apply only the
   reviewed single-policy saved-plan update through
-  [the operator runbook](../../IaC/operator/README.md#full-unit-reconciliation),
+  [the operator runbook](../../docs/operator-infrastructure.md#full-unit-reconciliation),
   never CI self-administration; stop on unrelated drift. On September 30, 2026
   PDT (October 1 UTC), the saved plan applied and a fresh full-unit plan was a
   no-op; CI simulation allows only `kms:DescribeKey` on the current SSM key,
@@ -772,7 +772,7 @@ checks did not exercise a new password or MFA challenge. Test actual pilot login
 denial after its initial password change and MFA setup; an interrupted
 authentication flow is not proof of denial. Keep actual HUMAN identifiers private.
 
-The [`operator/entra-owner-mail` unit](../../IaC/modules/entra-owner-mail/README.md)
+The [`operator/entra-owner-mail` unit](../../IaC/terragrunt-catalog/modules/entra-owner-mail/README.md)
 retires the historical mail-only Graph PATCH. Its `removed` block forgets only
 the retired Terraform state address after a separately reviewed plan; it does
 not write Graph or release the old SMTP alias. The supported replacement is an
@@ -858,7 +858,7 @@ on enforced containment.
 
 ## Mastodon credential boundary
 
-The [Mastodon declaration](../../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
+The [Mastodon declaration](../../IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
 adds nine exact `/homelab/mastodon/` parameters and namespace-scoped External
 Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
 owner password are generated in encrypted state. The external SMTP slot starts

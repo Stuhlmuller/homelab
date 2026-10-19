@@ -15,9 +15,9 @@ sources:
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-4fa6e8b8348f9583e76afe30
-    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
@@ -67,7 +67,7 @@ The Multica chart reads `POSTGRES_PASSWORD` when the built-in PostgreSQL data
 directory is initialized. On a retained, already-initialized PVC, refreshing
 `multica-secrets` does not change the existing `multica` database role
 password. The generated SSM value is declared in the committed
-`IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
+`IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
 rendered into the `IaC/live/aws-ssm-parameters` OpenTofu stack, so do not
 hand-edit
 `/homelab/multica/postgres-password`; the next apply would restore the
@@ -78,7 +78,7 @@ role, and consumers move together.
 
 1. Open a reviewed PR that changes the declared rotation trigger or keeper for
    `/homelab/multica/postgres-password` in
-   `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
+   `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
    generated-parameter workflow does not have an explicit keeper yet, add one
    before rotating.
 2. regenerate the live stack, then plan and apply it so OpenTofu writes the new

@@ -32,7 +32,7 @@ Generated indexes: [root](index.md), [apps](apps/index.md),
 | --- | --- | --- |
 | Add or change an app | [Inventory](workloads/inventory.md), [application pattern](patterns/new-application.md) | App README under `clusters/homelab/apps/`; [app onboarding](../.agents/skills/homelab-app-onboarding/SKILL.md) |
 | Fix a bug or regression | [Application notes](workloads/application-notes.md), [runbooks](runbooks/overview.md), [validation gates](operations/validation-gates.md) | Search the app, symptom, or resource name; follow callers, manifests, tests, and relevant incident evidence |
-| Change IaC or GitOps | [GitOps flow](architecture/gitops-flow.md), [unit pattern](patterns/new-terragrunt-unit.md) | `IaC/stacks/`, shared catalog/modules; [Terragrunt workflow](../.agents/skills/terragrunt-workflows/SKILL.md) |
+| Change IaC or GitOps | [GitOps flow](architecture/gitops-flow.md), [unit pattern](patterns/new-terragrunt-unit.md) | `IaC/`, shared catalog/modules; [Terragrunt workflow](../.agents/skills/terragrunt-workflows/SKILL.md) |
 | Add a platform dependency | [Platform pattern](patterns/new-platform-service.md), [topology](architecture/cluster-topology.md) | `clusters/homelab/platform/`; [app onboarding](../.agents/skills/homelab-app-onboarding/SKILL.md) |
 | Change secrets or identity | [Secret boundaries](architecture/secrets-and-identity.md) | [Secret contracts](../.agents/skills/homelab-secret-contracts/SKILL.md) |
 | Diagnose storage or recovery | [Storage and state](architecture/storage-and-state.md), [PVC metrics](operations/pvc-metrics-recovery.md), [etcd scheduling](operations/etcd-scheduler-diagnostics.md) | Workload backup/restore runbooks and [application recovery](../docs/application-recovery.md) |
