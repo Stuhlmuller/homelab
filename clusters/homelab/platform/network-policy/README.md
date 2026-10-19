@@ -40,13 +40,13 @@ or removes Kubernetes resources. T019/T027 still require an admitted isolated
 canary and live lifecycle evidence.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
-selector, host mounts, service account, and read/watch RBAC before probing the
+selector, host mounts, service account, and read/watch RBAC. It probes the
 fixed TCP/UDP allow/deny matrix and resolves the Kubernetes Service name over
 both DNS transports. It rejects extra or unsafe fixture Pods, including changed
 commands, arguments, or container security overrides. It requires each traffic
 probe's outcome marker as well as its exit code, so a transport error cannot
-count as a denied connection. It stores a
-private receipt listing each still-unverified lifecycle scenario. A successful
+count as a traffic result. It stores a private receipt listing each
+still-unverified lifecycle scenario. A successful
 fixture probe is not Talos qualification: cold bootstrap, first packets,
 enforcer stop/restart, API loss, policy/conntrack changes, Pod reschedule/IP
 reuse, node reboot, IPv6 absence, and real workload paths remain T027/T028

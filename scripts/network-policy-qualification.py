@@ -99,6 +99,7 @@ try:
    reply,_=connection.recvfrom(4096)
 except OSError: sys.exit(7)
 if len(reply)<12 or reply[:2]!=b'\\x12\\x34' or not reply[2]&0x80 or reply[3]&0x0f or not int.from_bytes(reply[6:8],'big'): sys.exit(8)
+print('NPQ_DNS_ALLOWED')
 """
 CASES = (
     ("npq-allowed", "npq-denied", 8080, "TCP", True),
@@ -322,7 +323,7 @@ def probe_dns(source, address, protocol):
         ["kubectl", "--request-timeout=15s", "-n", NAMESPACE, "exec", source,
          "--", "/usr/bin/python3", "-c", DNS_PROBE, address, protocol],
         capture_output=True, text=True, timeout=25,
-    ).returncode
+    )
 
 
 def dns_matrix():
@@ -338,10 +339,12 @@ def dns_matrix():
         raise ValueError("DNS Service differs from reviewed IPv4 source")
     results = []
     for protocol in ("TCP", "UDP"):
-        if probe_dns("npq-client", "10.96.0.10", protocol) != 0:
+        result = probe_dns("npq-client", "10.96.0.10", protocol)
+        if result.returncode != 0 or result.stdout.strip() != "NPQ_DNS_ALLOWED":
             raise ValueError(f"DNS {protocol} probe failed")
         results.append({"source": "npq-client", "target": "kube-dns", "port": 53,
-                        "protocol": protocol, "permitted": True})
+                        "protocol": protocol, "permitted": True,
+                        "observed": "NPQ_DNS_ALLOWED"})
     return results
 
 

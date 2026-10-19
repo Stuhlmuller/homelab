@@ -108,6 +108,24 @@ class CanaryQualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "traffic mismatch"):
                 self.module.traffic_matrix(pods)
 
+    def test_dns_requires_remote_success_marker(self):
+        service = {"metadata": {"name": "kube-dns", "namespace": "kube-system"},
+                   "spec": {"clusterIP": "10.96.0.10", "ipFamilies": ["IPv4"],
+                            "selector": {"k8s-app": "kube-dns"},
+                            "ports": [{"protocol": protocol, "port": 53, "targetPort": 53}
+                                      for protocol in ("TCP", "UDP")]}}
+        success = subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", "")
+        with (patch.object(self.module, "kubernetes_json", return_value=service),
+              patch.object(self.module, "probe_dns", side_effect=[success, success])):
+            results = self.module.dns_matrix()
+            self.assertEqual([item["observed"] for item in results],
+                             ["NPQ_DNS_ALLOWED", "NPQ_DNS_ALLOWED"])
+        with (patch.object(self.module, "kubernetes_json", return_value=service),
+              patch.object(self.module, "probe_dns", return_value=
+                           subprocess.CompletedProcess([], 0, "", ""))):
+            with self.assertRaisesRegex(ValueError, "DNS TCP probe failed"):
+                self.module.dns_matrix()
+
     def test_inspection_refuses_foreign_policy_or_untainted_node(self):
         node = {"metadata": {"name": "zimaboard-0", "uid": "node-uid",
                              "labels": {self.module.CANARY_KEY: "true"}},

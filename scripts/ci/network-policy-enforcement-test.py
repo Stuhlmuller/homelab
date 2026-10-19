@@ -148,16 +148,21 @@ class FirewallSourceTests(unittest.TestCase):
                             "ports": [{"protocol": "TCP", "port": 53, "targetPort": 53},
                                       {"protocol": "UDP", "port": 53, "targetPort": 53}]}}
         with (mock.patch.object(qualification, "kubernetes_json", return_value=service),
-              mock.patch.object(qualification, "probe_dns", return_value=0) as probe):
+              mock.patch.object(qualification, "probe_dns", return_value=
+                                subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", "")) as probe):
             results = qualification.dns_matrix()
         self.assertEqual([item["protocol"] for item in results], ["TCP", "UDP"])
+        self.assertEqual([item["observed"] for item in results],
+                         ["NPQ_DNS_ALLOWED", "NPQ_DNS_ALLOWED"])
         self.assertEqual(probe.call_count, 2)
         self.assertEqual({call.args for call in probe.call_args_list}, {
             ("npq-client", "10.96.0.10", "TCP"),
             ("npq-client", "10.96.0.10", "UDP"),
         })
         with (mock.patch.object(qualification, "kubernetes_json", return_value=service),
-              mock.patch.object(qualification, "probe_dns", side_effect=[0, 7])):
+              mock.patch.object(qualification, "probe_dns", side_effect=[
+                  subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", ""),
+                  subprocess.CompletedProcess([], 7, "", "")])):
             with self.assertRaisesRegex(ValueError, "DNS"):
                 qualification.dns_matrix()
         service["spec"]["selector"] = {"k8s-app": "foreign"}
@@ -169,9 +174,12 @@ class FirewallSourceTests(unittest.TestCase):
         pods = {name: {"status": {"podIP": f"10.244.1.{index}"}}
                 for index, name in enumerate(("npq-client", "npq-allowed", "npq-denied"), 10)}
         dns = [{"source": "npq-client", "target": "kube-dns", "port": 53,
-                "protocol": protocol, "permitted": True} for protocol in ("TCP", "UDP")]
-        codes = [0 if case[4] else 7 for case in qualification.CASES]
-        with (mock.patch.object(qualification, "probe", side_effect=codes),
+                "protocol": protocol, "permitted": True, "observed": "NPQ_DNS_ALLOWED"}
+               for protocol in ("TCP", "UDP")]
+        outcomes = [subprocess.CompletedProcess([], 0 if case[4] else 7,
+                    "NPQ_ALLOWED\n" if case[4] else "NPQ_DENIED\n", "")
+                    for case in qualification.CASES]
+        with (mock.patch.object(qualification, "probe", side_effect=outcomes),
               mock.patch.object(qualification, "dns_matrix", return_value=dns) as checked):
             result = qualification.traffic_matrix(pods)
         checked.assert_called_once_with()
