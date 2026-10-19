@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:707527ea615c5c8baff17c16ea76603f2a2ab0ebdbc75c0abd45da59e9450694",
+  "pageVersion": "sha256:f5763e52178239bfd8afc9a3253857ebb6ae79546708c365db5e517dca2be9c4",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -70,7 +70,7 @@
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:6bb1e2381e22181d9a5b07913c2fc8615040a3e9a6f152eeb73b12d544e760bd"
+          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -95,10 +95,54 @@
           "version": "repo-lines-v1:sha256:ce2a2c6677dc17e89afa30a6f3729aca090f43804217a8d0b486474c38db1cc2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmOWFlMGE5ODMzNWIzMjM3YmJiMWY5MTI1OTE3NzFlYTI1ZjI1NDJlNGY0Nzc2ZDllYjhmMDliOTE0YjI4ZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA5MDkwMDZlNTExNzFmM2I2MDZhOTU3OWQ2YmUxMmM5ZGQxM2QyOWEwZGI0YjIyMWExYmJkYTA3MmQ2YTgwMGYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUzNjRhNmM3ODI5NDQ2MjZjMzQwMzFjOTcwNzYwODcyMWEzYTBiZGJhMmVhZTY3ODQyMWI4ZWMxN2ZjZmY4NmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1MGEzMjc3NjAzZTgyZTQ1YTMyNGU4MmM4N2I3YzE5OGM0OWNkZmUyNDcxMjVlYWQwODZhM2YyMDliMTU1MTIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_4e53605094f640e4938d3cb45593c573",
+      "statement": "Declared source policies restrict Cloudflared private egress to two routed Istio gateway Pod labels on TCP/443 and Octelium ingress dataplane Pod labels on TCP/8080, and restrict Harbor component and vulnerability-exporter metrics ingress to labeled Prometheus Pods in monitoring.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
+          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:22487ad94034680e20936d33d7703a37858801be8e9e591aa719597f3542bff0"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-peers-test.py",
+          "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
+        }
+      ]
+    },
+    {
+      "id": "claim_df550be630404f5589b7fe301ede3983",
+      "statement": "Harbor nginx and Mastodon gateway ingress select istio-system ingressgateway Pods; Harbor nginx retains labeled Traefik and same-namespace bootstrap peers. Mastodon's ambient policy includes gateway-origin HBONE TCP/15008 with application TCP/3000 and TCP/4000. Flannel does not enforce these rules, so live canary paths and probes remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml#L43-L75",
+          "version": "repo-lines-v1:sha256:ce647f80462beb4258d862d266c8fc0ac7eb7a6e2a3f2552a742037a1e49af4a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNDUyODM5YTZmYmIzM2QxNTRlOTYyZjA3ZDcxNDg1MWY2YTY0NDZjM2M4MzkxYjg1NTU4YmQ1ZDAxZWFkMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3Y2YzYmI4MDA3ZjAyNGM4MWMwY2Q2Y2U4YzRhYjg1MmJkOGJmZTFlZDU3ZTdjNTlmZGY1OTc4YjdhNzQyOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1OTIyMjFhYWUzNDFkMDg1MTBiOTU1ZjZhYWE3YmQzYzRhMWQ5MDFkOTY3YjE4NGVmMmM5OGMxMWRlNDNhNWYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/namespace.yaml",
+          "version": "repo-file-v1:sha256:ba8b5055c383d5c72d06319a315b4a7bf6e1fb5abdf3d979f4e8ad58e800be75"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:25.268Z"
   }
 }

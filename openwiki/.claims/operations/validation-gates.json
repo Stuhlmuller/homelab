@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4eab6339a4f32c44eff56a8a448f41a7750942b490cb2997c444d50f4a66fb6c",
+  "pageVersion": "sha256:a72cce04963a3f501bcd7dd8e34f5c1a15c728c3e6092715df876900aab693c5",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -927,7 +927,7 @@
       "statement": "Enterprise reconciler fixtures run in static and offline validation. `check` attests selected Drivers from stable immutable-Secret and Ready-Pod snapshots; guarded `reconcile` may journal and POST/adopt the prepared logical Namespace, then blocks before Agent creation, while `verify` remains read-only and blocked.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/offline-checks.sh#L60-L65",
+          "resource": "repo://scripts/ci/offline-checks.sh#L61-L66",
           "version": "repo-lines-v1:sha256:4708ad92af0c4026a38532a319907dfbaace12b2ff79cbc9ff55ecd81f3f695a:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjY3OTFkZjZiNDRhOTM3YzA3MTFmMzkyZjhkMDZhYWIzODExNzA0ZWYyYjRhNjU0NDhkYmExNzJjYjQzMjc4YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjE1M2RjMzBiNjdhYzRmYjY0NjkyOTRiMWYzNTRkOTUxODRjOTVkYWIzZTQzYjE4NDBmOGZlYzE2YmU3ZWM4ZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDJhYTYxMjA3Y2QxMzRmYWFjMDE2ZmFiNTIzM2JkNGJmOGNmZjEzNDA3NTk5YTcwNDQxYjdhZGFjOTgxMGNlNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGZhZTIyNjdkMTUxMjcwN2VmMWMxYzI3ZWZhOTI1N2FmNTYzOWMwYWU0ZDIyY2I2MjJjOWNmZTUxMzQ3NGExMSJ9"
         },
         {
@@ -1151,10 +1151,28 @@
           "version": "repo-lines-v1:sha256:6999aec1d9be9808d513b0eab6e97299a0c409968a46a4a7ceb6364145243678:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5ZThhOTk1NmM3NDRjODBmZWMzZDAwNzM2NDgyMzMzNTcxNjY1YjljZjYxMTJmNzdhYTQ2N2Y3OWE1NDQyYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4ZDQ4Zjg4MzE4YWMzZmFjYzA2Yzk5MTNkZWFkNzg3NDYyMzg4Y2VhYjA1YTJhYjA1NTRkN2Q3MjlkMGQ5Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyODNmNjFhODZmMzI5YzhlMmVkN2Q3OWE4ZDZhNjRjZmY4OGZmNzRmYjVjMDkwZDFlNWI3MTE3NjU3MjdmZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1M2I4Y2M3OGQ5ZTVjNjM0MTUxZjlmMGY0NjhlOGQ3NWYyOWQ0OTI3NDlkZGRhNDFkZjZhZTlkNTgwYTQ2NWUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_2701d7ccc02d4bc7a372aadf82494a2d",
+      "statement": "Offline peer regression checks Cloudflared origins and gateway selectors, Harbor monitoring peers, Harbor and Mastodon ingressgateway peers, and Mastodon's ambient HBONE TCP/15008 allowance. These source checks do not prove traffic through an enforcing dataplane.",
+      "evidence": [
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-peers-test.py",
+          "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:25.268Z"
   }
 }

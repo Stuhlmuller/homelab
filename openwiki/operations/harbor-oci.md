@@ -54,6 +54,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/harbor-pull-secret.yaml
   - id: openwiki-source-9749edd762a130f624e47007
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
+  - id: openwiki-source-3f6d0b26d6634f9dca554267
+    resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
@@ -116,6 +118,8 @@ sources:
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
+  - id: openwiki-source-556eb082b86343ef048df9f7
+    resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-e3e84b128839afbc47f478f7
@@ -156,10 +160,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:25.268Z
 ---
 
 # Harbor Private OCI Registry
@@ -224,7 +228,12 @@ failure, or absent active config stops the operation. The same checks run before
 and after apply; scope, identity, no-reboot and native-pull gates remain intact.
 Offline regression covers these cases without proving a live node rollout.
 
-Flannel does not enforce the declared NetworkPolicy. Traefik's Istio policy
+Flannel does not enforce the declared NetworkPolicy. Harbor nginx's TCP/8080
+ingress now selects `istio=ingressgateway` Pods in `istio-system`, while retaining
+labeled Traefik Pods and same-namespace Harbor bootstrap Pods. Harbor component
+and vulnerability-exporter metrics ingress selects the labeled Prometheus Pod
+in `monitoring` on TCP/8001 and TCP/8080, respectively. Prove these paths on
+the isolated enforcing canary before activation. Traefik's Istio policy
 admits the four declared LAN node addresses and their four individual `cni0`
 bridge plus four `flannel.1` overlay `/32`s as unauthenticated sources on port
 9443. It also admits only `cluster.local/ns/automation/sa/renovate` as an

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:45b6d978cce3ab7ce9594682df17e008c816acdc0e672cf47c3d8319825a69d3",
+  "pageVersion": "sha256:d3625040227b6ca20bed50f3d550f532909fb0f2057eab4a251008d18515e711",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -375,10 +375,54 @@
           "version": "repo-file-v1:sha256:59c359720a35d1fba4e52db563152f3570ae82f11e67246cc6c5d659350bfb29"
         }
       ]
+    },
+    {
+      "id": "claim_4f8c5107346644b0bb02db46628bd727",
+      "statement": "Retained Cloudflare Tunnel origins route to two Istio gateway Services on TCP/443 and the Octelium ingress dataplane on TCP/8080. Declared Cloudflared policy selects their backing Pod labels; Harbor nginx retains labeled Istio, Traefik, and bootstrap peers, and Harbor metrics ingress selects labeled Prometheus Pods.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/configmap.yaml",
+          "version": "repo-file-v1:sha256:54b456cd761278f6a953e0e1a147fb707a679bbbb4b98e2f2b5ee7253406ec14"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:22487ad94034680e20936d33d7703a37858801be8e9e591aa719597f3542bff0"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-peers-test.py",
+          "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
+        }
+      ]
+    },
+    {
+      "id": "claim_abe01c99e0c64d749e5fd048918188f7",
+      "statement": "Mastodon's declared Istio gateway ingress permits TCP/3000 and TCP/4000 plus ambient HBONE TCP/15008 from labeled ingressgateway Pods. Flannel does not enforce those selectors; current live routes and isolated-canary allowed and denied traffic remain verification gates.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/namespace.yaml",
+          "version": "repo-file-v1:sha256:ba8b5055c383d5c72d06319a315b4a7bf6e1fb5abdf3d979f4e8ad58e800be75"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/virtualservice.yaml",
+          "version": "repo-file-v1:sha256:ae4da97c540a55b79d2195916313133df28df3f503dd4df2b773dad203a3aa06"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:25.268Z"
   }
 }

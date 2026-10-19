@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6cca6570b4c6e27030939d3e23991d594955177e99f76b433babbae18891f01d",
+  "pageVersion": "sha256:b446c5d7cc79460f0b4561bb02f5549b2a38d9173693014c0666d51070ac6351",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -491,10 +491,36 @@
           "version": "repo-file-v1:sha256:d8e4d501a5ba1633f112b44732d6321cb2b46860a04b29a98eb220ee0410578f"
         }
       ]
+    },
+    {
+      "id": "claim_45097a72ec12417780258f5431abd5ce",
+      "statement": "The source-only T018 pass narrows declared Cloudflared egress to labeled Istio and Octelium dataplane Pods, Harbor metrics ingress to Prometheus Pods, and Harbor nginx and Mastodon ingress to labeled gateway Pods; Harbor nginx retains Traefik and bootstrap peers, and Mastodon adds ambient HBONE TCP/15008. Flannel does not yet enforce these NetworkPolicies, so endpoint and traffic behavior require isolated-canary verification.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:3e5aac1ecc637b466942a902d45257fec79f9cd55c6259bb74f2ec7db7419227"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:e3ce4d32166e2393b0ba97ed91a7f1469e9cb82f01d71ab643edfd25cbdd70b2"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:22487ad94034680e20936d33d7703a37858801be8e9e591aa719597f3542bff0"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-peers-test.py",
+          "version": "repo-file-v1:sha256:1127146f697fb21439b7a601129a48ad78bff12747d3c57f58516d6a00d2acb7"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:25.268Z"
   }
 }

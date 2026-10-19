@@ -6,12 +6,24 @@ tags: [runbook, networking, ingress]
 sources:
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
+  - id: openwiki-source-3f6d0b26d6634f9dca554267
+    resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
+  - id: openwiki-source-259f9ac5704d0293a7850944
+    resource: repo://clusters/homelab/apps/mastodon/namespace.yaml
+  - id: openwiki-source-a953c7d60cd7a8fdea7b14bd
+    resource: repo://clusters/homelab/apps/mastodon/networkpolicy.yaml
+  - id: openwiki-source-f63af960991dc66477879fc8
+    resource: repo://clusters/homelab/apps/mastodon/virtualservice.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
     resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-d190dbce4c50934f34b78ce1
     resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-c6350999c9f74bf0f53f9005
     resource: repo://clusters/homelab/apps/octelium-cluster/console-redirect.yaml
+  - id: openwiki-source-eb9ba8868bbd263b0cd40e71
+    resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
+  - id: openwiki-source-92921fc2790f07b9b1a48bd3
+    resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-df94d6406e64c190589692a0
     resource: repo://clusters/homelab/apps/openclaw/networkpolicy.yaml
   - id: openwiki-source-fa98853a4d8b97699eb08972
@@ -46,8 +58,12 @@ sources:
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
+  - id: openwiki-source-556eb082b86343ef048df9f7
+    resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
+  - id: openwiki-source-54e352b5d1969695ce29dabe
+    resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
     resource: repo://scripts/ci/tailnet-dns-test.py
   - id: openwiki-source-511191e55632b55651ad4318
@@ -72,10 +88,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:25.268Z
 ---
 
 # Tailnet And App Ingress
@@ -159,6 +175,22 @@ Talos host-to-Service SNAT selects a bridge locally or overlay across nodes;
 ordinary Pod CIDRs are not allowed. Converge these policies before the worker-first host-only mapping,
 then require an uncached successful pull from every node before Harbor DNS
 changes. See the [dated failed-pull and node-readiness findings](../operations/harbor-oci.md#private-node-registry-foundation).
+
+## Retained Cloudflare and Istio paths
+
+The retained Cloudflare Tunnel routes to two Istio gateway Services on TCP/443
+and the Octelium ingress dataplane Service on TCP/8080. Its declared egress
+policy selects their backing Pod labels in `istio-system` and `octelium`.
+Harbor nginx's TCP/8080 ingress permits the labeled Istio ingressgateway Pod,
+labeled Traefik Pods, and same-namespace Harbor bootstrap Pods. Harbor metrics
+ingress permits labeled Prometheus Pods in `monitoring` on TCP/8001 and
+TCP/8080.
+
+Mastodon's retained Istio route selects that gateway Pod for TCP/3000 and
+TCP/4000, plus TCP/15008 for ambient HBONE delivery. Flannel does not enforce
+these selectors. Recheck live Service and EndpointSlice routes and Pod labels,
+then prove allowed paths and denied peers on the isolated canary before
+enforcement; Mastodon's app Pods were absent at source review.
 
 ## Tailnet Lock
 

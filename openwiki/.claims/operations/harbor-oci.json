@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2fe861828d5f3dfc387e3c7f773efbb6b39fb0093de68e9523dcd660004481b7",
+  "pageVersion": "sha256:b9f0a7a38116b355388a0b0be63d9a9b8e332ed249073b1afd3638d8d71c3b3e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -781,10 +781,38 @@
           "version": "repo-lines-v1:sha256:709a22745f01c1af68303b78ac189556fcc859358cf64424edb2740adbbaa4ad:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyY2U5YmI0ZTg0NzZiODAxMWNhYmYzZGY3ODMwY2JiNDllNmZmZGE0ZDA2ZmQ2ZTcxN2RiMGRhZDA3YmZjZDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkNTM3MjRjODhmNjE1M2EzNWMwYzUzM2ZkZjlhYTVlZTEwOGVmOGJiMDMxZTA5NzBlMDU5NGJhMDlmMTUzYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwODRlMmUwN2UxYjRmNzFjZDVkYjU2MTY0ZjAwNzIyYTRhOWNiZTFkZWIyZTFlMzU1YTIzYTk4ZDMyY2FjYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyMzFiODU4NzcyN2RlZTYzMDViZTcwZjM3MmY5Mjc1NDE1YTA0YzZmZjVlNzY5NjIyMDczYWE3MDMwMmE3YzkifQ"
         }
       ]
+    },
+    {
+      "id": "claim_13da127738d247b7be8898b464a33e9a",
+      "statement": "The declared Harbor nginx NetworkPolicy allows TCP/8080 ingress from labeled Istio ingressgateway Pods in istio-system, labeled Traefik Pods in traefik, and same-namespace Harbor bootstrap Pods; Flannel currently does not enforce that policy.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml#L43-L75",
+          "version": "repo-lines-v1:sha256:ce647f80462beb4258d862d266c8fc0ac7eb7a6e2a3f2552a742037a1e49af4a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNDUyODM5YTZmYmIzM2QxNTRlOTYyZjA3ZDcxNDg1MWY2YTY0NDZjM2M4MzkxYjg1NTU4YmQ1ZDAxZWFkMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3Y2YzYmI4MDA3ZjAyNGM4MWMwY2Q2Y2U4YzRhYjg1MmJkOGJmZTFlZDU3ZTdjNTlmZGY1OTc4YjdhNzQyOTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1OTIyMjFhYWUzNDFkMDg1MTBiOTU1ZjZhYWE3YmQzYzRhMWQ5MDFkOTY3YjE4NGVmMmM5OGMxMWRlNDNhNWYifQ"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
+        }
+      ]
+    },
+    {
+      "id": "claim_42c9431895804705ab7ad618ff646862",
+      "statement": "The declared Harbor component and vulnerability-exporter metrics ingress selects Prometheus Pods in monitoring on TCP/8001 and TCP/8080 respectively.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml#L12-L41",
+          "version": "repo-lines-v1:sha256:aef5d4b20c052ed24e18defba7aa186d124c353ce6c89adc0efd1ecfd4e94225:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNzZiMWQ2MDEwNzc2ZTEzZGRkMjVjODY5NDRlNTkxZjY3ZjVkYzA0NDE0MjBlYzhjNDRiZmViOTliYTQzNWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcwZWYyYTYxYWNjYWUwZDA5NzBiMjkyOTQ5ZmYzMDExOWE1ZTYwOTAwNTQyN2IzYmY3ZTAzN2Y0MmZlNjczZjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY1OTIyMjFhYWUzNDFkMDg1MTBiOTU1ZjZhYWE3YmQzYzRhMWQ5MDFkOTY3YjE4NGVmMmM5OGMxMWRlNDNhNWYifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml#L160-L181",
+          "version": "repo-lines-v1:sha256:862b9bbaf5c7a37322c26d82d0f25a2e2808ec24ccbebf02e9fb7abedc5dc6a1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3Mzg0NDQ0OGIwNWY0NGIwYzY3MmM3MWY3MzljYjNmMGU2OGZmZjYwZjZkYTdhZTQwMmRiNzU5MDMwMjBjNTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYyNDUyODM5YTZmYmIzM2QxNTRlOTYyZjA3ZDcxNDg1MWY2YTY0NDZjM2M4MzkxYjg1NTU4YmQ1ZDAxZWFkMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxOWYxZWNiMWYzZjQ1ZDRmYmMyZTBkYTExNWQ4ZmQxYTU4ZGE3NjAwODU5ZjNkMGYwM2RkZTMyMDVkYmZmOTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0N2EyNGEyZmEwYmUyZGYxYmZkOTdjODA3OTQ4NGM0OGM3MzBkMzFiZTE0NjY0NjRjYjY0OTZlMmFiOGJjYWQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:47:25.268Z"
   }
 }

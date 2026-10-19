@@ -4,12 +4,22 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-3f6d0b26d6634f9dca554267
+    resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
     resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
   - id: openwiki-source-95cce4aa4d0f7c4802f5fdd5
     resource: repo://clusters/homelab/apps/kiali/README.md
   - id: openwiki-source-448cbe27130e9e3c4e8b10b3
     resource: repo://clusters/homelab/apps/kiali/values.yaml
+  - id: openwiki-source-259f9ac5704d0293a7850944
+    resource: repo://clusters/homelab/apps/mastodon/namespace.yaml
+  - id: openwiki-source-a953c7d60cd7a8fdea7b14bd
+    resource: repo://clusters/homelab/apps/mastodon/networkpolicy.yaml
+  - id: openwiki-source-eb9ba8868bbd263b0cd40e71
+    resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
+  - id: openwiki-source-92921fc2790f07b9b1a48bd3
+    resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -20,6 +30,8 @@ sources:
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
+  - id: openwiki-source-54e352b5d1969695ce29dabe
+    resource: repo://scripts/ci/network-policy-peers-test.py
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-221eda5e9e283a2549066105
@@ -28,10 +40,10 @@ sources:
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
-generated: { by: "codex", at: "2026-10-19T20:40:44.909Z" }
+generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T21:47:25.268Z
 ---
 
 # Runtime Isolation
@@ -53,6 +65,24 @@ The source handoff does not prove live convergence, narrower access, or
 NetworkPolicy enforcement. Confirm Kiali access through Octelium and the
 Prometheus scrape after sync; the [T018 policy review](../../specs/003-replace-openclaw-enterprise/tasks.md)
 and isolated enforcement canary remain open.
+
+## Declared peer narrowing
+
+Source policies select routed gateway and monitoring Pods instead of whole
+namespaces. Cloudflared private egress selects the two Istio gateway Pod labels
+on TCP/443 and the Octelium ingress dataplane labels on TCP/8080. Harbor
+component and vulnerability-exporter metrics ingress selects Prometheus Pods
+on TCP/8001 and TCP/8080. Harbor nginx and Mastodon gateway ingress select
+`istio=ingressgateway` Pods in `istio-system`; Harbor nginx also retains labeled
+Traefik Pods and same-namespace Harbor bootstrap Pods. Mastodon's ambient
+namespace requires gateway-origin HBONE TCP/15008 before traffic reaches its
+TCP/3000 and TCP/4000 application ports.
+
+The offline peer regression ties these selectors to declared Cloudflared
+origins, gateway routes, ServiceMonitor settings, and the Mastodon namespace
+label. No enforcing canary has tested the flows. Recheck live Service selectors,
+EndpointSlices, and Pod labels, then prove allowed paths, Service translation,
+ambient HBONE, kubelet probes, and denied peers before activation.
 
 ## Egress enforcement prerequisite
 
