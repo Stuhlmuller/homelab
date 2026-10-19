@@ -301,7 +301,7 @@ trigger redelivery merely to validate ingress.
   `git diff --check`, repository secret scanning, and
   `nix flake check --no-build --all-systems` passed before live rollout.
   Focused Prowlarr Terragrunt initialization and validation use the
-  repository-local `IaC/modules/argocd-application-kubernetes` module.
+  repository-local `IaC/terragrunt-catalog/modules/argocd-application-kubernetes` module.
 - Kiali desired state was added on 2026-05-26. `terragrunt hcl fmt --check`,
   `terragrunt hcl validate`, `kubectl kustomize clusters/homelab/apps/kiali`,
   `helm template kiali-operator kiali-operator --repo
@@ -317,7 +317,7 @@ trigger redelivery merely to validate ingress.
 
 | Failure | Operator response |
 | --- | --- |
-| Missing Application module | Stop, fix the local `IaC/modules/argocd-application-kubernetes` module or explicitly document a temporary catalog fallback before applying. |
+| Missing Application module | Stop, fix the local `IaC/terragrunt-catalog/modules/argocd-application-kubernetes` module or explicitly document a temporary catalog fallback before applying. |
 | Dependency cycle | Stop, remove the cycle from Terragrunt dependencies before applying. |
 | Existing unmanaged app | Stop, document adoption or delete/recreate strategy before Argo CD takes ownership. |
 | External DNS lookup failures from pods | Verify `platform-dns` is synced and CoreDNS forwards through `1.1.1.1` and `1.0.0.1`; confirm the upstream answer is not a sinkhole response such as `0.0.0.0`; do not manually patch the live CoreDNS `ConfigMap`. |

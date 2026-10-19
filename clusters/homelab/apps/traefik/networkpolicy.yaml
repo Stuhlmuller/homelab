@@ -67,6 +67,12 @@ spec:
         - ipBlock: {cidr: 10.244.2.0/32}
         - ipBlock: {cidr: 10.244.3.0/32}
         - ipBlock: {cidr: 10.244.4.0/32}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: automation
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: renovate
       ports:
         - {protocol: TCP, port: 9443}
     - from:

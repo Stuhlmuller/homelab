@@ -6,6 +6,7 @@ resources:
   - externalsecret.yaml
   - networkpolicy.yaml
   - pvc.yaml
+  - serviceaccount.yaml
 configMapGenerator:
   - name: renovate-config
     files:

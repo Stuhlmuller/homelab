@@ -49,7 +49,7 @@ done
 
 repo_root="$(git rev-parse --show-toplevel)"
 unit="$repo_root/IaC/live/kubernetes-secrets/external-secrets-aws-ssm-auth"
-catalog_unit="$repo_root/IaC/.catalog/units/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terragrunt.hcl"
+catalog_unit="$repo_root/IaC/terragrunt-catalog/units/live/kubernetes-secrets/external-secrets-aws-ssm-auth/terragrunt.hcl"
 
 if [[ "$(git -C "$repo_root" branch --show-current)" != "main" ]] ||
   [[ -n "$(git -C "$repo_root" status --porcelain)" ]]; then

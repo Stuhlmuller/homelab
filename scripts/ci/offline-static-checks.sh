@@ -23,7 +23,7 @@ if [[ "$parsed_units" -ne "$expected_units" ]]; then
   echo "Parsed ${parsed_units} of ${expected_units} explicit stack units" >&2
   exit 1
 fi
-if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/stacks; then
+if rg -q '^[[:space:]]+kustomize[[:space:]]*=[[:space:]]*\{\}[[:space:]]*$' IaC/terragrunt.stack.hcl IaC/; then
   echo "Terragrunt-owned Argo CD Applications must omit empty Kustomize options because Argo CD normalizes them away." >&2
   exit 1
 fi
@@ -119,22 +119,22 @@ echo "::group::Terragrunt Azure credential gate"
 
   for changed_path in \
     IaC/live/azuread-applications/fleet/.terraform.lock.hcl \
-    IaC/.catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
-    IaC/modules/azuread-saml-application/main.tf \
-    IaC/modules/azuread-family-user/main.tf; do
+    IaC/terragrunt-catalog/units/live/azuread-applications/fleet/terragrunt.hcl \
+    IaC/terragrunt-catalog/modules/azuread-saml-application/main.tf \
+    IaC/terragrunt-catalog/modules/azuread-family-user/main.tf; do
     if ! terragrunt_azuread_stack_changed; then
       echo "Azure credentials must be required for ${changed_path}." >&2
       exit 1
     fi
   done
   [[ "$(terragrunt_azuread_changed_filter)" == "*" ]]
-  changed_path="IaC/modules/argocd-application-kubernetes/main.tf"
+  changed_path="IaC/terragrunt-catalog/modules/argocd-application-kubernetes/main.tf"
   if terragrunt_azuread_stack_changed; then
     echo "An unrelated module change must not require Azure credentials." >&2
     exit 1
   fi
   [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
-  changed_path="IaC/modules/entra-verified-family-user/main.tf"
+  changed_path="IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf"
   [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
   changed_path="scripts/ci/terragrunt-plan.sh"
   [[ "$(terragrunt_azuread_changed_filter)" == "IaC/live/azuread-applications/* | [main...HEAD]" ]]
@@ -161,7 +161,7 @@ echo "::group::Terragrunt deleted-unit ownership"
   git() {
     case "$1" in
       rev-parse) return 0 ;;
-      diff) printf '%s\n' IaC/.catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
+      diff) printf '%s\n' IaC/terragrunt-catalog/units/live/old/terragrunt.hcl IaC/operator/old/terragrunt.hcl IaC/live/old/terragrunt.hcl IaC/bootstrap/old/terragrunt.hcl ;;
       *) return 1 ;;
     esac
   }
@@ -919,7 +919,7 @@ done <<'EOF'
 .github/workflows/lint.yml c7e3627cbaf16226a2e3c042e9afa729067dcc28fab20e5a8623c16255a3ff75
 .github/workflows/nofx-images.yml a25ee2e23e3774ba6459badb3d03e29511778b1190ee6a605da3c63a30738c09
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
-.github/workflows/openclaw-enterprise-operations.yml e14b4f19bff115e02a2ac9dcf507e5c6db9d4bfd96b7609c5fcb340f2caa8a9f
+.github/workflows/openclaw-enterprise-operations.yml a2f9195795f78e66450fd9c74fb8bdae3bba594809f5cf19cb5f3586d71e78ed
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7

@@ -29,6 +29,11 @@ spec:
             app.kubernetes.io/part-of: homelab-automation
         spec:
           automountServiceAccountToken: false
+          serviceAccountName: renovate
+          # Use the Harbor-only listener; keep the canonical hostname for TLS.
+          hostAliases:
+            - ip: 10.96.0.50
+              hostnames: [harbor.stinkyboi.com]
           restartPolicy: Never
           securityContext:
             runAsUser: 12021

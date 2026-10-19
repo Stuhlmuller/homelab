@@ -8,20 +8,24 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
     resource: repo://clusters/homelab/apps/harbor/externalsecret.yaml
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-f19aa740c5d820d4dd28114e
+    resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-  - id: openwiki-source-4fa6e8b8348f9583e76afe30
-    resource: repo://IaC/modules/aws-github-actions-role-policy/main.tf
-generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
+  - id: openwiki-source-da1c62ec7717f978964e0a11
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
+  - id: openwiki-source-1f0ad12bbff1986d64be6620
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+generated: { by: "codex", at: "2026-10-19T05:24:03.516Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:24:03.516Z
 ---
 
 # AWS SSM Secret References
@@ -41,16 +45,29 @@ Commit SSM paths, ExternalSecret contracts, and safe placeholders only. Runtime
 values stay outside git; External Secrets materializes application credentials
 after the repository-managed bootstrap secret is available.
 
-## Renovate App transfer (staged)
+## Renovate App transfer and role retirement
 
 The [Renovate runbook](../../clusters/homelab/apps/renovate/README.md) declares
-two fixed SSM placeholders for the existing GitHub App issuer and private key.
-After a reviewed, private SSM plan, apply the temporary exact-scope OIDC transfer
-role. The companion repository's protected workflow writes the existing App
-credentials to those paths; verify parameter metadata and a later
-`automation/renovate` ExternalSecret refresh without reading values. Retire the
-transfer grant through another reviewed plan before unsuspending the hourly
-CronJob. This sequence is staged source, not a completed live transfer.
+two fixed SSM parameters for the existing GitHub App issuer and private key.
+The [2026-10-19 operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records a successful companion transfer: both parameters reached version 2,
+then `automation/renovate` refreshed with `Ready=True`; the CronJob stayed
+suspended with no Job. Inspect only parameter and Secret metadata, never values.
+Current IAM source removes the temporary exact-scope OIDC writer role from
+desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, an operator applied a private, un-targeted saved plan deleting only
+that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
+a fresh full-unit plan had no changes. A later rotation needs a reviewed
+reintroduction of the exact-scope grant. The hourly CronJob remains suspended
+in full dry-run mode; parity and the old-writer cutover remain separate gates.
+
+**Source finding (2026-10-19).** The [workload README](../../clusters/homelab/apps/renovate/README.md#credentials-and-storage)
+still phrases initial role application and credential transfer as future steps,
+while the [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records the transfer and the [IAM module](../../IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf)
+removes the role from desired state. Reconcile that README in a follow-up PR:
+mark the initial transfer and live role retirement complete, and retain the
+separate rotation and writer-cutover gates.
 
 ## Harbor native receipt prerequisite
 
@@ -67,7 +84,7 @@ The Multica chart reads `POSTGRES_PASSWORD` when the built-in PostgreSQL data
 directory is initialized. On a retained, already-initialized PVC, refreshing
 `multica-secrets` does not change the existing `multica` database role
 password. The generated SSM value is declared in the committed
-`IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
+`IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl` catalog source and
 rendered into the `IaC/live/aws-ssm-parameters` OpenTofu stack, so do not
 hand-edit
 `/homelab/multica/postgres-password`; the next apply would restore the
@@ -78,7 +95,7 @@ role, and consumers move together.
 
 1. Open a reviewed PR that changes the declared rotation trigger or keeper for
    `/homelab/multica/postgres-password` in
-   `IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
+   `IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. If the
    generated-parameter workflow does not have an explicit keeper yet, add one
    before rotating.
 2. regenerate the live stack, then plan and apply it so OpenTofu writes the new

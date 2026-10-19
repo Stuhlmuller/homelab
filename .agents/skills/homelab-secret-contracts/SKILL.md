@@ -14,7 +14,7 @@ The matrix is an index; source files decide the current behavior.
 
 - Put declarations in the authoritative shared SSM or provider-owned catalog
   inputs indexed by `IaC/terragrunt.stack.hcl`, not generated `IaC/live` files.
-  App registration inputs under `IaC/stacks/<app>/stack.hcl` reference those
+  App registration inputs under `IaC/<app>/stack.hcl` reference those
   producer units; they do not own the secret material.
   Preserve the distinction between runtime SSM encryption in `us-west-2` and
   OpenTofu state encryption in `us-east-1`.

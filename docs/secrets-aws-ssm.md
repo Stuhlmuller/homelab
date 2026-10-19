@@ -117,7 +117,7 @@ publisher's `0600` cache, including its separate public authority identities,
 outside git and retain an encrypted recovery copy. Increment the committed generation and rotate every 60 days (90-day key
 expiry), then explicitly retire old cached signing authorities after CI
 acceptance. Expiring an auth key alone does not remove that authority. The
-[module runbook](../IaC/modules/tailscale-access/README.md) owns preview, publication,
+[module runbook](../IaC/terragrunt-catalog/modules/tailscale-access/README.md) owns preview, publication,
 acceptance, rotation, and recovery commands.
 
 ## Mastodon secret contract
@@ -496,19 +496,22 @@ are removed before changing application records. Credential retirement follows
 successful application, callback, CI, and Cordium acceptance in a separate change.
 
 The tailnet resolver reads the approved Traefik Service and requires no DNS
-write token. The later guarded public-record retirement helper reads the
-existing scoped cert-manager Cloudflare DNS token from SSM. It removes only
-the fixed 27 private application names' A/AAAA/CNAME records after the owner
-tailnet DNS handoff and client acceptance; it preserves callback, CI, carrier,
-unrelated names, and other record types. API responses and token values stay
-out of public logs. Follow the [current cutover](../clusters/homelab/apps/traefik/CUTOVER.md#current-tailnet-dns-cutover)
+write token. The guarded public-record retirement helper reads the existing
+scoped cert-manager Cloudflare DNS token from SSM. It removes only A/AAAA/CNAME
+records for the 26 approved non-apex app subdomains after the owner tailnet DNS
+handoff and client acceptance. The public apex, mail and certificate validation
+records, Cloudflare zone, four legacy callback/CI/carrier names, unrelated
+names, and other record types remain. API responses and token values stay out
+of public logs. Follow the [current 26-name cutover](../specs/005-retire-public-app-dns/quickstart.md)
 from a clean reviewed `main` checkout.
 
 The cert-manager Cloudflare value should be a scoped API token with permission
 to read the zone and edit DNS records for `stinkyboi.com`; do not store the
-token itself in git. The cert-manager ExternalSecret refreshes this value every
-five minutes so DNS-01 token rotations converge quickly without hand-editing the
-Kubernetes Secret.
+token itself in git. The cert-manager ExternalSecret uses `OnChange` refresh;
+rotate its declared source through the reviewed secret workflow, without
+hand-editing the Kubernetes Secret. Check its Ready condition, the Cloudflare
+ClusterIssuer, and both Traefik and Istio Certificates before and after public
+app subdomain retirement.
 
 ## Microsoft Entra SSO Bootstrap
 

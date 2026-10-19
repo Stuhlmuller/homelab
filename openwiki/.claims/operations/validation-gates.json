@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:40bab06d8106e90d1935297a700b6ec99fc817e4813ab480f15578a67ac58025",
+  "pageVersion": "sha256:ff6e4391163071caaa7ac91bac0f14a8ba311a4f585c1726acad67ad3ed2c67a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
       "statement": "Offline validation retains immutable-owner OIDC tests. The owner-mail Graph PATCH is retired with state-only removal; read-only conversion tests reject the current federated target and require recovery administrator evidence. Live domain reconciliation, recovery sign-in, conversion, Fleet SAML and recovery login remain separate acceptance.",
       "evidence": [
         {
-          "resource": "repo://IaC/modules/entra-owner-mail/main.tf",
+          "resource": "repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf",
           "version": "repo-file-v1:sha256:1750c30868a6ba16808e30c1785487e218e224581eeff38c43545abcb6290656"
         },
         {
@@ -30,11 +30,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/fleet/FREE-ENTRA.md",
-          "version": "repo-file-v1:sha256:0846caf1093bb91704a864c5812c96bbb9b0802e3da704ac687e475e12646c12"
+          "version": "repo-file-v1:sha256:666cac04c8a446019f22c1244e8d5dcc7a86f28aa36fe1f63b725aa6e6165b65"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
         }
       ]
     },
@@ -54,15 +54,19 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "Offline validation runs route and tokenless-kubeconfig fixtures, including exact LAN, bridge, and overlay `/32` sources for registry port 9443; the separately invoked loopback runtime harness exercises declared Traefik routes and TLS reload. Neither replaces live ingress acceptance.",
+      "statement": "Offline validation runs route and tokenless-kubeconfig fixtures, including exact LAN, bridge, and overlay /32 sources plus a dedicated no-token Renovate identity and Harbor host alias for registry port 9443; the separately invoked loopback runtime harness exercises declared Traefik routes and TLS reload. Neither replaces live ingress acceptance.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+        },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
           "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
+          "version": "repo-file-v1:sha256:5e83bfb4b50a30d51b3ee2efabb6a6bac97f0ad377a3b29ba5a4dc2b5701fce5"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -90,7 +94,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
+          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
@@ -102,7 +106,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
+          "version": "repo-file-v1:sha256:fe836deb4b727f8c0fc0b2dc8e172b335ac0b9e827ef4c8609000061bbe5b3e7"
         }
       ]
     },
@@ -144,7 +148,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
+          "version": "repo-file-v1:sha256:fe836deb4b727f8c0fc0b2dc8e172b335ac0b9e827ef4c8609000061bbe5b3e7"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -152,7 +156,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
+          "version": "repo-file-v1:sha256:b7c0daf4b91ff98ae4c2b7de9d0a97f8c2fce4ba54fe4fa9d29833c02cd78b89"
         }
       ]
     },
@@ -176,15 +180,19 @@
     },
     {
       "id": "claim_208b0475f0894dc0a15e62f0943aeb0a",
-      "statement": "The retained private DNS preflight accepts AFFiNE 502/503 only with explicit source and live zero replicas and rejects other app 5xx responses; its regression also prevents publishing peer IPv6 when ingress Service publishes only IPv4.",
+      "statement": "The private DNS preflight accepts AFFiNE HTTP 500/502/503 and OpenClaw HTTP 502 only with reviewed source and live zero replicas. Deployed Traefik routes and TLS must match source, other app 5xx responses fail, and a peer IPv6 is not published when ingress Service publishes only IPv4.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:28b4eed01ebc9c5c51d62b94dcdb04bb13b345023ed42d3f3e83c33e74a261b6"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L135-L220",
+          "version": "repo-lines-v1:sha256:8b3e0d8259494147e041189318fecbf50639c29c24b234c5420aa91a2d3db498:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzYjE5NzNkYzIzZjAwZTlmNWYzYTk0MmJkMzE0ODY2YmQ4NTc3ZTcwM2YyNzMxZWVlMzUwYmE2OTZmYzY0MTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YzdmMDlkN2Q4MDY4MDMxNWIwNGY0OWJhMjU4OTgxZjMxODUxMzJiMGM0MTBhOTI3NDRlODIxZjRjMGVmMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ODU1M2UwOTJlMTk2Y2VkYTYyYzZmYzM5MTJlNDNhOWQ1YzE5YzllYWYyZDhmYjhmNjI2ZWU5MGViOWFkYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MjZjYzU0MDQzNGIzMzI5MWRlYTdmZTk3ZGVjYjM0NTZhOTBiZmRmMzM0OGFlN2VkNGM3NDZhOGIzZDA0NTMifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:e706771e686eae8d91ebb4362d9dd12efaf867fda034bf8abaa1940f0eb37402"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L91-L117",
+          "version": "repo-lines-v1:sha256:29cdf195d46b9f96df4ab5cb2f52504951411bd5088398168ddb9c98879deb69:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ZDAyNjFlZTcwNzE5YWI3M2Y3NzcyN2U2YjZkNmZmY2E2MzE3ZWUxOTNkYzdiODA2ZmJkYzNjYjU2NDQ5NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmYzM4MTkzZDdlNDhhYWNiYmFhYmJhYTJlZTgzMTE4OTk2Yzg0NWViYjM5NDBmZWE1ZTk2MjA2OWQ0ZDJkY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MWU1ZmFlZTBiMDA0MzY5YTM4OTRiYTUzMWYxM2Y1YTJmZmU1OTMyN2EwYTRkZmZlZTc1NjU5NDc2MzRlMTQifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L136-L186",
+          "version": "repo-lines-v1:sha256:95b8aff0f5a1fa1bb6cb819b72e99bdf6d2b71f8abbe0e3d5e38e285a4285731:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3ZmUyZGU5NjU3OTJiMjRjODNmYzE3YWJkMzVmYWJiMmUwMGY1MDQ5M2VjZmJkYmRmMTI1ZGRkMTgwODMwNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1YTEyZDAxYWQ3ZTExZWVkMDFiOWM5NGM1MjdhYjc5ZDk3ZjRiODRkODg1NzdiOTQ3MDQ2ODg0ZDcwMjFjZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiOWZkNzczN2QxNjFhZjNjZGYxNmQwYTc3MTE1NmJkZTQyMDUzNjU1NWJhNGEzZjkwNDc0ODI2NjEzNjczYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYjBkZGJkNzgzY2Q0YzNjNWY4MzkxMjI0MmEyMjcwM2RmYzJiNTFkMDYwYTdjMTU1YWMxZjY3Y2FiMmE4MmYifQ"
         }
       ]
     },
@@ -235,8 +243,8 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
-          "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L173-L209",
+          "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
         }
       ]
     },
@@ -268,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:c79d0b86a93d8a24bc2a6aa2de0b79a657c38f493d290c00974fb724d8d43228"
+          "version": "repo-file-v1:sha256:7ee2dd58f730e4c0c20903ba2f624ba81bf4ff33f5b36d533ccb7d297192b97c"
         }
       ]
     },
@@ -282,7 +290,7 @@
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
+          "version": "repo-file-v1:sha256:93d7147c9989ac9fb90ee8d88393f7ec4c20db00434d16531a74ea7b5dc0d1c2"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-source-test.py",
@@ -318,7 +326,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
+          "version": "repo-file-v1:sha256:93d7147c9989ac9fb90ee8d88393f7ec4c20db00434d16531a74ea7b5dc0d1c2"
         },
         {
           "resource": "repo://builds/harbor-core/csrf-compat_test.go",
@@ -336,7 +344,7 @@
       "evidence": [
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
-          "version": "repo-file-v1:sha256:7c67ecdeda5bdb5e41c6acc7d52bb734e7d03087b05daf628f4256f0c5da09f1"
+          "version": "repo-file-v1:sha256:93d7147c9989ac9fb90ee8d88393f7ec4c20db00434d16531a74ea7b5dc0d1c2"
         },
         {
           "resource": "repo://builds/harbor-core/token-trust_test.go",
@@ -384,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9b646c6c8513eb0bb0cbcc51aabbe5f6c70f84bba0cc6360951dca96bd13e9ab"
+          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
         }
       ]
     },
@@ -420,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
         }
       ]
     },
@@ -534,7 +542,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:ab7f4937bc6e2c7091be7eb8e01ba2f536b628590d5929bd8c35eaf3a1fdd703"
+          "version": "repo-file-v1:sha256:bb743191af5d81a378430caea6d4c72cf0cc248acc55ae1806afbf48f87c3be2"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh#L7-L14",
@@ -562,7 +570,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
-          "version": "repo-file-v1:sha256:a407fca7edcb6d830e3966f93b21af2b6fd5b535b66e85fdd10b37cd5811e777"
+          "version": "repo-file-v1:sha256:e25f21479f0bfeb8634d5f20b24144b33bc27e160a936ea70c119c6a66c4c5c9"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -670,7 +678,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9b646c6c8513eb0bb0cbcc51aabbe5f6c70f84bba0cc6360951dca96bd13e9ab"
+          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -720,7 +728,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:9b646c6c8513eb0bb0cbcc51aabbe5f6c70f84bba0cc6360951dca96bd13e9ab"
+          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
         }
       ]
     },
@@ -730,7 +738,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
-          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
@@ -764,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:c79d0b86a93d8a24bc2a6aa2de0b79a657c38f493d290c00974fb724d8d43228"
+          "version": "repo-file-v1:sha256:7ee2dd58f730e4c0c20903ba2f624ba81bf4ff33f5b36d533ccb7d297192b97c"
         }
       ]
     },
@@ -788,17 +796,47 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:2f32499562ed091112c01222ed5327b721819cddfdf7dbed36e9f66ce8bce4ac"
+          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
           "version": "repo-file-v1:sha256:8251f2bfd72061617175cb232cb12c2b8ea43d54242637f02869332a89136444"
         }
       ]
+    },
+    {
+      "id": "claim_798d1d68cfd34164a9cdf0c4c2ee504f",
+      "statement": "Feature 005 separates 26 public app subdomain retirement targets from 27 private resolver names. Before any DELETE, the helper scans the complete Cloudflare zone and fails closed on relevant child NS delegation, including a wildcard NS covering a target, or an out-of-set covering wildcard A/AAAA/CNAME. It checks authoritative answers without traversing child zones and rereads full target fields so content, proxy, or TTL drift blocks. Per-name off-tailnet, DNS-01, preserved-record, post-TTL absence, and private HTTPS gates remain required.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L399-L416",
+          "version": "repo-lines-v1:sha256:5988c21070999a35b307e015484ac66e1dc6848e2ab2c404e5fec6bd1ca36a67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZGIzMjVjMTA3NzhiMTVmMTlkYzIwMDJmMDE2ZTYyODM3ZjFjYjQzNzM1YmRiZWEwOWY5NjlmMjhhYmQzZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5N2M5ZWMzMDhmNjIwYTEyYmE5YjM3Y2U4ZmJkZWVhMDkzYTA2YjRiM2RhZTc5YmQ2ZjIzZDJiODAwZDcyODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjODE5MmFlZGY5YTg1Nzg4ZDk2YjcxM2IyZDA4ZDU3MjhjNThhZTU1MDhjY2IzMjlkMmY3NzUxNjhjODJhNGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3M2FjYWQ5Zjk5NmJjNWFhYzQ4MWE4NzlmN2Y4NjIxM2JhMDhhYWFhYjIxNWY0YTc0Y2Y3ZDhkYmU5OGMyYmUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L634-L643",
+          "version": "repo-lines-v1:sha256:40ba51922a2c9e9d43ae4cbb553e700f490fa338b7fab55363725a5bc3468be3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTI0ZWUwMmJlMTU4ZDA0ZTM2NDEyMWI5YzI0Y2M2MjQwODRmZjNlZTQ5MzhlYjJhYjk4MGM5NjJkMzY1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMzNmNGZlNDVlNjUzMWFhNmI3MzdlZGVjMDFlM2ViZjhlYmY0OTQxNTA2NjY1OGFiNzUxNDQzMjMzOWM5NDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxY2ZmZmY4NzkyZjllNDNmZTdiM2Y4ZTExMThlMjQwYTZmOTUzNWQyMTNiMGZkYjZjZDc4MGNiM2Q4ODQ2MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMWQzOTNmZGQyNDhlYjZlY2E3NjZmNGIwNDVkMTlhMDNhOTQzNzliNWE4MGU5MzQwOTM0ZTBkODg0ODQzZDEifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L273-L317",
+          "version": "repo-lines-v1:sha256:8e0cec6fb3c3f236740580d63e9890647a6cf6b3af101887ac2dcfd4496c9f6c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjlhOTM2ZDE2NDAyZDk0MmUyZDVlM2ZmNjBiMTM3M2E5YTk4NWZhOTBkMjcwMWQ0MDcwZDNhZTJmZDA0MzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMzZiOGFkOGQ1MzFhZTlmMzZjZmJjYmViZTFhNGU5OTFmZjgzNTAxZmJmMzA2ODA1MDNmODlmZjYwYjllZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkNmQzMTE3NmFjZDg3MDA3MTY2MThiOWZmZDA2MDhjNDdlNTVkYzI2NDNkYWIyZGIyYjU4NjE5OGIyMjBjZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwMWIyMmEyNDA4ODUwYjc0ZGY5N2QwNGZlNzMyNTZmNjk3YWIxYzg1NjcwMjFiYzkxNzM2MTA1NGQ0NTJiNDcifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh#L129-L185",
+          "version": "repo-lines-v1:sha256:20c11ae14effa0d01a2aeff59ced04119125ecced0d143be414bf9b2c0926e06:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjg1M2JhMWQ4NTU2NmU2NTg5YjlmNDFhNThkZDlkYTU4NTkwZTQwODcwZGE4MDI1YjM2NjljYTE2NTcxYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjQwYWUxZjk0MzNmZGEyOWViMDAyZmIzMjUwNDU2OGMxYzAwODkyNTA3NzRmM2UzNzNlNzkwMmMzMjhmMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmNTQ3NmUxZjBlMjBhN2EwYzkwZTY2ZWVjODJiMTdiZjAwN2U1MDZlMWU0NWI2NmE1MWQxMDQ0M2Q0MDM2NmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3ODg1ZGZlNmI0YzE3NzE5NTEyZDNmZDZhMWJmN2FiZmYwYzk4NDNkNjc2OWJiODM3NmYzN2U2Y2Q3Zjk1NGYifQ"
+        },
+        {
+          "resource": "repo://scripts/tailscale-private-dns.sh#L207-L217",
+          "version": "repo-lines-v1:sha256:3da955737e0d30d3056b88a7aad4f95e9dbb3d65844a8ea376a94f34647a0a41:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5ZGEwNTFkN2VjNjk2MTcyNjVlNDQyM2RjMWEzNTk0OTUyMDVlYjRkYjA5YTlkZjMzZDVlNzRjNmJkY2ViZjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkMmQxYjIwZDNjYjJiODMxMjViOWJjN2MyM2NkM2QzZWVjODk0ZWRiMGI2MWY2NjkyNDMxMGY4MDY0YjU0NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNGNlYmM4MDRkZjI1Y2JlMWFjYzlhZDg4MmUwNzg3ZDA2NDljZDRlYTI2YzBiZTQyNjQxN2QzOTQ0MzE2MDIifQ"
+        },
+        {
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L20-L88",
+          "version": "repo-lines-v1:sha256:799d5fe07072d35726b04dd9847ca9f4ec92b4cbe26b8cc57d8594626fdde9dd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkODFkZjFlY2VlY2Y1OWFkOThkZmFjYzgwYWExMTY5MGM2ZGYxNzA4ZjBlYmQwYWYyZTcwNWJjZGQyNDkwYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzNWUzMTcwOTczNWU4MmU4YmFjOGJhM2Y2NWI1MjNhMGU4ZmMzNWM3MzE1OTlhNDhmMjIyYTE5ZTBlNTZkNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3MTJkMmFmMmFiMTk2MTcxMDVlMjI3MTQ1MjA2Mzc0NjA5ZWVkZTA2YWFmMjI5OGNiM2FjZDg4MDAxZGEyNjcifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T02:17:09.125Z"
+    "at": "2026-10-19T05:30:44.377Z"
   }
 }

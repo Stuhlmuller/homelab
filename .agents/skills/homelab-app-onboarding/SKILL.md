@@ -17,7 +17,7 @@ through the shared Application template:
 
 ```hcl
 unit "argocd_apps_example" {
-  source                 = "./.catalog/units/live/argocd-app"
+  source                 = "./terragrunt-catalog/units/live/argocd-app"
   path                   = "live/argocd-apps/example"
   no_dot_terragrunt_stack = true
 
@@ -25,7 +25,7 @@ unit "argocd_apps_example" {
 }
 ```
 
-Create `IaC/stacks/example/stack.hcl`; do not copy a generated live unit or a
+Create `IaC/example/stack.hcl`; do not copy a generated live unit or a
 full CRD:
 
 ```hcl

@@ -127,7 +127,7 @@ pass.
 ## Registration Provider
 
 Terragrunt registers Applications through the repository-local
-`IaC/modules/argocd-application-kubernetes` module. The module writes Argo CD
+`IaC/terragrunt-catalog/modules/argocd-application-kubernetes` module. The module writes Argo CD
 `Application` CRDs through the Kubernetes provider, so routine registration does
 not require an exposed Argo CD API endpoint, an auth token in operator
 environment variables, or a manual local `argocd login`. The shared unit
@@ -136,23 +136,23 @@ generates a raw CRD-shaped `manifest`; app overrides use Argo CD field names.
 ## Register With Shared Defaults
 
 Register the unit in `IaC/terragrunt.stack.hcl` and keep its settings in
-`IaC/stacks/<app>/stack.hcl`. All active workload and platform Applications use
-`IaC/.catalog/units/live/argocd-app`. Do not edit ignored generated files under
+`IaC/<app>/stack.hcl`. All active workload and platform Applications use
+`IaC/terragrunt-catalog/units/live/argocd-app`. Do not edit ignored generated files under
 `IaC/live/argocd-apps`.
 
 Add the unit to the root index:
 
 ```hcl
 unit "argocd_apps_example" {
-  source                 = "./.catalog/units/live/argocd-app"
+  source                 = "./terragrunt-catalog/units/live/argocd-app"
   path                   = "live/argocd-apps/example"
   no_dot_terragrunt_stack = true
 
-  values = read_terragrunt_config("${get_terragrunt_dir()}/stacks/example/stack.hcl").inputs
+  values = read_terragrunt_config("${get_terragrunt_dir()}/example/stack.hcl").inputs
 }
 ```
 
-Create `IaC/stacks/example/stack.hcl`:
+Create `IaC/example/stack.hcl`:
 
 ```hcl
 locals {

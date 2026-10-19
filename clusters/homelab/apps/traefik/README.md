@@ -21,16 +21,19 @@ file provider does not discover or publish arbitrary Kubernetes Services.
 | `web` | 8000 | Private Tailscale LoadBalancer | Redirect to HTTPS port 443 |
 | `websecure` | 8443 | Private Tailscale LoadBalancer | Application and Cordium/control hosts |
 | `funnel` | 8080 | Two Tailscale Ingress proxies | Only the callbacks below |
-| `registry` | 9443 | Declared Talos node addresses | Only Harbor OCI and token endpoints |
+| `registry` | 9443 | Talos nodes and Renovate | Only Harbor OCI and token endpoints |
 
 The `traefik-registry` ClusterIP Service reserves `10.96.0.50:443` for Talos
-image pulls. Host-only resolution sends `harbor.stinkyboi.com` there on the
-nodes; TLS still validates that hostname. Its router permits only `/v2`,
-`/v2/` descendants, and `/service/token`, preserving Authorization headers.
+image pulls and Renovate's Docker lookups. Host-only resolution on nodes and a
+Pod-local alias in Renovate send `harbor.stinkyboi.com` there; TLS still validates
+that hostname. Its router permits only `/v2`, `/v2/` descendants, and
+`/service/token`, preserving Authorization headers.
 Harbor dashboards, management APIs, and every other application host are excluded.
 The ambient AuthorizationPolicy restricts the registry listener to the declared
-node source addresses; local-node traffic also follows Istio's trusted probe
-bypass. Talos host-to-ClusterIP routing can SNAT the source to its `cni0` bridge
+node source addresses and `cluster.local/ns/automation/sa/renovate`; it does not
+allow Renovate onto the shared private TLS listener. Local-node traffic also
+follows Istio's trusted probe bypass. Talos host-to-ClusterIP routing can SNAT
+the source to its `cni0` bridge
 for a local endpoint or its `flannel.1` interface for a remote endpoint. The
 registry policies allow the four LAN node addresses, verified bridge addresses
 `10.244.1.1` through `10.244.4.1`, and verified overlay addresses `10.244.1.0`
@@ -94,7 +97,7 @@ Tailscale state; normal pod replacement retains the controller-managed state.
 The helper deliberately accepts no arbitrary node or key argument. Review a
 replaced identity before re-running; do not disable lock to bypass a failure.
 See [Tailnet Lock](https://tailscale.com/docs/features/tailnet-lock) and the
-[CI key rotation runbook](../../../../IaC/modules/tailscale-access/README.md).
+[CI key rotation runbook](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 ## Mesh and certificates
 

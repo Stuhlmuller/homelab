@@ -1,14 +1,18 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b35187a7cb6d939624f0b19f4a5246bbb7ad41a5e293c0fbd607374be8bbfd0e",
+  "pageVersion": "sha256:970e33d0125f92de080c47e97029f5065cefccc7e7c8558c8715d1f1a9a1f63c",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
-      "statement": "NOFX retains its canonical hostname through the separate tailnet DNS resolver, private Tailscale, and Traefik after guarded DNS acceptance; the former public DNS writer is removed while legacy runtime routes remain until acceptance.",
+      "statement": "NOFX's canonical hostname already has private tailnet DNS and a Traefik HTTPS route, while its public address record remains until the guarded 26-name retirement; Cloudflare Tunnel and Octelium remain for legacy callers after the former public DNS writer was removed.",
       "evidence": [
         {
+          "resource": "repo://clusters/homelab/apps/nofx/README.md",
+          "version": "repo-file-v1:sha256:9ebcc34fb65078af47ddf3bda81f2f3bc68cff7f70d7f5aa7b05842c44ec7137"
+        },
+        {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:4dd4dd1208b225bcc1e1ba3614190e61f6bcfcc6c0a0b32f15ef7160e8e14f31"
+          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
@@ -16,7 +20,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
-          "version": "repo-file-v1:sha256:6d83a5f09ea39c4beeeca57519f11931d40f1b9f2b5fa306c72ebe7439a57749"
+          "version": "repo-file-v1:sha256:b64e07313ff7420e21e481b8781546a7a89c8b0558354568af8b40c959f2f778"
         }
       ]
     },
@@ -41,6 +45,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T20:54:06.405Z"
+    "at": "2026-10-19T05:01:55.414Z"
   }
 }

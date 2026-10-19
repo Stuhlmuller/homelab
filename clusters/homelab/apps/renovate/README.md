@@ -70,6 +70,20 @@ non-root container has a writable ephemeral root because the Renovate image
 installs package-manager tools there for lockfile updates. No Service or ingress
 is exposed.
 
+Harbor Docker lookups use the canonical `harbor.stinkyboi.com` TLS name through
+the registry-only `traefik-registry` Service at `10.96.0.50:443`. A Pod-local
+host alias selects this route without changing cluster DNS or node image pulls.
+On 2026-10-19, destination ztunnel rejected the first dry-run Pod's default
+service identity at the shared private listener before Harbor received traffic.
+The dedicated `renovate` ServiceAccount mounts no Kubernetes token; Istio allows
+only its identity to the registry listener on port 9443. That listener exposes
+only OCI and token paths. No Harbor credential is configured, matching the old
+runner; anonymous lookups can see the public `mirror` project but not private
+projects. In dry-run verification, distinguish a transport failure from an
+expected authentication denial. Hold writer cutover if an eligible private
+package requires a credential. Revert this route change through GitOps if it
+breaks registry access.
+
 ### Cache failure and recovery
 
 An unavailable claim leaves the Job Pod pending with a mount or scheduling

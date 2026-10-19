@@ -52,6 +52,8 @@ sources:
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -78,8 +80,8 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
-  - id: openwiki-source-e9bb34bdbee430c2456beb6d
-    resource: repo://IaC/modules/entra-owner-mail/main.tf
+  - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
+    resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
@@ -172,16 +174,20 @@ sources:
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
     resource: repo://scripts/tailscale-private-dns-check.py
+  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
+    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:30:44.377Z
 ---
 
 # Validation Gates
@@ -305,7 +311,7 @@ overridden Applications from the real shared template, checking default
 inheritance, list replacement, historical backend keys, changed-unit selection,
 Azure credential isolation, and retirement ownership. Catalog fixtures carry
 shape only; production defaults belong in `IaC/stack-defaults.hcl`, with app
-inputs in `IaC/stacks/<app>/stack.hcl`.
+inputs in `IaC/<app>/stack.hcl`.
 For a stack refactor, also compare every affected generated unit's inputs,
 dependencies, backend configuration, provider generation, and module source
 against the pre-change revision. HCL validity alone does not prove equivalence.
@@ -370,8 +376,11 @@ Offline validation runs `traefik-routes-test.py` and
 callback/registry boundaries, Fleet setup denial, and the exact four LAN, four
 bridge, and four overlay `/32` sources for registry port 9443 in both ingress
 policies. Adjacent LAN addresses and ordinary Pod addresses remain outside that
-source boundary. The second checks tokenless API-proxy configuration and
-plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
+source boundary. It also requires Renovate's dedicated no-token service identity
+and canonical Harbor host alias on the registry-only listener, while excluding
+the default identity and shared private listener. The second checks tokenless
+API-proxy configuration and plan-only dry-run admission. Render the exact
+Traefik chart plus Kustomization
 and run Conftest on all declared routing resources.
 
 Separately invoke `traefik-runtime-check.py --binary /absolute/path/to/traefik`
@@ -444,11 +453,12 @@ missing persistent after a later active change, duplicate resources, read failur
 and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
-The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
-the repository and live Deployment explicitly declare zero replicas and no
-live replicas remain. This accounts for Traefik's static ClusterIP backend
-while AFFiNE is suspended. All other application 5xx responses fail; this
-exception does not establish AFFiNE runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
+OpenClaw HTTP 502 only when each reviewed workload declaration and live
+Deployment specify zero replicas and no live replicas remain. Deployed Traefik
+routes and TLS must match the reviewed checkout. Other application 5xx
+responses fail. These exceptions check routing to intentionally stopped apps;
+they do not establish application runtime health.
 
 The DNS regression includes a dual-address peer whose LoadBalancer Service
 publishes only IPv4: it must produce A records and no AAAA. Probe each published
@@ -472,7 +482,7 @@ The current Flannel CNI does not enforce NetworkPolicy. Do not count those
 manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
-[provider runbook](../../IaC/modules/tailscale-access/README.md).
+[provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind
@@ -523,6 +533,35 @@ wildcard child. It compares public apex MX/TXT and an unrelated public name.
 These checks establish a handoff gate, not owner tailnet DNS configuration or
 normal client resolution. Leave public app records until those later checks
 pass; the `--retire-private` helper is deletion-only and separately guarded.
+
+### Public app subdomain retirement
+
+The [feature 005 cutover](../../specs/005-retire-public-app-dns/quickstart.md)
+is a separate live gate. Its public deletion set is the 26 approved non-apex
+app subdomains; private DNS and HTTPS checks still cover all 27 approved names.
+Run the focused retirement fixtures and fresh checks from reviewed `main`.
+Record a per-name off-tailnet decision, the exact Cloudflare record baseline,
+and the previous maximum TTL in private evidence. A 27-name public-retirement
+template is invalid.
+
+Before the first DELETE, inspect the complete paginated public-zone
+A/AAAA/CNAME/NS inventory. The helper blocks relevant child NS delegation and
+covering wildcard NS delegation such as `*.stinkyboi.com`, plus any out-of-set
+covering wildcard A/AAAA/CNAME; it does not traverse child zones.
+It checks Cloudflare authoritative answers for all 26 names and a concrete
+Cordium wildcard child. An unexplained answer, drift, or incomplete evidence
+blocks execution. A full-field target reread after the zone scan blocks changed
+content, proxy status, or TTL before the first DELETE. Preserve the public apex
+A/MX/TXT and any CAA, the zone, four legacy endpoint names, and unrelated
+public services. Confirm Cloudflare delegation, Ready DNS-01 ExternalSecret and
+ClusterIssuer, matching solver/Secret references, and Ready application
+Certificates before deletion and after the old TTL.
+
+After the old TTL, require no public A/AAAA/CNAME answers for the 26 names and
+Cordium child from authoritative and recursive resolvers. Recheck ordinary
+tailnet client answers and HTTPS routes. The fail-closed check applies to the
+retired subdomains; the apex keeps its public A answer. Resolver recovery
+restores private DNS without republishing app records.
 
 The CI boundary helper is
 `scripts/ci/tailscale-access-check.py`. Its `plan` mode verifies the impersonated
@@ -1242,8 +1281,8 @@ details and live command output are withheld from the public PR and Actions
 logs. Run the same order locally when reproducing a failure.
 
 CI plan and apply scripts call `terragrunt stack generate` before filtering
-units. When `IaC/terragrunt.stack.hcl`, `IaC/stacks`, `IaC/stack-defaults.hcl`,
-`IaC/.catalog`, or `IaC/modules` changes, the scripts plan or apply the matching
+units. When `IaC/terragrunt.stack.hcl`, `IaC/<app>/stack.hcl`, `IaC/stack-defaults.hcl`,
+`IaC/terragrunt-catalog`, or `IaC/terragrunt-catalog/modules` changes, the scripts plan or apply the matching
 generated unit groups instead
 of relying on `--filter-affected` against ignored generated `terragrunt.hcl`
 files. Stack index/inputs/defaults, catalog, module, shared root/provider, and tracked generated-group

@@ -170,7 +170,7 @@ def declared_mastodon_images():
 
 def chart_sources():
     charts = []
-    stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC/stacks").glob("*/stack.hcl"))]
+    stacks = [ROOT / "IaC/terragrunt.stack.hcl", *sorted((ROOT / "IaC").glob("*/stack.hcl"))]
     for stack in stacks:
         for match in re.finditer(r"\{([^{}]*\bchart\s*=[^{}]*)", stack.read_text()):
             fields = dict(re.findall(r'(repoURL|chart|targetRevision)\s*=\s*"([^\"]+)"', match[1]))
@@ -178,7 +178,7 @@ def chart_sources():
                 raise SystemExit(f"{stack.relative_to(ROOT)}: Stack chart sources must keep literal "
                                  "repoURL, chart and targetRevision before nested options for image inventory extraction")
             charts.append({"source": str(stack.relative_to(ROOT)), **fields})
-    bootstrap = ROOT / "IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl"
+    bootstrap = ROOT / "IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl"
     fields = dict(re.findall(r'(repository|chart|chart_version)\s*=\s*"([^\"]+)"', bootstrap.read_text()))
     charts.append({"source": str(bootstrap.relative_to(ROOT)), "repoURL": fields["repository"],
                    "chart": fields["chart"], "targetRevision": fields["chart_version"]})

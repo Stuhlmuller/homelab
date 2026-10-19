@@ -1,6 +1,11 @@
 # Quickstart: Validate Private Tailnet Service DNS
 
-This is a validation guide. The [DNS publication contract](contracts/dns-publication.md) defines answers and approval; the [cutover contract](contracts/cutover.md) defines when public records may change.
+This historical guide remains the 27-name **private resolver** rollout and
+owner handoff. Its original public-record retirement instructions are
+superseded by the [26-name app subdomain cutover](../005-retire-public-app-dns/quickstart.md),
+which preserves the public apex and zone. The
+[DNS publication contract](contracts/dns-publication.md) still defines private
+answers and approval.
 
 ## Local prerequisites and render
 
@@ -64,6 +69,5 @@ recovery.
 **Pause here for the owner.** Give the verified IP and ask the owner to add it as a **restricted `stinkyboi.com` nameserver** in tailnet DNS. If the owner uses an exit node for these clients, enable `Use with exit node` for that nameserver. No global nameserver or public record change is part of this handoff.
 
 After the owner reports the setting active, verify normal OS resolution from an ordinary tailnet client (for example with Python `socket.getaddrinfo`, not only `dig @server`), existing HTTPS, Fleet,
-Harbor node pulls, native Cordium/API clients and Funnel callback restrictions. Then follow the [retirement gates](contracts/cutover.md) and the updated ingress runbook. Capture public baseline/old
-TTL, preview exact 27-record changes, retire through the reviewed helper, wait the old maximum TTL and confirm public A/AAAA/CNAME absence while unrelated public records remain. If any gate fails,
-keep the public records and restore private resolution through Argo/Terragrunt and the fixed signer.
+Harbor node pulls, native Cordium/API clients and Funnel callback restrictions. Then follow the current [26-name retirement gates](../005-retire-public-app-dns/contracts/cutover.md) and ingress runbook. The apex retains public A and mail records, while all 27 approved names retain private answers. If any gate fails,
+keep the selected public records and restore private resolution through Argo/Terragrunt and the fixed signer.

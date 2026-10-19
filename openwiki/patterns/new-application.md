@@ -24,8 +24,8 @@ Use this checklist before adding a new runtime application.
 
 1. Add app desired state under `clusters/homelab/apps/<app>`.
 2. Register the Application in `IaC/terragrunt.stack.hcl` using the shared
-   `IaC/.catalog/units/live/argocd-app` template. Create
-   `IaC/stacks/<app>/stack.hcl`, load `IaC/stack-defaults.hcl`, and set
+   `IaC/terragrunt-catalog/units/live/argocd-app` template. Create
+   `IaC/<app>/stack.hcl`, load `IaC/stack-defaults.hcl`, and set
    `inputs.defaults = local.shared.argocd_defaults`; specify only
    `metadata`/`spec` exceptions. The unit directory supplies the name, namespace, and ordinary
    repository source path. Follow the compact example in
