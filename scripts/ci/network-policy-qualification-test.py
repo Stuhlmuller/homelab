@@ -3,8 +3,13 @@
 
 import importlib.util
 import json
+import shutil
+import socket
 import stat
+import subprocess
+import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -26,20 +31,70 @@ class CanaryQualificationTests(unittest.TestCase):
     def setUpClass(cls):
         cls.module = load_module()
 
+    def test_reviewed_fixture_commands_match_manifest(self):
+        if not shutil.which("yq"):
+            self.skipTest("yq is provided by the Nix validation shell")
+        output = subprocess.run(
+            ["yq", "ea", "-o=json", '[select(.kind == "Pod")]',
+             str(ROOT / "clusters/homelab/platform/network-policy/canary/fixtures.yaml")],
+            check=True, capture_output=True, text=True, timeout=10,
+        )
+        pods = json.loads(output.stdout)
+        self.assertEqual({pod["metadata"]["name"] for pod in pods},
+                         {"npq-client", "npq-allowed", "npq-denied"})
+        for pod in pods:
+            role = pod["metadata"]["labels"]["role"]
+            container, = pod["spec"]["containers"]
+            with self.subTest(role=role):
+                self.assertEqual(container["command"], self.module.FIXTURE_COMMANDS[role])
+                self.assertNotIn("args", container)
+                self.assertEqual(container["securityContext"], self.module.FIXTURE_SECURITY)
+
+    def test_remote_probe_emits_outcome_marker(self):
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            port = listener.getsockname()[1]
+            def serve():
+                connection, _ = listener.accept()
+                with connection:
+                    connection.sendall(b"npq-ok")
+            thread = threading.Thread(target=serve, daemon=True)
+            thread.start()
+            allowed = subprocess.run([sys.executable, "-c", self.module.PROBE,
+                                      "127.0.0.1", str(port), "TCP"],
+                                     capture_output=True, text=True, timeout=5)
+            thread.join(timeout=5)
+            self.assertFalse(thread.is_alive())
+        denied = subprocess.run([sys.executable, "-c", self.module.PROBE,
+                                 "127.0.0.1", str(port), "TCP"],
+                                capture_output=True, text=True, timeout=5)
+        self.assertEqual((allowed.returncode, allowed.stdout.strip()), (0, "NPQ_ALLOWED"))
+        self.assertEqual((denied.returncode, denied.stdout.strip()), (7, "NPQ_DENIED"))
+
     def test_traffic_requires_baseline_and_all_denials(self):
         pods = {name: {"status": {"podIP": f"10.42.0.{index}"}}
                 for index, name in enumerate(("npq-client", "npq-allowed", "npq-denied"), 1)}
-        expected = [0 if case[-1] else 7 for case in self.module.CASES]
+        def response(permitted, marker=None):
+            return subprocess.CompletedProcess([], 0 if permitted else 7,
+                                               (marker or ("NPQ_ALLOWED" if permitted else "NPQ_DENIED")) + "\n", "")
+        expected = [response(case[-1]) for case in self.module.CASES]
         with patch.object(self.module, "probe", side_effect=expected) as probe:
             self.assertEqual(len(self.module.traffic_matrix(pods)), len(expected))
             self.assertEqual(probe.call_count, len(expected))
         for index in (0, 5, 7):
             wrong = list(expected)
-            wrong[index] = 7 if wrong[index] == 0 else 0
+            wrong[index] = response(not self.module.CASES[index][-1])
             with self.subTest(index=index), patch.object(self.module, "probe", side_effect=wrong):
                 with self.assertRaisesRegex(ValueError, "traffic mismatch"):
                     self.module.traffic_matrix(pods)
-        with patch.object(self.module, "probe", side_effect=[1] + expected[1:]):
+        with patch.object(self.module, "probe", side_effect=[
+                subprocess.CompletedProcess([], 1, "", "kubectl failed"), *expected[1:]]):
+            with self.assertRaisesRegex(ValueError, "traffic mismatch"):
+                self.module.traffic_matrix(pods)
+        wrong = list(expected)
+        wrong[5] = response(False, "kubectl failed")
+        with patch.object(self.module, "probe", side_effect=wrong):
             with self.assertRaisesRegex(ValueError, "traffic mismatch"):
                 self.module.traffic_matrix(pods)
 
@@ -59,7 +114,21 @@ class CanaryQualificationTests(unittest.TestCase):
             pods[name] = {"metadata": {"name": name, "uid": f"{name}-uid",
                                       "labels": {"role": role}},
                           "spec": {"nodeName": "zimaboard-0",
-                                   "containers": [{"image": self.module.IMAGE}]},
+                                   "nodeSelector": {self.module.CANARY_KEY: "true"},
+                                   "tolerations": [{"key": self.module.CANARY_KEY,
+                                                    "operator": "Equal", "value": "true",
+                                                    "effect": "NoSchedule"}],
+                                   "automountServiceAccountToken": False,
+                                   "securityContext": {"runAsUser": 65532,
+                                                       "runAsNonRoot": True,
+                                                       "seccompProfile": {"type": "RuntimeDefault"}},
+                                   "containers": [{"name": "probe" if role == "client" else "server",
+                                                   "image": self.module.IMAGE,
+                                                   "command": self.module.FIXTURE_COMMANDS[role],
+                                                   "securityContext": {
+                                                       "allowPrivilegeEscalation": False,
+                                                       "readOnlyRootFilesystem": True,
+                                                       "capabilities": {"drop": ["ALL"]}}}]},
                           "status": {"phase": "Running", "podIP": "10.42.0.2",
                                      "conditions": [{"type": "Ready", "status": "True"}]}}
         firewall = {"metadata": {"uid": "daemonset-uid", "generation": 2},
@@ -111,6 +180,51 @@ class CanaryQualificationTests(unittest.TestCase):
             firewall["status"]["updatedNumberScheduled"] = 1
             firewall_pod["metadata"]["ownerReferences"][0]["uid"] = "foreign"
             with self.assertRaisesRegex(ValueError, "firewall is not ready"):
+                self.module.inspect(config)
+            firewall_pod["metadata"]["ownerReferences"][0]["uid"] = "daemonset-uid"
+            client = pods["npq-client"]["spec"]
+            for field, value in (("automountServiceAccountToken", True),
+                                 ("hostNetwork", True),
+                                 ("nodeSelector", {}),
+                                 ("volumes", [{"hostPath": {"path": "/"}}]),
+                                 ("initContainers", [{"name": "foreign"}])):
+                with self.subTest(field=field):
+                    original = client.get(field)
+                    client[field] = value
+                    with self.assertRaisesRegex(ValueError, "fixture identity"):
+                        self.module.inspect(config)
+                    if original is None:
+                        del client[field]
+                    else:
+                        client[field] = original
+            container = client["containers"][0]
+            original = container["securityContext"]["allowPrivilegeEscalation"]
+            container["securityContext"]["allowPrivilegeEscalation"] = True
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
+                self.module.inspect(config)
+            container["securityContext"]["allowPrivilegeEscalation"] = original
+            for name in ("npq-client", "npq-allowed", "npq-denied"):
+                fixture = pods[name]["spec"]["containers"][0]
+                with self.subTest(name=name, field="command"):
+                    original = fixture["command"]
+                    fixture["command"] = ["/usr/bin/python3", "-c", "print('npq-ok')"]
+                    with self.assertRaisesRegex(ValueError, "fixture identity"):
+                        self.module.inspect(config)
+                    fixture["command"] = original
+                with self.subTest(name=name, field="args"):
+                    fixture["args"] = ["--ignore-client"]
+                    with self.assertRaisesRegex(ValueError, "fixture identity"):
+                        self.module.inspect(config)
+                    del fixture["args"]
+                for field, value in (("runAsNonRoot", False), ("runAsUser", 0),
+                                     ("seccompProfile", {"type": "Unconfined"})):
+                    with self.subTest(name=name, field=field):
+                        fixture["securityContext"][field] = value
+                        with self.assertRaisesRegex(ValueError, "fixture identity"):
+                            self.module.inspect(config)
+                        del fixture["securityContext"][field]
+            client["containers"].append({"name": "foreign", "image": self.module.IMAGE})
+            with self.assertRaisesRegex(ValueError, "fixture identity"):
                 self.module.inspect(config)
 
     def test_live_firewall_source_rejects_router_or_rbac_drift(self):
