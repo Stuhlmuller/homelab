@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b446c5d7cc79460f0b4561bb02f5549b2a38d9173693014c0666d51070ac6351",
+  "pageVersion": "sha256:107925af03a77f718de9c0a0c9ed2817af4bc504847d8e9a782301fc16a09317",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -334,7 +334,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
+          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -364,7 +364,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
+          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
+          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:59c359720a35d1fba4e52db563152f3570ae82f11e67246cc6c5d659350bfb29"
+          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
         }
       ]
     },
@@ -452,18 +452,14 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:59c359720a35d1fba4e52db563152f3570ae82f11e67246cc6c5d659350bfb29"
+          "version": "repo-file-v1:sha256:3de2c74d82e03c8704b444d002a32758f9de4bf90b70570fc49b99abd91e5eb0"
         }
       ]
     },
     {
       "id": "claim_dbff4878e83b486cbd0847a96ca87c45",
-      "statement": "The Kiali source stages a distinct repository-owned ingress NetworkPolicy at Argo CD wave 0 before its wave-1 custom resource disables the operator-generated policy; the rule retains the observed unrestricted-source TCP 20001/9090 contract, and live handoff and enforcement qualification remain open.",
+      "statement": "Kiali's source-owned ingress policy replaces the operator-generated policy with an equivalent complete TCP 20001/9090 spec. The read-only recheck found the operator policy absent and source policy present; Octelium and Prometheus traffic, broad-source review, and isolated canary enforcement remain open.",
       "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/kiali/README.md",
-          "version": "repo-file-v1:sha256:22ac78c4a460441d2137cc4d996abb698219b721b0df29ac172de8ab5498b27a"
-        },
         {
           "resource": "repo://clusters/homelab/apps/kiali/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
@@ -471,6 +467,10 @@
         {
           "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
           "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
         }
       ]
     },
@@ -480,11 +480,11 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
+          "version": "repo-file-v1:sha256:bf10adaaf99d4896fa5734ed7db377e8e85f83f8c7b17893a9fe5f5795706755"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
+          "version": "repo-file-v1:sha256:efc8ad341e62d786ae014797d4ca91a859979ea63637b3916b3af42eb67689f7"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -521,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:47:25.268Z"
+    "at": "2026-10-19T23:13:39.081Z"
   }
 }

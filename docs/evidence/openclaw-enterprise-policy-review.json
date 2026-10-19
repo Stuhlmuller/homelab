@@ -1,6 +1,7 @@
 {
   "acceptedEnterpriseBoundary": "Stock OCE public TCP/443 rule with private-range exclusions is a documented exception; it must still produce a strict broad-egress finding.",
   "capturedAt": "2026-10-19T02:30:39.199767+00:00",
+  "snapshotStatus": "Historical baseline: findingCounts, generatedOwnerAudit managers and decisions, ingressAudit, live counts, and policies describe capturedAt only. The later Kiali replacement is recorded in generatedOwnerAudit.pinnedSourceReview.currentLiveRecheck; capture a fresh full inventory before enforcement.",
   "findingCounts": {
     "pod-requires-separate-review": 178,
     "unisolated-pod": 196,
@@ -84,7 +85,7 @@
     },
     "policyRuleDecisions": {
       "cordium/ws-main": "Hold: selected Workspace Pods have Octelium/genesis ingress on TCP 8080/2022 and UDP 45000; egress allows DNS TCP/UDP 53, two internal TCP 8080 peers, and IPv4/IPv6 0/0 minus declared exclusions on every port. The latter remains a strict broad-egress finding pending pinned-generator render and canary traffic.",
-      "monitoring/kiali": "Hold: operator-owned ingress admits every source on TCP 20001/9090. The repository declares private Istio authorization but no source control for this NetworkPolicy; verify the operator-supported correction and real Octelium/Prometheus paths before narrowing.",
+      "monitoring/kiali": "Historical 02:32 UTC baseline: operator-owned ingress admitted every source on TCP 20001/9090. The later source-owned kiali-server-ingress replacement is recorded in pinnedSourceReview.currentLiveRecheck; real Octelium/Prometheus paths still need proof before narrowing.",
       "octelium/cordium-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
       "octelium/cordium-rscserver": "Hold: ingress from Octelium cluster/genesis selectors on TCP 8080; ingress-only policy does not isolate egress.",
       "octelium/octelium-ingress": "Hold: ingress from Octelium ingress-dataplane selector on TCP 8080; ingress-only policy does not isolate egress.",
@@ -102,14 +103,67 @@
       "octelium/octeliumee-secretman": "Hold: ingress from Octelium rscserver selector on TCP 8080; ingress-only policy does not isolate egress.",
       "octelium/svc-upstream": "Hold: ingress from Octelium svc/genesis selectors on every port; egress allows IPv4/IPv6 0/0 minus declared exclusions on every port. The latter remains a strict broad-egress finding pending pinned-generator render and canary traffic."
     },
-    "method": "Read-only Kubernetes managedFields inspection; 18 generator-managed policies remain absent from repository Kustomize renders",
+    "method": "At the 02:32 UTC baseline, read-only Kubernetes managedFields inspection found 18 generator-managed policies absent from repository Kustomize renders; later Kiali replacement is recorded under pinnedSourceReview.currentLiveRecheck",
     "repositoryOwnerCandidates": [
       "clusters/homelab/apps/cordium-bootstrap/genesis.yaml",
       "IaC/cordium/stack.hcl",
       "IaC/octelium/stack.hcl",
       "IaC/octelium-enterprise/stack.hcl",
       "clusters/homelab/apps/kiali/values.yaml"
-    ]
+    ],
+    "pinnedSourceReview": {
+      "capturedAt": "2026-10-19T18:30:27+00:00",
+      "liveSpecHashesMatchedPrior": 18,
+      "currentLiveRecheck": {
+        "capturedAt": "2026-10-19T21:12:00+00:00",
+        "generatedPolicyHashesMatchedPrior": 17,
+        "operatorKialiPolicyAbsent": true,
+        "sourceOwnedKialiPolicy": "monitoring/kiali-server-ingress",
+        "sourceOwnedKialiSpecSha256": "65ce40f5007c9d61d0436c31aa6f89c4acae56f0b2c20adb69d04bbab7c8afb7",
+        "method": "Read-only all-namespace NetworkPolicy snapshot and Kiali CR/Argo CD inspection; the replacement's complete canonical spec matches both the source manifest and prior operator policy."
+      },
+      "method": "The 18:30 UTC read-only full-spec SHA-256 recheck covered all 18 then-live generated policies; pinned upstream constructors/templates were inspected, but no generator binary was executed.",
+      "policySourceRefs": {
+        "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
+        "monitoring/kiali": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/templates/kubernetes/networkpolicy.yaml#L1",
+        "octelium/cordium-nocturne": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/nocturne.go#L152",
+        "octelium/cordium-rscserver": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/rscserver.go#L131",
+        "octelium/octelium-ingress": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/ingress.go#L334",
+        "octelium/octelium-nocturne": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/nocturne.go#L147",
+        "octelium/octelium-octovigil": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/octovigil.go#L98",
+        "octelium/octeliumee-cloudman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/cloudman.go#L65",
+        "octelium/octeliumee-clusterman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/clusterman.go#L79",
+        "octelium/octeliumee-collector": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/collector.go#L115",
+        "octelium/octeliumee-logstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/logstore.go#L117",
+        "octelium/octeliumee-metricstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/metricstore.go#L114",
+        "octelium/octeliumee-nocturne": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/nocturne.go#L124",
+        "octelium/octeliumee-policyportal": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/policyportal.go#L99",
+        "octelium/octeliumee-rscserver": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscserver.go#L124",
+        "octelium/octeliumee-rscstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscstore.go#L114",
+        "octelium/octeliumee-secretman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/secretman.go#L129",
+        "octelium/svc-upstream": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237"
+      },
+      "result": "All 17 remaining generated policies match their prior live spec hashes. Kiali's source-owned replacement matches the former operator policy spec; no generator render or real traffic qualification was performed.",
+      "sourceFindings": [
+        "Cordium ws-main and Octelium svc-upstream hardcode broad public IPv4/IPv6 egress; retain strict inventory findings until pinned render and isolated canary traffic show actual requirements.",
+        "Kiali's deployment.network_policy.enabled=false handoff removed the operator policy, and Argo CD now owns an equivalent broad-source TCP 20001/9090 policy. Gateway, Traefik, Prometheus, Octelium and ambient paths still need canary traffic proof before narrowing.",
+        "The other 15 policies are generated ingress-only rules. Their presence does not isolate selected Pods from egress; no source-only correction or acceptance follows from matching source shapes."
+      ],
+      "status": "unqualified: 17 remaining generator renders, broad-source/egress decisions and real isolated canary enforcement remain pending",
+      "kialiOperatorControlRef": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/tasks/kubernetes/k8s-main.yml#L58-L67",
+      "kialiCallerReview": {
+        "repositoryPaths": [
+          "clusters/homelab/apps/kiali/authorizationpolicy.yaml",
+          "clusters/homelab/apps/kiali/networkpolicy.yaml",
+          "clusters/homelab/apps/kiali/values.yaml",
+          "clusters/homelab/apps/kiali/virtualservice.yaml",
+          "clusters/homelab/apps/traefik/routes.yaml",
+          "docs/examples/octelium/homelab-services.yaml"
+        ],
+        "readOnlyObservation": "The Ready Kiali Pod is ambient redirected; its Service targets TCP 20001/9090 and the live Istio ALLOW policy matches the repository principals.",
+        "stillUnverified": "No canary has proven which Pod identities kube-router sees for gateway, Traefik, Prometheus and Octelium traffic through ambient and Service translation."
+      }
+    }
   },
   "ingressAudit": {
     "allSourcePolicies": [
@@ -124,7 +178,7 @@
       "traefik/traefik"
     ],
     "allSourceRuleCount": 9,
-    "scope": "Syntactic full-spec scan only; mesh HBONE and operator-generated Kiali ingress need owner intent and canary traffic verification"
+    "scope": "Historical 02:30 UTC syntactic full-spec scan only; mesh HBONE and the later source-owned Kiali replacement need owner intent and canary traffic verification"
   },
   "livePodCount": 209,
   "livePolicyCount": 66,
@@ -1258,10 +1312,10 @@
     }
   ],
   "requiredCorrections": [
-    "Render or otherwise source-bind all 18 generated policies to the pinned Cordium, Octelium and Kiali owners; compare complete live ingress and egress specs before enforcement.",
+    "Render or otherwise source-bind the 17 remaining Cordium and Octelium generated policies to their pinned owners; the former Kiali operator policy has an equivalent source-owned replacement. Compare complete live ingress and egress specs before enforcement.",
     "For cordium/ws-main and octelium/svc-upstream, determine the pinned generator's supported public-egress configuration and prove required destinations and private-range denial on the canary; neither all-port 0/0 rule is approved by owner binding alone.",
-    "For monitoring/kiali, determine the pinned operator's supported NetworkPolicy configuration and prove required TCP 20001/9090 clients before changing its all-source generated ingress.",
-    "Review the nine all-source ingress rules, including eight TCP/15008 mesh rules and generated monitoring/kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
+    "For monitoring/kiali-server-ingress, prove required TCP 20001/9090 clients before changing its all-source source-owned ingress.",
+    "Review the nine baseline all-source ingress rules, including eight TCP/15008 mesh rules and Kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
     "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
     "Review all 18 strict wildcard-egress findings, including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
     "Recheck the six source-corrected DNS policies against live specs and prove TCP/UDP Service DNS through exact CoreDNS Pod peers on the isolated canary before enforcement.",

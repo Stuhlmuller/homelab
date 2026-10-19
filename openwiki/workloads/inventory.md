@@ -28,8 +28,6 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
     resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
-  - id: openwiki-source-95cce4aa4d0f7c4802f5fdd5
-    resource: repo://clusters/homelab/apps/kiali/README.md
   - id: openwiki-source-448cbe27130e9e3c4e8b10b3
     resource: repo://clusters/homelab/apps/kiali/values.yaml
   - id: openwiki-source-3ee445a5390585cab7a1edab
@@ -162,10 +160,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
+generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:47:25.268Z
+    at: 2026-10-19T23:13:39.081Z
 ---
 
 # Workload Inventory
@@ -360,13 +358,15 @@ CI transport remain until replacement client, callback and CI paths pass
 | `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC CronJob, declared unsuspended in full dry-run mode; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action still writing pending dry-run parity and cutover; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache); dedicated no-token ServiceAccount and Pod-local Harbor alias target the registry-only Traefik listener; [T017](../../specs/004-run-renovate-in-cluster/tasks.md) accepted the 18:00 UTC scheduled full dry-run repository scan after the 17:00 timeout; the [Harbor lookup gap](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc) still needs live transport and eligible version-discovery proof, while cache reuse, full dry-run parity, and writer cutover remain open | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
 
-Kiali's [source-staged ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
+Kiali's [source-owned ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
 uses a distinct name at Argo CD wave 0 before the wave-1
 [Kiali CR](../../clusters/homelab/apps/kiali/values.yaml) disables the
 operator-generated `monitoring/kiali` policy. It preserves the observed
-unrestricted-source TCP 20001/9090 contract. The handoff still needs live
-reconciliation and Octelium/Prometheus traffic checks; broad-source review and
-the network-enforcement canary remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
+unrestricted-source TCP 20001/9090 contract. The [October 19 read-only recheck](../../docs/evidence/openclaw-enterprise-policy-review.json)
+found the operator policy absent and `kiali-server-ingress` present with the
+same complete spec as both the former rule and source manifest. Octelium and
+Prometheus traffic checks, broad-source review, and the enforcement canary
+remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
 
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, or
