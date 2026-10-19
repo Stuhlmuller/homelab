@@ -311,6 +311,10 @@ class HarborPublicationGates(unittest.TestCase):
                         if FIXTURE["failure"] == "mirror-alias-lookup":
                             print("connection refused private-test-credential-must-never-appear", file=sys.stderr)
                             raise SystemExit(18)
+                        fail_read("alias-lookup", {
+                            "mirror-alias-lookup-once": "connection reset",
+                            "mirror-alias-lookup-auth": "unauthorized; connection reset",
+                        })
                         if not FIXTURE["resume"] and reference not in published:
                             print("manifest unknown", file=sys.stderr)
                             raise SystemExit(1)
@@ -1233,7 +1237,8 @@ class HarborPublicationGates(unittest.TestCase):
         self.assert_cleaned()
 
     def test_mirror_verification_retries_one_transport_failure(self):
-        for failure, phase in (("mirror-alias-verify-once", "alias"),
+        for failure, phase in (("mirror-alias-lookup-once", "alias"),
+                               ("mirror-alias-verify-once", "alias"),
                                ("mirror-pull-once", "skopeo"),
                                ("mirror-regctl-pull-once", "regctl")):
             with self.subTest(failure=failure):
@@ -1262,6 +1267,7 @@ class HarborPublicationGates(unittest.TestCase):
 
     def test_mirror_verification_does_not_retry_hard_failures(self):
         for failure, phase, count in (
+            ("mirror-alias-lookup-auth", "alias-lookup", 1),
             ("mirror-alias-verify-auth", "alias-verify", 2),
             ("mirror-alias-verify-missing", "alias-verify", 2),
             ("mirror-alias-verify-digest", "alias-verify", 2),

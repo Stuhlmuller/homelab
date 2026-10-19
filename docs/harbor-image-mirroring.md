@@ -119,8 +119,9 @@ Retries reuse an existing digest-named tag only after its manifest hash matches
 the catalog; a missing tag is copied from upstream. Missing-content detection
 accepts registry manifest/name-unknown errors and Harbor's exact expected
 artifact or repository `not found` message. Generic 404 responses and messages
-for another repository or digest tag still stop publication. Other lookup errors
-and unexpected digest-tag hashes stop publication. Source-tag aliases are copied
+for another repository or digest tag still stop publication. Alias lookups retry
+transient transport errors up to three times; other lookup errors and unexpected
+digest-tag hashes stop publication. Source-tag aliases are copied
 from the verified Harbor digest when missing or stale; exact existing aliases
 are reused. Every entry still receives a complete authenticated Harbor download
 and alias verification on each run.

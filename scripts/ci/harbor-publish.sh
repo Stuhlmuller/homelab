@@ -366,19 +366,26 @@ if [[ "$mode" == mirror ]]; then
       source_tag="${tagged_source##*:}"
       mirror_phase="alias-lookup"
       alias_needs_copy=true
-      if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
-        "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
-        if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
-          alias_needs_copy=false
+      for attempt in 1 2 3; do
+        if skopeo inspect --raw --authfile "$scratch/mirror-pull-auth.json" \
+          "docker://${destination}:${source_tag}" >"$scratch/tag-manifest.json" 2>"$scratch/mirror-error"; then
+          if [[ "sha256:$(sha256sum "$scratch/tag-manifest.json" | cut -d ' ' -f 1)" == "$source_digest" ]]; then
+            alias_needs_copy=false
+          fi
+          break
+        else
+          lookup_status=$?
         fi
-      else
-        lookup_status=$?
-        if ! grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" &&
-            ! grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" &&
-            ! grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+        if grep -Eiq 'manifest unknown|name unknown' "$scratch/mirror-error" ||
+            grep -Fq "artifact mirror/${source_repository}:${source_tag} not found" "$scratch/mirror-error" ||
+            grep -Fq "repository mirror/${source_repository} not found" "$scratch/mirror-error"; then
+          break
+        fi
+        if [[ "$attempt" == 3 ]] || ! mirror_retryable_transport; then
           exit "$lookup_status"
         fi
-      fi
+        sleep "$attempt"
+      done
       if [[ "$alias_needs_copy" == true ]]; then
         mirror_phase="alias-copy"
         if "$oci_index_copy"; then
