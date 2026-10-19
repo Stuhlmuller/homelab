@@ -35,6 +35,12 @@ scenarios:
   - name: pod-termination-timeout
     matchingPodAfterScale: Running
     expected: migration-blocked
+  - name: migration-failed
+    replicasAfterQuiesce: {api: 0, worker: 0}
+    expected: writers-remain-stopped
+  - name: cancelled-after-quiesce
+    replicasAfterQuiesce: {api: 0, worker: 0}
+    expected: retry-preflight-then-initialization
   - name: successful-upgrade
     replicasBefore: {api: 1, worker: 1}
     replicasAfterQuiesce: {api: 0, worker: 0}
