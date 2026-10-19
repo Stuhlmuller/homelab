@@ -30,19 +30,42 @@ fi
 terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
   render --json --write=false --no-color \
   | jq -e '
-      any(.inputs.manifest.spec.sources[];
+      .inputs.manifest.spec as $spec |
+      $spec.syncPolicy.automated.enabled == true and
+      $spec.syncPolicy.automated.prune == true and
+      ([ $spec.sources[] | select(has("chart")) |
+        [.chart, .helm.releaseName, .targetRevision] ] == [
+        ["base", "istio-base", "1.27.3"],
+        ["istiod", "istiod", "1.27.3"],
+        ["cni", "istio-cni", "1.27.3"],
+        ["ztunnel", "ztunnel", "1.27.3"],
+        ["gateway", "istio-ingressgateway", "1.27.3"],
+        ["gateway", "octelium-api-ingressgateway", "1.27.3"]
+      ]) and
+      any($spec.sources[];
         .chart == "ztunnel" and
         any(.helm.parameters[]?;
           .name == "podLabels.homelab\\.rst\\.io/service-account-issuer-cutover" and
-          .value == "10-1-0-199-v1")
-        and any(.helm.parameters[]?;
+          .value == "10-1-0-199-v1") and
+        any(.helm.parameters[]?;
           .name == "updateStrategy.rollingUpdate.maxSurge" and
-          .value == "0")
-        and any(.helm.parameters[]?;
+          .value == "0") and
+        any(.helm.parameters[]?;
           .name == "updateStrategy.rollingUpdate.maxUnavailable" and
           .value == "1")
       )
     ' >/dev/null
+jq -e '
+  .schemaVersion == 1 and .activationEnabled == false and
+  .from == "1.27.3" and .to == "1.28.10" and
+  .chartRepository == "https://istio-release.storage.googleapis.com/charts" and
+  ([.components[] | [.chart, .releaseName]] == [
+    ["base", "istio-base"], ["istiod", "istiod"], ["cni", "istio-cni"],
+    ["ztunnel", "ztunnel"], ["gateway", "istio-ingressgateway"],
+    ["gateway", "octelium-api-ingressgateway"]
+  ]) and
+  all(.components[]; .archiveSha256 | test("^[0-9a-f]{64}$"))
+' clusters/homelab/apps/istio/upgrade-1.28.10.json >/dev/null
 if rg -q 'extra_arguments[[:space:]]+"plan"|arguments[[:space:]]*=[[:space:]]*\[[^]]*plan\.out' IaC/root.hcl; then
   echo "IaC/root.hcl must not persist every local plan; saved plans belong only in explicit, cleaned-up workflows." >&2
   exit 1
