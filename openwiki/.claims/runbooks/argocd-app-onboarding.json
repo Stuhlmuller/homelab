@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:a4829d44860965621474a9cdec0d04fe8a1494c7d6c064e4857f6c1760316f2b",
+  "claims": [
+    {
+      "id": "claim_732731dc8626403ca02c2daf55b25d17",
+      "statement": "The OpenClaw Enterprise platform NetworkPolicy, canary, cleanup and Envoy Gateway Applications are registered with automatic sync disabled; NetworkPolicy selects no node, while Envoy's CRD source owns shared CRDs ahead of the controller, so registration alone neither enforces policy nor serves a route.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/platform-envoy-gateway/stack.hcl",
+          "version": "repo-file-v1:sha256:8d0d580140ed39bc371b9405cb7a30ac3ac617b77e73d70b85f7db69feffea60"
+        },
+        {
+          "resource": "repo://IaC/platform-network-policy/stack.hcl",
+          "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:ca1dff9eab4d90f97030a8cf8d466bbfd588a866f09933d5fd67e5e15cf26216"
+        },
+        {
+          "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
+          "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.0",
+    "at": "2026-10-19T07:08:11.339Z"
+  }
+}

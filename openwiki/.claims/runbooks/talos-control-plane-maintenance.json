@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6e3779575b2eb25793ee98a1b63fe9b4ed6d937c0cb4b793888bfae17b0e2ae8",
+  "pageVersion": "sha256:803764ca15a14ad540895ae58d969dda050449870d91f4a6815475fddb6fe93b",
   "claims": [
     {
       "id": "claim_37e303c005aa47029b7599d0ff5542e9",
       "statement": "The first 2026-10-10 zimaboard-2 stall involved NFS-backed n8n PostgreSQL and NOFX Pods, so the no-PVC remote-reboot exception did not apply; a physical power-cycle recovered the worker.",
       "evidence": [
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L902-L910",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L978-L986",
           "version": "repo-lines-v1:sha256:8ddb89afc2ddedf13089ad08ca1770687ec67bab1e008749c64164b3b00e4586:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzkzYzAxM2JhNjI0MzY4OTBmNWY2ZGJlNjg4MzY0NDk5MGZhZGMyODgwMjU2OGI0YTBlODkxNjVjYThjMTc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjBmNDEzY2Y1MTJiNzZmYTUxMjI3MzkyZTc1ZDcxMTFjZTQwODBiNTFjMjcwOGZlNTViNzFmNzU3MTZjNjE5YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2I1NTdmMDY3YzhkNWY5Y2Y1MjExNWJiMjI4OGE2NTY5MDA0YjA3ZTc4YTg4MWFlNzcyYmY1MzRkY2JjNmJmMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDhjMjNkOWFkOGNlYjhlYmMwNjYwY2RiMDg4OTc0MTU1ZjM5YzdlM2U2NWI5Y2Y3YzdlZTJiMjZhNjA1YzM1NiJ9"
         }
       ]
@@ -29,7 +29,7 @@
           "version": "repo-lines-v1:sha256:ae9b60e40aac1039466761279e2049d285dc168fbf80d53c09c7714f6373184c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEwNThmYmFkNmJlYmI0YjdjYTUyYjA3MzhjNTEwMTBhNzU3Mzk4NGZjMjk4M2ViOTMzZmNhNTNjMGJjOTAzODgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM5YTFhOWVhNWJmN2UwYTFiNzcyZjA1YmMxMjkwODhiYzFiYWI3MmZiMzkxZmFhMjM5NGVmZjUzM2EyOTZmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L911-L913",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L987-L989",
           "version": "repo-lines-v1:sha256:08c23d9ad8ceb8ebc0660cdb088974155f39c7e3e65b9cf7c7ee2b26a605c356:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDNjNmM2OTEzZjc4MTQ4YzcyMzI5ODc4N2Q0NmMzMmNlMmRjODJkMDczOGE5YTM1ODlhMjI1MzA3ZTQwODYyMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMWZkOTgwY2ExODE3YjA0NGQ4MTM2NDdhZDBkZjI4ZjRkMDczZjFhZjU5MzU1OTRjMDNmYmI2M2E1NTc1ZjE4MiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGE3MjVmNTBhMjQ1NzVkMmU1YzYxY2E5MTgzMzAyZTkxYThjZDhkMWM0YzhhNzU4ZWIwNDFlMzczODI0N2I5YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTA5NjNhNDkxZGNmNDY5ZTMwZWQ2MzdmZmZiNWQ1MDAwZmM1Y2M5NmNhNDRmN2UyZWUxOTVhMTNiNTMyYjgzOSJ9"
         }
       ]
@@ -51,10 +51,32 @@
           "version": "repo-lines-v1:sha256:25d4468bfe61c9b65e4302def838de4c66f2a58be905915e447723d074da5a24:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRkNDBmMzNmMjQ3MjkzM2RjMzY1ZmJjZGVjZDc5M2Q4NWUzYzBlNGFlZTAwNzkyMDZiYTYyMDEzZTNlY2M5OTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4N2Y3MmJlMzRiYmYwNzU2M2U3YjYzYmM0NGM0YjU3MmI5MTE3MjdmMzQzMjczZjE3ZGZjYTdhZDA2OGJjZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU4NDRhMjRjNDhjZTY2YTBhYmU3OTFhOTIzYWEyZTcwNTAwYjI4Njk2ZTQzZjgzMWJmYzI4NDY3NjQxMDhhMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgzMjFlZmZkYmI2ZGFiMTc1ZWQ5ZWUyMGQxZGM4MDZkNjY4NmY4Mzg5NjU3NDY5ZWYxMmQ4ZTBmY2RlMWJhNGYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_aee080632cde4d8c8fa4b41eab1888f4",
+      "statement": "The staged OpenClaw Enterprise maintenance workflow declares an ordered Talos 1.11.3-to-1.14.4 ladder and separately gated Kubernetes 1.34.11-to-1.35.9 stage with exact-current-main and durable per-node markers, but its upgrade branch is disabled pending recovery, publication, strict validation, isolated-canary, Istio and immutable image-tag/readback prerequisites; no live upgrade is accepted from source alone.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/platform-maintenance.yml",
+          "version": "repo-file-v1:sha256:e51ca0498184d91db19ccffe4fa1f808b288e2a7845df5a11674d71d33cd48ac"
+        },
+        {
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L357-L430",
+          "version": "repo-lines-v1:sha256:990d5235070b134b594817bfa019f5b0ee337ca23ab5ff7a6269e0bf950a71ba:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiZTU3N2IxNDY3MDU0ZDU1ZDM5MDE3YTM0MWU4ZTMwZTYyOGZjZTA2MTE4ZjA4OTJjYTI4ZmY1NDUwOTE2ZTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzYjZlZDhmNTgwN2RiNzdlZjMwY2QxOGM0YTZiMjc4MTFmZTc0N2QxN2JkNDg1OTYxNWI4OTM4YWNlNmFmNTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE0Y2E4YzZiNjg2MWU5ZDRiNDVjMzFmOGZlNjY5M2UxZjAxN2ZkNGQ5OTRjYTRiYzMzYjFhN2M2OGM1NWRkMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM0NGMyOWU2MGQ4YzY1MzE3ZTY1OTA1NTFiODcxNjg0MGViZTM0ZmIxNzI2ZDI5ZTE4ZGQ4MjdlNmZmOTFmNjkifQ"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        },
+        {
+          "resource": "repo://scripts/platform-maintenance.py",
+          "version": "repo-file-v1:sha256:f77d4d4cdfd7cad72fdf469145c2e87c44e80adb96c48412ea4977d7ea5d0e5e"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T07:08:11.339Z"
   }
 }

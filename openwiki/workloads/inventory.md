@@ -80,6 +80,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-11b0c1d09769ac6f8cf5b7b0
     resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
+  - id: openwiki-source-cb44bee82f523806d88ae83a
+    resource: repo://docs/argocd-app-onboarding.md
   - id: openwiki-source-e2bba4610c00d9825733d678
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -96,8 +98,12 @@ sources:
     resource: repo://IaC/cert-manager/stack.hcl
   - id: openwiki-source-b6af8459ba491c30ebdfcbb9
     resource: repo://IaC/mastodon/stack.hcl
+  - id: openwiki-source-00c8a32293c8aaa55d3daba4
+    resource: repo://IaC/platform-envoy-gateway/stack.hcl
   - id: openwiki-source-73d9c28ed7b9740028ceb5c2
     resource: repo://IaC/platform-image-policy/stack.hcl
+  - id: openwiki-source-e3e84b128839afbc47f478f7
+    resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-9324a7b2a44defc4437d288b
     resource: repo://IaC/renovate/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
@@ -114,10 +120,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
+generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:36:33.438Z
+    at: 2026-10-19T07:08:11.339Z
 ---
 
 # Workload Inventory
@@ -308,6 +314,13 @@ The OpenClaw Enterprise replacement is staged in source with
 agent has been deployed. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
+The platform branch registers dormant `platform-network-policy`,
+`platform-network-policy-canary`, `platform-network-policy-cleanup`, and
+`platform-envoy-gateway` Argo Applications. Automatic sync is disabled;
+kube-router selects no node and the canary fixtures deploy nothing until
+placement, publication, policy review, and live qualification pass. Envoy's
+shared CRD source is ordered before the controller but no private route is
+accepted yet.
 
 The 2026-10-10 cleanup removed the empty `grafana-alert-cleanup` source after
 read-only checks confirmed its Application and retired monitoring objects were

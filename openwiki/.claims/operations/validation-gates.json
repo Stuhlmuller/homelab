@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5f286ce22ed8f7dfeab6e5ba6841dd1463e17bf656792a9d6e17153c70700fbd",
+  "pageVersion": "sha256:12bfaf8ca86c6c492b6ef207a1f279f707cc6d32af5d6ab5219b6671a0e84cf3",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:7ee2dd58f730e4c0c20903ba2f624ba81bf4ff33f5b36d533ccb7d297192b97c"
+          "version": "repo-file-v1:sha256:99d1b1f7ffe66f731500ca93e8e88b9cfae337c6050295ba8b3830746409536f"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ce0f96d0857c48116c130a2bf5a3d9a8a28590e23df5c2fb6cdb7d1c13af51c4"
+          "version": "repo-file-v1:sha256:b0b4f23cc32b0f2b1c8b85d4a61e0c50c10f1b0806236c673fca4cf19dc02336"
         }
       ]
     },
@@ -588,7 +588,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -674,7 +674,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:b5a6cb19b4915421099ebd4458022711867f6bcdb9e97da731abf512a7604f78"
+          "version": "repo-file-v1:sha256:009a324849b79331d2cd30bbaab5a829abe071c9b5f074b6a9f68ec2f5c09989"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -728,7 +728,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:ce0f96d0857c48116c130a2bf5a3d9a8a28590e23df5c2fb6cdb7d1c13af51c4"
+          "version": "repo-file-v1:sha256:b0b4f23cc32b0f2b1c8b85d4a61e0c50c10f1b0806236c673fca4cf19dc02336"
         }
       ]
     },
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:7ee2dd58f730e4c0c20903ba2f624ba81bf4ff33f5b36d533ccb7d297192b97c"
+          "version": "repo-file-v1:sha256:99d1b1f7ffe66f731500ca93e8e88b9cfae337c6050295ba8b3830746409536f"
         }
       ]
     },
@@ -870,17 +870,39 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2c91d138947ca944ea4a0dd892d28a4c51caa2e5ee4855ca25910a99be75cad7"
+          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
           "version": "repo-file-v1:sha256:2e5ea96cde46fcc2ecfad16a9300922789686a39bfdc3275383edd253681b568"
         }
       ]
+    },
+    {
+      "id": "claim_8f6750cd81d74ccca2af7f099488ce8d",
+      "statement": "The staged OpenClaw Enterprise platform adds offline exact-main maintenance, NetworkPolicy inventory, traffic fixture and ownership-limited cleanup checks, while its maintenance workflow and enforcer remain disabled until recovery, image-publication and isolated-canary evidence pass; fixture success does not establish live node isolation.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/platform-network-policy/stack.hcl",
+          "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
+        },
+        {
+          "resource": "repo://scripts/ci/network-policy-enforcement-test.py",
+          "version": "repo-file-v1:sha256:2e165521b4101108e5960b9bf7c45dbaf17ef1a299b58d52f48066863174ceed"
+        },
+        {
+          "resource": "repo://scripts/ci/platform-maintenance-test.py",
+          "version": "repo-file-v1:sha256:d5a42f6e8e8ac9dc02b72f17583fb0a75738c67f417260ad6a06a4cd669f4665"
+        },
+        {
+          "resource": "repo://scripts/config/platform-maintenance.json",
+          "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T06:36:33.438Z"
+    "at": "2026-10-19T07:08:11.339Z"
   }
 }

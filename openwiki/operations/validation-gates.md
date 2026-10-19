@@ -86,6 +86,8 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-e3e84b128839afbc47f478f7
+    resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -126,6 +128,8 @@ sources:
     resource: repo://scripts/ci/multica-desktop-connect-test.py
   - id: openwiki-source-263c9c13d476aa142f8ebd42
     resource: repo://scripts/ci/network-policy-enforcement-check.py
+  - id: openwiki-source-55c4fe691d927de7a22cd232
+    resource: repo://scripts/ci/network-policy-enforcement-test.py
   - id: openwiki-source-47792446a9e092544c3c1857
     resource: repo://scripts/ci/nix-checks.sh
   - id: openwiki-source-f6fba8ad33526ba318c4d722
@@ -136,6 +140,8 @@ sources:
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-719a8f57b80adfae662090ca
+    resource: repo://scripts/ci/platform-maintenance-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
@@ -178,6 +184,8 @@ sources:
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
@@ -198,10 +206,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
+generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:36:33.438Z
+    at: 2026-10-19T07:08:11.339Z
 ---
 
 # Validation Gates
@@ -1484,6 +1492,11 @@ source checks and validates an owner-supplied OpenRouter key before writing only
 The stopped legacy inventory is verified, but the independent archive/restore,
 full image catalog, isolated canary, platform upgrades, and new-state restore
 remain acceptance gates. Source-only static checks do not activate the agent.
+The staged platform source adds offline tests for exact-main maintenance
+receipts, safe node order, NetworkPolicy inventory, fixture traffic and
+ownership-limited cleanup. The platform workflow and enforcer remain disabled
+until recovery, publication and isolated-canary evidence pass. Passing these
+fixtures does not qualify a live Talos node or make existing policies effective.
 See the [rollout runbook](../../docs/openclaw-enterprise-rollout.md) and
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:970e33d0125f92de080c47e97029f5065cefccc7e7c8558c8715d1f1a9a1f63c",
+  "pageVersion": "sha256:80787169d36097aeb9513713987d4ca76916917a70a9914b939c0a226a60e9d5",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -26,7 +26,7 @@
     },
     {
       "id": "claim_04e320966cd44b0bba65652d4801f004",
-      "statement": "NOFX frontend declares CoreDNS and backend-only egress, local health probes, and backend HBONE ingress; live network-policy enforcement remains gated on the separate NRI canary.",
+      "statement": "NOFX frontend declares CoreDNS and backend-only egress, local health probes, and backend HBONE ingress; live network-policy enforcement remains gated on a staged firewall-only kube-router canary with isolated-node admission.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nofx/deployment.yaml",
@@ -37,14 +37,18 @@
           "version": "repo-file-v1:sha256:e798a1e4cc8aba888cca7f74a026740b6e3b1750b860c0c77e350574035ae624"
         },
         {
-          "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:ca1dff9eab4d90f97030a8cf8d466bbfd588a866f09933d5fd67e5e15cf26216"
+        },
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L92-L128",
+          "version": "repo-lines-v1:sha256:388ca4ed406943c9c6a434ad124b764bcb95fd096ca49b3da7ec8f0f7bf2f65d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNjMmZkZGY5YzA3YTJjZmEwYzI2NjE3ODIwNTYyMjRmNGM1YmNiOWRkZDAwNjZjY2E5OTUyMDM3ZDc2ZGRhOTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViYzNiMDNhZmQxY2ZmNDdhNzgzMTQ0ZDMyOGEzNDJiYmQwYzAzY2JjY2EzNjVlZjZjMDU0Mzc1NjE4M2M0NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjAyMDM5YWY0NzliZGMwOGM1NTU0MDVkMzY5ODNmM2ZlMGUwMTc3OTEzOTk1MzRmZWU0NTg2NDQ3YzM4OGI3NjAifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T07:08:11.339Z"
   }
 }

@@ -1,21 +1,21 @@
 ---
 type: runbook
 title: "Runtime Isolation"
-description: "Pod Security, service accounts, Istio authorization, workload security contexts, and unenforced NetworkPolicy limits on flannel."
+description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-994a8289757a8dfdfff70e1b
+    resource: repo://clusters/homelab/platform/network-policy/README.md
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-  - id: openwiki-source-28fa6202184199322ab68bca
-    resource: repo://scripts/ci/network-policy-inventory-test.py
-  - id: openwiki-source-221eda5e9e283a2549066105
-    resource: repo://scripts/network-policy-inventory.py
-generated: { by: "codex", at: "2026-10-14T04:45:23.387Z" }
+generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T05:44:36.454Z
+    at: 2026-10-19T07:08:11.339Z
 ---
 
 # Runtime Isolation
@@ -23,15 +23,18 @@ verified:
 Canonical runbook: [`docs/runtime-isolation.md`](../../docs/runtime-isolation.md)
 
 Pod Security, service accounts, Istio authorization, and workload security
-contexts are enforced desired state. NetworkPolicy objects remain intent-only
-where the current flannel data plane cannot enforce them.
+contexts are enforced desired state. Existing `NetworkPolicy` objects remain
+intent-only while Flannel is the sole active CNI and the staged firewall-only
+kube-router Application selects no node.
 
 ## Egress enforcement prerequisite
 
 The 2026-10-12 read-only audit found all Flannel and ztunnel instances Ready,
 but readiness does not add egress enforcement. Gateway API CRDs and a
-`GatewayClass` are absent; existing Istio Gateway objects use the legacy API.
-There is no NRI configuration or `kube-network-policies` deployment.
+`GatewayClass` were absent; existing Istio Gateway objects use the legacy API.
+Envoy Gateway and firewall-only kube-router are now staged in GitOps with
+automatic sync disabled. The prior source-only NRI fragment is not the chosen
+enforcement path.
 
 Do not enable default-deny egress, `REGISTRY_ONLY`, an egress waypoint, or the
 existing NetworkPolicies globally. Some policies are incomplete or deliberately
@@ -39,13 +42,16 @@ broad, and image pulls are node/containerd traffic rather than pod egress.
 `zimaboard-2` is not a safe canary because it has no dedicated isolation/taint,
 limited capacity, system DaemonSets, and a live backup workload.
 
-First add Gateway API, a repository-owned NRI policy dataplane, and a dedicated
-tainted canary worker through their declared owners. Its reviewed contract must
-cover capacity, scheduling, and storage placement before workloads are placed
-there. Before activation, compare private read-only Pod/NetworkPolicy snapshots
-and all rendered policies with `scripts/network-policy-inventory.py
---fail-on-findings`. A disposable ambient canary must prove exact allowed
-DNS/destinations and denial of undeclared domains, direct IPs, alternate ports,
-IPv6, and gateway bypasses.
+Before activation, finish image publication and policy owner/render review, then
+admit an isolated tainted canary with measured capacity and local-storage
+placement. No existing worker currently qualifies without risking unrelated
+stateful workloads. Compare private read-only Pod/NetworkPolicy snapshots and
+all rendered policies with `scripts/network-policy-inventory.py`. Qualify
+allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
+IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
+IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before
+expanding to another node. Stock Enterprise's public TCP/443 requirement
+remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
+allowlist.
 
 See [Validation Gates](../operations/validation-gates.md) and [Workload Inventory](../workloads/inventory.md).
