@@ -38,8 +38,11 @@ try:
   with socket.socket(type=socket.SOCK_DGRAM) as connection:
    connection.settimeout(3); connection.sendto(b'npq',(address,port))
    data=connection.recv(32)
-except OSError: sys.exit(7)
+except OSError:
+ print('NPQ_DENIED')
+ sys.exit(7)
 if data!=b'npq-ok': sys.exit(8)
+print('NPQ_ALLOWED')
 """
 CASES = (
     ("npq-allowed", "npq-denied", 8080, "TCP", True),
@@ -186,9 +189,30 @@ def inspect(config):
     for name, role in (("npq-client", "client"), ("npq-allowed", "allowed"),
                        ("npq-denied", "denied")):
         pod = kubernetes_json("-n", NAMESPACE, "get", "pod", name)
-        if (not ready(pod) or pod["spec"].get("nodeName") != node_name or
+        spec = pod["spec"]
+        containers = spec.get("containers", [])
+        if (not ready(pod) or spec.get("nodeName") != node_name or
                 pod["metadata"].get("labels", {}).get("role") != role or
-                pod["spec"]["containers"][0].get("image") != IMAGE or
+                spec.get("nodeSelector") != {CANARY_KEY: "true"} or
+                not any(toleration.get("key") == CANARY_KEY and
+                        toleration.get("operator") == "Equal" and
+                        toleration.get("value") == "true" and
+                        toleration.get("effect") == "NoSchedule"
+                        for toleration in spec.get("tolerations", [])) or
+                spec.get("automountServiceAccountToken") is not False or
+                spec.get("hostNetwork") is True or spec.get("hostPID") is True or
+                spec.get("hostIPC") is True or spec.get("volumes") or
+                spec.get("initContainers") or spec.get("ephemeralContainers") or
+                spec.get("securityContext", {}).get("runAsNonRoot") is not True or
+                spec["securityContext"].get("runAsUser") != 65532 or
+                spec["securityContext"].get("seccompProfile") != {"type": "RuntimeDefault"} or
+                len(containers) != 1 or
+                containers[0].get("name") != ("probe" if role == "client" else "server") or
+                containers[0].get("image") != IMAGE or
+                containers[0].get("securityContext", {}).get("privileged") is True or
+                containers[0].get("securityContext", {}).get("allowPrivilegeEscalation") is not False or
+                containers[0].get("securityContext", {}).get("readOnlyRootFilesystem") is not True or
+                containers[0].get("securityContext", {}).get("capabilities") != {"drop": ["ALL"]} or
                 not pod["metadata"].get("uid") or not pod["status"].get("podIP")):
             raise ValueError(f"canary fixture identity or readiness differs: {name}")
         pods[name] = pod
@@ -228,17 +252,19 @@ def probe(source, address, port, protocol):
         ["kubectl", "--request-timeout=15s", "-n", NAMESPACE, "exec", source,
          "--", "/usr/bin/python3", "-c", PROBE, address, str(port), protocol],
         capture_output=True, text=True, timeout=25,
-    ).returncode
+    )
 
 
 def traffic_matrix(pods):
     results = []
     for source, target, port, protocol, permitted in CASES:
-        code = probe(source, pods[target]["status"]["podIP"], port, protocol)
-        if code not in (0, 7) or (code == 0) != permitted:
+        result = probe(source, pods[target]["status"]["podIP"], port, protocol)
+        marker = "NPQ_ALLOWED" if permitted else "NPQ_DENIED"
+        if result.returncode != (0 if permitted else 7) or result.stdout.strip() != marker:
             raise ValueError(f"canary traffic mismatch: {source}/{target}/{port}/{protocol}")
         results.append({"source": source, "target": target, "port": port,
-                        "protocol": protocol, "permitted": permitted})
+                        "protocol": protocol, "permitted": permitted,
+                        "observed": marker})
     return results
 
 

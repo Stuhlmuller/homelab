@@ -40,7 +40,9 @@ canary and live lifecycle evidence.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC before probing the
-fixed TCP/UDP allow/deny matrix. It rejects extra fixture Pods and stores a
+fixed TCP/UDP allow/deny matrix. It rejects extra or unsafe fixture Pods and
+requires each remote probe's outcome marker as well as its exit code, so a
+transport error cannot count as a denied connection. It stores a
 private receipt listing each still-unverified lifecycle scenario. A successful
 fixture probe is not Talos qualification: cold bootstrap, first packets,
 enforcer stop/restart, API loss, policy/conntrack changes, Pod reschedule/IP
