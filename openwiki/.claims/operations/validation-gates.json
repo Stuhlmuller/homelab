@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:432fae75825d295012c540a65d58645c24ab8250429578d4f04b21ba3cba75bf",
+  "pageVersion": "sha256:40bab06d8106e90d1935297a700b6ec99fc817e4813ab480f15578a67ac58025",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:9b646c6c8513eb0bb0cbcc51aabbe5f6c70f84bba0cc6360951dca96bd13e9ab"
         }
       ]
     },
@@ -534,7 +534,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
+          "version": "repo-file-v1:sha256:ab7f4937bc6e2c7091be7eb8e01ba2f536b628590d5929bd8c35eaf3a1fdd703"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh#L7-L14",
@@ -670,7 +670,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:9b646c6c8513eb0bb0cbcc51aabbe5f6c70f84bba0cc6360951dca96bd13e9ab"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -720,7 +720,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:9b646c6c8513eb0bb0cbcc51aabbe5f6c70f84bba0cc6360951dca96bd13e9ab"
         }
       ]
     },
@@ -748,15 +748,11 @@
     },
     {
       "id": "claim_823a08a8670e4b57b50e4cf8ce0507c7",
-      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures for missed starts, incomplete cycles, late prior success, suspension/resume, and a missing CronJob. The completion alert's 56-minute schedule threshold exceeds the 15-minute start allowance plus 40-minute Job runtime; these checks do not establish live credential, cache, or scheduled-Job acceptance.",
+      "statement": "The staged Renovate runner has static config and discovery checks plus offline Prometheus fixtures for missed starts, incomplete cycles, late prior success, suspension and resume just before an hour boundary, and a missing CronJob. Its first post-resume slot alerts after the 15-minute start grace; the completion alert's 56-minute threshold exceeds the 15-minute start allowance plus 40-minute Job runtime. These checks do not establish live credential, cache, or scheduled-Job acceptance.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml",
-          "version": "repo-file-v1:sha256:f0b2885239e3b3f27926503f3928de22c121e7165688b1fc3781c82f582976d6"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
+          "version": "repo-file-v1:sha256:5ab39d1b53db6f642573cfee04c8566a8f652cab5b4d946f080efb46a1aca7ce"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -764,7 +760,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
-          "version": "repo-file-v1:sha256:9389f5fd29fc8a178651498bba75a5c1d9e6884a2aea9f518e20bf47ad3bc9eb"
+          "version": "repo-file-v1:sha256:894a419aadcb31b42b206d570716e2e7184c5191739da0d7ffd3aaac1709abc0"
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
@@ -777,18 +773,32 @@
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L88",
-          "version": "repo-lines-v1:sha256:f32a4bf6e3e6980ea082dee2db89385ee53221cf8887321690b4ab5db7bc3106:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
+          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:593f37f2e0f54e2849efe5a31adaf9751224d6d204c106f873d89c93bfb69c05"
+          "version": "repo-file-v1:sha256:76426fb1f3fc7d399923e3f7247f422ebcbbba569a655cee691bcb54acdce34f"
+        }
+      ]
+    },
+    {
+      "id": "claim_02a584a3dde4474b927244b8e203a5f3",
+      "statement": "The pinned Renovate 44.167.4 local cache fixture verifies rebuilding missing and malformed package and repository cache entries; live PVC recovery, two-Pod cache evidence, and seven-day acceptance remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:2f32499562ed091112c01222ed5327b721819cddfdf7dbed36e9f66ce8bce4ac"
+        },
+        {
+          "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
+          "version": "repo-file-v1:sha256:8251f2bfd72061617175cb232cb12c2b8ea43d54242637f02869332a89136444"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T02:17:09.125Z"
   }
 }

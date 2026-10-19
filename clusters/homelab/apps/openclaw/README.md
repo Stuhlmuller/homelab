@@ -29,6 +29,11 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=archive \
   -f baseline_ref=<INVENTORY_SHA>/<INVENTORY_RUN_ID>
+# Wait for the private archive-result file after the detached worker finishes.
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=publish-archive \
+  -f baseline_ref=<INVENTORY_SHA>/<INVENTORY_RUN_ID> \
+  -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=verify \
   -f archive_ref=<ARCHIVE_SHA>/<ARCHIVE_RUN_ID>
@@ -59,11 +64,17 @@ the old gateway. If publication fails or the object has multiple versions, keep
 shutdown blocked and inspect the private failure; do not overwrite a version.
 Unreadable zero-byte NAS files retain their empty hash and original mode in the
 archive; unreadable files with data still stop the operation.
-The archive stage refuses active or uncertain writers and copies the complete
-bundle to versioned S3. It downloads
-that copy into scratch and verifies a full isolated extract before publishing a
-private `final.json` receipt. It rechecks zero writers and the original volume
-identities immediately before that publication. Verify selects its original S3
+The archive stage refuses active or uncertain writers and starts a file-locked
+worker in the reader Pod. The worker copies both source roots, checks the
+stopped-source inventory again, and writes a private result only after a full
+local restore. Do not treat a successful start as an archive receipt. Inspect
+the private result and worker log before dispatching `publish-archive` with the
+archive stage's SHA/run ID; the old source stays stopped and read-only while it
+runs. Publication checks the completed receipt against the observed inventory,
+copies the bundle to versioned S3, downloads it to scratch, and verifies a full
+isolated extract in a detached worker before writing the private `final.json`
+receipt. It rechecks zero writers and original volume identities immediately
+before publication. Verify selects its original S3
 version even after later versions or delete markers, then restores the archive
 and receipt versions it recorded. A green inventory alone does not authorize
 shutdown; the old Deployment and backup CronJob must first reach their reviewed
@@ -71,6 +82,19 @@ stopped GitOps state. If any stage
 fails, leave old PVs, NAS data and credentials retained, inspect the private
 diagnostic in the backup bucket if published, and retry with a new run ID after fixing
 the cause. Do not reuse a partial S3 prefix.
+
+The tar keeps each source symlink's raw target without following it. Restore
+verification extracts non-symlink data with Python's `data` filter. It recreates
+links in private scratch only after checking there are no archive members below
+a non-directory member. It compares every restored path, type, file hash and
+raw link target with the stopped-source content digest before creating links.
+Source UID, mode and mtime remain bound by the stopped inventory and rescan;
+NAS all-squash changes them in private restore. Verification never follows
+links. Some retained NAS links point to reader-Pod overlay directories outside
+both archived roots; others are dangling. External target data is not in this
+archive. T014 compatible recovery must classify those targets and prove any
+needed data is separately retained or rebuilt before acceptance. Do not
+blindly extract this tar into a live filesystem.
 
 For compatible legacy recovery after a later Enterprise failure, first stop
 the new agent through its supported API and prove its runtime is terminated.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8977e50640cfff9f3b75078928e5f9d1230d1ce1f5a2df48e5fbad60c9154818",
+  "pageVersion": "sha256:2b96cb309bc065a898c96a90dd7477397233c708c80ab6980a9300a8931f9c4e",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -78,7 +78,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
-          "version": "repo-file-v1:sha256:2720bc9341dfcd4b4a9d5737280470dfc5eeb999a66feab13faeab00543269cd"
+          "version": "repo-file-v1:sha256:ab7f4937bc6e2c7091be7eb8e01ba2f536b628590d5929bd8c35eaf3a1fdd703"
         }
       ]
     },
@@ -139,6 +139,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T02:17:09.125Z"
   }
 }

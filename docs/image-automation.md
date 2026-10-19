@@ -14,4 +14,5 @@ and registered through Terragrunt. It discovers Stuhlmuller-owned repositories
 hourly and retains Renovate's replaceable package cache on a protected claim.
 Its first rollout is suspended and configured for full dry runs. The existing
 GitHub Actions runner remains the only writer until dry-run parity, complete
-legacy workflow deletion, and drainage of its unfinished runs are verified.
+legacy workflow deletion, drainage of its unfinished runs, and guarded
+retirement of its repository Actions private key are verified.
