@@ -67,10 +67,10 @@ The repository's .specify/memory/constitution.md is v1.0.0 and derives from AGEN
       externalsecret.yaml
       config.js                 # Global policy and App token from mounted files
       README.md
-    IaC/stacks/renovate/stack.hcl
+    IaC/renovate/stack.hcl
     IaC/terragrunt.stack.hcl
-    IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-    IaC/modules/aws-github-actions-role-policy/
+    IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+    IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/
     clusters/homelab/apps/prometheus/
     clusters/homelab/apps/renovate/acceptance-observer.js
     clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
