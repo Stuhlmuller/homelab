@@ -6,7 +6,7 @@ companion GitHub Action remains the sole writer. This receipt records public
 aggregates only. Restricted Job logs and private repository/package identities
 stay out of Git and PR output.
 
-| Check | Evidence through 2026-10-19 21:21 UTC | Result |
+| Check | Evidence through 2026-10-19 22:25 UTC | Result |
 | --- | --- | --- |
 | Owner and App scope | The [baseline inventory](../../clusters/homelab/apps/renovate/README.md) found 18 owned repositories: eight eligible, ten archived, four private among the eligible, and no forks. The App installation selects all repositories. The last legacy App-token run scanned eight of eight; the 18:00 cluster Job also finished eight of eight. Direct installation-token repository enumeration is unavailable to the operator. | Pass for the observed inventory; first real owner transition remains a later check. |
 | App grants | The existing App has the listed repository and organization grants, except repository Administration read. [PR #1453](https://github.com/Stuhlmuller/homelab/pull/1453) records the narrow exception and the first write-enabled verification requirement. | Accepted exception; do not infer private branch-protection settings. |
