@@ -105,6 +105,8 @@ def bind(expected_sha, config, api, kube):
     # A second exact-main check closes the long read-only proof window.
     startup.reviewed_main(expected_sha)
     if not was_bound:
+        if _identity(api.get("/installation")) != identity:
+            raise oce.Blocked("Enterprise Installation identity changed before binding")
         operations = [
             {"op": "test", "path": "/metadata/uid", "value": metadata["uid"]},
             {"op": "test", "path": "/metadata/resourceVersion",

@@ -74,7 +74,8 @@ class InstallationBinding(unittest.TestCase):
                 snapshot["secret"]["metadata"]["resourceVersion"] = "101"
         return before, after
 
-    def run_binding(self, pre=None, post=None, identities=("ins_one", "ins_one")):
+    def run_binding(self, pre=None, post=None,
+                    identities=("ins_one", "ins_one", "ins_one")):
         pre = pre or self.snapshots()
         post = post or self.snapshots(bound=True)
         kube = Kubernetes([*pre, *post])
@@ -87,7 +88,7 @@ class InstallationBinding(unittest.TestCase):
         receipt, patch_secret, kube, api = self.run_binding()
         self.assertEqual(receipt, {"installationId": "ins_one", "secretUid": "secret-one",
                                    "secretResourceVersion": "101"})
-        self.assertEqual(api.calls, ["/installation", "/installation"])
+        self.assertEqual(api.calls, ["/installation"] * 3)
         self.assertEqual(kube.calls, [self.digest] * 4)
         self.assertEqual(self.main_mock.call_count, 2)
         args = patch_secret.call_args.args
@@ -154,7 +155,7 @@ class InstallationBinding(unittest.TestCase):
     def test_patch_conflict_fails_closed_and_retries_can_read_back(self):
         with patch.object(binder.startup, "kube", side_effect=binder.startup.Blocked("CAS conflict")):
             with self.assertRaises(binder.startup.Blocked):
-                binder.bind("a" * 40, self.config, API("ins_one"),
+                binder.bind("a" * 40, self.config, API("ins_one", "ins_one"),
                             Kubernetes(self.snapshots()))
         # A retry may observe the exact annotation after an uncertain response.
         pre = self.snapshots(bound=True)
@@ -163,7 +164,7 @@ class InstallationBinding(unittest.TestCase):
 
     def test_post_patch_rejects_changed_identity_or_workload(self):
         with self.assertRaisesRegex(binder.oce.Blocked, "identity changed"):
-            self.run_binding(identities=("ins_one", "ins_other"))
+            self.run_binding(identities=("ins_one", "ins_one", "ins_other"))
         post = self.snapshots(bound=True)
         post[0]["pods"]["api"][0]["metadata"]["uid"] = "new-pod"
         post[1]["pods"]["api"][0]["metadata"]["uid"] = "new-pod"
@@ -183,6 +184,13 @@ class InstallationBinding(unittest.TestCase):
              patch.object(binder.startup, "kube") as patch_secret:
             with self.assertRaises(binder.startup.Blocked):
                 binder.bind("a" * 40, self.config, API("ins_one"),
+                            Kubernetes(self.snapshots()))
+            patch_secret.assert_not_called()
+
+    def test_changed_identity_before_patch_keeps_secret_unbound(self):
+        with patch.object(binder.startup, "kube") as patch_secret:
+            with self.assertRaisesRegex(binder.oce.Blocked, "identity changed before binding"):
+                binder.bind("a" * 40, self.config, API("ins_one", "ins_other"),
                             Kubernetes(self.snapshots()))
             patch_secret.assert_not_called()
 
