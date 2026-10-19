@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c226608cbe1f37852542019e8d01b171cfbd0d79ad2354b752b3eba8f1fa8cb2",
+  "pageVersion": "sha256:dd6098cc3090e269aac86937f78530108038ca2e12ae911121d3f3b470964fbb",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -38,7 +38,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:089c2e395615ab3ac94b42e42d52c55100fe0974e57b7e83cb73640c35ec7900"
+          "version": "repo-file-v1:sha256:c93c482c84b3528097c0e04e656324dadefebedb37951a56eb92be0025ee99a1"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L92-L128",
@@ -49,6 +49,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T22:16:36.048Z"
+    "at": "2026-10-19T22:20:06.991Z"
   }
 }
