@@ -175,12 +175,13 @@ class EnterpriseReconciliation(unittest.TestCase):
         self.assertFalse((self.private / "journal.json").exists())
 
     def test_activation_requires_explicit_model_and_distinct_key_reference(self):
-        active = {**self.config, "activationEnabled": True}
+        active = copy.deepcopy(self.config)
+        active["activationEnabled"] = True
+        active["model"] = {}
         with self.assertRaisesRegex(OCE.Blocked, "explicit model"):
             OCE._validate_config(active)
-        active["model"] = {"provider": "openrouter", "id": "openrouter/free"}
-        active["secrets"] = {**self.config["secrets"],
-                             "modelApiKey": "/homelab/litellm/openrouter-api-key"}
+        active["model"] = copy.deepcopy(self.config["model"])
+        active["secrets"]["modelApiKey"] = "/homelab/litellm/openrouter-api-key"
         with self.assertRaisesRegex(OCE.Blocked, "dedicated key"):
             OCE._validate_config(active)
         active["secrets"]["modelApiKey"] = "/homelab/openclaw-enterprise/model-api-key"
