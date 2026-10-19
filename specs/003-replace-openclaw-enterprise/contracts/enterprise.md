@@ -11,15 +11,22 @@ and images, installation phase, logical Namespace/agent names, private origins,
 storage class, native model configuration, credential references, and
 `activationEnabled`. It contains no secret values or operator shell inputs.
 The source-to-image pairing policy and image repository names are fixed in T003;
-their digest fields stay null and activation stays false until T004 builds or
-identifies the matching published pair and records its immutable receipts.
+the controller/runtime digests are verified. The CLI digest stays null until
+its source-built artifact has a publication receipt; activation stays false.
 
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
-Sandbox, optional broker/collector, or configured Codex Harness. The provider is
-`openrouter`; `openrouter/free` and a dedicated model credential are explicit activation inputs.
-Do not copy the example model or reuse old app credentials. Activation requires a
-real provider probe and a dedicated key; foundation and inactive installation may
-proceed without either.
+Sandbox, optional broker/collector, or configured Codex Harness. The pinned OCE
+Kubernetes driver does not accept `openrouter` as a Harness provider. Use its
+supported `openai` transport with `baseUrl: https://openrouter.ai/api/v1`,
+`api: openai-completions`, and model ID `openrouter/free`. OCE's model reference
+is `openai/openrouter/free`; the wire request to OpenRouter uses `openrouter/free`.
+Do not copy the example model or reuse old app credentials. The dedicated
+OpenRouter key must be registered as an Agent `harnessAuth` OCC Secret; direct
+Configuration secret binding or an ExternalSecret model mount is unsupported.
+OCE projects it as `OPENAI_API_KEY` only into this agent. Foundation,
+Configuration and stopped Agent creation may proceed without the key. An
+`occ agent deploy` requires a bound Secret and runs a real provider probe; never
+use it in the inactive phase.
 
 Planned `scripts/openclaw-enterprise.py` commands are `check`, `reconcile`, and
 `verify`, each accepting `--config PATH`. `reconcile` also requires the protected

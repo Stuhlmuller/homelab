@@ -150,8 +150,9 @@ none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
 SSM unit generates the five internal values below in encrypted state and grants
 their exact parameter names to the External Secrets reader. The model key is a
 placeholder until a separate protected `homelab-production` credential workflow
-writes an owner-supplied OpenAI key. `REPLACE_ME` must block activation and any
-billable probe. That workflow must use the existing
+writes an owner-supplied OpenRouter API key. `REPLACE_ME` must block activation
+and any provider probe, but not foundation or stopped Agent creation. Never
+register a placeholder as an OCC `harnessAuth` Secret. That workflow must use the existing
 `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role, a fixed parameter name and an exact
 current-main SHA; it must not accept the key as a dispatch argument or print it.
 
@@ -162,7 +163,7 @@ current-main SHA; it must not accept the key as a dispatch argument or print it.
 | `postgres-app-password` | OpenTofu generated | `openclaw-system/occ-postgres-app` `password` | API and worker via limited `occ-database` URL |
 | `session-auth-secret` | OpenTofu generated 32-byte hex | `openclaw-system/occ-auth` `secret` | API/worker session signing |
 | `gateway-api-key` | OpenTofu generated | `openclaw-system/occ-private-gateway-key` `occ` | API/worker and private Envoy SecurityPolicy |
-| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Fresh agent's native model Secret only |
+| `model-api-key` | Protected owner injection | `openclaw-agents/occ-model-api-key` `api-key` | Protected reconciler registers the key as the fresh Agent's OCC `harnessAuth` Secret; OCE projects `OPENAI_API_KEY` only to that agent |
 
 The foundation must materialize the exact TLS-verified application and
 migration URLs in `openclaw-system/occ-database` without mounting the admin or

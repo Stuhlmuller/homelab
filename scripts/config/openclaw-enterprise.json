@@ -58,8 +58,10 @@
     "sessionAuth": "/homelab/openclaw-enterprise/session-auth-secret"
   },
   "model": {
-    "provider": "openrouter",
-    "id": "openrouter/free"
+    "provider": "openai",
+    "id": "openrouter/free",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "api": "openai-completions"
   },
   "privateJournal": {
     "required": true,
