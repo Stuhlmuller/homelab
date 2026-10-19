@@ -18,6 +18,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-1765d2b8de68537c36f7221e
+    resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -39,7 +41,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T23:13:39.081Z
+    at: 2026-10-19T23:18:08.587Z
 ---
 
 # Runtime Isolation
