@@ -87,8 +87,11 @@ def check_pod_identity(pod):
 def scale_zero(component, deployment):
     path = deployment_path(component) + "/scale"
     scale = api(path)
-    if scale.get("metadata", {}).get("uid") != deployment["metadata"]["uid"]:
+    metadata = scale.get("metadata", {})
+    if metadata.get("uid") != deployment["metadata"]["uid"]:
         raise RuntimeError(f"{deployment_name(component)} scale identity changed")
+    if not isinstance(metadata.get("resourceVersion"), str) or not metadata["resourceVersion"]:
+        raise RuntimeError(f"{deployment_name(component)} scale lacks resourceVersion")
     if scale.get("spec", {}).get("replicas") not in (0, 1):
         raise RuntimeError(f"{deployment_name(component)} scale replicas are outside {{0,1}}")
     if scale["spec"]["replicas"] == 0:
