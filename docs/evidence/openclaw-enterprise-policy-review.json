@@ -109,7 +109,50 @@
       "IaC/octelium/stack.hcl",
       "IaC/octelium-enterprise/stack.hcl",
       "clusters/homelab/apps/kiali/values.yaml"
-    ]
+    ],
+    "pinnedSourceReview": {
+      "capturedAt": "2026-10-19T18:30:27+00:00",
+      "liveSpecHashesMatchedPrior": 18,
+      "method": "Read-only full-spec SHA-256 recheck for all 18 live policies, then inspection of the pinned upstream constructors/templates; no generator binary was executed.",
+      "policySourceRefs": {
+        "cordium/ws-main": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/ws_init.go#L254",
+        "monitoring/kiali": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/templates/kubernetes/networkpolicy.yaml#L1",
+        "octelium/cordium-nocturne": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/nocturne.go#L152",
+        "octelium/cordium-rscserver": "https://github.com/octelium/cordium/blob/e12b0b16d5fe94716e414fca7cfdc10b21014f2c/cluster/genesis/genesis/components/rscserver.go#L131",
+        "octelium/octelium-ingress": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/ingress.go#L334",
+        "octelium/octelium-nocturne": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/nocturne.go#L147",
+        "octelium/octelium-octovigil": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/octovigil.go#L98",
+        "octelium/octeliumee-cloudman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/cloudman.go#L65",
+        "octelium/octeliumee-clusterman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/clusterman.go#L79",
+        "octelium/octeliumee-collector": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/collector.go#L115",
+        "octelium/octeliumee-logstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/logstore.go#L117",
+        "octelium/octeliumee-metricstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/metricstore.go#L114",
+        "octelium/octeliumee-nocturne": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/nocturne.go#L124",
+        "octelium/octeliumee-policyportal": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/policyportal.go#L99",
+        "octelium/octeliumee-rscserver": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscserver.go#L124",
+        "octelium/octeliumee-rscstore": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/rscstore.go#L114",
+        "octelium/octeliumee-secretman": "https://github.com/octelium/octelium-ee/blob/0e9368283420e17847879a58dc7f354b656ef3c3/cluster/genesis/genesis/components/secretman.go#L129",
+        "octelium/svc-upstream": "https://github.com/octelium/octelium/blob/5e4eb3e36911ba4f66f5f43df2cc4b264211c4ce/cluster/genesis/genesis/components/common.go#L237"
+      },
+      "result": "No concrete live-versus-pinned rule mismatch found. The static source explains the observed rule shapes, but does not qualify traffic or prove byte-for-byte generator rendering.",
+      "sourceFindings": [
+        "Cordium ws-main and Octelium svc-upstream hardcode broad public IPv4/IPv6 egress; retain strict inventory findings until pinned render and isolated canary traffic show actual requirements.",
+        "Kiali operator emits TCP 20001/9090 ingress with no source peer. Its deployment.network_policy.enabled=false control can remove this policy, but an owned replacement needs verified gateway, Traefik, Prometheus, Octelium and ambient-policy paths before narrowing.",
+        "The other 15 policies are generated ingress-only rules. Their presence does not isolate selected Pods from egress; no source-only correction or acceptance follows from matching source shapes."
+      ],
+      "status": "unqualified: owner decisions, exact generator renders and real isolated canary enforcement remain pending",
+      "kialiOperatorControlRef": "https://github.com/kiali/kiali-operator/blob/db4556620c4d22271fae34d6cc2bda76d17a15ac/roles/default/kiali-deploy/tasks/kubernetes/k8s-main.yml#L58-L67",
+      "kialiCallerReview": {
+        "repositoryPaths": [
+          "clusters/homelab/apps/kiali/authorizationpolicy.yaml",
+          "clusters/homelab/apps/kiali/virtualservice.yaml",
+          "clusters/homelab/apps/traefik/routes.yaml",
+          "docs/examples/octelium/homelab-services.yaml"
+        ],
+        "readOnlyObservation": "The Ready Kiali Pod is ambient redirected; its Service targets TCP 20001/9090 and the live Istio ALLOW policy matches the repository principals.",
+        "stillUnverified": "No canary has proven which Pod identities kube-router sees for gateway, Traefik, Prometheus and Octelium traffic through ambient and Service translation."
+      }
+    }
   },
   "ingressAudit": {
     "allSourcePolicies": [
