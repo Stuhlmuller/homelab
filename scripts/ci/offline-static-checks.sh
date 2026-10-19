@@ -33,6 +33,7 @@ terragrunt --log-disable --working-dir IaC/live/argocd-apps/istio \
       .inputs.manifest.spec as $spec |
       $spec.syncPolicy.automated.enabled == true and
       $spec.syncPolicy.automated.prune == true and
+      $spec.syncPolicy.automated.selfHeal == true and
       ([ $spec.sources[] | select(has("chart")) |
         [.chart, .helm.releaseName, .targetRevision] ] == [
         ["base", "istio-base", "1.27.3"],
