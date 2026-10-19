@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4127f02ab206def0c2448c0f2b1a76891f070696666611dab1da1de9c714d9a8",
+  "pageVersion": "sha256:bc597959eb8fade7629405016a88cfbabe0ce504e436ff9d941a9d55705829e0",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -126,19 +126,23 @@
     },
     {
       "id": "claim_69308222d1c94bb682dacb13a27cfe91",
-      "statement": "The runbook records October 11 and 19 full-catalog failures on LiteLLM's repeated-descriptor index and Harbor's correlated unique_reference error. The fixed LiteLLM scope stages the exact Linux amd64 child while the current consumer pin stays intact; only after a scoped pull receipt may a separate PR switch the consumer and remove the failing index from the full catalog, followed by a full-catalog retry. No live schema repair or strict mirror activation follows from scoped publication alone.",
+      "statement": "The runbook records October 11 and 19 full-catalog failures on LiteLLM's repeated-descriptor index and Harbor's correlated unique_reference error. Protected run 39210811031 published the exact Linux amd64 child with a source-digest check and complete authenticated Harbor pull. The consumer source now pins that child and removes only the rejected root index from the full catalog; a new full-catalog receipt remains required. This excludes arm64 and attestation descriptors and does not authorize live schema repair or strict mirrors.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/litellm/values.yaml",
-          "version": "repo-file-v1:sha256:62a554d06955bac05febee22864c64f7dfe81d167fd5a67ee44d026a5075b3e7"
+          "version": "repo-file-v1:sha256:645f0ab7cdb0241f19e9d6759dd24c22591354b58606ebd9d913e039db335dcd"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
-          "resource": "repo://scripts/config/harbor-litellm-images.json",
-          "version": "repo-file-v1:sha256:04b6f987c031d00622391dfbfea25cb58ea3ea7c520c1e2487225c840383c403"
+          "resource": "repo://scripts/config/harbor-images.json",
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         }
       ]
     },
@@ -366,7 +370,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         }
       ]
     },
@@ -375,7 +379,7 @@
       "statement": "Missing mirror artifacts normally stage all platforms anonymously and verify the original root digest before Harbor upload. For the exact Skopeo digest-preserving OCI conversion error during staging or upload, regctl copies the pinned source digest, including a second upstream read after failed upload. A resumed digest can similarly use regctl for a failing alias copy. Both paths require exact digest and alias verification plus a fresh complete authenticated Harbor pull; unrelated copy errors fail closed.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L893-L958",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L895-L960",
           "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
@@ -402,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         }
       ]
     },
@@ -450,7 +454,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -496,25 +500,25 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         }
       ]
     },
     {
       "id": "claim_3131fdd2b83d414b86f72c057b3d1d13",
-      "statement": "The full Harbor catalog stages nine Harbor 2.15.4 component digests beside active 2.15.2 entries without changing running Pods; protected fixed Harbor-scope publication and authenticated pull acceptance precede the separate consumer upgrade, which must preserve singleton nginx rolling-update availability. The scoped receipt does not prove full-catalog coverage while the LiteLLM duplicate-index failure remains.",
+      "statement": "The full Harbor catalog stages nine Harbor 2.15.4 component digests beside active 2.15.2 entries without changing running Pods; protected fixed Harbor-scope publication and authenticated pull acceptance precede the separate consumer upgrade, which must preserve singleton nginx rolling-update availability. The scoped receipt does not prove full-catalog coverage, so the revised LiteLLM catalog still needs a successful all-scope run.",
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -546,7 +550,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -644,7 +648,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/config/harbor-dns-images.json",
@@ -690,23 +694,23 @@
     },
     {
       "id": "claim_8bdf04089df24f579540743fc5f7c2fb",
-      "statement": "The fixed LiteLLM mirror scope selects only the digest-pinned Linux amd64 child of the repeated-index source, stages it beside the unchanged current runtime index pin, and requires a complete authenticated Harbor pull before a separate consumer/catalog change and full-catalog retry; this scoped receipt alone does not authorize strict Talos mirrors.",
+      "statement": "The fixed LiteLLM mirror scope selects only the exact Linux amd64 child of the repeated-index source. Protected run 39210811031 passed the source-digest check and complete authenticated Harbor pull; after that receipt, the consumer source pins the child and the full catalog excludes the failing index. The scoped receipt alone does not prove full-catalog coverage or authorize strict Talos mirrors.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
           "version": "repo-file-v1:sha256:61c7fde07352eccbc71dfe69598e7f1e836ef837f4c67ce435ec11708814a318"
         },
         {
-          "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:a61e553ad7acf3f365fec1002c9b8c7a93b96b912ea8b5775a73d59ffd2a9a96"
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -720,17 +724,17 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:08:11.339Z"
+    "at": "2026-10-19T07:42:29.586Z"
   }
 }

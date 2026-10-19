@@ -28,6 +28,10 @@ sources:
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
+  - id: openwiki-source-99b01b3b79f53a385f98fdf8
+    resource: repo://clusters/homelab/apps/litellm/README.md
+  - id: openwiki-source-bd06d6b0499111fbfe3b1e84
+    resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-bb71538b4bc75dd401bfc1ec
     resource: repo://clusters/homelab/apps/mastodon/backup-cronjob.yaml
   - id: openwiki-source-9909d58412f1a989bfab76c4
@@ -120,10 +124,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+generated: { by: "codex", at: "2026-10-19T07:42:29.586Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:08:11.339Z
+    at: 2026-10-19T07:42:29.586Z
 ---
 
 # Workload Inventory
@@ -143,6 +147,13 @@ inside its existing `ai` Application, with a 20 GiB NFS claim and separate
 admin/app SSM credentials. This prerequisite is not live key migration;
 database readiness and native-auth cutover remain pending. See
 [AI observability](../architecture/ai-observability.md).
+
+LiteLLM's image pin selects the Linux amd64 child of an upstream OCI index
+that Harbor 2.15.2 rejects because it repeats child descriptors. The exact
+child passed the [protected scoped mirror receipt](../operations/harbor-oci.md#october-11-duplicate-index-failure)
+before the consumer source changed. All four observed nodes were amd64 on
+October 19; re-evaluate this pin before adding arm64 nodes. Full-catalog
+publication is still pending.
 
 ## Import Note
 

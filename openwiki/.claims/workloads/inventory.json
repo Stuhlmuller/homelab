@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:607ec707ebe993eef87220792f86aa165e6ff6c13c9b1fd8c4216126f44a5bd7",
+  "pageVersion": "sha256:648c19448bb61e0581730f643a793ea3b63386d54c7eee81ec8a952f359a34c1",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -334,7 +334,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -364,13 +364,35 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+        }
+      ]
+    },
+    {
+      "id": "claim_6ea097967f8f4bb9a330a1be2cbf70a1",
+      "statement": "LiteLLM's reviewed consumer source pins the Linux amd64 child of a repeated-descriptor OCI index that Harbor 2.15.2 rejects. Protected scoped run 39210811031 published that exact child before the consumer source changed; all four observed nodes were amd64 on October 19, and full-catalog publication remains pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/litellm/README.md",
+          "version": "repo-file-v1:sha256:4673401d8ed0bb1a4a18325664bea1c43808aaae503f7832cd128370ae59ace0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/litellm/values.yaml",
+          "version": "repo-file-v1:sha256:645f0ab7cdb0241f19e9d6759dd24c22591354b58606ebd9d913e039db335dcd"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:08:11.339Z"
+    "at": "2026-10-19T07:42:29.586Z"
   }
 }

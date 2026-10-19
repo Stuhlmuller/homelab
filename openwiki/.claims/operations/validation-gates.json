@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:12bfaf8ca86c6c492b6ef207a1f279f707cc6d32af5d6ab5219b6671a0e84cf3",
+  "pageVersion": "sha256:284dfd0331f5700f8bb2d2c6a9f0dd50ef812e684a5c60db561f266534a8843a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -130,7 +130,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
+          "version": "repo-file-v1:sha256:a8ed97b68504163b2ff337fdf276aa93fe6fbba4957135a75bfd1f2881127557"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -402,7 +402,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
+          "version": "repo-file-v1:sha256:a8ed97b68504163b2ff337fdf276aa93fe6fbba4957135a75bfd1f2881127557"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -566,15 +566,19 @@
     },
     {
       "id": "claim_0e3c1afd23034474b5208b12c395dfbf",
-      "statement": "The fixed Harbor 2.15.4 publication scope contains exactly nine digests from the reviewed full catalog; publisher fixtures reject unreviewed scope entries and require selected-image pull verification. Scoped success does not prove full-catalog acceptance while LiteLLM duplicate-index publication fails.",
+      "statement": "The fixed Harbor 2.15.4 publication scope contains exactly nine digests from the reviewed full catalog; publisher fixtures reject unreviewed scope entries and require selected-image pull verification. Scoped success does not prove full-catalog acceptance; the revised LiteLLM catalog still requires an all-scope receipt.",
       "evidence": [
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
+        },
         {
           "resource": "repo://scripts/ci/harbor-images-check.py",
           "version": "repo-file-v1:sha256:a9fd4eca1f44b80928fe2f5169578f04a1bc65ec34716a889865cd5ebad3bf00"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
+          "version": "repo-file-v1:sha256:a8ed97b68504163b2ff337fdf276aa93fe6fbba4957135a75bfd1f2881127557"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -588,7 +592,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
+          "version": "repo-file-v1:sha256:bbde22ad06c790833a52c2dd29e6ac75859f5d6574395b950e969fb83c915188"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -678,7 +682,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
+          "version": "repo-file-v1:sha256:a8ed97b68504163b2ff337fdf276aa93fe6fbba4957135a75bfd1f2881127557"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -691,7 +695,7 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L893-L958",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L895-L960",
           "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
@@ -836,15 +840,19 @@
     },
     {
       "id": "claim_31bc470a71b64dffa328e35ac9146249",
-      "statement": "The fixed LiteLLM scope selects one reviewed Linux amd64 child digest while the catalog retains the running index. Coverage and publisher fixtures reject missing, altered, or extra scope entries before credentials; the shared publisher verifies source digest bytes and a fresh complete authenticated Harbor pull. Local fixtures do not prove scoped publication or full-catalog coverage.",
+      "statement": "The fixed LiteLLM scope selects one reviewed Linux amd64 child digest, while the consumer source now pins that child and the catalog excludes the failing root index. Coverage and publisher fixtures reject missing, altered, or extra scope entries before credentials; the shared publisher verifies source manifest bytes and a fresh complete authenticated Harbor pull. Protected run 39210811031 passed one-image publication, but it does not prove full-catalog coverage.",
       "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
+        },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
           "version": "repo-file-v1:sha256:83f92c85e85a27d429670e646e8d9eecea284b04e5557e506d2f8e483fe87ccf"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:cb69f31372b49c270171a32df5e6f773db9e322cfb3f544486da51c199b3ab41"
+          "version": "repo-file-v1:sha256:a8ed97b68504163b2ff337fdf276aa93fe6fbba4957135a75bfd1f2881127557"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -852,7 +860,7 @@
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
-          "version": "repo-file-v1:sha256:3f74ca46ef63f3b4a48b81fc19374ef6001f39bbecf6e9e84d2ea843503a2251"
+          "version": "repo-file-v1:sha256:63f0d525ad7c00112b2373d9aa97a54288dc96f3cd441deedc7f2f28e5eb9e7c"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -870,7 +878,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
+          "version": "repo-file-v1:sha256:bb45572412e166f22518c99de7e86f46755e8d361258e8ec09ca4358b491153b"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -903,6 +911,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:08:11.339Z"
+    "at": "2026-10-19T07:42:29.586Z"
   }
 }

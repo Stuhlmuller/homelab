@@ -144,10 +144,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+generated: { by: "codex", at: "2026-10-19T07:42:29.586Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:08:11.339Z
+    at: 2026-10-19T07:42:29.586Z
 ---
 
 # Harbor Private OCI Registry
@@ -465,15 +465,19 @@ A fresh full-catalog attempt on October 19 (run `39190983355`)
 hit the same index and PostgreSQL constraint. The upstream index repeats the
 Linux amd64 child `sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8`;
 all four observed nodes use amd64. The fixed
-[LiteLLM scope](../../scripts/config/harbor-litellm-images.json) adds that
-digest-only child to the catalog while leaving the running index pin intact.
-Its protected dispatch preserves the child manifest bytes and requires a
-complete authenticated Harbor pull. Require that scoped receipt before a
-separate consumer/catalog PR; then rerun the full catalog. This first stage
-does not prove full coverage or authorize strict Talos mirrors.
+[LiteLLM scope](../../scripts/config/harbor-litellm-images.json) published that
+digest-only child while the original consumer remained intact. The exact-main
+[protected run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
+passed the source digest check and complete authenticated Harbor pull. The
+[consumer source](../../clusters/homelab/apps/litellm/values.yaml) now pins this
+child and the full catalog excludes the failing index. This retains the image
+selected by the current amd64 nodes, but omits arm64 and attestation
+descriptors; re-evaluate before adding arm64 nodes. Re-run the full catalog
+after this consumer/catalog change merges. The scoped receipt alone does not
+prove full coverage or authorize strict Talos mirrors.
 
-The two-image Traefik scope can publish the native probe independently of this
-full-catalog incompatibility. A scoped receipt still proves only selected image
+The two-image Traefik scope can publish the native probe independently of the
+pending full-catalog receipt. A scoped receipt still proves only selected image
 availability. Native pulls on every node remain required before Harbor DNS
 changes; global `skipFallback` mirrors still require full publication. See the
 [recorded failure and repair boundary](../../docs/harbor-image-mirroring.md#duplicate-index-publication-failure).
@@ -485,8 +489,9 @@ Harbor 2.15.4 component digests beside the active 2.15.2 entries. This changes
 no running Pod. Publish the fixed nine-image Harbor scope through the protected
 workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
-coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
-rolling update, so its existing Pod serves Harbor while the replacement pulls.
+coverage; the revised LiteLLM catalog still needs a successful `all` run. That
+upgrade must verify singleton nginx retains a rolling update, so its existing
+Pod serves Harbor while the replacement pulls.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images

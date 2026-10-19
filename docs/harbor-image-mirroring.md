@@ -573,10 +573,10 @@ retaining the active 2.15.2 entries. Publish the fixed Harbor scope with
 `image_scope=harbor` and require fresh authenticated pulls of the nine new digests
 before merging a Harbor 2.15.4 consumer. This catalog change does not alter
 running Pods. The scoped receipt proves these nine components only; the full
-catalog remains held on the separate LiteLLM duplicate-index repair. The
-consuming upgrade must verify that the singleton nginx
-Deployment retains a rolling update that keeps Harbor reachable during its
-replacement image pull.
+catalog remains pending until the LiteLLM child-consumer change and a new
+full-catalog receipt. The consuming upgrade must verify that the singleton
+nginx Deployment retains a rolling update that keeps Harbor reachable during
+its replacement image pull.
 
 The chart uses `Recreate` for the registry Deployment. Before merging the
 consumer, pre-pull its 2.15.4 registry and registryctl images onto every Talos
@@ -677,23 +677,26 @@ The source index lists the same Linux amd64 child digest
 `sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8`
 twice. An anonymous GHCR GET verified the child manifest's bytes against that
 digest; all four observed Kubernetes nodes were Linux amd64 on October 19.
-The fixed `litellm` mirror scope copies and completely pulls that exact child
-without changing the running LiteLLM workload:
+The fixed `litellm` mirror scope copied and completely pulled that exact child
+without changing the running LiteLLM workload. It passed on exact `main`
+`0183db1cfb860609e665532aa5642341e890b429` in
+[protected run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031),
+including the source manifest digest and a fresh authenticated Harbor pull:
 
 ```sh
 gh workflow run harbor-mirror.yml --ref main -f expected_sha="<reviewed-current-main-sha>" -f image_scope=litellm
 ```
 
-Require a successful exact-current-main scoped receipt before a separate PR
-pins LiteLLM to the same child and removes the failing index from the full
-catalog. That later pin retains the image these nodes select but excludes arm64
-and attestation descriptors; re-evaluate it before adding arm64 nodes. A scoped
-receipt does not establish full-catalog coverage or authorize strict Talos
-mirrors. Re-run `image_scope=all` after the consumer/catalog PR merges.
+The separate consumer/catalog PR pins LiteLLM to the verified child and removes
+the failing index from the full catalog. That pin retains the image these nodes
+select but excludes arm64 and attestation descriptors; re-evaluate it before
+adding arm64 nodes. The scoped receipt does not establish full-catalog coverage
+or authorize strict Talos mirrors. Re-run `image_scope=all` after the
+consumer/catalog PR merges, and keep T004 pending until that run passes.
 
-Until that later PR, keep the running source index pin intact. Do not alter the
-live database schema to bypass this failure. The fixed Traefik scope publishes the
-native pause probe independently; its success authorizes only those artifacts.
+Do not alter the live database schema to bypass this failure. The fixed Traefik
+scope publishes the native pause probe independently; its success authorizes
+only those artifacts.
 Node hostname migration still requires successful native pulls from every node.
 Cluster-wide `skipFallback` mirrors remain gated on successful full publication.
 
