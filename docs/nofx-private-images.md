@@ -46,7 +46,7 @@ The data path is:
    a token environment variable nor a token volume mount.
 
 The SSM parameter and exact reader permissions belong to
-`IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. The registry
+`IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl`. The registry
 ExternalSecret belongs to `clusters/homelab/apps/nofx`. Parameter creation uses
 the existing OpenTofu placeholder contract; the credential workflow cannot
 create a missing slot or write another parameter.

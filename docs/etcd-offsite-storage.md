@@ -11,7 +11,7 @@ offsite copy is not implied by a successful bucket apply.
 ## Ownership And Retention
 
 These are this homelab's public deployment values. Other deployments must change
-the [committed destination](../IaC/config/etcd-backup-storage.json), consumed by
+the [committed destination](../IaC/etcd-backup-storage.hcl), consumed by
 both the catalog inputs/provider guard and manual publisher.
 
 | Setting | Declared value |
@@ -151,9 +151,9 @@ Preserve stored versions and state while investigating an incomplete apply.
 
 ## Sources
 
-- [Bucket module](../IaC/modules/aws-backup-bucket/main.tf)
-- [Catalog unit](../IaC/.catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
-- [Operator ownership](../IaC/operator/README.md)
+- [Bucket module](../IaC/terragrunt-catalog/modules/aws-backup-bucket/main.tf)
+- [Catalog unit](../IaC/terragrunt-catalog/units/operator/etcd-backup-storage/terragrunt.hcl)
+- [Operator ownership](operator-infrastructure.md)
 - [Local etcd verification](talos-etcd-backup.md)
 - [AWS lifecycle rule scope](https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html)
 - [AWS incomplete-upload cleanup](https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpu-abort-incomplete-mpu-lifecycle-config.html)

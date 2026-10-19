@@ -94,7 +94,7 @@ Tailscale state; normal pod replacement retains the controller-managed state.
 The helper deliberately accepts no arbitrary node or key argument. Review a
 replaced identity before re-running; do not disable lock to bypass a failure.
 See [Tailnet Lock](https://tailscale.com/docs/features/tailnet-lock) and the
-[CI key rotation runbook](../../../../IaC/modules/tailscale-access/README.md).
+[CI key rotation runbook](../../../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
 
 ## Mesh and certificates
 

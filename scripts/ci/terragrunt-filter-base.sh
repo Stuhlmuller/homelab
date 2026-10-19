@@ -100,9 +100,9 @@ terragrunt_azuread_stack_changed() {
 
   if ! git diff --quiet "$base_sha" "$head_sha" -- \
     IaC/live/azuread-applications \
-    IaC/.catalog/units/live/azuread-applications \
-    IaC/modules/azuread-saml-application \
-    IaC/modules/azuread-family-user; then
+    IaC/terragrunt-catalog/units/live/azuread-applications \
+    IaC/terragrunt-catalog/modules/azuread-saml-application \
+    IaC/terragrunt-catalog/modules/azuread-family-user; then
     return 0
   fi
 
@@ -164,9 +164,9 @@ terragrunt_stack_changed() {
   local paths=(
     IaC/terragrunt.stack.hcl
     IaC/stack-defaults.hcl
-    IaC/stacks
-    IaC/.catalog
-    IaC/modules
+    IaC/
+    IaC/terragrunt-catalog
+    IaC/terragrunt-catalog/modules
     IaC/root.hcl
     IaC/kubernetes-provider.hcl
   )

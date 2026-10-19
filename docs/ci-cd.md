@@ -602,7 +602,7 @@ deliberately outside the GitHub workflow traversal: an automation role must not
 be able to widen its own trust or replace the policy attached to itself.
 
 For a trust-only change, use the targeted operator runbook in
-`IaC/operator/README.md`. It conditionally imports only the existing role,
+`docs/operator-infrastructure.md`. It conditionally imports only the existing role,
 saves a plan for `aws_iam_role.github_actions`, rejects non-trust role drift and
 any subject outside the four environments, applies those exact reviewed plan
 bytes, and verifies live IAM. Do not run an un-targeted operator apply to roll
@@ -681,7 +681,7 @@ also need the IAM and SSM write actions represented by
 If the production apply fails while reading a KMS key in `us-west-2` with an
 error like `AccessDeniedException` for `kms:DescribeKey`, update the relevant
 operator-owned identity policy through the reviewed
-[`github-actions-role-policy` full-unit saved-plan path](../IaC/operator/README.md#full-unit-reconciliation).
+[`github-actions-role-policy` full-unit saved-plan path](operator-infrastructure.md#full-unit-reconciliation).
 The September 29, 2026 Langfuse apply had exactly this failure: its identity
 policy covered the former runtime key but omitted the current AWS-managed SSM
 key. For that repair, accept only the single managed-policy update adding

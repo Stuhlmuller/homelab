@@ -24,9 +24,9 @@ source "${script_dir}/terragrunt-filter-base.sh"
 terragrunt_generate_stack
 
 echo "::group::Operator OpenTofu validation"
-rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/modules/aws-github-actions-role-policy/main.tf
-rg -Fq 'variable = "aws:TokenIssueTime"' IaC/modules/aws-github-actions-role-policy/main.tf
-rg -Fq 'variable = "aws:ViaAWSService"' IaC/modules/aws-github-actions-role-policy/main.tf
+rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
+rg -Fq 'variable = "aws:TokenIssueTime"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
+rg -Fq 'variable = "aws:ViaAWSService"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
 for parameter in \
   '/homelab/external-secrets/aws-ssm/access-key-id' \
   '/homelab/external-secrets/aws-ssm/secret-access-key' \
@@ -48,7 +48,7 @@ for parameter in \
       index($0, target) { found = 1 }
       found { print }
       found && /^    }$/ { exit }
-    ' IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+    ' IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   )"
   rg -Fq 'reader_access = false' <<<"$parameter_block"
 done
@@ -63,22 +63,22 @@ done
   terragrunt --log-disable init -backend=false -no-color
   terragrunt --log-disable run --no-auto-init -- validate -no-color
 )
-rg -Fq 'data "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf
-rg -Fq 'resource "msgraph_resource" "domain"' IaC/modules/entra-domain-verification/main.tf && exit 1
-verify_action_block="$(sed -n '/^resource "msgraph_resource_action" "verify" {/,/^}$/p' IaC/modules/entra-domain-verification/main.tf)"
+rg -Fq 'data "msgraph_resource" "domain"' IaC/terragrunt-catalog/modules/entra-domain-verification/main.tf
+rg -Fq 'resource "msgraph_resource" "domain"' IaC/terragrunt-catalog/modules/entra-domain-verification/main.tf && exit 1
+verify_action_block="$(sed -n '/^resource "msgraph_resource_action" "verify" {/,/^}$/p' IaC/terragrunt-catalog/modules/entra-domain-verification/main.tf)"
 rg -Fq 'method       = "POST"' <<<"$verify_action_block"
 if rg -q '^[[:space:]]*(body[[:space:]]*=|forceTakeover[[:space:]]*=)' <<<"$verify_action_block"; then
   echo "The standard Entra domain verification action must use a bodyless POST." >&2
   exit 1
 fi
-rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/modules/entra-verified-family-user/main.tf
-rg -Fq 'verify_domain = true' IaC/.catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
-rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-rg -Fq 'user_principal_name      = "rodman.mac@stuhlmuller.net"' IaC/.catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-rg -Fq 'homelab-emergency-admin' IaC/modules/entra-emergency-global-admin/main.tf
-rg -Fq '62e90394-69f5-4237-9190-012177145e10' IaC/modules/entra-emergency-global-admin/main.tf
-rg -Fq 'azuread_directory_role_assignment' IaC/modules/entra-emergency-global-admin/main.tf
-rg -Fq 'disable_password_expiration = true' IaC/modules/entra-emergency-global-admin/main.tf
+rg -Fq 'local.user_principal_domain == var.required_verified_domain' IaC/terragrunt-catalog/modules/entra-verified-family-user/main.tf
+rg -Fq 'verify_domain = true' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-domain/terragrunt.hcl
+rg -Fq 'required_verified_domain = "stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+rg -Fq 'user_principal_name      = "rodman.mac@stuhlmuller.net"' IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+rg -Fq 'homelab-emergency-admin' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
+rg -Fq '62e90394-69f5-4237-9190-012177145e10' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
+rg -Fq 'azuread_directory_role_assignment' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
+rg -Fq 'disable_password_expiration = true' IaC/terragrunt-catalog/modules/entra-emergency-global-admin/main.tf
 gate_unit="IaC/operator/entra-emergency-global-admin"
 gate_config="$gate_unit/terragrunt.hcl"
 if rg -Fq 'feature "emergency_global_admin"' "$gate_config"; then
@@ -125,8 +125,8 @@ EOF
   fi
 )
 python3 -I scripts/ci/entra-emergency-global-admin-plan-test.py
-rg -Fq 'from = msgraph_update_resource.mail' IaC/modules/entra-owner-mail/main.tf
-rg -Fq 'destroy = false' IaC/modules/entra-owner-mail/main.tf
+rg -Fq 'from = msgraph_update_resource.mail' IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
+rg -Fq 'destroy = false' IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
 for operator_unit in entra-stuhlmuller-domain entra-stuhlmuller-pilot-user entra-emergency-global-admin entra-owner-mail entra-google-workspace-federation; do
   (
     cd "IaC/operator/${operator_unit}"
@@ -218,7 +218,7 @@ if command -v checkov >/dev/null 2>&1; then
       fi
     }
 
-    run_checkov terraform IaC/modules
+    run_checkov terraform IaC/terragrunt-catalog/modules
     run_checkov kubernetes clusters
     run_checkov secrets .
   )

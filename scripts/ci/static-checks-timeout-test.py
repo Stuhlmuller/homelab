@@ -15,12 +15,12 @@ class Timeout(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="static-timeout-") as folder:
             root = Path(folder)
             for name in ("scripts/ci", "IaC/operator/github-actions-role-policy",
-                         "IaC/modules/aws-github-actions-role-policy",
-                         "IaC/.catalog/units/live/aws-ssm-parameters", "bin"):
+                         "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy",
+                         "IaC/terragrunt-catalog/units/live/aws-ssm-parameters", "bin"):
                 (root / name).mkdir(parents=True)
             for name in ("scripts/ci/static-checks.sh",
-                         "IaC/modules/aws-github-actions-role-policy/main.tf",
-                         "IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
+                         "IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf",
+                         "IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl"):
                 shutil.copyfile(ROOT / name, root / name)
             for name in ("nix-cache-signature-test.py", "openclaw-retirement-test.py",
                          "openclaw-retirement-status-test.py",
