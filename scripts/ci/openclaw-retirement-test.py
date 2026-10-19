@@ -261,14 +261,15 @@ class Retirement(unittest.TestCase):
             with self.subTest(change=change):
                 def incomplete(tar, root, label):
                     if label != 'nas':
-                        return original(tar, root, label)
-                    tar.add(root, arcname=label, recursive=True,
-                            filter=lambda member: None if member.name == 'nas/unlisted-configuration'
-                            else member)
-                    if change == 'changed':
-                        member = tarfile.TarInfo('nas/unlisted-configuration')
-                        member.size = len(b'changed')
-                        tar.addfile(member, io.BytesIO(b'changed'))
+                        original(tar, root, label)
+                    else:
+                        tar.add(root, arcname=label, recursive=True,
+                                filter=lambda member: None if member.name == 'nas/unlisted-configuration'
+                                else member)
+                        if change == 'changed':
+                            member = tarfile.TarInfo('nas/unlisted-configuration')
+                            member.size = len(b'changed')
+                            tar.addfile(member, io.BytesIO(b'changed'))
 
                 with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), \
                      patch.object(retirement, 'add_tree', side_effect=incomplete):
