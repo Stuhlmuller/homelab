@@ -151,6 +151,68 @@ controllers:
               n8n publish:workflow --id="$workflow_id"
             fi
             done
+
+            n8n export:workflow --id=6wtwXT4PL5QuSGSD --output=/tmp/codex-review-workflow.json
+            node <<'CODEX'
+            const fs = require('node:fs');
+            const workflows = JSON.parse(fs.readFileSync('/tmp/codex-review-workflow.json', 'utf8'));
+            if (!Array.isArray(workflows) || workflows.length !== 1) {
+              throw new Error('expected exactly the Codex Review Helper workflow');
+            }
+            const workflow = workflows[0];
+            const expected = new Map([
+              ['Webhook', 'n8n-nodes-base.webhook'],
+              ['Filter', 'n8n-nodes-base.filter'],
+              ['If', 'n8n-nodes-base.if'],
+              ['Ask Codex for Help', 'n8n-nodes-base.github'],
+              ['HTTP Request', 'n8n-nodes-base.httpRequest'],
+              ['Stamp', 'n8n-nodes-base.github'],
+            ]);
+            const names = new Set();
+            if (workflow.id !== '6wtwXT4PL5QuSGSD' || workflow.name !== 'Codex Review Helper' ||
+                workflow.isArchived !== false || !Array.isArray(workflow.nodes) ||
+                workflow.nodes.length !== expected.size || workflow.nodes.some((node) => {
+                  if (!expected.has(node.name) || expected.get(node.name) !== node.type || names.has(node.name)) return true;
+                  names.add(node.name);
+                  return false;
+                })) {
+              throw new Error('Codex Review Helper workflow changed; refusing publication');
+            }
+            const webhook = workflow.nodes.find((node) => node.name === 'Webhook');
+            if (webhook.webhookId !== '7cd61c45-077f-45e4-aafe-8e06ce68fbc4' ||
+                webhook.parameters?.path !== '7cd61c45-077f-45e4-aafe-8e06ce68fbc4' ||
+                webhook.parameters?.httpMethod !== 'POST') {
+              throw new Error('Codex Review Helper webhook changed; refusing publication');
+            }
+            const canonical = (value) => Array.isArray(value) ? value.map(canonical) :
+              value !== null && typeof value === 'object' ? Object.fromEntries(
+                Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value;
+            const nodes = workflow.nodes.map((node) => ({
+              name: node.name,
+              type: node.type,
+              typeVersion: node.typeVersion,
+              webhookId: node.webhookId,
+              parameters: node.parameters,
+              credentials: node.credentials,
+              disabled: node.disabled ?? false,
+            })).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+            const digest = require('node:crypto').createHash('sha256').update(JSON.stringify(canonical({
+              nodes, connections: workflow.connections, settings: workflow.settings,
+            }))).digest('hex');
+            if (digest !== 'a0752f25efaa3d44f9c0a23001676dd39b0e9f308bd056b95f0e3580f0913bd2') {
+              throw new Error('Codex Review Helper behavior changed; refusing publication');
+            }
+            const published = workflow.active === true &&
+              typeof workflow.activeVersionId === 'string' && workflow.activeVersionId.length > 0;
+            const unpublished = workflow.active === false && workflow.activeVersionId === null;
+            if (!published && !unpublished) {
+              throw new Error('Codex Review Helper publication state is inconsistent');
+            }
+            fs.writeFileSync('/tmp/codex-review-action', unpublished ? 'publish' : 'skip');
+            CODEX
+            if [ "$(cat /tmp/codex-review-action)" = publish ]; then
+              n8n publish:workflow --id=6wtwXT4PL5QuSGSD
+            fi
         resources:
           requests:
             cpu: 100m

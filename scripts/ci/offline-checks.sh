@@ -26,6 +26,7 @@ python3 -I scripts/ci/tailnet-dns-test.py --declarations
 python3 -I scripts/ci/multica-desktop-connect-test.py
 python3 -I scripts/ci/policy-bot-webhook-test.py
 python3 -I scripts/ci/n8n-github-webhooks-test.py
+python3 -I scripts/ci/n8n-codex-publication-check.py
 python3 -I scripts/ci/cordium-check-test.py
 python3 -I scripts/ci/cordium-runner-test.py
 python3 -I scripts/ci/cordium-runner-controller-test.py
