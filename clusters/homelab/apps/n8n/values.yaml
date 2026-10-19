@@ -92,11 +92,15 @@ controllers:
             n8n import:credentials --input=/tmp/litellm-credential.json
 
             umask 077
+            workflow_ids="$(n8n list:workflow --onlyId)"
             for workflow_id in s1JVSbnvnmHMCbty xaUDsbylSwaveMQ5 Wc0AMPBPqBegSey5; do
-            if ! n8n export:workflow --id="$workflow_id" --output=/tmp/ai-workflow.json; then
-              echo "Skipping AI workflow migration for $workflow_id: export unavailable" >&2
+            if ! printf '%s\n' "$workflow_ids" | grep -Fxq "$workflow_id"; then
+              echo "Skipping AI workflow migration for $workflow_id: workflow absent" >&2
               continue
             fi
+            rm -f /tmp/ai-workflow.json
+            n8n export:workflow --id="$workflow_id" --output=/tmp/ai-workflow.json
+            test -s /tmp/ai-workflow.json
             if ! node - "$workflow_id" <<'NODE'
             const fs = require('node:fs');
             const path = '/tmp/ai-workflow.json';

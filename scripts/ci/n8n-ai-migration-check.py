@@ -22,7 +22,8 @@ script = command.split('node - "$workflow_id" <<\'NODE\'\n', 1)[1].split("\nNODE
 assert 'if [ "$(cat /tmp/ai-workflow-active)" = true ]; then\n  n8n publish:workflow' in command
 assert 'n8n export:workflow --id="$workflow_id"' in command
 assert 'n8n import:workflow --input=/tmp/ai-workflow.json' in command
-assert 'if ! n8n export:workflow' in command
+assert 'workflow_ids="$(n8n list:workflow --onlyId)"' in command
+assert 'if ! printf' in command
 assert 'if ! node - "$workflow_id"' in command
 targets = [
     ("s1JVSbnvnmHMCbty", "5c52f616-3b9e-4483-89e3-effffc393750", True, "lmChatAwsBedrock", "anthropic.claude-3-sonnet-20240229-v1:0"),
@@ -97,8 +98,18 @@ with tempfile.TemporaryDirectory() as directory:
 n8n() {
   case "$1" in
     import:credentials) echo credentials >> "$CALLS" ;;
+    list:workflow)
+      [ "$2" = --onlyId ] || return 99
+      [ "${LIST_FAIL:-}" != true ] || return 28
+      for export in "$EXPORT_DIR"/*.json; do
+        [ -f "$export" ] || continue
+        export="${export##*/}"
+        echo "${export%.json}"
+      done
+      ;;
     export:workflow)
       workflow_id="${2#--id=}"
+      [ "$workflow_id" != "${EXPORT_FAIL_ID:-}" ] || return 27
       [ -f "$EXPORT_DIR/$workflow_id.json" ] || return 1
       cp "$EXPORT_DIR/$workflow_id.json" "${3#--output=}"
       ;;
@@ -124,5 +135,20 @@ n8n() {
     result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
                             env=environment, capture_output=True, text=True, timeout=20)
     assert result.returncode == 0, result.stderr
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env={**environment, "EXPORT_FAIL_ID": "s1JVSbnvnmHMCbty"},
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env={**environment, "LIST_FAIL": "true"},
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
     assert calls.read_text().splitlines() == ["credentials"]
 print("n8n AI migration: three targets, inactive preservation, arrays, idempotence and refusal guards passed")
