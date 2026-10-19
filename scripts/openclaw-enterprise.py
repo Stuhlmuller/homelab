@@ -551,14 +551,15 @@ def exact_model_grant(roles, bindings, namespace_id, principal_id, secret_id):
     if len(exact_roles) != 1:
         raise Blocked("exact model Secret grant role is absent or ambiguous")
     role_id = exact_roles[0]["id"]
-    exact_bindings = [binding for binding in bindings if
+    principal_bindings = [binding for binding in bindings if
+                          binding.get("subjectKind") == "identity" and
+                          binding.get("subjectId") == principal_id]
+    exact_bindings = [binding for binding in principal_bindings if
                       binding.get("namespaceId") == namespace_id and
-                      binding.get("subjectKind") == "identity" and
-                      binding.get("subjectId") == principal_id and
                       binding.get("roleId") == role_id and
                       binding.get("resourceKind") == "secret" and
                       binding.get("resourceId") == secret_id]
-    if len(exact_bindings) != 1:
+    if len(exact_bindings) != 1 or len(principal_bindings) != 1:
         raise Blocked("exact model Secret grant is absent or ambiguous")
     return role_id, exact_bindings[0]["id"]
 
