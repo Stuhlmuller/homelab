@@ -149,12 +149,21 @@ The fresh Enterprise installation uses only `/homelab/openclaw-enterprise/*`;
 none of the old `/homelab/openclaw/*` or LiteLLM values are aliases. The shared
 SSM unit generates the five internal values below in encrypted state and grants
 their exact parameter names to the External Secrets reader. The model key is a
-placeholder until a separate protected `homelab-production` credential workflow
-writes an owner-supplied OpenRouter API key. `REPLACE_ME` must block activation
-and any provider probe, but not foundation or stopped Agent creation. Never
-register a placeholder as an OCC `harnessAuth` Secret. That workflow must use the existing
-`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role, a fixed parameter name and an exact
-current-main SHA; it must not accept the key as a dispatch argument or print it.
+placeholder until `openclaw-enterprise-model-credential.yml` in the protected
+`homelab-production` environment writes an owner-supplied OpenRouter API key.
+`REPLACE_ME` must block activation and any provider probe, but not foundation
+or stopped Agent creation. Never register a placeholder as an OCC `harnessAuth`
+Secret. The workflow uses the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role,
+a fixed parameter name and an exact current-main SHA; it never accepts the key
+as a dispatch argument or prints it.
+
+Temporarily store the new key in the `homelab-production` environment secret
+`OCE_MODEL_API_KEY`, then dispatch `openclaw-enterprise-model-credential.yml` on
+`main` with its exact current commit as `expected_sha`. Verify its SSM version
+receipt, remove the temporary GitHub secret, and advance the committed
+ExternalSecret revision before registering the Agent's OCC `harnessAuth`
+Secret. The writer checks OpenRouter authentication and writes only the declared
+Enterprise parameter; it never copies the LiteLLM credential.
 
 | SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
 | --- | --- | --- | --- |
@@ -180,10 +189,10 @@ listener certificate in separate Secrets; neither is an SSM password. Preserve
 the bootstrap files, CA Secret, auth key, gateway key, database roles and new
 agent state as one recovery set. The protected operations workflow must receive
 Talos client identity through its protected credential path, never a repo file
-or an SSM value projected into application Pods. No such live projection or
-credential write exists yet.
+or an SSM value projected into application Pods. No live Talos projection or
+Enterprise model-credential write has occurred yet.
 
-The planned protected workflows use distinct `homelab-production` environment
+The protected workflows use distinct `homelab-production` environment
 secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
 writer, and `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
 the fixed platform-maintenance job. Neither is a workflow dispatch input or an
