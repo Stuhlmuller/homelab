@@ -13,7 +13,8 @@ capacity admission, owned-rule cleanup, and live canary traffic/lifecycle
 qualification pass the [platform contract](../../../../specs/003-replace-openclaw-enterprise/contracts/platform.md).
 The separate `platform-network-policy-canary` Application tracks `canary/` at
 `main`, with automatic sync disabled and an empty Kustomization. Its excluded
-`fixtures.yaml` contains taint-bound TCP/UDP allow and deny probes. Registration
+`fixtures.yaml` contains taint-bound TCP/UDP allow and deny probes plus an
+exact CoreDNS TCP/UDP 53 grant. Registration
 alone creates no namespace, Pods, or policy. The `homelab` AppProject admits
 the fixture namespace as an explicit destination.
 
@@ -40,10 +41,11 @@ canary and live lifecycle evidence.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC before probing the
-fixed TCP/UDP allow/deny matrix. It rejects extra or unsafe fixture Pods, including
-changed commands, arguments, or container security overrides, and
-requires each remote probe's outcome marker as well as its exit code, so a
-transport error cannot count as a denied connection. It stores a
+fixed TCP/UDP allow/deny matrix and resolves the Kubernetes Service name over
+both DNS transports. It rejects extra or unsafe fixture Pods, including changed
+commands, arguments, or container security overrides. It requires each traffic
+probe's outcome marker as well as its exit code, so a transport error cannot
+count as a denied connection. It stores a
 private receipt listing each still-unverified lifecycle scenario. A successful
 fixture probe is not Talos qualification: cold bootstrap, first packets,
 enforcer stop/restart, API loss, policy/conntrack changes, Pod reschedule/IP
