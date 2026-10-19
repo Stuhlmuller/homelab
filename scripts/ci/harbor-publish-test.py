@@ -561,15 +561,17 @@ class HarborPublicationGates(unittest.TestCase):
         result = self.rejected(mode="mirror-dns")
         self.assertIn("The production Octelium CI credential is required", result.stderr)
 
-    def test_litellm_scope_pins_exact_amd64_child_without_changing_consumer(self):
+    def test_litellm_scope_pins_exact_amd64_child_and_consumer(self):
         source = "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
         selected = json.loads((ROOT / "scripts/config/harbor-litellm-images.json").read_text())
         catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
         workflow = (ROOT / ".github/workflows/harbor-mirror.yml").read_text()
         self.assertEqual(selected, {"images": [{"source": source}]})
         self.assertIn(selected["images"][0], catalog["images"])
-        self.assertIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
+        self.assertIn("main-v1.80.8-stable@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8",
                       (ROOT / "clusters/homelab/apps/litellm/values.yaml").read_text())
+        self.assertNotIn("3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8",
+                         json.dumps(catalog))
         self.assertIn("bash scripts/ci/harbor-publish.sh mirror-litellm", workflow)
         self.assertIn("all|fleet|bazarr|mastodon|traefik|chainguard|harbor|renovate|dns|litellm)", workflow)
 

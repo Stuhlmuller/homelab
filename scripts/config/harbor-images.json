@@ -334,9 +334,6 @@
       "source": "ghcr.io/actions/actions-runner:2.338.0@sha256:4ffadc0002b2581327e06101fc8c06cd189232baf79fe561fac9caeb76f5e807"
     },
     {
-      "source": "ghcr.io/berriai/litellm-database:main-v1.80.8-stable@sha256:3305291fc9fa1b53196e21567a97f4c51e3a38bdc4e19704e38a551ee7712cd8"
-    },
-    {
       "source": "ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"
     },
     {

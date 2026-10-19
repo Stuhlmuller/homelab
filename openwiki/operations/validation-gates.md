@@ -206,10 +206,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+generated: { by: "codex", at: "2026-10-19T07:42:29.586Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:08:11.339Z
+    at: 2026-10-19T07:42:29.586Z
 ---
 
 # Validation Gates
@@ -1823,16 +1823,18 @@ not establish successful private image publication.
 The fixed Harbor 2.15.4 scope must contain exactly the nine digests from the
 reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
 selected-image pull verification. A successful scoped run proves only those nine
-components; the LiteLLM duplicate-index failure still blocks full-catalog
-acceptance.
+components; the revised LiteLLM catalog still needs an `all` run for
+full-catalog acceptance.
 
 The fixed LiteLLM scope selects the one reviewed Linux amd64 child digest
-from the current repeated-descriptor index. The catalog still retains the
-running index until a later consumer change. Coverage and publisher fixtures
+from the repeated-descriptor index. The consumer source now pins that child and
+the catalog excludes the failing root index. Coverage and publisher fixtures
 reject a missing, altered or extra scope entry before credentials. The shared
 publisher verifies original manifest bytes and a fresh complete authenticated
-Harbor pull; these source tests do not publish the child or clear full-catalog
-coverage.
+Harbor pull. Exact-main protected
+[run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
+passed the one-image publication receipt; local fixtures alone cannot prove
+that live result, and the scoped run does not clear full-catalog coverage.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
