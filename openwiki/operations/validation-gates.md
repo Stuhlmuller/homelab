@@ -6,6 +6,8 @@ tags: [operations, validation]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-f3920ab8ec322c64d84a889b
+    resource: repo://.github/workflows/cordium-nocturne-publish.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
@@ -18,8 +20,10 @@ sources:
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
     resource: repo://.talos/patches/nix-builder-seccomp.yaml
-  - id: openwiki-source-b7a8f502eac27f334c6bfc5f
-    resource: repo://builds/cordium-nocturne/README.md
+  - id: openwiki-source-9dee84e0aa3dcfac7517e754
+    resource: repo://builds/cordium-nocturne/workspace_requests_test.go
+  - id: openwiki-source-237698dc6fcf523aaaa3095e
+    resource: repo://builds/cordium-nocturne/workspace-reservations.patch
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-d776ebf3a4d179a97fb3c239
@@ -52,6 +56,8 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
+  - id: openwiki-source-52536621afbfff1f8abeed59
+    resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -66,8 +72,6 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
-  - id: openwiki-source-e038674a313521b0f6eadc03
-    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -130,6 +134,8 @@ sources:
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
     resource: repo://scripts/ci/renovate-alert-check.py
+  - id: openwiki-source-9100b7266ad774f6eeda0265
+    resource: repo://scripts/ci/renovate-config-test.js
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-1d25596b50032267f565d3f3
@@ -176,10 +182,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
+generated: { by: "codex", at: "2026-10-19T00:06:32.446Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T22:45:17.850Z
+    at: 2026-10-19T00:06:32.446Z
 ---
 
 # Validation Gates
@@ -1675,6 +1681,14 @@ still requires the new web Pod Ready on Acer, the old web Pod gone from
 readback. The [capacity receipt](../../docs/evidence/acer-cordium-capacity-2026-10-17.json)
 is a projection, not rollout acceptance.
 
+The staged Nocturne controller patch reserves configured workspace CPU and
+memory limits and uses a separate Pod user namespace. Its pinned build
+reproduces the old request defect before patching and checks the generator
+afterward. Publisher fixtures require one fixed Nocturne image, exact workflow
+and current-main binding, complete authenticated Harbor pull, signature
+verification, and withheld outputs on failure. These checks do not establish
+publication, Acer capacity, Talos application, or live workspace execution.
+
 ## Harbor OCI rollout
 
 The core compatibility candidate adds `scripts/ci/harbor-core-source-test.py`
@@ -1747,14 +1761,6 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
-The staged Nocturne controller patch reserves configured workspace CPU and
-memory limits and uses a separate Pod user namespace. Its pinned build
-reproduces the old request defect before patching and checks the generator
-afterward. Publisher fixtures require one fixed Nocturne image, exact workflow
-and current-main binding, complete authenticated Harbor pull, signature
-verification, and withheld outputs on failure. These checks do not establish
-publication, Acer capacity, Talos application, or live workspace execution.
-
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
 copy and authenticated-pull path. The workflow's exact security hash is
@@ -1762,7 +1768,9 @@ updated with the new choice; a passing fixture does not publish the images or
 validate consuming workloads.
 
 The staged hourly Renovate runner has a credential-free config and discovery
-test in `static-checks.sh`. `offline-checks.sh` runs its Prometheus rule
+test in `static-checks.sh`. The config test injects a cache write failure and
+checks that no GitHub API request follows; live PVC-failure behavior remains
+unverified. `offline-checks.sh` runs its Prometheus rule
 fixture, which checks missed starts, incomplete cycles, a missing CronJob,
 late prior-Job completion, and schedules before and after suspension. These
 fixtures also enforce that the 15-minute allowed late start plus the 40-minute

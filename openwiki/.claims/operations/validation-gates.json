@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8d2de319c045f6cf731696ab83d50efe21a6053d4a2fe653dbb8ea879c0561bb",
+  "pageVersion": "sha256:be47d992c247598179d44310c588791944b7b9d91ea5190967ce76b6f3c76a4f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -773,22 +773,44 @@
       ]
     },
     {
-      "id": "claim_cd3b11c0f0934e55a01ac2f5a26da68b",
-      "statement": "Staged Nocturne controller fixtures verify workspace CPU and memory reservations, separate Pod user namespace, and fixed publisher boundaries; publication, Acer capacity, Talos application, and live workspace execution remain unproven.",
+      "id": "claim_58ae28f7ae7642faa63b0dc5157e05ed",
+      "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://builds/cordium-nocturne/README.md",
-          "version": "repo-file-v1:sha256:c0a12526371d2000d35d7d8d6cc2e9f934a57d25708d3a48e3f121db7f41ab8d"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
+          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         },
         {
-          "resource": "repo://docs/cordium-ci.md",
-          "version": "repo-file-v1:sha256:10ec974797217d12bfac9b686877d08811f5cb286b46b9a87854dd846d0cff5a"
+          "resource": "repo://scripts/ci/renovate-config-test.js",
+          "version": "repo-file-v1:sha256:519abc68e6fdb381de7c09891dda3365684f774937442ba3411ffb98f537e7fa"
+        }
+      ]
+    },
+    {
+      "id": "claim_3e6042da9bf144f7818d2d2c78ec62e7",
+      "statement": "The staged Nocturne controller patch reserves configured workspace CPU and memory limits with a separate Pod user namespace; its pinned build and publisher fixtures test the source and publication contracts without proving live capacity or rollout.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-nocturne-publish.yml",
+          "version": "repo-file-v1:sha256:60566fad8d31d44337094fade5b812ea58dbb80dd0ded52245dd83b24d682cf2"
+        },
+        {
+          "resource": "repo://builds/cordium-nocturne/workspace-reservations.patch",
+          "version": "repo-file-v1:sha256:4a21a870ed2f953873a4cad4a4e80ccb177a681371456a6a84f353a062ccaec0"
+        },
+        {
+          "resource": "repo://builds/cordium-nocturne/workspace_requests_test.go",
+          "version": "repo-file-v1:sha256:0cf619ccbb8489f20f1121d4ad54f447a2793627d584d45c5a5066caf55715e3"
+        },
+        {
+          "resource": "repo://scripts/ci/harbor-publish-test.py",
+          "version": "repo-file-v1:sha256:09e70e5a14bf1ae8157a44b6c47db35ec19455200c70e4cd5afb23779d977a77"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T22:45:17.850Z"
+    "at": "2026-10-19T00:06:32.446Z"
   }
 }

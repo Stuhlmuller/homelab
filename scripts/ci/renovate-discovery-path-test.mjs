@@ -64,7 +64,12 @@ async function configuredRunner() {
           if (file === '/var/run/secrets/renovate/private-key') return key;
           throw new Error('Unexpected credential path');
         },
-        writeFileSync() { throw new Error('Credentials must not be written to disk'); },
+        writeFileSync(file, bytes, settings) {
+          assert.match(file, /^\/cache\/renovate\/\.storage-probe-[0-9a-f-]+$/);
+          assert.equal(bytes.length, 4096);
+          assert.equal(settings.flush, true);
+        },
+        unlinkSync(file) { assert.match(file, /^\/cache\/renovate\/\.storage-probe-[0-9a-f-]+$/); },
       };
       throw new Error(`Unexpected config.js import: ${name}`);
     },
