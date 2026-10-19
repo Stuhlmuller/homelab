@@ -58,7 +58,7 @@ with `Ready=True` and a changed target Secret resource version; no values were
 read. The CronJob remained suspended with no Renovate Job.
 Current IaC source removes the temporary exact-scope transfer role, but live
 deletion still requires the exact saved-plan apply and fresh no-op plan in the
-[operator runbook](../../../../IaC/operator/README.md#renovate-app-credential-transfer-and-role-retirement).
+[operator runbook](../../../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement).
 Keep the CronJob suspended until that deletion is verified. The first full
 dry run must successfully mint an App token. For rotation, reintroduce the
 same limited role through a reviewed change, transfer new values, wait for a
