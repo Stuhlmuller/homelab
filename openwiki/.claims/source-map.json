@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8977e50640cfff9f3b75078928e5f9d1230d1ce1f5a2df48e5fbad60c9154818",
+  "pageVersion": "sha256:8bd25e7b54007cdd55748bc6e31222b18623acec70c2679590beea248a3e65b2",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -66,11 +66,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/mastodon-public-dns.yml",
-          "version": "repo-file-v1:sha256:5ec8b9c13900f72075c89c9c5b9393087daf14fc62c6244a07b9ba36012fe9fc"
+          "version": "repo-file-v1:sha256:286922b85745be34020c96078b8d2a449d1c6b981de8c5444a3f2087817791d4"
         },
         {
           "resource": "repo://.github/workflows/mastodon-smtp-credential.yml",
-          "version": "repo-file-v1:sha256:1c9c86f3e661149ad1d031b011229e134f26bbc7941b0b89658d04d33a548f22"
+          "version": "repo-file-v1:sha256:c965b10d49c10cc03be85305af4d7a1fb7dc581835aa0f34ffe57977d7e3eac0"
         },
         {
           "resource": "repo://IaC/stacks/mastodon/stack.hcl",
@@ -106,7 +106,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-native-chainguard-receipt.yml",
-          "version": "repo-file-v1:sha256:42bb79d20bdf4b53ab827004662804344a254e80af94303329f833e159cb52b1"
+          "version": "repo-file-v1:sha256:d6d4b37b173b7887e733b9658a5ec65dd799efbb7fb7e9e7740a98e58c3b5089"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt.py",
@@ -139,6 +139,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T00:13:27.328Z"
   }
 }

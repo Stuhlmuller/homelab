@@ -4,6 +4,9 @@
 
 This repository uses GitHub Actions for the review and rollout path:
 
+- The Cordium self-hosted pool is the target for regular local jobs. Bootstrap
+  publication and runner canary jobs retain their dedicated selectors. See
+  [Cordium runners](cordium-runners.md) for provisioning and activation gates.
 - Required pull request checks remain automatic: Policy Bot, Lint, repository
   validation, Python and Actions CodeQL, release dry run, and Terragrunt Gate.
   Their required status names stay unchanged, so eligible PRs can still merge.

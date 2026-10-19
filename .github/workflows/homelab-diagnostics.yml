@@ -16,7 +16,7 @@ env:
 
 jobs:
   grafana:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     environment:
       name: homelab-production
     permissions:

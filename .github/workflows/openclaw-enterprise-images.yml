@@ -15,7 +15,7 @@ jobs:
   publish:
     name: Build And Publish Paired Stock Images
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 180
     concurrency:
       group: harbor-packages-production

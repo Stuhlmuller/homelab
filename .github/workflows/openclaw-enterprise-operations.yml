@@ -30,7 +30,7 @@ env:
 jobs:
   static-policy:
     name: Validate Legacy Operation
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: read
     steps:
@@ -68,7 +68,7 @@ jobs:
     name: Protected Legacy Retention
     needs: [static-policy]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     timeout-minutes: 360
     concurrency:
       group: openclaw-enterprise-operations-production

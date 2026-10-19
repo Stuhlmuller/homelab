@@ -34,7 +34,7 @@ env:
 jobs:
   static-policy:
     name: Static Policy And Security Checks
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     permissions:
       contents: read
     steps:
@@ -79,7 +79,7 @@ jobs:
     concurrency:
       group: terragrunt-apply-production
       cancel-in-progress: false
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, cordium]
     environment:
       name: homelab-production
     permissions:

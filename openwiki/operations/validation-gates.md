@@ -6,10 +6,16 @@ tags: [operations, validation]
 sources:
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-729acf039d34520f724d5bfe
+    resource: repo://.github/workflows/cordium-check.yml
+  - id: openwiki-source-28a7f340da431caf1c218c7d
+    resource: repo://.github/workflows/cordium-runner-canary.yml
   - id: openwiki-source-5639384dcb82d59768eb1132
     resource: repo://.github/workflows/harbor-core-images.yml
   - id: openwiki-source-bb8a89652a59628537fcc9b2
     resource: repo://.github/workflows/harbor-mirror.yml
+  - id: openwiki-source-ae9e276e4f1f0876814f04a2
+    resource: repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml
   - id: openwiki-source-2ab88915e37908e92fe8ef01
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
@@ -66,6 +72,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-e038674a313521b0f6eadc03
+    resource: repo://docs/cordium-ci.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -179,7 +187,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:13:27.328Z
 ---
 
 # Validation Gates
@@ -577,9 +585,11 @@ semantic release and linting retain explicit reviewed versions.
 This uses hardened **actions**, not replacement runner images. Super-Linter's
 [hardened manifest](https://github.com/chainguard-actions/super-linter-super-linter/blob/bf49e660c836f9c76777ae48293f937565e314d7/action.yml)
 still runs the upstream GHCR container, pinned by digest. Other
-actions use JavaScript or composite steps. Ubuntu hosted runners and Nix-managed
-tools remain; application images built or inspected by CI are separate workload
-contracts. `terragrunt-apply-request.yml` has no external actions to replace.
+actions use JavaScript or composite steps. The staged Cordium selector cutover
+uses Nix-managed tools; runner bootstrap and required native receipt provenance
+stay hosted, and the canary uses its own label. The pool remains disabled.
+Application images built or inspected by CI are separate workload contracts.
+`terragrunt-apply-request.yml` has no external actions to replace.
 
 `nix-community/cache-nix-action` remains pinned upstream: no corresponding
 Chainguard repository was available at the recorded review. Recheck the catalog

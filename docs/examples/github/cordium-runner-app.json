@@ -1,0 +1,17 @@
+{
+  "name": "Stuhlmuller Cordium Runners",
+  "url": "https://github.com/Stuhlmuller/homelab",
+  "description": "Register disposable Cordium GitHub Actions runners for the homelab repository.",
+  "public": false,
+  "redirect_url": "http://127.0.0.1:8765/callback",
+  "hook_attributes": {
+    "url": "https://github.com/Stuhlmuller/homelab",
+    "active": false
+  },
+  "default_permissions": {
+    "administration": "write",
+    "actions": "read",
+    "metadata": "read"
+  },
+  "default_events": []
+}

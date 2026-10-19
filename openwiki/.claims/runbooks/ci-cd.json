@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:19908e3a4b98fed80415a2f4697805c6db0edf4a3d866c1e401256105144138f",
+  "pageVersion": "sha256:7730b52db1474c25ab0513272da57a0f0db6d5a8c691927a56c2e9b5d416d6c0",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -8,19 +8,19 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/image-automation.yml",
-          "version": "repo-file-v1:sha256:d7c0ee3dc0c5c571b187ad9abbcd90bd50d00f3090d8affd5373484b6d61e9d2"
+          "version": "repo-file-v1:sha256:db3bd4716067e37ff02837284d36b6319498ff70f50532b5e57c7e0933ca236c"
         },
         {
           "resource": "repo://.github/workflows/nofx-images.yml",
-          "version": "repo-file-v1:sha256:b076f16676452f98d1abf6a084c4fe4583ddc4e7d77d2436962c1643adf7b3a6"
+          "version": "repo-file-v1:sha256:996093a94239505a4ca3807f717d24d1b2934d8d0d764121e8016bc1399d9924"
         },
         {
           "resource": "repo://.github/workflows/openclaw-config.yml",
-          "version": "repo-file-v1:sha256:28ab72b380dc338ff504e0560053c26afab121a00fc43ae6aaa19761600e3535"
+          "version": "repo-file-v1:sha256:eb9c2c8b08817ae2973ec3b0db14717bcb8bd96c027e2067dcf4dd2257ccea9a"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         }
       ]
     },
@@ -60,21 +60,43 @@
         },
         {
           "resource": "repo://.github/workflows/lint.yml",
-          "version": "repo-file-v1:sha256:0fa8148c1b9d471174d4f6971bcf8a0bc07346ab957714b009ce31816fba9cbe"
+          "version": "repo-file-v1:sha256:40214fd3e60c37c12ffb0dd06cc4219c8826379067dbe2ba087e20abf1a7c96e"
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
+        }
+      ]
+    },
+    {
+      "id": "claim_de2c63b2f1c24934a537d1701712d8ed",
+      "statement": "The Cordium runner pool remains disabled while draft PR 1276 stages regular job selectors, keeping bootstrap and credential jobs hosted, the canary isolated, and native receipt provenance hosted until live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.cordium/runner-pool.json",
+          "version": "repo-file-v1:sha256:49c9924d3f5f209b98c5ae9eadbe0658ec18dad78c0f5e57ebc3afcbfcb5cf54"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-check.yml",
+          "version": "repo-file-v1:sha256:d9bd5b88fde5ae4fc8d5866128accf4c24538f7da4b6480bcba1596410cb1795"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T00:13:27.328Z"
   }
 }

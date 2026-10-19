@@ -4,6 +4,10 @@ title: "CI/CD"
 description: "Trusted Terragrunt plan and exact-SHA apply workflows, Policy Bot merge rules, environment approvals, and credential recovery."
 tags: ["runbook", "ci", "github-actions"]
 sources:
+  - id: openwiki-source-e82cbcffb5df1a3ee146efb1
+    resource: repo://.cordium/runner-pool.json
+  - id: openwiki-source-729acf039d34520f724d5bfe
+    resource: repo://.github/workflows/cordium-check.yml
   - id: openwiki-source-28a7f340da431caf1c218c7d
     resource: repo://.github/workflows/cordium-runner-canary.yml
   - id: openwiki-source-36db39acd9400bc022704939
@@ -31,7 +35,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:13:27.328Z
 ---
 
 # CI/CD
@@ -73,7 +77,11 @@ Cordium runner bootstrap is staged as separate exact-main workflows for
 credential intake, fixed image builds, protected Harbor publication, and a
 canary. The controller would provision one JIT runner per job with private
 file-backed credentials and verify Workspace, Kubernetes, and GitHub cleanup.
-The pool remains disabled and existing job selectors stay unchanged. The
+The pool remains disabled. Draft PR #1276 stages regular job selectors for
+the Cordium pool while keeping bootstrap publication and credential jobs
+hosted and the canary on its isolated label. The required native receipt
+provenance status job stays hosted so PR validation can run before the pool is
+enabled. The
 [runner contract](../../builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
 before a reviewed selector cutover.

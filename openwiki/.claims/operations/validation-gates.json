@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:432fae75825d295012c540a65d58645c24ab8250429578d4f04b21ba3cba75bf",
+  "pageVersion": "sha256:6bc00a7a6b246ef3d2af66c7adf48614b6a1f72ef7888664213754d340e4b687",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         }
       ]
     },
@@ -278,7 +278,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:f7dc1e31d8fd0c000bd34211a2bd93fcb72962767d81492104a682398f90faf4"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -354,7 +354,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:f7dc1e31d8fd0c000bd34211a2bd93fcb72962767d81492104a682398f90faf4"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -376,7 +376,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
+          "version": "repo-file-v1:sha256:3428d7548e4557ba35ef4dea061fd374f90d79272f8282d7564d4959d2cc7735"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
         }
       ]
     },
@@ -408,11 +408,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
+          "version": "repo-file-v1:sha256:3428d7548e4557ba35ef4dea061fd374f90d79272f8282d7564d4959d2cc7735"
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:f7dc1e31d8fd0c000bd34211a2bd93fcb72962767d81492104a682398f90faf4"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:d7495569c1433d498f248b057cb175aa70649bd5339ef1c63b086ba43459fed3"
         }
       ]
     },
@@ -548,7 +548,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:f7dc1e31d8fd0c000bd34211a2bd93fcb72962767d81492104a682398f90faf4"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
@@ -662,7 +662,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:2978369cab487d8b8e6dc6c2a50644f405ef3ab759761bb39df38b9c28326d21"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -670,7 +670,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -712,7 +712,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/lint.yml",
-          "version": "repo-file-v1:sha256:0fa8148c1b9d471174d4f6971bcf8a0bc07346ab957714b009ce31816fba9cbe"
+          "version": "repo-file-v1:sha256:40214fd3e60c37c12ffb0dd06cc4219c8826379067dbe2ba087e20abf1a7c96e"
         },
         {
           "resource": "repo://scripts/ci/harbor-native-chainguard-receipt-test.py",
@@ -720,7 +720,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:1fe2dd6161acf1453c8d69c1149f7529cec46816f3afa575a787fb0f11c3a63a"
         }
       ]
     },
@@ -777,18 +777,40 @@
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L88",
-          "version": "repo-lines-v1:sha256:f32a4bf6e3e6980ea082dee2db89385ee53221cf8887321690b4ab5db7bc3106:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
+          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:593f37f2e0f54e2849efe5a31adaf9751224d6d204c106f873d89c93bfb69c05"
+          "version": "repo-file-v1:sha256:519abc68e6fdb381de7c09891dda3365684f774937442ba3411ffb98f537e7fa"
+        }
+      ]
+    },
+    {
+      "id": "claim_5215a6d50736454487dcec2e4c6a7ce4",
+      "statement": "Draft PR 1276 stages regular CI job selectors for the disabled Cordium pool while bootstrap publication, credential jobs, required native receipt provenance, and the isolated canary retain their hosted or dedicated selectors.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/cordium-check.yml",
+          "version": "repo-file-v1:sha256:d9bd5b88fde5ae4fc8d5866128accf4c24538f7da4b6480bcba1596410cb1795"
+        },
+        {
+          "resource": "repo://.github/workflows/cordium-runner-canary.yml",
+          "version": "repo-file-v1:sha256:781f207ad4db4949a42e9e51341d1d3b926607fe595bad9230718084c8352857"
+        },
+        {
+          "resource": "repo://.github/workflows/harbor-native-chainguard-receipt-provenance.yml",
+          "version": "repo-file-v1:sha256:249fecaa6442ce061412b013990c132df31e0f7c7754ea4ab3afd040d7ce71e9"
+        },
+        {
+          "resource": "repo://docs/cordium-ci.md",
+          "version": "repo-file-v1:sha256:b3c83a9238bb84661d8180df07cfa435851276fa15fb187c31b5f79b739a8625"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T00:13:27.328Z"
   }
 }
