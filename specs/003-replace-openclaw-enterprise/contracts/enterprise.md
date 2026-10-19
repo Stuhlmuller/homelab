@@ -17,8 +17,9 @@ identifies the matching published pair and records its immutable receipts.
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
 Sandbox, optional broker/collector, or configured Codex Harness. The provider is
 `openrouter`; `openrouter/free` and a dedicated model credential are explicit activation inputs.
-Do not copy the example model or reuse old app credentials. Deployment includes a
-real billable provider probe; no deployment occurs without those configured inputs.
+Do not copy the example model or reuse old app credentials. Activation requires a
+real provider probe and a dedicated key; foundation and inactive installation may
+proceed without either.
 
 Planned `scripts/openclaw-enterprise.py` commands are `check`, `reconcile`, and
 `verify`, each accepting `--config PATH`. `reconcile` also requires the protected
