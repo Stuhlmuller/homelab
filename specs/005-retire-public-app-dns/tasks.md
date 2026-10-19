@@ -18,10 +18,10 @@
 
 ## Phase 2: Foundational (Shared Retirement Set)
 
-**Purpose**: Establish one validated 26-name public deletion set while retaining all 27 private answers.
+**Purpose**: Establish one validated 26-name public deletion set while retaining all 29 current private answers.
 
 - [X] T002 Add a failing test for the ordered 26 non-apex retirement names, fixed 27-name inventory digest, and excluded four legacy names in `scripts/ci/tailscale-private-dns-test.py`.
-- [X] T003 Derive and validate the exact 26-name retirement set from the fixed inventory, excluding only `stinkyboi.com`, in `scripts/tailscale-private-dns-check.py`; preserve its 27-name private DNS and HTTPS checks.
+- [X] T003 Derive and validate the exact 26-name retirement set from the fixed inventory, excluding only `stinkyboi.com`, in `scripts/tailscale-private-dns-check.py`; preserve private DNS for every approved name and HTTPS checks for the original 27 migration routes.
 
 **Checkpoint**: The preflight distinguishes public deletion targets from private resolver approvals.
 
@@ -45,11 +45,11 @@
 
 **Goal**: Preserve public apex, mail and validation records, other record types, and unrelated public names while private apex resolution remains healthy.
 
-**Independent Test**: Mock a cutover with apex A/MX/TXT/CAA, NS/SOA, legacy, Mastodon, and other unrelated records; confirm none change, the 27-name private checker still covers the apex, and read-only public DNS-01 readiness passes before and after live cutover.
+**Independent Test**: Mock a cutover with apex A/MX/TXT/CAA, NS/SOA, legacy, Mastodon, and other unrelated records; confirm none change, the current 29-name private checker still covers the apex, and read-only public DNS-01 readiness passes before and after live cutover.
 
 - [X] T007 [US2] Extend Cloudflare fixtures and assertions so apex A/MX/TXT/CAA, NS/SOA, four legacy names, Mastodon and other unrelated owners, plus non-address types at target owners survive execution in `scripts/ci/tailscale-private-dns-test.py`.
 - [X] T008 [P] [US2] Explain the preserved public zone, private apex, DNS-01 validation, and unrelated-name behavior; replace stale 27-name public-retirement wording with the 26-name boundary and keep legacy endpoints distinct in `docs/networking-tailnet-ingress.md`, `clusters/homelab/platform/tailnet-dns/README.md`, `docs/secrets-aws-ssm.md`, and `docs/octelium.md`.
-- [X] T009 [US2] Verify the unchanged 27-name resolver approval and apex coverage with `scripts/ci/tailnet-dns-check-test.py` and `scripts/ci/tailnet-dns-test.py`; update only a stale expectation in those files if a check fails.
+- [X] T009 [US2] Verify resolver approval and apex coverage with `scripts/ci/tailnet-dns-check-test.py` and `scripts/ci/tailnet-dns-test.py`; the initial 27-name approval later expanded to 29 names.
 
 **Checkpoint**: Public preservation and private apex behavior are explicit and testable independently of live deletion.
 
@@ -69,7 +69,7 @@
   failed/non-authoritative TTL replies, excess TTL, deliberate zero-replica
   route exceptions, and safe partial retry in
   `scripts/ci/tailscale-private-dns-test.py`.
-- [X] T011 [US3] Require exact 26-name evidence membership and record-owner/type validation while keeping all 27 private-client preflight checks, with serving routes strict and deliberately stopped backends accepted only on matching reviewed/live zero replicas, in `scripts/tailscale-private-dns-check.py`.
+- [X] T011 [US3] Require exact 26-name evidence membership and record-owner/type validation while keeping all 29 current private-client DNS checks and the original 27 migration HTTPS checks, with serving routes strict and deliberately stopped backends accepted only on matching reviewed/live zero replicas, in `scripts/tailscale-private-dns-check.py`.
 - [X] T012 [US3] Generate a fresh private evidence template with all 26 empty `off_tailnet` decisions and no apex target records in `scripts/tailscale-private-dns.sh`; reject historical 27-name templates rather than adapting them.
 - [X] T013 [US3] Inspect the complete paginated public wildcard/CNAME/NS
   inventory, block on relevant child NS delegation or out-of-set covering
