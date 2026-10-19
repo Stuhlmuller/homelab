@@ -454,11 +454,15 @@ def verify(config, api, kube):
     configuration = api.get(f"/namespaces/{namespace_id}/configurations/{configuration_id}")
     _assert_configuration(configuration, namespace_id, configuration_id,
                           desired_configuration(config), state.get("configurationGeneration"))
+    agents = api.get(f"/namespaces/{namespace_id}/agents")
+    discover_exact(agents, config["agent"]["name"], agent_id,
+                   {"configurationId": configuration_id})
     agent = api.get(f"/namespaces/{namespace_id}/agents/{agent_id}")
     _assert_agent(agent, config, namespace_id, configuration_id, agent_id)
     _require(agent["desiredRuntimeState"] == "stopped" and
              agent.get("activeRevisionId") is None and
-             agent.get("harnessAuth") is None,
+             agent.get("harnessAuth") is None and
+             agent.get("servicePrincipalId") == state.get("servicePrincipalId"),
              "inactive Enterprise Agent changed")
     after, second_raw = read_journal(journal_path, config["source"]["revision"], _identity_hash(config))
     _require(raw == second_raw and state == after, "Enterprise journal changed during verification")

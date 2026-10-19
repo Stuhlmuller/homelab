@@ -977,6 +977,17 @@ class InactiveAgentReconciliation(unittest.TestCase):
             "app.kubernetes.io/managed-by=openclaw-enterprise,openclaw.dev/namespace=ns_one",
             "-o=json")
 
+    def test_verify_blocks_duplicate_name_or_changed_principal(self):
+        self._reconcile()
+        with patch.object(OCE, "check", return_value={"installationId": "ins_one"}):
+            self.api.agents["agt_second"] = {**self.api.agents["agt_one"], "id": "agt_second"}
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                OCE.verify(self.config, self.api, self.kube)
+            self.api.agents.pop("agt_second")
+            self.api.agents["agt_one"]["servicePrincipalId"] = "sp_foreign"
+            with self.assertRaisesRegex(OCE.Blocked, "inactive Enterprise Agent changed"):
+                OCE.verify(self.config, self.api, self.kube)
+
 
 if __name__ == "__main__":
     unittest.main()
