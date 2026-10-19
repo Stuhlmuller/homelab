@@ -555,15 +555,14 @@ def reconcile_namespace(config, api, journal, kube):
                 candidate = api.post("/namespaces", {"name": name,
                                                       "existingNamespace": physical})
             except DefinitiveRejection:
-                # The pinned 401/403 admission and grant checks run before create.
-                # Preserve the intent if a competing Namespace appears meanwhile.
+                # A definitive rejection cannot own a later competing Namespace.
+                state.pop("pending")
+                journal.save(state)
                 after_rejection = api.get("/namespaces")
                 _require(isinstance(after_rejection, list) and
                          not any(isinstance(item, dict) and item.get("name") == name
                                  for item in after_rejection),
                          "Namespace create outcome changed after rejection")
-                state.pop("pending")
-                journal.save(state)
                 raise
             _require(isinstance(candidate, dict) and candidate.get("name") == name and
                      candidate.get("existingNamespace") == physical and
@@ -637,12 +636,11 @@ def reconcile_configuration(config, api, journal, kube, namespace_id):
             try:
                 created = api.post(path, {"kind": "agent", "values": desired})
             except DefinitiveRejection:
-                # A rejected create can be retried only after a fresh Kubernetes
-                # read proves that no Configuration ConfigMap appeared.
-                _require(kube.configuration_candidates(namespace_id) == [],
-                         "Configuration create outcome changed after rejection")
+                # A definitive rejection cannot own a later competing ConfigMap.
                 state.pop("pending")
                 journal.save(state)
+                _require(kube.configuration_candidates(namespace_id) == [],
+                         "Configuration create outcome changed after rejection")
                 raise
             _require(isinstance(created, dict), "Configuration create response is invalid")
             configuration_id = created.get("id")
@@ -714,10 +712,11 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
                 created = api.post(path, {"name": name, "configurationId": configuration_id,
                                           "executionMode": "embedded"})
             except DefinitiveRejection:
-                # Preserve intent unless an exact fresh list proves no Agent
-                # appeared after the authorization rejection.
-                after_rejection = api.get(path)
+                # A definitive rejection cannot own a later competing Agent.
                 baseline = state["pending"]["baselineAgentIds"]
+                state.pop("pending")
+                journal.save(state)
+                after_rejection = api.get(path)
                 _require(isinstance(after_rejection, list) and
                          all(isinstance(item, dict) and isinstance(item.get("id"), str)
                              for item in after_rejection) and
@@ -725,8 +724,6 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
                          set(baseline) <= {item["id"] for item in after_rejection} and
                          not any(item.get("name") == name for item in after_rejection),
                          "Agent create outcome changed after rejection")
-                state.pop("pending")
-                journal.save(state)
                 raise
             _require(isinstance(created, dict), "Agent create response is invalid")
             agent_id = created.get("id")

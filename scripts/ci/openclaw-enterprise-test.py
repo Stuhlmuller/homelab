@@ -707,7 +707,7 @@ class EnterpriseReconciliation(unittest.TestCase):
         self.assertEqual(kube.calls, [("tenant-prepared", "ns_one", False)])
         self.assertEqual(api.calls, [("GET", "/namespaces")])
 
-    def test_definitive_create_rejection_clears_pending_only_after_empty_readback(self):
+    def test_definitive_create_rejection_clears_pending_before_foreign_readback(self):
         source = self.config["source"]["revision"]
         identity = OCE._identity_hash(self.config)
         path = self.private / "journal.json"
@@ -738,10 +738,14 @@ class EnterpriseReconciliation(unittest.TestCase):
 
         other_path = self.private / "other-journal.json"
         with OCE.ProtectedJournal(other_path, source, identity) as journal:
+            appearing_api = AppearingNamespaceAPI()
             with self.assertRaisesRegex(OCE.Blocked, "outcome changed"):
-                OCE.reconcile_namespace(self.config, AppearingNamespaceAPI(), journal,
+                OCE.reconcile_namespace(self.config, appearing_api, journal,
                                         FakeKubernetes([]))
-            self.assertEqual(journal.state, {"pending": {"operation": "namespace-create"}})
+            self.assertEqual(journal.state, {})
+            with self.assertRaisesRegex(OCE.Blocked, "unjournaled Enterprise identity"):
+                OCE.reconcile_namespace(self.config, appearing_api, journal,
+                                        FakeKubernetes([]))
 
     def test_unknown_or_foreign_namespace_create_stays_pending(self):
         source = self.config["source"]["revision"]
@@ -1012,22 +1016,26 @@ class InactiveAgentReconciliation(unittest.TestCase):
         self.assertNotIn("pending", state)
         self.assertEqual(self._reconcile()["agentId"], "agt_one")
 
-    def test_rejected_creates_keep_intent_when_new_objects_appear(self):
-        original_post = self.api.post
-
-        def create_then_reject(path, body):
-            original_post(path, body)
+    def test_rejected_creates_never_adopt_competing_objects(self):
+        def competing_configuration(path, body):
+            self.api.configurations["cfg_foreign"] = {
+                "id": "cfg_foreign", "namespaceId": "ns_one", "kind": "agent",
+                "createdAt": "2026-10-19T00:00:00.000Z", "generation": 1,
+                "values": copy.deepcopy(body["values"])}
             raise OCE.DefinitiveRejection("HTTP 403")
 
-        with patch.object(self.api, "post", side_effect=create_then_reject):
+        with patch.object(self.api, "post", side_effect=competing_configuration):
             with self.assertRaisesRegex(OCE.Blocked, "Configuration create outcome changed"):
                 self._reconcile()
         state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
                                     self.config["source"]["revision"],
                                     OCE._identity_hash(self.config))
-        self.assertEqual(state["pending"]["operation"], "configuration-create")
-        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+        self.assertNotIn("pending", state)
+        with self.assertRaisesRegex(OCE.Blocked, "unjournaled Enterprise Configuration"):
+            self._reconcile()
 
+        self.api.configurations.clear()
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
         self.api.agents.pop("agt_one")
         with OCE.ProtectedJournal(self.config["privateJournal"]["mountPath"],
                                   self.config["source"]["revision"],
@@ -1036,14 +1044,20 @@ class InactiveAgentReconciliation(unittest.TestCase):
             state.pop("agentId")
             state.pop("servicePrincipalId")
             journal.save(state)
-        with patch.object(self.api, "post", side_effect=create_then_reject):
+
+        def competing_agent(path, body):
+            self.api.agents["agt_foreign"] = {"id": "agt_foreign", "name": body["name"]}
+            raise OCE.DefinitiveRejection("HTTP 403")
+
+        with patch.object(self.api, "post", side_effect=competing_agent):
             with self.assertRaisesRegex(OCE.Blocked, "Agent create outcome changed"):
                 self._reconcile()
         state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
                                     self.config["source"]["revision"],
                                     OCE._identity_hash(self.config))
-        self.assertEqual(state["pending"]["operation"], "agent-create")
-        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+        self.assertNotIn("pending", state)
+        with self.assertRaisesRegex(OCE.Blocked, "unjournaled Enterprise Agent"):
+            self._reconcile()
 
     def test_foreign_configuration_and_changed_generation_block(self):
         self.api.configurations["cfg_foreign"] = {
