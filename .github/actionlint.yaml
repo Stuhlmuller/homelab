@@ -2,3 +2,9 @@ self-hosted-runner:
   labels:
     - cordium
     - cordium-canary
+
+# actionlint v1.7.12 predates GitHub's queue: max; Rego pins both protected jobs.
+paths:
+  .github/workflows/openclaw-enterprise-operations.yml:
+    ignore:
+      - '^unexpected key "queue" for "concurrency" section'

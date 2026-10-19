@@ -93,6 +93,7 @@ jobs:
     concurrency:
       group: openclaw-enterprise-operations-production
       cancel-in-progress: false
+      queue: max
     environment:
       name: homelab-production
     permissions:
@@ -177,6 +178,7 @@ jobs:
     concurrency:
       group: openclaw-enterprise-operations-production
       cancel-in-progress: false
+      queue: max
     environment:
       name: homelab-production
     permissions:
@@ -199,6 +201,19 @@ jobs:
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
         with:
           persist-credentials: false
+
+      - name: Recheck Current Main Commit Before Enterprise Stage
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
       - name: Run Fixed Enterprise Stage
         env:

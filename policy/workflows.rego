@@ -292,7 +292,7 @@ approved_openclaw_legacy_operation if {
 	job := input.jobs.legacy
 	job.needs == ["static-policy"]
 	job.environment.name == "homelab-production"
-	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false}
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.permissions == {"contents": "read", "id-token": "write"}
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'"
 	some step in job.steps
@@ -321,17 +321,19 @@ approved_openclaw_enterprise_operation if {
 	job := input.jobs.enterprise
 	job.needs == ["static-policy"]
 	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main' && inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none'"
-	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false}
+	job.concurrency == {"group": "openclaw-enterprise-operations-production", "cancel-in-progress": false, "queue": "max"}
 	job.environment.name == "homelab-production"
 	job.permissions == {"contents": "read"}
-	count(job.steps) == 3
-	[job.steps[0].name, job.steps[1].name, job.steps[2].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Run Fixed Enterprise Stage"]
+	count(job.steps) == 4
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Recheck Current Main Commit Before Enterprise Stage", "Run Fixed Enterprise Stage"]
 	job.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(job.steps[0].run, "\n") == platform_maintenance_main_check
 	job.steps[1].uses == "chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505"
 	job.steps[1].with["persist-credentials"] == false
-	job.steps[2].env == {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
-	trim(job.steps[2].run, "\n") == openclaw_enterprise_blocked_run
+	job.steps[2].env == job.steps[0].env
+	trim(job.steps[2].run, "\n") == platform_maintenance_main_check
+	job.steps[3].env == {"RUN_STAGE": "${{ inputs.enterprise_stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	trim(job.steps[3].run, "\n") == openclaw_enterprise_blocked_run
 }
 
 openclaw_dispatch_guard := `set -euo pipefail

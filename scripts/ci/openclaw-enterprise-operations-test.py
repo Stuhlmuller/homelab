@@ -33,6 +33,7 @@ class Operations(unittest.TestCase):
                       'restore, acceptance]', workflow)
         self.assertIn('Choose exactly one fixed operation stage.', workflow)
         self.assertEqual(workflow.count('group: openclaw-enterprise-operations-production'), 2)
+        self.assertEqual(workflow.count('queue: max'), 2)
         self.assertIn("inputs.legacy_stage != 'none' && inputs.enterprise_stage == 'none'",
                       workflow)
         self.assertIn("inputs.legacy_stage == 'none' && inputs.enterprise_stage != 'none'",
@@ -42,6 +43,34 @@ class Operations(unittest.TestCase):
         self.assertNotIn('kubectl', script)
         self.assertNotIn('argocd', script)
         self.assertNotIn('openclaw-enterprise.py', script)
+
+        enterprise_job = workflow.split('\n  enterprise:\n', 1)[1]
+        self.assertLess(enterprise_job.index('name: Check Out Repository'),
+                        enterprise_job.index('name: Recheck Current Main Commit Before Enterprise Stage'))
+        self.assertLess(enterprise_job.index('name: Recheck Current Main Commit Before Enterprise Stage'),
+                        enterprise_job.index('name: Run Fixed Enterprise Stage'))
+        recheck = re.search(r'      - name: Recheck Current Main Commit Before Enterprise Stage\n'
+                            r'.*?        run: \|\n'
+                            r'(.*?)(?=\n      - name: Run Fixed Enterprise Stage)',
+                            enterprise_job, re.S)
+        self.assertIsNotNone(recheck)
+        with tempfile.TemporaryDirectory() as directory:
+            fake_gh = Path(directory) / 'gh'
+            fake_gh.write_text('#!/bin/sh\nprintf "%s\\n" "$FAKE_MAIN_SHA"\n')
+            fake_gh.chmod(0o755)
+            for current_main, expected in (('a' * 40, True), ('b' * 40, False)):
+                result = subprocess.run(['bash', '-c', textwrap.dedent(recheck.group(1))],
+                                        cwd=ROOT, env={**os.environ,
+                                                       'PATH': f'{directory}:{os.environ["PATH"]}',
+                                                       'ACTUAL_REF': 'refs/heads/main',
+                                                       'ACTUAL_SHA': 'a' * 40,
+                                                       'EXPECTED_SHA': 'a' * 40,
+                                                       'FAKE_MAIN_SHA': current_main,
+                                                       'GH_REPO': 'Stuhlmuller/homelab',
+                                                       'GH_TOKEN': 'test'},
+                                        capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode == 0, expected,
+                                 (current_main, result.stderr))
 
         dispatch = re.search(r'      - name: Verify Dispatch Commit\n.*?        run: \|\n'
                              r'(.*?)(?=\n      - name: Check Out Repository)',
