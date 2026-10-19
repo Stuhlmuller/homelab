@@ -162,6 +162,18 @@ and Renovate's normal cache freshness rules.
 `scripts/ci/renovate-log-remap-test.mjs` verifies the INFO record and its
 metadata against an installed copy of pinned Renovate 44.167.4.
 
+On 2026-10-19, the 19:00 and 20:00 scheduled Pods had distinct UIDs and each
+hit that exact cached key. After the protected v0.0.2 release at 20:20 UTC, the
+21:00 full dry run kept the cache hit and gained one branch-commit proposal for
+the public canary; its four other proposals were unchanged. Renovate's pinned
+full dry-run path stops before creating a new PR, so no create-PR marker is
+expected. The
+[parity receipt](../../../../specs/004-run-renovate-in-cluster/dry-run-parity-receipt.md)
+records the aggregate evidence. A manual cluster Job created the public canary
+record at 05:13 UTC after v0.0.1 was published; historical Job and Pod
+metrics confirm it mounted the retained PVC. T022 is complete. Real PR creation
+and policy remain gated by T031.
+
 Read-only status checks:
 
 ```sh
