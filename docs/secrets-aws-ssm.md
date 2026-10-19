@@ -661,10 +661,12 @@ Secret as `issuer-id` and `private-key`, mounted read-only as files under
 `/var/run/secrets/renovate`. It refreshes every five minutes. After transfer,
 it refreshed at 03:56:19 UTC with `Ready=True` and a changed target Secret
 resource version. At that check, the CronJob was suspended with no Job. The
-transfer role is absent from current IaC source. Live deletion still needs the
-exact saved-plan apply and a fresh no-op plan in the
-[operator runbook](operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement).
-Keep the CronJob suspended until deletion is verified. Rotation requires a
+temporary transfer role was later retired through the reviewed saved-plan path:
+a read-only IAM lookup returned `NoSuchEntity`, and a fresh full-unit plan had
+no changes. The [operator receipt](operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records those checks. The [hourly CronJob](../clusters/homelab/apps/renovate/cronjob.yaml)
+is now declared unsuspended in [full dry-run mode](../clusters/homelab/apps/renovate/config.js);
+the legacy Action remains the only writer until cutover. Rotation requires a
 reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
 See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
