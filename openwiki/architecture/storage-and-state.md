@@ -28,10 +28,10 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-19T19:09:44.607Z
 ---
 
 # Storage And State
@@ -553,16 +553,17 @@ private-package, and repository caches; its working files stay on ephemeral
 storage. The cache includes private package metadata, so restrict access to the
 volume and logs. It is replaceable and has no backup requirement. Argo CD does
 not prune the PVC. Before requesting a GitHub token, each run flushes a small
-write to the claim so a full or unwritable cache fails visibly. Expand the
-claim through reviewed GitOps only after checking backing NFS capacity. For
+write to the claim so a full or unwritable cache fails visibly. This NFS
+provisioner cannot resize the claim; restore backing share capacity through a
+declared path after suspending the CronJob through reviewed GitOps. For
 corruption, suspend the CronJob, clear only cache contents with a reviewed
 temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
-probe stops GitHub access. These are local checks. A live failed cycle and the
-next scheduled recovery still need to be observed before accepting the storage
-behavior.
+probe stops GitHub access. These are local checks. A live cache-failure cycle
+and its next scheduled recovery still need to be observed before accepting
+the storage behavior.
 
 ## Staged independent application recovery (HOME-2)
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f64799a614f25e11e856d91040a967f4d6649df782c22bcea2022f6d066639dd",
+  "pageVersion": "sha256:3caa0d80e263a97c3ec2b2ad0093b9cfeec5eab315b744e329c60cf03923c765",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -794,7 +794,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:76426fb1f3fc7d399923e3f7247f422ebcbbba569a655cee691bcb54acdce34f"
+          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
         }
       ]
     },
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
+          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -1085,10 +1085,28 @@
           "version": "repo-lines-v1:sha256:eb63d9bd76d09617fa407de914390bd84ee21bcbef30390b9b6dced210496ad0:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkMjhiODM4ZGFkYWU5OTRlN2E3ZDcyYmFhZjZmYjczYTY4OGI5Nzg0YThkMTg1OGEyNGYxODI4NmRiYmY0YzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwNTEzY2JkOGE2Zjk4NjA2MjczOWIwMjVkM2YyOTRjNWJmYmViYTA1N2YyNjFjMDBmNDg2NTU3NjJkN2E0MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZDg4OWZjZmY1ZWNmYzUyY2Q3YjE4MmRhM2E1MjQ4N2Q5OGM3Y2Y1Y2YzOTE4Y2E4MTZhNDljZmIyNTI4NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNjBiMGFjYzA5YWRjYjU0NmFmZmQ4MmE2NGJkNTc4ZTQ4OThjOWI2YmNkZjI0MmUzZTZmMTRjMWY5MzlmMWMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_cf898aed519d439ca54222f144695543",
+      "statement": "T017 accepted an 18:00 UTC scheduled Renovate full dry-run Job covering all eight eligible owner repositories after the 17:00 registry mutex timeout; effective writes, full owner/App parity, and two-Pod cache reuse remain separate gates.",
+      "evidence": [
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
+          "version": "repo-lines-v1:sha256:c79c28a4dd7e7e10bc2ede27c0daebb097152f1ca5a90586893e7cc429a8d0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMwYjYxY2IxOTg5MDlmMzU5OWZkMmU1YWEwMjJhYjVlN2M2MDhiZGFjMTk3OTdlNmVmMTFmYTI4N2Q3MjllMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjc3MTczNzQ5ZDMxODdjMmRmOGQyODhlNDg3NWFlYWVlZmY1YzRiNWY2N2JlOGQ3ZGUzZDhkNWMwZTUxNWMyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU3NmIxODJlY2I1Y2JkYzI1ZWQ4YzI4NjlkMDU2ZTY3YTU2OWYyZTI1NTA2MWFjZjQyZDBkOGE0ZDFjNTI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
+          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
+          "version": "repo-lines-v1:sha256:c9d6c2f54666e24e71341487098fd7c416852d126832707f8a184a09f6ec544e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlZTAzNmE1YWY2MDcxZWJhMzM4YTg4YjA2NDUzYTFmYzE2NzVmMjU2MjQxYjYwMmQ3NDA3MjQzNjRhYjAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MjU3NmY4MWIyNmRiMmE0ZjAwOTQ3NzM3YmIyNTIxYWRiNmViOTM1YmFkMzcyMGQwMGU4ZTU1OWVkNjRiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY5ODZmOTdiOWIwYzY3MTczZGU2ZWI1YmMwZDllZTJhMDc5MjgwOTZmOWVlMzA5NDk0OGUyMzBiNWUyYmE2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJjODBhMjk5ZjU0NDJkMDYyNmFiZjg3OWQ1N2NkMDE4ZjRhMGU3ODJmNTNjNzM1ZjMyYTZmMDhkMWY5NjJmNyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-19T19:09:44.607Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:873e75faba2af53647c9b3ad6cf72704ac07c6d5703fcda5fbf143110a659d41",
+  "pageVersion": "sha256:d23a024ff3a033a2ebac0dab7bd624733ee5a658e797ede13d1d2136d09364c3",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,23 +292,15 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application is declared in automation as an hourly UTC CronJob unsuspended in full dry-run mode, with a retained 20 Gi NFS cache and a dedicated no-token ServiceAccount and Harbor host alias targeting the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement completed, while the legacy GitHub Action remains the writer pending dry-run parity and reviewed cutover; live Harbor route and scheduled Job acceptance remain pending.",
+      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while Harbor transport and version discovery, two-Pod cache evidence, full dry-run parity, and reviewed cutover remain open.",
       "evidence": [
         {
-          "resource": "repo://IaC/renovate/stack.hcl",
-          "version": "repo-file-v1:sha256:04724af1dc2ae6e1ddb027dcb270d4704ad204c33aff015ca79428175f609ad8"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
-          "version": "repo-lines-v1:sha256:35b66f1c4e3dde01914dfeb0e0d1d0001d0c496a44e6b8998520828c0948a587:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTUxMzZhZTZiYTZmZmE2ZDJmMTY5OTc1ZTFiNmVjMTI0ZmQ0NTBjZTZjYTkwZGI4NjgwMzAyMWZiMGE4NWVjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L138-L147",
-          "version": "repo-lines-v1:sha256:3e4046f21d5d3403a43b699c5ad4c47390f6bab717647221b926239e2298806b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI0YWZiY2RkNjFmY2NmMWM3MWVjMDcxMmJhZGQxNGQzYjNkZGNhM2UzOTc4MDQ4ZGNkMWVjZjQ5NThlNDliZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMDE3ZjZiMzNkMTIxZTU3YWM0YmQ2NTdkYzIwNGJiZDE0ZmY5MGFlZmEzMzU4NWRlMTQ4YTEwYzQzNjQ2NmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg5YWE1NjBkODVmMmM1ODUyZDNjNDc1NjZkZTJiMTc4NTYwMThjYjNkNzYyNjA5NmE1YWFhYmNhNGQ4ZjI3YzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQyODM0MjFkMzk1ZDMyZTM5MTM4YWRlNWM5YjFkZDhmNGM5YjgxNmIyZDYwNzRiOTZmZmE4YmY4MTNhYzU5NTgifQ"
-        },
-        {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L11-L17",
-          "version": "repo-lines-v1:sha256:172dcb36b2cc12899b2596805ec0cf48cd4ef0173f5c3c34a2f3df924366c51d:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWU5MWU1MWNlNTM4ZWYxMjBlZTIwY2JkZjk0MTU4YmFjZTFjYzExNzkwNmY4NjRmZWQyZDk0ZTM3MTEwY2IyNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzYxZWFmZTUyOTNkM2RmOWE3NjU0OTNmOWE1ZjlhYzU0NTFlYWJmZjk3NTdjZGY1NmIwYmQ3ODg2NmM3ZDYzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTRmYTA1NTg3MDNmZmNjMGRjMmUzNmQ0Mjk5YTAyMTdmNzQ2OTZmZjdiNzdiMzFkYzBjMjllMTU4Mzc0NDI5YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWQ3YjE1YTAzM2ZkMTljNWMzYWI3M2VhNWEwNDQwMDdhMzY1NTJhM2Y4ZjgwOWU2YzFlODE3YjU3NjU3NzMwNiJ9"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
@@ -319,12 +311,16 @@
           "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L53-L59",
+          "version": "repo-lines-v1:sha256:c79c28a4dd7e7e10bc2ede27c0daebb097152f1ca5a90586893e7cc429a8d0fd:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjMwYjYxY2IxOTg5MDlmMzU5OWZkMmU1YWEwMjJhYjVlN2M2MDhiZGFjMTk3OTdlNmVmMTFmYTI4N2Q3MjllMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjc3MTczNzQ5ZDMxODdjMmRmOGQyODhlNDg3NWFlYWVlZmY1YzRiNWY2N2JlOGQ3ZGUzZDhkNWMwZTUxNWMyNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNTU3NmIxODJlY2I1Y2JkYzI1ZWQ4YzI4NjlkMDU2ZTY3YTU2OWYyZTI1NTA2MWFjZjQyZDBkOGE0ZDFjNTI4ZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMDAxZjJlYzE3NTkzYzEwNTRlYjQ2MzY3ZDg0NTNlZjI0YTE3M2NlOTZiNzExN2Q5MWY5YTY4ZDQ0ZmVmOGIwMSJ9"
         },
         {
-          "resource": "repo://docs/operator-infrastructure.md#L339-L369",
-          "version": "repo-lines-v1:sha256:504abc8d5e74ffccee77f0ac7f3561473a70018d486ade05db1e6ae4f5268678:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5ZWQzYmNmYTc1YTc0YmQ3MTc3ZDMyMDFmYjRjNzA0NWFjMTJiMGMyNzNkYTcyYzFkOGYyZTEwNjMyYTI1NzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3ZWFiMTdmMjlmNmM4NjhmMGE5ZWQ5MzFhOTcxZTAyYmNlMzQ4YzhiZTFiOGZkYjczOTRhZjgxYmU0ZjY4ZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4MDJhZWI5NGNlODI0M2Q4NWQ5OTI1ZGY2MDJhYTVkMmE3ZDdhNDIwNDhmOGU3N2RhNzJlZGExYTdjNzU5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5YTI1YjJmNDI2OGFmMTNlZmQxZWE4MzE1MGJmYjBjNDhkMmUyZmViOTE0MTRlYWM4MzJlODZhNWM1YmY3ZTMifQ"
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L73-L78",
+          "version": "repo-lines-v1:sha256:0edf4f790d91455abe78ef5072ca2007215241f0cb67dcbcb29b9a3bebe0f3fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzgwNzIwOWJjMDEyZTRmMzc4YjdmMjg3MTVmZmZmMGFlN2FiZThiMzVjMzFjZGExZDA4MmM2YWIyMmZlZTMzNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTFlYjlmYjllMDY5ZGRlNTY0NDUwZmE3ZDE0NDMxNjU5ZDVjMGQyNzhjNTFkZGJmYmQ5N2EzMTRiODdjYzc2MSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTYxMzRiMzdlMWQ3OGE0NDI0ZWYzYWI0MjQwNDE0NzU5MTRlZjMxZjBmYWJiOTY5NjVlZGQyNmYyMGRiMGFlMiJ9"
+        },
+        {
+          "resource": "repo://specs/004-run-renovate-in-cluster/tasks.md#L89-L96",
+          "version": "repo-lines-v1:sha256:c9d6c2f54666e24e71341487098fd7c416852d126832707f8a184a09f6ec544e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlZTAzNmE1YWY2MDcxZWJhMzM4YTg4YjA2NDUzYTFmYzE2NzVmMjU2MjQxYjYwMmQ3NDA3MjQzNjRhYjAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MjU3NmY4MWIyNmRiMmE0ZjAwOTQ3NzM3YmIyNTIxYWRiNmViOTM1YmFkMzcyMGQwMGU4ZTU1OWVkNjRiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY5ODZmOTdiOWIwYzY3MTczZGU2ZWI1YmMwZDllZTJhMDc5MjgwOTZmOWVlMzA5NDk0OGUyMzBiNWUyYmE2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJjODBhMjk5ZjU0NDJkMDYyNmFiZjg3OWQ1N2NkMDE4ZjRhMGU3ODJmNTNjNzM1ZjMyYTZmMDhkMWY5NjJmNyJ9"
         }
       ]
     },
@@ -334,11 +330,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:ab3eaab6558f14690c2c012c2805dccf47305139f1065561e78423eb43ac42ff"
+          "version": "repo-file-v1:sha256:8dad9ee7ae9ca40462edc31ea8f94d1438e4f26e82da8c589e2d7d729e1cd38c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -368,7 +364,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         }
       ]
     },
@@ -386,7 +382,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -459,10 +455,28 @@
           "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
         }
       ]
+    },
+    {
+      "id": "claim_dbff4878e83b486cbd0847a96ca87c45",
+      "statement": "The Kiali source stages a distinct repository-owned ingress NetworkPolicy at Argo CD wave 0 before its wave-1 custom resource disables the operator-generated policy; the rule retains the observed unrestricted-source TCP 20001/9090 contract, and live handoff and enforcement qualification remain open.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/README.md",
+          "version": "repo-file-v1:sha256:22ac78c4a460441d2137cc4d996abb698219b721b0df29ac172de8ab5498b27a"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
+          "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-19T19:09:44.607Z"
   }
 }
