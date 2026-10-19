@@ -35,6 +35,13 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchExpressions:
+              - key: istio
+                operator: In
+                values:
+                  - ingressgateway
+                  - octelium-api-ingressgateway
       ports:
         - protocol: TCP
           port: 443
@@ -42,6 +49,11 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: octelium
+          podSelector:
+            matchLabels:
+              app: octelium
+              octelium.com/component: ingress-dataplane
+              octelium.com/component-type: cluster
       ports:
         - protocol: TCP
           port: 8080

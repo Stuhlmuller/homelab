@@ -164,6 +164,14 @@ still has unreviewed generated policies and broad egress findings. The
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md) records why no
 existing node safely admits the isolated canary.
 
+The source policies now limit cloudflared's private egress to the two routed
+Istio gateways and Octelium ingress dataplane, Harbor metrics ingress to the
+Prometheus Pod, and Harbor/Mastodon gateway ingress to the Istio gateway Pod.
+Before enforcement, recheck live Service selectors, EndpointSlices and Pod labels,
+then prove these paths on the isolated canary, including ambient HBONE and Service
+translation. Mastodon's web and streaming Pods were absent at source review, so
+their allowed path also needs a live canary proof.
+
 Before making policies effective, finish owner/render review, publish every
 fixture and controller image, admit a tainted node with measured memory and
 local storage, and prove allowed and denied traffic plus restart, API-loss,

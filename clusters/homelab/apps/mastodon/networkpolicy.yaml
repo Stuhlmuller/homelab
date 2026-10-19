@@ -89,6 +89,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio: ingressgateway
       ports:
         - protocol: TCP
           port: 3000
