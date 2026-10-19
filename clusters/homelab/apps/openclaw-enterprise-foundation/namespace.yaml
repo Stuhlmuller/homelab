@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+  labels:
+    app.kubernetes.io/part-of: openclaw-enterprise
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw-agents
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    openclaw.dev/namespace-lifecycle: external
+  labels:
+    app.kubernetes.io/part-of: openclaw-enterprise
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-enterprise-worker
+  namespace: openclaw-agents
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: oce-openclaw-tenant-worker
+subjects:
+  - kind: ServiceAccount
+    name: openclaw-enterprise-worker
+    namespace: openclaw-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-enterprise-api-secrets
+  namespace: openclaw-agents
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: oce-openclaw-tenant-api
+subjects:
+  - kind: ServiceAccount
+    name: openclaw-enterprise-api
+    namespace: openclaw-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openclaw-enterprise-api-configuration
+  namespace: openclaw-agents
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: oce-openclaw-tenant-configuration
+subjects:
+  - kind: ServiceAccount
+    name: openclaw-enterprise-api
+    namespace: openclaw-system
