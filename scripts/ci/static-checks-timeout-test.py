@@ -30,6 +30,7 @@ class Timeout(unittest.TestCase):
                          "openclaw-enterprise-foundation-test.py",
                          "openclaw-enterprise-postgres-test.py",
                          "openclaw-enterprise-chart-hooks-test.py",
+                         "openclaw-enterprise-registration-test.py",
                          "openclaw-enterprise-lifecycle-test.py",
                          "openclaw-enterprise-startup-test.py",
                          "openclaw-enterprise-quiesce-test.py",
