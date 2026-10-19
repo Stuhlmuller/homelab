@@ -1986,9 +1986,12 @@ dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
 17:00 datasource mutex timeout. The 19:00 and 20:00 scheduled Jobs each
 finished all eight eligible repositories with no reported errors and one
 exact public canary datasource-key cache hit on distinct Pods using the same
-bound PVC. This proves observed two-Pod reuse for that key, not general cache
-freshness, eligible Harbor discovery, full owner/App policy parity, or write
-safety.
+bound PVC. These restricted-log observations show same-key reuse across two
+Pods, but do not close [T022](../../specs/004-run-renovate-in-cluster/tasks.md):
+at this draft revision, its task record still lacks a durable receipt for
+those Pod UIDs and acceptance of the `v0.0.2` refresh. They also do not prove
+general cache freshness, eligible Harbor discovery, full
+owner/App policy parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing

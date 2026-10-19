@@ -32,7 +32,9 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
+  - id: openwiki-source-a44b67b396abfe9ddff04314
+    resource: repo://specs/004-run-renovate-in-cluster/tasks.md
+generated: { by: "codex", at: "2026-10-19T21:32:39.892Z" }
 verified:
   - by: openwiki/0.7.0
     at: 2026-10-19T22:48:59.937Z
@@ -566,11 +568,14 @@ temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
-probe stops GitHub access. These are local checks. The 19:00 and 20:00 UTC
-scheduled Pods reused the same PVC and each logged one exact public canary
-datasource-key hit with distinct Pod UIDs. The protected `v0.0.2` release was
-published at 20:20 UTC; its normal scheduled refresh, a live cache-failure
-cycle, and next-slot recovery remain to be observed.
+probe stops GitHub access. These are local checks. Restricted logs from the
+19:00 and 20:00 UTC scheduled Pods showed one exact public canary
+datasource-key hit each, on distinct Pod UIDs using the same PVC. These
+observations do not close [T022](../../specs/004-run-renovate-in-cluster/tasks.md):
+at this draft revision, its task record still lacks a durable receipt for
+those Pod UIDs and acceptance of the `v0.0.2` refresh. The protected release
+was published at 20:20 UTC. A live cache-failure cycle and next-slot recovery
+also remain open.
 
 ## Staged independent application recovery (HOME-2)
 
