@@ -45,7 +45,7 @@ python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-hand
 The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
 `stinkyboi.com`** in Tailscale DNS. Enable **Use with exit node** for clients
 using an exit node. Do not set a global nameserver. The resolver keeps private
-answers for all 27 approved names, including the apex. The separate
+answers for all 29 current approved names, including the apex. The separate
 [public app subdomain cutover](../specs/005-retire-public-app-dns/quickstart.md)
 retires A/AAAA/CNAME records for only the 26 approved non-apex names after
 ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls, and callbacks

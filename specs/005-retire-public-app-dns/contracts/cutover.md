@@ -12,8 +12,9 @@ scripts/tailscale-private-dns.sh --retire-private --execute --expected-sha REVIE
 `--dry-run` may read Cloudflare and authoritative DNS but cannot write records.
 `--execute` may delete only A, AAAA, or CNAME records whose exact owner is one
 of the 26 approved non-apex names in the fixed migration snapshot. The apex
-`stinkyboi.com` remains in the 27-name private resolver approval but is never
-selected for public deletion. The helper has no publication or restoration
+`stinkyboi.com` remains in the fixed first 27 migration names and the current
+29-name private resolver approval but is never selected for public deletion.
+The two later Enterprise names are also excluded. The helper has no publication or restoration
 mode. Its private evidence file must be outside the repository.
 
 ## Required pre-write evidence
@@ -22,9 +23,10 @@ mode. Its private evidence file must be outside the repository.
    the helper, preflight, and inventory exist in that revision.
 2. The observed DNS Service tailnet IPv4 belongs to the online signed
    `homelab-dns` peer. The owner has enabled the restricted `stinkyboi.com`
-   nameserver. Ordinary client OS lookups resolve all 27 approved names to
+   nameserver. Ordinary client OS lookups resolve all 29 current approved names to
    private Traefik, including the apex and a Cordium wildcard child; direct
-   UDP/TCP resolver answers and serving canonical HTTPS routes pass. A backend
+   UDP/TCP resolver answers and the original 27 migration HTTPS routes pass.
+   The staged Enterprise backends have separate readiness. A backend
    error for an intentionally stopped app is accepted only when reviewed source
    and the live Deployment both specify zero replicas.
 3. Fleet setup denial and device check-in, uncached Harbor pulls on every

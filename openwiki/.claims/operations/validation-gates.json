@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:379ae9f5756077184411c869c41b6860360394074d7be73e28c5ec83c682eaa1",
+  "pageVersion": "sha256:af785b43e23a62a7bb7c41194b9502011cbff64b00ab5892c15277dd4ff27aec",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -94,7 +94,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md",
-          "version": "repo-file-v1:sha256:c7d9abce6ccd6402ce436d3c91992edd39775d0f6736f97783e67677d1323569"
+          "version": "repo-file-v1:sha256:d16a0324bae8a657783ee9e0491da50e14e46cd10da99aa07137fda45e2b34fb"
         },
         {
           "resource": "repo://scripts/ci/multica-desktop-connect-test.py",
@@ -106,7 +106,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:5b5eeeac3cd543d8264aa30e7aedc66b30caa6f0c96380f8e17210b8a149ce8d"
+          "version": "repo-file-v1:sha256:9a09c9fe6c0d07cd5e268b375567f91fe6876a028953d1f5a1c37543a89a193e"
         }
       ]
     },
@@ -148,7 +148,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:5b5eeeac3cd543d8264aa30e7aedc66b30caa6f0c96380f8e17210b8a149ce8d"
+          "version": "repo-file-v1:sha256:9a09c9fe6c0d07cd5e268b375567f91fe6876a028953d1f5a1c37543a89a193e"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -156,7 +156,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:40d64c03108b4b54d5d9daa22286422127493b02cd8023452c31732a52ce0708"
+          "version": "repo-file-v1:sha256:1d84e5cba1674433f3628a4d980adef39e8cbc87a552719b495d6408b55846bd"
         }
       ]
     },
@@ -180,19 +180,19 @@
     },
     {
       "id": "claim_208b0475f0894dc0a15e62f0943aeb0a",
-      "statement": "The private DNS preflight accepts AFFiNE 500/502/503 only with reviewed and live zero replicas, removes the stopped OpenClaw 502 exception, requires deployed Traefik route/TLS parity, and rejects other application 5xx responses; published ingress remains IPv4-only.",
+      "statement": "The private DNS preflight accepts AFFiNE 500/502/503 and legacy OpenClaw 502 only with reviewed and live zero replicas; it requires deployed Traefik route/TLS parity and rejects other application 5xx responses. Retirement route checks cover the fixed 27 migration names, while the full check probes staged Enterprise routes with a matching Agent host and rejects edge 404.",
       "evidence": [
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:1d94f8fee50916900530d36fccecfe2f9eda51a098b4a1f14e206c5116f6a578"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L136-L265",
+          "version": "repo-lines-v1:sha256:91f2f9af0751cbb6a1e58c6f904103ce73cde20834a0d7a5b0955b1927909fa9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMwLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJiM2IxOTczZGMyM2YwMGU5ZjVmM2E5NDJiZDMxNDg2NmJkODU3N2U3MDNmMjczMWVlZTM1MGJhNjk2ZmM2NDE1IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI5ZDRkNDNmYmJiZTQwZmI3NGQ0ZDgzOWVlZjY1NDJkODRkMmU1MGQ0NTU1Yjg0Y2VlYTcwZGY3MWM5MmFiYWRlIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJmNzg1NTNlMDkyZTE5NmNlZGE2MmM2ZmMzOTEyZTQzYTlkNWMxOWM5ZWFmMmQ4ZmI4ZjYyNmVlOTBlYjlhZGM2IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJjZGZjNjU2MWRlODFlZDAxZjFlYzhhYTZlZTI1YzA0NGQwN2FmNzkwMmQ4NmRlNzk0ZTQzNmIxOTcwMzg5YmM1In0"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:5b5eeeac3cd543d8264aa30e7aedc66b30caa6f0c96380f8e17210b8a149ce8d"
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L147-L191",
+          "version": "repo-lines-v1:sha256:fe14d77452b642fc870e814cadb2b3f81d1491f70cd2a4069a3dbaad5265573f:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5NjdiY2VjMmZiMTRhMzllNWMwMDA2Zjk0ZGI4MDA2MDcwYWMxNDNhYjI2N2E4M2Q0NjZkNTkxNDI1ODQzNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1YTEyZDAxYWQ3ZTExZWVkMDFiOWM5NGM1MjdhYjc5ZDk3ZjRiODRkODg1NzdiOTQ3MDQ2ODg0ZDcwMjFjZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQzYjQ0MzYxODIzZmFlY2RmZTZmYzZjZTFjZDExMjdhNGNkNDY2MDA3ODNlM2E5ODE0YWRiMjUyZTQ5ZDlhNTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYjBkZGJkNzgzY2Q0YzNjNWY4MzkxMjI0MmEyMjcwM2RmYzJiNTFkMDYwYTdjMTU1YWMxZjY3Y2FiMmE4MmYifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:40d64c03108b4b54d5d9daa22286422127493b02cd8023452c31732a52ce0708"
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L369-L446",
+          "version": "repo-lines-v1:sha256:42c58f7ce1284a3b32ba7774a41cdf333f7b275e6ca26d4f8c7bf21a590ff903:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4OTU1NDFmZjJmZTdjMzExYmU0ZDc2NzNmODQ4NGU3OGVmMDRmMzE1ZGQ1N2E0Njg3Mzg1ZDc5YTU2YmI4ZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmYTIwODU4YWY2NDI0N2FhNDdmMzFkMWUwMDQ0ZjcxMDc1NmJkMjc0Y2Y1MmYwODk3ZjgxNTU3YzU1MjViZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNGFhOGYwMWQ2OTU4YTgwYWEwMmY0NDQ2ZGY1NmNjOGZlYTA5MzliYzFlZTk2NTM5YTkyMjY2NDRlNmY5ODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -810,31 +810,23 @@
     },
     {
       "id": "claim_798d1d68cfd34164a9cdf0c4c2ee504f",
-      "statement": "Feature 005 separates 26 public app subdomain retirement targets from 27 private resolver names. Before any DELETE, the helper scans the complete Cloudflare zone and fails closed on relevant child NS delegation, including a wildcard NS covering a target, or an out-of-set covering wildcard A/AAAA/CNAME. It checks authoritative answers without traversing child zones and rereads full target fields so content, proxy, or TTL drift blocks. Per-name off-tailnet, DNS-01, preserved-record, post-TTL absence, and private HTTPS gates remain required.",
+      "statement": "Feature 005 separates 26 public app subdomain retirement targets from 29 current private resolver names, preserving the fixed first 27 migration routes as the retirement HTTPS gate. Before any DELETE, the helper scans the complete Cloudflare zone and fails closed on relevant child NS delegation or an out-of-set covering wildcard A/AAAA/CNAME. It checks authoritative answers and rereads full target fields so drift blocks deletion; per-name caller, DNS-01, preserved-record, post-TTL absence, and private access gates remain required.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L356-L373",
-          "version": "repo-lines-v1:sha256:5988c21070999a35b307e015484ac66e1dc6848e2ab2c404e5fec6bd1ca36a67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZGIzMjVjMTA3NzhiMTVmMTlkYzIwMDJmMDE2ZTYyODM3ZjFjYjQzNzM1YmRiZWEwOWY5NjlmMjhhYmQzZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5N2M5ZWMzMDhmNjIwYTEyYmE5YjM3Y2U4ZmJkZWVhMDkzYTA2YjRiM2RhZTc5YmQ2ZjIzZDJiODAwZDcyODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjODE5MmFlZGY5YTg1Nzg4ZDk2YjcxM2IyZDA4ZDU3MjhjNThhZTU1MDhjY2IzMjlkMmY3NzUxNjhjODJhNGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3M2FjYWQ5Zjk5NmJjNWFhYzQ4MWE4NzlmN2Y4NjIxM2JhMDhhYWFhYjIxNWY0YTc0Y2Y3ZDhkYmU5OGMyYmUifQ"
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L369-L446",
+          "version": "repo-lines-v1:sha256:42c58f7ce1284a3b32ba7774a41cdf333f7b275e6ca26d4f8c7bf21a590ff903:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4OTU1NDFmZjJmZTdjMzExYmU0ZDc2NzNmODQ4NGU3OGVmMDRmMzE1ZGQ1N2E0Njg3Mzg1ZDc5YTU2YmI4ZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJmYTIwODU4YWY2NDI0N2FhNDdmMzFkMWUwMDQ0ZjcxMDc1NmJkMjc0Y2Y1MmYwODk3ZjgxNTU3YzU1MjViZjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmNGFhOGYwMWQ2OTU4YTgwYWEwMmY0NDQ2ZGY1NmNjOGZlYTA5MzliYzFlZTk2NTM5YTkyMjY2NDRlNmY5ODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L591-L600",
-          "version": "repo-lines-v1:sha256:40ba51922a2c9e9d43ae4cbb553e700f490fa338b7fab55363725a5bc3468be3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTI0ZWUwMmJlMTU4ZDA0ZTM2NDEyMWI5YzI0Y2M2MjQwODRmZjNlZTQ5MzhlYjJhYjk4MGM5NjJkMzY1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMzNmNGZlNDVlNjUzMWFhNmI3MzdlZGVjMDFlM2ViZjhlYmY0OTQxNTA2NjY1OGFiNzUxNDQzMjMzOWM5NDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxY2ZmZmY4NzkyZjllNDNmZTdiM2Y4ZTExMThlMjQwYTZmOTUzNWQyMTNiMGZkYjZjZDc4MGNiM2Q4ODQ2MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMWQzOTNmZGQyNDhlYjZlY2E3NjZmNGIwNDVkMTlhMDNhOTQzNzliNWE4MGU5MzQwOTM0ZTBkODg0ODQzZDEifQ"
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L48-L68",
+          "version": "repo-lines-v1:sha256:7aaf280e81454bd40ab90aadd7a32b9667bc7b6b073433dbfde5f8bd3582c365:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2OWJjNjFiODkwNGQ3ZmFlOGI2ODczYTc5MDRmZjg4YzM1MjFlZWYwZWQyNjY5YTc0MTFhMWNiMzU1ZWNhZmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNGE0ZmFlN2Y0Nzk3YTZhN2ZkNGZjNDI5NzJhZDUxZTMzZjhhNjcwMjRhYzY2NDdmZTU4OGEwZDNkYWFiNjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2ZmE2YzI0ZWY3ZjA2YjdlMjljNWU0YjU0YzVjMTYyZGJmNWE2OTljMWI5ZWJmMmM0Y2Q1OGIyMjMwZjk0MWYifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py#L266-L310",
-          "version": "repo-lines-v1:sha256:8e0cec6fb3c3f236740580d63e9890647a6cf6b3af101887ac2dcfd4496c9f6c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjlhOTM2ZDE2NDAyZDk0MmUyZDVlM2ZmNjBiMTM3M2E5YTk4NWZhOTBkMjcwMWQ0MDcwZDNhZTJmZDA0MzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMzZiOGFkOGQ1MzFhZTlmMzZjZmJjYmViZTFhNGU5OTFmZjgzNTAxZmJmMzA2ODA1MDNmODlmZjYwYjllZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkNmQzMTE3NmFjZDg3MDA3MTY2MThiOWZmZDA2MDhjNDdlNTVkYzI2NDNkYWIyZGIyYjU4NjE5OGIyMjBjZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwMWIyMmEyNDA4ODUwYjc0ZGY5N2QwNGZlNzMyNTZmNjk3YWIxYzg1NjcwMjFiYzkxNzM2MTA1NGQ0NTJiNDcifQ"
+          "resource": "repo://scripts/tailscale-private-dns.sh#L129-L217",
+          "version": "repo-lines-v1:sha256:63e26e158671263782d911dc942420cde9549193a0cd25a8fb79e6387f520689:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjg1M2JhMWQ4NTU2NmU2NTg5YjlmNDFhNThkZDlkYTU4NTkwZTQwODcwZGE4MDI1YjM2NjljYTE2NTcxYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmNTQ3NmUxZjBlMjBhN2EwYzkwZTY2ZWVjODJiMTdiZjAwN2U1MDZlMWU0NWI2NmE1MWQxMDQ0M2Q0MDM2NmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNGNlYmM4MDRkZjI1Y2JlMWFjYzlhZDg4MmUwNzg3ZDA2NDljZDRlYTI2YzBiZTQyNjQxN2QzOTQ0MzE2MDIifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns.sh#L129-L185",
-          "version": "repo-lines-v1:sha256:20c11ae14effa0d01a2aeff59ced04119125ecced0d143be414bf9b2c0926e06:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjg1M2JhMWQ4NTU2NmU2NTg5YjlmNDFhNThkZDlkYTU4NTkwZTQwODcwZGE4MDI1YjM2NjljYTE2NTcxYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjQwYWUxZjk0MzNmZGEyOWViMDAyZmIzMjUwNDU2OGMxYzAwODkyNTA3NzRmM2UzNzNlNzkwMmMzMjhmMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmNTQ3NmUxZjBlMjBhN2EwYzkwZTY2ZWVjODJiMTdiZjAwN2U1MDZlMWU0NWI2NmE1MWQxMDQ0M2Q0MDM2NmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3ODg1ZGZlNmI0YzE3NzE5NTEyZDNmZDZhMWJmN2FiZmYwYzk4NDNkNjc2OWJiODM3NmYzN2U2Y2Q3Zjk1NGYifQ"
-        },
-        {
-          "resource": "repo://scripts/tailscale-private-dns.sh#L207-L217",
-          "version": "repo-lines-v1:sha256:3da955737e0d30d3056b88a7aad4f95e9dbb3d65844a8ea376a94f34647a0a41:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5ZGEwNTFkN2VjNjk2MTcyNjVlNDQyM2RjMWEzNTk0OTUyMDVlYjRkYjA5YTlkZjMzZDVlNzRjNmJkY2ViZjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkMmQxYjIwZDNjYjJiODMxMjViOWJjN2MyM2NkM2QzZWVjODk0ZWRiMGI2MWY2NjkyNDMxMGY4MDY0YjU0NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQyNGNlYmM4MDRkZjI1Y2JlMWFjYzlhZDg4MmUwNzg3ZDA2NDljZDRlYTI2YzBiZTQyNjQxN2QzOTQ0MzE2MDIifQ"
-        },
-        {
-          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L20-L88",
-          "version": "repo-lines-v1:sha256:799d5fe07072d35726b04dd9847ca9f4ec92b4cbe26b8cc57d8594626fdde9dd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkODFkZjFlY2VlY2Y1OWFkOThkZmFjYzgwYWExMTY5MGM2ZGYxNzA4ZjBlYmQwYWYyZTcwNWJjZGQyNDkwYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzNWUzMTcwOTczNWU4MmU4YmFjOGJhM2Y2NWI1MjNhMGU4ZmMzNWM3MzE1OTlhNDhmMjIyYTE5ZTBlNTZkNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3MTJkMmFmMmFiMTk2MTcxMDVlMjI3MTQ1MjA2Mzc0NjA5ZWVkZTA2YWFmMjI5OGNiM2FjZDg4MDAxZGEyNjcifQ"
+          "resource": "repo://specs/005-retire-public-app-dns/contracts/cutover.md#L10-L94",
+          "version": "repo-lines-v1:sha256:7f1cf3b9c71602f9d85c969d376a1821aa8570e3014d113ad3a93de7ab7aca2d:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzA2YzU2MWQ1YzMyNzM0MzY4NTI2OGE0NmIzMzkxZjM5OThlZWU4OTBkMmJlNTFmMGQyMWNjNGE1M2FlNmQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjNmNkYmMzMWUyNWI0YTUxMzQxZWU0NDVhNDM0YjE2MzkyMjM1MTM2YWIxNWI1NDE1YmIxNGJiM2RhZTE2YjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM0NmY1OTJkNzVkMTk5NjU4ZDQ4NDk0YzMxYjNiM2U2OTUwM2U0YjU1OGMxYjViMzdjNWNiOTM1ZTljODc0ZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZlNTcyYjAwOTRhODczNGI3MjkzNWE3ZmM2Y2IxMDRmZTBmZjhmZDg3MDFlZmRkOTgyZGI4ZDdiMmI5ZDFhZWEifQ"
         }
       ]
     },
@@ -1069,6 +1061,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T14:58:52.418Z"
+    "at": "2026-10-19T15:59:51.049Z"
   }
 }

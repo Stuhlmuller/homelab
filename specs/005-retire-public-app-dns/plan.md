@@ -7,9 +7,10 @@ records after private access passes. The public zone and apex remain.
 
 ## Summary
 
-Narrow the existing guarded Cloudflare retirement helper from all 27 approved
-names to the 26 non-apex names. Keep the 27-name private resolver and Traefik
-route declarations unchanged. Capture a fresh exact Cloudflare baseline,
+Narrow the existing guarded Cloudflare retirement helper from the fixed first
+27 migration names to the 26 non-apex names. Keep private DNS for all 29
+current names and HTTPS retirement readiness for the original 27 routes.
+Capture a fresh exact Cloudflare baseline,
 confirm normal tailnet DNS/HTTPS and caller paths, execute only from reviewed
 `main`, then prove public absence after the old TTL while public apex, mail,
 certificate validation, and unrelated names continue working.
@@ -45,7 +46,7 @@ maximum authoritative TTL. Existing private resolver TTL/cache limit remains
 
 **Constraints**: Preserve the public zone, all apex records including A,
 any existing CAA and mail records, four legacy names, Mastodon and other
-unrelated names. Keep 27 private answers. Remove only exact A/AAAA/CNAME
+unrelated names. Keep 29 current private answers. Remove only exact A/AAAA/CNAME
 records for 26 names; fail before a write on drift or missing evidence;
 do not provide a public republishing fallback.
 
@@ -69,14 +70,17 @@ again after Phase 1 design.*
 No exception or unresolved technical clarification is needed for this scope.
 Live acceptance evidence is a required execution gate, not assumed by this
 plan. The 004 feature's all-27 public retirement wording is superseded only
-for the public-record cutover; its 27-name private resolver contract remains.
+for the public-record cutover; its original 27-name private approval remains
+inside the current 29-name inventory.
 
 ## Design
 
-1. **Separate sets:** Retain the fixed 27-name inventory and digest. Derive
-   the retirement set as the ordered inventory without exact apex
-   `stinkyboi.com`, and validate its 26-name membership. Keep private DNS and
-   HTTPS readiness probes on all 27. Accept a stopped backend only when its
+1. **Separate sets:** Retain the fixed first 27 migration names and digest. Derive
+   the retirement set as those ordered first 27 entries without exact apex
+   `stinkyboi.com`, and validate its 26-name membership. Keep private DNS
+   probes on all 29 current names and retirement HTTPS readiness on the first
+   27 routes. The two staged Enterprise routes have a separate full route check.
+   Accept a stopped migration backend only when its
    reviewed workload declaration and live Deployment both specify zero replicas;
    keep serving routes strict.
 2. **Narrow the helper:** Use the 26-name set for Cloudflare deletion-target
@@ -131,10 +135,10 @@ specs/005-retire-public-app-dns/
 ### Source Code (repository root)
 
 ```text
-scripts/config/tailscale-private-dns.json   # 27-name snapshot, unchanged
+scripts/config/tailscale-private-dns.json   # fixed first 27 plus two staged names
 scripts/tailscale-private-dns.sh             # exact 26-name Cloudflare preview/delete
 scripts/tailscale-private-dns-check.py       # narrowed evidence and TTL preflight
-scripts/tailnet-dns-check.py                 # read-only 27-name health check, unchanged
+scripts/tailnet-dns-check.py                 # read-only current-name health check
 scripts/ci/tailscale-private-dns-test.py     # mock cutover and no-write safety cases
 docs/networking-tailnet-ingress.md           # current DNS model and cutover boundary
 clusters/homelab/apps/traefik/CUTOVER.md     # operator procedure
@@ -151,7 +155,7 @@ Tailscale policy, or Kubernetes manifests for this scope.
 
 1. Merge the narrowed helper, tests, and affected current guides through the
    normal protected PR workflow. Confirm local validation at the reviewed SHA.
-2. From clean `main`, gather fresh read-only live evidence for all 27 private
+2. From clean `main`, gather fresh read-only live evidence for all 29 private
    answers, exact public target records, wildcard/CNAME/delegation conflicts, preserved
    public records, and critical caller paths. Preview the 26-name deletion
    into a new private evidence file; do not execute if a broader public

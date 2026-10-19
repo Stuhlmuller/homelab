@@ -609,9 +609,9 @@ scripts/octelium-gateway-dns.sh --dry-run
 ```
 
 The old public application DNS publisher is retired. The private resolver
-follows reviewed Traefik routes and its Service annotation for all 27 approved
-names; [public-record retirement](../specs/005-retire-public-app-dns/quickstart.md)
-selects only the 26 non-apex app subdomains.
+follows reviewed Traefik routes and its Service annotation for all 29 current
+approved names; [public-record retirement](../specs/005-retire-public-app-dns/quickstart.md)
+selects only the 26 non-apex names from the original 27-name migration set.
 
 ## Octelium Enterprise Package
 

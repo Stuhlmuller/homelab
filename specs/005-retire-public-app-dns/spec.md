@@ -74,9 +74,15 @@ As the operator, I want a precise public-record baseline, evidence of affected c
 
 ### Functional Requirements
 
-- **FR-001**: The retirement set MUST be the 26 approved non-apex names in `scripts/config/tailscale-private-dns.json`, including `cordium.stinkyboi.com` and the `*.cordium.stinkyboi.com` wildcard. The apex, the four listed `retired_hostnames`, and the planned public Mastodon name MUST be excluded.
+- **FR-001**: The retirement set MUST be the 26 non-apex names in the fixed first 27 entries of `scripts/config/tailscale-private-dns.json`, including `cordium.stinkyboi.com` and the `*.cordium.stinkyboi.com` wildcard. The apex, later private names, the four listed `retired_hostnames`, and the planned public Mastodon name MUST be excluded.
 - **FR-002**: The retirement MUST remove only public A, AAAA, and CNAME records for that set. It MUST preserve the public DNS zone, all existing public apex records, other record types, and unrelated public names.
-- **FR-003**: Retirement MUST wait for recorded evidence that ordinary tailnet clients resolve all approved names privately through their normal DNS path and can use serving HTTPS routes and access restrictions. An intentionally stopped app MAY return a backend error only when reviewed source and live state both declare zero replicas; active routes MUST still pass.
+- **FR-003**: Retirement MUST wait for recorded evidence that ordinary tailnet
+  clients resolve all current approved names privately through their normal DNS
+  path and can use the original 27 migration HTTPS routes and access
+  restrictions. Staged private names outside the retirement set have separate
+  backend readiness. An intentionally stopped migration app MAY return a backend
+  error only when reviewed source and live state both declare zero replicas;
+  active migration routes MUST still pass.
 - **FR-004**: Retirement MUST wait for a reviewed live public-record baseline, prior maximum cache lifetime, exact proposed changes, and accepted impact on existing off-tailnet callers and special paths.
 - **FR-005**: Before deletion, the cutover MUST verify that the selected
   Cloudflare API zone is publicly delegated, inspect complete public-zone
@@ -101,7 +107,7 @@ As the operator, I want a precise public-record baseline, evidence of affected c
 
 ### Key Entities
 
-- **Approved app subdomain**: One of the 26 non-apex names in the current private-app inventory, including the Cordium wildcard. Its existing HTTPS destination remains unchanged.
+- **Approved app subdomain**: One of the 26 non-apex names in the fixed first 27 migration entries, including the Cordium wildcard. Its existing HTTPS destination remains unchanged.
 - **Retirement set**: The approved app subdomains whose public A, AAAA, and CNAME records are selected for removal.
 - **Preserved public record**: An apex record, another record type, or an unrelated public name that remains available after cutover.
 - **Cutover evidence**: The reviewed live baseline, exact proposed record changes, private-client and caller checks, previous cache lifetime, and post-retirement results.
@@ -111,7 +117,7 @@ As the operator, I want a precise public-record baseline, evidence of affected c
 ### Measurable Outcomes
 
 - **SC-001**: After the previous maximum cache lifetime, public DNS gives no A, AAAA, or CNAME answer for 26 of 26 retired names and a concrete Cordium wildcard child.
-- **SC-002**: An ordinary tailnet client receives the intended private answer for 27 of 27 approved names, including the apex, and representative HTTPS destinations and route restrictions pass after retirement.
+- **SC-002**: An ordinary tailnet client receives the intended private answer for 29 of 29 current approved names, including the apex and two staged Enterprise names; the original 27 migration HTTPS routes and restrictions pass after retirement.
 - **SC-003**: Zero existing public apex records or unrelated public records are removed or unintentionally changed; the public DNS-01 readiness checks in FR-007 pass, existing application Certificates remain Ready, and intentionally public service checks pass.
 - **SC-004**: In a private-resolver outage check, sampled retired subdomains return no public app address; restoring private resolution requires no public app record restoration.
 - **SC-005**: The operator can review the exact record changes and the required client, caller, and cache evidence before deletion; a changed baseline or missing evidence blocks the cutover.
