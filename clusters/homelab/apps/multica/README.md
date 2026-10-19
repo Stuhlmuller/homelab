@@ -18,9 +18,10 @@ Multica attribution in Langfuse. No ChatGPT/Codex OAuth runtime or credential is
 installed in this workload.
 
 On first boot, `runtime/bootstrap.py` signs in with the fixed-code key from
-`multica-backend-secrets`, creates a renewable 90-day personal token, and
-reuses it on later boots. The daemon has no database credentials, Kubernetes
-token, host sockets, or other application's home directory.
+`multica-backend-secrets` and creates a 90-day personal token. The pinned
+upstream daemon renews that token in place when fewer than seven days remain;
+revoked or expired tokens fail closed. The daemon has no database credentials,
+Kubernetes token, host sockets, or other application's home directory.
 
 After Argo sync:
 
