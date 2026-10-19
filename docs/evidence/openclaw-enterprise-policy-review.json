@@ -1264,8 +1264,42 @@
     "Review the nine all-source ingress rules, including eight TCP/15008 mesh rules and generated monitoring/kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
     "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
     "Review all 18 strict wildcard-egress findings, including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
+    "Recheck the six source-corrected DNS policies against live specs and prove TCP/UDP Service DNS through exact CoreDNS Pod peers on the isolated canary before enforcement.",
     "Qualify the full allowed/denied and lifecycle matrix on an isolated tainted Talos canary, then each expanded node; current render equality alone is insufficient."
   ],
+  "repositoryDnsCorrection": {
+    "checkedAt": "2026-10-19T17:47:06+00:00",
+    "decision": "Limit the six source-owned TCP/UDP 53 egress peers from every kube-system Pod to the CoreDNS Pods selected by the live kube-dns Service.",
+    "dnsReferenceSha256": {
+      "clusters/homelab/platform/dns/coredns-deployment.yaml": "b374aca7b1ae9a9733511c0b2250fdcc1cf13da18cb6e89e6473addc50d0ff34",
+      "clusters/homelab/platform/dns/coredns-service.yaml": "4478aceefb861cc9792a89a6f89d9812e8439b9eed20baaa7994134c9bb88921"
+    },
+    "liveServiceCheck": "Read-only kube-dns Service selector was k8s-app=kube-dns with UDP and TCP 53; repository CoreDNS Service and Deployment declare the same selector.",
+    "policies": [
+      "octelium/cordium-genesis",
+      "octelium/cordium-cluster-config",
+      "harbor/harbor-postgres-backup",
+      "mastodon/mastodon-datastores",
+      "nix-builder/nix-builder",
+      "octelium-public/cloudflared-egress"
+    ],
+    "sourceRenderSpecSha256": {
+      "octelium/cordium-cluster-config": "3c44ccbfa0a258d2966889ef7b87a6184d4978c497f28af5ce31a07255b719ab",
+      "octelium/cordium-genesis": "3c117cd69806f379c4f31b6eda9914251c78630a4c4e1150f75137bc7ce8354c",
+      "harbor/harbor-postgres-backup": "7f542a30bb0fcf91ef254a880111589f25567ee55e5291d8fc208cc8d916d6f3",
+      "mastodon/mastodon-datastores": "0c356964006d20969aaa6461742d422f6abee0dbed56dc1cac7ac3781f2b3a42",
+      "nix-builder/nix-builder": "29bf38d6a0d47af9d5595650476176f4d0d16ad3bc9d0b5e4ca3d1cc27fc921a",
+      "octelium-public/cloudflared-egress": "132830347f268b9600aea18717b0458351a92ad082b604daf35c259161a09be4"
+    },
+    "sourceSha256": {
+      "clusters/homelab/apps/cordium/networkpolicy.yaml": "ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246",
+      "clusters/homelab/apps/harbor/networkpolicy.yaml": "873b48f0fb79646a85a0813b65e8854baf5501927ddb8853e26b7a4ebc574ea6",
+      "clusters/homelab/apps/mastodon/networkpolicy.yaml": "3b040f069a6808fe0b02809993c31dc055b15ecf67df365d28d3f8dc2fcec6d4",
+      "clusters/homelab/apps/nix-builder/networkpolicy.yaml": "3ef10e43a5e4942ad69b81c28936ec78b8e9bc298c80f606ef89f7c933a063ab",
+      "clusters/homelab/apps/octelium-public/networkpolicy.yaml": "6a840d9f711aac333fed74444fc6d0256e77ec4b192cfd5a0ed9f5dc45779ac2"
+    },
+    "status": "Source render asserted; baseline live/source equality is historical. Live reconciliation and enforced TCP/UDP DNS traffic remain unverified."
+  },
   "schemaVersion": 1,
   "scope": "Read-only live baseline; 48 repository Kustomize full specs match after empty-list normalization. Generated owner renders, ingress intent and live traffic are unverified.",
   "sourceRenderAudit": {
