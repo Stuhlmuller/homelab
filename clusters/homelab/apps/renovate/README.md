@@ -239,7 +239,14 @@ visibility and effective policy, owner inventory, and a GitHub PR/outcome
 verifier must be declared before seeding or claiming SC-002. The current
 inventory Job still reads the repository cache and does not consume this report.
 Keep both Jobs omitted/suspended and the observer suspended until the producer,
-review-input, and outcome-verification paths are joined and reviewed.
+review-input, and outcome-verification paths are joined and reviewed. A
+one-shot report cannot establish outcomes across seven days. During that
+window, a reviewed schedule must retain per-run reports and bind repository
+heads before and after each scan. GitHub PR `created_at` proves only the first
+proposal, not a later version added by synchronize; the verifier must check a
+version-bound initial diff or retain the first read-only observation of that
+version in the PR diff. A deferral needs the matching branch result, receipt
+completion time, and effective-policy evidence. Missing proof stays unknown.
 
 Before starting this CronJob, freeze a private inventory from the pinned
 Renovate image's actual repository-extraction cache. Full dry-run skips cache
