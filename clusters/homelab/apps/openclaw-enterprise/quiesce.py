@@ -90,7 +90,8 @@ def scale_zero(component, deployment):
     metadata = scale.get("metadata", {})
     if metadata.get("uid") != deployment["metadata"]["uid"]:
         raise RuntimeError(f"{deployment_name(component)} scale identity changed")
-    if not isinstance(metadata.get("resourceVersion"), str) or not metadata["resourceVersion"]:
+    if (not isinstance(metadata.get("resourceVersion"), str) or
+            metadata["resourceVersion"] in ("", "0")):
         raise RuntimeError(f"{deployment_name(component)} scale lacks resourceVersion")
     if scale.get("spec", {}).get("replicas") not in (0, 1):
         raise RuntimeError(f"{deployment_name(component)} scale replicas are outside {{0,1}}")

@@ -106,7 +106,7 @@ class QuiesceContract(unittest.TestCase):
         self.assertEqual(fake.deployments["worker"]["spec"]["replicas"], 1)
 
     def test_missing_scale_resource_version_blocks_before_writes(self):
-        for version in (None, ""):
+        for version in (None, "", "0"):
             with self.subTest(version=version):
                 fake = FakeAPI(scale_version=version)
                 MODULE.api, MODULE.pods = fake, lambda: []
