@@ -94,3 +94,17 @@ test('observer requests only read-scoped GitHub App permissions', async () => {
     global.fetch = originalFetch;
   }
 });
+
+test('pinned Renovate image package path resolves without its shell wrapper', () => {
+  const originalExists = fs.existsSync;
+  const originalRealpath = fs.realpathSync;
+  const imagePackage = '/usr/local/renovate';
+  fs.existsSync = (file) => file === `${imagePackage}/dist/modules/datasource/api.js`;
+  fs.realpathSync = (file) => file === imagePackage ? imagePackage : originalRealpath(file);
+  try {
+    assert.equal(observer.renovateRoot(), imagePackage);
+  } finally {
+    fs.existsSync = originalExists;
+    fs.realpathSync = originalRealpath;
+  }
+});

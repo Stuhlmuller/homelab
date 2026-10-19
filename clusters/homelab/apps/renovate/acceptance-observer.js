@@ -181,7 +181,8 @@ async function readToken() {
 }
 
 function renovateRoot() {
-  for (const candidate of ['/usr/src/app/node_modules/renovate', '/usr/local/lib/node_modules/renovate']) {
+  for (const candidate of ['/usr/local/renovate', '/usr/src/app/node_modules/renovate',
+    '/usr/local/lib/node_modules/renovate']) {
     if (fs.existsSync(path.join(candidate, 'dist/modules/datasource/api.js'))) return fs.realpathSync(candidate);
   }
   for (const directory of (process.env.PATH || '').split(path.delimiter)) {
@@ -276,4 +277,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { selectSample, recordPoll, aggregate, readToken, datasourceApi };
+module.exports = { selectSample, recordPoll, aggregate, readToken, renovateRoot, datasourceApi };
