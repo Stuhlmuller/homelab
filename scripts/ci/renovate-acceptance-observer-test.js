@@ -47,18 +47,27 @@ test('sample freezes every class and source visibility, excluding the controlled
 test('only healthy upstream polls advance last-absent brackets', () => {
   const ledger = observer.selectSample(inventory());
   const item = ledger.sample[0];
-  const at = ['2026-10-18T00:00:00.000Z', '2026-10-18T00:15:00.000Z', '2026-10-18T00:30:00.000Z'];
-  const result = (versions) => new Map([[item.key, { releases: versions.map((version) => ({ version })) }]]);
-  assert.equal(observer.recordPoll(ledger, result(['1.0.0']), at[0]).failed, 2);
-  assert.equal(observer.recordPoll(ledger, new Map(), at[1]).failed, 3);
-  assert.equal(observer.recordPoll(ledger, result(['1.0.0', '1.1.0']), at[2]).events, 1);
-  assert.deepEqual(item.events, [{ version: '1.1.0', lastAbsent: at[0], firstPresent: at[2] }]);
+  const baselineStart = '2026-10-18T00:00:00.000Z';
+  const baselineEnd = '2026-10-18T00:02:00.000Z';
+  const failedAt = '2026-10-18T00:15:00.000Z';
+  const firstStart = '2026-10-18T00:30:00.000Z';
+  const firstEnd = '2026-10-18T00:32:00.000Z';
+  const result = (versions, startedAt, finishedAt = startedAt) =>
+    new Map([[item.key, { response: { releases: versions.map((version) => ({ version })) },
+      startedAt, finishedAt }]]);
+  assert.equal(observer.recordPoll(ledger, result(['1.0.0'], baselineStart, baselineEnd), baselineEnd).failed, 2);
+  assert.equal(observer.recordPoll(ledger, new Map(), failedAt).failed, 3);
+  assert.equal(observer.recordPoll(ledger, result(['1.0.0', '1.1.0'], firstStart, firstEnd), firstEnd).events, 1);
+  assert.deepEqual(item.failures, [{ at: failedAt, status: 'missing-observation' }]);
+  assert.deepEqual(item.events, [{ version: '1.1.0', lastAbsent: baselineStart,
+    firstPresent: firstEnd, ambiguous: true }]);
   assert.equal(observer.aggregate(ledger).bracketedEvents, 1);
+  assert.equal(observer.aggregate(ledger).ambiguousEvents, 1);
   const absent = '2026-10-18T00:45:00.000Z';
   const present = '2026-10-18T01:00:00.000Z';
-  observer.recordPoll(ledger, result(['1.0.0']), absent);
-  assert.equal(observer.recordPoll(ledger, result(['1.0.0', '1.1.0']), present).events, 1);
-  assert.deepEqual(item.events[1], { version: '1.1.0', lastAbsent: absent, firstPresent: present });
+  observer.recordPoll(ledger, result(['1.0.0'], absent), absent);
+  assert.equal(observer.recordPoll(ledger, result(['1.0.0', '1.1.0'], present), present).events, 0);
+  assert.equal(item.events.length, 1);
 });
 
 test('observer requests only read-scoped GitHub App permissions', async () => {

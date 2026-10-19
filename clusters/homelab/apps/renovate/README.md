@@ -178,7 +178,7 @@ CronJob. For a failure, inspect Job
 conditions, ExternalSecret readiness, restricted logs, and the next scheduled
 cycle. Correct desired state in git; do not patch or restart a live Pod.
 
-A temporary acceptance observer is planned but not yet declared. Once added,
+A temporary acceptance observer is declared but remains suspended. Once enabled,
 keep it suspended until its private sample is fixed before the seven-day
 window. It must poll upstream without the Renovate cache or GitHub writes;
 its separate protected ledger retains private release brackets. Publish only
@@ -208,8 +208,8 @@ would poll every 15 minutes during the seven-day acceptance window. It mounts
 only `renovate-acceptance-ledger`, never `renovate-cache`. It asks GitHub for an
 installation token limited to `contents` and `metadata` **read** permissions.
 Its own GitHub POST mints that token; datasource clients may POST read-only
-GraphQL queries. The observer calls
-the pinned Renovate image's datasource implementations directly, bypassing the
+GraphQL queries. The observer calls the pinned Renovate image's datasource
+implementations directly, bypassing the
 package-cache wrapper. Any datasource-local cache is confined to one Pod's
 ephemeral `/tmp`; the next poll uses a new Pod. It has no Kubernetes API token
 or inbound Service.
@@ -230,13 +230,14 @@ repository/package identities stay on the volume and out of public reviews.
 The seed selects up to five packages per datasource and source-visibility
 stratum by SHA-256 of the preregistered seed and dependency key. It writes the
 selection once to `/ledger/private/ledger.json` with mode `0600`; the seed stays
-private. A second seed
-refuses to replace it. Check the seed Job's aggregate counts, then use a
+private. A second seed refuses to replace it. Check the seed Job's aggregate
+counts, then use a
 reviewed GitOps change to unsuspend the CronJob. Its first healthy poll sets
 the baseline. Later healthy polls record each new version with the previous
-healthy absence time and first presence time. Failed source polls do not
-advance a bracket. Only counts appear in Pod logs. The `report` mode emits
-aggregate sample, stratum, poll-failure, and bracket counts; raw brackets stay
+healthy request-start time and first presence response time. Failed source
+polls stay in the private ledger and mark spanning brackets ambiguous; they do
+not advance a bracket. Only counts appear in Pod logs. The `report` mode emits
+aggregate sample, stratum, poll-failure, bracket, and ambiguous-event counts; raw brackets stay
 on the protected PVC. Do not publish the inventory or ledger.
 
 Start the seven-day clock only after the sample and baseline are verified.
@@ -246,7 +247,9 @@ aggregate report is reviewed, erase the private files with a reviewed GitOps
 cleanup Job and verify `/ledger/private` is empty. Next remove `Prune=false`
 from the PVC manifest through GitOps and verify the live PVC annotation is
 gone. Only then remove the CronJob, script, cleanup Job, and PVC manifests
-through a reviewed change; verify the PVC and backing PV are deleted. If the
-storage class retains the PV, use a reviewed storage cleanup path and verify
-the erased NFS directory is gone. A PVC reset before the aggregate review
-destroys acceptance evidence.
+through a reviewed change; verify the PVC is gone. `nfs-default` has
+`Retain` reclaim policy and `archiveOnDelete: true`, so the backing PV and
+NFS subdirectory can persist after claim deletion; later volume deletion can
+archive the directory. Use a separate reviewed storage cleanup path, then
+verify the PV and any subdirectory or archive are gone before closing T035.
+A PVC reset before the aggregate review destroys acceptance evidence.

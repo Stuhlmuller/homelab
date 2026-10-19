@@ -60,6 +60,7 @@ function selectSample(inventory) {
       key: digest(key),
       seen: [],
       lastHealthyAt: null,
+      failures: [],
       events: [],
     });
   }
@@ -84,10 +85,18 @@ function recordPoll(ledger, results, at) {
   let failed = 0;
   let events = 0;
   for (const item of ledger.sample) {
-    const result = results.get(item.key);
+    const observation = results.get(item.key);
+    const result = observation?.response;
+    const startedAt = observation?.startedAt;
+    const finishedAt = observation?.finishedAt;
     if (!result || !Array.isArray(result.releases) || !result.releases.length ||
-        result.releases.some((release) => typeof release.version !== 'string')) {
+        result.releases.some((release) => typeof release.version !== 'string') ||
+        !startedAt || !finishedAt || !Number.isFinite(Date.parse(startedAt)) ||
+        !Number.isFinite(Date.parse(finishedAt)) || startedAt > finishedAt) {
       failed++;
+      const failureAt = Number.isFinite(Date.parse(finishedAt)) ? finishedAt : at;
+      item.failures.push({ at: failureAt,
+        status: observation?.status || (observation ? 'invalid-response' : 'missing-observation') });
       continue;
     }
     healthy++;
@@ -96,13 +105,17 @@ function recordPoll(ledger, results, at) {
     if (item.lastHealthyAt) {
       for (const [hash, version] of versions) {
         if (!seen.has(hash)) {
-          item.events.push({ version, lastAbsent: item.lastHealthyAt, firstPresent: at });
+          const ambiguous = item.failures.some((failure) =>
+            failure.at > item.lastHealthyAt && failure.at <= finishedAt);
+          item.events.push({ version, lastAbsent: item.lastHealthyAt, firstPresent: finishedAt, ambiguous });
           events++;
         }
       }
     }
-    item.seen = [...versions.keys()];
-    item.lastHealthyAt = at;
+    for (const hash of versions.keys()) seen.add(hash);
+    item.seen = [...seen];
+    // The request start is a conservative lower bound for a later unseen release.
+    item.lastHealthyAt = startedAt;
   }
   ledger.polls.push({ at, healthy, failed, events });
   return { healthy, failed, events };
@@ -118,6 +131,8 @@ function aggregate(ledger) {
     polls: ledger.polls.length,
     failedSources: ledger.polls.reduce((sum, poll) => sum + poll.failed, 0),
     bracketedEvents: ledger.sample.reduce((sum, item) => sum + item.events.length, 0),
+    ambiguousEvents: ledger.sample.reduce((sum, item) =>
+      sum + item.events.filter((event) => event.ambiguous).length, 0),
   };
 }
 
@@ -227,6 +242,7 @@ async function poll(ledger) {
     for (const item of ledger.sample) {
       const datasource = datasources.get(item.datasource);
       if (!datasource) throw new Error('unsupported-datasource');
+      const startedAt = new Date().toISOString();
       try {
         // Call the datasource directly: Renovate's package-cache wrapper is never invoked.
         const registryUrl = item.registryUrl || datasource.getDefaultRegistryUrls(item.packageName)?.[0];
@@ -236,9 +252,9 @@ async function poll(ledger) {
           registryUrl,
           currentValue: item.currentValue || undefined,
         });
-        results.set(item.key, result);
+        results.set(item.key, { response: result, startedAt, finishedAt: new Date().toISOString() });
       } catch {
-        results.set(item.key, null);
+        results.set(item.key, { response: null, startedAt, finishedAt: new Date().toISOString(), status: 'request-error' });
       }
     }
   } finally {
