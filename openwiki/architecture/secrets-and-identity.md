@@ -50,8 +50,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-500c19e4044fe1088cd60c0d
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
-  - id: openwiki-source-c728e68797517895d00bd9f9
-    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-52536621afbfff1f8abeed59
+    resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -70,8 +70,6 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-da1c62ec7717f978964e0a11
-    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -106,10 +104,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T17:11:24.506Z" }
+generated: { by: "codex", at: "2026-10-19T21:34:58.898Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:11:24.506Z
+    at: 2026-10-19T21:43:06.282Z
 ---
 
 # Secrets And Identity
@@ -239,16 +237,17 @@ companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull
 merged, the operator applied the private, un-targeted saved plan with only the
 role and inline-policy deletions. A read-only IAM lookup returned
 `NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
-is now declared unsuspended in full dry-run mode. Scheduled-run parity remains
-pending; the legacy GitHub Action remains the writer.
+was staged unsuspended in full dry-run mode while the legacy GitHub Action
+remained the writer.
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name
-organization or environment secrets, and drained old runs. Cluster writes then
-require a separate reviewed GitOps change. Rollback first suspends and drains
-cluster Jobs; the guarded companion restore script can restore the repository
-Actions key from SSM before a reviewed PR restores the old workflow. This
-writer cutover has not occurred.
+organization or environment secrets, and drained old runs. The reviewed
+activation change removes `dryRun: 'full'`; the cluster becomes the sole writer
+only after Argo CD syncs that revision from `main`. Rollback first suspends and
+drains cluster Jobs; the guarded companion restore script can restore the repository
+Actions key from SSM before a reviewed PR restores the old workflow. Until the
+activation revision is synced, keep the running CronJob in full dry-run mode.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

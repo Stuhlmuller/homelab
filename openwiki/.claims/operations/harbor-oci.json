@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4c8a1d30aae46f21c280aec8530d045cc9b3c0849ee0f0645c8d0cffc842f38f",
+  "pageVersion": "sha256:1e7b427ddbcdb18538fdd29bd8606a77ece75b1ed08b85be74c823e47af9b16e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:60824abbf33ec9127336c48e88848269ba1689216506668d988b30680744abc1"
+          "version": "repo-file-v1:sha256:9f55566844f47306ade6b4a1cc5befb84c55f9f3c6d9f246e4d18c7794020290"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
+          "version": "repo-file-v1:sha256:2254439112c41b131058e25d07e88f3601b7f3eb05690b234c4c154a0c16aacb"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
+          "version": "repo-file-v1:sha256:2254439112c41b131058e25d07e88f3601b7f3eb05690b234c4c154a0c16aacb"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
+          "version": "repo-file-v1:sha256:2254439112c41b131058e25d07e88f3601b7f3eb05690b234c4c154a0c16aacb"
         }
       ]
     },
@@ -472,7 +472,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
+          "version": "repo-file-v1:sha256:2254439112c41b131058e25d07e88f3601b7f3eb05690b234c4c154a0c16aacb"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
@@ -490,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
+          "version": "repo-file-v1:sha256:2254439112c41b131058e25d07e88f3601b7f3eb05690b234c4c154a0c16aacb"
         }
       ]
     },
@@ -604,11 +604,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:60824abbf33ec9127336c48e88848269ba1689216506668d988b30680744abc1"
+          "version": "repo-file-v1:sha256:9f55566844f47306ade6b4a1cc5befb84c55f9f3c6d9f246e4d18c7794020290"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:ae4d00ac358e620d379edae486724db34a114e5790e3a253d218fc78083e93ee"
+          "version": "repo-file-v1:sha256:2254439112c41b131058e25d07e88f3601b7f3eb05690b234c4c154a0c16aacb"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -644,7 +644,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:60824abbf33ec9127336c48e88848269ba1689216506668d988b30680744abc1"
+          "version": "repo-file-v1:sha256:9f55566844f47306ade6b4a1cc5befb84c55f9f3c6d9f246e4d18c7794020290"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -658,23 +658,27 @@
     },
     {
       "id": "claim_a8a81b748b56428399b58d58cfec6ea2",
-      "statement": "The unsuspended Renovate CronJob remains in full dry-run mode, uses a dedicated ServiceAccount without a mounted Kubernetes API token, and resolves the canonical Harbor hostname to the registry-only Traefik Service at 10.96.0.50:443; Istio allows that identity only on port 9443.",
+      "statement": "The hourly Renovate CronJob was staged in full dry-run with a dedicated no-token ServiceAccount and a Pod-local alias from the canonical Harbor hostname to the registry-only Traefik Service at 10.96.0.50:443; Istio admits that identity only on port 9443. The activation revision removes full dry-run, with writes beginning only after Argo CD syncs it from main.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js",
-          "version": "repo-file-v1:sha256:31b52246c100fe81df240f26385aff5861d944ead48c9d170217f2187b693db4"
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L1-L7",
+          "version": "repo-lines-v1:sha256:e3f38492c87607640f95d32af90aa637b62f9c545634a099d6feeb2df6c2ed4f:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTY3MTkzYmMxNjU0NzllNWMyNmJjMTA0M2MyZTE4MjJhNmEzYjA5MDNlZWVhOTg2YzQ0NDc3MmJhMTg2YjY2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTVjODk2ZTAyNjM0NDAyMjZjMTkyOTZlM2NiMjM0NGRkMTllYjY5MmRkYjg5NWIzNTNhOWJhZGRiZWY5ZTdjZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMTYxMWVjY2Q2NmUzOTgzZGEyODEwM2I3MjhhOWU1ZmMzNTU4ZjQyM2Y2Nzc5M2IzMzQ3YjNjNTgyOGIzOTY0MSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L106-L116",
+          "version": "repo-lines-v1:sha256:b4370e755b54cee906ce08253681646dc71bfce6770543eb823aaa5d8dfaf6f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3ZWEwN2Y4NzhkOWE5MmI2YWEyZWU4M2I2Nzk3NDE2YTJkNzIzMDU2YmVmNDg1OTUzZTEyMGNhNDUwYTdiNGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiY2FhNTEyYmZjOTk0YzNmNjY5MGUxYzA0ZjFhYTRiZjcxZWNmZmFiNTYyZGQwMjZkZDYwZGRlZGQ2MTI4MWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L11-L35",
+          "version": "repo-lines-v1:sha256:ae1f00ffc845509d06c0109e7ffcfb77df560e4c5f4f76b98f107a8e78c48bfb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlOTFlNTFjZTUzOGVmMTIwZWUyMGNiZGY5NDE1OGJhY2UxY2MxMTc5MDZmODY0ZmVkMmQ5NGUzNzExMGNiMjYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5NGNjOGI4MmM5ZDdmNWIyYzgzOGY1MWNkYzkwNmFkMTVhYzJhYjI5OTY0Y2JiN2FhOGMxNzFiNTE0MGE3MmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0ZmEwNTU4NzAzZmZjYzBkYzJlMzZkNDI5OWEwMjE3Zjc0Njk2ZmY3Yjc3YjMxZGMwYzI5ZTE1ODM3NDQyOWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMTVlOWQzNmRiM2M2MjQzOWMyODFhOGJiZjdlMzJhNjQ0ZDM2MThmOWExZDk5ODJhYjQ4N2E0NDkzZjlmMDEifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
           "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
         },
         {
-          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L43-L55",
+          "version": "repo-lines-v1:sha256:1e4c754fb47ea31bcdd7a5589a6fdd3a331fc1cb698ec32d7febba324564708e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0OTBlMGExYzc5OGE2OGY2YWM1ZTE0MzdkNGIwODg2MDg1ODg2MDliNWUxNDViMjA1MjA5MzVhNzkxNWQ5ZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNlZDcxZGI3NjcwYmNmZjVhOGJhMzg0MGQyNzc2MmU4Y2QxNTU1ZTM1MTE0ZGY1YzgzODZkYTJjMjFmMmJkZjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ZTQ0NzNiNGExZDBkN2U4ZDUyMzMzYmQ1Mzg2NTZiMGJkNjg0ZjAwOTZmMGRhYTEwZTk0MWZjNWNiYmFiM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZTg0ODc0MzllNDY1YjZmOTZiMGQ2NWY0NGY4NDRmMzJiNzVkYTE2NzE5ZDUwYzg4YzA3MjNiZjFjMDUyYTYifQ"
         }
       ]
     },
@@ -683,7 +687,7 @@
       "statement": "The first manual in-cluster Renovate dry run was rejected by destination ztunnel before Harbor traffic reached Traefik. A later scheduled full dry run completed repository coverage, but that does not establish Harbor transport or eligible version discovery; those responses and any needed credential contract remain gates before writer cutover.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L74-L90",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L75-L91",
           "version": "repo-lines-v1:sha256:0122046e0a2d48a5eee4eb815dcdb8542e954e6646f6ee46ad858b7fa33bc396:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg2YTdmMGY5MmM0YjczNzQwMWM4MWViZWFjODU1YTRmMmZjMjA5Nzk0Mjc5YWQzOTNhYmQyMWJkZjMxYTJjMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3NWQzMDRmZTMwYmE1YzYxNWU4ZjliNjA0OTcxODYwODBkNWI0MzY1ZjdhZGY0NDRlMjQ4YWVmZThlNGJjNmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5ZDAxYTZiYjM0MTA2Y2MwOTAzOTNlNmEwZTczZGFkZWNlY2RmOGRmM2FhNmQ2NDk2ZmQ5ZGJhNTk5ZDhmYWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI4MDU4ZjFmY2JmNDYxOTQ1MTE4NmY2MDFmZWNmMTc2MzVjOGViMDRhNzMyZjYxODkwNDBjODJkNjlmNzkzNTQifQ"
         },
         {
@@ -702,7 +706,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:60824abbf33ec9127336c48e88848269ba1689216506668d988b30680744abc1"
+          "version": "repo-file-v1:sha256:9f55566844f47306ade6b4a1cc5befb84c55f9f3c6d9f246e4d18c7794020290"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -785,6 +789,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T20:01:23.259Z"
+    "at": "2026-10-19T21:34:58.898Z"
   }
 }

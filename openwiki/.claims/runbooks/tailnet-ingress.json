@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:bfd12085ca232f66b88cf47bb997fa19b72c1be66d616fa786b590d5df770c83",
+  "pageVersion": "sha256:da77423d65dda0bc89b9121a4307e932f96941ff4efa04aa99f19af5fa7bcb4b",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -372,13 +372,13 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
+          "version": "repo-file-v1:sha256:59c359720a35d1fba4e52db563152f3570ae82f11e67246cc6c5d659350bfb29"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-19T21:34:58.898Z"
   }
 }

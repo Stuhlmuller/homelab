@@ -16,8 +16,6 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
-  - id: openwiki-source-c728e68797517895d00bd9f9
-    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
     resource: repo://clusters/homelab/apps/renovate/externalsecret.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -26,16 +24,16 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-da1c62ec7717f978964e0a11
-    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
+  - id: openwiki-source-7bc39840de078c7eb3baf2e5
+    resource: repo://specs/004-run-renovate-in-cluster/quickstart.md
+generated: { by: "codex", at: "2026-10-19T21:34:58.898Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-19T21:43:06.282Z
 ---
 
 # AWS SSM Secret References
@@ -68,9 +66,11 @@ desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
 merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
-reintroduction of the exact-scope grant. The hourly CronJob is now declared
-unsuspended in full dry-run mode; scheduled-run parity and the old-writer
-cutover remain separate gates.
+reintroduction of the exact-scope grant. The hourly CronJob was staged
+unsuspended in full dry-run mode. Retire the old workflow and Actions private
+key through the guarded companion path before merging the activation revision;
+the cluster becomes the writer after Argo CD syncs that revision from `main`.
+Until that sync, the running CronJob remains in full dry-run mode.
 
 ## OpenClaw Enterprise model key
 

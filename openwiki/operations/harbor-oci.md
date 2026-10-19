@@ -156,10 +156,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
+generated: { by: "codex", at: "2026-10-19T21:34:58.898Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T20:01:23.259Z
+    at: 2026-10-19T21:34:58.898Z
 ---
 
 # Harbor Private OCI Registry
@@ -280,15 +280,15 @@ identity and resolved Harbor through the shared private Traefik listener on
 [authorization policy](../../clusters/homelab/apps/traefik/authorizationpolicy.yaml)
 before they reached Traefik; Renovate reported TLS `ECANCELED`. The
 [repository-owned repair](../../clusters/homelab/apps/renovate/README.md)
-gives the unsuspended full dry-run CronJob a dedicated no-token ServiceAccount
-and a Pod-local
+gave the CronJob, staged in full dry-run mode, a dedicated no-token
+ServiceAccount and a Pod-local
 alias for `harbor.stinkyboi.com` to the registry-only `10.96.0.50:443` Service.
 Istio admits that exact identity only on port 9443. The listener still routes
 only OCI and token paths. Local route tests and rendering pass. The successful
 18:00 UTC scheduled dry run establishes repository coverage, but does not
 establish Harbor transport or version discovery. An eligible post-convergence
 Job must prove transport, expected public/unauthorized responses, and actual
-eligible version discovery before writer cutover. If an
+eligible version discovery before the activation revision is synced. If an
 eligible private source needs a Harbor credential, add a reviewed secret
 contract before enabling writes.
 

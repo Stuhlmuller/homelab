@@ -98,11 +98,22 @@ test('mints a signed installation token and preserves the current global policy'
     'config:best-practices', ':automergeAll', 'replacements:all',
     'schedule:automergeDaily', 'security:openssf-scorecard',
   ]);
-  assert.equal(resolved.dryRun, 'full');
   assert.equal(resolved.cacheDir, '/cache/renovate');
   assert.equal(resolved.baseDir, '/tmp/renovate');
   assert.equal(resolved.repositoryCache, 'enabled');
   assert.equal(resolved.cachePrivatePackages, true);
+});
+
+test('write mode requires the hourly schedule and default log levels', async () => {
+  const { config } = load();
+  const resolved = await config();
+  assert.equal(Object.hasOwn(resolved, 'dryRun'), false);
+  assert.equal(Object.hasOwn(resolved, 'logLevelRemap'), false);
+
+  const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
+  assert.match(cronjob, /^  suspend: false$/m);
+  assert.match(cronjob, /^  schedule: "0 \* \* \* \*"$/m);
+  assert.match(cronjob, /^  concurrencyPolicy: Forbid$/m);
 });
 
 test('fails closed for missing credentials and invalid signing keys', async () => {
@@ -153,20 +164,6 @@ test('refuses invalid or nearly expired installation tokens', async () => {
     await assert.rejects(config(), /installation token is invalid or expires too soon/);
     assert.equal(calls.length, 2);
   }
-});
-
-test('temporarily exposes only package-cache hit markers during full dry run', async () => {
-  const { config } = load();
-  const resolved = await config();
-  assert.equal(resolved.dryRun, 'full');
-  assert.deepEqual(
-    Array.from(resolved.logLevelRemap, ({ matchMessage, newLogLevel }) => ({ matchMessage, newLogLevel })),
-    [{ matchMessage: '/^Returning cached value$/', newLogLevel: 'info' }],
-  );
-  const cronjob = fs.readFileSync(path.resolve(__dirname, '../../clusters/homelab/apps/renovate/cronjob.yaml'), 'utf8');
-  assert.match(cronjob, /^  suspend: false$/m);
-  assert.match(cronjob, /^  schedule: "0 \* \* \* \*"$/m);
-  assert.match(cronjob, /^  concurrencyPolicy: Forbid$/m);
 });
 
 test('keeps Renovate cache refresh defaults and mounts credentials outside the PVC', async () => {

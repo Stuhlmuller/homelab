@@ -234,14 +234,16 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
+  - id: openwiki-source-7bc39840de078c7eb3baf2e5
+    resource: repo://specs/004-run-renovate-in-cluster/quickstart.md
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
+generated: { by: "codex", at: "2026-10-19T21:43:06.282Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T20:01:23.259Z
+    at: 2026-10-19T21:43:06.282Z
 ---
 
 # Validation Gates
@@ -1946,25 +1948,34 @@ copy and authenticated-pull path. The workflow's exact security hash
 locks the reviewed fixed-scope choices; a passing fixture does not publish the images or
 validate consuming workloads.
 
-The staged hourly Renovate runner has a credential-free config and discovery
-test in `static-checks.sh`. The config test injects a cache write failure and
-checks that no GitHub API request follows; live PVC-failure behavior remains
-unverified. `offline-checks.sh` runs its Prometheus rule
-fixture, which checks missed starts, incomplete cycles, a missing CronJob,
+The hourly Renovate runner has a credential-free config and discovery test in
+`static-checks.sh`. For the activation revision, the config test requires the
+hourly unsuspended CronJob, no full dry-run setting, and no temporary cache-log
+remap. It also injects a cache write failure and checks that no GitHub API
+request follows; live PVC-failure behavior remains unverified.
+`offline-checks.sh` runs its Prometheus rule fixture, which checks missed
+starts, incomplete cycles, a missing CronJob,
 late prior-Job completion, and schedules before and after suspension. These
 fixtures also enforce that the 15-minute allowed late start plus the 40-minute
 Job runtime ends before the completion alert's 56-minute threshold and the next
-hourly slot. These checks verify declared behavior. The unsuspended full
-dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
-17:00 registry mutex timeout; that result does not establish live cache
+hourly slot. These checks verify declared behavior, not Argo CD sync or a
+write-enabled Job. Before activation, the unsuspended full-dry-run runner
+passed T017's 18:00 UTC scheduled discovery cycle after the 17:00 registry
+mutex timeout; that result does not establish live cache
 recovery, two-Pod cache reuse, full owner/App parity, or write safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
-retirement are complete; two-Pod cache evidence, dry-run parity, and a
-separate seven-day acceptance window remain open gates.
+retirement are complete; normal canary refresh, dry-run parity, and a separate
+seven-day acceptance window remain open gates. Merge the activation revision
+only after the old workflow and Actions key are retired; verify Argo CD syncs
+exact `main` before treating the cluster as the writer. Keep the companion
+canary manager, fixture, and workflow through the first write-enabled canary
+PR under T031. Reviewed companion #53 removes them after that acceptance; the
+homelab activation removes only the temporary cache-log remap and its local
+test fixture.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures
