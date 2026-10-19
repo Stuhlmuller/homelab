@@ -66,9 +66,9 @@ The official 4.7.3 image serves compiled static files and media through Puma;
 streaming runs separately on port 4000. The image's private application directory
 requires its native UID/GID 991; application containers use those IDs with
 supplementary filesystem group 65534 for shared volumes. The datastore and
-backup containers retain UID/GID 65534. Database-role provisioning runs in
-wave 0, schema preparation in wave 1, owner bootstrap in wave 2, and the
-Deployments start in wave 3. Web and Sidekiq mount the retained media
+backup containers retain UID/GID 65534. PostgreSQL rolls in wave -1 before
+database-role provisioning in wave 0, schema preparation in wave 1, owner
+bootstrap in wave 2, and the Deployments start in wave 3. Web and Sidekiq mount the retained media
 claim, writable bounded temporary/log directories, and read-only configuration.
 Sidekiq runs five threads; Puma runs one worker with five threads to fit the
 small homelab. Sidekiq startup/readiness checks use the upstream job-processing

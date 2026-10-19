@@ -48,6 +48,10 @@ class Routes(unittest.TestCase):
                 self.assertEqual(context["runAsUser"], 991)
                 self.assertEqual(context["runAsGroup"], 991)
                 self.assertEqual(context["fsGroup"], 65534)
+        postgres = documents("postgres.yaml")[1]
+        role = documents("database-role-job.yaml")[0]
+        self.assertLess(int(postgres["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]),
+                        int(role["metadata"]["annotations"]["argocd.argoproj.io/sync-wave"]))
         runtime = documents("runtime-externalsecret.yaml")[0]["spec"]
         paths = {item["remoteRef"]["key"] for item in runtime["data"]}
         self.assertIn("/homelab/mastodon/postgres-app-password", paths)
