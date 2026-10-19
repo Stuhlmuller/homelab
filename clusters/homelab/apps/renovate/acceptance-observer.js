@@ -60,6 +60,8 @@ function selectSample(inventory) {
       key: digest(key),
       seen: [],
       lastHealthyAt: null,
+      lastHealthySlot: null,
+      lastHealthyLate: false,
       failures: [],
       events: [],
     });
@@ -80,7 +82,11 @@ function selectSample(inventory) {
   };
 }
 
-function recordPoll(ledger, results, at) {
+function recordPoll(ledger, results, at, startedAt = at) {
+  const started = Date.parse(startedAt);
+  if (!Number.isFinite(started) || !Number.isFinite(Date.parse(at))) throw new Error('invalid-poll-time');
+  const slotAt = new Date(Math.floor(started / 900000) * 900000).toISOString();
+  const late = started - Date.parse(slotAt) > 300000;
   let healthy = 0;
   let failed = 0;
   let events = 0;
@@ -105,8 +111,11 @@ function recordPoll(ledger, results, at) {
     if (item.lastHealthyAt) {
       for (const [hash, version] of versions) {
         if (!seen.has(hash)) {
+          const previousSlot = Date.parse(item.lastHealthySlot);
           const ambiguous = item.failures.some((failure) =>
-            failure.at > item.lastHealthyAt && failure.at <= finishedAt);
+            failure.at > item.lastHealthyAt && failure.at <= finishedAt) ||
+            !Number.isFinite(previousSlot) || Date.parse(slotAt) - previousSlot !== 900000 ||
+            item.lastHealthyLate || late;
           item.events.push({ version, lastAbsent: item.lastHealthyAt, firstPresent: finishedAt, ambiguous });
           events++;
         }
@@ -116,19 +125,28 @@ function recordPoll(ledger, results, at) {
     item.seen = [...seen];
     // The request start is a conservative lower bound for a later unseen release.
     item.lastHealthyAt = startedAt;
+    item.lastHealthySlot = slotAt;
+    item.lastHealthyLate = late;
   }
-  ledger.polls.push({ at, healthy, failed, events });
+  ledger.polls.push({ at, startedAt, slotAt, late, healthy, failed, events });
   return { healthy, failed, events };
 }
 
 function aggregate(ledger) {
   const strata = { public: 0, private: 0 };
   for (const item of ledger.sample) strata[item.sourceVisibility]++;
+  let missedPolls = 0;
+  for (let index = 1; index < ledger.polls.length; index++) {
+    const gap = Date.parse(ledger.polls[index].slotAt) - Date.parse(ledger.polls[index - 1].slotAt);
+    if (gap > 900000) missedPolls += gap / 900000 - 1;
+  }
   return {
     classes: new Set(ledger.sample.map((item) => item.datasource)).size,
     sample: ledger.sample.length,
     strata,
     polls: ledger.polls.length,
+    missedPolls,
+    latePolls: ledger.polls.filter((poll) => poll.late).length,
     failedSources: ledger.polls.reduce((sum, poll) => sum + poll.failed, 0),
     bracketedEvents: ledger.sample.reduce((sum, item) => sum + item.events.length, 0),
     ambiguousEvents: ledger.sample.reduce((sum, item) =>
@@ -232,6 +250,7 @@ async function datasourceApi(token) {
 }
 
 async function poll(ledger) {
+  const cycleStartedAt = new Date().toISOString();
   const results = new Map();
   const stdout = process.stdout.write;
   const stderr = process.stderr.write;
@@ -257,11 +276,18 @@ async function poll(ledger) {
         results.set(item.key, { response: null, startedAt, finishedAt: new Date().toISOString(), status: 'request-error' });
       }
     }
+  } catch {
+    results.clear();
+    const finishedAt = new Date().toISOString();
+    for (const item of ledger.sample) {
+      results.set(item.key, { response: null, startedAt: cycleStartedAt,
+        finishedAt, status: 'global-error' });
+    }
   } finally {
     process.stdout.write = stdout;
     process.stderr.write = stderr;
   }
-  const counts = recordPoll(ledger, results, new Date().toISOString());
+  const counts = recordPoll(ledger, results, new Date().toISOString(), cycleStartedAt);
   saveLedger(ledger);
   console.log(JSON.stringify({ mode: 'poll', ...counts }));
   if (counts.failed) process.exitCode = 1;
@@ -293,4 +319,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { selectSample, recordPoll, aggregate, readToken, renovateRoot, datasourceApi };
+module.exports = { selectSample, recordPoll, aggregate, readToken, renovateRoot, datasourceApi, poll };

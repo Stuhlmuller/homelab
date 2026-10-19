@@ -70,6 +70,69 @@ test('only healthy upstream polls advance last-absent brackets', () => {
   assert.equal(item.events.length, 1);
 });
 
+test('missed and late observer slots make release timing ambiguous', () => {
+  const source = inventory();
+  const baseline = (ledger, cycle, version = '1.0.0') => {
+    const item = ledger.sample[0];
+    const finished = new Date(Date.parse(cycle) + 60_000).toISOString();
+    observer.recordPoll(ledger, new Map([[item.key, {
+      response: { releases: [{ version }] }, startedAt: cycle, finishedAt: finished,
+    }]]), finished, cycle);
+    return item;
+  };
+  const missed = observer.selectSample(source);
+  const missedItem = baseline(missed, '2026-10-18T00:00:00.000Z');
+  baseline(missed, '2026-10-18T00:30:00.000Z', '1.1.0');
+  assert.equal(missedItem.events[0].ambiguous, true);
+  assert.equal(observer.aggregate(missed).missedPolls, 1);
+
+  const late = observer.selectSample(source);
+  const lateItem = baseline(late, '2026-10-18T00:06:00.000Z');
+  baseline(late, '2026-10-18T00:15:00.000Z', '1.1.0');
+  assert.equal(lateItem.events[0].ambiguous, true);
+  assert.equal(observer.aggregate(late).latePolls, 1);
+
+  const healthy = observer.selectSample(source);
+  const healthyItem = baseline(healthy, '2026-10-18T00:00:00.000Z');
+  baseline(healthy, '2026-10-18T00:15:00.000Z', '1.1.0');
+  assert.equal(healthyItem.events[0].ambiguous, false);
+  assert.equal(observer.aggregate(healthy).missedPolls, 0);
+});
+
+test('global poll failure persists private failed observations and exits nonzero', async () => {
+  const ledger = observer.selectSample(inventory());
+  const originalRead = fs.readFileSync;
+  const originalWrite = fs.writeFileSync;
+  const originalRename = fs.renameSync;
+  const originalLog = console.log;
+  const originalExitCode = process.exitCode;
+  const writes = [];
+  const logs = [];
+  fs.readFileSync = (file, ...args) => {
+    if (file === '/var/run/secrets/renovate/issuer-id') throw new Error('private failure');
+    return originalRead(file, ...args);
+  };
+  fs.writeFileSync = (file, data) => writes.push({ file, data });
+  fs.renameSync = (source, target) => writes.push({ source, target });
+  console.log = (line) => logs.push(line);
+  try {
+    await observer.poll(ledger);
+    assert.equal(ledger.polls[0].failed, ledger.sample.length);
+    assert.equal(ledger.polls[0].healthy, 0);
+    assert.equal(ledger.sample.every((item) => item.failures[0].status === 'global-error'), true);
+    assert.equal(writes.length, 2);
+    assert.equal(process.exitCode, 1);
+    assert.equal(JSON.stringify(logs).includes('private failure'), false);
+    assert.equal(JSON.stringify(logs).includes('@example/private'), false);
+  } finally {
+    fs.readFileSync = originalRead;
+    fs.writeFileSync = originalWrite;
+    fs.renameSync = originalRename;
+    console.log = originalLog;
+    process.exitCode = originalExitCode;
+  }
+});
+
 test('observer requests only read-scoped GitHub App permissions', async () => {
   const { privateKey } = crypto.generateKeyPairSync('rsa', {
     modulusLength: 2048,
