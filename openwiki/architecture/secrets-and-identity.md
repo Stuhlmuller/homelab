@@ -109,7 +109,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T17:11:24.506Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:17:22.223Z
+    at: 2026-10-19T22:21:44.110Z
 ---
 
 # Secrets And Identity
