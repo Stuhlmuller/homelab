@@ -114,10 +114,18 @@ test('fails closed for missing credentials and invalid signing keys', async () =
 });
 
 test('fails before GitHub access when the cache volume is full or unwritable', async () => {
-  const { config, calls, cacheWrites, cacheUnlinks } = load({ cacheError: true });
+  const options = { cacheError: true };
+  const { config, calls, cacheWrites, cacheUnlinks } = load(options);
   await assert.rejects(config(), /cache volume is unavailable or full/);
   assert.equal(calls.length, 0);
   assert.deepEqual(cacheUnlinks, cacheWrites);
+
+  options.cacheError = false;
+  const recovered = load(options);
+  const laterRun = await recovered.config();
+  assert.equal(laterRun.cacheDir, '/cache/renovate');
+  assert.equal(recovered.calls.length, 2, 'a later run may mint a token after storage recovers');
+  assert.deepEqual(recovered.cacheUnlinks, recovered.cacheWrites);
 });
 
 test('refuses an inaccessible or selected-repository installation', async () => {

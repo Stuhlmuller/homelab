@@ -11,18 +11,31 @@ The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
 settings. Repository files still override eligible settings. Autodiscovery
 filters to `Stuhlmuller/*`, includes owned forks, skips archived repositories,
-and processes repositories without a config file. In the 2026-10-18 baseline,
-the owner had eight non-archived repositories, and the existing
+and processes repositories without a config file. The 2026-10-19 owner API
+inventory had 18 repositories: 10 archived and eight eligible non-archived,
+including four private repositories and no forks. The active
 `rstuhlmuller-renovate` App installation selected all repositories. The last
 observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
+Its App-token scan started and finished all eight then-eligible owner
+repositories, including the four private repositories, and scanned none of the
+ten archives; the owner had no forks to exercise live fork handling.
 Its workflow/config commits were `3f5f078000173af86205f04df1559132d3e290f8`
 and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
 dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
-bot username and Git author so startup needs no account lookup. The current
-operator credential could not enumerate the App's accessible repositories;
-compare that inventory, App grants, and existing PR author with the first
-cluster dry run before cutover. Keep private repository names out of public
-reports.
+bot username and Git author so startup needs no account lookup. The legacy
+workflow and global config reference no separate private-registry credential
+input; the workflow uses only the existing App secrets. The public App
+definition currently requests repository Checks, Contents, Issues, Pull
+requests, Commit statuses, and Workflows write; Metadata and Dependabot alerts
+read; and organization Members and Administration read. It lacks repository
+Administration read from
+Renovate's recommended grants. This does not block discovery, but a repository
+override using automatic rebasing may lose branch-protection awareness. The
+operator credential cannot enumerate the current installation-token repository
+list or confirm effective installation grants; compare its eligible count of
+eight, effective grants and repository overrides, and the existing PR author
+with the first cluster dry run before cutover. Keep private repository names out
+of public reports.
 
 ## Credentials and storage
 
@@ -77,16 +90,20 @@ Argo CD. `nfs-default` permits claim expansion; confirm the bound claim's
 reported capacity and the backing NFS share's free space before relying on the
 larger request. A larger claim does not repair a full NAS share.
 
-For a lost or corrupt cache, first suspend `cronjob.yaml` through a reviewed
-PR and confirm no active Renovate Job remains. Use a reviewed, temporary
-GitOps Job that mounts only `renovate-cache`, deletes only its contents, and
-has no App credential or cluster API token. Verify that Job completes, remove
-it through a second reviewed change, then unsuspend the CronJob. The next run
-rebuilds package data from upstream; open PRs and repository policy remain on
-GitHub. Do not delete the PVC or edit NFS files by hand. If the claim cannot
-mount or the backing share is full, restore the declared storage path before
-resuming scans. Record the failed cycle and verify the next scheduled run and
-freshness alerts recover.
+Renovate 44.167.4 treats missing or malformed package entries as misses and
+skips malformed repository cache files; a later run can rebuild both from
+upstream. The pinned upstream recovery fixture in
+`scripts/ci/renovate-cache-recovery-test.mjs` checks these cases. A full claim
+blocks App token minting until capacity is restored. If repeated runs still
+fail because the cache tree itself is corrupt, first suspend `cronjob.yaml`
+through a reviewed PR and confirm no active Renovate Job remains. Use a
+reviewed, temporary GitOps Job that mounts only `renovate-cache`, deletes only
+its contents, and has no App credential or cluster API token. Verify that Job
+completes, remove it through a second reviewed change, then unsuspend the
+CronJob. Open PRs and repository policy remain on GitHub. Do not delete the
+PVC or edit NFS files by hand. If the claim cannot mount or the backing share
+is full, restore the declared storage path before resuming scans. Record the
+failed cycle and verify the next scheduled run and freshness alerts recover.
 
 ## Validate and observe
 
@@ -133,9 +150,17 @@ aggregate results, then erase the ledger and retire its Job and claim through
 reviewed GitOps. Report a controlled canary separately from natural releases.
 
 Cutover is a two-repository sequence: after dry-run parity and the last old
-run, delete the complete legacy workflow including manual dispatch, verify no
-nonterminal old run remains, then enable cluster writes through a reviewed
-homelab change. For rollback, first suspend or restore full dry-run mode in
-homelab GitOps, verify no pending or active write-enabled Job, then restore
-the legacy workflow through a reviewed companion PR. The interval between
-legacy deletion and first cluster write is a planned no-writer gap.
+run, delete the complete legacy workflow including manual dispatch and verify
+no nonterminal old run remains. From exact reviewed companion `main`, run its
+guarded `scripts/retire-renovate-actions-key.py` and require a current receipt
+that the SSM values and later ExternalSecret projection are ready, no same-name
+organization or environment secret exists, the repository Actions private key
+is absent, and old runs are drained. Then enable cluster writes through a
+reviewed homelab change. Historical workflow revisions can be rerun while the
+old key exists. For rollback, first suspend the cluster CronJob through
+reviewed GitOps, verify Argo CD synced and no pending or active Renovate Job or
+Pod remains, then use the guarded companion
+`scripts/restore-renovate-actions-key.py` from exact reviewed companion `main`
+to restore the repository key from SSM. Verify its receipt before restoring the
+legacy workflow through a reviewed PR. The interval between legacy deletion
+and first cluster write is a planned no-writer gap.

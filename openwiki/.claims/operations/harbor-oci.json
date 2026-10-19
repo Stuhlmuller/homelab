@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5df23bae6a5573f911962320cdb9e40455607f05cfb849394cff0cdf62ddee24",
+  "pageVersion": "sha256:98f91cd38016aab5ae7e0b61ebe8fef4c2d2a1db9a812bc42d7604fe4517ec5a",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -434,7 +434,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:c6d398ed761cf710d171c0f71e621cde88f699f15f0915dd13fc9b58245eff19"
+          "version": "repo-file-v1:sha256:94d4ca2c77829067bb4107e74ecbdab8fe2e6da74fb61d384463ced7482eec62"
         }
       ]
     },
@@ -443,7 +443,7 @@
       "statement": "Mastodon's fixed four-image publication scope uses its separate PostgreSQL 18-bookworm security candidate without changing Harbor's existing database pin, and requires all-platform digest copies, aliases and complete authenticated Harbor pulls before consuming references merge.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L195-L243",
+          "resource": "repo://clusters/homelab/apps/mastodon/README.md#L200-L248",
           "version": "repo-lines-v1:sha256:6552dc2ef5813acd9c0e305cd75a437c63dd3a34b7dc6c1062e28610a6547925:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiYjI4ZmZhMDgwOTI2ZTI1ZWYwM2Q0ZDEyMmY2YjQxZGY2NmVmYjEzNDdkODllNjJhNjZhOWViZmZlMjYzNGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMzYjYzMzQzOWViZDE2YWUwNmYxOGRjZWUxYWEzZDE2NzQzMjNjOGQ1MjVjYWM1ZGZlZTVmN2U3NmYwYjc5MWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhMDVmYTk1MzJhYWQ4MmRiYTBjMzhmOWEwNmQ5ZDIwNDRkNDUwNzVlNzVhMTFmM2JkNzAxMzRkODA1MzUxYjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI2NThlMGRjNmMxY2Q3ZDVhYTg0ZmFkZmYxNmU2YmQ4Y2U3YjRhMzFhOTdmZTgxMzlmNDU2MzZiMzQzYzIwZTIifQ"
         },
         {
@@ -516,7 +516,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:c6d398ed761cf710d171c0f71e621cde88f699f15f0915dd13fc9b58245eff19"
+          "version": "repo-file-v1:sha256:94d4ca2c77829067bb4107e74ecbdab8fe2e6da74fb61d384463ced7482eec62"
         }
       ]
     },
@@ -635,6 +635,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T21:31:10.787Z"
+    "at": "2026-10-19T02:17:09.125Z"
   }
 }

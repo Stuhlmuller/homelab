@@ -105,7 +105,8 @@ completed.
 Renovate registration initially creates a suspended, full dry-run CronJob.
 Readiness requires its App ExternalSecret, retained cache claim, and a successful
 dry-run parity check. The separate GitHub Actions runner remains the only writer
-until its complete workflow is removed and every unfinished run drains. See the
+until its complete workflow is removed, every unfinished run drains, and its
+repository Actions private key is retired through the guarded receipt. See the
 [Renovate runbook](../clusters/homelab/apps/renovate/README.md) for cutover and
 rollback.
 
