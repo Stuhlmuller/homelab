@@ -708,10 +708,10 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
                 after_rejection = api.get(path)
                 baseline = state["pending"]["baselineAgentIds"]
                 _require(isinstance(after_rejection, list) and
-                         len(after_rejection) == len(baseline) and
                          all(isinstance(item, dict) and isinstance(item.get("id"), str)
                              for item in after_rejection) and
-                         {item["id"] for item in after_rejection} == set(baseline) and
+                         len({item["id"] for item in after_rejection}) == len(after_rejection) and
+                         set(baseline) <= {item["id"] for item in after_rejection} and
                          not any(item.get("name") == name for item in after_rejection),
                          "Agent create outcome changed after rejection")
                 state.pop("pending")

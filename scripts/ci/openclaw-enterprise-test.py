@@ -998,6 +998,7 @@ class InactiveAgentReconciliation(unittest.TestCase):
 
         def reject_agent(path, body):
             if path.endswith("/agents"):
+                self.api.agents["agt_unrelated"] = {"id": "agt_unrelated", "name": "other"}
                 raise OCE.DefinitiveRejection("HTTP 403")
             return original_post(path, body)
 
