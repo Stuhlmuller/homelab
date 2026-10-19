@@ -16,6 +16,37 @@ ROOT = Path(__file__).resolve().parents[1]
 NAMESPACE = "network-policy-canary"
 CANARY_KEY = "homelab.stinkyboi.com/network-policy-canary"
 IMAGE = "harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394"
+SERVER_CODE = """import socket, threading, time
+def serve_tcp(port):
+    with socket.socket() as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(('0.0.0.0', port))
+        listener.listen()
+        while True:
+            connection, _ = listener.accept()
+            with connection:
+                connection.sendall(b'npq-ok')
+def serve_udp():
+    with socket.socket(type=socket.SOCK_DGRAM) as listener:
+        listener.bind(('0.0.0.0', 8080))
+        while True:
+            _, address = listener.recvfrom(32)
+            listener.sendto(b'npq-ok', address)
+for port in (8080, 9090):
+    threading.Thread(target=serve_tcp, args=(port,), daemon=True).start()
+threading.Thread(target=serve_udp, daemon=True).start()
+time.sleep(86400)
+"""
+FIXTURE_COMMANDS = {
+    "client": ["/usr/bin/python3", "-c", "import time; time.sleep(86400)"],
+    "allowed": ["/usr/bin/python3", "-u", "-c", SERVER_CODE],
+    "denied": ["/usr/bin/python3", "-u", "-c", SERVER_CODE],
+}
+FIXTURE_SECURITY = {
+    "allowPrivilegeEscalation": False,
+    "readOnlyRootFilesystem": True,
+    "capabilities": {"drop": ["ALL"]},
+}
 FIREWALL_IMAGE = "harbor.stinkyboi.com/mirror/docker.io/cloudnativelabs/kube-router:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a@sha256:64da9a538d29e13780e256ce3897a52932a68657793bef009063bbeb2762146a"
 FIREWALL_FLAGS = {
     "--run-router=false", "--run-service-proxy=false", "--run-loadbalancer=false",
@@ -209,10 +240,9 @@ def inspect(config):
                 len(containers) != 1 or
                 containers[0].get("name") != ("probe" if role == "client" else "server") or
                 containers[0].get("image") != IMAGE or
-                containers[0].get("securityContext", {}).get("privileged") is True or
-                containers[0].get("securityContext", {}).get("allowPrivilegeEscalation") is not False or
-                containers[0].get("securityContext", {}).get("readOnlyRootFilesystem") is not True or
-                containers[0].get("securityContext", {}).get("capabilities") != {"drop": ["ALL"]} or
+                containers[0].get("command") != FIXTURE_COMMANDS[role] or
+                containers[0].get("args") not in (None, []) or
+                containers[0].get("securityContext") != FIXTURE_SECURITY or
                 not pod["metadata"].get("uid") or not pod["status"].get("podIP")):
             raise ValueError(f"canary fixture identity or readiness differs: {name}")
         pods[name] = pod

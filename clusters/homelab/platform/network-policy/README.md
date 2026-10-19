@@ -40,7 +40,8 @@ canary and live lifecycle evidence.
 `scripts/network-policy-qualification.py` runs only from the protected exact-main
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC before probing the
-fixed TCP/UDP allow/deny matrix. It rejects extra or unsafe fixture Pods and
+fixed TCP/UDP allow/deny matrix. It rejects extra or unsafe fixture Pods, including
+changed commands, arguments, or container security overrides, and
 requires each remote probe's outcome marker as well as its exit code, so a
 transport error cannot count as a denied connection. It stores a
 private receipt listing each still-unverified lifecycle scenario. A successful

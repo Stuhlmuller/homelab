@@ -3,6 +3,7 @@
 
 import importlib.util
 import json
+import shutil
 import socket
 import stat
 import subprocess
@@ -29,6 +30,25 @@ class CanaryQualificationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.module = load_module()
+
+    def test_reviewed_fixture_commands_match_manifest(self):
+        if not shutil.which("yq"):
+            self.skipTest("yq is provided by the Nix validation shell")
+        output = subprocess.run(
+            ["yq", "ea", "-o=json", '[select(.kind == "Pod")]',
+             str(ROOT / "clusters/homelab/platform/network-policy/canary/fixtures.yaml")],
+            check=True, capture_output=True, text=True, timeout=10,
+        )
+        pods = json.loads(output.stdout)
+        self.assertEqual({pod["metadata"]["name"] for pod in pods},
+                         {"npq-client", "npq-allowed", "npq-denied"})
+        for pod in pods:
+            role = pod["metadata"]["labels"]["role"]
+            container, = pod["spec"]["containers"]
+            with self.subTest(role=role):
+                self.assertEqual(container["command"], self.module.FIXTURE_COMMANDS[role])
+                self.assertNotIn("args", container)
+                self.assertEqual(container["securityContext"], self.module.FIXTURE_SECURITY)
 
     def test_remote_probe_emits_outcome_marker(self):
         with socket.socket() as listener:
@@ -104,6 +124,7 @@ class CanaryQualificationTests(unittest.TestCase):
                                                        "seccompProfile": {"type": "RuntimeDefault"}},
                                    "containers": [{"name": "probe" if role == "client" else "server",
                                                    "image": self.module.IMAGE,
+                                                   "command": self.module.FIXTURE_COMMANDS[role],
                                                    "securityContext": {
                                                        "allowPrivilegeEscalation": False,
                                                        "readOnlyRootFilesystem": True,
@@ -182,6 +203,26 @@ class CanaryQualificationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "fixture identity"):
                 self.module.inspect(config)
             container["securityContext"]["allowPrivilegeEscalation"] = original
+            for name in ("npq-client", "npq-allowed", "npq-denied"):
+                fixture = pods[name]["spec"]["containers"][0]
+                with self.subTest(name=name, field="command"):
+                    original = fixture["command"]
+                    fixture["command"] = ["/usr/bin/python3", "-c", "print('npq-ok')"]
+                    with self.assertRaisesRegex(ValueError, "fixture identity"):
+                        self.module.inspect(config)
+                    fixture["command"] = original
+                with self.subTest(name=name, field="args"):
+                    fixture["args"] = ["--ignore-client"]
+                    with self.assertRaisesRegex(ValueError, "fixture identity"):
+                        self.module.inspect(config)
+                    del fixture["args"]
+                for field, value in (("runAsNonRoot", False), ("runAsUser", 0),
+                                     ("seccompProfile", {"type": "Unconfined"})):
+                    with self.subTest(name=name, field=field):
+                        fixture["securityContext"][field] = value
+                        with self.assertRaisesRegex(ValueError, "fixture identity"):
+                            self.module.inspect(config)
+                        del fixture["securityContext"][field]
             client["containers"].append({"name": "foreign", "image": self.module.IMAGE})
             with self.assertRaisesRegex(ValueError, "fixture identity"):
                 self.module.inspect(config)
