@@ -4,6 +4,8 @@ title: "AWS SSM Secret References"
 description: "SSM and ExternalSecret contracts plus coordinated Multica PostgreSQL password rotation on an initialized persistent volume."
 tags: ["runbook", "secrets", "aws"]
 sources:
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-fd05994eb55b0e1cf42320bb
     resource: repo://clusters/homelab/apps/harbor/bootstrap-job.yaml
   - id: openwiki-source-64bca48d4f10b0676e24742b
@@ -22,10 +24,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-19T05:24:03.516Z" }
+generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:24:03.516Z
+    at: 2026-10-19T06:36:33.438Z
 ---
 
 # AWS SSM Secret References
@@ -62,12 +64,21 @@ reintroduction of the exact-scope grant. The hourly CronJob remains suspended
 in full dry-run mode; parity and the old-writer cutover remain separate gates.
 
 **Source finding (2026-10-19).** The [workload README](../../clusters/homelab/apps/renovate/README.md#credentials-and-storage)
-still phrases initial role application and credential transfer as future steps,
-while the [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
-records the transfer and the [IAM module](../../IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf)
-removes the role from desired state. Reconcile that README in a follow-up PR:
-mark the initial transfer and live role retirement complete, and retain the
-separate rotation and writer-cutover gates.
+now records completed credential transfer but still says live transfer-role
+deletion is pending. The [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records that deletion and a fresh no-change plan. Correct the workload README
+in a follow-up PR; rotation and writer cutover remain separate gates.
+
+## OpenClaw Enterprise model key
+
+The fresh Enterprise agent uses only
+`/homelab/openclaw-enterprise/model-api-key`. The protected
+[writer workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml)
+validates an owner-supplied OpenRouter key and binds the write to exact current
+`main`; it does not copy the old OpenClaw or LiteLLM values. No key has been
+supplied. The placeholder blocks activation and provider acceptance until a
+real key is transferred, projected, and tested. See the
+[canonical secret contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
 
 ## Harbor native receipt prerequisite
 

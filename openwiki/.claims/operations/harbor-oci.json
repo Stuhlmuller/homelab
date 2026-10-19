@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3d08a1fee30f7337159d5b8e30a2a9fb9788edae1e938d70b7e818422fd5fca1",
+  "pageVersion": "sha256:93e64bdd5e0a2dcaa2b555f0ba31161eae91f8fa3421fa444376be0e8dfa8f4b",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -430,7 +430,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:94d3d26814d2b6aa349c5045ad225f31164e801dbe7d4e29b84af185f16b35b7"
+          "version": "repo-file-v1:sha256:3e02afd5fa5bf89459e99bdf72e1ff0eb9d5b73e9e1d5b16826b89b9a35452cc"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
@@ -446,7 +446,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0ffbbaa90a7ade9e45838ec966f4d6675128492d9afcb866d6e45ed9d8f08d28"
+          "version": "repo-file-v1:sha256:ebab95e51be87738be4308bbdcca93d3ee02956f7cb85b34f661fbbccb5ab56d"
         }
       ]
     },
@@ -520,7 +520,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl",
-          "version": "repo-file-v1:sha256:94d3d26814d2b6aa349c5045ad225f31164e801dbe7d4e29b84af185f16b35b7"
+          "version": "repo-file-v1:sha256:3e02afd5fa5bf89459e99bdf72e1ff0eb9d5b73e9e1d5b16826b89b9a35452cc"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -528,7 +528,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0ffbbaa90a7ade9e45838ec966f4d6675128492d9afcb866d6e45ed9d8f08d28"
+          "version": "repo-file-v1:sha256:ebab95e51be87738be4308bbdcca93d3ee02956f7cb85b34f661fbbccb5ab56d"
         }
       ]
     },
@@ -650,7 +650,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
+          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
@@ -672,7 +672,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
+          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -705,10 +705,24 @@
           "version": "repo-file-v1:sha256:04b6f987c031d00622391dfbfea25cb58ea3ea7c520c1e2487225c840383c403"
         }
       ]
+    },
+    {
+      "id": "claim_5d8e4ef4cd5d4a04b5ece1dedd461ec5",
+      "statement": "The pinned stock OpenClaw Enterprise controller/runtime pair has a signed protected Harbor publication and complete pulls, but the full platform image catalog and transitive render still lack a complete publication receipt.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:2c91d138947ca944ea4a0dd892d28a4c51caa2e5ee4855ca25910a99be75cad7"
+        },
+        {
+          "resource": "repo://docs/harbor-image-mirroring.md",
+          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T06:14:05.634Z"
+    "at": "2026-10-19T06:36:33.438Z"
   }
 }
