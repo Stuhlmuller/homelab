@@ -139,10 +139,13 @@ NetworkPolicy snapshots with every rendered policy source by using
 `scripts/network-policy-inventory.py`. Include chart renders and generated
 Octelium policies in `--render`; repository YAML alone is insufficient. The
 JSON review file records the exact `sha256` fingerprints emitted by the audit.
-Run it with `--fail-on-findings` for the candidate namespace. It refuses
-wildcard or ranged CIDR/port egress, peer selectors or IP blocks that reach all
-other active Pods, unresolved namespace selectors, drifted, unowned and
-unreviewed egress, plus unisolated, host-network, privileged,
+Fingerprints cover ingress and egress rules; refresh private reviews made with
+an older inventory version. Run it with `--fail-on-findings` for the candidate
+namespace. It refuses live-only, drifted, or source-only policies, including
+ingress-only generated policies. It also refuses
+ wildcard or ranged CIDR/port egress, peer selectors or IP blocks that reach all
+other active Pods, unresolved namespace selectors, unreviewed egress, plus
+unisolated, host-network, privileged,
 NET_ADMIN/NET_RAW/SYS_ADMIN and init-container workloads that require a
 separate control-path review. The utility never calls Kubernetes and snapshot
 files must remain private.

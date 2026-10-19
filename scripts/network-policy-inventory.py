@@ -145,10 +145,10 @@ def normalized_peer(peer):
     return normalized
 
 
-def normalized_egress(egress):
+def normalized_rules(rules, peer_field):
     """Apply Kubernetes defaults that affect NetworkPolicy equality."""
     normalized = []
-    for rule in egress:
+    for rule in rules:
         if not isinstance(rule, dict):
             normalized.append(rule)
             continue
@@ -162,11 +162,11 @@ def normalized_egress(egress):
                 if isinstance(port, dict) and port.get("protocol") is None else port
                 for port in ports
             ]
-        destinations = normalized_rule.get("to")
-        if destinations == []:
-            normalized_rule.pop("to")
-        elif isinstance(destinations, list):
-            normalized_rule["to"] = [normalized_peer(peer) for peer in destinations]
+        peers = normalized_rule.get(peer_field)
+        if peers == []:
+            normalized_rule.pop(peer_field)
+        elif isinstance(peers, list):
+            normalized_rule[peer_field] = [normalized_peer(peer) for peer in peers]
         normalized.append(normalized_rule)
     return canonical(normalized)
 
@@ -179,15 +179,17 @@ def normalized_policy(item):
     if not isinstance(spec, dict) or not isinstance(spec.get("podSelector"), dict):
         raise ValueError("NetworkPolicy spec is invalid")
     types = policy_types(spec)
+    ingress = spec.get("ingress", [])
     egress = spec.get("egress", [])
-    if "Egress" in types and not isinstance(egress, list):
-        raise ValueError("NetworkPolicy egress must be a list")
+    if not isinstance(ingress, list) or not isinstance(egress, list):
+        raise ValueError("NetworkPolicy rules must be lists")
     return {
         "namespace": namespace,
         "name": name,
         "podSelector": canonical(normalized_selector(spec["podSelector"])),
         "policyTypes": sorted(types),
-        "egress": normalized_egress(egress if "Egress" in types else []),
+        "ingress": normalized_rules(ingress, "from"),
+        "egress": normalized_rules(egress, "to"),
     }
 
 
@@ -599,14 +601,14 @@ def audit(pod_items, policy_items, render_items, review_path=None, namespaces=()
     findings = []
     policy_index = {(record["namespace"], record["name"]): record for record in policy_records}
     for key in live_only:
-        if "Egress" in live[key]["policyTypes"]:
-            findings.append({"kind": "unowned-egress-policy", "policy": "/".join(key)})
+        direction = "egress" if "Egress" in live[key]["policyTypes"] else "ingress"
+        findings.append({"kind": f"unowned-{direction}-policy", "policy": "/".join(key)})
     for key in drifted:
-        if "Egress" in live[key]["policyTypes"]:
-            findings.append({"kind": "drifted-egress-policy", "policy": "/".join(key)})
+        direction = "egress" if "Egress" in live[key]["policyTypes"] else "ingress"
+        findings.append({"kind": f"drifted-{direction}-policy", "policy": "/".join(key)})
     for key in source_only:
-        if "Egress" in rendered[key]["policyTypes"]:
-            findings.append({"kind": "source-only-egress-policy", "policy": "/".join(key)})
+        direction = "egress" if "Egress" in rendered[key]["policyTypes"] else "ingress"
+        findings.append({"kind": f"source-only-{direction}-policy", "policy": "/".join(key)})
     for record in policy_records:
         policy = live[(record["namespace"], record["name"])]
         if "Egress" not in policy["policyTypes"]:
