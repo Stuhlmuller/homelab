@@ -246,13 +246,46 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
                          ["Egress", "Ingress"])
         self.assertEqual(result["driftedPolicies"], [])
 
-    def test_not_in_selector_requires_label_presence(self):
+    def test_not_in_selector_matches_missing_key(self):
         selector = {"matchExpressions": [{
             "key": "app", "operator": "NotIn", "values": ["excluded"],
         }]}
-        self.assertFalse(inventory.selector_matches(selector, {}))
+        self.assertTrue(inventory.selector_matches(selector, {}))
         self.assertTrue(inventory.selector_matches(selector, {"app": "included"}))
         self.assertFalse(inventory.selector_matches(selector, {"app": "excluded"}))
+
+    def test_not_in_policy_selector_includes_pods_without_key(self):
+        selector = {"matchExpressions": [{
+            "key": "scope", "operator": "NotIn", "values": ["excluded"],
+        }]}
+        item = policy("apps", "not-in", selector, [{
+            "to": [{"podSelector": {"matchLabels": {"app": "target"}}}],
+            "ports": [{"port": 443}],
+        }], ["Egress"])
+        result = inventory.audit(
+            [pod("apps", "missing", {}), pod("apps", "included", {"scope": "included"}),
+             pod("apps", "excluded", {"scope": "excluded"})],
+            [item], [[item]],
+        )
+        pods = {record["name"]: record for record in result["pods"]}
+        self.assertEqual(pods["missing"]["matchingEgressPolicies"], ["apps/not-in"])
+        self.assertEqual(pods["missing"]["egressMode"], "allow-rules")
+        self.assertEqual(pods["excluded"]["matchingEgressPolicies"], [])
+
+    def test_not_in_peer_reaches_pods_without_key(self):
+        selector = {"matchExpressions": [{
+            "key": "scope", "operator": "NotIn", "values": ["blocked"],
+        }]}
+        item = policy("apps", "not-in-peer", {"matchLabels": {"app": "client"}}, [{
+            "to": [{"podSelector": selector}], "ports": [{"port": 443}],
+        }], ["Egress"])
+        result = inventory.audit(
+            [pod("apps", "client", {"app": "client", "scope": "blocked"}),
+             pod("apps", "target-a", {}), pod("apps", "target-b", {"scope": "allowed"})],
+            [item], [[item]],
+        )
+        client = next(record for record in result["pods"] if record["name"] == "client")
+        self.assertEqual(client["effectiveWildcards"], ["all-current-pods"])
 
     def test_normalizes_empty_policy_and_egress_fields_before_drift_comparison(self):
         live = [
