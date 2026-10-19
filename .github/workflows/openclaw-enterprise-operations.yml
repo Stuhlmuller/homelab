@@ -12,13 +12,13 @@ on:
         description: Fixed legacy retention operation
         required: true
         type: choice
-        options: [inventory, publish-inventory, archive, verify]
+        options: [inventory, publish-inventory, archive, publish-archive, verify]
       baseline_ref:
         description: Inventory source SHA and run ID for publish or archive (SHA/run-id)
         required: false
         type: string
       archive_ref:
-        description: Archive source SHA and run ID for verify (SHA/run-id)
+        description: Archive source SHA and run ID for publish or verify (SHA/run-id)
         required: false
         type: string
 
@@ -69,7 +69,7 @@ jobs:
     needs: [static-policy]
     if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, cordium]
-    timeout-minutes: 240
+    timeout-minutes: 360
     concurrency:
       group: openclaw-enterprise-operations-production
       cancel-in-progress: false
@@ -135,7 +135,7 @@ jobs:
           umask 077
           bash scripts/ci/install-kubeconfig.sh
           kubectl --request-timeout=15s version >/dev/null
-          sha256sum --check --status <<<'3491fe8b6c80454d522b7d03dba1baf7e0101519467368ba4bf9c471a91efb6d  scripts/ci/openclaw-enterprise-operations.sh'
+          sha256sum --check --status <<<'f433de4d705662fddc30208efd9db7a3f1fab842857c400a6f5edd1bf7059436  scripts/ci/openclaw-enterprise-operations.sh'
           bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
           EOF
           then

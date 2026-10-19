@@ -14,13 +14,16 @@ on_exit() {
 trap on_exit EXIT
 
 stage="${1:-}"
-case "$stage" in inventory | publish-inventory | archive | verify) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
+case "$stage" in inventory | publish-inventory | archive | publish-archive | verify) ;; *) echo 'Invalid legacy operation stage' >&2; exit 2 ;; esac
 [[ "${GITHUB_ACTIONS:-}" == true && "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ && "${GITHUB_RUN_ID:-}" =~ ^[0-9]+$ ]] || exit 2
 case "$stage" in
   publish-inventory)
     [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2
     ;;
   archive) [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
+  publish-archive)
+    [[ "${BASELINE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ && "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2
+    ;;
   verify) [[ "${ARCHIVE_REF:-}" =~ ^[0-9a-f]{40}/[0-9]+$ ]] || exit 2 ;;
 esac
 
@@ -154,6 +157,36 @@ run_inventory_worker() {
   [[ "$state" == success ]] || exit 1
 }
 
+verify_restored_archive() {
+  local receipt="$1" marker="/private/legacy/verify-${GITHUB_RUN_ID}.state" state attempt
+  "${reader[@]}" sh -c '
+    set -eu
+    umask 077
+    receipt="$1"; marker="$2"
+    test ! -e "$marker" && test ! -L "$marker"
+    nohup sh -c '\''
+      if python3 /etc/openclaw-retirement/retirement.py verify-archive \
+        --config /private/legacy/config.json --receipt "$1"; then
+        printf "success\\n" >"$2"
+      else
+        printf "failure\\n" >"$2"
+      fi
+    '\'' sh "$receipt" "$marker" </dev/null >"${marker%.state}.log" 2>&1 &
+  ' sh "$receipt" "$marker"
+  state=pending
+  for ((attempt = 0; attempt < 420; attempt++)); do
+    state="$("${reader[@]}" sh -c \
+      'if test -f "$1"; then cat "$1"; else printf pending; fi' sh "$marker")"
+    case "$state" in
+      success) break ;;
+      failure) exit 1 ;;
+      pending|'') sleep 30 ;;
+      *) exit 1 ;;
+    esac
+  done
+  [[ "$state" == success ]] || exit 1
+}
+
 case "$stage" in
   inventory)
     baseline="/archive/private/baseline-${GITHUB_RUN_ID}.json"
@@ -209,23 +242,47 @@ case "$stage" in
       --version-id "$version" --query ServerSideEncryption --output text)" == aws:kms ]] || exit 1
     refresh_status inventory
     ;;
-  archive)
+  archive|publish-archive)
     baseline_id="${BASELINE_REF##*/}"
     baseline="/archive/private/baseline-${baseline_id}.json"
-    archive_result="/private/legacy/archive-result-${GITHUB_RUN_ID}.json"
+    archive_id="$GITHUB_RUN_ID"
+    archive_sha="$GITHUB_SHA"
+    if [[ "$stage" == publish-archive ]]; then
+      archive_id="${ARCHIVE_REF##*/}"
+      archive_sha="${ARCHIVE_REF%%/*}"
+    fi
+    archive_result="/private/legacy/archive-result-${archive_id}.json"
     aws s3 cp "s3://${bucket}/openclaw-enterprise/legacy/${BASELINE_REF}/baseline.json" - >"$work/baseline.json"
     "${reader[@]}" cat "$baseline" >"$work/mounted-baseline.json"
     cmp "$work/baseline.json" "$work/mounted-baseline.json"
-    observed="/private/legacy/baseline-${GITHUB_RUN_ID}.json"
-    run_inventory_worker
+    observed="/private/legacy/baseline-${archive_id}.json"
+    if [[ "$stage" == archive ]]; then run_inventory_worker; fi
     refresh_status stopped
-    "${reader[@]}" env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py archive \
-      --config /private/legacy/config.json --status /private/legacy/status.json \
-      --baseline "$baseline" --observed "$observed" --destination /archive/private \
-      --output "$archive_result"
+    if [[ "$stage" == archive ]]; then
+      "${reader[@]}" sh -c '
+        set -eu
+        umask 077
+        baseline="$1"; observed="$2"; output="$3"; run_id="$4"
+        log="/private/legacy/archive-${run_id}.log"
+        test ! -e "$output" && test ! -e "$log"
+        test ! -L "$output" && test ! -L "$log"
+        nohup flock -n /private/legacy/archive.lock env GITHUB_ACTIONS=true \
+          python3 /etc/openclaw-retirement/retirement.py archive \
+          --config /private/legacy/config.json --status /private/legacy/status.json \
+          --baseline "$baseline" --observed "$observed" --destination /archive/private \
+          --output "$output" </dev/null >"$log" 2>&1 &
+        worker=$!
+        sleep 2
+        kill -0 "$worker"
+      ' sh "$baseline" "$observed" "$archive_result" "$archive_id"
+    else
     receipt="$("${reader[@]}" cat "$archive_result" | jq -er .receipt)"
     [[ "$receipt" =~ ^/archive/private/legacy-[0-9a-f]{64}/receipt\.json$ ]] || exit 1
-    prefix="openclaw-enterprise/legacy/${GITHUB_SHA}/${GITHUB_RUN_ID}"
+    "${reader[@]}" cat "$observed" >"$work/observed.json"
+    "${reader[@]}" cat "$receipt" >"$work/receipt.json"
+    validate_baseline "$work/observed.json" "$work/status.json"
+    jq -e --slurpfile observed "$work/observed.json" '.format == 1 and .inventory == $observed[0] and (.sha256 | test("^[0-9a-f]{64}$"))' "$work/receipt.json" >/dev/null
+    prefix="openclaw-enterprise/legacy/${archive_sha}/${archive_id}"
     for name in legacy.tar.gz receipt.json final.json; do require_absent_object "$prefix/$name"; done
     "${reader[@]}" cat "${receipt%/*}/legacy.tar.gz" | aws s3 cp - "s3://${bucket}/${prefix}/legacy.tar.gz" --expected-size 80000000000
     "${reader[@]}" cat "$receipt" | aws s3 cp - "s3://${bucket}/${prefix}/receipt.json"
@@ -236,16 +293,17 @@ case "$stage" in
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
     restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
     restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
-    "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py verify-archive \
-      --config /private/legacy/config.json --receipt "$restore/receipt.json"
-    "${reader[@]}" cat "$restore/receipt.json" >"$work/receipt.json"
-    jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+    verify_restored_archive "$restore/receipt.json"
+    "${reader[@]}" cat "$restore/receipt.json" >"$work/restored-receipt.json"
+    cmp "$work/receipt.json" "$work/restored-receipt.json"
+    jq -n --arg sha "$archive_sha" --arg run "$archive_id" \
       --arg baseline "$BASELINE_REF" --arg archiveVersion "$archive_version" \
       --arg receiptVersion "$receipt_version" --arg digest "$(jq -er .sha256 "$work/receipt.json")" \
       '{sourceSha:$sha,runId:$run,baselineRef:$baseline,archiveVersion:$archiveVersion,receiptVersion:$receiptVersion,archiveSha256:$digest,offsiteRestoreVerified:true}' >"$work/final.json"
     refresh_status stopped
     aws s3 cp "$work/final.json" "s3://${bucket}/${prefix}/final.json"
     "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
+    fi
     ;;
   verify)
     jq -e '.replicas == 0 and .readyReplicas == 0 and .pods == 0 and .activeJobs == 0 and (.cronJobSuspended == true or .cronJobAbsent == true)' "$work/status.json" >/dev/null
@@ -262,11 +320,14 @@ case "$stage" in
     "${reader[@]}" sh -c 'umask 077; test ! -e "$1" && mkdir -m 700 "$1"' sh "$restore"
     restore_version "$prefix/legacy.tar.gz" "$archive_version" "$restore/legacy.tar.gz"
     restore_version "$prefix/receipt.json" "$receipt_version" "$restore/receipt.json"
-    "${reader[@]}" python3 /etc/openclaw-retirement/retirement.py verify-archive \
-      --config /private/legacy/config.json --receipt "$restore/receipt.json"
+    verify_restored_archive "$restore/receipt.json"
     "${reader[@]}" cat "$restore/receipt.json" | jq -e --arg sha "$(jq -er .archiveSha256 "$work/final.json")" '.sha256 == $sha' >/dev/null
     "${reader[@]}" sh -c 'case "$1" in /archive/private/offsite-[0-9]*) rm -rf -- "$1";; *) exit 1;; esac' sh "$restore"
     ;;
 esac
 
-echo 'Legacy operation completed; private receipt retained offsite'
+if [[ "$stage" == archive ]]; then
+  echo 'Legacy archive worker started; protected publication remains pending'
+else
+  echo 'Legacy operation completed; private receipt retained offsite'
+fi

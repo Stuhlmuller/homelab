@@ -14,7 +14,7 @@ test_allows_exact_openclaw_legacy_operation if {
 test_rejects_changed_openclaw_legacy_operation if {
 	every candidate in [
 		workflow_with_openclaw_legacy_operation(
-			replace(openclaw_legacy_run, "3491fe8b6c80454d522b7d03dba1baf7e0101519467368ba4bf9c471a91efb6d", "0000000000000000000000000000000000000000000000000000000000000000"),
+			replace(openclaw_legacy_run, "f433de4d705662fddc30208efd9db7a3f1fab842857c400a6f5edd1bf7059436", "0000000000000000000000000000000000000000000000000000000000000000"),
 			{"contents": "read", "id-token": "write"},
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
@@ -50,13 +50,13 @@ echo "Legacy operation completed; private receipts withheld."`)
 openclaw_legacy_run := `set -euo pipefail
 umask 077
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
-sha256sum --check --status <<<'3491fe8b6c80454d522b7d03dba1baf7e0101519467368ba4bf9c471a91efb6d  scripts/ci/openclaw-enterprise-operations.sh'
+sha256sum --check --status <<<'f433de4d705662fddc30208efd9db7a3f1fab842857c400a6f5edd1bf7059436  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
 
 workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"name": "OpenClaw Enterprise Operations",
-	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "verify"]}}}},
+	"true": {"workflow_dispatch": {"inputs": {"legacy_stage": {"options": ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]}}}},
 	"jobs": {"legacy": {
 		"needs": ["static-policy"],
 		"environment": {"name": "homelab-production"},
