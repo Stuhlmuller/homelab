@@ -8,10 +8,14 @@ sources:
     resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
     resource: repo://clusters/homelab/apps/cordium/runner-credentials.yaml
+  - id: openwiki-source-62b4804f94bc9a36375f5db0
+    resource: repo://clusters/homelab/apps/external-secrets/cluster-secret-store.yaml
   - id: openwiki-source-58caddf8069d72479935ea1e
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-1e65bc7abd9e63d10fcb87dc
@@ -30,6 +34,18 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-8547ae9691c6849e109e322b
     resource: repo://clusters/homelab/apps/mastodon/runtime-externalsecret.yaml
+  - id: openwiki-source-584942349e9deaf323c58e09
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
+  - id: openwiki-source-9cb199d7fd0a511b7c7d689f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/namespace.yaml
+  - id: openwiki-source-489371bb6baef577dc131a87
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -68,12 +84,16 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-96fd4f3e569f8bc04da5259d
     resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
+  - id: openwiki-source-d2206c7f78c1ec59c3551c13
+    resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
@@ -82,10 +102,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T04:37:10.218Z" }
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Secrets And Identity
@@ -177,10 +197,11 @@ retaining Tunnel credentials, existing Octelium identities, and native carrier
 recovery. The separate tailnet resolver watches approved Kubernetes Services
 and needs no DNS write token. Only the later guarded retirement helper reads
 the existing scoped cert-manager Cloudflare token. Feature 005 limits its
-public A/AAAA/CNAME deletion to the 26 approved non-apex app subdomains after owner
-tailnet DNS handoff and client acceptance. The private resolver retains all 27
-approved names. Public apex, mail, DNS-01 validation, and unrelated public
-names stay in the zone; see the [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
+public A/AAAA/CNAME deletion to the 26 non-apex names from the fixed migration
+set after owner tailnet DNS handoff and client acceptance. The private resolver
+retains all 29 current approved names. Public apex, mail, DNS-01 validation,
+and unrelated public names stay in the zone; see the
+[cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
 The helper has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
@@ -210,9 +231,12 @@ the App issuer and private key. The [2026-10-19 transfer receipt](../../docs/ope
 records both parameters at version 2 and a later `Ready=True` refresh of the
 `automation/renovate` ExternalSecret. It projects both credentials as files
 every five minutes. Current IAM source removes the temporary exact-scope
-companion writer role; the live role-retirement saved-plan apply and subsequent
-no-op verification remain pending. Keep the hourly CronJob suspended until the
-writer grant is confirmed gone and the separate dry-run gates pass.
+companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, the operator applied the private, un-targeted saved plan with only the
+role and inline-policy deletions. A read-only IAM lookup returned
+`NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
+remains suspended in full dry-run mode while separate parity gates are pending;
+the legacy GitHub Action remains the writer.
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name
@@ -240,6 +264,34 @@ boundary. After repair, verify a controlled repository-driven refresh before
 rotating dependent credentials.
 See [AWS forward access sessions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_forward_access_sessions.html)
 and [ViaAWSService](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_condition-keys.html#condition-keys-viaawsservice).
+
+### Dormant OpenClaw Enterprise boundary
+
+The unregistered [Enterprise foundation](../../clusters/homelab/apps/openclaw-enterprise-foundation/README.md)
+declares restricted `openclaw-system` and external `openclaw-agents` namespaces.
+The `aws-ssm` store allow-list includes both; seven `OnChange` ExternalSecrets
+project only exact `/homelab/openclaw-enterprise/` parameters and retain target
+Secrets on deletion. The model key remains a placeholder until the protected
+workflow supplies a distinct OpenRouter key. These declarations do not prove
+materialization or authorize activation.
+
+`occ-database` templates separate `application-url` and `migration-url` keys
+from generated app and migrator passwords. Both URLs name the private
+`occ-postgres` Service and require `sslmode=verify-full` with the retained
+`occ-postgres-root` CA at `/etc/openclaw/database-ca/tls.crt`; the admin
+password is a separate target. cert-manager declares that CA and a server
+certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
+and live TLS verification remain pending.
+
+The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
+non-secret `installation.yaml` bytes. Its exact SHA-256 is bound in Helm values.
+A protected exact-`main` workflow can create and reread only that fixed Secret
+after the foundation namespace exists; this PR does not run it. The initial
+Secret has no installation ID. A later protected reconciler must bind the ID
+returned by `GET /installation` and verify the selected Drivers and Ready Pods
+before activation. SSM-backed model, database, auth, and gateway credentials
+remain separate from these startup bytes.
 
 ## Identity Notes
 
@@ -577,7 +629,7 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   `/homelab/n8n/postgres-app-password` values; n8n receives only the app
   password through `n8n-postgres-client` and
   `DB_POSTGRESDB_PASSWORD_FILE`.
-- OpenClaw uses `/homelab/openclaw/app-secret` as
+- The stopped legacy OpenClaw retains `/homelab/openclaw/app-secret` as
   `OPENCLAW_GATEWAY_TOKEN`; bootstrap configures gateway auth with an OpenClaw
   SecretRef to that environment value instead of a generated file under the
   container user's home directory. OpenClaw uses
@@ -597,6 +649,15 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   that key for a homelab-only installation token on each CLI/Git invocation.
   Tokens use private temporary CLI config files, never the PVC or child process
   environment; requests omit administration and secret-management permissions.
+- Fresh OpenClaw Enterprise has a separate `/homelab/openclaw-enterprise/*`
+  contract. OpenTofu generates five internal values; the model key stays a
+  placeholder until the owner supplies a distinct OpenRouter inference key to
+  the protected [fixed-target workflow](../../.github/workflows/openclaw-enterprise-model-credential.yml).
+  It verifies the key and writes only the new SSM path. The selected
+  `openrouter/free` model uses OCE's OpenAI-compatible provider configuration.
+  Activation remains disabled until the key, consumer refresh, and real model
+  probe pass. No legacy OpenClaw or LiteLLM credential is an alias for this
+  agent. See the [SSM contract](../../docs/secrets-aws-ssm.md#openclaw-enterprise-credential-contract).
 - Policy Bot runs one replica after its GitHub-App-owned SSM placeholders are
   replaced. Its SSM contract is summarized in
   [AWS SSM Secret References](../runbooks/secrets-aws-ssm.md) and [Application Notes](../workloads/application-notes.md). Configure

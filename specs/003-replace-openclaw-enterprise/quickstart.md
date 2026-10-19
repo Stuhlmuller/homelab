@@ -62,6 +62,11 @@ python3 scripts/openclaw-enterprise.py check \
   --config scripts/config/openclaw-enterprise.json
 ```
 
+The platform `validate --config` command checks only the pinned declaration.
+To validate private Talos bases and every target patch offline, also pass both
+`--control-plane-config` and `--worker-config` paths to mode-0600 files.
+Neither form proves recovery or live readiness.
+
 Expected: no unsupported upgrade hops, CNI writes, unknown live-operation inputs,
 plaintext secrets, duplicate-create retry, unsafe archive path, or bypassed
 quiescence. Fixtures prove error paths; they do not prove live enforcement.
@@ -74,11 +79,11 @@ verify zero writers, create the final multi-root archive and perform an isolated
 restore. Keep both local authoritative databases, NAS files, old full archives
 and historical runtime checkpoint in the protected inventory.
 
-The read-only status helper and protected stages are implemented. This stage
-starts one reader; the offsite bucket must be applied and verified separately,
-and the legacy writer stays active. If the reader is not Ready or its retained
-mount identities differ, return it to zero replicas through GitOps before any
-archive or shutdown. Validate the offline contracts first:
+The read-only status helper and protected stages are implemented. The offsite
+bucket is applied, the reader is Ready, and the legacy writer is stopped. If the
+reader is not Ready or its retained mount identities differ, return it to zero
+replicas through GitOps before another archive attempt. Validate the offline
+contracts first:
 
 ```sh
 python3 scripts/ci/openclaw-retirement-test.py

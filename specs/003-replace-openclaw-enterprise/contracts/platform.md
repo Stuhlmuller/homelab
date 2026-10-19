@@ -27,8 +27,10 @@ platform-maintenance.py execute --config PATH --stage STAGE --expected-sha SHA
 ```
 
 - `inspect`: read-only versions, node/image identity, health and capacity metadata.
-- `validate`: schema, supported hop/order, immutable references, complete machine
-  config validation, recovery prerequisites; does not invoke upgrade operations.
+- `validate --config`: pinned declaration schema, supported hop/order, and immutable
+  references only. Supplying both private role-specific Talos configurations also
+  renders and strictly validates every target patch offline. Neither form proves
+  recovery or live readiness or invokes upgrade operations.
 - `execute`: protected workflow only; verifies current SHA, maintenance stage,
   live starting state and private recovery receipt before each mutation. It uses
   the supported Talos upgrade path and records per-node completion.
@@ -42,6 +44,15 @@ The helper must not mistake `upgrade-k8s --dry-run` for a read-only probe.
 Validate configs with `talosctl validate --mode metal --strict`; use authenticated
 Talos access. Confirm direct recovery and fresh etcd backups before the sole
 control-plane change. No automatic Kubernetes rollback.
+The protected runner needs an explicitly reviewed Octelium TCP grant to the
+Talos API: the existing service policy admits only the owner human session.
+Use the hostname covered by the Talos server certificate with a fixed local
+publish port, keep Talos mTLS, and prove a separate direct-LAN recovery path.
+Do not use `--insecure` to work around transport or certificate failures.
+Talos appends the target `:v<version>` tag to `upgrade-k8s` image-base flags;
+verify every resulting tag against its digest-pinned Harbor catalog entry and
+private publication receipt before execution. Do not pass `tag@sha256` values
+directly to those flags.
 
 ## Enforcement Configuration
 

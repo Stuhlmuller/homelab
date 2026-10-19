@@ -18,10 +18,10 @@
 
 ## Phase 2: Foundational (Shared Retirement Set)
 
-**Purpose**: Establish one validated 26-name public deletion set while retaining all 27 private answers.
+**Purpose**: Establish one validated 26-name public deletion set while retaining all 29 current private answers.
 
 - [X] T002 Add a failing test for the ordered 26 non-apex retirement names, fixed 27-name inventory digest, and excluded four legacy names in `scripts/ci/tailscale-private-dns-test.py`.
-- [X] T003 Derive and validate the exact 26-name retirement set from the fixed inventory, excluding only `stinkyboi.com`, in `scripts/tailscale-private-dns-check.py`; preserve its 27-name private DNS and HTTPS checks.
+- [X] T003 Derive and validate the exact 26-name retirement set from the fixed inventory, excluding only `stinkyboi.com`, in `scripts/tailscale-private-dns-check.py`; preserve private DNS for every approved name and HTTPS checks for the original 27 migration routes.
 
 **Checkpoint**: The preflight distinguishes public deletion targets from private resolver approvals.
 
@@ -34,7 +34,7 @@
 **Independent Test**: Mock a preview and execution, then confirm exactly the 26 owner names are queried and only their address records are removed; after live cutover, public authoritative and recursive answers are absent for those names and a concrete Cordium wildcard child.
 
 - [X] T004 [US1] Add a failing 26-name dry-run test that excludes the apex from `checked_names`, `baseline_records`, Cloudflare target queries, and maximum-TTL calculation in `scripts/ci/tailscale-private-dns-test.py`.
-- [X] T005 [US1] Use the validated 26-name set for Cloudflare queries, preview, baseline, TTL, DELETE, readback, and completion output in `scripts/tailscale-private-dns.sh`; keep direct private DNS and HTTPS readiness on all 27 names.
+- [X] T005 [US1] Use the validated 26-name set for Cloudflare queries, preview, baseline, TTL, DELETE, readback, and completion output in `scripts/tailscale-private-dns.sh`; keep direct private DNS for every approved name and HTTPS readiness on the original 27 migration routes.
 - [X] T006 [US1] Add mocked execution cases for A/AAAA/CNAME removal, absent individual records, empty baseline, and the Cordium wildcard owner in `scripts/ci/tailscale-private-dns-test.py`.
 
 **Checkpoint**: The guarded helper can retire the 26 exact owner names without selecting the apex.
@@ -45,11 +45,11 @@
 
 **Goal**: Preserve public apex, mail and validation records, other record types, and unrelated public names while private apex resolution remains healthy.
 
-**Independent Test**: Mock a cutover with apex A/MX/TXT/CAA, NS/SOA, legacy, Mastodon, and other unrelated records; confirm none change, the 27-name private checker still covers the apex, and read-only public DNS-01 readiness passes before and after live cutover.
+**Independent Test**: Mock a cutover with apex A/MX/TXT/CAA, NS/SOA, legacy, Mastodon, and other unrelated records; confirm none change, the current 29-name private checker still covers the apex, and read-only public DNS-01 readiness passes before and after live cutover.
 
 - [X] T007 [US2] Extend Cloudflare fixtures and assertions so apex A/MX/TXT/CAA, NS/SOA, four legacy names, Mastodon and other unrelated owners, plus non-address types at target owners survive execution in `scripts/ci/tailscale-private-dns-test.py`.
 - [X] T008 [P] [US2] Explain the preserved public zone, private apex, DNS-01 validation, and unrelated-name behavior; replace stale 27-name public-retirement wording with the 26-name boundary and keep legacy endpoints distinct in `docs/networking-tailnet-ingress.md`, `clusters/homelab/platform/tailnet-dns/README.md`, `docs/secrets-aws-ssm.md`, and `docs/octelium.md`.
-- [X] T009 [US2] Verify the unchanged 27-name resolver approval and apex coverage with `scripts/ci/tailnet-dns-check-test.py` and `scripts/ci/tailnet-dns-test.py`; update only a stale expectation in those files if a check fails.
+- [X] T009 [US2] Verify resolver approval and apex coverage with `scripts/ci/tailnet-dns-check-test.py` and `scripts/ci/tailnet-dns-test.py`; the initial 27-name approval later expanded to 29 names.
 
 **Checkpoint**: Public preservation and private apex behavior are explicit and testable independently of live deletion.
 
@@ -69,7 +69,7 @@
   failed/non-authoritative TTL replies, excess TTL, deliberate zero-replica
   route exceptions, and safe partial retry in
   `scripts/ci/tailscale-private-dns-test.py`.
-- [X] T011 [US3] Require exact 26-name evidence membership and record-owner/type validation while keeping all 27 private-client preflight checks, with serving routes strict and deliberately stopped backends accepted only on matching reviewed/live zero replicas, in `scripts/tailscale-private-dns-check.py`.
+- [X] T011 [US3] Require exact 26-name evidence membership and record-owner/type validation while keeping all 29 current private-client DNS checks and the original 27 migration HTTPS checks, with serving routes strict and deliberately stopped backends accepted only on matching reviewed/live zero replicas, in `scripts/tailscale-private-dns-check.py`.
 - [X] T012 [US3] Generate a fresh private evidence template with all 26 empty `off_tailnet` decisions and no apex target records in `scripts/tailscale-private-dns.sh`; reject historical 27-name templates rather than adapting them.
 - [X] T013 [US3] Inspect the complete paginated public wildcard/CNAME/NS
   inventory, block on relevant child NS delegation or out-of-set covering
@@ -117,9 +117,14 @@ was attempted but stopped at `nix-cache-signature-test.py`:
 the `homelab-manifest-policy` Nix store output had no available substituter.
 The affected DNS checks above passed independently.
 
-- [ ] T017 Review the changed helper, preflight, tests, runbooks, and OpenWiki pages, then merge their protected PR to `main` before any live DELETE; include `scripts/tailscale-private-dns.sh`, `scripts/tailscale-private-dns-check.py`, `scripts/ci/tailscale-private-dns-test.py`, and `clusters/homelab/apps/traefik/CUTOVER.md` in the review.
+- [X] T017 Review the changed helper, preflight, tests, runbooks, and OpenWiki pages, then merge their protected PR to `main` before any live DELETE; include `scripts/tailscale-private-dns.sh`, `scripts/tailscale-private-dns-check.py`, `scripts/ci/tailscale-private-dns-test.py`, and `clusters/homelab/apps/traefik/CUTOVER.md` in the review.
+
+**T017 delivery (2026-10-19):** PR #1410 merged through the protected path at
+`2f94bec3f4d42b4759bfe5cab566633eaa7cb6d3`; no public DNS records were
+deleted. Revalidate current `main` before the live cutover because later changes
+affect the private-name inventory and readiness checks.
 - [ ] T018 From clean reviewed `main`, capture read-only Argo, signed resolver,
-  all 27 ordinary tailnet DNS answers, serving HTTPS routes and declared/live
+  all 29 ordinary tailnet DNS answers, the original 27 migration HTTPS routes and declared/live
   zero-replica suspensions, Fleet, Harbor node pulls, native API, Cordium
   reconnect, public callbacks, apex, and unrelated-name observations outside
   git; before deletion also verify Cloudflare authoritative delegation, Ready
@@ -132,6 +137,10 @@ The affected DNS checks above passed independently.
   `specs/005-retire-public-app-dns/quickstart.md` and
   `clusters/homelab/apps/traefik/CUTOVER.md`.
 - [ ] T019 Run the reviewed dry-run from `scripts/tailscale-private-dns.sh` into `~/.local/state/homelab/app-subdomain-retirement.json`; review all 26 exact owner IDs/types, preserved public records, broader wildcard/CNAME/child-delegation conflicts, effective authoritative answers, and old maximum TTL before editing confirmation fields.
+
+**T019 status:** An earlier read-only preview is stale after `main` advanced and
+AWS SSO expired. Capture a fresh preview from current reviewed `main` before
+completing evidence or deleting records.
 - [ ] T020 Record current `migrated` or `accepted_loss` decisions for every one of the 26 names and confirm the owner DNS setting, all normal-client and critical-path checks, and exact baseline in `~/.local/state/homelab/app-subdomain-retirement.json`; stop if any evidence or caller decision is missing.
 - [ ] T021 Execute `scripts/tailscale-private-dns.sh --retire-private --execute` from clean reviewed `main` with its exact `--expected-sha` and `~/.local/state/homelab/app-subdomain-retirement.json`; if a partial run occurs, investigate and retry only through the same guard after rechecking live state.
 - [ ] T022 After the saved previous TTL from the last deletion, follow any
@@ -148,7 +157,7 @@ The affected DNS checks above passed independently.
   `clusters/homelab/apps/cert-manager/issuer.yaml`,
   `clusters/homelab/apps/traefik/certificate.yaml`, and
   `clusters/homelab/apps/istio/certificate.yaml`.
-- [ ] T023 Recheck ordinary tailnet DNS for all 27 names, HTTPS/access restrictions, critical callers, and isolated-client fail-closed behavior for sampled retired names; record results and restore private DNS only through the declared path if needed, following `clusters/homelab/apps/traefik/CUTOVER.md` and `specs/005-retire-public-app-dns/contracts/cutover.md`.
+- [ ] T023 Recheck ordinary tailnet DNS for all 29 names, the original 27 migration HTTPS/access restrictions, critical callers, and isolated-client fail-closed behavior for sampled retired names; record results and restore private DNS only through the declared path if needed, following `clusters/homelab/apps/traefik/CUTOVER.md` and `specs/005-retire-public-app-dns/contracts/cutover.md`.
 
 **Checkpoint**: The source is merged, the public 26-name retirement is observed after cache expiry, preserved public DNS still works, and private app access passes.
 

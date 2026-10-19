@@ -162,6 +162,40 @@ class HarborAPI:
         return 400, {"error": "unsupported operation"}, {}
 
 
+class KubernetesTagClient:
+    def __init__(self):
+        self.digests = dict(bootstrap.KUBERNETES_TAG_DIGESTS)
+        self.rules = []
+        self.calls = []
+        self.report_immutable = True
+
+    def request(self, method, path, body=None, expected=(200,), json_response=True):
+        self.calls.append((method, path, copy.deepcopy(body)))
+        artifact_prefix = "/projects/mirror/repositories/"
+        rules_path = "/projects/mirror/immutabletagrules"
+        if method == "GET" and path.startswith(artifact_prefix):
+            encoded = path[len(artifact_prefix):].split("/artifacts/", 1)[0]
+            repository = urllib.parse.unquote(urllib.parse.unquote(encoded))
+            desired = bootstrap.kubernetes_immutable_rule(repository, 7)
+            locked = any(all(rule.get(key) == value for key, value in desired.items())
+                         for rule in self.rules)
+            return {"digest": self.digests[repository], "tags": [
+                {"name": bootstrap.KUBERNETES_TAG,
+                 "immutable": locked and self.report_immutable}]}, {}
+        if method == "GET" and path.startswith(rules_path + "?"):
+            return [{key: copy.deepcopy(value) for key, value in rule.items()
+                     if key != "project_id"} for rule in self.rules], {
+                         "X-Total-Count": str(len(self.rules))}
+        if method == "POST" and path == rules_path:
+            self.rules.append({**copy.deepcopy(body), "id": len(self.rules) + 1})
+            return None, {}
+        if method == "PUT" and path.startswith(rules_path + "/"):
+            identifier = int(path.rsplit("/", 1)[1])
+            self.rules[identifier - 1] = copy.deepcopy(body)
+            return None, {}
+        raise AssertionError("unexpected Harbor API request")
+
+
 class BootstrapTest(unittest.TestCase):
     def setUp(self):
         self.api = HarborAPI()
@@ -209,6 +243,50 @@ class BootstrapTest(unittest.TestCase):
         bad["rules"] = ({**bad["rules"][0], "delete": True},)
         with self.assertRaises(bootstrap.BootstrapError):
             bootstrap.validate_replication_policy(bad)
+
+    def test_kubernetes_tag_lock_pins_match_platform_and_catalog(self):
+        platform = json.loads((ROOT / "scripts/config/platform-maintenance.json").read_text())
+        catalog = json.loads((ROOT / "scripts/config/harbor-images.json").read_text())
+        pins = platform["kubernetesStage"]["images"].values()
+        expected = {source.split(":v1.35.9@", 1)[0]: source.split("@", 1)[1]
+                    for source in pins}
+        self.assertEqual(bootstrap.KUBERNETES_TAG_DIGESTS, expected)
+        self.assertTrue({entry["source"] for entry in catalog["images"]}.issuperset(pins))
+        self.assertFalse(bootstrap.KUBERNETES_TAG_LOCK_ENABLED)
+
+    def test_kubernetes_tag_lock_is_dormant_until_reviewed_activation(self):
+        client = KubernetesTagClient()
+        bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+        self.assertEqual(client.calls, [])
+
+    def test_kubernetes_tag_lock_prechecks_all_digests_before_writing(self):
+        client = KubernetesTagClient()
+        client.digests["ghcr.io/siderolabs/kubelet"] = "sha256:" + "0" * 64
+        with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True), \
+                self.assertRaises(bootstrap.BootstrapError):
+            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+        self.assertFalse([call for call in client.calls if call[0] != "GET"])
+
+    def test_kubernetes_tag_lock_reads_back_and_repairs_exact_rules(self):
+        client = KubernetesTagClient()
+        with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True):
+            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            self.assertEqual(len(client.rules), 5)
+            self.assertEqual(len([call for call in client.calls if call[0] == "POST"]), 5)
+            client.calls.clear()
+            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            self.assertFalse([call for call in client.calls if call[0] != "GET"])
+            client.rules[0]["disabled"] = True
+            client.calls.clear()
+            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
+            self.assertEqual(len([call for call in client.calls if call[0] == "PUT"]), 1)
+
+    def test_kubernetes_tag_lock_rejects_missing_immutable_readback(self):
+        client = KubernetesTagClient()
+        client.report_immutable = False
+        with patch.object(bootstrap, "KUBERNETES_TAG_LOCK_ENABLED", True), \
+                self.assertRaisesRegex(bootstrap.BootstrapError, "digest or lock"):
+            bootstrap.reconcile_kubernetes_tag_lock(client, 7)
 
     def test_paused_policy_disables_native_rules(self):
         rule = bootstrap.CHAINGUARD_REPLICATION["rules"][0]

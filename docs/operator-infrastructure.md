@@ -361,6 +361,13 @@ jq -e '
 Stop on unrelated changes. Apply only the reviewed saved bytes, verify a
 fresh full-unit no-op plan, then delete the private plan directory.
 
+On 2026-10-19, after [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, the operator applied a private, un-targeted saved plan whose only
+managed-resource changes deleted `aws_iam_role.renovate_transfer` and
+`aws_iam_role_policy.renovate_transfer`. The apply succeeded; a read-only IAM
+role lookup returned `NoSuchEntity`, and a fresh full-unit plan reported no
+changes. The hourly Renovate CronJob remains suspended pending dry-run parity.
+
 The September 29, 2026 Langfuse apply reached SSM refresh but failed because
 the workflow role's KMS grant still named the former runtime key, not the
 current `alias/aws/ssm` target. Reconcile the existing managed policy through

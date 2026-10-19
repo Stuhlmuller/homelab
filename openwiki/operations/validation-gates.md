@@ -4,6 +4,8 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
 tags: [operations, validation]
 sources:
+  - id: openwiki-source-3b9a4d642a8fbbac6cbed98b
+    resource: repo://.checkov.baseline
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
@@ -14,6 +16,10 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-664c834cf8c51093d63fbef4
+    resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -46,14 +52,22 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
+    resource: repo://clusters/homelab/apps/traefik/certificate.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -70,18 +84,24 @@ sources:
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
     resource: repo://docs/evidence/harbor-core-advisory-assessment-2026-10-11.json
+  - id: openwiki-source-df5b234ace5ca38a67ae3b6b
+    resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
     resource: repo://docs/nix-cache.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
   - id: openwiki-source-714484b73b4ba165201cb06d
@@ -98,6 +118,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
@@ -124,6 +146,20 @@ sources:
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-4091442a62f62f0adc73ce96
+    resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-18423e8d68f98d1e991a1691
+    resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
+  - id: openwiki-source-80b544ebc719878ac3f31bac
+    resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-7d23244901f610ddb0d3ae2a
+    resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-86a40ee4669b4b7843917e87
+    resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
+  - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
+    resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-379810dcab1205ffb941d2cb
+    resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
@@ -158,14 +194,24 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
+    resource: repo://scripts/config/harbor-images.json
+  - id: openwiki-source-f9b3281815e3adb0fb2d9b59
+    resource: repo://scripts/config/harbor-litellm-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
     resource: repo://scripts/config/harbor-runtime-images.json
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
   - id: openwiki-source-4bbfe00c406fec8a213babcb
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
     resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
@@ -182,10 +228,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Validation Gates
@@ -374,8 +420,11 @@ Offline validation runs `traefik-routes-test.py` and
 callback/registry boundaries, Fleet setup denial, and the exact four LAN, four
 bridge, and four overlay `/32` sources for registry port 9443 in both ingress
 policies. Adjacent LAN addresses and ordinary Pod addresses remain outside that
-source boundary. The second checks tokenless API-proxy configuration and
-plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
+source boundary. It also requires Renovate's dedicated no-token service identity
+and canonical Harbor host alias on the registry-only listener, while excluding
+the default identity and shared private listener. The second checks tokenless
+API-proxy configuration and plan-only dry-run admission. Render the exact
+Traefik chart plus Kustomization
 and run Conftest on all declared routing resources.
 
 Separately invoke `traefik-runtime-check.py --binary /absolute/path/to/traefik`
@@ -449,11 +498,14 @@ and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
 The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-OpenClaw HTTP 502 only when each reviewed workload declaration and live
-Deployment specify zero replicas and no live replicas remain. Deployed Traefik
-routes and TLS must match the reviewed checkout. Other application 5xx
-responses fail. These exceptions check routing to intentionally stopped apps;
-they do not establish application runtime health.
+legacy OpenClaw HTTP 502 only when each reviewed declaration and live
+Deployment specify zero replicas and no live replicas remain. Other application
+5xx responses fail. These stopped-app exceptions check routing, not runtime
+health. Deployed Traefik routes and TLS must match the reviewed checkout.
+`--retire-private --check` probes the original 27 migration routes; bare
+`--check` also probes the two staged Enterprise routes. Its Agent probe uses an
+`agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's router and
+rejects an edge 404. Enterprise backend readiness is a separate rollout gate.
 
 The DNS regression includes a dual-address peer whose LoadBalancer Service
 publishes only IPv4: it must produce A records and no AAAA. Probe each published
@@ -523,7 +575,7 @@ DNS proxy under Tailnet Lock and run
 `python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff`
 from the trusted signer Mac with read-only cluster access. The checker binds
 the observed IP to the online signed peer, rejects other selected Services,
-and probes all 27 approved A/AAAA names over UDP and TCP, including a Cordium
+and probes all 29 current approved A/AAAA names over UDP and TCP, including a Cordium
 wildcard child. It compares public apex MX/TXT and an unrelated public name.
 These checks establish a handoff gate, not owner tailnet DNS configuration or
 normal client resolution. Leave public app records until those later checks
@@ -533,7 +585,8 @@ pass; the `--retire-private` helper is deletion-only and separately guarded.
 
 The [feature 005 cutover](../../specs/005-retire-public-app-dns/quickstart.md)
 is a separate live gate. Its public deletion set is the 26 approved non-apex
-app subdomains; private DNS and HTTPS checks still cover all 27 approved names.
+app subdomains from the fixed first 27 migration names. Private DNS checks
+cover all 29 current names; retirement HTTPS checks cover the original 27 routes.
 Run the focused retirement fixtures and fresh checks from reviewed `main`.
 Record a per-name off-tailnet decision, the exact Cloudflare record baseline,
 and the previous maximum TTL in private evidence. A 27-name public-retirement
@@ -1457,6 +1510,71 @@ cold pulls, canary cleanup, and workflow execution remain gates before
 enabling registration or changing job selectors. See the
 [runner source contract](../../builds/cordium-runner/README.md).
 
+## OpenClaw Enterprise replacement gates
+
+The Enterprise model-credential workflow is protected by exact current-`main`
+source checks and validates an owner-supplied OpenRouter key before writing only
+`/homelab/openclaw-enterprise/model-api-key`. No key has been supplied or written.
+The stopped legacy inventory is verified, but the independent archive/restore,
+full image catalog, isolated canary, platform upgrades, and new-state restore
+remain acceptance gates. Source-only static checks do not activate the agent.
+The staged platform source tests exact-main maintenance receipts, safe node
+order, private prerequisite readback, Talos role/disk preservation, immutable
+Kubernetes tag readback, NetworkPolicy inventory, fixture traffic and
+ownership-limited cleanup. The protected workflow wires fixed upgrade stages
+to that executor with a pinned helper hash and bounded private results. Its
+activation flag and canary node remain unset. Current-SHA recovery receipts,
+full-catalog publication, five-tag Harbor lock and an isolated canary remain
+live gates. Passing these fixtures does not qualify a live Talos node or make
+existing policies effective.
+The dormant foundation adds
+[`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
+to `static-checks.sh`. It renders the Kustomization and checks restricted
+namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
+RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
+private server SAN, and `activationEnabled: false`. The separate
+[`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
+now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
+fixtures exercise reconciliation and workload attestation. Config validation
+pins the bootstrap service-key destination to
+`https://console.oce.stinkyboi.com` before reading the key. When activation is
+requested, it requires the exact `openai` transport, OpenRouter base URL,
+`openai-completions` API, `openrouter/free` model, and dedicated key reference;
+fixtures reject changed, missing, and extra model fields. The stable
+receipt compares nonempty resource versions for the immutable Secret,
+Deployments, ReplicaSets, and Pods across two read-only snapshots. The
+read-only `check` uses those snapshots to prove the selected Drivers; `verify`
+also remains read-only and blocked. With a file-backed service key and protected
+journal, `reconcile` can POST the logical `claw` Namespace for the prepared
+`openclaw-agents` namespace. It checks the external namespace, restricted PSA,
+exact tenant RBAC and policy ownership before the first POST, records pending
+intent first, and recovers an uncertain response only through unique API
+readback. A ready result needs exact API and owned Kubernetes readback,
+including exactly the three pinned base NetworkPolicies. Reconciliation then
+blocks before Agent creation or activation. A blocked run may already have
+changed Enterprise and Kubernetes state: inspect the journal, exact API object,
+namespace and policies before retrying. Rollback needs a reviewed cleanup path
+for the logical Namespace; retain the physical tenant Namespace. These local
+tests do not prove live Secret readiness, certificate issuance, PostgreSQL TLS,
+network-policy enforcement, hooks, routes, Namespace adoption or restore.
+The dormant chart gate renders pinned upstream Helm values with the reviewed
+Installation bytes, fixed immutable startup Secret name, and the single local
+Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
+Secret creation/readback and bounded hook behavior; Checkov uses an exact
+three-finding baseline for public Secret-name strings. These offline checks do
+not establish running Pod/Secret binding or a successful live hook.
+The staged private-access check runs
+[`openclaw-enterprise-access-test.py`](../../scripts/ci/openclaw-enterprise-access-test.py)
+in the static gate. It validates the scoped Octelium catalog and exact-main
+reconciler without applying it. The Traefik route and executable runtime checks
+cover the authenticated console host, exact 32-hex native Agent host, rejected
+lookalikes, WebSockets, and certificate SANs. The console needs the explicit
+`console.oce.stinkyboi.com` SAN: `*.stinkyboi.com` covers only one label.
+Live console authentication and native Agent access still require the inactive
+Enterprise API, policy prerequisites, and final cutover.
+See the [rollout runbook](../../docs/openclaw-enterprise-rollout.md) and
+[acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
+
 ## OpenClaw bootstrap gates
 
 Bootstrap verifies its current offline archive, existing local database
@@ -1780,13 +1898,23 @@ not establish successful private image publication.
 The fixed Harbor 2.15.4 scope must contain exactly the nine digests from the
 reviewed full catalog. Publisher fixtures reject an unreviewed scope and prove
 selected-image pull verification. A successful scoped run proves only those nine
-components; the LiteLLM duplicate-index failure still blocks full-catalog
-acceptance.
+components; the revised LiteLLM catalog still needs an `all` run for
+full-catalog acceptance.
+
+The fixed LiteLLM scope selects the one reviewed Linux amd64 child digest
+from the repeated-descriptor index. The consumer source now pins that child and
+the catalog excludes the failing root index. Coverage and publisher fixtures
+reject a missing, altered or extra scope entry before credentials. The shared
+publisher verifies original manifest bytes and a fresh complete authenticated
+Harbor pull. Exact-main protected
+[run `39210811031`](https://github.com/Stuhlmuller/homelab/actions/runs/39210811031)
+passed the one-image publication receipt; local fixtures alone cannot prove
+that live result, and the scoped run does not clear full-catalog coverage.
 
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
-copy and authenticated-pull path. The workflow's exact security hash is
-updated with the new choice; a passing fixture does not publish the images or
+copy and authenticated-pull path. The workflow's exact security hash
+locks the reviewed fixed-scope choices; a passing fixture does not publish the images or
 validate consuming workloads.
 
 The staged hourly Renovate runner has a credential-free config and discovery
@@ -1822,8 +1950,10 @@ require separate acceptance.
 Mocked transport fixtures cover the exact OCI conversion failure at destination
 upload and at alias copy after a resumed digest tag. Both require the `regctl`
 fallback, unchanged root digest and alias, and a complete authenticated pull;
-generic destination errors still fail closed. These fixtures do not establish
-that the protected full-catalog publication succeeded.
+generic destination errors still fail closed. Alias lookup fixtures also require
+one transient read to recover and an authorization failure to stop without a
+retry. These fixtures do not establish that the protected full-catalog
+publication succeeded.
 
 The native Chainguard receipt fixture uses actual Skopeo and generated local
 OCI indexes to check complete two-platform downloads with repeated child

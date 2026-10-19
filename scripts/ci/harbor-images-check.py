@@ -19,6 +19,7 @@ MASTODON_CATALOG = ROOT / "scripts/config/harbor-mastodon-images.json"
 BAZARR_CATALOG = ROOT / "scripts/config/harbor-bazarr-images.json"
 CHAINGUARD_CATALOG = ROOT / "scripts/config/harbor-chainguard-images.json"
 DNS_CATALOG = ROOT / "scripts/config/harbor-dns-images.json"
+LITELLM_CATALOG = ROOT / "scripts/config/harbor-litellm-images.json"
 HARBOR_RUNTIME_CATALOG = ROOT / "scripts/config/harbor-runtime-images.json"
 CHARTS = ROOT / "scripts/config/harbor-image-charts.json"
 AUTOMATION = ROOT / "clusters/homelab/apps/harbor/image-automation.json"
@@ -412,6 +413,8 @@ def check():
         ("Harbor", HARBOR_RUNTIME_CATALOG, harbor_runtime),
         ("DNS", DNS_CATALOG,
          {"codeberg.org/k8s-gateway/k8s_gateway:1.9.0@sha256:0b556f261d46873d7d2e86e5d345bb99db30de6b3869b83e32d273a466e980e4"}),
+        ("LiteLLM", LITELLM_CATALOG,
+         {"ghcr.io/berriai/litellm-database@sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8"}),
     ):
         sources = {item["source"] for item in json.loads(path.read_text())["images"]}
         known_scope = {normalize(image) for image in sources}

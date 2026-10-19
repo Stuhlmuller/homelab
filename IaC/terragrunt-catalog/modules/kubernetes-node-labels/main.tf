@@ -64,3 +64,20 @@ resource "kubernetes_annotations" "nodes" {
   field_manager = "terragrunt-node-annotations"
   force         = true
 }
+
+resource "kubernetes_node_taint" "nodes" {
+  for_each = var.node_taints
+
+  metadata {
+    name = each.key
+  }
+
+  taint {
+    key    = each.value.key
+    value  = each.value.value
+    effect = each.value.effect
+  }
+
+  field_manager = "terragrunt-node-taints"
+  force         = false
+}

@@ -20,12 +20,12 @@ sources:
     resource: repo://IaC/traefik/stack.hcl
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-  - id: openwiki-source-9754c9cae8bb1727dfa4e705
-    resource: repo://specs/005-retire-public-app-dns/plan.md
-generated: { by: "codex", at: "2026-10-19T03:27:33.881Z" }
+  - id: openwiki-source-c7293ec8244333b0db0a401c
+    resource: repo://specs/005-retire-public-app-dns/data-model.md
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # GitOps Flow
@@ -136,8 +136,9 @@ does not satisfy Tailnet Lock. Fleet has only a private mesh target route.
 Phase 2a changes internal CoreDNS routes and n8n's advertised Funnel URL, and
 removes the legacy public DNS helper and restoration workflow. External DNS
 writes remain behind the guarded [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
-for the 26 approved non-apex app subdomains. The resolver still serves all 27
-approved private names. The cutover preserves the public apex, mail, certificate
+for the 26 approved non-apex names from the original migration set. The
+resolver serves all 29 current private names, including two later staged
+Enterprise names. The cutover preserves the public apex, mail, certificate
 validation, and unrelated public names. It follows the separate
 `tailnet-dns` Application reaching Synced/Healthy, signing its Tailscale DNS
 proxy, and the owner setting its observed IP as a restricted tailnet nameserver.

@@ -67,7 +67,11 @@ archive; unreadable files with data still stop the operation.
 The archive stage refuses active or uncertain writers and starts a file-locked
 worker in the reader Pod. The worker copies both source roots, checks the
 stopped-source inventory again, and writes a private result only after a full
-local restore. Do not treat a successful start as an archive receipt. Inspect
+local restore. Verification streams archive headers into a private disk-backed
+index before extraction, so the 512 MiB reader does not retain every tar member
+in memory. An OOM-killed reader or absent result leaves only a partial local
+archive; retain it for diagnosis and start a new protected run only after the
+cause is fixed. Do not treat a successful start as an archive receipt. Inspect
 the private result and worker log before dispatching `publish-archive` with the
 archive stage's SHA/run ID; the old source stays stopped and read-only while it
 runs. Publication checks the completed receipt against the observed inventory,
@@ -84,10 +88,13 @@ diagnostic in the backup bucket if published, and retry with a new run ID after 
 the cause. Do not reuse a partial S3 prefix.
 
 The tar keeps each source symlink's raw target without following it. Restore
-verification extracts non-symlink data with Python's `data` filter. It recreates
-links in private scratch only after checking there are no archive members below
-a non-directory member. It compares every restored path, type, file hash and
-raw link target with the stopped-source content digest before creating links.
+verification validates all archive members and parent paths before extracting
+non-link data without applying tar metadata, then restores safe file and
+directory modes. It recreates links in private scratch only after checking
+there are no archive members below a non-directory member and extracting all
+non-link data. It compares every restored path, type, file hash and raw link
+target with the stopped-source
+content digest without following links.
 Source UID, mode and mtime remain bound by the stopped inventory and rescan;
 NAS all-squash changes them in private restore. Verification never follows
 links. Some retained NAS links point to reader-Pod overlay directories outside

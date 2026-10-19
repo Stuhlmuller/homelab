@@ -26,10 +26,11 @@ class Readiness(unittest.TestCase):
         apps = 'affine argocd bazarr compass deluge dispatcharr fleet grafana harbor kiali langfuse litellm multica n8n nofx openclaw policy-bot prowlarr radarr sonarr'.split()
         self.assertEqual(set(value['hostnames']), {f'{app}.stinkyboi.com' for app in apps} | {
             'stinkyboi.com', 'cordium.stinkyboi.com', '*.cordium.stinkyboi.com', 'console.stinkyboi.com',
-            'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com'})
+            'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com',
+            'console.oce.stinkyboi.com', '*.agents.oce.stinkyboi.com'})
         self.assertEqual(set(value['retired_hostnames']), {f'{name}.stinkyboi.com' for name in (
             'octelium-transport', 'kubernetes-api-ci', 'n8n-webhook', 'policy-bot-hook')})
-        self.assertEqual(check.retirement_names(value), value['hostnames'][1:])
+        self.assertEqual(check.retirement_names(value), value['hostnames'][1:27])
         self.assertEqual(len(check.retirement_names(value)), 26)
         self.assertNotIn('stinkyboi.com', check.retirement_names(value))
         self.assertFalse(set(check.retirement_names(value)) & set(value['retired_hostnames']))
@@ -101,7 +102,7 @@ class Readiness(unittest.TestCase):
         commands = self.exercise()
         self.assertEqual(commands[0], ('kubectl', '-n', 'traefik', 'get', 'service', 'traefik-private', '-o', 'json'))
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 28)
+        self.assertEqual(len(probes), 30)
         self.assertTrue(all('--connect-to' in command and '--disable' in command and '--insecure' not in command
                             for command in probes))
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
@@ -111,7 +112,7 @@ class Readiness(unittest.TestCase):
     def test_ipv4_service_does_not_publish_dualstack_peers_unsupported_ipv6(self):
         commands = self.exercise(dualstack_peer=True)
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 28)
+        self.assertEqual(len(probes), 30)
         self.assertTrue(all(command[command.index('--connect-to') + 1].endswith(':100.100.100.1:443')
                             for command in probes))
 
@@ -215,6 +216,39 @@ class Readiness(unittest.TestCase):
                         check.routes({'hostnames':[f'{host}.stinkyboi.com']})
                     affine.assert_not_called()
                     openclaw.assert_not_called()
+
+    def test_oce_agent_probe_matches_route_and_rejects_edge_404(self):
+        name = '*.agents.oce.stinkyboi.com'
+        child = 'agent-' + '0' * 32 + '.agents.oce.stinkyboi.com'
+        for status in (200, 401, 403):
+            with self.subTest(status=status), patch.object(check, 'probe', return_value=(status, [])) as probe, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                check.routes({'hostnames':[name]}, '100.100.100.1')
+                probe.assert_called_once_with(child, '100.100.100.1', '/')
+        for status in (404, 502):
+            with self.subTest(status=status), patch.object(check, 'probe', return_value=(status, [])) as probe:
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':[name]}, '100.100.100.1')
+                probe.assert_called_once_with(child, '100.100.100.1', '/')
+        with patch.object(check, 'probe', return_value=(404, [])) as probe, contextlib.redirect_stderr(io.StringIO()):
+            check.routes({'hostnames':['*.cordium.stinkyboi.com']}, '100.100.100.1')
+            probe.assert_called_once_with('dns-preflight.cordium.stinkyboi.com', '100.100.100.1', '/')
+
+    def test_retirement_route_check_excludes_staged_oce_backends(self):
+        value = check.inventory()
+        for args, expected in ((['--check'], 29), (['--retire-private', '--check'], 27)):
+            with self.subTest(args=args), patch.object(sys, 'argv', ['check', *args]), \
+                    patch.object(check, 'mesh_addresses', return_value={'A':['100.100.100.1'], 'AAAA':[]}), \
+                    patch.object(check, 'declared_routes'), patch.object(check, 'routes') as routes:
+                check.main()
+                self.assertEqual(len(routes.call_args.args[0]['hostnames']), expected)
+                self.assertEqual(routes.call_args.args[1], '100.100.100.1')
+        with patch.object(check, 'run'), patch.object(check.socket, 'getaddrinfo',
+                return_value=[(None,None,None,None,('100.100.100.1',443))]) as dns, \
+                patch.object(check, 'routes') as routes, contextlib.redirect_stderr(io.StringIO()):
+            check.verify_private_dns(value, {'A':['100.100.100.1'], 'AAAA':[]}, '100.100.100.2')
+            self.assertEqual(dns.call_count, 29)
+            self.assertEqual(routes.call_args.args[0]['hostnames'], value['hostnames'][:27])
 
     def test_private_preflight_requires_direct_and_normal_client_dns_without_connection_override(self):
         commands = []
