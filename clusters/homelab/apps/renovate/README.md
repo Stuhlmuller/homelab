@@ -18,8 +18,10 @@ observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
 Its workflow/config commits were `3f5f078000173af86205f04df1559132d3e290f8`
 and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
 dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
-bot username and Git author so startup needs no account lookup. The current
-operator credential could not enumerate the App's accessible repositories;
+bot username and Git author so startup needs no account lookup. The legacy
+workflow and global config reference no separate private-registry credential
+input; the workflow uses only the existing App secrets. The operator credential
+could not enumerate the App's accessible repositories;
 compare that inventory, App grants, and existing PR author with the first
 cluster dry run before cutover. Keep private repository names out of public
 reports.
@@ -77,16 +79,20 @@ Argo CD. `nfs-default` permits claim expansion; confirm the bound claim's
 reported capacity and the backing NFS share's free space before relying on the
 larger request. A larger claim does not repair a full NAS share.
 
-For a lost or corrupt cache, first suspend `cronjob.yaml` through a reviewed
-PR and confirm no active Renovate Job remains. Use a reviewed, temporary
-GitOps Job that mounts only `renovate-cache`, deletes only its contents, and
-has no App credential or cluster API token. Verify that Job completes, remove
-it through a second reviewed change, then unsuspend the CronJob. The next run
-rebuilds package data from upstream; open PRs and repository policy remain on
-GitHub. Do not delete the PVC or edit NFS files by hand. If the claim cannot
-mount or the backing share is full, restore the declared storage path before
-resuming scans. Record the failed cycle and verify the next scheduled run and
-freshness alerts recover.
+Renovate 44.167.4 treats missing or malformed package entries as misses and
+skips malformed repository cache files; a later run can rebuild both from
+upstream. The pinned upstream recovery fixture in
+`scripts/ci/renovate-cache-recovery-test.mjs` checks these cases. A full claim
+blocks App token minting until capacity is restored. If repeated runs still
+fail because the cache tree itself is corrupt, first suspend `cronjob.yaml`
+through a reviewed PR and confirm no active Renovate Job remains. Use a
+reviewed, temporary GitOps Job that mounts only `renovate-cache`, deletes only
+its contents, and has no App credential or cluster API token. Verify that Job
+completes, remove it through a second reviewed change, then unsuspend the
+CronJob. Open PRs and repository policy remain on GitHub. Do not delete the
+PVC or edit NFS files by hand. If the claim cannot mount or the backing share
+is full, restore the declared storage path before resuming scans. Record the
+failed cycle and verify the next scheduled run and freshness alerts recover.
 
 ## Validate and observe
 
