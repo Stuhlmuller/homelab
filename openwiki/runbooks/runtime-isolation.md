@@ -20,6 +20,8 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
+  - id: openwiki-source-1765d2b8de68537c36f7221e
+    resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -40,10 +42,10 @@ sources:
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
-generated: { by: "codex", at: "2026-10-19T21:47:25.268Z" }
+generated: { by: "codex", at: "2026-10-19T22:22:06.612Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:47:25.268Z
+    at: 2026-10-19T22:22:06.612Z
 ---
 
 # Runtime Isolation
@@ -121,6 +123,8 @@ selectors; live DNS qualification on the isolated canary remains pending.
 The protected [`network-policy-qualification.py`](../../scripts/network-policy-qualification.py)
 checks the live firewall-only DaemonSet image, flags, host mount and RBAC, then
 checks the admitted tainted node, three fixed fixture Pods and their policy.
+It rejects changed fixture commands, arguments, and container security contexts
+before probing, so a modified server cannot make blocked traffic appear denied.
 Its TCP/UDP allow-and-deny probe writes a private receipt that explicitly lists
 the lifecycle scenarios still unverified. The qualifier does not create the
 fixture or attest node reboot, enforcer recovery, or real workload traffic;
