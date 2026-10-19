@@ -526,9 +526,10 @@ flowchart TD
 
 The declared public connector and Istio route split website and streaming traffic.
 
-PostgreSQL 18 uses a retained 3 GiB local claim on `zimaboard-0`; Redis uses a
-separate retained 1 GiB local claim with AOF. These hostPath capacities are not
-quotas. Media uses a retained 50 GiB NAS claim, while checked nightly database
+PostgreSQL 18 uses a retained 3 GiB local claim on `zimaboard-1`; Redis uses a
+separate retained 1 GiB local claim with AOF on the same worker. The backup Job
+also uses that worker for its local database socket. These hostPath capacities
+are not quotas. Media uses a retained 50 GiB NAS claim, while checked nightly database
 dumps use a separate 30 GiB NAS claim with 14-day retention. NAS media and
 backups share a failure domain; they are not independent disaster recovery.
 Preserve the database, media and stable encryption/signing keys during rollback.

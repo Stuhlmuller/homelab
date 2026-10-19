@@ -1,25 +1,26 @@
 # Mastodon
 
-Preparation for the requested Mastodon server for stinkyboi.com. This directory
-owns PostgreSQL, Redis, retained storage, web, Sidekiq, streaming, and a schema
-migration Job. The shared Terragrunt stack declares its Application at
-`IaC/live/argocd-apps/mastodon`; the draft has not been merged or applied, and
-no server or public route is deployed. The declared Istio route sends streaming requests to port
-4000 and remaining subdomain requests to Puma on port 3000. STRICT mTLS and
-default-deny authorization admit only the shared gateway and Mastodon service
-account; NetworkPolicy separately limits ingress and federation egress. This
-The shared cloudflared configuration declares its native public route;
-`mastodon-public-dns.yml` publishes only the instance hostname after rollout
-readiness. Neither has been applied yet. The website and account identities both use `mastodon.stinkyboi.com`. This
-preserves the private apex portal and makes federation discovery independent
-of private apex DNS. The default administrator is `rodman`, using the existing
-repository owner address `rodman@stuhlmuller.net`. No account has been created. Google Workspace SMTP defaults use `smtp.gmail.com:587`, the existing owner
-login, and that same sender address. Its protected password is still a
-placeholder; the Rails launcher rejects activation until it is injected.
+Mastodon server for stinkyboi.com. This directory owns PostgreSQL, Redis,
+retained storage, web, Sidekiq, streaming, and schema migration. The shared
+Terragrunt stack declares its Application at `IaC/live/argocd-apps/mastodon`;
+registration and public activation follow the gates below.
+
+The Istio route sends streaming requests to port 4000 and remaining instance
+requests to Puma on port 3000. STRICT mTLS and default-deny authorization admit
+only the shared gateway and Mastodon service account. NetworkPolicy separately
+declares ingress and federation-egress intent. The shared cloudflared route and
+`mastodon-public-dns.yml` provide public transport and publish the instance
+hostname after rollout readiness.
+
+Website and account identities both use `mastodon.stinkyboi.com`, preserving
+the private apex portal and independent federation discovery. Owner bootstrap
+creates `rodman` with `rodman@stuhlmuller.net`. Google Workspace SMTP uses
+`smtp.gmail.com:587`, the same login and sender address. Inject the protected
+SMTP credential before registration; the Rails launcher rejects placeholders.
 
 ## Storage and credentials
 
-PostgreSQL 18 and Redis 7.4 use separate retained local volumes on `zimaboard-0`,
+PostgreSQL 18 and Redis 7.4 use separate retained local volumes on `zimaboard-1`,
 following the existing media PostgreSQL pattern. QNAP NFS stalls documented in
 `docs/storage-nfs.md` make it unsuitable for the active database. Redis keeps
 Sidekiq queues with AOF and `appendfsync everysec`, allowing up to one second of
@@ -27,14 +28,18 @@ queue loss after an abrupt host failure.
 
 The local claims request 3 GiB and 1 GiB. These are descriptive capacities:
 `hostPath` does not enforce quotas. Before registration, recheck node memory,
-filesystem headroom, and image download space. The node had approximately
-7.2 GiB free disk and 2.3 GiB available memory on 2026-10-11. Grow or move storage
-before consuming that headroom. A node reset or disk failure loses local data.
+filesystem headroom, and image download space. The 2026-10-18 preflight found
+approximately 11.8 GiB free disk, 2.4 GiB available memory, and 4.25 GiB of
+unreserved memory on `zimaboard-1`. PostgreSQL (256 MiB), Redis (64 MiB), and
+the backup Job (64 MiB) reserve 384 MiB together. Redis retains its 512 MiB
+limit; verify actual memory use after startup.
 
-The 2026-10-17 preflight found 421 MiB of unreserved memory on `zimaboard-0`.
-PostgreSQL (256 MiB), Redis (64 MiB), and the backup Job (64 MiB) reserve
-384 MiB together. Redis retains its 512 MiB limit; verify its actual memory use
-and recheck this scheduling budget before registration or adding workloads.
+The original `zimaboard-0` placement had only 5 MiB of unreserved memory at
+that preflight. Initial placement moved before any Mastodon Application or
+local volumes existed; the backup Job follows the same node for its database
+Unix socket. Do not retarget a bound local volume by editing affinity: use an
+explicit backup and restore. A node reset or disk failure loses local data.
+Grow or move storage before consuming its headroom.
 
 A bounded root init container changes only the mounted directory's ownership;
 PostgreSQL and Redis run as UID/GID 65534. PostgreSQL initializes `pg_trgm` and
