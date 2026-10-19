@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:883a91ef6738af307ef8d5ea887beba9da3fb5d7979fd3aee52f339fad8a1e59",
+  "pageVersion": "sha256:3531e8bfe443873a7a0537ec5f2dd8552898e7f43015741ec2c78ed548b3f5a8",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -40,7 +40,7 @@
     },
     {
       "id": "claim_5ccef82fce4f413da7827acd753341d3",
-      "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns; six were narrowed in this review, while harbor-vulnerability-exporter, harbor-image-signing, and nofx-frontend already had this selector. The static gate checks all nine policies and matching kube-dns Service and CoreDNS Deployment selectors. Live reconciliation and enforced canary traffic remain unverified.",
+      "statement": "Nine repository-owned DNS egress policies allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns; six were narrowed in this review, while harbor-vulnerability-exporter, harbor-image-signing, and nofx-frontend already had this selector. The static gate checks all nine policies and requires exact kube-dns Service and CoreDNS Deployment selector maps plus the matching Pod label. Live reconciliation and enforced canary traffic remain unverified.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/nofx/networkpolicy.yaml#L1-L27",
@@ -59,14 +59,14 @@
           "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
         },
         {
-          "resource": "repo://scripts/ci/offline-static-checks.sh#L474-L513",
-          "version": "repo-lines-v1:sha256:ed3c59cc4d265c4d3658144fa30be89ad58fab63586e1842903f539028e2151c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNmM4MWYxOWExMjgyNDQwYzMyOTVkMjU0MmEyYjU5Y2Y4YmVmZjU3ZWUyZGQ4YzljYjY2OWM3YThiMGQ2NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MzBiMjM1ODQ3Y2JhYmFhMmI2ZWQ1ZjNmOTA3ZTE2YjhjYmYyYjJkMmViMWZjZGE1MWExZjdiNDg0ODRhNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1MDQyYjc5M2IxY2MyYzIwNmQ2OWVhOTAxMjFiY2U0MjMxZGNkZTAzMTgwMmM4ZTg2MzI0NWVkY2ZjNGNlNTEifQ"
+          "resource": "repo://scripts/ci/offline-static-checks.sh#L474-L516",
+          "version": "repo-lines-v1:sha256:3c595178c313629322f9ae9b516ce81a01ef6f7e732d66c7d82e6b5cf29dc344:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZkNmM4MWYxOWExMjgyNDQwYzMyOTVkMjU0MmEyYjU5Y2Y4YmVmZjU3ZWUyZGQ4YzljYjY2OWM3YThiMGQ2NzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3NWU4NzBkNTYyM2ZlNzg2YmU0NzQ3MjAzODJkMDE3NTllNDNhNjhhOGZiZGNlZjAwY2I2NjMxNTQxYzAyNmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU0MzBiMjM1ODQ3Y2JhYmFhMmI2ZWQ1ZjNmOTA3ZTE2YjhjYmYyYjJkMmViMWZjZGE1MWExZjdiNDg0ODRhNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZkOGY5MmYwNmM0MjczYzk2YjlhYTE5YmU5YzE5Yjg0YTljNDQ1MTA5MzJjZjllYTdiZmNhZDI5MTg0NjZiOWQifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T19:50:26.593Z"
+    "at": "2026-10-19T19:55:27.966Z"
   }
 }

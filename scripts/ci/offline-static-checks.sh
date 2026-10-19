@@ -472,9 +472,13 @@ kubectl kustomize clusters/homelab/apps/octelium-storage |
 echo "::endgroup::"
 
 echo "::group::DNS NetworkPolicy peers"
-yq -e '.metadata.namespace == "kube-system" and .spec.selector."k8s-app" == "kube-dns"' \
+yq -e '.metadata.namespace == "kube-system" and
+  (.spec.selector | keys | length) == 1 and
+  .spec.selector."k8s-app" == "kube-dns"' \
   clusters/homelab/platform/dns/coredns-service.yaml >/dev/null
 yq -e '.metadata.namespace == "kube-system" and
+  (.spec.selector | keys | length) == 1 and
+  (.spec.selector.matchLabels | keys | length) == 1 and
   .spec.selector.matchLabels."k8s-app" == "kube-dns" and
   .spec.template.metadata.labels."k8s-app" == "kube-dns"' \
   clusters/homelab/platform/dns/coredns-deployment.yaml >/dev/null

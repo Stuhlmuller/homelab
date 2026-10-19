@@ -24,10 +24,10 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
-generated: { by: "codex", at: "2026-10-19T19:50:26.593Z" }
+generated: { by: "codex", at: "2026-10-19T19:55:27.966Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T19:50:26.593Z
+    at: 2026-10-19T19:55:27.966Z
 ---
 
 # CoreDNS GitOps Ownership
@@ -45,8 +45,9 @@ allow TCP/UDP 53 only to `kube-system` Pods labeled `k8s-app=kube-dns`. Six
 were narrowed in this review; `harbor/harbor-vulnerability-exporter`,
 `harbor/harbor-image-signing`, and `nofx/nofx-frontend` already selected those
 Pods. The `kube-dns` Service selector and CoreDNS Deployment Pod label use that
-value. The static gate checks all nine policies and both selector sources. A
-CoreDNS selector or Pod-label change must update all nine policies in
+value. The static gate checks all nine policies, requires both selector maps to
+contain only `k8s-app=kube-dns`, and checks the matching Pod label. A CoreDNS
+selector or Pod-label change must update all nine policies in
 the same review, or DNS can fail when kube-router enforces NetworkPolicy.
 Before enforcement, reconcile changed policies with live resources and prove
 both TCP and UDP Service DNS on the isolated canary; source render checks alone
