@@ -88,6 +88,7 @@ python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 python3 scripts/ci/terragrunt-apply-stage-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
+python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
 python3 -I scripts/ci/affine-suspension-probe-check.py

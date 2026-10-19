@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
         }
       ]
     },
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         }
       ]
     },
@@ -428,7 +428,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -772,7 +772,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -1166,7 +1166,29 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:8ef4267afdc085464d7eed64ab652745b19e4bb5199d302663d2aac151e37f5b"
+          "version": "repo-file-v1:sha256:a84c6e5b570154c50eca4f66cb84983fd35fd8d0f1a9bc510d4088923f32d821"
+        }
+      ]
+    },
+    {
+      "id": "claim_a3773f7c38414ba9a5371cf1ae64cc41",
+      "statement": "The protected private Octelium catalog job supplies a read-scoped GitHub token to its fixed helper, which selects exactly three Policies and three Services and rechecks the current main SHA immediately before each of two catalog writes. Missing or advanced main stops the next write, and offline fixtures cover both stale-SHA points and lookup failure; these source checks do not prove a live dispatch.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/octelium-private-kubernetes-apply.yml#L110-L123",
+          "version": "repo-lines-v1:sha256:da59c60e33837de63d99639cd1825abfab5619b390ef67d813575f08bd32ab1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg3MTgzYWNlYjQ3OGJhNTFhY2VhNWI1MTg4NGI5ZGY1MzY1OTllNmUyNzI5NTY3YjY4ZTc3NThiYzY1N2JmNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1NzcyOTYzMzZhNmU4NjQ2MWM1MTllNTM0OTU3YmQ0OTA1ZDk0OTU2ZTQyNGU5N2Q3OGJiOGZjNTQzOTdjYjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNlNWNiOTliN2JhODA5ZjBiNjVlZTNhMTFlMWI0ZDI0ZWNjN2VlMGY0NzVlMWQ0ODA0MjgxMmI5YzRjNTVkODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJlMzNmZTEzMjExZGUxNDNmYmIwMjk5MDQ5YzM4ZTVlMzEwMDRlMjRmZDg4NGU1MmE1OTA4Mjc2OTVlMTI0YzUifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py#L75-L112",
+          "version": "repo-lines-v1:sha256:81d7f409438f574e8bdf72982b9d624fe3ade4698e149ad231b296939d3ca87e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4NjczZmYzYmFjZGUyZGZhMjY3M2NhNTczYTVkZjZjMjAwZWMyODdhZmEwNzk3ZjU4YTMzNGQ2ZjUwZjUwNjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkODBiNTU4ODVhNjk4N2Y0ZGI3ZGEwZjMxNzZlMDNiMzA0YjI0NzZlNzVkMTVkNmEzMGUyMDM3NTFhMWNlZTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwODI3OWJiYWIxMDRjMTc0M2E5MDAwNWE2MWY1MzA2YzNmZDMxZjUyZGE3ZjZkY2FmMjZmOTE5ZDljZmVhYjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L35-L49",
+          "version": "repo-lines-v1:sha256:5c123935f5cd5373d59890a0f66df8e8b6abcfa9c80e6d6760a3114b5d98903c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljZWJjYjhiOGRiNTlhZjM0MWYxMmQ3MjBkYmVmOTA5MWViNDdhZmRjYTI0YTRkMjRjZjZhMzJlODBhZGQ1ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkZDI0NDU4MmI2ZmIwM2QyM2I4NDE1YWJlY2QzNDZiMGM5ZjQ2NmI2Zjc1MmIwNjgxODljZTdlOWEyZGMzNTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImFlZDA1ZTYwNTBmNDAzNjMzNjFmZGQ0YTdiNTJlM2Y2MGYwZWE1Mjg3ODFlMDM3YjZhZmIyMTRkMjZhZTA3NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU4M2Q4MWU2OTFlMTBkNzA1Y2YzOTIxYjc4MzVlZGRlMGQ2MTk2NzlmY2ZhYTM5YTU5ZTkxMzdkNGM0OTc3NTIifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L85-L107",
+          "version": "repo-lines-v1:sha256:9cc750928a802ea05c3402da96a0fab68a4acce4da6da8c8798e29e91dfd8943:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExY2ZmZGIwYmU4YjgyYTFkZTYxYmU4OGJjZjYwNDkzODNlMWZiY2I5ODU0ODQ5ZTRlMDMwMzI3NWYzMWVkYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3M2VlMTcxM2QxNTFhYmFmYjA5YWIyZDgzYmQ5NjcxYTUyZWNkODJkNjUxOTVlY2IxYTAwYmFmOWQ4M2U0NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOWI0MDllMmQ5MWM4N2Y4NGY2MWI2NDVjMmFhZTMxYTJkNmY1NDc1M2Y0ZTY3MTkwNDYxMWRmNDEzOWYwNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },

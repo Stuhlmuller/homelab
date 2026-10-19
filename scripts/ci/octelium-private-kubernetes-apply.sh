@@ -9,6 +9,8 @@ set -euo pipefail
   echo "error: OCTELIUM_CATALOG_AUTH_TOKEN is required" >&2
   exit 1
 }
+github_main_check_token="${GH_TOKEN:?}"
+unset GH_TOKEN
 
 domain="stinkyboi.com"
 catalog="docs/examples/octelium/homelab-services.yaml"
@@ -80,7 +82,22 @@ apply_catalog() {
   printf '%s\n' "$output"
 }
 
+verify_current_main_commit() {
+  local current_main_sha
+
+  current_main_sha="$(GH_TOKEN="$github_main_check_token" gh api "repos/${GITHUB_REPOSITORY:?}/git/ref/heads/main" --jq .object.sha 2>/dev/null)" || {
+    echo "Unable to verify current main; refusing to change live state." >&2
+    return 1
+  }
+  [[ "$current_main_sha" == "${GITHUB_SHA:?}" ]] || {
+    echo "Main advanced after dispatch; refusing to change live state." >&2
+    return 1
+  }
+}
+
+verify_current_main_commit
 apply_catalog >/dev/null
+verify_current_main_commit
 second_apply="$(apply_catalog)"
 grep -Fq 'No applied changes in Cluster Core resources' <<<"$second_apply" || {
   echo "error: second Octelium apply did not prove an empty live diff" >&2

@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
         }
       ]
     },
@@ -64,7 +64,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:80ffaf08ab67ae30a82a7180135e0ffdbc9097093067c46d8033ee3f4bc6b7cd"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -115,6 +115,24 @@
         {
           "resource": "repo://scripts/openclaw-enterprise-startup.py",
           "version": "repo-file-v1:sha256:08de19e4a74ae7521889d600edaae58b500bb9bdd6d9f5e7e2464d7fe45fb289"
+        }
+      ]
+    },
+    {
+      "id": "claim_a9b102fdcbbe4ee688fc5d4a63fbed79",
+      "statement": "The fixed private Octelium catalog helper rechecks the GitHub main commit before each of its two writes, fails closed on a missing or advanced main SHA, and requires the second write to report no changes. Offline tests prove both stale-SHA stop points and lookup failure; live dispatch remains unverified.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md#L48-L53",
+          "version": "repo-lines-v1:sha256:c9c204f058273d04a04350bccdc64d6e83488a2e77b5988ad62f96f0f1cd9a78:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiODFiNDc3MjdiYzk0NmNlZmFkNzVhMDg0Y2Y0ZjA0OThiMmJjZGE2MjE3NjJiZTBhYjJmN2M4YWUzYTVmODNkNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGYyY2Y5YzQ4NDI2YzhjNTU0ODljYWY1M2Q0YzBhYzg1YjBmYzI2MThiZDRjMDE0ZDM4ZDM5YjU2NmYxMzA5ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGI3YjcyNDUwYWJhMjg2ZjE4NWNhOTI3MDk2MTgyMGZiNzFlMzNiYmQwNTEyZGVmYTdjOTc3ODdkNTNlYTU2NSJ9"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply-test.py#L92-L110",
+          "version": "repo-lines-v1:sha256:778cf30123f1f9af242156d2b8491cf4a0ed09a42c6218ec7bf576acfb42d5b0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3ZDFmMjc3MTczMGI5YTA4MjUwOGU2N2RmOWMzZWZlZGQ2NzE0NTEzNWJjMmYwZDkzNzU5ZDQ0NGIwYzAxZDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0ZDAxOWZjNjMyZmNlOTcxNWZmYmVmMWZlOTdiZWQ0OTIzMjcyODRkZDUzYWY4ODk1NmRhMjFjOWU0OTkzNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEzMDJjZWZiYWE1MzBiNzNmZDNkOGNlZmIxZWFmYmM0YzU4M2UxNmU1ZDBlOGJmZWU2ZDhmOTA2NzQzZDE4MGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNkNDEzNDBjYzIzOWExNTljZTliNjAyMmU5ZjYzMjI4MzJlMmVhZDc2Y2FlOWU0NzU0ZDIxMGViOGZiNmQ1ZTgifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/octelium-private-kubernetes-apply.sh#L85-L107",
+          "version": "repo-lines-v1:sha256:9cc750928a802ea05c3402da96a0fab68a4acce4da6da8c8798e29e91dfd8943:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExY2ZmZGIwYmU4YjgyYTFkZTYxYmU4OGJjZjYwNDkzODNlMWZiY2I5ODU0ODQ5ZTRlMDMwMzI3NWYzMWVkYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3M2VlMTcxM2QxNTFhYmFmYjA5YWIyZDgzYmQ5NjcxYTUyZWNkODJkNjUxOTVlY2IxYTAwYmFmOWQ4M2U0NmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwOWI0MDllMmQ5MWM4N2Y4NGY2MWI2NDVjMmFhZTMxYTJkNmY1NDc1M2Y0ZTY3MTkwNDYxMWRmNDEzOWYwNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }

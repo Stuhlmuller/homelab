@@ -47,8 +47,9 @@ This repository uses GitHub Actions for the review and rollout path:
   `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
-  production branch gates, never prunes, and proves a second apply has no
-  live diff.
+  production branch gates, rechecks current `main` immediately before both
+  catalog writes, never prunes, and proves a second apply has no live diff.
+  An unresolved or advanced `main` stops the next write.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
