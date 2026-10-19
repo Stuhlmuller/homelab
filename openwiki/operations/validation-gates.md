@@ -88,8 +88,6 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -230,10 +228,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T14:58:52.418Z" }
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T14:58:52.418Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Validation Gates
@@ -499,13 +497,15 @@ missing persistent after a later active change, duplicate resources, read failur
 and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
-The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 only
-when its reviewed declaration and live Deployment specify zero replicas and no
-live replicas remain. OpenClaw has no stopped-workload 502 exception; its
-canonical route must pass normal application readiness after Enterprise cutover.
-Deployed Traefik routes and TLS must match the reviewed checkout. Other
-application 5xx responses fail. The AFFiNE exception checks routing, not
-application runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
+legacy OpenClaw HTTP 502 only when each reviewed declaration and live
+Deployment specify zero replicas and no live replicas remain. Other application
+5xx responses fail. These stopped-app exceptions check routing, not runtime
+health. Deployed Traefik routes and TLS must match the reviewed checkout.
+`--retire-private --check` probes the original 27 migration routes; bare
+`--check` also probes the two staged Enterprise routes. Its Agent probe uses an
+`agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's router and
+rejects an edge 404. Enterprise backend readiness is a separate rollout gate.
 
 The DNS regression includes a dual-address peer whose LoadBalancer Service
 publishes only IPv4: it must produce A records and no AAAA. Probe each published
@@ -575,7 +575,7 @@ DNS proxy under Tailnet Lock and run
 `python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-handoff`
 from the trusted signer Mac with read-only cluster access. The checker binds
 the observed IP to the online signed peer, rejects other selected Services,
-and probes all 27 approved A/AAAA names over UDP and TCP, including a Cordium
+and probes all 29 current approved A/AAAA names over UDP and TCP, including a Cordium
 wildcard child. It compares public apex MX/TXT and an unrelated public name.
 These checks establish a handoff gate, not owner tailnet DNS configuration or
 normal client resolution. Leave public app records until those later checks
@@ -585,7 +585,8 @@ pass; the `--retire-private` helper is deletion-only and separately guarded.
 
 The [feature 005 cutover](../../specs/005-retire-public-app-dns/quickstart.md)
 is a separate live gate. Its public deletion set is the 26 approved non-apex
-app subdomains; private DNS and HTTPS checks still cover all 27 approved names.
+app subdomains from the fixed first 27 migration names. Private DNS checks
+cover all 29 current names; retirement HTTPS checks cover the original 27 routes.
 Run the focused retirement fixtures and fresh checks from reviewed `main`.
 Record a per-name off-tailnet decision, the exact Cloudflare record baseline,
 and the previous maximum TTL in private evidence. A 27-name public-retirement

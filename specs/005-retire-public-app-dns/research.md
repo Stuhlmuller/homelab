@@ -7,11 +7,12 @@ the intended behavior; live cutover evidence remains a separate gate.
 
 ## Decision 1: Derive the 26-name retirement set from the approved snapshot
 
-**Decision:** Keep all 27 names in `scripts/config/tailscale-private-dns.json`
-and the Traefik Service annotation. Select the 26 entries other than
-`stinkyboi.com` only when querying, previewing, or deleting public records.
-Retain the existing fixed migration-set validation so a later app addition
-cannot silently expand this one-time cutover.
+**Decision:** Keep the fixed first 27 migration names in
+`scripts/config/tailscale-private-dns.json` and the Traefik Service annotation.
+Current private DNS includes two additional staged Enterprise names. Select the
+26 non-apex entries from the fixed first 27 only when querying, previewing, or
+deleting public records. Retain the existing migration-set validation so later
+app additions cannot silently expand this one-time cutover.
 
 **Rationale:** The healthy tailnet resolver must continue answering the apex
 privately. Public apex A, mail, certificate validation, and unrelated names
@@ -79,10 +80,11 @@ off-tailnet reachability but reverses the requested security boundary.
 
 ## Evidence and remaining live checks
 
-- The current source has 27 approved names, including the apex, plus four
-  separately retired legacy names. The guarded helper currently targets all
-  27; only the 26-name target selection and dependent evidence/tests need
-  narrowing. [Inventory](../../scripts/config/tailscale-private-dns.json),
+- At research time, source had 27 approved names, including the apex, plus
+  four separately retired legacy names. The guarded helper then targeted all
+  27; current source adds two staged Enterprise names after that fixed set,
+  while this retirement still selects only the original 26 non-apex names.
+  [Inventory](../../scripts/config/tailscale-private-dns.json),
   [helper](../../scripts/tailscale-private-dns.sh),
   [preflight](../../scripts/tailscale-private-dns-check.py).
 - The private resolver watches the approved Traefik Service and forwards
