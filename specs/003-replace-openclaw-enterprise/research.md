@@ -242,6 +242,16 @@ server IDs. Use exact generation checks for updates; recover unknown outcomes
 before retrying creation/deployment. Embedded does not support the dedicated
 provision endpoint's idempotency protocol.
 
+The pinned `GET /installation` response schema contains only ID, name,
+creation time and optional capabilities. It does not report selected Compute,
+Configuration, Secret, IAM or Sandbox Driver identities/settings; `occ
+installation get` uses the same route. `GET /installation/deployment-inventory`
+reports deployment state, not Driver selection. Thus an API-only checker cannot
+prove the installation matches the intended profile. The reconciler must stop
+before mutation until a separate, repository-owned comparison of installed and
+reviewed Driver configuration is defined and validated; Embedded capability is
+insufficient evidence.
+
 Legacy recovery must cover both local databases and NAS content. Existing
 `openclaw-assistant-check.py`, `openclaw-runtime-storage-check.py`, and
 `openclaw-github-check.cjs` passed during research; these prove existing helpers,
@@ -253,6 +263,8 @@ unnecessary infrastructure. Blind create retries can duplicate resources.
 Keeping only daily database snapshots loses workspace and configuration coverage.
 
 Source: [OCE API](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/docs/reference/api.md),
+[Installation response schema](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/resources.ts#L296-L352),
+[Installation routes](https://github.com/openclaw/openclaw-enterprise/blob/33bb74590a749f37934da4502fca6035cd234a55/packages/contracts/src/api/routes.ts#L381-L409),
 [legacy recovery contract](../../clusters/homelab/apps/openclaw/README.md#durable-runtime-state-and-recovery).
 
 ## R8 — Shared Gateway API ownership and supported private Envoy

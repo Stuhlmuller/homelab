@@ -35,11 +35,20 @@ workflow's `--expected-sha SHA` and a mounted credential-file path. Read-only
 commands never create an agent, deploy a revision, or send a model request.
 Acceptance probes are separate declared tests, not implicit in read-only `verify`.
 
+At pinned source `33bb745`, `GET /installation` exposes identity and optional
+capabilities, but no selected Compute, Configuration, Secret, IAM or Sandbox
+Driver identities/settings. `occ installation get` reads that same operation;
+`installation deployment-inventory` only reports namespace/agent deployment
+state. These reads cannot establish the intended Driver selection. Until a
+repository-owned verification path compares the installed selection with the
+reviewed candidate, `check` and `reconcile` must fail closed before any API
+mutation. Capability support for Embedded is not that proof.
+
 Use these actual upstream operations:
 
 | Purpose | Supported operation and invariant |
 | --- | --- |
-| Installation | `GET /installation`; compare selected Drivers/configuration |
+| Installation | `GET /installation` for identity/capabilities only; selected Driver comparison requires separate reviewed proof before mutation |
 | Namespace | `GET/POST /namespaces`; create `name: claw`, `existingNamespace: openclaw-agents` only after prepared namespace/RBAC are ready |
 | Secrets | Namespace Secret collection GET/POST, exact PATCH; values supplied privately, never echoed |
 | Configuration | Namespace Configuration POST and exact GET/PATCH; updates use `expectedGeneration`, replacing the complete desired `values` |
