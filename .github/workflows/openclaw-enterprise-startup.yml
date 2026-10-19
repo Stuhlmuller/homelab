@@ -28,11 +28,13 @@ jobs:
     steps:
       - name: Verify Dispatch Commit
         env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = refs/heads/main
-          test "$GITHUB_SHA" = "$EXPECTED_SHA"
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
@@ -67,14 +69,16 @@ jobs:
     steps:
       - name: Verify Current Main Before Credentials
         env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          test "$GITHUB_REF" = refs/heads/main
-          test "$GITHUB_SHA" = "$EXPECTED_SHA"
-          test "$GITHUB_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+          test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
 
       - name: Check Out Repository
         uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1

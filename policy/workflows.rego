@@ -180,8 +180,9 @@ approved_openclaw_startup if {
 	static.permissions == {"contents": "read"}
 	count(static.steps) == 4
 	static.steps[0].name == "Verify Dispatch Commit"
-	static.steps[0].env.EXPECTED_SHA == "${{ inputs.expected_sha }}"
-	contains(static.steps[0].run, `test "$GITHUB_SHA" = "$EXPECTED_SHA"`)
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	contains(static.steps[0].run, `test "${ACTUAL_REF}" = refs/heads/main`)
+	contains(static.steps[0].run, `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`)
 	static.steps[3].name == "Run Static Checks"
 	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
 	job := input.jobs.startup
@@ -192,7 +193,7 @@ approved_openclaw_startup if {
 	count(job.steps) == 4
 	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Before Credentials", "Check Out Repository", "Install Nix", "Create Or Attest Fixed Startup Secret"]
 	verify := job.steps[0]
-	verify.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
 	trim(verify.run, "\n") == openclaw_startup_main_check
 	run := job.steps[3]
 	run.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
@@ -200,9 +201,9 @@ approved_openclaw_startup if {
 }
 
 openclaw_startup_main_check := `set -euo pipefail
-test "$GITHUB_REF" = refs/heads/main
-test "$GITHUB_SHA" = "$EXPECTED_SHA"
-test "$GITHUB_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
 
 openclaw_startup_private_run := `set -euo pipefail
 private_log="$(mktemp)"

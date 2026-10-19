@@ -24,7 +24,7 @@ openclaw_startup_fixture := {
 	"true": {"workflow_dispatch": {"inputs": {"expected_sha": {"required": true}}}},
 	"jobs": {
 		"static-policy": {"permissions": {"contents": "read"}, "steps": [
-			{"name": "Verify Dispatch Commit", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": `test "$GITHUB_SHA" = "$EXPECTED_SHA"`},
+			{"name": "Verify Dispatch Commit", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}, "run": `test "${ACTUAL_REF}" = refs/heads/main; test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`},
 			{"name": "Check Out Repository"},
 			{"name": "Install Nix"},
 			{"name": "Run Static Checks", "run": "nix develop --command bash scripts/ci/static-checks.sh --offline-verified"},
@@ -35,7 +35,7 @@ openclaw_startup_fixture := {
 			"environment": {"name": "homelab-production"},
 			"permissions": {"contents": "read"},
 			"steps": [
-				{"name": "Verify Current Main Before Credentials", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_startup_main_check},
+				{"name": "Verify Current Main Before Credentials", "env": {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}, "run": openclaw_startup_main_check},
 				{"name": "Check Out Repository"},
 				{"name": "Install Nix"},
 				{"name": "Create Or Attest Fixed Startup Secret", "env": {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}, "run": openclaw_startup_private_run},
