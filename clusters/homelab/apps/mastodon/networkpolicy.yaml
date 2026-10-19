@@ -97,3 +97,6 @@ spec:
           port: 3000
         - protocol: TCP
           port: 4000
+        # Ambient HBONE reaches the Pod before forwarding to 3000/4000.
+        - protocol: TCP
+          port: 15008

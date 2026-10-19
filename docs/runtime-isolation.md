@@ -167,10 +167,13 @@ existing node safely admits the isolated canary.
 The source policies now limit cloudflared's private egress to the two routed
 Istio gateways and Octelium ingress dataplane, Harbor metrics ingress to the
 Prometheus Pod, and Harbor/Mastodon gateway ingress to the Istio gateway Pod.
+Mastodon's ambient namespace also allows gateway-origin HBONE on TCP/15008;
+Istio [requires that destination port](https://github.com/istio/istio.io/blob/release-1.27/content/en/docs/ambient/usage/networkpolicy/index.md)
+before traffic can reach its application ports.
 Before enforcement, recheck live Service selectors, EndpointSlices and Pod labels,
 then prove these paths on the isolated canary, including ambient HBONE and Service
-translation. Mastodon's web and streaming Pods were absent at source review, so
-their allowed path also needs a live canary proof.
+translation and kubelet health probes. Mastodon's web and streaming Pods were
+absent at source review, so their allowed path also needs a live canary proof.
 
 Before making policies effective, finish owner/render review, publish every
 fixture and controller image, admit a tainted node with measured memory and

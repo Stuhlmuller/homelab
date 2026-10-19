@@ -109,7 +109,10 @@ class PeerTests(unittest.TestCase):
         mastodon = policy("mastodon", "mastodon-gateway-ingress")["ingress"][0]
         self.assertEqual(mastodon["from"], [gateway])
         self.assertEqual(mastodon["ports"], [
-            {"protocol": "TCP", "port": 3000}, {"protocol": "TCP", "port": 4000}])
+            {"protocol": "TCP", "port": 3000}, {"protocol": "TCP", "port": 4000},
+            {"protocol": "TCP", "port": 15008}])
+        namespace = documents(APPS / "mastodon/namespace.yaml")[0]["metadata"]["labels"]
+        self.assertEqual(namespace["istio.io/dataplane-mode"], "ambient")
         for app in ("harbor", "mastodon"):
             route = documents(APPS / app / "virtualservice.yaml")[0]["spec"]
             self.assertEqual(route["gateways"], ["istio-system/tailnet-gateway"])
