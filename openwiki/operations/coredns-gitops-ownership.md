@@ -4,20 +4,30 @@ title: "CoreDNS GitOps Ownership"
 description: "Ordered CoreDNS handoff from Talos to Argo CD, preserving resolver and Octelium rewrite behavior during upgrades."
 tags: ["homelab", "navigation"]
 sources:
+  - id: openwiki-source-d190dbce4c50934f34b78ce1
+    resource: repo://clusters/homelab/apps/nofx/networkpolicy.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-c071f0a75793c76e7f880496
     resource: repo://clusters/homelab/platform/dns/coredns-configmap.yaml
+  - id: openwiki-source-2b75865bb7a2424915c916d3
+    resource: repo://clusters/homelab/platform/dns/coredns-deployment.yaml
+  - id: openwiki-source-8aef4e7455acf1892a6ac497
+    resource: repo://clusters/homelab/platform/dns/coredns-service.yaml
   - id: openwiki-source-e20ef91bfc85ec57d6b2e621
     resource: repo://clusters/homelab/platform/dns/README.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
-generated: { by: "codex", at: "2026-10-10T23:43:46.551Z" }
+generated: { by: "codex", at: "2026-10-19T19:55:27.966Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T20:01:23.259Z
 ---
 
 # CoreDNS GitOps Ownership
@@ -27,6 +37,21 @@ owns all six CoreDNS resources while preserving DNS behavior and pinning the
 running image content. New clusters still require the ordered takeover below;
 the declaration alone does not complete it. Source and DNS checks are in the
 [platform DNS runbook](../../clusters/homelab/platform/dns/README.md).
+
+## DNS policy peer dependency
+
+Nine [repository-owned DNS egress policies](../../docs/evidence/openclaw-enterprise-policy-review.json)
+allow TCP/UDP 53 only to `kube-system` Pods labeled `k8s-app=kube-dns`. Six
+were narrowed in this review; `harbor/harbor-vulnerability-exporter`,
+`harbor/harbor-image-signing`, and `nofx/nofx-frontend` already selected those
+Pods. The `kube-dns` Service selector and CoreDNS Deployment Pod label use that
+value. The static gate checks all nine policies, requires both selector maps to
+contain only `k8s-app=kube-dns`, and checks the matching Pod label. A CoreDNS
+selector or Pod-label change must update all nine policies in
+the same review, or DNS can fail when kube-router enforces NetworkPolicy.
+Before enforcement, reconcile changed policies with live resources and prove
+both TCP and UDP Service DNS on the isolated canary; source render checks alone
+do not pass that gate. See [Runtime Isolation](../runbooks/runtime-isolation.md).
 
 ## Traefik Routing Change
 

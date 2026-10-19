@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:cc1c2d6b5a79d83067a0b0dd0800d8c5b79f13e8e7ce61087c800efc0c3bf30c",
+  "pageVersion": "sha256:23aa6728edf72422e7db14bb92d09de9c7fe4b4fe79914a0819217c51eff0f86",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -59,10 +59,28 @@
           "version": "repo-lines-v1:sha256:310d2c78cf7f314f3444e47893f1c55673c70a1ac3e2f96624217f914cdb76ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ0MDMwMDJlZDAyM2VhNDEzM2FmODRmZWM4NjA4YzY5ZDE5OTg2MTAwMTljMGE5OGQwYTQ0YjM0YjVlY2E3OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzUxYjIyN2M4YzNhYjdlYmIwNGMyMTcxYTZmZTcwZWFjYmZhOTM2ODE2OGEwN2IyMzQxYWM1OWVkNTU2MTNhZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTM4N2U5M2UzYTUyNGZjNWU3ODg3NTkzOWIxODBjNDE4YTkwN2Y4ODc0NWRmZDllMmMxMzUzMTMwZTVjMTEwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjE1ZDEzODRmNDhiYmY5MjYwNzU1ZDJhZTgyMGYyODFhYjYzMmJlMDA0NWRhZTM2NjdiNjM4NzUzNjc3ZWNhMyJ9"
         }
       ]
+    },
+    {
+      "id": "claim_fd1f1361d5be4385a2e8ab5f8467f033",
+      "statement": "Nine repository-owned DNS egress policies select only CoreDNS Pods on TCP and UDP port 53; offline checks verify the policy peers and matching CoreDNS Service and Deployment selectors, while live isolated-canary DNS qualification remains pending.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
+        },
+        {
+          "resource": "repo://docs/runtime-isolation.md",
+          "version": "repo-file-v1:sha256:6bb1e2381e22181d9a5b07913c2fc8615040a3e9a6f152eeb73b12d544e760bd"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T18:14:29.076Z"
+    "at": "2026-10-19T20:01:23.259Z"
   }
 }

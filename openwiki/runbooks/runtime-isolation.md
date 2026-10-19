@@ -14,18 +14,22 @@ sources:
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
   - id: openwiki-source-4f1f492ff2ee386585deee86
     resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
-generated: { by: "codex", at: "2026-10-19T18:14:29.076Z" }
+generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T18:14:29.076Z
+    at: 2026-10-19T20:01:23.259Z
 ---
 
 # Runtime Isolation
@@ -74,6 +78,10 @@ IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before
 expanding to another node. Stock Enterprise's public TCP/443 requirement
 remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
+
+The nine repository-owned DNS egress policies now select only CoreDNS Pods on
+TCP/UDP 53. Static renders check their peer and the matching Service/Deployment
+selectors; live DNS qualification on the isolated canary remains pending.
 
 The protected [`network-policy-qualification.py`](../../scripts/network-policy-qualification.py)
 checks the live firewall-only DaemonSet image, flags, host mount and RBAC, then

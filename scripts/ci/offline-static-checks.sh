@@ -471,6 +471,50 @@ kubectl kustomize clusters/homelab/apps/octelium-storage |
   ' >/dev/null
 echo "::endgroup::"
 
+echo "::group::DNS NetworkPolicy peers"
+yq -e '.metadata.namespace == "kube-system" and
+  (.spec.selector | keys | length) == 1 and
+  .spec.selector."k8s-app" == "kube-dns"' \
+  clusters/homelab/platform/dns/coredns-service.yaml >/dev/null
+yq -e '.metadata.namespace == "kube-system" and
+  (.spec.selector | keys | length) == 1 and
+  (.spec.selector.matchLabels | keys | length) == 1 and
+  .spec.selector.matchLabels."k8s-app" == "kube-dns" and
+  .spec.template.metadata.labels."k8s-app" == "kube-dns"' \
+  clusters/homelab/platform/dns/coredns-deployment.yaml >/dev/null
+(
+  rendered="$(mktemp)"
+  trap 'rm -f "$rendered"' EXIT
+  for overlay in cordium harbor mastodon nix-builder nofx octelium-public; do
+    kubectl kustomize "clusters/homelab/apps/$overlay" >> "$rendered"
+    printf '\n---\n' >> "$rendered"
+  done
+  yq ea -o=json -I=0 '[.]' "$rendered" |
+    jq -e '
+      ["octelium/cordium-genesis", "octelium/cordium-cluster-config",
+       "harbor/harbor-postgres-backup", "harbor/harbor-vulnerability-exporter",
+       "harbor/harbor-image-signing", "mastodon/mastodon-datastores",
+       "nix-builder/nix-builder", "nofx/nofx-frontend",
+       "octelium-public/cloudflared-egress"] as $ids |
+      [.[] | select(.kind == "NetworkPolicy") |
+        (.metadata.namespace + "/" + .metadata.name) as $id |
+        select($ids | index($id)) |
+        {id: $id, dns: [.spec.egress[]? | select(any(.ports[]?; .port == 53))]}
+      ] as $reviewed |
+      ($reviewed | map(.id) | sort) == ($ids | sort) and
+      all($reviewed[];
+        (.dns | length) == 1 and
+        .dns[0].to == [{
+          "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}},
+          "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}
+        }] and
+        ([.dns[0].ports[] | {protocol, port}] | sort_by(.protocol)) ==
+          [{"protocol": "TCP", "port": 53}, {"protocol": "UDP", "port": 53}]
+      )
+    ' >/dev/null
+)
+echo "::endgroup::"
+
 echo "::group::Cordium genesis privilege lifecycle"
 yq -e '.data."controller.sync.timeout.seconds" == "900"' \
   clusters/homelab/argocd/self-management/cmd-params-configmap.yaml >/dev/null

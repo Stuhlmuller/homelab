@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:3caa0d80e263a97c3ec2b2ad0093b9cfeec5eab315b744e329c60cf03923c765",
+  "pageVersion": "sha256:27b6e92f3a8c0c433b5ac548a719ec05bc828feb61c9e71a65eee1e979360dd8",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a752aa7a3be36c1156ba3460889c4122418aad2fb1f5980ae096725f3fb2a936"
+          "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
         }
       ]
     },
@@ -736,7 +736,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:a752aa7a3be36c1156ba3460889c4122418aad2fb1f5980ae096725f3fb2a936"
+          "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
         }
       ]
     },
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -1008,7 +1008,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
-          "version": "repo-file-v1:sha256:3a5b31195d404a22f4f95c61356524298dfa87f0040f2a790afd5e947e9102a4"
+          "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-quiesce-test.py",
@@ -1103,10 +1103,32 @@
           "version": "repo-lines-v1:sha256:c9d6c2f54666e24e71341487098fd7c416852d126832707f8a184a09f6ec544e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjdlZTAzNmE1YWY2MDcxZWJhMzM4YTg4YjA2NDUzYTFmYzE2NzVmMjU2MjQxYjYwMmQ3NDA3MjQzNjRhYjAwOCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MjU3NmY4MWIyNmRiMmE0ZjAwOTQ3NzM3YmIyNTIxYWRiNmViOTM1YmFkMzcyMGQwMGU4ZTU1OWVkNjRiZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWY5ODZmOTdiOWIwYzY3MTczZGU2ZWI1YmMwZDllZTJhMDc5MjgwOTZmOWVlMzA5NDk0OGUyMzBiNWUyYmE2OSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWJjODBhMjk5ZjU0NDJkMDYyNmFiZjg3OWQ1N2NkMDE4ZjRhMGU3ODJmNTNjNzM1ZjMyYTZmMDhkMWY5NjJmNyJ9"
         }
       ]
+    },
+    {
+      "id": "claim_d716a9f8cc8f4f43b53ca5dc3d0e0dc5",
+      "statement": "The offline static gate renders all nine DNS egress policies, requires TCP and UDP port 53 peers to select only kube-system Pods labeled k8s-app=kube-dns, and checks the exact kube-dns Service and CoreDNS Deployment Pod selectors; live canary DNS qualification remains pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-deployment.yaml",
+          "version": "repo-file-v1:sha256:b374aca7b1ae9a9733511c0b2250fdcc1cf13da18cb6e89e6473addc50d0ff34"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-service.yaml",
+          "version": "repo-file-v1:sha256:4478aceefb861cc9792a89a6f89d9812e8439b9eed20baaa7994134c9bb88921"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T19:09:44.607Z"
+    "at": "2026-10-19T20:01:23.259Z"
   }
 }
