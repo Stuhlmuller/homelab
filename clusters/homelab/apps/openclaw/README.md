@@ -83,6 +83,19 @@ fails, leave old PVs, NAS data and credentials retained, inspect the private
 diagnostic in the backup bucket if published, and retry with a new run ID after fixing
 the cause. Do not reuse a partial S3 prefix.
 
+The tar keeps each source symlink's raw target without following it. Restore
+verification extracts non-symlink data with Python's `data` filter. It recreates
+links in private scratch only after checking there are no archive members below
+a non-directory member. It compares every restored path, type, file hash and
+raw link target with the stopped-source content digest before creating links.
+Source UID, mode and mtime remain bound by the stopped inventory and rescan;
+NAS all-squash changes them in private restore. Verification never follows
+links. Some retained NAS links point to reader-Pod overlay directories outside
+both archived roots; others are dangling. External target data is not in this
+archive. T014 compatible recovery must classify those targets and prove any
+needed data is separately retained or rebuilt before acceptance. Do not
+blindly extract this tar into a live filesystem.
+
 For compatible legacy recovery after a later Enterprise failure, first stop
 the new agent through its supported API and prove its runtime is terminated.
 Run the `verify` stage above, then restore the old Deployment replica count and
