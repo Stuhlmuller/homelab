@@ -219,6 +219,8 @@ class PostgresFoundation(unittest.TestCase):
                                 f"localhost:{self.port}")
         script = script.replace("host=occ-postgres.openclaw-system.svc.cluster.local port=5432",
                                 f"host=localhost hostaddr=127.0.0.1 port={self.port}")
+        script = script.replace('timestamp="$(date -u +%Y%m%dT%H%M%SZ)"',
+                                'timestamp="20261019T000000Z"')
         candidate = self.root / "backup.sh"
         candidate.write_text(script)
         gateway = self.material / "gateway/occ"
@@ -232,6 +234,12 @@ class PostgresFoundation(unittest.TestCase):
         complete = next(backups.iterdir())
         self.assertTrue((complete / "database.dump").is_file())
         self.assertTrue((complete / "database-bootstrap.sql").is_file())
+        checksum = (complete / "SHA256SUMS").read_bytes()
+        duplicate = run("sh", str(candidate), check=False)
+        self.assertNotEqual(duplicate.returncode, 0)
+        self.assertIn("backup destination already exists", duplicate.stderr)
+        self.assertEqual(list(backups.iterdir()), [complete])
+        self.assertEqual((complete / "SHA256SUMS").read_bytes(), checksum)
 
         job = json.loads(run("yq", "-o=json", "-I=0", str(APP / "restore-drill.yaml")).stdout)
         self.assertEqual(job["metadata"]["name"], "occ-postgres-restore-drill")

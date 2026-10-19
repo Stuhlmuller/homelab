@@ -33,6 +33,10 @@ connection='host=occ-postgres.openclaw-system.svc.cluster.local port=5432 user=o
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 partial="$backup_root/.$timestamp.partial"
 complete="$backup_root/$timestamp"
+if test -e "$complete" || test -L "$complete"; then
+  echo "backup destination already exists: $timestamp" >&2
+  exit 1
+fi
 mkdir "$partial"
 trap 'rm -f /tmp/occ-pgpass; rm -rf "$partial"' EXIT
 pg_dump --dbname="$connection" --format=custom --file="$partial/database.dump"
@@ -45,6 +49,6 @@ cp -a "$material" "$partial/material"
     | sort -z | xargs -0 sha256sum > SHA256SUMS
   sha256sum --check SHA256SUMS >/dev/null
 )
-mv "$partial" "$complete"
+mv -T "$partial" "$complete"
 trap 'rm -f /tmp/occ-pgpass' EXIT
 echo "verified OpenClaw Enterprise recovery set $timestamp"
