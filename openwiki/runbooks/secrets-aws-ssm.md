@@ -16,6 +16,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
     resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
+  - id: openwiki-source-699113cfd35bf2732550bb50
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer.js
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -32,10 +36,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
+generated: { by: "codex", at: "2026-10-19T21:42:47.615Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-19T21:42:47.615Z
 ---
 
 # AWS SSM Secret References
@@ -71,6 +75,10 @@ a fresh full-unit plan had no changes. A later rotation needs a reviewed
 reintroduction of the exact-scope grant. The hourly CronJob is now declared
 unsuspended in full dry-run mode; scheduled-run parity and the old-writer
 cutover remain separate gates.
+The draft acceptance observer reuses those projected App files to request
+`contents:read` and `metadata:read`; it adds no SSM parameter. Its private
+inventory and outcome receipts need a separate reviewed delivery path before
+the suspended observer can run. See the [identity boundary](../architecture/secrets-and-identity.md).
 
 ## OpenClaw Enterprise model key
 

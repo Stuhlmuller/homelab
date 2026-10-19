@@ -16,6 +16,12 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
+  - id: openwiki-source-c1b7364dfb35a5f4ad9a3931
+    resource: repo://clusters/homelab/apps/renovate/acceptance-inventory-job.yaml
+  - id: openwiki-source-2db30a96244f789640bb2100
+    resource: repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml
+  - id: openwiki-source-21ece176c767ab637348d713
+    resource: repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
@@ -28,10 +34,10 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
+generated: { by: "codex", at: "2026-10-19T21:42:47.615Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T20:01:23.259Z
+    at: 2026-10-19T21:42:47.615Z
 ---
 
 # Storage And State
@@ -564,6 +570,20 @@ repository cache entries can be rebuilt; the config test confirms a full-claim
 probe stops GitHub access. These are local checks. A live cache-failure cycle
 and its next scheduled recovery still need to be observed before accepting
 the storage behavior.
+
+## Temporary Renovate acceptance ledger
+
+The draft observer declares a separate 2 GiB `nfs-default` PVC for private
+extraction inventory, fixed sample, upstream release brackets, and outcome
+receipts. The inventory Job is omitted from Kustomize and suspended; the
+15-minute observer CronJob is suspended. This ledger is acceptance evidence,
+not Renovate cache. Keep it through aggregate review.
+
+The PVC has `Prune=false`; the storage class retains released volumes. The
+[workload runbook](../../clusters/homelab/apps/renovate/README.md#temporary-acceptance-observer)
+requires reviewed cleanup of private files, removal of prune protection, and
+verification of the released PVC, PV, and NFS directory or archive. That cleanup
+path is not yet declared.
 
 ## Staged independent application recovery (HOME-2)
 

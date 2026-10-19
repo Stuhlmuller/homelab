@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1e90f2fc99b67d9877571534e82f60e1573d5c10980ee76df0a4915fd1bfe4eb",
+  "pageVersion": "sha256:30f7d0a68dfd0dc7cb7f9a9ca6dc50ae9b5b55cb7f1b234580ba31c45c0743af",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -11,7 +11,7 @@
           "version": "repo-lines-v1:sha256:d3324ca24a463beb26511d43f38ae1abc5b99b355fda9f779b6fea3252bc92f7:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTBhZjU4NmQzZTUxNTg1NmRmNTFmZGFhZGY0YTU4ZGQ3YWJjYzcxM2JlYjY2NjYyMzUzMzRmZTQyMGU5OTliZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTc0NmEwNjY0OGJlYmJmN2M2ZWUyNjFhZGI4YmU5NjFlNTA0ZjJiYzhhYWI1ZTEzY2ZmZmE0OTc2NTcyYzJiMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmE2Nzk2MWQ2OTE2NzEzMmFhYjNhYjc5MGYxYWZjOTE3OGU0MDg0YzQ2NGUxY2Y0ODZmMjkxZWVhYjc0MGNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjdkODNlYzUwNTViYjIyMTIzZGFhNDUwN2JlM2YzZDFlYzMzZDA5N2NkODQ0Y2Y5YzkwMzYxNmVmZDBhMWEzYSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L111-L114",
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L103-L106",
           "version": "repo-lines-v1:sha256:2c1f90f6c4cc8103be1f75902b9b459a21dc0f9edbe1ccafda3c623b606b8ae3:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDNjMWI4OGViODkyMTE2NjMxZTBlMzZkYjgzODhkMTJhZDZjMGZlOWEzZDkzYWQ2MDhjZGRmNzhjYTFmZWJiYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNjhkNGExMDZkYmUxM2RiZDQ2MzcyYjFlMTdlZjU1OTZmZThmNmYwMDkzMmRjZDRiZjA1YjIxODAxOGQxZDhiNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDgwMmZhYWI4NDE5Mjk1YThiYzQ1MDljMTM4MmFhZGJjZTAyY2Q1ZmI5M2RmOGZiNmVhY2RlMGIyY2FmM2VmOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTEzZmUzYzk4ZDRkZTA2ZGJiZTc4ZTlmYjI5MDJkNDFmNjk4YjFjYWE2ZGM5ZTAxMWRhNzY3NDgyZjJmM2JjYyJ9"
         },
         {
@@ -47,8 +47,8 @@
           "version": "repo-lines-v1:sha256:7410c6b28c8e1aa77ec5d6688198f140f808f9e2754c61ed801fb372c26cdcbd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiOTM0NTNlZGQ1NDE0Y2UzYzlkOTJkMzM0OWI1ZDA4MGYwZDgxODc0MzcwNDdlMDA0NzUxZjIxNzYxYTc3NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFiOGQ3NTJkYjYyNTAwM2VjNTczNDM1ZjE1ZTQ5MTA2MzY4MDExNzMwZjExOWIzNjJjZmY2NGVjOWZhMjViZmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZhM2EyNjk5ZTI1Nzc1YjAyY2Q1YTlkOTcwZmYzZTkzODYzYTQxNGQwYTNlYjUxZWE2MzJmOWQ4ZmQ3MTliMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3MzZkMThlMzNlMjM1ZjNlZWVmNWFjZWYwZDQwOWY3NmZlZDFkMzIyZjIyYmI3MTI3OGU3ZWY0NTA5NjNiN2IifQ"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
-          "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L82",
+          "version": "repo-lines-v1:sha256:5e746b9aa571e76c1673238d511ee226ca37a8f68a076a98d7525e5d3d9a6b4b:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjExNjA1YWZiZmE0N2ViMjAxNjY0OWM4MmQ4M2Q1OWQ3ZmQ1NDNiNGFiYjQ5YTJlODg1ZGM5YzIzZjQyMmJjYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODYxYWZhOTZlODNiNzM0ZDc4ZjBiMmZlYWVkNmY4NGU3MThhNGI4MjYzNzAxZjVhZmI4MDkyMzk3YmMwNmU1NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjM4ZTdkOTQyYmM2MWExY2I0NjUzNDYzZWFkOWYyYWFlOWEzZDUyZjcwYjc2YTZlN2RlMWVhNmZjYzEzNzlhNyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGRlZmM1YTc3NWFkMzU3ODYzNjc0ZWY3MzNjNTM4NTg3MzY1Nzc5MDVjODEzZjYzZTlhNTcyZTcyNjlkNzFhYyJ9"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:e57a2dda4faffb09bdead75cf4346600bcf52c905cf9ed918eee4ceee67551dc"
+          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -115,10 +115,42 @@
           "version": "repo-lines-v1:sha256:32767fffcabf3ce011668824eae15de418c41d5fb74c5eeb7469d23010cb0845:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZjcwMDFjMGFiMTM0NGQ3ODcxOTk0ZDgwNzZhN2JiZjI5NjNkYjBkZjE2NGVhMzdmMDBjMTcxNjQyMDE2YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjY2NmOTYwYTExNzQ1OTA3ZGI2OTM5M2IzNThmMWQwODM3MjU3ZGZlMGY2YjcwNWI0MjhhZTY1N2Y2YWY0ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2MWM1YjJiODY3ZDE0ZTM1ZTZkM2IyYmUyMjg3YTJlNjNhNDBmYTU1MGJhNWM3M2FkN2JjOWVhZDI5NGY0NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYzA3MmRlYWE3ZTVkMWIxNjBlYWE5ZjUwMDJiODZkODhlNDlkZDc2NWM2Yjc1NjNkY2JiMzg1ZGUwYmEwOTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_5d76b18751c5401cb8b65686fe38d070",
+      "statement": "Renovate's acceptance observer stores private sample and release evidence on a separate 2 GiB NFS ledger PVC, while its inventory Job and 15-minute observer CronJob remain suspended.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-inventory-job.yaml#L1-L12",
+          "version": "repo-lines-v1:sha256:53b7a493b335768801ad2f9a4eef2d37354fc71eba792f65b6c146dbbedf3069:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyM2NlOTIzODA5ZmMwMDIxNWQ3MGI3ZWYyODAyMDkwZmYzMmMyOGI2NzA4Nzk5ZGJhNjMwMjQ3NjFjNTA2NmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRiM2Q1OTk1MzQ3ZmY0YjhiMDgyMjViNzZmOTY1ZmE5MmI1NDU0MmVlODQ2NjNlMjliYjk3ZjFjNDAwMjU1MmEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml#L1-L19",
+          "version": "repo-lines-v1:sha256:1c2e6039204e9d8cc13fb2e753383093b8d0a37e13396947c74ecd32812ed285:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc3NmFlMTQyNDI4ZTc1NGI2N2Q3ZDZlM2RmZGJlMWI0NDhmMGJhYzM1NWQ4ZmEyNGVjOTQ3MWUyMWQ5MGI0MzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3ZjI4Y2Y1NjRkMWY0MzI1ZDZmZTQzMDdiZDYzZTdhOWQwMTY2OGQzOTE5NzVmZGRmMTZiYmFjMTZiZWQ3NDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml#L1-L13",
+          "version": "repo-lines-v1:sha256:a4b8e70485cb614a89327eefe79768dc417f30939d85534fb02216d0cded49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OTBiZGMxZjg3YWI4MjBjMzU5ZGFmZDA1YjNjZDNjMzQ0MDVlODM2MWExNTYyZmE0YzQ0NTM5NzE1MDgxMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYWVlYjBiNGEzOThiMzNhNWU4NzlkZDNlZGFkZDZhZGYyMzcyMDlmMjNhNmY3N2Y0MjVhMWI3ODVmZWIyNzEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cb6a1ebdc40b403b989a29a5b4318123",
+      "statement": "The acceptance ledger has Argo prune protection and must be erased and verified through reviewed cleanup after aggregate review, including retained PV and NFS storage.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L372-L389",
+          "version": "repo-lines-v1:sha256:924a106f1ad466756cc7c3c4eab176f7a7cde5d926bc083c3be06445bb3c8974:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5YmQxNWU5NmQ5ZmQ3YzQ1Y2MwMjIxM2FkOTM4YTY4NjU0YmU1ZmRlZGYzYjUwMDZkZTc4NzM3NjczZWFjZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkNTFmYzE4NTJmMGE4YTNlNGNkMWJlOTY0Mjg0M2E4ZjRkZjIwNzhiMGFkNTdmNDBiNjg1NTQ1MzI3NDBmMDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxYTM4YTUwODdhNGUxNmRjMGVlNjU1MDMyYTMyYzgxYTc3Y2E5Y2E4YjEwMDAwZGQ4YzQ0ODMyODk3YTFiY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwNDYxNmU3OGI3N2FjMmNhZTFmMDgyYTcxN2JiOWJjZmJlNmQxZDgyZGI2NTA5NjgxZGYxY2Q5NjVhZmZjM2IifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-ledger-pvc.yaml#L1-L8",
+          "version": "repo-lines-v1:sha256:0b0be37f0fa5085be9dbbe367fc0461fd5dbb7f53bb23724ef5376ec0683d8df:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzc2YWUxNDI0MjhlNzU0YjY3ZDdkNmUzZGZkYmUxYjQ0OGYwYmFjMzU1ZDhmYTI0ZWM5NDcxZTIxZDkwYjQzMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2FmNDQyMjc5NjQyYWNkODI3YzY0MWFjMGRhMTkyYzBhYWUzNmJkOWFlMWRmN2RiOWYwY2QyMTU3NDgwNmJjOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjRjZTNkY2EwNTc4ZmVlMGNhM2MwNDgzYjFhNWI3YjlkOTcwMzYwMDQwNjg5YTk0NzliNmFhNDk0MTg4ODc1YSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T20:01:23.259Z"
+    "at": "2026-10-19T21:42:47.615Z"
   }
 }

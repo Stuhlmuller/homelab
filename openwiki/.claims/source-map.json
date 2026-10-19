@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:89aeecb8b8b5b26d9687d9f205593f5b00e8c6909211940956d569f1a994080f",
+  "pageVersion": "sha256:3772d855b73eb43717cc7c3517229167bc73f435e19bbb01b1f5cc93f4410554",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -201,10 +201,28 @@
           "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         }
       ]
+    },
+    {
+      "id": "claim_69116176d41447a7afade723af1db157",
+      "statement": "The staged Renovate acceptance source separates private inventory seeding from upstream observation, with focused inventory and observer fixtures in static checks.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-inventory.js",
+          "version": "repo-file-v1:sha256:3d1036c1df48f278ea8f66dfeba3c4b994e139f729edd6110c4f11163d925147"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer.js",
+          "version": "repo-file-v1:sha256:2cf53537da3c7db8885b6f41c85a7eee8a5cb85a60318026aabb32ca65344092"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L25-L28",
+          "version": "repo-lines-v1:sha256:9ecf15bb292098dc9ce77b74bb842fd82eb3978ab55288859eb69656be951a39:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2ZmZjMDg3MTVmODZlYjA0MzU0Y2U1OTk2MTAxOThhZWI3OGVlOWM5MjMxY2JkZjQwZWQ0YTUwY2ZmZGUyYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2JlZjRmNzlhNDFkZTAxNTIwZDUxMmExM2YyMzg3OTUyZGEwNzEzNmUzOTJlYjE5ZDNiODVhZDRiODRiZmJmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk1NWUzZmJjOWYwMGM0ZmJkNWY3ZTdiMmMwNzNmZjBhOTMyMDQ2NDk1MzMxYTUzNjBhOGQ4NDNmMDQzZmMwNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0MjdiMDYxZDFhNWY2NjkxMWE5MGU5NTllYmVkZTFiYjE3MTAyMWY3OTE1YjM0ZmMwMTc2OWNlNzFjZDVhYSJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T19:40:37.007Z"
+    "at": "2026-10-19T21:42:47.615Z"
   }
 }
