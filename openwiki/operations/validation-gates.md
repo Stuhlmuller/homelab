@@ -48,6 +48,8 @@ sources:
     resource: repo://clusters/homelab/apps/nix-builder/deployment.yaml
   - id: openwiki-source-2dc1935a1c837b3ac0cd9adf
     resource: repo://clusters/homelab/apps/nix-builder/README.md
+  - id: openwiki-source-878d8aa0884abae2a8194701
+    resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
   - id: openwiki-source-436aa6b493bbff8d5c17b3ff
@@ -140,6 +142,10 @@ sources:
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-80b544ebc719878ac3f31bac
+    resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
+    resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-719a8f57b80adfae662090ca
     resource: repo://scripts/ci/platform-maintenance-test.py
   - id: openwiki-source-54912e76b9bc176f1d28ff87
@@ -190,6 +196,8 @@ sources:
     resource: repo://scripts/nix-builder.py
   - id: openwiki-source-b4247f9b4622fc86c02f0ce3
     resource: repo://scripts/octelium-api-response.py
+  - id: openwiki-source-2eea896f325c470e4979019b
+    resource: repo://scripts/openclaw-enterprise.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
@@ -206,10 +214,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T07:42:29.586Z" }
+generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:42:29.586Z
+    at: 2026-10-19T08:22:58.881Z
 ---
 
 # Validation Gates
@@ -1497,6 +1505,25 @@ receipts, safe node order, NetworkPolicy inventory, fixture traffic and
 ownership-limited cleanup. The platform workflow and enforcer remain disabled
 until recovery, publication and isolated-canary evidence pass. Passing these
 fixtures does not qualify a live Talos node or make existing policies effective.
+The dormant foundation adds
+[`openclaw-enterprise-foundation-test.py`](../../scripts/ci/openclaw-enterprise-foundation-test.py)
+to `static-checks.sh`. It renders the Kustomization and checks restricted
+namespaces outside ambient mesh, system-side default-deny ingress, fixed tenant
+RoleBindings, exact `OnChange` SSM projections, the retained PostgreSQL CA,
+private server SAN, and `activationEnabled: false`. The separate
+[`openclaw-enterprise-test.py`](../../scripts/ci/openclaw-enterprise-test.py)
+now runs in both `static-checks.sh` and `offline-checks.sh`. Its portable
+fixtures exercise reconciliation and workload attestation. Config validation
+pins the bootstrap service-key destination to
+`https://console.oce.stinkyboi.com` before reading the key. When activation is
+requested, it requires the exact `openai` transport, OpenRouter base URL,
+`openai-completions` API, `openrouter/free` model, and dedicated key reference;
+fixtures reject changed, missing, and extra model fields. The stable
+receipt compares nonempty resource versions for the immutable Secret,
+Deployments, ReplicaSets, and Pods across two read-only snapshots. The
+entrypoint still refuses mutation because pinned `GET /installation` does not
+reveal selected Drivers. Local tests do not prove Secret readiness, certificate
+issuance, PostgreSQL TLS, network-policy enforcement, hooks, routes, or restore.
 See the [rollout runbook](../../docs/openclaw-enterprise-rollout.md) and
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 

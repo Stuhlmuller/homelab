@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:284dfd0331f5700f8bb2d2c6a9f0dd50ef812e684a5c60db561f266534a8843a",
+  "pageVersion": "sha256:289e676bd0723bbd11a9f3715571818cfcaf888fc827e73c37cabce540f24e47",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -62,7 +62,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -84,7 +84,7 @@
         },
         {
           "resource": "repo://policy/kubernetes.rego",
-          "version": "repo-file-v1:sha256:77a1a3cc465b15a5b1ae182d4beb1572ba2e27730e1767d6c41f7a44d63eab99"
+          "version": "repo-file-v1:sha256:f7056c6e479acbf327f3fe7b6539a9af0e186e97f26b73559b94c0c50771f421"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:99d1b1f7ffe66f731500ca93e8e88b9cfae337c6050295ba8b3830746409536f"
+          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
         }
       ]
     },
@@ -298,7 +298,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         }
       ]
     },
@@ -374,7 +374,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         }
       ]
     },
@@ -406,7 +406,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         }
       ]
     },
@@ -498,7 +498,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -768,7 +768,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -776,7 +776,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:99d1b1f7ffe66f731500ca93e8e88b9cfae337c6050295ba8b3830746409536f"
+          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
         }
       ]
     },
@@ -907,10 +907,90 @@
           "version": "repo-file-v1:sha256:e4d8c5acb9dd94515c48c57a425b9c1f6d7376eb791cf7b66c664d0f3eb20aa0"
         }
       ]
+    },
+    {
+      "id": "claim_0cdab53ba21a4cc28472291e3459e80f",
+      "statement": "The dormant Enterprise foundation is rendered in static validation to check restricted namespaces, tenant RoleBindings, exact OnChange SSM projections, PostgreSQL certificate shape, ingress denial and disabled activation; this does not prove live readiness.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
+          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
+          "version": "repo-file-v1:sha256:b2a3c458be7cd2c9b9a5bc9a1786b679c8c4574705fc3cb66277b133e14cbbdf"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
+        }
+      ]
+    },
+    {
+      "id": "claim_33f43b085f014e02aa20fe8f103119dd",
+      "statement": "The Enterprise reconciler fixtures run in both static and Nix offline validation, while the entrypoint remains fail closed before mutation because GET /installation does not prove selected Drivers.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/offline-checks.sh",
+          "version": "repo-file-v1:sha256:f6ecc6f84fef27561ab93680e4564817a59a433c5b1c5c48e7b013507f74ed24"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
+          "version": "repo-file-v1:sha256:c74a533bf67b99c3d6a34d6f3ae6a56a82bcfc266d6d11f399d2d2ea95bc7c5c"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L82-L110",
+          "version": "repo-lines-v1:sha256:fad5776a451431a5fd76754e3f8fe0faad34f7b5353d9cb785d313167946cfa5:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NmVlMjM2ZTc3MDNjYzdlNWY2MTlkZWY4MzgxN2I5MDMxM2Q2ZDRiOWRhNjliMGU1YzBiMjdlY2Y5N2QzNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxOGQ4Mjc3ZmQzYmE2YzJmYjc3ODFhZTM3YzU2YTVkNDE2MjI3NTJlYjQ4M2ExNmU0NTQzOGM4YzU5Nzg4ZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJmN2Q0NWJlZDQ2NjUxYjY5MTExM2E3NTdjZmYwYzk1MDFiZTdiOTJkZmJhZTdjZmNmN2IzNjY5MWQ0MTdhNTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUwODc2OGIzNjYyNmE4YThiNzAwMWMxMmQ3M2E0Mzc3ZDE0YTRhNzIwZmQyODU4MTk1ZTBiNTk5MTM5MTYzOWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1c6dd1615cfa403a961d6f2840c06887",
+      "statement": "Enterprise attestation compares nonempty resource versions for an immutable Installation Secret and each Deployment, ReplicaSet and Pod across two read-only snapshots, rejecting workload races with unchanged UIDs.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L70-L210",
+          "version": "repo-lines-v1:sha256:ca08a7b1011d322d88d6ba4e602332ca7de3b5151b28335fb6962c62badca0da:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkMDgzMTZkM2M4ODAwNzgwMTNiYTYxMmNmZWJiZmI1YTYyNDVlYTIyYmVkNDYwNWQ4ZTc3MTRhMTMwMGNjYjc5IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhNDRlN2JjNWIwYjczZjY4ZDc3OWM4ZDZiNTBlOGJlYzE4ZTZlNTY3YmMwNzlmMTc1OTg0ZGJkZmZkOTM2NTY4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlNGQzOTg3NmVlY2JmMmI5NDU3NmFlNmQ3YzFkMWMxMmU5Nzc3Yzg2ZTYxYmUyZWEyZmJmMDQxZWE0ZTJjNDlkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIzZWZmMjQ2YTVjOGVjNmE3ZDQ4NDFlNDljMGU2NTdiNzlkMjQ0ODI4ODVhYjI2OTg1NDEyYmU0ZGE0ZmEyNGExIn0"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L165-L340",
+          "version": "repo-lines-v1:sha256:2d9c1a39669426b9e42c297fe4b6079a4801893226268ccba4887521400b3faa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTc2LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ZWViMmE1ZjEzMWZkNzA1ZWJkMjlkY2E1Y2E3Mjg3NDU2NjIzMzA5ZWU2Nzc0ZDgyM2I3NWNjNDc1MGQ4M2QyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkZThjMmQ4ZGY2YzQzNDc1MGMxMmQ0YjgyNWU2ODJhYTVhZTE3YzYwNzg1OTFlNWEwZGM0YzQ1NmRlOWM4NDM4IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI2MGY5YmE0OGE1ODQ3ZTA2OWZkMTM1Yzc3OWE3OWIxM2Q4ZGQ0ZTdkMjU4MWNlNWI3ZGRhOTVjNTRhNjZlNTEyIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiIwODAwZGEzMjZkNGI2NTA0OGY5ZTJkMTIzZTk3OTk3YTllY2Q2MmEyMmIxMTFmMzlhNDY3Yjg1NzNkMzQ4ZTJmIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_b8afd931eb4b490887fd459b5a174937",
+      "statement": "Enterprise API access pins the bootstrap key destination to the exact console origin, and activation validation accepts only the approved OpenRouter transport/model fields and dedicated model-key reference; offline fixtures reject altered inputs.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L210-L235",
+          "version": "repo-lines-v1:sha256:822851324f224259902a60a1f363237c14df32fa909aec58185d5f620838a5b3:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0NGU3YmM1YjBiNzNmNjhkNzc5YzhkNmI1MGU4YmVjMThlNmU1NjdiYzA3OWYxNzU5ODRkYmRmZmQ5MzY1NjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRiNDNmN2I1ZGM5NTExNzkxZGMyOWZlYmFkMThiM2Y2OTM4NTE3NGFkZDRhMGRjZDE2NzBmYTNhNDExMTc1NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJhMjcxNWVlYzIwYmY1YmQ2ZWRmZDgwMzU3ODZmNmQ1MGU4NTUyZDc1OWNkZmM1YmE4YzYwZDkwODI5NjU5YjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5MTE3YzYwY2E2ZmUzODk0ZTUzZjlmMDBkNmZiMjJkYzU3Y2M0MTUxMGUyODBkNzQ3MzhlOWY3YTI5ODAwZjgifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py#L55-L69",
+          "version": "repo-lines-v1:sha256:04b4b89ddb54bb48734f5f93dfae74529d86381312269dddef82117b662c904e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjNjQ0NWViNzE3MGRiMmIyZjVlNTI2YTA5OTJlYzAwN2VkM2E1MWM0NGRjMmQyNTE1N2RlM2RlN2MzMjJiMTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhiMzE1MGEzNWZjZjkwYjk4Y2M2NjI5ZDZjZDY1MzA1YjJjOWY4NTJkODQwNmI1NTVmYWI3NWZlN2VjYjRiOTkifQ"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L111-L159",
+          "version": "repo-lines-v1:sha256:07d910329195c432dc1ae978e5d0bba7e9daa5ec48d679350cfebac74c39fc9c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBhMzFiMDcyNzNhODMzNTkzNDU3MzY4NWMxZGY2ZTgwOTY0NTQ2N2NjNzExMTYzNTRkMGY2NDNmOWVkZTJhN2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhZTUyZWM4NTkzMWI5NTFkNTczOWVmOTM2NDFhNGZlNGVmNDJiYmRhOWJlMzA3ZTIzMGVlYzNiY2FiMmY4ZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2ZGIxY2E4MmEwNjE4OTNjMzliOWYyODQ3NTQ3MGI3ZjA2YzU1ZTc5YzkyZmM5YjFkNDEzZjY2YTFlYmVjODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5ZDg2OWQwYmY3NjcyMDcxMjY3OTFlZTUxNzZjOGViZTcwYjI1Y2I5YTQ5ZjQzZDIyN2MxNjNjMDRmYmEyYzcifQ"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L28-L35",
+          "version": "repo-lines-v1:sha256:567f60d117527d73d780eb3f54a74d7aa1d011a0e2b04568e8f319ccc461cc8b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmMwY2FmNDQxYTFhYWQyMjQwZTdhYWNjYmIyYTczOTE1ZmM1Y2U2MmE5MGViODU3ODM2ZDkwNWM2ODc2MGM3ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjcwMDYyMTBiYzczMTZiNDZiZTk4YzRkNDMxMDFlOWE2ZjAzYWU0MzU4ODY5MDQ3MWYxNGZjMjYxZmFmYjQ3YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjI2N2Y5ZmFmNzA0YTEwODAyN2U5ZjJkYmRhNjc4Njk2ODIzNDkwYmQ0OTVkM2QxOTcyYTA0YTE1YTU3NmIyOCJ9"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L58-L75",
+          "version": "repo-lines-v1:sha256:5298d48e43db8aca1f10933e51a5c92d6adf0c8811bae70d53b0bd279a0ba9c0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE1NjFlNjg5ZDQxOTY1ZTBhZDI5MzFhYmQzZDZiMDk3MDQ2NDA3ZjQxNjU4ODI1ODliN2YyZmNlZmM5NmY0ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhYTYzZmI5ZGIzNjM5ODRkYjVhZmMxNmIxODE1MmQxZWI1OTE4OGRmNGJmMTUzYjc0ZmE4ZDg5NzE1ODEwZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5YmNhNTFiZWJlOTlmNTZmYmVmN2Q0YTZkNGU1MWI0NGQ3NTc4ZDExNzE0ZTlmMTgyODc0OWYwOGVlZDAyMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhOWM0M2UxNDMzZTk1M2NhZWMyOTliYjE5NTdiY2M4MWEwZTg3YjNiMjRkMDc1ZDQ5YmU3Mjk0NTM0OTNiYzgifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:42:29.586Z"
+    "at": "2026-10-19T08:22:58.881Z"
   }
 }
