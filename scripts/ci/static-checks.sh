@@ -22,6 +22,10 @@ python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 python3 -I scripts/ci/openclaw-enterprise-test.py
 python3 -I scripts/ci/openclaw-enterprise-access-test.py
 node --test scripts/ci/renovate-config-test.js
+node --test scripts/ci/renovate-acceptance-observer-test.js
+node --test scripts/ci/renovate-acceptance-inventory-test.js
+node --test scripts/ci/renovate-acceptance-report-test.js
+node --test scripts/ci/renovate-acceptance-pr-proof-test.js
 python3 -I scripts/ci/tailnet-dns-test.py
 python3 -I scripts/ci/platform-maintenance-test.py
 python3 -I scripts/ci/platform-maintenance-stage-test.py
