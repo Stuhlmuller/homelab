@@ -24,6 +24,8 @@ sources:
     resource: repo://.github/workflows/openclaw-config.yml
   - id: openwiki-source-664c834cf8c51093d63fbef4
     resource: repo://.github/workflows/openclaw-enterprise-model-credential.yml
+  - id: openwiki-source-c0ca5e405a32db452e0a5896
+    resource: repo://.github/workflows/openclaw-enterprise-startup.yml
   - id: openwiki-source-f85a2f83ac2451fd051bfc74
     resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
@@ -38,10 +40,12 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-13711977c9ca794932b4c8ee
     resource: repo://scripts/config/platform-maintenance.json
-generated: { by: "codex", at: "2026-10-19T09:44:12.806Z" }
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:44:12.806Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # CI/CD
@@ -82,6 +86,14 @@ accepts only an exact current-`main` dispatch into `homelab-production`. Its
 protected job validates the owner-supplied OpenRouter key, then writes only the
 new Enterprise SSM parameter. It has not run because the key is not yet supplied;
 this source change does not activate Enterprise.
+
+The [Enterprise startup workflow](../../.github/workflows/openclaw-enterprise-startup.yml)
+is a separate protected, exact-current-`main` dispatch. After static checks
+and the production environment gate, its pinned script creates or attests only
+the versioned immutable Installation Secret from reviewed repository bytes.
+The create-only path does not register the dormant Application or run an Agent;
+the post-bootstrap installation-ID annotation and live Pod binding remain
+separate proof work.
 
 The separate [Platform Maintenance workflow](../../.github/workflows/platform-maintenance.yml)
 accepts fixed inspect, canary and upgrade stages only from the exact current

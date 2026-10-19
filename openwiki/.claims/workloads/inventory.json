@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:aa9e00f31136e5825136f12e23b3fa283a24b0fc46be86fa56c119cc8bde57ed",
+  "pageVersion": "sha256:6e80378e3c0a11159952d074b9213fc79caa325a1a710b5fa3af85f7fcb87171",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -396,7 +396,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml#L1-L142",
@@ -437,10 +437,28 @@
           "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
         }
       ]
+    },
+    {
+      "id": "claim_c0276db66dfe4a428c7de7fa5fb37afb",
+      "statement": "A dormant OpenClaw Enterprise stock-chart candidate now declares reviewed Installation startup bytes, immutable Secret contract, Helm values and lifecycle hooks, but has no Argo registration or running Enterprise workload; placeholder admin, absent placement labels and database/storage gates prevent activation.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:c3270cba9046df250f5953fc03ed551aebaa9a37f8ca8533833d8fd281dd23b8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml",
+          "version": "repo-file-v1:sha256:eb82c27d7c5fae91f9e1a4bb708efda4047fe5cfac49d0c6819bff7b77338396"
+        },
+        {
+          "resource": "repo://docs/openclaw-enterprise-rollout.md",
+          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:44:12.806Z"
+    "at": "2026-10-19T10:28:14.477Z"
   }
 }

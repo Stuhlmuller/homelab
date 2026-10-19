@@ -42,6 +42,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -88,6 +92,8 @@ sources:
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45a27dbbec11da74be9f5497
     resource: repo://scripts/fleet-google-login.py
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
@@ -96,10 +102,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T08:22:58.881Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # Secrets And Identity
@@ -275,6 +281,16 @@ from generated app and migrator passwords. Both URLs name the private
 password is a separate target. cert-manager declares that CA and a server
 certificate for the Service DNS name. PostgreSQL, chart consumers, backup,
 and live TLS verification remain pending.
+
+The separate dormant [application candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+uses a versioned immutable `occ-installation-startup-*` Secret for reviewed,
+non-secret `installation.yaml` bytes. Its exact SHA-256 is bound in Helm values.
+A protected exact-`main` workflow can create and reread only that fixed Secret
+after the foundation namespace exists; this PR does not run it. The initial
+Secret has no installation ID. A later protected reconciler must bind the ID
+returned by `GET /installation` and verify the selected Drivers and Ready Pods
+before activation. SSM-backed model, database, auth, and gateway credentials
+remain separate from these startup bytes.
 
 ## Identity Notes
 

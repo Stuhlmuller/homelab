@@ -8,6 +8,12 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-20275bab1ec480742e28a50f
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-52536621afbfff1f8abeed59
@@ -22,10 +28,10 @@ sources:
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:44:12.806Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # Storage And State
@@ -274,6 +280,13 @@ recovery set. The foundation is not registered with Argo; node placement,
 distinct storage, PostgreSQL roles, database and agent backups, and isolated
 restore remain pending. No new Enterprise PVC or live database exists from
 this source alone.
+The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+names local agent storage and a private bootstrap password claim. Its preflight
+requires `occ-bootstrap-admin-password` to be Bound to
+`openclaw-enterprise-bootstrap-local` and PostgreSQL to have a ready endpoint
+before chart initialization. The required retained local classes, claims,
+dedicated PostgreSQL and restore proof are still absent; the candidate does not
+adopt legacy OpenClaw state.
 Langfuse runs chart `2.1.1` in its own `langfuse` namespace for traces, token
 usage, and prompt logs. The overlay directly runs single-replica PostgreSQL
 (`20Gi`), Valkey (`8Gi`), and ClickHouse (`100Gi`) on retained `nfs-default`

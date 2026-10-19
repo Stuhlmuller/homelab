@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:10039de2902e10d1def709661eff6aeedb1ecaa7776157f4b5d7f594d75fdd9f",
+  "pageVersion": "sha256:32cec51a9fa09f9092aff0c492477d1cba276d7f6221854f15be4fda26bd26eb",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
+          "version": "repo-file-v1:sha256:945a0f1dcf3817517d1aa8a919f62bfe7ac618cb4f2bc64f022c5057e1dff8bb"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:4af49badc2ebc87dab9b511e5cfab21f8c188b042600656d54daa0a5052bd90a"
+          "version": "repo-file-v1:sha256:bfeb6b16f16d33c2b685c6ad7f1e81774658635faa7e9e355d06055ec26273e9"
         }
       ]
     },
@@ -678,7 +678,7 @@
         },
         {
           "resource": "repo://policy/workflows.rego",
-          "version": "repo-file-v1:sha256:74358228c203466c9c0414dddbe98789c32884e775950c908dbc0af0b1f465f5"
+          "version": "repo-file-v1:sha256:6d690c40d6d5eb308242a1793c38de5ea3af4a1e25133d96ea288b803dc68dd9"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
@@ -732,7 +732,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:4af49badc2ebc87dab9b511e5cfab21f8c188b042600656d54daa0a5052bd90a"
+          "version": "repo-file-v1:sha256:bfeb6b16f16d33c2b685c6ad7f1e81774658635faa7e9e355d06055ec26273e9"
         }
       ]
     },
@@ -776,7 +776,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
+          "version": "repo-file-v1:sha256:945a0f1dcf3817517d1aa8a919f62bfe7ac618cb4f2bc64f022c5057e1dff8bb"
         }
       ]
     },
@@ -914,7 +914,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -922,7 +922,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
+          "version": "repo-file-v1:sha256:945a0f1dcf3817517d1aa8a919f62bfe7ac618cb4f2bc64f022c5057e1dff8bb"
         }
       ]
     },
@@ -940,7 +940,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
+          "version": "repo-file-v1:sha256:945a0f1dcf3817517d1aa8a919f62bfe7ac618cb4f2bc64f022c5057e1dff8bb"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py#L82-L110",
@@ -1009,10 +1009,42 @@
           "version": "repo-file-v1:sha256:24a8f706a20921c35e1aac59f7a2f1d72a9f6feb7a8b72cbbdf7c19a4217564f"
         }
       ]
+    },
+    {
+      "id": "claim_cd6ce18fa5d54bb2b8b2a74c357cba2f",
+      "statement": "Dormant Enterprise chart validation renders the pinned chart and reviewed Installation profile; offline fixtures test the fixed immutable startup Secret and bounded hook behavior without qualifying live Pod binding.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
+          "version": "repo-file-v1:sha256:9b7bcc00c7c9c473d48869c2cf973e47a7b02790e651ec230966c5395332ac20"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-quiesce-test.py",
+          "version": "repo-file-v1:sha256:fc6e7907ca9624e063736b1053c2fb2784f07f2136717c30fc390bee756e5a51"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-startup-test.py",
+          "version": "repo-file-v1:sha256:bac8f54445de39b1b40a0917971e8553c5c3b6c3ee8c288690e36731e3b0a353"
+        }
+      ]
+    },
+    {
+      "id": "claim_fe340c58d87d4c2ab2a69685510ad336",
+      "statement": "Checkov secrets scanning uses an exact three-finding baseline for non-secret Kubernetes Secret-name strings in the dormant Enterprise chart source.",
+      "evidence": [
+        {
+          "resource": "repo://.checkov.baseline",
+          "version": "repo-file-v1:sha256:a7511317c8c003ff5551dc2fec086bf101166b8c05bd4ba8c7340f80490209b1"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh",
+          "version": "repo-file-v1:sha256:945a0f1dcf3817517d1aa8a919f62bfe7ac618cb4f2bc64f022c5057e1dff8bb"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:44:12.806Z"
+    "at": "2026-10-19T10:28:14.477Z"
   }
 }

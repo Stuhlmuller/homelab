@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a9f5fd72e93fff6aa71b9569066deaf547e85c22c758df6f465a044651b4e244",
+  "pageVersion": "sha256:c02fe91fa2beb7f3563ace179d3bdbc9d4c55ff1f34f49782f8b7d97d1411ffc",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -94,17 +94,35 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
         },
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml#L1-L65",
           "version": "repo-lines-v1:sha256:90d0844bb75e445dc42337709ae19f5e493d3aa39342d461452011d5ce6c5cfd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzZjdiMzVjZjkxMTQ1MDBkN2IyN2E5YjFhNTM3N2NiM2I4NDJlM2E4YzMwNTllN2Y0ZTk1ZjlhNjgyMGM0MjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZjNmJiYmZhM2NlYjlkNzZhMGJkMDljNWRkM2FiZmUwYjY3NDM0M2JmZmQ1Yzk2YzJlYTY0OGZhMzQ1NzY4ZDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_b5ed386830ae4c9ca4684a1a5758c893",
+      "statement": "The dormant Enterprise chart candidate requires a Bound bootstrap password PVC on its local class and a ready dedicated PostgreSQL endpoint before initialization, while the storage classes, claims, database, and restore proof remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:c3270cba9046df250f5953fc03ed551aebaa9a37f8ca8533833d8fd281dd23b8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/preflight.mjs#L82-L104",
+          "version": "repo-lines-v1:sha256:1ef97d90830ca79ddd352a416018e4edcc3c9400cb732edebce5e85c47a8b0b2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwOGFlN2U2MDFiYzU3ZjUzMjAwZDBlZDQ0YjhmOTlhOGQ0OTI0OTcxY2FjZmFmYzgyMjdjYjQ5MTA1MmQ2ZDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NWEyOWE5ZGQyZWMyNmJkMWEzN2VjZWM5ZTNhZDY5YjRmYTE0MWI1ZmU2NTgzNzcwZmM2MTM3MjNmNzM3NmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY5Y2U0YjZiZjZiZmVmOTU0ZWNkYzZmYWIyMmE1OTVjOGU3ZjllODUxZjgyM2JmN2I4Y2Q5NDI2ODVkNTc1MDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1ZTg3YzViMDFhMWMyMTFmYmUyMDRhNzcwMzg1ZWZiMWVjM2VhM2YwMzEyOWE4NTIwZjZiM2ZmMzRjN2UyMTIifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml#L13-L22",
+          "version": "repo-lines-v1:sha256:32767fffcabf3ce011668824eae15de418c41d5fb74c5eeb7469d23010cb0845:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlZjcwMDFjMGFiMTM0NGQ3ODcxOTk0ZDgwNzZhN2JiZjI5NjNkYjBkZjE2NGVhMzdmMDBjMTcxNjQyMDE2YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjY2NmOTYwYTExNzQ1OTA3ZGI2OTM5M2IzNThmMWQwODM3MjU3ZGZlMGY2YjcwNWI0MjhhZTY1N2Y2YWY0ZjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2MWM1YjJiODY3ZDE0ZTM1ZTZkM2IyYmUyMjg3YTJlNjNhNDBmYTU1MGJhNWM3M2FkN2JjOWVhZDI5NGY0NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjljYzA3MmRlYWE3ZTVkMWIxNjBlYWE5ZjUwMDJiODZkODhlNDlkZDc2NWM2Yjc1NjNkY2JiMzg1ZGUwYmEwOTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:44:12.806Z"
+    "at": "2026-10-19T10:28:14.477Z"
   }
 }
