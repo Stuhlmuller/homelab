@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:93e64bdd5e0a2dcaa2b555f0ba31161eae91f8fa3421fa444376be0e8dfa8f4b",
+  "pageVersion": "sha256:4127f02ab206def0c2448c0f2b1a76891f070696666611dab1da1de9c714d9a8",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -105,7 +105,7 @@
       "statement": "The Talos Harbor helper reads the complete machineconfig resource stream, requires active v1alpha1, permits a missing persistent resource only for version1 STATE boot, and otherwise requires semantic equality of all active/persistent documents before changing the host mapping.",
       "evidence": [
         {
-          "resource": "repo://docs/harbor-image-mirroring.md#L421-L432",
+          "resource": "repo://docs/harbor-image-mirroring.md#L437-L448",
           "version": "repo-lines-v1:sha256:a799676256a7f7631e0afbc6701d7498e1a6b44952a2850d3cacf24234180899:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3OTc5YjVlMTc0NDBhODdiYjk0YWRhNmYxMDg0YzAwOTEyZjlmMWYyMzc1N2Q1ZjI5NTFlNGM1MWJmMzVjOGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwNzQ0NzY4ZTBhOWE1ODlkZDQ2ZGNjNDFlNjQ3NWEzMjU5MzYzZDliYjFlMGE3ZTg0YWViMTdiNWJhYjIzYTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzYTMxNzQxNjAwZTgxYmFkYjM1ZTM5MGMxODk1M2FhMGVjNzIzYTM4MzQyODgwNDRjOWJlYmEzMjczZmY5YTcifQ"
         },
         {
@@ -134,7 +134,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/config/harbor-litellm-images.json",
@@ -358,7 +358,7 @@
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
+          "version": "repo-file-v1:sha256:da2a384b298a27da1ecd5b37cc9ce7abc60800ca7bebb9bbe4ff6d2c8a1a184f"
         },
         {
           "resource": "repo://scripts/config/harbor-chainguard-images.json",
@@ -386,11 +386,19 @@
     },
     {
       "id": "claim_d6f10f15d9864661a1f9c69dcbbf71f6",
-      "statement": "The full catalog contains digest-pinned kube-network-policies v1.1.2 and paused Argo CD Image Updater v1.3.0. Cataloging activates no enforcer; activation requires repository-owned Talos NRI configuration, live socket/plugin registration, negative startup/bypass tests, NetworkPolicy review, and a fail-closed strict-mode worker canary.",
+      "statement": "The full Harbor catalog still contains a digest-pinned older kube-network-policies source and paused Image Updater v1.3.0; the staged firewall-only kube-router DaemonSet is a separate dormant source with no selected node, and activation requires image publication, policy review, isolated-canary admission and live traffic/lifecycle qualification.",
       "evidence": [
         {
-          "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
+          "resource": "repo://IaC/platform-network-policy/stack.hcl",
+          "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:ca1dff9eab4d90f97030a8cf8d466bbfd588a866f09933d5fd67e5e15cf26216"
+        },
+        {
+          "resource": "repo://docs/image-egress-hardening.md#L200-L221",
+          "version": "repo-lines-v1:sha256:27b5dc6505a6d41bafe247c6f6adbf032f0bf383b40795aaa2aa92c2abb8c134:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4OGM3MzQ5MDUzNGUzNzRiMzY0NGRiNmQ0ODVkN2UxNjkzYTliYTFkYjA0YWY3ZjYxZWU3ZDA3N2JkYWRhNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1ZTY4N2M3N2M4OTdmMzhhMmJjNzg4Nzc0MzA5MmFkYWI3NDk1NTViYTE0YzFjZjE1ZTllZjY5ZDUxOGFlNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE3NzU4YmM1ODhkNmFiYzA5NDEzMjhhZTg2MDljZDhkNzBmZDgyYjE2MDQwY2NjOTI1MjA2NGNmY2NiMGQ3MTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -434,7 +442,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/bootstrap.py",
-          "version": "repo-file-v1:sha256:e5a7ce8b96db1ba8efb7e3267db70b9f93f2fe98351df7fc2b44eab8b5f09941"
+          "version": "repo-file-v1:sha256:0f03d43bd7ea8556fb997fe9e1663b8afe2265e50816f6b55c133421675c7ebf"
         },
         {
           "resource": "repo://clusters/homelab/apps/harbor/externalsecret.yaml",
@@ -442,11 +450,11 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:ebab95e51be87738be4308bbdcca93d3ee02956f7cb85b34f661fbbccb5ab56d"
+          "version": "repo-file-v1:sha256:8ce6f5df81955fc96930ae9504ce65084987c47e05233ee8a04c617777a647af"
         }
       ]
     },
@@ -488,7 +496,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -502,7 +510,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -528,7 +536,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:ebab95e51be87738be4308bbdcca93d3ee02956f7cb85b34f661fbbccb5ab56d"
+          "version": "repo-file-v1:sha256:8ce6f5df81955fc96930ae9504ce65084987c47e05233ee8a04c617777a647af"
         }
       ]
     },
@@ -538,7 +546,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -636,7 +644,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/config/harbor-dns-images.json",
@@ -690,7 +698,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -712,17 +720,17 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2c91d138947ca944ea4a0dd892d28a4c51caa2e5ee4855ca25910a99be75cad7"
+          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:1ccf6a7b97092d39b8da8718b7e43624a1fbb893f4387819bdb5d6ead4e8d380"
+          "version": "repo-file-v1:sha256:a8ff326c8a231e32616182ecac31b4aa02c968a71396e92372e0c0e7bf9ff140"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T06:36:33.438Z"
+    "at": "2026-10-19T07:08:11.339Z"
   }
 }

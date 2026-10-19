@@ -11,6 +11,8 @@ terraform {
 }
 
 inputs = {
+  # Placement admission selects the canary later; no node is tainted now.
+  node_taints = {}
   node_annotations = {
     # Octelium otherwise advertises the ISP-facing IPv6 address, which is not
     # reachable through the reviewed Tailscale 10.1.0.0/24 fallback route.

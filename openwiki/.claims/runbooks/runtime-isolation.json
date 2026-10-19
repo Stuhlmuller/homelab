@@ -1,32 +1,32 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:368a927a5cfaa07d785dfbc8665be7bc8ed7a4b7134b7c35098c8583e7113e1f",
+  "pageVersion": "sha256:7cb62aa3752fca04b98b925c7b7148e8c654d9a0f460a05ebbfb9371d3a6104b",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
-      "statement": "The 2026-10-12 read-only egress audit found all Flannel and ztunnel instances Ready but no Gateway API CRDs/GatewayClass, NRI configuration, or kube-network-policies deployment; legacy Istio Gateway resources do not supply the Gateway API egress path. No egress enforcement is active. Activation first requires a dedicated tainted canary worker with reviewed capacity, scheduling, and storage placement, a declared Gateway API/NRI dataplane, private inventory audit, and positive and negative ambient canary evidence.",
+      "statement": "The 2026-10-12 read-only audit found ready Flannel and ztunnel but no Gateway API CRDs or GatewayClass; firewall-only kube-router and Envoy Gateway are now staged with automatic sync disabled, and no NetworkPolicy enforcement is active. Activation requires published images, policy review, a measured isolated tainted canary, live traffic and lifecycle qualification, and ownership-limited cleanup; no existing worker currently qualifies.",
       "evidence": [
         {
-          "resource": "repo://docs/image-egress-hardening.md",
-          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:ca1dff9eab4d90f97030a8cf8d466bbfd588a866f09933d5fd67e5e15cf26216"
         },
         {
-          "resource": "repo://docs/runtime-isolation.md",
-          "version": "repo-file-v1:sha256:5742b5c0ee1423c66678ea6eb4ee7656ef83c7f1ca070730dc5e89c7f48a498d"
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py",
-          "version": "repo-file-v1:sha256:fe5d5912c9c103367f5c1720f97f6e978e631ca03f1f88cfef9a1af1f34d68bf"
+          "resource": "repo://docs/image-egress-hardening.md#L90-L115",
+          "version": "repo-lines-v1:sha256:91bf8446d656542e330db64dd6926be98ce8247ee24857230f8545a52c3f210f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImViY2E2NzZjNjgyNTJkYTVmNjRiMWQ1MDBlYjU3ODlkNWE1OTMwZDhkZWUyZTQ0ODdjODgwYjExZTg0Yzc1NmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk1MWFhNGJhZmQ5MTVhMTlkYmU2YzIwODJiZmZiMDY2ZmYyMjhiYjBlZGY2ODViOGVmMGExMjhiNGVhYzkwZmUifQ"
         },
         {
-          "resource": "repo://scripts/network-policy-inventory.py",
-          "version": "repo-file-v1:sha256:df7edfc19aae05013415cc745f01da6d11a05cfe6645f932d5195c260c984137"
+          "resource": "repo://docs/runtime-isolation.md#L6-L24",
+          "version": "repo-lines-v1:sha256:789bc1f94a7703e2bd7de69306c174e4bea4c8cac9191e159e43be03759946a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyZmEyOTA1ZTE5MTZiNzgxNTAyMDk4OTJjNzcwMjZhYTgxMjZjNDI0YTNjYjVhYzA0MmRhZWUyOTNlMDdjOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4YmQzNmIyMTUyOWQ4NGJmNTUyZjIzZWE2M2Y1MjE1YmU4YTYwNjdjMDkwMjhiM2Q4MDE1ODY3NGM3OWFlMzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxMzBkZmI1MWYxZmIxNzhjZTRiMmFhNmY0NDEzMWZmMDUwYzJkZTZmNThiZTY0NzkzNGY2YTUzNTU4NmE5ZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhZTFkNDQ2YTc4NDk3Y2IxNzYyMjYyMmViYjZiYjRkYzhlNzUwMTYzZDk3NzEwNzcyMWYwOTkzNGFjODI2ZDQifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T05:44:36.454Z"
+    "at": "2026-10-19T07:08:11.339Z"
   }
 }

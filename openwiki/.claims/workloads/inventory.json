@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5c638e4656014cb770be273a5c38247662a3c28349d5b3604df4fcf4326b82b5",
+  "pageVersion": "sha256:607ec707ebe993eef87220792f86aa165e6ff6c13c9b1fd8c4216126f44a5bd7",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -44,7 +44,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:fd6f43f9c2b0f89b520d49a414fafd2037fcb642a49eb142af697bdac9410fec"
+          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
         },
         {
           "resource": "repo://docs/argocd-image-updater.md",
@@ -214,7 +214,7 @@
         },
         {
           "resource": "repo://IaC/terragrunt.stack.hcl",
-          "version": "repo-file-v1:sha256:fd6f43f9c2b0f89b520d49a414fafd2037fcb642a49eb142af697bdac9410fec"
+          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
         },
         {
           "resource": "repo://clusters/homelab/platform/image-policy/binding.yaml",
@@ -334,17 +334,43 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:2c91d138947ca944ea4a0dd892d28a4c51caa2e5ee4855ca25910a99be75cad7"
+          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
-          "version": "repo-file-v1:sha256:2889f1a61e11e04123322e1d69e566019daa3a22b7a7010d9ee41fec32ddb0f2"
+          "version": "repo-file-v1:sha256:ed8ab9c4732f5fe6247ca3595b2193eea14902521be7df15e76c9122dac14e55"
+        }
+      ]
+    },
+    {
+      "id": "claim_49dae6fe73894d9cbe7749c26f7ef825",
+      "statement": "The Enterprise platform branch registers NetworkPolicy, canary, cleanup and Envoy Gateway Argo Applications with automatic sync disabled; kube-router selects no node, canary fixtures stay empty before admission, and no private route or firewall enforcement is accepted from registration alone.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/platform-envoy-gateway/stack.hcl",
+          "version": "repo-file-v1:sha256:8d0d580140ed39bc371b9405cb7a30ac3ac617b77e73d70b85f7db69feffea60"
+        },
+        {
+          "resource": "repo://IaC/platform-network-policy/stack.hcl",
+          "version": "repo-file-v1:sha256:07453ec42d446aa00a24edfb6b3b53ac157f9b77a39c0a3cd978a6324e82d23b"
+        },
+        {
+          "resource": "repo://IaC/terragrunt.stack.hcl",
+          "version": "repo-file-v1:sha256:1bc26c90c3ec9313f6266b0a7b554076bbedd126c1ea4cf2f944cc5bb940eee6"
+        },
+        {
+          "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
+          "version": "repo-lines-v1:sha256:1086c16871aecc5ca2acecacfe2dd886d79f82386f202ab0274fb5cd2a6d4d54:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWUyNTRjNDFjNzZlNDZiMmI2OGY2OGFjMTkzOGU1MDU2MTY5ZTUzNmNlM2MwMzg1NjhkMzU0NGM0MWU4ODQ5MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzZmY2E4NjM0NWEwODMwMTVmOWIyMzYwMmM0YzZkODczOTExOTExZjA3YTM4YmExOTZlYjY0YzM4MjA4NzZjZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiN2RiZTU1MjExMDNiMWRmYjQxODkxNTUwNzM5NmIzZDAzMDQzYTBhYTE0MDg1ZTMwOTdiMDA0NDE5YzU0ODBiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWE0NmFmOWE4ZTk5MTZmMjM3ODM3NTcwMTMzZmYwMGE5MzBmMGEwNTFhMzg4NzIyOWMwZTMzMDhjZDk3ZjMzMiJ9"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:81e25c0a129161b8effca58359db6b3d475c28a8723518f859893f369a57dcef"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T06:36:33.438Z"
+    "at": "2026-10-19T07:08:11.339Z"
   }
 }

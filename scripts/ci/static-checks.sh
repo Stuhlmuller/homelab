@@ -16,12 +16,20 @@ python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
 node --test scripts/ci/renovate-config-test.js
 python3 -I scripts/ci/tailnet-dns-test.py
+python3 -I scripts/ci/platform-maintenance-test.py
+python3 -I scripts/ci/platform-maintenance-stage-test.py
+python3 -I scripts/ci/network-policy-enforcement-test.py
+python3 -I scripts/ci/network-policy-qualification-test.py
+python3 -I scripts/ci/network-policy-cleanup-test.py
+python3 -I scripts/ci/envoy-gateway-prerequisite-test.py
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091 # Shared helper is linted separately.
 source "${script_dir}/terragrunt-filter-base.sh"
 
 terragrunt_generate_stack
+python3 -I scripts/ci/envoy-gateway-registration-test.py
+python3 -I scripts/ci/network-policy-registration-test.py
 
 echo "::group::Operator OpenTofu validation"
 rg -Fq 'sid       = "DenyTemporarySessionCredentials"' IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf

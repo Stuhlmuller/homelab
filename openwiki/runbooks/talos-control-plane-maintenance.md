@@ -4,6 +4,8 @@ title: "Talos Control-Plane Maintenance"
 description: "Authenticated Talos maintenance, etcd snapshot integrity, macOS backup scheduling, retention, offsite publication, and recovery limits."
 tags: ["runbook", "talos", "maintenance"]
 sources:
+  - id: openwiki-source-f85a2f83ac2451fd051bfc74
+    resource: repo://.github/workflows/platform-maintenance.yml
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
   - id: openwiki-source-2d8396976c82220440798f1a
@@ -16,10 +18,14 @@ sources:
     resource: repo://docs/talos-control-plane-maintenance.md
   - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-11T00:16:41.141Z" }
+  - id: openwiki-source-13711977c9ca794932b4c8ee
+    resource: repo://scripts/config/platform-maintenance.json
+  - id: openwiki-source-cdfffc7b29677732b4694b38
+    resource: repo://scripts/platform-maintenance.py
+generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T07:08:11.339Z
 ---
 
 # Talos Control-Plane Maintenance
@@ -153,5 +159,20 @@ Do not invent limits while metrics are unavailable.
 The canonical runbook also owns the dated 2026-08-25 corrupt-object recovery.
 That recovery is exact-key and snapshot-first, with a Talos snapshot-restore
 rollback; do not generalize it into a routine etcd mutation path.
+
+## Staged Enterprise platform maintenance
+
+The [platform maintenance workflow](../../.github/workflows/platform-maintenance.yml)
+and [committed ladder](../../scripts/config/platform-maintenance.json) define
+Talos `1.11.3 → 1.11.6 → 1.12.12 → 1.13.11 → 1.14.4`, followed by a separately
+gated Kubernetes `1.34.11 → 1.35.9` stage. The protected lane requires exact
+current `main`, a distinct Octelium client tunnel and Talos mTLS. Inspect and
+offline validation do not execute upgrades; per-node durable start/verified
+markers are intended to stop ambiguous retries. The upgrade branch remains
+disabled pending direct-LAN recovery, fresh off-node etcd, published images,
+role-specific strict validation, an isolated canary, and Istio completion.
+Kubernetes image digest-to-version-tag immutability/readback also remains an
+explicit open gate. No live node or control-plane upgrade is accepted from this
+staged source alone.
 
 See [Cluster Topology](../architecture/cluster-topology.md) and [Validation](validation.md).

@@ -862,6 +862,8 @@ expected_credentialed_job_inventory="$({
     '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:reconcile' \
     '.github/workflows/octelium-private-kubernetes-apply.yml:static-policy' \
+    '.github/workflows/platform-maintenance.yml:maintenance' \
+    '.github/workflows/platform-maintenance.yml:static-policy' \
     '.github/workflows/release.yml:release' \
     '.github/workflows/release.yml:release-dry-run' \
     '.github/workflows/terragrunt-apply-request.yml:request' \
@@ -923,6 +925,7 @@ done <<'EOF'
 .github/workflows/openclaw-enterprise-images.yml 33bc215c9fbed4a72efb5b9cc3c034bdab9ce614dabfde1fba61455eb156f120
 .github/workflows/openclaw-enterprise-model-credential.yml df104c8914cdc9985652389046c788a09395ba650be0f181dfd2bebb4e21ed9f
 .github/workflows/openclaw-enterprise-operations.yml a2f9195795f78e66450fd9c74fb8bdae3bba594809f5cf19cb5f3586d71e78ed
+.github/workflows/platform-maintenance.yml ef72c8526f0544ccb0d5cfc04f82305147515d5416d4153795de843e2a53e7ae
 .github/workflows/nofx-registry-credential.yml 26f1c1b7d31dece4a1c68c8f14e7b9470a889dc54315ff99f2991367f577e7c5
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
@@ -949,6 +952,7 @@ for workflow_job in \
   '.github/workflows/openclaw-enterprise-images.yml:publish' \
   '.github/workflows/openclaw-enterprise-model-credential.yml:static-policy' \
   '.github/workflows/openclaw-enterprise-operations.yml:static-policy' \
+  '.github/workflows/platform-maintenance.yml:static-policy' \
   '.github/workflows/homelab-diagnostics.yml:grafana' \
   '.github/workflows/nofx-images.yml:test-build' \
   '.github/workflows/nofx-registry-credential.yml:static-policy' \
@@ -1251,7 +1255,7 @@ bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "b91ccb55d0e1e689d3c49a17309a575c4e1ffe2458900b02d2790761dd5b0518" ]] || {
+  "f91c07dbf100ff0ea84837c4968f632939696eaccbe235a3380cacfcebb11a50" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }
@@ -1275,6 +1279,8 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api.homelab")] as $services |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-private-talos-access")] as $talos_policies |
     [.[] | select(.kind == "Service" and .metadata.name == "talos-api.homelab")] as $talos_services |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-platform-talos-ci-access")] as $talos_ci_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "talos-api-ci.homelab")] as $talos_ci_services |
     [.[] | select(.kind == "User" and .metadata.name == "homelab-catalog-ci")] as $catalog_users |
     [.[] | select(.kind == "Credential" and .metadata.name == "homelab-private-kubernetes-ci")] as $catalog_credentials |
     ($policies | length) == 1 and
@@ -1353,6 +1359,30 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     } and
     ($talos_services[0].spec.config.tls // null) == null and
     ($talos_services[0].spec.config.clientCertificate // null) == null and
+    ($talos_ci_policies | length) == 1 and
+    $talos_ci_policies[0].spec.rules == [{
+      "name": "protected-maintenance-client",
+      "effect": "ALLOW",
+      "condition": {"all": {"of": [
+        {"match": "ctx.user.metadata.name == \"homelab-ci\""},
+        {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+        {"match": "ctx.session.status.type == \"CLIENT\""},
+        {"match": "ctx.service.metadata.name == \"talos-api-ci.homelab\""},
+        {"match": "ctx.service.spec.mode == \"TCP\""}
+      ]}}
+    }] and
+    ($talos_ci_services | length) == 1 and
+    $talos_ci_services[0].spec == {
+      "displayName": "Protected CI Talos API",
+      "isPublic": false,
+      "isTLS": false,
+      "mode": "TCP",
+      "port": 50000,
+      "authorization": {"policies": ["homelab-platform-talos-ci-access"]},
+      "config": {"upstream": {"url": "tcp://10.1.0.199:50000"}}
+    } and
+    ($talos_ci_services[0].spec.config.tls // null) == null and
+    ($talos_ci_services[0].spec.config.clientCertificate // null) == null and
     ($catalog_users | length) == 1 and
     $catalog_users[0].spec == {
       "type": "WORKLOAD",

@@ -1,6 +1,10 @@
 # OpenClaw Enterprise Acceptance Ledger
 
 Status: **legacy stopped; archive and replacement rollout pending**.
+Platform prerequisites have only offline source validation. No live upgrade,
+firewall enforcement, Envoy route or isolated canary is active; measured nodes
+do not admit an isolated canary without evicting unrelated stateful workloads.
+
 This public ledger contains only sanitized source identifiers, immutable
 artifact references, private receipt hashes and pass/fail outcomes. Full
 inventories, credentials, diagnostics, model prompts and backups stay private.
@@ -9,13 +13,13 @@ inventories, credentials, diagnostics, model prompts and backups stay private.
 | --- | --- | --- | --- |
 | Pinned stock source | `33bb74590a749f37934da4502fca6035cd234a55` | — | Verified source and paired build |
 | Stock controller/runtime publication | [main `3814835f`, run `39103518827`](https://github.com/Stuhlmuller/homelab/actions/runs/39103518827); controller `sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164`, runtime `sha256:649351619d6a6697671ceb8bca36c8fd104ff0416e1a652095ce5de6fbf437b6` | — | Signed and fully pulled by protected workflow |
-| Full platform image catalog and transitive render | [main `d7c81d87`, mirror run `39105390894`](https://github.com/Stuhlmuller/homelab/actions/runs/39105390894); [retry `39134745906`](https://github.com/Stuhlmuller/homelab/actions/runs/39134745906); [OCI-index copy fix #1378](https://github.com/Stuhlmuller/homelab/pull/1378) | — | Pending: the previous full mirror failed on an OCI index copy. The fix is merged, but no complete publication and verification receipt exists. |
+| Full platform image catalog and transitive render | [failed mirror `39188058137`](https://github.com/Stuhlmuller/homelab/actions/runs/39188058137); [main `93b641a7`, full retry `39190983355`](https://github.com/Stuhlmuller/homelab/actions/runs/39190983355) | — | Pending. The full retry failed at item 112/214, the pinned LiteLLM database OCI index, with Harbor's `unique_reference` violation. No complete publication or authenticated pull receipt exists. |
 | Legacy off-NAS archive bucket | [main `2841475f`, protected apply `39110519607`](https://github.com/Stuhlmuller/homelab/actions/runs/39110519607) | — | Applied; read-only check confirmed versioning, KMS encryption and public-access block. Archive write/restore pending. |
 | Legacy pre-shutdown inventory | [main `d55e2ab8`, run `39127113354`](https://github.com/Stuhlmuller/homelab/actions/runs/39127113354); [main `6de59d7c`, protected recovery `39142331296`](https://github.com/Stuhlmuller/homelab/actions/runs/39142331296) | `e8663e8451f7d76acfdd91904b7a9373a738ef5de44195ac4127ff862389307b` | Passed: the private success marker and both retained baseline copies match this digest; protected publication verified current source identities, one KMS-encrypted S3 version, and a versioned download matching the baseline. Old writers were active at this pre-shutdown gate; the next row records their shutdown. |
 | Legacy stopped with zero writers | [main `f818b41b`, reviewed shutdown PR #1350](https://github.com/Stuhlmuller/homelab/pull/1350); Argo `openclaw` synced to that revision at 2026-10-18 16:15:52 UTC | `da89c8f5fde25808175f667767d3a46e06663e58ddb9efd2bfcc55a79ca54d2e` | Passed at 16:17 UTC: Deployment 0 desired/ready, zero gateway Pods, backup CronJob suspended with zero active Jobs, reader Ready on the expected node, and four retained PVC/PV identities verified. Private read-only status receipt retained outside Git. |
 | Legacy post-shutdown inventory | [main `e48bcbe7`, run `39157724373`](https://github.com/Stuhlmuller/homelab/actions/runs/39157724373); [verification `39170006465`](https://github.com/Stuhlmuller/homelab/actions/runs/39170006465) | `cd0845fa234c374609e1196f182ac82ed525340bad2b52a21f88fee42b4e1ea4` | Full stopped-source scan, one versioned off-NAS object, matching downloaded bytes and KMS encryption verified. |
-| Full independent legacy archive/restore | [failed archive `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916); [failed archive `39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077) | — | Pending. The first run could not verify a SQLite database with WAL directly on the read-only mount; a private writable snapshot fixed that check. The latter completed its stopped-source rescan, but the long archive exec disconnected before any result or off-NAS receipt. The orphan process stopped and left only an unpublished private partial bundle. Do not count either run as a backup. |
-| Capacity and isolated canary | Read-only post-shutdown `kubectl describe node`, `kubectl top node` at 2026-10-18 16:18 UTC | — | Blocked: no dedicated node; no existing worker qualifies as a safe tainted canary. Admission and platform activation remain disabled. |
+| Full independent legacy archive/restore | [earlier attempts `39144330916`](https://github.com/Stuhlmuller/homelab/actions/runs/39144330916), [`39170731077`](https://github.com/Stuhlmuller/homelab/actions/runs/39170731077); [detached attempt `39181763037`](https://github.com/Stuhlmuller/homelab/actions/runs/39181763037); [merged repair #1401](https://github.com/Stuhlmuller/homelab/pull/1401); [main `2f94bec3`, retry `39204434898`](https://github.com/Stuhlmuller/homelab/actions/runs/39204434898); [checksum repair #1416](https://github.com/Stuhlmuller/homelab/pull/1416) | — | Pending. An earlier worker left an unpublished private partial bundle. Retry `39204434898` failed before worker creation because the workflow's pinned helper checksum was stale; #1416 updates that guard. No verified archive or independent restore receipt exists yet; retained sources remain intact. |
+| Capacity and isolated canary | Read-only post-shutdown node/top snapshots through 2026-10-19 03:37 UTC | — | Blocked: no dedicated node; no existing worker qualifies as a safe tainted canary without exposing or evicting unrelated stateful workloads. Admission and platform activation remain disabled. |
 | Talos node-by-node ladder | Pending | — | Pending |
 | Istio minor ladder | Pending | — | Pending |
 | Kubernetes 1.35.9 | Pending | — | Pending |
@@ -46,10 +50,63 @@ claim and about 381 MiB in the local runtime; the NAS reported 853 GiB free.
 The archive needs a separate NAS-backed scratch claim and a verified off-NAS
 copy. Recheck source size, free space, placement and restore headroom immediately
 before shutdown; these observations do not pass the capacity or recovery gate.
-The [read-only policy baseline](openclaw-enterprise-policy-review.json) found
-61 live policies across 204 Pods; 194 Pods had no selected egress policy.
-Source-render and ingress review, owner corrections, and real canary enforcement
-remain pending, so firewall activation is blocked.
+The [read-only policy baseline](openclaw-enterprise-policy-review.json) was
+refreshed at 2026-10-19 02:30 UTC: 66 live policies and 209 active Pods. The
+inventory flags 196 unisolated Pods, 178 Pods requiring separate review,
+21 unreviewed egress policies, and 18 strict wildcard-egress findings.
+The three new Mastodon policies are included. All 51 repository Kustomizations
+rendered 50 distinct policies; 48 live policies matched their complete source
+specs after normalizing only Kubernetes' absent-versus-empty rule lists. Two
+restore-only policies exist only in source. The remaining 18 live policies
+are generated by Cordium Genesis (3), Octelium Genesis (4), Octelium
+Enterprise Genesis (10), and Kiali's OpenAPI generator (1). Their exact
+generator outputs and rule intent remain unverified. Nine ingress rules admit
+all sources on fixed ports; eight are mesh HBONE TCP/15008, and Kiali's
+operator-owned rule covers TCP/20001 and TCP/9090. No source rule is changed
+from render equality alone. Owner decisions and real canary enforcement remain
+pending, so firewall activation is blocked. Private snapshots and detailed
+findings were not committed.
+Read-only `kubectl top nodes` at 2026-10-18 11:57 UTC showed memory use of
+69% on `acer`, 82% on `zimaboard-0`, 85% on `zimaboard-1` and 81% on
+`zimaboard-2`; all four nodes were Ready and none had a dedicated canary
+taint. These are point-in-time observations before legacy shutdown, not
+placement admission. Recheck requests, peaks, daemonset overhead and storage
+after US2; do not select or taint a canary from this snapshot.
+At 2026-10-18 12:47 UTC, read-only node allocation showed memory requests
+of 88% (`acer`), 99% (`zimaboard-0`), 68% (`zimaboard-1`) and 92%
+(`zimaboard-2`). The legacy gateway and retirement reader both occupy
+`zimaboard-1`; neither this request snapshot nor their eventual removal
+proves safe canary capacity.
+
+At 2026-10-19 02:16 UTC, after the legacy gateway shutdown, read-only
+`kubectl top nodes` showed memory use of 71% (`acer`), 83%
+(`zimaboard-0`), 72% (`zimaboard-1`) and 74% (`zimaboard-2`). Active
+Pod memory requests were 88%, 98%, 40% and 92% of allocatable memory,
+respectively. `zimaboard-1` still hosted 40 active Pods and seven
+hostPath PVs declaring 43.3 GiB, including the three retained OpenClaw
+local PVs declaring 10 GiB. No node had a canary taint. These are
+point-in-time requests and usage, not measured peaks or physical local-disk
+free space. A dedicated isolated canary is still unavailable; placement
+and T022 remain pending.
+
+At 2026-10-19 03:37 UTC, a fresh read-only check found memory use of
+70% (`acer`), 85% (`zimaboard-0`), 74% (`zimaboard-1`) and 70%
+(`zimaboard-2`); memory requests were 88%, 99%, 44% and 92% of
+allocatable RAM, respectively. All nodes were Ready and untainted.
+`zimaboard-1` had 42 active Pods, including 36 non-DaemonSet Pods,
+and seven node-affine local PVs: three retained OpenClaw volumes, two
+Cordium workspaces, and Mastodon's PostgreSQL and Redis volumes.
+Its 7,282 MiB allocatable RAM minus 5,441 MiB reported use leaves
+about 1,841 MiB observed margin, below the proposed roughly 4 GiB
+Enterprise steady reservation before transient jobs and system headroom.
+A `NoSchedule` canary taint would leave those unrelated Pods exposed to
+firewall qualification and could strand their replacements after reboot;
+vacating the node would evict unrelated stateful apps. The other workers
+are 99% and 92% reserved; `acer` is the sole control plane and 88%
+reserved. No existing node qualifies as an isolated canary under T022's
+no-unrelated-eviction and no-new-hardware constraint. These are
+point-in-time observations, not measured peaks; T022 remains blocked.
+
 Relevant source or policy changes invalidate affected receipts. Keep the
 strict broad-egress finding for stock Enterprise public TCP/443 visible during
 network acceptance; it is an accepted scoped limitation, not proof of global

@@ -62,6 +62,11 @@ python3 scripts/openclaw-enterprise.py check \
   --config scripts/config/openclaw-enterprise.json
 ```
 
+The platform `validate --config` command checks only the pinned declaration.
+To validate private Talos bases and every target patch offline, also pass both
+`--control-plane-config` and `--worker-config` paths to mode-0600 files.
+Neither form proves recovery or live readiness.
+
 Expected: no unsupported upgrade hops, CNI writes, unknown live-operation inputs,
 plaintext secrets, duplicate-create retry, unsafe archive path, or bypassed
 quiescence. Fixtures prove error paths; they do not prove live enforcement.

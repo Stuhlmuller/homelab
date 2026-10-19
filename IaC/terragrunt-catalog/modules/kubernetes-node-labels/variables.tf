@@ -25,3 +25,13 @@ variable "node_annotations" {
   type        = map(map(string))
   default     = {}
 }
+
+variable "node_taints" {
+  description = "Reviewed per-node taints managed without replacing unrelated node metadata."
+  type = map(object({
+    key    = string
+    value  = string
+    effect = string
+  }))
+  default = {}
+}

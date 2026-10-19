@@ -1,0 +1,231 @@
+# Add to this directory's Kustomization only after reviewed canary admission.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: network-policy-canary
+  labels:
+    app.kubernetes.io/part-of: homelab
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: npq-client
+  namespace: network-policy-canary
+  annotations:
+    checkov.io/skip1: CKV_K8S_8=The idle probe client has no listening endpoint; its process exit is the failure signal.
+    checkov.io/skip2: CKV_K8S_9=The idle probe client has no readiness dependency before workflow-driven exec probes.
+  labels:
+    role: client
+spec:
+  nodeSelector:
+    homelab.stinkyboi.com/network-policy-canary: "true"
+  tolerations:
+    - key: homelab.stinkyboi.com/network-policy-canary
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 65532
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: probe
+      image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      command: [/usr/bin/python3, -c, "import time; time.sleep(86400)"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: npq-allowed
+  namespace: network-policy-canary
+  labels:
+    role: allowed
+spec:
+  nodeSelector:
+    homelab.stinkyboi.com/network-policy-canary: "true"
+  tolerations:
+    - key: homelab.stinkyboi.com/network-policy-canary
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 65532
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: server
+      image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      command:
+        - /usr/bin/python3
+        - -u
+        - -c
+        - |
+          import socket, threading, time
+          def serve_tcp(port):
+              with socket.socket() as listener:
+                  listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                  listener.bind(('0.0.0.0', port))
+                  listener.listen()
+                  while True:
+                      connection, _ = listener.accept()
+                      with connection:
+                          connection.sendall(b'npq-ok')
+          def serve_udp():
+              with socket.socket(type=socket.SOCK_DGRAM) as listener:
+                  listener.bind(('0.0.0.0', 8080))
+                  while True:
+                      _, address = listener.recvfrom(32)
+                      listener.sendto(b'npq-ok', address)
+          for port in (8080, 9090):
+              threading.Thread(target=serve_tcp, args=(port,), daemon=True).start()
+          threading.Thread(target=serve_udp, daemon=True).start()
+          time.sleep(86400)
+      readinessProbe:
+        tcpSocket:
+          port: fixture-tcp
+      livenessProbe:
+        tcpSocket:
+          port: fixture-tcp
+      ports:
+        - name: fixture-tcp
+          containerPort: 8080
+          protocol: TCP
+        - name: fixture-udp
+          containerPort: 8080
+          protocol: UDP
+        - name: alternate-tcp
+          containerPort: 9090
+          protocol: TCP
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: npq-denied
+  namespace: network-policy-canary
+  labels:
+    role: denied
+spec:
+  nodeSelector:
+    homelab.stinkyboi.com/network-policy-canary: "true"
+  tolerations:
+    - key: homelab.stinkyboi.com/network-policy-canary
+      operator: Equal
+      value: "true"
+      effect: NoSchedule
+  automountServiceAccountToken: false
+  securityContext:
+    runAsUser: 65532
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: server
+      image: harbor.stinkyboi.com/mirror/cgr.dev/chainguard/python:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394@sha256:1c4deeea85db49ab5f6bcd9e7fc0bf3fd8439e99f7bde45330f40400685eb394
+      command:
+        - /usr/bin/python3
+        - -u
+        - -c
+        - |
+          import socket, threading, time
+          def serve_tcp(port):
+              with socket.socket() as listener:
+                  listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                  listener.bind(('0.0.0.0', port))
+                  listener.listen()
+                  while True:
+                      connection, _ = listener.accept()
+                      with connection:
+                          connection.sendall(b'npq-ok')
+          def serve_udp():
+              with socket.socket(type=socket.SOCK_DGRAM) as listener:
+                  listener.bind(('0.0.0.0', 8080))
+                  while True:
+                      _, address = listener.recvfrom(32)
+                      listener.sendto(b'npq-ok', address)
+          for port in (8080, 9090):
+              threading.Thread(target=serve_tcp, args=(port,), daemon=True).start()
+          threading.Thread(target=serve_udp, daemon=True).start()
+          time.sleep(86400)
+      readinessProbe:
+        tcpSocket:
+          port: fixture-tcp
+      livenessProbe:
+        tcpSocket:
+          port: fixture-tcp
+      ports:
+        - name: fixture-tcp
+          containerPort: 8080
+          protocol: TCP
+        - name: fixture-udp
+          containerPort: 8080
+          protocol: UDP
+        - name: alternate-tcp
+          containerPort: 9090
+          protocol: TCP
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: [ALL]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: npq-client-egress
+  namespace: network-policy-canary
+spec:
+  podSelector:
+    matchLabels:
+      role: client
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              role: allowed
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: UDP
+          port: 8080

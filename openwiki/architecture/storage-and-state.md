@@ -21,7 +21,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:36:33.438Z
+    at: 2026-10-19T07:08:11.339Z
 ---
 
 # Storage And State

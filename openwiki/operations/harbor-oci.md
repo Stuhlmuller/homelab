@@ -84,6 +84,8 @@ sources:
     resource: repo://clusters/homelab/platform/image-policy/policy.yaml
   - id: openwiki-source-e61e6d11d2a5c456a06bdb85
     resource: repo://clusters/homelab/platform/image-policy/README.md
+  - id: openwiki-source-994a8289757a8dfdfff70e1b
+    resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-92f06a045a917688e7fed07d
     resource: repo://docs/evidence/harbor-chainguard-signer-pull-2026-10-11.json
   - id: openwiki-source-2d23b8001d89196fa1eba48a
@@ -106,6 +108,8 @@ sources:
     resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
+  - id: openwiki-source-e3e84b128839afbc47f478f7
+    resource: repo://IaC/platform-network-policy/stack.hcl
   - id: openwiki-source-1c1681618c09a7f118cf4e67
     resource: repo://IaC/terragrunt-catalog/modules/aws-ssm-parameters/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
@@ -140,10 +144,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T06:36:33.438Z" }
+generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T06:36:33.438Z
+    at: 2026-10-19T07:08:11.339Z
 ---
 
 # Harbor Private OCI Registry
@@ -835,15 +839,16 @@ publishing the stock pair alone does not release the Enterprise rollout.
 See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned
-Image Updater v1.3.0 and Kubernetes SIG Network `kube-network-policies` v1.1.2.
-Image Updater stays paused at zero replicas, and neither cataloging nor publishing
-the enforcer activates a DaemonSet. Flannel remains the transport and does not
-enforce existing NetworkPolicies. The enforcer is the proposed L3/L4 boundary
-behind Istio egress waypoints; activation requires repository-owned Talos NRI
-configuration, live socket/plugin registration, negative startup/bypass tests,
-review of every NetworkPolicy, and a fail-closed strict-mode worker canary.
-Preserve DNS, API, HBONE, webhook, storage, and recovery paths and prove direct-IP,
-alternate-port, IPv6, and gateway bypass denial before expansion. See
+Image Updater v1.3.0 and the older Kubernetes SIG Network
+`kube-network-policies` v1.1.2 source. Image Updater stays paused at zero
+replicas. The [staged enforcer](../../clusters/homelab/platform/network-policy/README.md)
+instead uses pinned firewall-only kube-router; its Argo Application is dormant
+and selects no node. Flannel remains the CNI and kube-proxy the service proxy.
+Cataloging an image does not activate enforcement. Activation needs published
+images, review of every rendered and generated policy, measured isolated-canary
+placement, and live allowed/denied traffic plus restart, API-loss, IP-reuse and
+reboot checks. Preserve DNS, API, HBONE, webhook, storage, and recovery paths and
+prove direct-IP, alternate-port, IPv6, and gateway bypass denial before expansion. See
 [image and egress gates](../../docs/image-egress-hardening.md) and
 [runtime isolation](../runbooks/runtime-isolation.md).
 
