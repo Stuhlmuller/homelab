@@ -643,17 +643,22 @@ after those GitHub-App-owned placeholders are replaced; scale it back to zero
 in git before reintroducing placeholder config.
 
 Renovate reuses the App credentials held by the separate
-`Stuhlmuller/renovate` GitHub Actions runner. Its reviewed transfer workflow
-writes only the fixed issuer ID and private-key parameters through a dedicated,
-temporary OIDC role; no key appears in this repository or a workflow artifact.
+`Stuhlmuller/renovate` GitHub Actions runner. Protected transfer run
+`39196912858` on 2026-10-19 wrote only the fixed issuer ID and private-key
+parameters through the temporary OIDC role. Both SecureStrings reached version
+2, and no key entered this repository or a workflow artifact.
 The `renovate` ExternalSecret in `automation` projects them into the `renovate`
 Secret as `issuer-id` and `private-key`, mounted read-only as files under
-`/var/run/secrets/renovate`. It refreshes every five minutes. Rotate through a
-reviewed temporary transfer grant, then verify a refresh after the transfer
-and confirm a later Job uses the same App identity before retiring the grant.
-Keep the CronJob suspended until a post-transfer refresh is confirmed and the
-transfer grant is removed. See the
-[Renovate runbook](../clusters/homelab/apps/renovate/README.md).
+`/var/run/secrets/renovate`. It refreshes every five minutes. After transfer,
+it refreshed at 03:56:19 UTC with `Ready=True` and a changed target Secret
+resource version. At that check, the CronJob was suspended with no Job. The
+transfer role is absent from current IaC source. Live deletion still needs the
+exact saved-plan apply and a fresh no-op plan in the
+[operator runbook](../IaC/operator/README.md#renovate-app-credential-transfer-and-role-retirement).
+Keep the CronJob suspended until deletion is verified. Rotation requires a
+reviewed reintroduction of the same limited role, a later ExternalSecret
+refresh, and a Job using the same App identity before retiring the grant again.
+See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret

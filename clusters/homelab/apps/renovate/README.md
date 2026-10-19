@@ -50,16 +50,20 @@ arguments, or the cache. The Pod has no Kubernetes API token. The token must
 cover all owner repositories. The Job has a 40-minute deadline and config
 requires 55 minutes of token validity at startup; otherwise it fails closed.
 
-The protected credential-transfer workflow in `Stuhlmuller/renovate` writes
-the existing App credentials to those exact SSM paths. Apply the temporary
-exact-scope transfer role through reviewed IaC before transfer. Verify
-ExternalSecret `Ready=True` and target Secret metadata without reading values,
-and require its refresh timestamp to follow the transfer receipt. It refreshes
-every five minutes so a previously projected placeholder cannot remain stale.
-Then retire the temporary write grant before unsuspending the CronJob. The
-first full dry run must successfully mint an App token. For rotation, restore
-that reviewed grant, transfer new values, wait for a later ExternalSecret
-refresh, verify a later Job under the same App, and retire the grant again.
+The protected credential-transfer workflow in `Stuhlmuller/renovate` wrote the
+existing App credentials to those exact SSM paths on 2026-10-19 in run
+`39196912858`. Both SecureStrings reached version 2. The ExternalSecret
+refreshes every five minutes. It refreshed at 03:56:19 UTC after transfer,
+with `Ready=True` and a changed target Secret resource version; no values were
+read. The CronJob remained suspended with no Renovate Job.
+Current IaC source removes the temporary exact-scope transfer role, but live
+deletion still requires the exact saved-plan apply and fresh no-op plan in the
+[operator runbook](../../../../IaC/operator/README.md#renovate-app-credential-transfer-and-role-retirement).
+Keep the CronJob suspended until that deletion is verified. The first full
+dry run must successfully mint an App token. For rotation, reintroduce the
+same limited role through a reviewed change, transfer new values, wait for a
+later ExternalSecret refresh, verify a later Job under the same App, and retire
+the grant again.
 
 The retained `renovate-cache` 20 GiB `nfs-default` PVC holds Renovate's
 datasource, private-package, and repository-extraction caches. It contains
