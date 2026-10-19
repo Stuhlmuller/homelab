@@ -147,6 +147,7 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-18"
     helm.sh/hook-delete-policy: before-hook-creation
+    checkov.io/skip1: CKV_K8S_38=Preflight needs its narrowly scoped token to read Secret, PVC, EndpointSlice and prior Jobs.
 spec:
   backoffLimit: 0
   activeDeadlineSeconds: 180
@@ -209,6 +210,7 @@ metadata:
     helm.sh/hook: pre-install,pre-upgrade
     helm.sh/hook-weight: "-15"
     helm.sh/hook-delete-policy: before-hook-creation
+    checkov.io/skip1: CKV_K8S_38=Quiesce needs its narrowly scoped token to scale exact API and worker Deployments and observe Pods.
 spec:
   backoffLimit: 0
   activeDeadlineSeconds: 240
