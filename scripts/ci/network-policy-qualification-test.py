@@ -62,8 +62,13 @@ class CanaryQualificationTests(unittest.TestCase):
                                    "containers": [{"image": self.module.IMAGE}]},
                           "status": {"phase": "Running", "podIP": "10.42.0.2",
                                      "conditions": [{"type": "Ready", "status": "True"}]}}
-        firewall = {"status": {"desiredNumberScheduled": 1, "numberReady": 1}}
-        firewall_pod = {"metadata": {"uid": "firewall-uid"},
+        firewall = {"metadata": {"uid": "daemonset-uid", "generation": 2},
+                    "status": {"observedGeneration": 2, "desiredNumberScheduled": 1,
+                               "updatedNumberScheduled": 1, "numberReady": 1}}
+        firewall_pod = {"metadata": {"uid": "firewall-uid", "ownerReferences": [{
+                            "apiVersion": "apps/v1", "kind": "DaemonSet",
+                            "name": "kube-router-network-policy", "uid": "daemonset-uid",
+                            "controller": True, "blockOwnerDeletion": True}]},
                         "spec": {"nodeName": "zimaboard-0",
                                  "containers": [{"image": self.module.FIREWALL_IMAGE}]},
                         "status": {"phase": "Running", "conditions": [
@@ -97,6 +102,15 @@ class CanaryQualificationTests(unittest.TestCase):
             objects[("-n", self.module.NAMESPACE, "get", "networkpolicies")]["items"].pop()
             node["spec"]["taints"] = []
             with self.assertRaisesRegex(ValueError, "taint"):
+                self.module.inspect(config)
+            node["spec"]["taints"] = [{"key": self.module.CANARY_KEY,
+                                         "value": "true", "effect": "NoSchedule"}]
+            firewall["status"]["updatedNumberScheduled"] = 0
+            with self.assertRaisesRegex(ValueError, "firewall is not ready"):
+                self.module.inspect(config)
+            firewall["status"]["updatedNumberScheduled"] = 1
+            firewall_pod["metadata"]["ownerReferences"][0]["uid"] = "foreign"
+            with self.assertRaisesRegex(ValueError, "firewall is not ready"):
                 self.module.inspect(config)
 
     def test_live_firewall_source_rejects_router_or_rbac_drift(self):

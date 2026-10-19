@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "pages": {
     "/openwiki/apps/nofx.md": {
+      "gitHead": "28b6907a9537d7c319df305a8ba7ebe0cebb7984",
+      "sourceFingerprint": "sha256:89daebe423f11dd1ec44ba4881772b72c9935da84a7f94bdbfe71c4350aa666a",
       "pageVersion": "sha256:4b6bfc2b56e1da08ccfa6ca99d11913a72305a8f03b713cbaaa20ee7efa30dee",
       "completedBy": "codex",
-      "completedRunId": "50e4536e-6b2a-472c-bbed-1608cc638772",
-      "gitHead": "28b6907a9537d7c319df305a8ba7ebe0cebb7984",
-      "sourceFingerprint": "sha256:89daebe423f11dd1ec44ba4881772b72c9935da84a7f94bdbfe71c4350aa666a"
+      "completedRunId": "50e4536e-6b2a-472c-bbed-1608cc638772"
     },
     "/openwiki/architecture/ai-observability.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -72,11 +72,11 @@
       "completedRunId": "2cc35338-f010-4bc5-9518-89c6cbd00056"
     },
     "/openwiki/operations/harbor-oci.md": {
+      "gitHead": "28b6907a9537d7c319df305a8ba7ebe0cebb7984",
+      "sourceFingerprint": "sha256:89daebe423f11dd1ec44ba4881772b72c9935da84a7f94bdbfe71c4350aa666a",
       "pageVersion": "sha256:2487df1ef5ff173b3886f985c165162b4f5e5dba8c334c81238339b7c849c741",
       "completedBy": "codex",
-      "completedRunId": "50e4536e-6b2a-472c-bbed-1608cc638772",
-      "gitHead": "28b6907a9537d7c319df305a8ba7ebe0cebb7984",
-      "sourceFingerprint": "sha256:89daebe423f11dd1ec44ba4881772b72c9935da84a7f94bdbfe71c4350aa666a"
+      "completedRunId": "50e4536e-6b2a-472c-bbed-1608cc638772"
     },
     "/openwiki/operations/openclaw-personal-assistant.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -114,11 +114,11 @@
       "completedRunId": "0c4bc290-4b15-4e20-8ac7-ad6b10aa5e98"
     },
     "/openwiki/runbooks/argocd-app-onboarding.md": {
+      "gitHead": "6977872088dbc4bc48b4f3e25e92a22cafc63aaa",
+      "sourceFingerprint": "sha256:d5257e0691a918fff59e77776cf370fa5866430c4ab00f565f0a5dd33a30c050",
       "pageVersion": "sha256:61515e9bb258d6faad0595780bfd8598f61705975662f3f5cbbe3cac7fafb15d",
       "completedBy": "codex",
-      "completedRunId": "8c55ea97-a813-4c38-8a2f-f37edfed2bb2",
-      "gitHead": "6977872088dbc4bc48b4f3e25e92a22cafc63aaa",
-      "sourceFingerprint": "sha256:d5257e0691a918fff59e77776cf370fa5866430c4ab00f565f0a5dd33a30c050"
+      "completedRunId": "8c55ea97-a813-4c38-8a2f-f37edfed2bb2"
     },
     "/openwiki/runbooks/ci-cd.md": {
       "gitHead": "6bc0641c3f346b81849fef87490ee2aef555885d",
@@ -135,11 +135,11 @@
       "completedRunId": "26328575-d690-4e94-b81c-2aa6baefa44e"
     },
     "/openwiki/runbooks/runtime-isolation.md": {
-      "pageVersion": "sha256:8f507390ebbaf3aee0b359b93953c4e7f788a2dbf8f6b61f56c94ef12e85ab69",
+      "pageVersion": "sha256:68d30ec93f1df15168e3fa6a360319e2e43ce1ce9c40222cec66130fac508fe7",
       "completedBy": "codex",
-      "completedRunId": "50e4536e-6b2a-472c-bbed-1608cc638772",
-      "gitHead": "28b6907a9537d7c319df305a8ba7ebe0cebb7984",
-      "sourceFingerprint": "sha256:89daebe423f11dd1ec44ba4881772b72c9935da84a7f94bdbfe71c4350aa666a"
+      "completedRunId": "89199378-6071-4a25-a4f3-910c54ef2273",
+      "gitHead": "73745298fb3ef0210707456aba8ef27b8ec5074a",
+      "sourceFingerprint": "sha256:bf48ff5c17c74f36ba25e2d69b1f5b05da5f26af0b1af069e11225421230baeb"
     },
     "/openwiki/runbooks/secrets-aws-ssm.md": {
       "gitHead": "6977872088dbc4bc48b4f3e25e92a22cafc63aaa",

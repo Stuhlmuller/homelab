@@ -195,11 +195,22 @@ def inspect(config):
     firewall = inspect_firewall_source()
     firewall_pods = kubernetes_json("-n", "kube-system", "get", "pods", "-l",
                                     "app.kubernetes.io/name=kube-router-network-policy")
-    if (firewall["status"].get("desiredNumberScheduled") != 1 or
+    owners = [item for pod in firewall_pods.get("items", [])
+              for item in pod.get("metadata", {}).get("ownerReferences", [])
+              if item.get("controller") is True]
+    if (not firewall.get("metadata", {}).get("uid") or
+            firewall["status"].get("observedGeneration") !=
+            firewall["metadata"].get("generation") or
+            firewall["status"].get("desiredNumberScheduled") != 1 or
+            firewall["status"].get("updatedNumberScheduled") != 1 or
             firewall["status"].get("numberReady") != 1 or
             len(firewall_pods.get("items", [])) != 1 or
             firewall_pods["items"][0]["spec"].get("nodeName") != node_name or
             firewall_pods["items"][0]["spec"]["containers"][0].get("image") != FIREWALL_IMAGE or
+            len(owners) != 1 or owners[0].get("apiVersion") != "apps/v1" or
+            owners[0].get("kind") != "DaemonSet" or
+            owners[0].get("name") != "kube-router-network-policy" or
+            owners[0].get("uid") != firewall["metadata"]["uid"] or
             not ready(firewall_pods["items"][0])):
         raise ValueError("firewall is not ready only on the admitted canary")
     inventory = runpy.run_path(str(ROOT / "scripts/network-policy-inventory.py"))

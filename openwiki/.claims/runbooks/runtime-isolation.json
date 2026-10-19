@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8f507390ebbaf3aee0b359b93953c4e7f788a2dbf8f6b61f56c94ef12e85ab69",
+  "pageVersion": "sha256:68d30ec93f1df15168e3fa6a360319e2e43ce1ce9c40222cec66130fac508fe7",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -34,13 +34,13 @@
         },
         {
           "resource": "repo://scripts/network-policy-qualification.py",
-          "version": "repo-file-v1:sha256:50dfb19ccb3272f3cf160d982f3e30bfe796cdc07866f5140d7fc487300fb3f4"
+          "version": "repo-file-v1:sha256:4a11d43c6c0b2fe415922a7d6accbc83639b9c1c544cb036dce53aeb051b5ba0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T10:02:28.692Z"
+    "at": "2026-10-19T10:09:06.381Z"
   }
 }
