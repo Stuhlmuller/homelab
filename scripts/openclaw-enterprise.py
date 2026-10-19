@@ -616,7 +616,16 @@ def reconcile_configuration(config, api, journal, kube, namespace_id):
             state["pending"] = {"operation": "configuration-create",
                                 "baselineConfigmapUids": []}
             journal.save(state)
-            created = api.post(path, {"kind": "agent", "values": desired})
+            try:
+                created = api.post(path, {"kind": "agent", "values": desired})
+            except DefinitiveRejection:
+                # A rejected create can be retried only after a fresh Kubernetes
+                # read proves that no Configuration ConfigMap appeared.
+                _require(kube.configuration_candidates(namespace_id) == [],
+                         "Configuration create outcome changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
             _require(isinstance(created, dict), "Configuration create response is invalid")
             configuration_id = created.get("id")
             _require(_valid_resource_id(configuration_id, "cfg_"),
@@ -683,8 +692,24 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
             state["pending"] = {"operation": "agent-create",
                                 "baselineAgentIds": [item["id"] for item in agents]}
             journal.save(state)
-            created = api.post(path, {"name": name, "configurationId": configuration_id,
-                                      "executionMode": "embedded"})
+            try:
+                created = api.post(path, {"name": name, "configurationId": configuration_id,
+                                          "executionMode": "embedded"})
+            except DefinitiveRejection:
+                # Preserve intent unless an exact fresh list proves no Agent
+                # appeared after the authorization rejection.
+                after_rejection = api.get(path)
+                baseline = state["pending"]["baselineAgentIds"]
+                _require(isinstance(after_rejection, list) and
+                         len(after_rejection) == len(baseline) and
+                         all(isinstance(item, dict) and isinstance(item.get("id"), str)
+                             for item in after_rejection) and
+                         {item["id"] for item in after_rejection} == set(baseline) and
+                         not any(item.get("name") == name for item in after_rejection),
+                         "Agent create outcome changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
             _require(isinstance(created, dict), "Agent create response is invalid")
             agent_id = created.get("id")
         _require(_valid_resource_id(agent_id, "agt_"),
@@ -705,6 +730,9 @@ def reconcile_agent(config, api, journal, namespace_id, configuration_id):
     _assert_agent(exact, config, namespace_id, configuration_id, agent_id)
     _require(exact.get("servicePrincipalId") == state.get("servicePrincipalId"),
              "journaled Agent principal changed")
+    _require(exact.get("desiredRuntimeState") == "stopped" and
+             exact.get("activeRevisionId") is None and exact.get("harnessAuth") is None,
+             "journaled Agent is not inactive")
     return exact
 
 

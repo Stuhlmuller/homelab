@@ -949,6 +949,67 @@ class InactiveAgentReconciliation(unittest.TestCase):
         self.assertEqual(len([call for call in self.api.calls if call[0] == "POST" and
                               call[1] == "/namespaces/ns_one/agents"]), 1)
 
+    def test_definitively_rejected_configuration_clears_intent_only_after_absence(self):
+        with patch.object(self.api, "post", side_effect=OCE.DefinitiveRejection("HTTP 403")):
+            with self.assertRaisesRegex(OCE.DefinitiveRejection, "HTTP 403"):
+                self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertNotIn("pending", state)
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+
+    def test_definitively_rejected_agent_clears_intent_only_after_absence(self):
+        original_post = self.api.post
+
+        def reject_agent(path, body):
+            if path.endswith("/agents"):
+                raise OCE.DefinitiveRejection("HTTP 403")
+            return original_post(path, body)
+
+        with patch.object(self.api, "post", side_effect=reject_agent):
+            with self.assertRaisesRegex(OCE.DefinitiveRejection, "HTTP 403"):
+                self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["configurationId"], "cfg_one")
+        self.assertNotIn("pending", state)
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+
+    def test_rejected_creates_keep_intent_when_new_objects_appear(self):
+        original_post = self.api.post
+
+        def create_then_reject(path, body):
+            original_post(path, body)
+            raise OCE.DefinitiveRejection("HTTP 403")
+
+        with patch.object(self.api, "post", side_effect=create_then_reject):
+            with self.assertRaisesRegex(OCE.Blocked, "Configuration create outcome changed"):
+                self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["pending"]["operation"], "configuration-create")
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+
+        self.api.agents.pop("agt_one")
+        with OCE.ProtectedJournal(self.config["privateJournal"]["mountPath"],
+                                  self.config["source"]["revision"],
+                                  OCE._identity_hash(self.config)) as journal:
+            state = dict(journal.state)
+            state.pop("agentId")
+            state.pop("servicePrincipalId")
+            journal.save(state)
+        with patch.object(self.api, "post", side_effect=create_then_reject):
+            with self.assertRaisesRegex(OCE.Blocked, "Agent create outcome changed"):
+                self._reconcile()
+        state, _ = OCE.read_journal(self.config["privateJournal"]["mountPath"],
+                                    self.config["source"]["revision"],
+                                    OCE._identity_hash(self.config))
+        self.assertEqual(state["pending"]["operation"], "agent-create")
+        self.assertEqual(self._reconcile()["agentId"], "agt_one")
+
     def test_foreign_configuration_and_changed_generation_block(self):
         self.api.configurations["cfg_foreign"] = {
             "id": "cfg_foreign", "namespaceId": "ns_one", "kind": "agent",
@@ -987,6 +1048,12 @@ class InactiveAgentReconciliation(unittest.TestCase):
             self.api.agents["agt_one"]["servicePrincipalId"] = "sp_foreign"
             with self.assertRaisesRegex(OCE.Blocked, "inactive Enterprise Agent changed"):
                 OCE.verify(self.config, self.api, self.kube)
+
+    def test_reconcile_rejects_auth_bound_to_journaled_stopped_agent(self):
+        self._reconcile()
+        self.api.agents["agt_one"]["harnessAuth"] = {"method": "api_key"}
+        with self.assertRaisesRegex(OCE.Blocked, "journaled Agent is not inactive"):
+            self._reconcile()
 
 
 if __name__ == "__main__":
