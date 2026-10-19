@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const crypto = require('node:crypto');
 const os = require('node:os');
 const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const observer = require('../../clusters/homelab/apps/renovate/acceptance-observer.js');
 
 const proof = (name) => ({ source: `evidence/${name}.json`, sha256: 'a'.repeat(64) });
@@ -69,6 +70,14 @@ function observedReleases() {
   }
   return { ledger, receipts };
 }
+
+test('CLI rejects the legacy bare-inventory seed mode', () => {
+  const script = path.resolve(__dirname, '../../clusters/homelab/apps/renovate/acceptance-observer.js');
+  const result = spawnSync(process.execPath, [script, 'seed'], { encoding: 'utf8' });
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.deepEqual(JSON.parse(result.stderr.trim()), { mode: 'seed', error: 'invalid-input' });
+});
 
 test('sample freezes every class and source visibility, excluding the controlled canary', () => {
   const source = inventory();

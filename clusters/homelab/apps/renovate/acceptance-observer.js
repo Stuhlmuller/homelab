@@ -6,7 +6,6 @@ const { isDeepStrictEqual } = require('node:util');
 
 const owner = 'Stuhlmuller';
 const ledgerDir = '/ledger/private';
-const inventoryPath = path.join(ledgerDir, 'inventory.json');
 const ledgerPath = path.join(ledgerDir, 'ledger.json');
 const outcomesPath = path.join(ledgerDir, 'outcomes.json');
 const sampleSize = 5;
@@ -370,10 +369,10 @@ function privateDirectory() {
   if ((fs.statSync(ledgerDir).mode & 0o077) !== 0) throw new Error('ledger-permissions');
 }
 
-function saveLedger(ledger, create = false) {
-  const target = create ? ledgerPath : `${ledgerPath}.new`;
-  fs.writeFileSync(target, `${JSON.stringify(ledger)}\n`, { flag: create ? 'wx' : 'w', mode: 0o600 });
-  if (!create) fs.renameSync(target, ledgerPath);
+function saveLedger(ledger) {
+  const target = `${ledgerPath}.new`;
+  fs.writeFileSync(target, `${JSON.stringify(ledger)}\n`, { flag: 'w', mode: 0o600 });
+  fs.renameSync(target, ledgerPath);
 }
 
 async function readToken() {
@@ -505,22 +504,16 @@ async function poll(ledger) {
 }
 
 async function main() {
-  privateDirectory();
   const mode = process.argv[2];
-  if (mode === 'seed') {
-    const inventory = JSON.parse(fs.readFileSync(inventoryPath, 'utf8'));
-    const ledger = selectSample(inventory);
-    saveLedger(ledger, true);
-    console.log(JSON.stringify({ mode, ...aggregate(ledger) }));
-  } else if (mode === 'poll') {
+  if (mode !== 'poll' && mode !== 'report') throw new Error('invalid-mode');
+  privateDirectory();
+  if (mode === 'poll') {
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
     await poll(ledger);
-  } else if (mode === 'report') {
+  } else {
     const outcomes = readPrivateOutcomes();
     console.log(JSON.stringify(aggregateReport(
       JSON.parse(fs.readFileSync(ledgerPath, 'utf8')), outcomes, verifyPrivateEvidence(outcomes))));
-  } else {
-    throw new Error('invalid-mode');
   }
 }
 
