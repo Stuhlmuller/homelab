@@ -1,11 +1,10 @@
 # Renovate
 
 Renovate scans Stuhlmuller-owned GitHub repositories at 00 minutes past every
-hour, UTC. The `automation` CronJob is initially suspended, and its committed
-config uses Renovate's full dry-run mode. The old writer in
-`Stuhlmuller/renovate` remains authoritative until dry-run parity is verified
-and its entire workflow is removed through a reviewed PR. Only then may a
-reviewed homelab change remove `dryRun: 'full'`.
+hour, UTC. The `automation` CronJob runs in Renovate's full dry-run mode. The
+old writer in `Stuhlmuller/renovate` remains authoritative until dry-run parity
+is verified and its entire workflow is removed through a reviewed PR. Only
+then may a reviewed homelab change remove `dryRun: 'full'`.
 
 The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
@@ -15,7 +14,7 @@ and processes repositories without a config file. The 2026-10-19 owner API
 inventory had 18 repositories: 10 archived and eight eligible non-archived,
 including four private repositories and no forks. The active
 `rstuhlmuller-renovate` App installation selected all repositories. The last
-observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
+observed legacy scheduled run (39193708267) succeeded at 2026-10-19 03:14 UTC.
 Its App-token scan started and finished all eight then-eligible owner
 repositories, including the four private repositories, and scanned none of the
 ten archives; the owner had no forks to exercise live fork handling.
@@ -56,14 +55,15 @@ existing App credentials to those exact SSM paths on 2026-10-19 in run
 refreshes every five minutes. It refreshed at 03:56:19 UTC after transfer,
 with `Ready=True` and a changed target Secret resource version; no values were
 read. The CronJob remained suspended with no Renovate Job.
-Current IaC source removes the temporary exact-scope transfer role, but live
-deletion still requires the exact saved-plan apply and fresh no-op plan in the
-[operator runbook](../../../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement).
-Keep the CronJob suspended until that deletion is verified. The first full
-dry run must successfully mint an App token. For rotation, reintroduce the
-same limited role through a reviewed change, transfer new values, wait for a
-later ExternalSecret refresh, verify a later Job under the same App, and retire
-the grant again.
+The operator then removed the temporary transfer role through the reviewed
+saved-plan path and verified an IAM `NoSuchEntity` lookup and a fresh no-op plan.
+The [operator receipt](../../../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records the checks without credential values. A manual full dry run minted an
+App token and finished all eight eligible repositories; scheduled scans must
+still prove parity and cache reuse. For rotation, reintroduce the same limited
+role through a reviewed change, transfer new values, wait for a later
+ExternalSecret refresh, verify a later Job under the same App, and retire the
+grant again.
 
 The retained `renovate-cache` 20 GiB `nfs-default` PVC holds Renovate's
 datasource, private-package, and repository-extraction caches. It contains
@@ -137,11 +137,14 @@ kubectl kustomize clusters/homelab/apps/renovate
 
 Use the Terragrunt, static, Conftest, and protected private-plan gates in
 `specs/004-run-renovate-in-cluster/quickstart.md` before live reconciliation.
-While suspended, confirm the ExternalSecret is Ready, the target Secret exists,
-and no Job was created. Then unsuspend only through reviewed GitOps code. Two
-scheduled dry-run Pods must prove repository coverage, planned proposals,
-unchanged App identity and merge policy, and a cache hit for the same datasource
-key across Pod UIDs. A shorter second run alone does not prove cache reuse.
+Before activation, the ExternalSecret was Ready, the target Secret existed,
+and the CronJob was suspended. A manual full dry run finished all eight eligible
+repositories without a new bot PR, but its Harbor lookups failed before the
+registry-only route was deployed. It does not prove scheduled operation or
+cache reuse. Two scheduled dry-run Pods must prove repository coverage, planned
+proposals, unchanged App identity and merge policy, and a cache hit for the
+same datasource key across Pod UIDs. A shorter second run alone does not prove
+cache reuse.
 Keep detailed Renovate logs private.
 
 Read-only status checks:
