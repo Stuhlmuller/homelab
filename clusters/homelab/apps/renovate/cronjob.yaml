@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/part-of: homelab-automation
 spec:
   suspend: false
-  schedule: "0 */2 * * *"
+  schedule: "0 * * * *"
   timeZone: Etc/UTC
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 900
