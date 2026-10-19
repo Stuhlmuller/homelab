@@ -121,8 +121,8 @@ base intentionally adopts them again and the documentation explains why.
 3. Before nontrivial code with a relevant upstream or peer implementation,
    search the pinned XERJ reference corpus and inspect the cited source. See
    [reference coding](docs/xerj-reference-coding.md).
-4. Run the repo validation gate when available, such as `nix run .#validate` or
-   the documented replacement.
+4. Run the change-specific validation gates in `README.md` and
+   `docs/validation-runbook.md`.
 5. Make the smallest code and documentation change that solves the request.
 6. Update affected knowledge-base notes under `openwiki/` when the
    change creates, removes, renames, or materially changes an app, platform
@@ -244,15 +244,15 @@ precedence over upstream OpenWiki defaults.
 
 ## OpenWiki
 
-This repository has a generated `openwiki/` evidence index. It is optional just-in-time context, not required startup reading.
+Read `openwiki/quickstart.md` for the repository task route. Retrieve other wiki pages only when they are relevant.
 
-- Do not enumerate, preload, or search wikis at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
+- Do not enumerate, preload, or search the rest of the wiki at task start. Use retrieval when the user asks for it, when unfamiliar architecture or dependency behavior materially affects the task, or when source inspection leaves an important uncertainty. Stop once the question is grounded.
 - When those conditions apply and OpenWiki retrieval tools are available, use `openwiki_search` for just-in-time context and `openwiki_read` for the relevant complete sections. If search returns `workspace_required`, ask which listed workspace to use and retry with its ID.
 - Use `openwiki_list_workspaces` or `openwiki_list_wikis` when workspace membership itself needs to be discovered.
-- If the retrieval tools are unavailable, read `openwiki/quickstart.md` and follow its links to the relevant pages.
+- If the retrieval tools are unavailable, follow the relevant links from `openwiki/quickstart.md`.
 - Treat source code and tests as authoritative. A brief's unknowns and review items are verification gaps, not automatic requirements.
 - Prefer the narrowest quiet validation that proves the changed behavior. Preserve complete failure output.
 
-The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+No scheduled wiki workflow is installed. Update affected authored pages in the same PR through the OpenWiki update workflow. Do not hand-edit generated indexes, Claims, provenance, or run state.
 
 <!-- OPENWIKI:END -->
