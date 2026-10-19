@@ -12,10 +12,12 @@ sources:
     resource: repo://docs/image-egress-hardening.md
   - id: openwiki-source-556eb082b86343ef048df9f7
     resource: repo://docs/runtime-isolation.md
-generated: { by: "codex", at: "2026-10-19T07:08:11.339Z" }
+  - id: openwiki-source-a347fb1739a2d297e214f41a
+    resource: repo://scripts/network-policy-qualification.py
+generated: { by: "codex", at: "2026-10-19T10:02:28.692Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:44:12.806Z
+    at: 2026-10-19T10:02:28.692Z
 ---
 
 # Runtime Isolation
@@ -53,5 +55,13 @@ IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before
 expanding to another node. Stock Enterprise's public TCP/443 requirement
 remains broad egress; Kubernetes `NetworkPolicy` does not provide an FQDN
 allowlist.
+
+The protected [`network-policy-qualification.py`](../../scripts/network-policy-qualification.py)
+checks the live firewall-only DaemonSet image, flags, host mount and RBAC, then
+checks the admitted tainted node, three fixed fixture Pods and their policy.
+Its TCP/UDP allow-and-deny probe writes a private receipt that explicitly lists
+the lifecycle scenarios still unverified. The qualifier does not create the
+fixture or attest node reboot, enforcer recovery, or real workload traffic;
+those remain live gates before enforcement expands.
 
 See [Validation Gates](../operations/validation-gates.md) and [Workload Inventory](../workloads/inventory.md).

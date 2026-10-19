@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6872e4bfeb79797c6f06a846fd9e9aa16e53c9a1d8b2d9311989e9f99324b2c5",
+  "pageVersion": "sha256:8f507390ebbaf3aee0b359b93953c4e7f788a2dbf8f6b61f56c94ef12e85ab69",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:ca1dff9eab4d90f97030a8cf8d466bbfd588a866f09933d5fd67e5e15cf26216"
+          "version": "repo-file-v1:sha256:22abc6be8414362a1b7bc7a005a2068cc2b9b413971523baf308f00721dc43a4"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -23,10 +23,24 @@
           "version": "repo-lines-v1:sha256:789bc1f94a7703e2bd7de69306c174e4bea4c8cac9191e159e43be03759946a0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyZmEyOTA1ZTE5MTZiNzgxNTAyMDk4OTJjNzcwMjZhYTgxMjZjNDI0YTNjYjVhYzA0MmRhZWUyOTNlMDdjOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU4YmQzNmIyMTUyOWQ4NGJmNTUyZjIzZWE2M2Y1MjE1YmU4YTYwNjdjMDkwMjhiM2Q4MDE1ODY3NGM3OWFlMzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjkxMzBkZmI1MWYxZmIxNzhjZTRiMmFhNmY0NDEzMWZmMDUwYzJkZTZmNThiZTY0NzkzNGY2YTUzNTU4NmE5ZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhZTFkNDQ2YTc4NDk3Y2IxNzYyMjYyMmViYjZiYjRkYzhlNzUwMTYzZDk3NzEwNzcyMWYwOTkzNGFjODI2ZDQifQ"
         }
       ]
+    },
+    {
+      "id": "claim_3a03a33eef1c45b4a4fd071facb605ef",
+      "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, the admitted tainted node, and exact fixture identities before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification explicitly unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:22abc6be8414362a1b7bc7a005a2068cc2b9b413971523baf308f00721dc43a4"
+        },
+        {
+          "resource": "repo://scripts/network-policy-qualification.py",
+          "version": "repo-file-v1:sha256:50dfb19ccb3272f3cf160d982f3e30bfe796cdc07866f5140d7fc487300fb3f4"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:44:12.806Z"
+    "at": "2026-10-19T10:02:28.692Z"
   }
 }
