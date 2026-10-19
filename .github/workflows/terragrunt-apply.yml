@@ -186,6 +186,7 @@ jobs:
           ARM_USE_CLI: "false"
           ARM_USE_MSI: "false"
           ARM_TENANT_ID: ${{ secrets.AZUREAD_TENANT_ID }}
+          GH_TOKEN: ${{ github.token }}
           OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
           KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
         run: |

@@ -43,7 +43,10 @@ instance key; do not rotate the SSM value without following an n8n-supported
   the three inventoried model nodes (one active and two inactive workflows)
   with that credential and `openrouter/free` through n8n's supported CLI.
   Exact workflow/node IDs and previous model settings are checked before edits;
-  changed provider options or built-in tools fail closed. Only previously active
+  absent workflows or changed settings are logged and skipped so the app can
+  start on a fresh database or after an intentional workflow edit. A matching
+  workflow is migrated before n8n starts, so its published version is active
+  when the app loads. Only previously active
   workflows are republished; inactive workflows stay inactive. Its credential is
   still serialized as a one-element JSON array because `import:credentials`
   requires an array input. The exported target workflow remains in n8n's

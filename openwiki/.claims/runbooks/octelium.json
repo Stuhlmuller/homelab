@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:42e3160b76d09f607bd60ffad053d8aaf6d15538d0717a0fa6a3fa88e25c5470",
+  "pageVersion": "sha256:310bda75d02405b14ba43403805fd492e5bcdeb1dedd37ededadb6b9427c7c5a",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -40,13 +40,31 @@
         },
         {
           "resource": "repo://docs/octelium.md",
-          "version": "repo-file-v1:sha256:1bba30bee41127c019494d738bcbc44956cdb4deac72a4ba2c365837f93372fd"
+          "version": "repo-file-v1:sha256:12a8e1bf918848f698c009342138eedacd4559c1d13abc98c2ba62a5d0d495a9"
+        }
+      ]
+    },
+    {
+      "id": "claim_e01173681b4c46fe947014f3e78a3658",
+      "statement": "The Octelium catalog declares a separate homelab-ci-plan User and read/dry-run Kubernetes Policy; the credential helper defaults to production and requires explicit plan selection before publishing a plan token.",
+      "evidence": [
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:353fe358df299f04aef6ed546a7f65d30d87099d819333cf5610e9151a379305"
+        },
+        {
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:12a8e1bf918848f698c009342138eedacd4559c1d13abc98c2ba62a5d0d495a9"
+        },
+        {
+          "resource": "repo://scripts/octelium-ci-credential.sh",
+          "version": "repo-file-v1:sha256:4c2a6a45ab1950c8b3730893496e705a4ce5529213e8a6fc10b01131659b58b2"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:34:18.200Z"
   }
 }

@@ -1,11 +1,41 @@
 variable "apply_role_name" {
-  description = "Existing GitHub Actions role that runs trusted homelab Terragrunt plans and applies."
+  description = "Existing GitHub Actions role that runs protected homelab Terragrunt applies."
   type        = string
 
   validation {
     condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,64}$", var.apply_role_name))
     error_message = "apply_role_name must be a valid IAM role name."
   }
+}
+
+variable "plan_role_name" {
+  description = "Dedicated GitHub Actions role for reviewed homelab pull-request plans."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9+=,.@_-]{1,64}$", var.plan_role_name))
+    error_message = "plan_role_name must be a valid IAM role name."
+  }
+}
+
+variable "state_bucket_name" {
+  description = "S3 bucket holding encrypted homelab OpenTofu state."
+  type        = string
+}
+
+variable "state_kms_key_id" {
+  description = "Alias of the OpenTofu state and plan encryption key."
+  type        = string
+
+  validation {
+    condition     = startswith(var.state_kms_key_id, "alias/")
+    error_message = "state_kms_key_id must be a KMS alias."
+  }
+}
+
+variable "backup_bucket_name" {
+  description = "Existing application backup bucket inspected by pull-request plans."
+  type        = string
 }
 
 variable "aws_region" {

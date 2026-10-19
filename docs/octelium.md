@@ -83,12 +83,15 @@ They create:
   resources and subresources.
 - Policy `homelab-ci-kubernetes-api-access`, allowing only the
   `homelab-ci` workload User to create an Octelium client session and access
-  the Kubernetes API Service.
+  the Kubernetes API Service for production applies.
+- Policy `homelab-ci-kubernetes-api-plan-access`, allowing only
+  `homelab-ci-plan` to read Kubernetes resources and submit dry-run writes.
 - Workload User `homelab-octelium-client`, retained for connector bootstrap and
   future private upstreams.
-- Workload User `homelab-ci` for GitHub Actions plan/apply and diagnostics,
-  with matching 30-day clientless-session and access-token lifetimes. Rotate
-  its credential every 21 days with `scripts/octelium-ci-credential.sh`.
+- Workload User `homelab-ci` for GitHub Actions applies and diagnostics, and
+  separate User `homelab-ci-plan` for pull-request plans. Both have matching
+  30-day clientless-session and access-token lifetimes. Rotate each credential
+  every 21 days with the separate commands in [CI access setup](ci-cd.md#octelium-ci-access-setup).
 - Dormant workload User `homelab-catalog-ci` for the protected private
   Kubernetes catalog workflow. Its helper-only Credential template lives in
   `homelab-private-kubernetes-ci-credential.yaml` outside this general catalog.
@@ -880,13 +883,14 @@ bash scripts/ci/install-kubeconfig.sh
 kubectl --request-timeout=15s version
 ```
 
-The `homelab-ci-kubernetes-api-access` policy is the enforcement boundary for
-this clientless workload credential. The upstream kubeconfig lives only in the
+The production `homelab-ci-kubernetes-api-access` and plan
+`homelab-ci-kubernetes-api-plan-access` Policies bind separate clientless
+workload credentials. The upstream kubeconfig lives only in the
 Octelium Secret `homelab-ci-kubeconfig`, created with
 `scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig <path>`. GitHub Actions
 uses the access token as the public Service bearer credential, avoiding the
-IPv6-only Gateway transport entirely. The rotation helper deletes this
-dedicated User's old Sessions before issuing the replacement, so Octelium
+IPv6-only Gateway transport entirely. The rotation helper deletes the
+selected User's old Sessions before issuing its replacement, so Octelium
 creates a fresh 30-day Session instead of reusing the prior expiry.
 
 ## Rollback
@@ -914,7 +918,6 @@ it. Keep Cordium state and its required native services.
 Remove or downgrade the Enterprise package through an Octelium-supported
 package operation. Record the target package version in this document before
 running the operator script again.
-
 
 The follow-up failure on 2026-10-01 was a running native client with no local
 listener, while the API carrier and authenticated session remained healthy.

@@ -10,6 +10,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
   - id: openwiki-source-5edf712b7916c34ad7d2c410
@@ -18,6 +20,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
+  - id: openwiki-source-978ea26012c822651daa0e75
+    resource: repo://scripts/ci/terragrunt-apply-test.py
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
   - id: openwiki-source-9754c9cae8bb1727dfa4e705
@@ -25,7 +31,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T03:27:33.881Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:34:18.200Z
 ---
 
 # GitOps Flow
@@ -199,6 +205,10 @@ set of fields Argo CD or the API server normalizes. Repository-owned source
 fields remain declarative. Production logs can include Terragrunt's internal
 `tofu apply` subprocess even though the operator entrypoint remains the
 Terragrunt workflow or `scripts/ci/terragrunt-apply.sh`.
+On GitHub Actions, the root Terragrunt before-apply hook checks the exact
+current remote `main` SHA for each unit, including later units in a bulk run.
+If `main` advances or the lookup fails, that unit does not apply; earlier
+units in the run may already have applied.
 
 Confirmed tainted Application state is repaired through the protected
 `Terragrunt Apply` dispatch with one exact `argocd_app` and

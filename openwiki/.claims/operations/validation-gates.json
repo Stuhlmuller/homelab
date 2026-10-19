@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a7ca3426a64f7f373a75eeb249c5a13a21ed907adb6d001cf6ddc5126a7cdea0",
+  "pageVersion": "sha256:87922742a5c71ef788886b60af2f74ea1ef46f79416496f45156e5a2ef6d0e81",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:1af9ac3617d4a87cd5f2b8c43edfdfdac8269a7aafa224bb9a3def7202f82223"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -162,7 +162,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
@@ -282,7 +282,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://builds/harbor-core/Dockerfile",
@@ -294,7 +294,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         }
       ]
     },
@@ -358,7 +358,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -370,7 +370,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         }
       ]
     },
@@ -388,7 +388,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:9fee0323d314d2713c5cee85bc5f596bc06abccd6292d5d0f22043e611a26e3d"
         }
       ]
     },
@@ -402,13 +402,13 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         }
       ]
     },
     {
       "id": "claim_8e0f5d1def624426aff856de7987ba8e",
-      "statement": "The Harbor Core publication workflow runs the pinned public Chainguard Cosign compatibility fixture before AWS credential configuration, and validate runs the same fixture. It checks disposable P-256 import, OpenSSL public-key equality and producer signing flags. The dated October 11 reviewer observation is historical; current source declares automatic same-repository PR-plan and production environments, with production restricted to exact main. Live settings require fresh verification.",
+      "statement": "The Harbor Core publication workflow and validate run the pinned Chainguard Cosign compatibility fixture before AWS credentials. It checks disposable P-256 import, OpenSSL public-key equality, and signing flags. Current source declares a homelab-plan reviewer and main-only production; live inspection on October 19 found the plan rule absent, so source configuration is not live acceptance.",
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
@@ -416,7 +416,7 @@
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -424,7 +424,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:1af9ac3617d4a87cd5f2b8c43edfdfdac8269a7aafa224bb9a3def7202f82223"
         }
       ]
     },
@@ -494,7 +494,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -552,7 +552,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://scripts/ci/network-policy-enforcement-check.py",
@@ -674,7 +674,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:9fee0323d314d2713c5cee85bc5f596bc06abccd6292d5d0f22043e611a26e3d"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -724,7 +724,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:9fee0323d314d2713c5cee85bc5f596bc06abccd6292d5d0f22043e611a26e3d"
         }
       ]
     },
@@ -760,7 +760,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:c05fe74a008fe400e43c0fc5b52ef5f94ccaf708a6d69bed8db47bab39a44392"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -829,10 +829,46 @@
           "version": "repo-lines-v1:sha256:799d5fe07072d35726b04dd9847ca9f4ec92b4cbe26b8cc57d8594626fdde9dd:eyJzZWxlY3RlZExpbmVDb3VudCI6NjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkODFkZjFlY2VlY2Y1OWFkOThkZmFjYzgwYWExMTY5MGM2ZGYxNzA4ZjBlYmQwYWYyZTcwNWJjZGQyNDkwYzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMzNWUzMTcwOTczNWU4MmU4YmFjOGJhM2Y2NWI1MjNhMGU4ZmMzNWM3MzE1OTlhNDhmMjIyYTE5ZTBlNTZkNjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3MTJkMmFmMmFiMTk2MTcxMDVlMjI3MTQ1MjA2Mzc0NjA5ZWVkZTA2YWFmMjI5OGNiM2FjZDg4MDAxZGEyNjcifQ"
         }
       ]
+    },
+    {
+      "id": "claim_f91413dbc5a946acbeb2134ecc6a7ebe",
+      "statement": "Repository validation checks whitespace in the committed PR or push diff, and the protected Terragrunt apply checks the exact remote main SHA before each unit.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/validate.yml",
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
+        },
+        {
+          "resource": "repo://IaC/root.hcl",
+          "version": "repo-file-v1:sha256:2787ba5515a31ff85163758433b1619d5662cb39312da24f8c579a16004147c9"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply-test.py",
+          "version": "repo-file-v1:sha256:540fb84ff2db3af022d61212d00bb7be510a8083201b313b43dc6524e8ec2f71"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-current-main.sh",
+          "version": "repo-file-v1:sha256:cc8ec5393c389b59cdbc685a0467924a43efcba0cc90d4018c340e5a040d15e1"
+        }
+      ]
+    },
+    {
+      "id": "claim_a5a65383287e4c3b96fdce3fc940a6ff",
+      "statement": "PR plan validation fails when AzureAD application units changed and AzureAD credentials are absent.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan-stage-test.py",
+          "version": "repo-file-v1:sha256:8b684dbd917d6d4cf02bfebf3ae6ea66bad058b5bff4f929ea89a89f43084a2e"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-plan.sh",
+          "version": "repo-file-v1:sha256:0776efdc2b5228a3341386da1813b891fb8b02ee7fba94f054115588b430e306"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:34:18.200Z"
   }
 }

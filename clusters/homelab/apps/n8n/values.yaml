@@ -93,8 +93,11 @@ controllers:
 
             umask 077
             for workflow_id in s1JVSbnvnmHMCbty xaUDsbylSwaveMQ5 Wc0AMPBPqBegSey5; do
-            n8n export:workflow --id="$workflow_id" --output=/tmp/ai-workflow.json
-            node - "$workflow_id" <<'NODE'
+            if ! n8n export:workflow --id="$workflow_id" --output=/tmp/ai-workflow.json; then
+              echo "Skipping AI workflow migration for $workflow_id: export unavailable" >&2
+              continue
+            fi
+            if ! node - "$workflow_id" <<'NODE'
             const fs = require('node:fs');
             const path = '/tmp/ai-workflow.json';
             const workflows = JSON.parse(fs.readFileSync(path, 'utf8'));
@@ -142,6 +145,10 @@ controllers:
             fs.writeFileSync(path, JSON.stringify(workflows));
             fs.writeFileSync('/tmp/ai-workflow-changed', 'true');
             NODE
+            then
+              echo "Skipping AI workflow migration for $workflow_id: workflow no longer matches the inventoried model" >&2
+              continue
+            fi
             if [ "$(cat /tmp/ai-workflow-changed)" != true ]; then
               continue
             fi

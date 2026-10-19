@@ -15,7 +15,7 @@ update_github="true"
 rotate_credential="true"
 delete_user_sessions="true"
 dry_run="false"
-environments=("homelab-plan" "homelab-production")
+environments=("homelab-production")
 
 usage() {
   cat <<'USAGE'
@@ -50,7 +50,7 @@ Options:
                                applying the catalog, rotating a credential, or
                                updating GitHub.
   --env NAME                   GitHub environment to update. May be repeated.
-                               Defaults: homelab-plan, homelab-production
+                               Default: homelab-production
   --skip-catalog               Do not apply the catalog before rotating.
   --skip-github                Create/rotate the credential but do not update GitHub.
                                This is intended only for debugging token parsing.
@@ -158,12 +158,6 @@ validate_name() {
   fi
 }
 
-require_command octeliumctl
-require_command jq
-if [[ "$update_github" == "true" && "$rotate_credential" == "true" ]]; then
-  require_command gh
-fi
-
 octeliumctl_cmd=(octeliumctl)
 if [[ -n "$octelium_homedir" ]]; then
   octeliumctl_cmd+=(--homedir "$octelium_homedir")
@@ -195,6 +189,31 @@ for env_name in "${environments[@]}"; do
   validate_name "$env_name" "--env"
 done
 
+if [[ "$update_github" == "true" && "$rotate_credential" == "true" ]]; then
+  for env_name in "${environments[@]}"; do
+    case "$env_name" in
+      homelab-plan)
+        if [[ "$credential_name" != "homelab-ci-plan" || "$user_name" != "homelab-ci-plan" ||
+          "$policy_name" != "homelab-ci-kubernetes-api-plan-access" ]]; then
+          echo "error: homelab-plan requires the dedicated plan User, credential, and Policy" >&2
+          exit 1
+        fi
+        ;;
+      homelab-production)
+        if [[ "$credential_name" != "homelab-ci" || "$user_name" != "homelab-ci" ||
+          "$policy_name" != "homelab-ci-kubernetes-api-access" ]]; then
+          echo "error: homelab-production requires the protected apply User, credential, and Policy" >&2
+          exit 1
+        fi
+        ;;
+      *)
+        echo "error: unsupported GitHub environment: ${env_name}" >&2
+        exit 1
+        ;;
+    esac
+  done
+fi
+
 if [[ "$dry_run" == "true" ]]; then
   if [[ "$apply_catalog" == "true" ]]; then
     echo "DRY-RUN would apply ${catalog} to ${domain}"
@@ -211,6 +230,12 @@ if [[ "$dry_run" == "true" ]]; then
     printf '\n'
   fi
   exit 0
+fi
+
+require_command octeliumctl
+require_command jq
+if [[ "$update_github" == "true" && "$rotate_credential" == "true" ]]; then
+  require_command gh
 fi
 
 if [[ "$delete_user_sessions" == "true" &&

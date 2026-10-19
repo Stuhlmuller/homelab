@@ -4,12 +4,24 @@ title: "Continuous Improvement"
 description: "Security and reliability stewardship, source-backed finding format, open operational risks, and concrete follow-up gates."
 tags: ["operations", "security", "reliability", "stewardship"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-1ab63006818d653aed251f6d
+    resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
+  - id: openwiki-source-ac4e5166b14da067a9c57d03
+    resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
+  - id: openwiki-source-e6fd9160ab2341143a5d45c8
+    resource: repo://docs/image-egress-hardening.md
+  - id: openwiki-source-8852e7fd463f12bed3ef5da3
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/plan.tf
 generated: { by: "codex", at: "2026-10-10T22:45:18.562Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:34:18.200Z
 ---
 
 # Continuous Improvement
@@ -73,6 +85,33 @@ while Dependabot automated fixes stay disabled to avoid duplicate PRs. The
 organization-policy blocker is tracked below.
 
 ## Open Findings
+
+- **Status:** open
+- **Area:** private ingress / NetworkPolicy enforcement
+- **Evidence:** Traefik's private listener accepts plaintext traffic on port
+  8443 for the L3 Tailscale ingress path, while Flannel does not enforce the
+  declared `clusters/homelab/apps/traefik/networkpolicy.yaml`. Read-only
+  ztunnel inspection on 2026-10-19 showed the Tailscale proxy flow had no mesh
+  source identity. No enforcing NRI DaemonSet is deployed.
+- **Risk:** another in-cluster workload can reach the private listener without
+  passing the tailnet access boundary.
+- **Next step:** publish the pinned enforcer image, establish a dedicated
+  drained canary, audit effective policies, and deliver an enforcing NRI
+  DaemonSet through GitOps. Prove allowed Tailscale access and denied same-node
+  and cross-node Pod access before expanding to Traefik's node. Select the
+  canary from current capacity and placement evidence.
+
+- **Status:** source staged; live cutover pending
+- **Area:** CI/CD plan credential isolation
+- **Evidence:** `IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/plan.tf`
+  declares a separate read-capable AWS plan role, and the Octelium catalog
+  declares a plan-only User/Policy. The current PR plan still assumes the
+  apply role.
+- **Risk:** reviewed PR plan code retains write-capable credentials until the
+  dedicated identities are provisioned and the workflow/trust cutover lands.
+- **Next step:** use the reviewed operator apply and credential helpers, switch
+  the plan workflow in a second PR, remove `homelab-plan` from the apply-role
+  OIDC trust, and prove a protected live plan with the new identities.
 
 - **Status:** recovered; capacity follow-up open
 - **Area:** Talos / Argo CD reconciliation, 2026-10-10

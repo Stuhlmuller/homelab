@@ -10,12 +10,16 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-ac4e5166b14da067a9c57d03
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-5b27d2bccc9c055dcc37f46a
+    resource: repo://scripts/octelium-ci-credential.sh
 generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:34:18.200Z
 ---
 
 # Octelium
@@ -30,6 +34,10 @@ bootstrap, Enterprise adoption, and Entra OIDC stay on their repository-owned
 scripts and manifests. The catalog
 also owns the core human session ceiling; apply its `ClusterConfig` include
 separately before the normal catalog apply.
+The staged catalog adds `homelab-ci-plan` with a read and dry-run Kubernetes
+Policy separate from production `homelab-ci`. The helper rotates production by
+default; the [CI runbook](ci-cd.md) gives the explicit plan credential command.
+The split is not live until the catalog and plan token are applied and verified.
 
 Bootstrap and upgrade require the dataplane label on `zimaboard-0`, the
 control-plane label on `zimaboard-1`, and no dataplane label on `zimaboard-2`.

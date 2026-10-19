@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8d82e407eb7d6fc0223c4d760faaaa9f1d02804837db32f90c8ac030aac0f67d",
+  "pageVersion": "sha256:05edb7676f6567c56fea20f24b9c926453fe180f05588a9a581c10b12f6049b4",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -61,10 +61,28 @@
           "version": "repo-lines-v1:sha256:98c8bc57fc813af5ab1f5f61681ce729cbe3b97e3a63384c205f243f803acc1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NDMxZWRlOTU2YzI3YzdmZTE2Y2FlN2RiY2E1MGEwNWI4N2FiMTIxYzI2NGJjYzVkYTAxNjE1MTVkNjVlMmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzZjc0ODM4ZDYwNGQ1YTM5ZWMyMTI5YjgwNzJiN2I4OGJkNzQ2ZjZhMDJkOTc2Yzg3Y2RjM2FlNGIzYjk4YWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIxNjE0ODMyYzM4ZDE0OTY3ZmM2OTQ4YWY1Y2QyOThmZjEwYTliODQwNjNkNmZhYTkwODI2MTUzN2E3YjNhY2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjIwMjRmNTQ4Y2RmZjBjMTM3MWZkMTcyYWRkYjFkZTI4MzkyMzNkYjQwY2Y2MWM2ZWU0ZTAzMzY2YjljZjIzYzIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_a9ac1c5da829475897a6eeec43df19a1",
+      "statement": "The GitHub Actions root Terragrunt before-apply hook checks the current remote main SHA for every unit and fails closed when it changes or cannot be read.",
+      "evidence": [
+        {
+          "resource": "repo://IaC/root.hcl",
+          "version": "repo-file-v1:sha256:2787ba5515a31ff85163758433b1619d5662cb39312da24f8c579a16004147c9"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-apply-test.py",
+          "version": "repo-file-v1:sha256:540fb84ff2db3af022d61212d00bb7be510a8083201b313b43dc6524e8ec2f71"
+        },
+        {
+          "resource": "repo://scripts/ci/terragrunt-current-main.sh",
+          "version": "repo-file-v1:sha256:cc8ec5393c389b59cdbc685a0467924a43efcba0cc90d4018c340e5a040d15e1"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:34:18.200Z"
   }
 }

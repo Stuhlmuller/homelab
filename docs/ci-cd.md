@@ -37,7 +37,10 @@ This repository uses GitHub Actions for the review and rollout path:
   current `main` SHA. It repeats static checks and Conftest, enters the
   main-only `homelab-production` environment, then
   verifies `main` again before referencing
-  environment credentials or running live commands. Full applies run the Argo
+  environment credentials and immediately before each state import or apply.
+  The root Terragrunt `before_hook` repeats that check for every unit in a
+  multi-unit apply, so a later unit stops if `main` advances during the run.
+  Full applies run the Argo
   CD bootstrap, SSM parameter declarations, Entra application registrations,
   Argo CD Application registrations, and Kubernetes secret materialization.
   They compare against the latest successful historical push apply or full
@@ -47,8 +50,8 @@ This repository uses GitHub Actions for the review and rollout path:
   `github-iac` manages its exact `main` branch allowlist, excluding tags.
 - `Octelium Private Kubernetes Apply` is a separate manual lane for the private
   Kubernetes and Talos Policies and Services. It repeats the exact-`main` and
-  production branch gates, never prunes, and proves a second apply has no
-  live diff.
+  production branch gates before both catalog writes, never prunes, and proves
+  a second apply has no live diff.
 
 Forked pull requests never receive AWS, Octelium, or Kubernetes secrets. They
 run the static checks and Conftest only.
@@ -111,14 +114,15 @@ checks remain fresh.
   can write to pull requests or another public GitHub surface.
 - AWS access uses GitHub OIDC and short-lived role sessions. Do not add static
   AWS access keys to this repository.
-- Octelium access uses an access-token credential for workload User `homelab-ci`
-  and the public clientless `KUBERNETES` Service `kubernetes-api-ci`. Live
+- Octelium access uses separate access-token credentials for workload Users
+  `homelab-ci-plan` and `homelab-ci` through the public clientless
+  `KUBERNETES` Service `kubernetes-api-ci`. Live
   Terragrunt and diagnostic jobs run on GitHub-hosted Ubuntu and use the
   existing Cloudflare Tunnel endpoint at `https://kubernetes-api-ci.stinkyboi.com`.
   This avoids the IPv6-only Gateway QUIC path, while the
-  `homelab-ci-kubernetes-api-access` policy remains the hard access boundary.
-  The dedicated User gives both its clientless session and access token a
-  30-day lifetime; rotate the credential every 21 days.
+  plan and production Policies remain the hard access boundaries. Each User
+  gives its clientless session and access token a 30-day lifetime; rotate each
+  credential every 21 days.
   Trusted pull requests only open this live access path when the diff includes
   the plan workflow, IaC, flake, OpenTofu/Terragrunt policy, or live-plan helper
   inputs.
@@ -244,9 +248,12 @@ References:
 
 Create two GitHub environments:
 
-- `homelab-plan`: used by same-repository pull request plans. No required
-  reviewers. PR code executes automatically with live write-capable identities;
-  the same-repository workflow trust check remains required.
+- `homelab-plan`: used by same-repository pull request plans. The desired HCL
+  requires reviewer `rstuhlmuller` before PR code receives live credentials.
+  On 2026-10-19, GitHub still showed no live protection rules, so same-repository
+  PR jobs could receive credentials without approval. Apply the reviewed
+  environment plan and verify the reviewer before relying on this gate. The
+  same-repository workflow trust check also applies.
 - `homelab-production`: used by post-merge applies and main-only diagnostics.
   No required reviewers; allow only the exact `main` branch (no tags).
 
@@ -256,17 +263,18 @@ environment-only saved plan; the ruleset-only deployment workflow does not
 reconcile environments. Restore reviewers through HCL and a saved plan to
 roll back approval behavior, retaining the exact `main` production allowlist.
 
-Add `OCTELIUM_CI_AUTH_TOKEN` to both environments. Entra uses separate
+Add a distinct `OCTELIUM_CI_AUTH_TOKEN` to each environment. Entra uses separate
 operator-managed GitHub OIDC identities, with no `AZUREAD_CLIENT_SECRET`.
 Bootstrap and verify them through the [Entra provider runbook](entra-terraform-provider.md).
 Keep live credentials environment-scoped so GitHub releases PR-plan credentials
-automatically for same-repository PRs and production credentials only to
-`main`; do not keep
+after the reviewer gate is live and approved, and production credentials only
+to `main`; do not keep
 duplicate repository-scoped copies:
 
 | Secret | Environment | Purpose |
 | --- | --- | --- |
-| `OCTELIUM_CI_AUTH_TOKEN` | both | Octelium clientless access token for User `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
+| `OCTELIUM_CI_AUTH_TOKEN` | `homelab-plan` | Octelium clientless token for `homelab-ci-plan`, limited to Kubernetes reads and dry-run writes. |
+| `OCTELIUM_CI_AUTH_TOKEN` | `homelab-production` | Octelium clientless token for `homelab-ci`, scoped to the public `kubernetes-api-ci` Service. |
 | `OCTELIUM_CATALOG_AUTH_TOKEN` | `homelab-production`, temporary | One-authentication token created immediately before the private Kubernetes catalog dispatch and removed immediately afterward. |
 
 The retired `/homelab/github-actions-runner/registration-token` SSM parameter
@@ -348,35 +356,37 @@ defines:
 
 - workload User `homelab-ci` with matching 30-day clientless-session and
   access-token lifetimes;
-- Policy `homelab-ci-kubernetes-api-access`, which allows only the public
-  clientless Kubernetes Service;
+- workload User `homelab-ci-plan` with the same lifetimes;
+- Policy `homelab-ci-kubernetes-api-access` for production access and Policy
+  `homelab-ci-kubernetes-api-plan-access` for reads and dry-run writes;
 - public `KUBERNETES` Service `kubernetes-api-ci -> https://10.1.0.199:6443`.
 
 Apply that catalog after materializing the upstream kubeconfig Secret, then
-create or rotate the GitHub environment secret in both CI environments:
+create or rotate each environment's credential separately:
 
 ```sh
 scripts/octelium-ci-kubeconfig-secret.sh --kubeconfig ~/.kube/config
 scripts/octelium-ci-credential.sh
+scripts/octelium-ci-credential.sh --credential-name homelab-ci-plan \
+  --user homelab-ci-plan --policy homelab-ci-kubernetes-api-plan-access \
+  --env homelab-plan --skip-catalog
 ```
 
 The helper requires an authenticated Octelium admin session for `octeliumctl`
 and GitHub CLI access to `Stuhlmuller/homelab`. It applies the catalog, creates
-or rotates the `homelab-ci` credential, pipes the generated token directly into
-the `OCTELIUM_CI_AUTH_TOKEN` secret for `homelab-plan` and
-`homelab-production`, and removes the temporary token file before exit.
+or rotates the selected User's credential, pipes the generated token directly
+into that environment's `OCTELIUM_CI_AUTH_TOKEN`, and removes the temporary
+token file before exit.
 For existing credentials, the helper verifies GitHub environment secret write
 access by writing and deleting a temporary preflight secret, reconciles the
-credential binding to User `homelab-ci` and Policy
-`homelab-ci-kubernetes-api-access`, deletes every Session for that dedicated
-User so Octelium cannot reuse its old expiry, then rotates the token. It
+credential binding to the selected User and Policy, deletes that User's
+Sessions so Octelium cannot reuse an old expiry, then rotates the token. It
 refuses to rotate an existing credential when GitHub secret updates are
 disabled, because that would invalidate the old CI token without storing the
 replacement.
-Run rotation in a quiet window: deleting the old Session invalidates the
-current bearer before the two GitHub environment secrets are updated. After
-token generation, the helper retries each secret write until both environments
-hold the replacement; if interrupted, rerun the helper.
+Run each rotation in a quiet window: deleting the old Session invalidates that
+environment's bearer before its GitHub secret is updated. If interrupted,
+rerun the helper for that environment.
 When recovering through a temporary Octelium CLI session, pass the unique home
 created by the recovery block below. If the public Octelium API path is not
 carrying authenticated admin CLI calls reliably, point `--octelium-proxy` at a
@@ -388,12 +398,12 @@ because it can print the generated token. If the helper cannot reach GitHub,
 fix `gh auth status` or the target environment permissions, then rerun the
 helper so the token is captured and stored without being displayed.
 
-Rotate `OCTELIUM_CI_AUTH_TOKEN` every 21 days, on suspicious runs, after catalog
-policy changes, and after runner image changes. Reconcile the
+Rotate both environment credentials every 21 days, on suspicious runs, after
+catalog policy changes, and after runner image changes. Reconcile the
 Octelium kubeconfig Secret when the upstream Kubernetes credential changes. If
 CI receives Octelium `401` from authenticated `kubectl` against
 `kubernetes-api-ci`, reapply the catalog and rotate the credential with
-`scripts/octelium-ci-credential.sh`. Treat `403` as a policy or User-state
+the corresponding helper command above. Treat `403` as a policy or User-state
 failure before rotating. Reconcile the upstream kubeconfig Secret when its
 Kubernetes credential changes.
 Recover the primary credential directly with the checked helper. Run this block
@@ -429,12 +439,16 @@ only after Octelium confirms logout:
 
   octeliumctl --homedir "$octelium_homedir" login --domain "$domain" --web
   scripts/octelium-ci-credential.sh --homedir "$octelium_homedir"
+  scripts/octelium-ci-credential.sh --homedir "$octelium_homedir" \
+    --credential-name homelab-ci-plan --user homelab-ci-plan \
+    --policy homelab-ci-kubernetes-api-plan-access --env homelab-plan --skip-catalog
 )
 ```
 
-The helper applies the primary catalog with checked resource verification,
-invalidates its stale Sessions, and writes the replacement token to both GitHub
-environments. Dispatch and bind verification to the exact `main` commit:
+The first helper call applies the catalog with checked resource verification.
+Each call invalidates only its selected User's stale Sessions and writes its
+replacement token to one GitHub environment. Dispatch and bind verification to
+the exact `main` commit:
 
 ```sh
 set -euo pipefail
@@ -613,6 +627,7 @@ administrator-authenticated un-targeted plan after backend-free validation:
 
 ```sh
 aws sso login --profile <administrator-profile>
+terragrunt --working-dir IaC stack generate
 cd IaC/operator/github-actions-role-policy
 terragrunt --log-disable init -backend=false -no-color
 terragrunt --log-disable run --no-auto-init -- validate -no-color
@@ -712,12 +727,12 @@ The Microsoft Entra providers use `ARM_CLIENT_ID`, `ARM_TENANT_ID` and
 They obtain short-lived assertions through the job's `id-token: write`
 permission. The readiness check requires both identity selectors and both GitHub
 OIDC request inputs; an incomplete OIDC setup cannot fall back to a client secret.
-Trusted pull request plans render the AzureAD stack only when the identity is
-configured in `homelab-plan`; production uses the separate
-`homelab-production` identity. User and claims-policy lifecycle and application
-assignment changes retain the reviewed operator Terraform path because the CI
-identity has no corresponding tenant-wide write grants. When the identity is
-not configured, production apply skips
+Trusted pull request plans require the `homelab-plan` AzureAD identity when the
+AzureAD stack or shared root changed, and fail if it is absent. Production uses
+the separate `homelab-production` identity. User, claims-policy, and
+application assignment changes retain the reviewed operator Terraform path
+because the CI identity has no corresponding tenant-wide write grants. When
+the identity is not configured, production apply skips
 that phase only if the unapplied range did not change the AzureAD stack or its
 shared root configuration. Every root source change requires the credentials
 so identity drift is not silently ignored.

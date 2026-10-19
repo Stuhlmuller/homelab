@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:85e50c32d6ed8479133fdd1e164374d6928cfba488737fe538829ba4195a7044",
+  "pageVersion": "sha256:f893d3a28905795b1789e92ec575166770954adf0f4bc1347a80858966d04a1d",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:1af9ac3617d4a87cd5f2b8c43edfdfdac8269a7aafa224bb9a3def7202f82223"
         }
       ]
     },
@@ -64,17 +64,35 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:e32f8226c5e09e3d449053995c547cd391426cc8baf3fafe5f1e2004268ce9bd"
+          "version": "repo-file-v1:sha256:1af9ac3617d4a87cd5f2b8c43edfdfdac8269a7aafa224bb9a3def7202f82223"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:0a7a9ba82eefac1a32478d87313abc836c6f1ea139b9ab81ff8297f2a076dd71"
+          "version": "repo-file-v1:sha256:9fee0323d314d2713c5cee85bc5f596bc06abccd6292d5d0f22043e611a26e3d"
+        }
+      ]
+    },
+    {
+      "id": "claim_d42dd22f377a4a88b75358a6575f99d6",
+      "statement": "The Octelium catalog declares a separate homelab-ci-plan User and read/dry-run Policy; the credential helper rotates production by default and requires an explicit plan User, Policy and environment command for plan token publication.",
+      "evidence": [
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:1af9ac3617d4a87cd5f2b8c43edfdfdac8269a7aafa224bb9a3def7202f82223"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:353fe358df299f04aef6ed546a7f65d30d87099d819333cf5610e9151a379305"
+        },
+        {
+          "resource": "repo://scripts/octelium-ci-credential.sh",
+          "version": "repo-file-v1:sha256:4c2a6a45ab1950c8b3730893496e705a4ce5529213e8a6fc10b01131659b58b2"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:34:18.200Z"
   }
 }

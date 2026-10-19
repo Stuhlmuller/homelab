@@ -109,7 +109,15 @@ jobs:
           done
 
       - name: Check whitespace
-        run: git diff --check
+        run: |
+          base_sha="$(jq -er --arg event "${GITHUB_EVENT_NAME}" '
+            (if $event == "pull_request" then .pull_request.base.sha else .before end) |
+            select(test("^[0-9a-f]{40}$"))
+          ' "${GITHUB_EVENT_PATH}")"
+          if [[ "${base_sha}" =~ ^0+$ ]]; then
+            base_sha="$(git hash-object -w -t tree /dev/null)"
+          fi
+          git diff --check "${base_sha}" HEAD
 
       - name: Check ClickHouse diagnostic quarantine
         run: nix develop --command python3 -I scripts/ci/clickhouse-log-quarantine-test.py --runtime docker

@@ -78,6 +78,8 @@ sources:
     resource: repo://docs/nix-cache.md
   - id: openwiki-source-3eda5d2b85501c78fc0ba02d
     resource: repo://flake.nix
+  - id: openwiki-source-bdda46b717c2e2415e19e8f3
+    resource: repo://IaC/root.hcl
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
@@ -154,6 +156,14 @@ sources:
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-c65516e351b2fe2cbdfc5a79
     resource: repo://scripts/ci/talos-nix-builder-seccomp-test.py
+  - id: openwiki-source-978ea26012c822651daa0e75
+    resource: repo://scripts/ci/terragrunt-apply-test.py
+  - id: openwiki-source-181c84b7cc75d240ee7654cc
+    resource: repo://scripts/ci/terragrunt-current-main.sh
+  - id: openwiki-source-d4c5f4ea43a9c10ac5e00082
+    resource: repo://scripts/ci/terragrunt-plan-stage-test.py
+  - id: openwiki-source-60b00db0363e7f9e27d7fa7f
+    resource: repo://scripts/ci/terragrunt-plan.sh
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
@@ -185,7 +195,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:34:18.200Z
 ---
 
 # Validation Gates
@@ -657,6 +667,11 @@ until their complete job definition is reviewed and hashed. Conftest also
 rejects direct live `kubectl`, `talosctl`, AWS, Terragrunt, OpenTofu, Terraform,
 or non-rendering Helm output and any command after the private-log wrapper;
 credentials stay scoped to the one live step.
+The PR plan now fails when AzureAD application units changed but AzureAD
+credentials are absent. The `repo` validation job checks whitespace in the
+committed PR or push diff, rather than the clean checkout's working tree.
+Protected Terragrunt apply checks remote `main` immediately before every unit's
+OpenTofu apply; a changed or unreachable main stops later units in a bulk run.
 The live-plan and protected-apply diagnostic exceptions check a classifier's
 SHA-256 inside the hashed workflow before reading private output. A changed or
 missing helper is not executed; only the fixed withheld error remains. The
@@ -904,9 +919,12 @@ dispatches to carry an exact expected `main` SHA and fail before work when the
 resolved workflow commit differs. Every push to `main` runs only the cancellable
 `Terragrunt Apply Request` check; it uses no protected environment, stored
 secret, or OIDC permission and prints the exact dispatch command plus active
-apply links. Production is restricted to `main`, without reviewer approval;
-Same-repository PR plans also enter their environment automatically. The apply's first live-job step requires the expected, workflow, and current `main` SHAs to
-match before credentials or live commands.
+apply links. Production is restricted to `main`, without reviewer approval.
+The desired `homelab-plan` environment requires a reviewer, but read-only
+GitHub inspection on 2026-10-19 found no live protection rule; verify the
+reconciled rule before trusting the plan gate. The apply's first live-job step
+requires the expected, workflow, and current `main` SHAs to match before
+credentials or live commands.
 The live job retains only the newest pending run and never cancels an
 in-progress apply. Main-only diagnostics use the same production environment.
 
@@ -1752,10 +1770,11 @@ The Harbor Core publication workflow runs the pinned public Chainguard signer
 fixture before AWS credential configuration, and `validate` runs the same fixture.
 It imports a disposable P-256 key, requires the emitted public key to equal
 OpenSSL's output, and checks the signing API flags used by the producer. A
-dated 2026-10-11 read-only check found a production reviewer, but the current
-source contract now declares automatic plan/production environments, with
-production restricted to the exact `main` branch. Recheck live settings before
-dispatch; source configuration alone is not live acceptance.
+dated 2026-10-11 read-only check found a production reviewer. The current
+source contract requires a plan reviewer and restricts production to exact
+`main` without a reviewer; on 2026-10-19 the live plan reviewer rule was still
+absent. Recheck live settings after the reviewed GitHub IaC reconciliation;
+source configuration alone is not live acceptance.
 The merged publisher suite retains current-main anonymous source staging and
 reader-authenticated destination-pull checks alongside the fixed-core cases. Its native
 offline OCI fixture still verifies multi-platform and repeated-descriptor

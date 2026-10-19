@@ -16,6 +16,9 @@ python3 -I scripts/ci/openwiki-check.py
 python3 -I scripts/ci/multica-runtime-check.py
 python3 -I scripts/ci/traefik-routes-test.py
 python3 -I scripts/ci/install-kubeconfig-test.py
+python3 -I scripts/ci/aws-plan-role-configure-test.py
+python3 -I scripts/ci/octelium-ci-credential-test.py
+python3 -I scripts/ci/octelium-plan-policy-test.py
 python3 -I scripts/ci/tailscale-ci-configure-test.py
 python3 -I scripts/ci/tailscale-ingress-sign-test.py
 python3 -I scripts/ci/tailscale-access-check-test.py
@@ -86,6 +89,7 @@ python3 -I scripts/ci/octelium-macos-api-carrier-test.py
 python3 scripts/ci/octelium-restore-drill-test.py
 python3 scripts/ci/terragrunt-apply-stage-test.py
 python3 scripts/ci/terragrunt-plan-stage-test.py
+python3 -I scripts/ci/octelium-private-kubernetes-apply-test.py
 python3 scripts/ci/istio-ambient-log-check-test.py
 python3 scripts/ci/istio-ambient-probe-check.py
 python3 -I scripts/ci/affine-suspension-probe-check.py

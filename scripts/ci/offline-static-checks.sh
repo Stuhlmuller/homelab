@@ -312,11 +312,12 @@ if rg -q '^[[:space:]]+N8N_ENCRYPTION_KEY:' "$n8n_values"; then
 fi
 rg -Fq 'N8N_BOOTSTRAP_ENCRYPTION_KEY:' "$n8n_values"
 yq -e '
-  (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.name == "n8n-secrets"
-  ) and (
-    .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef.key == "N8N_BOOTSTRAP_ENCRYPTION_KEY"
-  )
+  .controllers.n8n.initContainers."migrate-ai-workflow".env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef |
+  (.name == "n8n-secrets" and .key == "N8N_BOOTSTRAP_ENCRYPTION_KEY")
+' "$n8n_values" >/dev/null
+yq -e '
+  .controllers.n8n.containers.app.env.N8N_BOOTSTRAP_ENCRYPTION_KEY.valueFrom.secretKeyRef |
+  (.name == "n8n-secrets" and .key == "N8N_BOOTSTRAP_ENCRYPTION_KEY")
 ' "$n8n_values" >/dev/null
 # The literal shell assignment is intentionally matched inside a yq expression.
 # shellcheck disable=SC2016
@@ -644,7 +645,10 @@ echo "::group::Octelium catalog security contracts"
 yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
   jq -e '
     [.[] | select(.kind == "User" and .metadata.name == "homelab-ci")] as $users |
+    [.[] | select(.kind == "User" and .metadata.name == "homelab-ci-plan")] as $plan_users |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-access")] as $policies |
+    [.[] | select(.kind == "Policy" and .metadata.name == "homelab-ci-kubernetes-api-plan-access")] as $plan_policies |
+    [.[] | select(.kind == "Service" and .metadata.name == "kubernetes-api-ci")] as $kube_api_ci |
     [.[] | select(.kind == "Policy" and .metadata.name == "homelab-human-web-access")] as $human |
     [.[] | select(.kind == "Service" and .metadata.name == "multica")] as $multica |
     [.[] | select(.kind == "Service" and .metadata.name == "nofx")] as $nofx |
@@ -652,6 +656,15 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
     $users[0].spec.type == "WORKLOAD" and
     $users[0].spec.session.clientlessDuration == {"days": 30} and
     $users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($plan_users | length) == 1 and
+    $plan_users[0].spec.type == "WORKLOAD" and
+    $plan_users[0].spec.session.clientlessDuration == {"days": 30} and
+    $plan_users[0].spec.session.accessTokenDuration == {"days": 30} and
+    ($kube_api_ci | length) == 1 and
+    $kube_api_ci[0].spec.authorization.policies == [
+      "homelab-ci-kubernetes-api-access",
+      "homelab-ci-kubernetes-api-plan-access"
+    ] and
     ($nofx | length) == 1 and
     $nofx[0].spec.isAnonymous == false and
     $nofx[0].spec.authorization.policies == ["homelab-human-web-access"] and
@@ -679,7 +692,47 @@ yq ea -o=json -I=0 '[.]' docs/examples/octelium/homelab-services.yaml |
         {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
         {"match": "ctx.service.spec.mode == \"KUBERNETES\""}
       ]}}
-    }]
+    }] and
+    ($plan_policies | length) == 1 and
+    $plan_policies[0].spec.rules == [
+      {
+        "name": "deny-non-dry-run-writes",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"]"},
+          {"match": "!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != \"All\""}
+        ]}}
+      },
+      {
+        "name": "deny-subresources",
+        "effect": "DENY",
+        "priority": -4,
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.request.kubernetes.subresource != \"\""}
+        ]}}
+      },
+      {
+        "name": "read-or-dry-run",
+        "effect": "ALLOW",
+        "condition": {"all": {"of": [
+          {"match": "ctx.user.metadata.name == \"homelab-ci-plan\""},
+          {"match": "ctx.user.spec.type == \"WORKLOAD\""},
+          {"match": "ctx.session.status.type == \"CLIENTLESS\""},
+          {"match": "ctx.service.metadata.name == \"kubernetes-api-ci.default\""},
+          {"match": "ctx.service.spec.mode == \"KUBERNETES\""},
+          {"match": "ctx.request.kubernetes.subresource == \"\""},
+          {"any": {"of": [
+            {"match": "ctx.request.kubernetes.http.method in [\"GET\", \"HEAD\"] && ctx.request.kubernetes.verb in [\"get\", \"list\", \"watch\"]"},
+            {"match": "ctx.request.kubernetes.verb in [\"create\", \"update\", \"patch\", \"delete\", \"deletecollection\"] && ctx.request.kubernetes.http.queryParams.dryRun == \"All\""}
+          ]}}
+        ]}}
+      }
+    ]
   ' >/dev/null
 echo "::endgroup::"
 
@@ -924,10 +977,10 @@ done <<'EOF'
 .github/workflows/litellm-provider-credential.yml 5beb1f14e97a8f8e0c6d8ac456f4d05fde57d8aa951cbd7dd0017a1a4ba06aaa
 .github/workflows/mastodon-public-dns.yml d51b5303dd7b321a12f0232fdc81abe9aedfa8e8097915738ec6d9cead1ebaa7
 .github/workflows/mastodon-smtp-credential.yml 0d3bf6ba80b1bcb721445ee427870ca60ab95df62cadce967f328e32d92d0faf
-.github/workflows/octelium-private-kubernetes-apply.yml 5bccd9e772bb094397f69697a4153c754513e3c0dbb392c231b2f57dc748e5e1
+.github/workflows/octelium-private-kubernetes-apply.yml a40801cc8ecc105acf5edceeca4b10ac7b513ab8741dcfbb23f02ef147accb58
 .github/workflows/release.yml 36ac11373a2ea8da9982babbb09a08bb97c56660f1fb70eb7f18e56077ab646e
 .github/workflows/terragrunt-apply-request.yml 0b744c5a337978c6f5675156ee62b727653f37a008f86260113610ba8646b4e5
-.github/workflows/terragrunt-apply.yml a6af5a2c5aefbdcdf4f33fc4caed672636fe1d64297efb4a10f61dc05353b312
+.github/workflows/terragrunt-apply.yml 357dcf821bf79411ba11f6c38f22f4215c9389fad2cfbf6d1b0678b5edd7a689
 .github/workflows/terragrunt-plan.yml e75bb8269572b5da2e9b923670b15a6c209dc6206c01a5f9e57799bb9af26022
 EOF
 echo "::endgroup::"
@@ -1119,6 +1172,7 @@ yq -o=json '.' .github/workflows/terragrunt-apply.yml |
       "ARM_USE_CLI": "false",
       "ARM_USE_MSI": "false",
       "ARM_TENANT_ID": "${{ secrets.AZUREAD_TENANT_ID }}",
+      "GH_TOKEN": "${{ github.token }}",
       "KUBE_API_SERVER_URL": "${{ env.KUBE_API_SERVER_URL }}",
       "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
     } and
@@ -1230,6 +1284,7 @@ yq -o=json '.' .github/workflows/octelium-private-kubernetes-apply.yml |
       contains("test \"${ACTUAL_SHA}\" = \"${current_main_sha}\"")) and
     ($catalog_steps | length) == 1 and
     $catalog_steps[0].env == {
+      "GH_TOKEN": "${{ github.token }}",
       "OCTELIUM_CATALOG_AUTH_TOKEN": "${{ secrets.OCTELIUM_CATALOG_AUTH_TOKEN }}"
     } and
     ($catalog_steps[0].run |
@@ -1247,7 +1302,7 @@ bash -n \
   scripts/ci/octelium-private-kubernetes-apply.sh \
   scripts/octelium-private-kubernetes-credential.sh
 [[ "$(sha256sum scripts/ci/octelium-private-kubernetes-apply.sh | cut -d' ' -f1)" == \
-  "b91ccb55d0e1e689d3c49a17309a575c4e1ffe2458900b02d2790761dd5b0518" ]] || {
+  "3212fef59efa251842c8bb5e7f3489ef95828c4b35ac93259edaf43ec2b30c06" ]] || {
   echo "Octelium private Kubernetes apply helper changed; review its exact security hash." >&2
   exit 1
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:68e103fa9b1d9983b982f00b20b096fa454ae3603b338e487a19a51d0e00061d",
+  "pageVersion": "sha256:717e2ee4a75297a746cf3cae737af9047267ba94a1a38d25e9c2d50dca03951d",
   "claims": [
     {
       "id": "claim_387c6dac73fc4932ade43a20ef912aef",
@@ -11,10 +11,24 @@
           "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_2da305308c1948dc949915d8c57c7ed3",
+      "statement": "The n8n init migration skips absent or edited target workflows and republishes only previously active matching workflows before n8n starts.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml",
+          "version": "repo-file-v1:sha256:25d0067fee634d792548f9df71f64e3226e49c61683300014a965de01aff6715"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py",
+          "version": "repo-file-v1:sha256:dde79cde33fe707033c693b6d44b91e2ff863558690e661d1a69c035aeee83f8"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:10:58.872Z"
+    "at": "2026-10-19T05:34:18.200Z"
   }
 }

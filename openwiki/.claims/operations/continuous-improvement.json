@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7290f89eb69d96f9cb4600f47bafd9f244c5711326b3d95e4b49908d929317be",
+  "pageVersion": "sha256:d47afa7f46dc79bf0910c12e2f455fbb69c24c64d3ba197582f1628a8ef488c0",
   "claims": [
     {
       "id": "claim_90504df127484cc1967cce8cc178ca30",
@@ -11,10 +11,46 @@
           "version": "repo-file-v1:sha256:3fb023d451c0421894984fe2ebff2e8464dc662f4a414988fd94c9ae73ea8020"
         }
       ]
+    },
+    {
+      "id": "claim_32b912003ec94caf90231a5238fc8675",
+      "statement": "A separate AWS plan role and Octelium plan User/Policy are declared, but the current PR plan still uses write-capable identities until a reviewed operator apply and workflow/trust cutover.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:68f02f18dfac3b95afb25f20089de19c6bc1f2d4e2eac929100ad4b7cdb6bbe8"
+        },
+        {
+          "resource": "repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/plan.tf",
+          "version": "repo-file-v1:sha256:336d2484124649de0326eea11852668a63d080ba5c0faa396c0567bc7b6c0368"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:353fe358df299f04aef6ed546a7f65d30d87099d819333cf5610e9151a379305"
+        }
+      ]
+    },
+    {
+      "id": "claim_2560af3a86ee42e7990f7e76e73365e8",
+      "statement": "Traefik's private listener is reachable by in-cluster workloads because Flannel does not enforce its declared NetworkPolicy and the Tailscale proxy flow has no Istio source identity; an enforcing NRI dataplane and canary acceptance remain pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:a2e7b7fa8e1068fe4a6cafd829406b2d46dfa5352fbc153f22cbd5173c0b1e98"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
+        },
+        {
+          "resource": "repo://docs/image-egress-hardening.md",
+          "version": "repo-file-v1:sha256:9e195c40c93cdd3994ef74898eb6517c7116bc448298d8edab3d025b27a1f812"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:34:18.200Z"
   }
 }

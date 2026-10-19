@@ -26,12 +26,16 @@ sources:
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-5b27d2bccc9c055dcc37f46a
+    resource: repo://scripts/octelium-ci-credential.sh
 generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:34:18.200Z
 ---
 
 # CI/CD
@@ -60,6 +64,13 @@ Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
 environment protection rules; `homelab-production` has its branch policy and
 no required reviewer. The older October 6 reviewer snapshot is superseded.
 Re-read live settings before changing environment or branch protections.
+The desired GitHub IaC change requires `rstuhlmuller` review for `homelab-plan`,
+but the 2026-10-19 readback still found no live reviewer rule. The staged
+Octelium catalog adds plan User `homelab-ci-plan` with read and dry-run access;
+the current PR plan still shares the production-capable credential until the
+catalog, separate token, and workflow cutover are reviewed and applied.
+`scripts/octelium-ci-credential.sh` now rotates production by default; the
+[canonical runbook](../../docs/ci-cd.md) gives the explicit plan command.
 
 NOFX image builds, OpenClaw native configuration checks, and Image automation
 verification now run on matching `main` pushes or reviewed manual dispatches,

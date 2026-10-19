@@ -42,6 +42,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-0a6020a0918a65bec7f9d758
     resource: repo://docs/entra-terraform-provider.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
@@ -52,6 +54,8 @@ sources:
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-da1c62ec7717f978964e0a11
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
+  - id: openwiki-source-8852e7fd463f12bed3ef5da3
+    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/plan.tf
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -85,7 +89,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T05:20:35.611Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:20:35.611Z
+    at: 2026-10-19T05:52:13.497Z
 ---
 
 # Secrets And Identity
@@ -441,11 +445,12 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   the Octelium native Secret `entra-oidc-client-secret` and IdentityProvider
   `entra` by `scripts/octelium-entra-oidc.sh`. HUMAN user Entra identifiers are
   runtime mappings and must not be committed to the public repo.
-  GitHub Actions uses a separate Octelium workload credential for User
-  `homelab-ci`, Policy `homelab-ci-kubernetes-api-access`, and Service
-  `kubernetes-api-ci`. Store the credential only as GitHub environment
-  secret `OCTELIUM_CI_AUTH_TOKEN` for `homelab-plan` and
-  `homelab-production`. Only `homelab-plan` requires reviewer approval.
+  GitHub Actions currently uses Octelium workload User `homelab-ci`, Policy
+  `homelab-ci-kubernetes-api-access`, and Service `kubernetes-api-ci` for
+  both `homelab-plan` and `homelab-production` environment secrets named
+  `OCTELIUM_CI_AUTH_TOKEN`. Verify the live `homelab-plan` reviewer rules
+  before treating PR plan credentials as protected; the 2026-10-19 inspection
+  found no protection rule, and the separate GitHub IaC reconciliation is pending.
   The production environment
   permits only `main` and releases credentials without another approval;
   main-only diagnostics also use production. Approve a pull request plan only
@@ -517,6 +522,13 @@ homelab-octelium-public`. This retained tunnel supports legacy callers only
   this user's own key so a compromised key cannot copy its replacement. The
   pending administrator rollout remains tracked in
   [Continuous Improvement](../operations/continuous-improvement.md).
+- The dedicated `Github-TF-Plan` role and `homelab-ci-plan` Octelium User/Policy
+  are declared for a staged PR-plan credential split. The AWS role can read
+  homelab state, exact AzureAD SSO parameters, and required KMS material; state
+  can contain secrets. The Octelium policy denies non-dry-run writes and
+  Kubernetes subresources. These identities are not live until the reviewed
+  operator apply and credential publication complete. A follow-up PR must then
+  switch the plan workflow and remove `homelab-plan` from the apply role trust.
 - cert-manager DNS-01 uses the `cert-manager-cloudflare-api-token`
   ExternalSecret and target Secret `cloudflare-api-token`.
 - AFFiNE uses generated `/homelab/affine/postgres-password`,

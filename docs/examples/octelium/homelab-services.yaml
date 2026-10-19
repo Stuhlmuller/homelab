@@ -96,6 +96,46 @@ spec:
 ---
 kind: Policy
 metadata:
+  name: homelab-ci-kubernetes-api-plan-access
+spec:
+  rules:
+    - name: deny-non-dry-run-writes
+      effect: DENY
+      priority: -4
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-ci-plan"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci.default"
+            - match: ctx.request.kubernetes.verb in ["create", "update", "patch", "delete", "deletecollection"]
+            - match: '!has(ctx.request.kubernetes.http.queryParams.dryRun) || ctx.request.kubernetes.http.queryParams.dryRun != "All"'
+    - name: deny-subresources
+      effect: DENY
+      priority: -4
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-ci-plan"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci.default"
+            - match: ctx.request.kubernetes.subresource != ""
+    - name: read-or-dry-run
+      effect: ALLOW
+      condition:
+        all:
+          of:
+            - match: ctx.user.metadata.name == "homelab-ci-plan"
+            - match: ctx.user.spec.type == "WORKLOAD"
+            - match: ctx.session.status.type == "CLIENTLESS"
+            - match: ctx.service.metadata.name == "kubernetes-api-ci.default"
+            - match: ctx.service.spec.mode == "KUBERNETES"
+            - match: ctx.request.kubernetes.subresource == ""
+            - any:
+                of:
+                  - match: ctx.request.kubernetes.http.method in ["GET", "HEAD"] && ctx.request.kubernetes.verb in ["get", "list", "watch"]
+                  - match: ctx.request.kubernetes.verb in ["create", "update", "patch", "delete", "deletecollection"] && ctx.request.kubernetes.http.queryParams.dryRun == "All"
+---
+kind: Policy
+metadata:
   name: homelab-private-talos-access
 spec:
   rules:
@@ -167,6 +207,17 @@ spec:
 kind: User
 metadata:
   name: homelab-ci
+spec:
+  type: WORKLOAD
+  session:
+    clientlessDuration:
+      days: 30
+    accessTokenDuration:
+      days: 30
+---
+kind: User
+metadata:
+  name: homelab-ci-plan
 spec:
   type: WORKLOAD
   session:
@@ -470,6 +521,7 @@ spec:
   authorization:
     policies:
       - homelab-ci-kubernetes-api-access
+      - homelab-ci-kubernetes-api-plan-access
   config:
     upstream:
       url: https://10.1.0.199:6443
