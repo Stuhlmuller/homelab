@@ -104,10 +104,13 @@ kubectl -n automation describe pod <renovate-pod>
 kubectl -n automation describe job <renovate-job>
 ```
 
-For capacity, increase the request in `pvc.yaml` through a reviewed PR and
-Argo CD. `nfs-default` permits claim expansion; confirm the bound claim's
-reported capacity and the backing NFS share's free space before relying on the
-larger request. A larger claim does not repair a full NAS share.
+The `20Gi` request in `pvc.yaml` neither reserves NAS space nor caps this
+cache: `nfs-default` does not enforce per-claim size, and its provisioner
+cannot resize PVCs. If the backing share is full, suspend `cronjob.yaml`
+through a reviewed PR, restore share capacity through a declared path, and
+verify the next scheduled Job after resuming. If no declared NAS capacity path
+exists, add one before changing live state. Increasing the PVC request will
+not restore writes.
 
 Renovate 44.167.4 treats missing or malformed package entries as misses and
 skips malformed repository cache files; a later run can rebuild both from

@@ -33,7 +33,7 @@ spec:
           name: nfs-default
           provisionerName: k8s-sigs.io/qnap-nfs
           defaultClass: true
-          allowVolumeExpansion: true
+          allowVolumeExpansion: false
           reclaimPolicy: Retain
           archiveOnDelete: true
           accessModes: ReadWriteMany
