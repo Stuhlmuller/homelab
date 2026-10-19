@@ -15,6 +15,7 @@ python3 -I scripts/ci/openclaw-retirement-test.py
 python3 -I scripts/ci/openclaw-retirement-status-test.py
 python3 -I scripts/ci/openclaw-enterprise-operations-test.py
 python3 -I scripts/ci/openclaw-enterprise-foundation-test.py
+python3 -I scripts/ci/openclaw-enterprise-postgres-test.py
 python3 -I scripts/ci/openclaw-enterprise-chart-hooks-test.py
 python3 -I scripts/ci/openclaw-enterprise-lifecycle-test.py
 python3 -I scripts/ci/openclaw-enterprise-startup-test.py

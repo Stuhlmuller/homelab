@@ -429,7 +429,7 @@ oce_secret(namespace, key) := {
 }
 
 test_openclaw_enterprise_secret_names_are_exact_and_split_by_namespace if {
-	system := {"postgres-admin-password", "postgres-migrator-password", "postgres-app-password", "session-auth-secret", "gateway-api-key"}
+	system := {"postgres-admin-password", "postgres-migrator-password", "postgres-app-password", "postgres-backup-password", "session-auth-secret", "gateway-api-key"}
 	every suffix in system {
 		key := sprintf("/homelab/openclaw-enterprise/%s", [suffix])
 		violations := deny with input as oce_secret("openclaw-system", key)

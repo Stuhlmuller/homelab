@@ -1,0 +1,221 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: occ-postgres-hba
+  namespace: openclaw-system
+data:
+  pg_hba.conf: |
+    # The Unix socket exists only inside this single-container Pod.
+    local all all trust
+    hostnossl all all 0.0.0.0/0 reject
+    hostnossl all all ::/0 reject
+    hostssl all occ_admin 0.0.0.0/0 reject
+    hostssl all occ_admin ::/0 reject
+    hostssl openclaw_enterprise occ_migrator 10.244.0.0/16 scram-sha-256
+    hostssl openclaw_enterprise occ_app 10.244.0.0/16 scram-sha-256
+    hostssl openclaw_enterprise occ_backup 10.244.0.0/16 scram-sha-256
+    host all all 0.0.0.0/0 reject
+    host all all ::/0 reject
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: occ-postgres
+  namespace: openclaw-system
+spec:
+  clusterIP: 10.96.0.51
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+  selector:
+    app.kubernetes.io/name: occ-postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: occ-postgres
+  namespace: openclaw-system
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+    checkov.io/skip1: CKV_K8S_40=The official PostgreSQL image runs as non-root UID 999 to own its data directory.
+spec:
+  replicas: 1
+  serviceName: occ-postgres
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: occ-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: occ-postgres
+        app.kubernetes.io/part-of: openclaw-enterprise
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 120
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        runAsNonRoot: true
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: harbor.stinkyboi.com/mirror/docker.io/library/postgres:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+          imagePullPolicy: IfNotPresent
+          args:
+            - -c
+            - ssl=on
+            - -c
+            - ssl_min_protocol_version=TLSv1.3
+            - -c
+            - ssl_cert_file=/run/postgres-tls/tls.crt
+            - -c
+            - ssl_key_file=/run/postgres-tls/tls.key
+            - -c
+            - hba_file=/etc/occ-postgres/pg_hba.conf
+            - -c
+            - "password_encryption=scram-sha-256"
+            - -c
+            - max_connections=100
+            - -c
+            - shared_buffers=128MB
+          env:
+            - name: POSTGRES_DB
+              value: openclaw_enterprise
+            - name: POSTGRES_USER
+              value: occ_admin
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/occ-postgres-admin/password
+            - name: POSTGRES_INITDB_ARGS
+              value: --auth-local=trust --auth-host=scram-sha-256
+          ports:
+            - name: postgres
+              containerPort: 5432
+          # A projected cert-manager renewal does not reload PostgreSQL. Record
+          # the cert/key loaded at container start; probes restart on a change.
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -ec
+                  - |
+                    sha256sum /run/postgres-tls/tls.crt /run/postgres-tls/tls.key \
+                      > /tmp/occ-postgres-startup-tls.sha256
+          startupProbe:
+            exec:
+              command: [pg_isready, -h, /var/run/postgresql, -U, occ_admin, -d, openclaw_enterprise]
+            periodSeconds: 10
+            failureThreshold: 180
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  sha256sum -c /tmp/occ-postgres-startup-tls.sha256 >/dev/null 2>&1
+                  psql -X -h /var/run/postgresql -U occ_admin -d openclaw_enterprise -Atqc \
+                    "SELECT 1 FROM pg_database WHERE datname = current_database() AND shobj_description(oid, 'pg_database') = 'occ-bootstrap-v1'" \
+                    | grep -qx 1
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  sha256sum -c /tmp/occ-postgres-startup-tls.sha256 >/dev/null 2>&1
+                  exec psql -X -h /var/run/postgresql -U occ_admin -d openclaw_enterprise -Atqc 'SELECT 1'
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 512Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: occ-postgres
+              mountPath: /var/lib/postgresql
+            - name: socket
+              mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
+            - name: shm
+              mountPath: /dev/shm
+            - name: admin
+              mountPath: /run/secrets/occ-postgres-admin
+              readOnly: true
+            - name: migrator
+              mountPath: /run/secrets/occ-postgres-migrator
+              readOnly: true
+            - name: app
+              mountPath: /run/secrets/occ-postgres-app
+              readOnly: true
+            - name: backup
+              mountPath: /run/secrets/occ-postgres-backup
+              readOnly: true
+            - name: tls
+              mountPath: /run/postgres-tls
+              readOnly: true
+            - name: hba
+              mountPath: /etc/occ-postgres
+              readOnly: true
+            - name: bootstrap
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: socket
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+        - name: admin
+          secret:
+            secretName: occ-postgres-admin
+            defaultMode: 0440
+        - name: migrator
+          secret:
+            secretName: occ-postgres-migrator
+            defaultMode: 0440
+        - name: app
+          secret:
+            secretName: occ-postgres-app
+            defaultMode: 0440
+        - name: backup
+          secret:
+            secretName: occ-postgres-backup
+            defaultMode: 0440
+        - name: tls
+          secret:
+            secretName: occ-postgres-server-tls
+            defaultMode: 0440
+        - name: hba
+          configMap:
+            name: occ-postgres-hba
+        - name: bootstrap
+          configMap:
+            name: occ-postgres-bootstrap
+  volumeClaimTemplates:
+    - metadata:
+        name: occ-postgres
+        annotations:
+          argocd.argoproj.io/sync-options: Prune=false
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: openclaw-enterprise-postgres-local
+        resources:
+          requests:
+            storage: 10Gi

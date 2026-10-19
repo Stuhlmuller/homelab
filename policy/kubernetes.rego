@@ -385,7 +385,7 @@ external_secret_allowed_prefixes := {
 	"nofx": {"/homelab/nofx/"},
 	"octelium": {"/homelab/cordium/"},
 	"openclaw-agents": {"/homelab/openclaw-enterprise/model-api-key"},
-	"openclaw-system": {"/homelab/openclaw-enterprise/postgres-admin-password", "/homelab/openclaw-enterprise/postgres-migrator-password", "/homelab/openclaw-enterprise/postgres-app-password", "/homelab/openclaw-enterprise/session-auth-secret", "/homelab/openclaw-enterprise/gateway-api-key"},
+	"openclaw-system": {"/homelab/openclaw-enterprise/postgres-admin-password", "/homelab/openclaw-enterprise/postgres-migrator-password", "/homelab/openclaw-enterprise/postgres-app-password", "/homelab/openclaw-enterprise/postgres-backup-password", "/homelab/openclaw-enterprise/session-auth-secret", "/homelab/openclaw-enterprise/gateway-api-key"},
 	"cordium-runners": {"/homelab/cordium-runners/"},
 	"octelium-client": {"/homelab/octelium/"},
 	"octelium-public": {"/homelab/octelium/"},
