@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:71e6d8523bb7122e79fa30468abf4de4cef9db78d54971548319fd150449b70e",
+  "pageVersion": "sha256:dec72af26393297946a6792778b3063b8a20bc8cbbc99483f690834a729e60a3",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -292,7 +292,7 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application is staged in automation as a suspended hourly UTC CronJob in full dry-run mode, with a retained 20 Gi NFS cache and a protected App-key transfer prerequisite. Source registration does not establish live Job acceptance.",
+      "statement": "The Renovate Application is staged in automation as an hourly UTC CronJob suspended in full dry-run mode, with a retained 20 Gi NFS cache. The protected App-key transfer and temporary OIDC writer-grant retirement completed, while the legacy GitHub Action remains the writer pending dry-run parity and reviewed cutover; no live Renovate Job acceptance has occurred.",
       "evidence": [
         {
           "resource": "repo://IaC/renovate/stack.hcl",
@@ -303,18 +303,22 @@
           "version": "repo-file-v1:sha256:2f32499562ed091112c01222ed5327b721819cddfdf7dbed36e9f66ce8bce4ac"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:cbf5cfa9be4c498c594863ffc6f2669047037435a8e1f8aba0857841d6e961b9"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L1-L17",
+          "version": "repo-lines-v1:sha256:1f25b39c0b6742be29358e815101b5056c243e618411b78e15c2839696ba9627:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MWVhZmU1MjkzZDNkZjlhNzY1NDkzZjlhNWY5YWM1NDUxZWFiZmY5NzU3Y2RmNTZiMGJkNzg4NjZjN2Q2MzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkN2IxNWEwMzNmZDE5YzVjM2FiNzNlYTVhMDQ0MDA3YTM2NTUyYTNmOGY4MDllNmMxZTgxN2I1NzY1NzczMDYifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
           "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+        },
+        {
+          "resource": "repo://docs/operator-infrastructure.md#L339-L369",
+          "version": "repo-lines-v1:sha256:504abc8d5e74ffccee77f0ac7f3561473a70018d486ade05db1e6ae4f5268678:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5ZWQzYmNmYTc1YTc0YmQ3MTc3ZDMyMDFmYjRjNzA0NWFjMTJiMGMyNzNkYTcyYzFkOGYyZTEwNjMyYTI1NzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY3ZWFiMTdmMjlmNmM4NjhmMGE5ZWQ5MzFhOTcxZTAyYmNlMzQ4YzhiZTFiOGZkYjczOTRhZjgxYmU0ZjY4ZTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4MDJhZWI5NGNlODI0M2Q4NWQ5OTI1ZGY2MDJhYTVkMmE3ZDdhNDIwNDhmOGU3N2RhNzJlZGExYTdjNzU5OWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5YTI1YjJmNDI2OGFmMTNlZmQxZWE4MzE1MGJmYjBjNDhkMmUyZmViOTE0MTRlYWM4MzJlODZhNWM1YmY3ZTMifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:27:50.490Z"
   }
 }
