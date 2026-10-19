@@ -2,25 +2,26 @@
 
 ## Approved private name snapshot
 
-`scripts/config/tailscale-private-dns.json` contains 27 `hostnames`, including
-`stinkyboi.com`, and four separate `retired_hostnames`. It is the fixed
-migration snapshot. The live private approval source remains the reviewed
+`scripts/config/tailscale-private-dns.json` contains 29 `hostnames`: the fixed
+first 27 migration names, including `stinkyboi.com`, followed by two staged
+OpenClaw Enterprise names. Four `retired_hostnames` are separate. The live
+private approval source remains the reviewed
 `traefik-private` Service annotation paired with HTTPS routes. The resolver
-continues to answer all 27 approved names, including the apex.
+answers all 29 approved names, including the apex.
 
-Validation: names are unique, within the declared domain and existing fixed
-snapshot digest. The four legacy names never enter the approved set. Later
-private app additions use the route plus annotation contract, not an edit to
-this one-time retirement snapshot.
+Validation: names are unique, within the declared domain, and the first 27
+retain their fixed migration digest. The four legacy names never enter the
+approved set. Later private names require the route, annotation, and resolver
+inventory contract but do not enter this one-time public retirement set.
 
 ## Public retirement set
 
-The retirement set is `hostnames` minus the exact apex `stinkyboi.com`: 26
-names. It includes the literal wildcard owner
+The retirement set is the first 27 `hostnames` minus the exact apex
+`stinkyboi.com`: 26 names. It includes the literal wildcard owner
 `*.cordium.stinkyboi.com`; post-cutover checks also query a concrete child.
 Only exact Cloudflare A, AAAA, and CNAME records at those owner names may be
-deleted. The public apex, the four legacy names, Mastodon, unrelated names,
-and all other record types are outside the set.
+deleted. The public apex, two staged Enterprise names, four legacy names,
+Mastodon, unrelated names, and all other record types are outside the set.
 
 Validation: derive the set from the fixed snapshot on each run; require 26
 unique non-apex names. The shell helper, preflight, evidence, and tests must
@@ -50,7 +51,7 @@ existing fields, with `checked_names` and `baseline_records` narrowed to the
 | `reviewed_main_sha` | Exact merged `main` revision used for execution |
 | `resolver_ip` | Observed signed resolver tailnet IPv4 |
 | `owner_tailnet_dns_confirmed` | Owner's restricted DNS setting confirmed |
-| `normal_client_dns_confirmed` | Ordinary OS lookups for all 27 names confirmed |
+| `normal_client_dns_confirmed` | Ordinary OS lookups for all 29 current names confirmed |
 | `critical_paths_confirmed` | All existing Fleet, Harbor node pull, native API, Cordium reconnect, and public callback checks confirmed |
 | `off_tailnet` | Exactly the 26 retirement names, each with an explicit `migrated` or `accepted_loss` decision for callers bypassing ordinary tailnet DNS |
 | `previous_ttl_seconds` | Largest old authoritative TTL for the 26 target names |
@@ -69,8 +70,8 @@ cutover record, outside the deletion input.
 
 - **previewed**: complete live 26-name record baseline and old TTL captured;
   no mutation.
-- **accepted**: reviewed main SHA, owner setting, all 27 private answers,
-  HTTPS/access paths, and off-tailnet decisions recorded.
+- **accepted**: reviewed main SHA, owner setting, all 29 private answers,
+  original 27 migration HTTPS/access paths, and off-tailnet decisions recorded.
 - **executing**: re-read target records and private readiness; delete exact
   baseline IDs only. A partial failure returns to `accepted` after the live
   subset and preflight are rechecked.

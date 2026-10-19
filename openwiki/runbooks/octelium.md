@@ -20,10 +20,12 @@ sources:
     resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-e293d5daa2ad090397b8923e
     resource: repo://scripts/openclaw-enterprise-access.py
-generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:02:08.557Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Octelium
@@ -51,6 +53,8 @@ removed in phase 2a. Follow the
 [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md) for guarded
 tailnet resolver handoff, later public-record retirement, Mac migration,
 callback delivery, and later CI transport.
+The resolver approves 29 current names; the later public retirement selects
+only the 26 non-apex names from the fixed original migration set.
 Require canonical TLS, native gRPC/gRPC-Web, authenticated console access, and
 actual Cordium execution/reconnection before removing the old tunnel or catalog.
 The legacy `octelium-tunnel-check.py` is not a mesh acceptance gate.

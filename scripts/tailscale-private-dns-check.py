@@ -160,6 +160,15 @@ def affine_suspended():
     return deployment_suspended("affine", "affine")
 
 
+def openclaw_suspended():
+    source = json.loads(run("yq", "-o=json", ".", str(ROOT / "clusters/homelab/apps/openclaw/values.yaml")))
+    controllers = source.get("controllers") if isinstance(source, dict) else None
+    controller = controllers.get("openclaw") if isinstance(controllers, dict) else None
+    if not isinstance(controller, dict) or type(controller.get("replicas")) is not int or controller["replicas"] != 0:
+        return False
+    return deployment_suspended("ai", "openclaw")
+
+
 def routes(value, address=None):
     for hostname in value["hostnames"]:
         if hostname == "octelium-api.stinkyboi.com":
@@ -167,12 +176,15 @@ def routes(value, address=None):
                 probe(hostname, address, "/octelium.api.main.user.v1.MainService/GetStatus", protocol)
         else:
             wildcard = hostname.startswith("*.")
-            test_host = hostname.replace("*.", "dns-preflight.", 1) if wildcard else hostname
+            child = "agent-" + "0" * 32 if hostname == OCE_NAMES[1] else "dns-preflight"
+            test_host = hostname.replace("*.", child + ".", 1) if wildcard else hostname
             path = "/v2/" if hostname == "harbor.stinkyboi.com" else "/"
             status, headers = probe(test_host, address, path)
-            accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and status == 404)
+            accepted = 200 <= status < 400 or status in (401, 403) or (wildcard and hostname != OCE_NAMES[1] and status == 404)
             if hostname == "affine.stinkyboi.com" and status in (500, 502, 503):
                 accepted = affine_suspended()
+            elif hostname == "openclaw.stinkyboi.com" and status == 502:
+                accepted = openclaw_suspended()
             if not accepted:
                 raise RuntimeError(f"Traefik TLS/upstream readiness failed for {hostname}: HTTP {status}")
             if hostname == "harbor.stinkyboi.com" and (status != 401 or not any(
@@ -366,8 +378,8 @@ def verify_private_dns(value, addresses, resolver_ip):
         resolved = {item[4][0] for item in socket.getaddrinfo(test_host, 443, type=socket.SOCK_STREAM)}
         if resolved != expected:
             raise RuntimeError(f"Normal client DNS for {hostname} does not match the private Traefik Service")
-    routes(value)
-    print("Direct resolver, normal client DNS, and canonical HTTPS routes verified", file=sys.stderr)
+    routes({"hostnames": value["hostnames"][:27]})
+    print("Direct resolver, normal client DNS, and migration HTTPS routes verified", file=sys.stderr)
 
 
 def main():
@@ -410,15 +422,16 @@ def main():
             raise RuntimeError("Current public TTL exceeds the saved baseline; capture and review a new baseline")
     elif args.evidence or args.expected_sha:
         parser.error("--evidence and --expected-sha require --execute")
-    if args.retire_private and not args.execute:
+    if args.retire_private and not (args.execute or args.check):
         print(f"Fixed 26-name public retirement inventory verified; {len(value['hostnames'])} private names retained")
         return
     addresses = mesh_addresses()
     if args.execute or args.check:
         declared_routes()
     if args.execute or args.check:
+        route_value = {"hostnames": value["hostnames"][:27]} if args.retire_private else value
         for address in addresses["A"] + addresses["AAAA"]:
-            routes(value, address)
+            routes(route_value, address)
     if args.execute:
         verify_private_dns(value, addresses, resolver_ip)
     elif not args.check:

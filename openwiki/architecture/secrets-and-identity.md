@@ -102,10 +102,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T14:58:52.418Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Secrets And Identity
@@ -197,10 +197,11 @@ retaining Tunnel credentials, existing Octelium identities, and native carrier
 recovery. The separate tailnet resolver watches approved Kubernetes Services
 and needs no DNS write token. Only the later guarded retirement helper reads
 the existing scoped cert-manager Cloudflare token. Feature 005 limits its
-public A/AAAA/CNAME deletion to the 26 approved non-apex app subdomains after owner
-tailnet DNS handoff and client acceptance. The private resolver retains all 27
-approved names. Public apex, mail, DNS-01 validation, and unrelated public
-names stay in the zone; see the [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
+public A/AAAA/CNAME deletion to the 26 non-apex names from the fixed migration
+set after owner tailnet DNS handoff and client acceptance. The private resolver
+retains all 29 current approved names. Public apex, mail, DNS-01 validation,
+and unrelated public names stay in the zone; see the
+[cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
 The helper has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.

@@ -30,7 +30,7 @@
 ## Acceptance Criteria Quality
 
 - [x] CHK013 Can public absence be judged for every target record type, all 26 names, and a concrete wildcard child after the prior TTL? [Measurability, Spec §SC-001]
-- [x] CHK014 Can continued private service be judged against the 27-name approval set and representative HTTPS restrictions? [Measurability, Spec §SC-002]
+- [x] CHK014 Can continued private service be judged against the current 29-name approval set and original 27 migration HTTPS restrictions? [Measurability, Spec §SC-002]
 - [x] CHK015 Can preservation of apex and unrelated public records be compared against a pre-cutover baseline? [Measurability, Spec §SC-003]
 - [x] CHK016 Does the specification define an objective pass criterion for public certificate validation capability, separate from currently usable HTTPS certificates? [Measurability, Spec §FR-007, §SC-003]
 

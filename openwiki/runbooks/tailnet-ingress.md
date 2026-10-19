@@ -72,10 +72,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
+generated: { by: "codex", at: "2026-10-19T15:59:51.049Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:02:08.557Z
+    at: 2026-10-19T15:59:51.049Z
 ---
 
 # Tailnet And App Ingress
@@ -294,13 +294,16 @@ readiness before n8n restarts because it can register hooks during startup.
 Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
-The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 only
-when its reviewed declaration and live Deployment both specify zero replicas
-and no live replicas remain. OpenClaw no longer has a stopped-workload 502
-exception; its canonical route must pass normal readiness after Enterprise
-cutover. Deployed Traefik routes and TLS must match the reviewed checkout.
-Other application 5xx responses fail. The AFFiNE exception checks routing,
-not application runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
+legacy OpenClaw HTTP 502 only when each reviewed declaration and live
+Deployment specifies zero replicas and no live replicas remain. Other
+application 5xx responses fail. These exceptions check routing, not runtime
+health. Deployed Traefik routes and TLS must match the reviewed checkout.
+`--retire-private --check` probes the original 27 migration HTTPS routes;
+bare `--check` also probes both staged Enterprise routes. The Agent probe uses
+a concrete `agent-<32 hex>.agents.oce.stinkyboi.com` host matching Traefik's
+router and rejects edge 404. All 29 current names still require private DNS
+answers before retirement; staged Enterprise backend readiness is separate.
 
 For the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most
@@ -350,8 +353,7 @@ current guard rejected AFFiNE HTTP 500 and OpenClaw HTTP 502 while both apps
 were deliberately at zero replicas, Fleet setup timed out, the latest n8n
 delivery check returned 404, and Policy Bot preview was unavailable. No public
 app records were deleted. The current [readiness guard](../../scripts/tailscale-private-dns-check.py)
-allows that stopped-app response only for AFFiNE with reviewed and live zero
-replicas; OpenClaw 502 now fails.
+accepts those stopped-app responses only with reviewed and live zero replicas.
 Repeat the trusted CLI and normal-client checks, Fleet setup, n8n and Policy Bot
 callback checks, and every remaining [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md)
 gate from reviewed `main` before any public deletion. This dated observation is

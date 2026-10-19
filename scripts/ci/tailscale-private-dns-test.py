@@ -162,16 +162,93 @@ class Readiness(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, 'read failed'):
                         check.routes({'hostnames':['affine.stinkyboi.com']})
 
+    def test_openclaw_502_requires_explicit_source_and_live_suspension(self):
+        source = {'controllers':{'openclaw':{'replicas':0}}}
+        live = {'metadata':{'name':'openclaw','namespace':'ai'},'spec':{'replicas':0},
+                'status':{'replicas':0}}
+        with patch.object(check, 'run', side_effect=[json.dumps(source), json.dumps(live)]) as run, \
+                patch.object(check, 'probe', return_value=(502, [])), contextlib.redirect_stderr(io.StringIO()):
+            check.routes({'hostnames':['openclaw.stinkyboi.com']}, '100.100.100.1')
+        self.assertEqual(run.call_args_list[0].args,
+                         ('yq', '-o=json', '.', str(ROOT/'clusters/homelab/apps/openclaw/values.yaml')))
+        self.assertEqual(run.call_args_list[1].args,
+                         ('kubectl', '-n', 'ai', 'get', 'deployment', 'openclaw', '-o', 'json'))
+
+        invalid_sources = (None, {}, {'controllers':None}, {'controllers':{}},
+                           {'controllers':{'openclaw':None}},
+                           *({'controllers':{'openclaw':{'replicas':value}}}
+                             for value in (1, None, '0', False)))
+        for desired in invalid_sources:
+            with self.subTest(source=desired), patch.object(check, 'run', return_value=json.dumps(desired)) as run, \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+                run.assert_called_once()
+
+        invalid_live = (
+            {**live, 'metadata':{'name':'other','namespace':'ai'}},
+            {**live, 'metadata':{'name':'openclaw','namespace':'other'}},
+            *({**live, 'spec':{'replicas':value}} for value in (1, None, '0', False)),
+            *({**live, 'status':{'replicas':value}} for value in (1, '0')),
+        )
+        for actual in invalid_live:
+            with self.subTest(live=actual), patch.object(check, 'run',
+                    side_effect=[json.dumps(source), json.dumps(actual)]), \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+
+        for responses in ([RuntimeError('source read failed')], [json.dumps(source), RuntimeError('live read failed')]):
+            with self.subTest(failure=responses), patch.object(check, 'run', side_effect=responses), \
+                    patch.object(check, 'probe', return_value=(502, [])):
+                with self.assertRaisesRegex(RuntimeError, 'read failed'):
+                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
+
     def test_suspension_exception_does_not_allow_other_apps_or_other_5xx(self):
         for host in ('affine', 'openclaw', 'n8n', 'fleet', 'harbor'):
             for status in (500, 502, 503, 504):
-                if host == 'affine' and status in (500, 502, 503):
+                if (host == 'affine' and status in (500, 502, 503)) or (host == 'openclaw' and status == 502):
                     continue
                 with self.subTest(host=host, status=status), patch.object(check, 'probe', return_value=(status, [])), \
-                        patch.object(check, 'affine_suspended') as affine:
+                        patch.object(check, 'affine_suspended') as affine, \
+                        patch.object(check, 'openclaw_suspended') as openclaw:
                     with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
                         check.routes({'hostnames':[f'{host}.stinkyboi.com']})
                     affine.assert_not_called()
+                    openclaw.assert_not_called()
+
+    def test_oce_agent_probe_matches_route_and_rejects_edge_404(self):
+        name = '*.agents.oce.stinkyboi.com'
+        child = 'agent-' + '0' * 32 + '.agents.oce.stinkyboi.com'
+        for status in (200, 401, 403):
+            with self.subTest(status=status), patch.object(check, 'probe', return_value=(status, [])) as probe, \
+                    contextlib.redirect_stderr(io.StringIO()):
+                check.routes({'hostnames':[name]}, '100.100.100.1')
+                probe.assert_called_once_with(child, '100.100.100.1', '/')
+        for status in (404, 502):
+            with self.subTest(status=status), patch.object(check, 'probe', return_value=(status, [])) as probe:
+                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
+                    check.routes({'hostnames':[name]}, '100.100.100.1')
+                probe.assert_called_once_with(child, '100.100.100.1', '/')
+        with patch.object(check, 'probe', return_value=(404, [])) as probe, contextlib.redirect_stderr(io.StringIO()):
+            check.routes({'hostnames':['*.cordium.stinkyboi.com']}, '100.100.100.1')
+            probe.assert_called_once_with('dns-preflight.cordium.stinkyboi.com', '100.100.100.1', '/')
+
+    def test_retirement_route_check_excludes_staged_oce_backends(self):
+        value = check.inventory()
+        for args, expected in ((['--check'], 29), (['--retire-private', '--check'], 27)):
+            with self.subTest(args=args), patch.object(sys, 'argv', ['check', *args]), \
+                    patch.object(check, 'mesh_addresses', return_value={'A':['100.100.100.1'], 'AAAA':[]}), \
+                    patch.object(check, 'declared_routes'), patch.object(check, 'routes') as routes:
+                check.main()
+                self.assertEqual(len(routes.call_args.args[0]['hostnames']), expected)
+                self.assertEqual(routes.call_args.args[1], '100.100.100.1')
+        with patch.object(check, 'run'), patch.object(check.socket, 'getaddrinfo',
+                return_value=[(None,None,None,None,('100.100.100.1',443))]) as dns, \
+                patch.object(check, 'routes') as routes, contextlib.redirect_stderr(io.StringIO()):
+            check.verify_private_dns(value, {'A':['100.100.100.1'], 'AAAA':[]}, '100.100.100.2')
+            self.assertEqual(dns.call_count, 29)
+            self.assertEqual(routes.call_args.args[0]['hostnames'], value['hostnames'][:27])
 
     def test_private_preflight_requires_direct_and_normal_client_dns_without_connection_override(self):
         commands = []
