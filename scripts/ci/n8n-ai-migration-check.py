@@ -1,6 +1,7 @@
 """Exercise the deployed inline migration with synthetic workflow exports."""
 import copy
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -21,6 +22,10 @@ script = command.split('node - "$workflow_id" <<\'NODE\'\n', 1)[1].split("\nNODE
 assert 'if [ "$(cat /tmp/ai-workflow-active)" = true ]; then\n  n8n publish:workflow' in command
 assert 'n8n export:workflow --id="$workflow_id"' in command
 assert 'n8n import:workflow --input=/tmp/ai-workflow.json' in command
+assert 'workflow_ids="$(n8n list:workflow --onlyId)"' in command
+assert 'if ! printf' in command
+assert 'node - "$workflow_id" <<' in command
+assert 'if ! node - "$workflow_id"' not in command
 targets = [
     ("s1JVSbnvnmHMCbty", "5c52f616-3b9e-4483-89e3-effffc393750", True, "lmChatAwsBedrock", "anthropic.claude-3-sonnet-20240229-v1:0"),
     ("xaUDsbylSwaveMQ5", "d8f30a03-c3a1-4bdd-b733-8e33da04b004", False, "lmChatOpenAi", "gpt-5.5"),
@@ -30,15 +35,18 @@ with tempfile.TemporaryDirectory() as directory:
     root = Path(directory)
     source = script.replace("'/tmp/ai-", f"'{root}/ai-")
     path = root / "ai-workflow.json"
+    originals = {}
 
-    def run(workflow_id, data, success=True):
+    def run(workflow_id, data, success=True, skipped=False):
         path.write_text(json.dumps(data))
         before = path.read_bytes()
         result = subprocess.run(["node", "-", workflow_id], input=source,
                                 text=True, capture_output=True, timeout=10)
         assert (result.returncode == 0) == success, result.stderr
-        if not success:
+        if not success or skipped:
             assert path.read_bytes() == before
+        if skipped:
+            assert (root / "ai-workflow-changed").read_text() == "skip"
         return json.loads(path.read_text())
 
     for workflow_id, node_id, active, kind, model in targets:
@@ -52,6 +60,7 @@ with tempfile.TemporaryDirectory() as directory:
                           "credentials": {"legacy": {"id": "fixture-reference"}}},
                          {"id": "unrelated", "type": "n8n-nodes-base.noOp", "parameters": {}},
                      ]}]
+        originals[workflow_id] = original
         migrated = run(workflow_id, original)
         expected = copy.deepcopy(original)
         expected[0]["nodes"][0].update(
@@ -71,8 +80,115 @@ with tempfile.TemporaryDirectory() as directory:
                              ("builtInTools", {"webSearch": True})):
             changed = copy.deepcopy(original)
             changed[0]["nodes"][0]["parameters"][field] = value
-            run(workflow_id, changed, success=False)
+            run(workflow_id, changed, skipped=True)
         changed = copy.deepcopy(original)
         changed[0]["nodes"].append(copy.deepcopy(changed[0]["nodes"][0]))
         run(workflow_id, changed, success=False)
+        changed = copy.deepcopy(original)
+        changed[0]["nodes"] = [node for node in changed[0]["nodes"] if node["id"] != node_id]
+        run(workflow_id, changed, skipped=True)
+        changed[0]["nodes"].append(None)
+        run(workflow_id, changed, success=False)
+        changed = copy.deepcopy(original)
+        changed[0]["nodes"][0]["parameters"] = None
+        run(workflow_id, changed, success=False)
+
+    exports = root / "exports"
+    exports.mkdir()
+    calls = root / "calls"
+    password = root / "postgres-password"
+    password.write_text("fixture")
+    edited = copy.deepcopy(originals["xaUDsbylSwaveMQ5"])
+    edited[0]["nodes"][0]["parameters"]["model"]["value"] = "user-edited-model"
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    (exports / "xaUDsbylSwaveMQ5.json").write_text(json.dumps(edited))
+    fixture_command = command.replace("/home/node/.n8n/config", str(root / "config")) \
+        .replace("/tmp/ai-", str(root / "ai-")) \
+        .replace("/tmp/litellm-", str(root / "litellm-"))
+    n8n_stub = '''
+n8n() {
+  case "$1" in
+    import:credentials) echo credentials >> "$CALLS" ;;
+    list:workflow)
+      [ "$2" = --onlyId ] || return 99
+      [ "${LIST_FAIL:-}" != true ] || return 28
+      for export in "$EXPORT_DIR"/*.json; do
+        [ -f "$export" ] || continue
+        export="${export##*/}"
+        echo "${export%.json}"
+      done
+      ;;
+    export:workflow)
+      workflow_id="${2#--id=}"
+      [ "$workflow_id" != "${EXPORT_FAIL_ID:-}" ] || return 27
+      [ -f "$EXPORT_DIR/$workflow_id.json" ] || return 1
+      cp "$EXPORT_DIR/$workflow_id.json" "${3#--output=}"
+      ;;
+    import:workflow) echo import >> "$CALLS" ;;
+    publish:workflow) echo "publish:${2#--id=}" >> "$CALLS" ;;
+    *) return 99 ;;
+  esac
+}
+'''
+    environment = {**os.environ, "DB_POSTGRESDB_PASSWORD_FILE": str(password),
+                   "N8N_BOOTSTRAP_ENCRYPTION_KEY": "fixture", "EXPORT_DIR": str(exports),
+                   "CALLS": str(calls)}
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert calls.read_text().splitlines() == ["credentials", "import", "publish:s1JVSbnvnmHMCbty"]
+    assert "Skipping AI workflow migration for xaUDsbylSwaveMQ5" in result.stderr
+    assert "Skipping AI workflow migration for Wc0AMPBPqBegSey5" in result.stderr
+
+    for export in exports.iterdir():
+        export.unlink()
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env={**environment, "EXPORT_FAIL_ID": "s1JVSbnvnmHMCbty"},
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env={**environment, "LIST_FAIL": "true"},
+                            capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    (exports / "s1JVSbnvnmHMCbty.json").write_text("{invalid-json")
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(originals["s1JVSbnvnmHMCbty"]))
+    write_failure_command = fixture_command.replace(
+        "fs.writeFileSync(path, JSON.stringify(workflows));",
+        f"fs.writeFileSync({json.dumps(str(root / 'missing-parent' / 'workflow.json'))}, JSON.stringify(workflows));")
+    assert write_failure_command != fixture_command
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + write_failure_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode != 0
+    assert calls.read_text().splitlines() == ["credentials"]
+
+    removed = copy.deepcopy(originals["s1JVSbnvnmHMCbty"])
+    removed[0]["nodes"] = [node for node in removed[0]["nodes"]
+                           if node["id"] != "5c52f616-3b9e-4483-89e3-effffc393750"]
+    (exports / "s1JVSbnvnmHMCbty.json").write_text(json.dumps(removed))
+    calls.unlink()
+    result = subprocess.run(["/bin/sh", "-ec", n8n_stub + fixture_command],
+                            env=environment, capture_output=True, text=True, timeout=20)
+    assert result.returncode == 0, result.stderr
+    assert calls.read_text().splitlines() == ["credentials"]
+    assert "Skipping AI workflow migration for s1JVSbnvnmHMCbty" in result.stderr
 print("n8n AI migration: three targets, inactive preservation, arrays, idempotence and refusal guards passed")

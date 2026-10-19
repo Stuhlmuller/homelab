@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8b190dea4fd0ee5b7faea3f02bf2dec7c960a82f2a00a4a1b66e9e712eda1e96",
+  "pageVersion": "sha256:5260ef16cd2a99074cf6e93ee7c767cc18278a6d8ac6867648f585b0f70a24dc",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
       "statement": "Phase2a routes the canonical Octelium API and Harbor cluster DNS names to Traefik's private Service while preserving separate registry-only Talos node ingress and staged mesh/CI acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L95-L133",
-          "version": "repo-lines-v1:sha256:07a64f7d1281c30d4b21fa31a3320171072849dec752e466b32ad328d9b72d65:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
+          "resource": "repo://clusters/homelab/apps/traefik/CUTOVER.md#L99-L138",
+          "version": "repo-lines-v1:sha256:3a9176448d62224d1e829f77eeb7bb3573823e95502616bec9d839d787040964:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVmMmZhYWE5OTIxMDhhNDFmZGU3NzM2ZDk0NDM4YThjMjNhN2RiNGU2NjAyZmQyM2VkMjM2YTI4MzU3NDVjMTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYwMWE2YTliYWRhY2FjYjc1YzZiMzZkYjU0NGRlNGM5YTIzYzg4Zjc0MmEyOTM5YTcxYjMxOTE1OGE2NDg2MzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhN2Y2ZjljOGFhZWU4ZDE0MDRhNDM0ZDY3ZDc4MDlhYTQ5NmVkZmRlNTAyY2JlZDI2ZTYwNjliYmViNWM2ZGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNlNGI2ZWE5YjViMDRjMmNjNTE0ODcxMjZlZTZlYTQwMTRhNTJhMmMwODQwNGIzZWI5MTYzY2NkYTI2YmRiOTUifQ"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
@@ -25,7 +25,7 @@
           "version": "repo-lines-v1:sha256:52bace20ae4062be2619cd7d635e092aa90dfe8f2e260565d06bf29af5a0ff98:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5MTNjYzVmNTBjNDljYWVkMWYwNzM2YmFkOGEwMWJjZjcxMDE1NzllNGU2NzBjOTI2ZTQwMjkyNmZmODg1ZWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NzdjOTlmZmExZTk5ZGI3NjE2NDc0NDEzNmZjOThiNjMxMjAzZjRhMjhiZWU5MTYwMDZjMGQ2YjAyOWQ2NzkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjUwZjI4YzVmNTE3Nzk2ZDhiNTNkMjJlOGU5NjFkNGVmYmFjMTYzNWVhNGE4NmQxY2YxNDk5MTRkZTI5NzAyZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhlYzQxNmUxMDI5NDNkZGQ0M2IzMjA1MTlmYTFhMDUzZGJmZWVhNGFmZTZiYTRlODhkZTc1MGI1NGQyNjg0MmEifQ"
         },
         {
-          "resource": "repo://docs/talos-control-plane-maintenance.md#L902-L913",
+          "resource": "repo://docs/talos-control-plane-maintenance.md#L1013-L1024",
           "version": "repo-lines-v1:sha256:9e729255c797cca582a8be66d5c4b722eb9feda3d60be5501d17810f4d5beb38:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM5M2MwMTNiYTYyNDM2ODkwZjVmNmRiZTY4ODM2NDQ5OTBmYWRjMjg4MDI1NjhiNGEwZTg5MTY1Y2E4YzE3ODQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmZDk4MGNhMTgxN2IwNDRkODEzNjQ3YWQwZGYyOGY0ZDA3M2YxYWY1OTM1NTk0YzAzZmJiNjNhNTU3NWYxODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiNTU3ZjA2N2M4ZDVmOWNmNTIxMTViYjIyODhhNjU2OTAwNGIwN2U3OGE4ODFhZTc3MmJmNTM0ZGNiYzZiZjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkwOTYzYTQ5MWRjZjQ2OWUzMGVkNjM3ZmZmYjVkNTAwMGZjNWNjOTZjYTQ0ZjdlMmVlMTk1YTEzYjUzMmI4MzkifQ"
         }
       ]
@@ -125,6 +125,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T16:49:06.466Z"
   }
 }
