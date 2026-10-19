@@ -11,8 +11,9 @@ The global policy preserves the existing best-practices, replacements,
 OpenSSF, lockfile, vulnerability alert, label, platform-commit, and auto-merge
 settings. Repository files still override eligible settings. Autodiscovery
 filters to `Stuhlmuller/*`, includes owned forks, skips archived repositories,
-and processes repositories without a config file. In the 2026-10-18 baseline,
-the owner had eight non-archived repositories, and the existing
+and processes repositories without a config file. The 2026-10-19 owner API
+inventory had 18 repositories: 10 archived and eight eligible non-archived,
+including four private repositories and no forks. The active
 `rstuhlmuller-renovate` App installation selected all repositories. The last
 observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
 Its workflow/config commits were `3f5f078000173af86205f04df1559132d3e290f8`
@@ -20,11 +21,16 @@ and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
 dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
 bot username and Git author so startup needs no account lookup. The legacy
 workflow and global config reference no separate private-registry credential
-input; the workflow uses only the existing App secrets. The operator credential
-could not enumerate the App's accessible repositories;
-compare that inventory, App grants, and existing PR author with the first
-cluster dry run before cutover. Keep private repository names out of public
-reports.
+input; the workflow uses only the existing App secrets. The App currently has
+repository Checks, Contents, Issues, Pull requests, Commit statuses, and
+Workflows write; Metadata and Dependabot alerts read; and organization Members
+and Administration read. It lacks repository Administration read from
+Renovate's recommended grants. This does not block discovery, but a repository
+override using automatic rebasing may lose branch-protection awareness. The
+operator credential cannot enumerate the installation-token repository list;
+compare its eligible count of eight, effective repository overrides, and the
+existing PR author with the first cluster dry run before cutover. Keep private
+repository names out of public reports.
 
 ## Credentials and storage
 
@@ -139,9 +145,17 @@ aggregate results, then erase the ledger and retire its Job and claim through
 reviewed GitOps. Report a controlled canary separately from natural releases.
 
 Cutover is a two-repository sequence: after dry-run parity and the last old
-run, delete the complete legacy workflow including manual dispatch, verify no
-nonterminal old run remains, then enable cluster writes through a reviewed
-homelab change. For rollback, first suspend or restore full dry-run mode in
-homelab GitOps, verify no pending or active write-enabled Job, then restore
-the legacy workflow through a reviewed companion PR. The interval between
-legacy deletion and first cluster write is a planned no-writer gap.
+run, delete the complete legacy workflow including manual dispatch and verify
+no nonterminal old run remains. From exact reviewed companion `main`, run its
+guarded `scripts/retire-renovate-actions-key.py` and require a current receipt
+that the SSM values and later ExternalSecret projection are ready, no same-name
+organization or environment secret exists, the repository Actions private key
+is absent, and old runs are drained. Then enable cluster writes through a
+reviewed homelab change. Historical workflow revisions can be rerun while the
+old key exists. For rollback, first suspend the cluster CronJob through
+reviewed GitOps, verify Argo CD synced and no pending or active Renovate Job or
+Pod remains, then use the guarded companion
+`scripts/restore-renovate-actions-key.py` from exact reviewed companion `main`
+to restore the repository key from SSM. Verify its receipt before restoring the
+legacy workflow through a reviewed PR. The interval between legacy deletion
+and first cluster write is a planned no-writer gap.
