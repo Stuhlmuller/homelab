@@ -2,21 +2,28 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
+const os = require('node:os');
+const path = require('node:path');
 const observer = require('../../clusters/homelab/apps/renovate/acceptance-observer.js');
 
+const proof = (name) => ({ source: `evidence/${name}.json`, sha256: 'a'.repeat(64) });
 const dependency = (datasource, sourceVisibility, packageName) => ({
   repository: 'Stuhlmuller/example',
   datasource,
   sourceVisibility,
   packageName,
+  registryUrl: datasource === 'npm' ? 'https://registry.example.com' : 'https://api.github.com',
 });
 
 function inventory() {
+  const repositories = [{ repository: 'Stuhlmuller/example', baseBranch: 'main',
+    headSha: 'a'.repeat(40), cacheSha512: 'b'.repeat(128), configHash: 'c'.repeat(128) }];
   return {
     schema: 1,
     owner: 'Stuhlmuller',
     seed: 'natural-2026-10-18',
-    provenance: { method: 'renovate-extract', headSha: 'a'.repeat(40) },
+    provenance: { method: 'renovate-extract', repositories,
+      sha256: crypto.createHash('sha256').update(JSON.stringify(repositories)).digest('hex') },
     activeDatasources: ['npm', 'github-releases'],
     dependencies: [
       dependency('npm', 'public', 'lodash'),
@@ -26,6 +33,19 @@ function inventory() {
         packageFile: 'scripts/fixtures/renovate-cache-canary.txt' },
     ],
   };
+}
+
+function fixtureReport(ledger, receipts) {
+  // Unit fixtures mark source references present; the file-verification test covers real proof checks.
+  const evidence = new Set();
+  for (const receipt of receipts.receipts) {
+    for (const kind of ['eligibility', 'outcome', 'exclusion']) {
+      const field = receipt[kind];
+      if (field) evidence.add(JSON.stringify([
+        receipt.key, receipt.version, kind, field.source, field.sha256]));
+    }
+  }
+  return observer.aggregateReport(ledger, receipts, evidence);
 }
 
 function observedReleases() {
@@ -41,10 +61,10 @@ function observedReleases() {
     receipts.receipts.push({
       key: item.key,
       version,
-      eligibility: { status: 'eligible', source: 'private://policy-proof',
+      eligibility: { status: 'eligible', ...proof(`policy-${index}`),
         verifiedAt: new Date(absent + 6 * 3600_000).toISOString() },
       outcome: { kind: 'proposal', at: new Date(absent + 3 * 3600_000).toISOString(),
-        source: 'private://github-pr-proof', verifiedAt: new Date(absent + 6 * 3600_000).toISOString() },
+        ...proof(`proposal-${index}`), verifiedAt: new Date(absent + 6 * 3600_000).toISOString() },
     });
   }
   return { ledger, receipts };
@@ -69,13 +89,23 @@ test('sample freezes every class and source visibility, excluding the controlled
 test('seed deduplicates one upstream source across repositories before freezing', () => {
   const source = inventory();
   source.activeDatasources = ['npm'];
+  source.provenance.repositories = [
+    { repository: 'Stuhlmuller/one', baseBranch: 'main', headSha: '1'.repeat(40),
+      cacheSha512: 'a'.repeat(128), configHash: 'b'.repeat(128) },
+    { repository: 'Stuhlmuller/three', baseBranch: 'main', headSha: '3'.repeat(40),
+      cacheSha512: 'c'.repeat(128), configHash: 'd'.repeat(128) },
+    { repository: 'Stuhlmuller/two', baseBranch: 'main', headSha: '2'.repeat(40),
+      cacheSha512: 'e'.repeat(128), configHash: 'f'.repeat(128) },
+  ];
+  source.provenance.sha256 = crypto.createHash('sha256').update(
+    JSON.stringify(source.provenance.repositories)).digest('hex');
   source.dependencies = [
     { ...dependency('npm', 'public', 'shared-package'), repository: 'Stuhlmuller/one',
       registryUrl: 'https://REGISTRY.example.com/packages/' },
     { ...dependency('npm', 'public', 'shared-package'), repository: 'Stuhlmuller/two',
       registryUrl: 'https://registry.example.com/packages' },
     { ...dependency('npm', 'private', 'shared-package'), repository: 'Stuhlmuller/three',
-      registryUrl: 'https://registry.example.com/packages' },
+      registryUrl: 'https://private-registry.example.com/packages' },
   ];
   const first = observer.selectSample(source).sample;
   const reverse = observer.selectSample({ ...source, dependencies: [...source.dependencies].reverse() }).sample;
@@ -83,17 +113,58 @@ test('seed deduplicates one upstream source across repositories before freezing'
   assert.deepEqual(first, reverse);
   assert.deepEqual(observer.aggregate({ sample: first, polls: [] }).strata,
     { public: 1, private: 1 });
+  source.dependencies[2].registryUrl = 'https://registry.example.com/packages';
+  assert.throws(() => observer.selectSample(source), /ambiguous-source-visibility/);
+  delete source.dependencies[2].registryUrl;
+  assert.throws(() => observer.selectSample(source), /invalid-registry/);
+});
+
+test('report counts one independent release and requires every sampled consumer outcome', () => {
+  const { ledger, receipts } = observedReleases();
+  const first = ledger.sample[0];
+  const duplicate = { ...first, repository: 'Stuhlmuller/second', key: 'second-consumer',
+    events: first.events.map((event) => ({ ...event })) };
+  ledger.sample.push(duplicate);
+  for (const receipt of receipts.receipts.filter((entry) => entry.key === first.key)) {
+    receipts.receipts.push({ ...receipt, key: duplicate.key });
+  }
+  const complete = fixtureReport(ledger, receipts);
+  assert.equal(complete.bracketedEvents, 10 + first.events.length);
+  assert.equal(complete.naturalEvents, 10);
+  assert.equal(complete.eligibleEvents, 10);
+  assert.equal(complete.onTime, 10);
+  const duplicated = receipts.receipts.find((receipt) => receipt.key === duplicate.key);
+  delete duplicated.outcome;
+  const missing = fixtureReport(ledger, receipts);
+  assert.equal(missing.naturalEvents, 10);
+  assert.equal(missing.missingOutcomes, 1);
+  assert.equal(missing.onTime, 9);
+  assert.equal(missing.status, 'criteria-not-met');
+  duplicated.outcome = receipts.receipts.find((receipt) => receipt.key === first.key &&
+    receipt.version === duplicated.version).outcome;
+  duplicated.outcome = { ...duplicated.outcome, at: new Date(
+    Date.parse(first.events[0].lastAbsent) + 5 * 3600_000).toISOString() };
+  const slowest = fixtureReport(ledger, receipts);
+  assert.equal(slowest.late, 1);
+  assert.equal(slowest.onTime, 9);
+  duplicated.outcome = receipts.receipts.find((receipt) => receipt.key === first.key &&
+    receipt.version === duplicated.version).outcome;
+  duplicate.events[0].lastAbsent = new Date(
+    Date.parse(first.events[0].firstPresent) + 60_000).toISOString();
+  duplicate.events[0].firstPresent = new Date(
+    Date.parse(first.events[0].firstPresent) + 120_000).toISOString();
+  assert.equal(fixtureReport(ledger, receipts).status, 'inconclusive');
 });
 
 test('offline report joins exact private receipts and counts missing outcomes in the denominator', () => {
   const { ledger, receipts } = observedReleases();
-  const complete = observer.aggregateReport(ledger, receipts);
+  const complete = fixtureReport(ledger, receipts);
   assert.equal(complete.status, 'review-required');
   assert.equal(complete.naturalEvents, 10);
   assert.equal(complete.eligibleEvents, 10);
   assert.equal(complete.onTime, 10);
   assert.equal(complete.onTimePercent, 100);
-  for (const privateValue of ['private-version-0', 'private://github-pr-proof',
+  for (const privateValue of ['private-version-0', 'evidence/proposal-0.json',
     'Stuhlmuller/example', '@example/private']) {
     assert.equal(JSON.stringify(complete).includes(privateValue), false);
   }
@@ -101,7 +172,7 @@ test('offline report joins exact private receipts and counts missing outcomes in
   receipts.receipts[1].outcome.at = new Date(
     Date.parse(ledger.sample[1].events.find((event) => event.version === 'private-version-1').lastAbsent) +
     5 * 3600_000).toISOString();
-  const incomplete = observer.aggregateReport(ledger, receipts);
+  const incomplete = fixtureReport(ledger, receipts);
   assert.equal(incomplete.eligibleEvents, 10);
   assert.equal(incomplete.missingOutcomes, 1);
   assert.equal(incomplete.late, 1);
@@ -113,20 +184,20 @@ test('offline report joins exact private receipts and counts missing outcomes in
 test('report stays inconclusive for low sample, ambiguity, unknown, or incomplete evidence', () => {
   const { ledger, receipts } = observedReleases();
   ledger.sample[0].events[0].ambiguous = true;
-  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  assert.equal(fixtureReport(ledger, receipts).status, 'inconclusive');
   ledger.sample[0].events[0].ambiguous = false;
   receipts.receipts[0].eligibility.status = 'unknown';
-  assert.equal(observer.aggregateReport(ledger, receipts).unknownEvents, 1);
-  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  assert.equal(fixtureReport(ledger, receipts).unknownEvents, 1);
+  assert.equal(fixtureReport(ledger, receipts).status, 'inconclusive');
   receipts.receipts[0].eligibility.status = 'eligible';
   delete receipts.receipts[0].outcome.source;
-  assert.equal(observer.aggregateReport(ledger, receipts).incompleteEvidence, 1);
-  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
-  receipts.receipts[0].outcome.source = 'private://github-pr-proof';
+  assert.equal(fixtureReport(ledger, receipts).incompleteEvidence, 1);
+  assert.equal(fixtureReport(ledger, receipts).status, 'inconclusive');
+  receipts.receipts[0].outcome.source = 'evidence/proposal-0.json';
   const removed = ledger.sample[0].events.shift();
   receipts.receipts = receipts.receipts.filter((receipt) => receipt.version !== removed.version);
-  assert.equal(observer.aggregateReport(ledger, receipts).eligibleEvents, 9);
-  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  assert.equal(fixtureReport(ledger, receipts).eligibleEvents, 9);
+  assert.equal(fixtureReport(ledger, receipts).status, 'inconclusive');
 });
 
 test('integer threshold and floored display stay below 95 percent when unmet', () => {
@@ -134,10 +205,10 @@ test('integer threshold and floored display stay below 95 percent when unmet', (
   const item = ledger.sample[0];
   const lastAbsent = '2026-10-18T00:00:00.000Z';
   const firstPresent = '2026-10-18T00:15:00.000Z';
-  const eligibility = { status: 'eligible', source: 'private://policy-proof',
+  const eligibility = { status: 'eligible', ...proof('policy-bulk'),
     verifiedAt: '2026-10-18T06:00:00.000Z' };
   const onTime = { kind: 'proposal', at: '2026-10-18T03:00:00.000Z',
-    source: 'private://github-pr-proof', verifiedAt: '2026-10-18T06:00:00.000Z' };
+    ...proof('proposal-bulk'), verifiedAt: '2026-10-18T06:00:00.000Z' };
   const late = { ...onTime, at: '2026-10-18T05:00:00.000Z' };
   const receipts = { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
   for (let index = 0; index < 20000; index++) {
@@ -146,49 +217,49 @@ test('integer threshold and floored display stay below 95 percent when unmet', (
     receipts.receipts.push({ key: item.key, version, eligibility,
       outcome: index < 18999 ? onTime : late });
   }
-  const below = observer.aggregateReport(ledger, receipts);
+  const below = fixtureReport(ledger, receipts);
   assert.equal(below.onTime, 18999);
   assert.equal(below.onTimePercent, 94.99);
   assert.equal(below.status, 'criteria-not-met');
   receipts.receipts[18999].outcome = onTime;
-  assert.equal(observer.aggregateReport(ledger, receipts).status, 'review-required');
+  assert.equal(fixtureReport(ledger, receipts).status, 'review-required');
 });
 
 test('report separates policy exclusion from reviewed outage interval and rejects unmatched receipts', () => {
   const { ledger, receipts } = observedReleases();
   const first = receipts.receipts[0];
   first.eligibility = { status: 'policy-ineligible', reason: 'private policy receipt',
-    source: 'private://policy-proof', verifiedAt: first.outcome.verifiedAt };
+    ...proof('policy-ineligible'), verifiedAt: first.outcome.verifiedAt };
   delete first.outcome;
   const second = receipts.receipts[1];
   const absent = ledger.sample[1].events.find((event) => event.version === second.version).lastAbsent;
   second.eligibility.status = 'excluded-outage';
   second.exclusion = { reason: 'source-outage', startAt: absent,
     endAt: new Date(Date.parse(absent) + 3600_000).toISOString(),
-    source: 'private://outage-proof',
+    ...proof('outage'),
     verifiedAt: new Date(Date.parse(absent) + 2 * 3600_000).toISOString() };
   delete second.outcome;
-  const unrelated = observer.aggregateReport(ledger, receipts);
+  const unrelated = fixtureReport(ledger, receipts);
   assert.equal(unrelated.excludedIntervals, 0);
   assert.equal(unrelated.incompleteEvidence, 1);
   second.exclusion.affectedAt = new Date(Date.parse(absent) + 30 * 60_000).toISOString();
   second.exclusion.impact = 'scheduled source lookup failed';
-  const report = observer.aggregateReport(ledger, receipts);
+  const report = fixtureReport(ledger, receipts);
   assert.equal(report.policyIneligible, 1);
   assert.equal(report.excludedIntervals, 1);
   assert.equal(report.eligibleEvents, 8);
   assert.equal(report.status, 'inconclusive');
   second.exclusion.affectedAt = new Date(Date.parse(absent) + 2 * 3600_000).toISOString();
-  assert.equal(observer.aggregateReport(ledger, receipts).excludedIntervals, 0);
+  assert.equal(fixtureReport(ledger, receipts).excludedIntervals, 0);
   second.exclusion.affectedAt = new Date(Date.parse(absent) + 30 * 60_000).toISOString();
   second.exclusion.impact = '';
-  assert.equal(observer.aggregateReport(ledger, receipts).excludedIntervals, 0);
+  assert.equal(fixtureReport(ledger, receipts).excludedIntervals, 0);
   second.exclusion.impact = 'scheduled source lookup failed';
   receipts.receipts.push({ ...receipts.receipts[2], key: 'unknown-private-key' });
-  assert.throws(() => observer.aggregateReport(ledger, receipts), /invalid-outcomes/);
+  assert.throws(() => fixtureReport(ledger, receipts), /invalid-outcomes/);
   receipts.receipts.pop();
   receipts.receipts[2].version = 'unknown-private-version';
-  assert.throws(() => observer.aggregateReport(ledger, receipts), /invalid-outcomes/);
+  assert.throws(() => fixtureReport(ledger, receipts), /invalid-outcomes/);
 });
 
 test('report refuses a readable-by-others private outcomes file', () => {
@@ -201,6 +272,39 @@ test('report refuses a readable-by-others private outcomes file', () => {
   } finally {
     fs.lstatSync = originalLstat;
     fs.readFileSync = originalRead;
+  }
+});
+
+test('private evidence must be exact, private, and bound to the receipt claim', () => {
+  const { ledger, receipts } = observedReleases();
+  assert.equal(observer.aggregateReport(ledger, receipts).status, 'inconclusive');
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'renovate-evidence-'));
+  const directory = path.join(temporary, 'evidence');
+  fs.mkdirSync(directory, { mode: 0o700 });
+  try {
+    const receipt = receipts.receipts[0];
+    for (const kind of ['eligibility', 'outcome']) {
+      const field = receipt[kind];
+      const { source, sha256, ...claim } = field;
+      const bytes = Buffer.from(JSON.stringify({ schema: 1, key: receipt.key,
+        version: receipt.version, kind, claim, material: { reviewedSource: 'private source' } }));
+      field.sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+      fs.writeFileSync(path.join(temporary, source), bytes, { mode: 0o600 });
+    }
+    const evidence = observer.verifyPrivateEvidence(receipts, temporary);
+    assert.equal(evidence.size, 2);
+    const report = observer.aggregateReport(ledger, receipts, evidence);
+    assert.equal(report.incompleteEvidence, 9);
+    assert.equal(report.status, 'inconclusive');
+    fs.appendFileSync(path.join(temporary, receipt.outcome.source), '\n');
+    const changed = observer.aggregateReport(ledger, receipts,
+      observer.verifyPrivateEvidence(receipts, temporary));
+    assert.equal(changed.incompleteEvidence, 10);
+    fs.chmodSync(path.join(temporary, receipt.eligibility.source), 0o644);
+    assert.throws(() => observer.verifyPrivateEvidence(receipts, temporary),
+      /invalid-evidence-permissions/);
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true });
   }
 });
 

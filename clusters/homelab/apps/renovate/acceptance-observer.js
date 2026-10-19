@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { pathToFileURL } = require('node:url');
+const { isDeepStrictEqual } = require('node:util');
 
 const owner = 'Stuhlmuller';
 const ledgerDir = '/ledger/private';
@@ -20,15 +21,14 @@ function sampleKey(item) {
 }
 
 function sourceKey(item) {
-  let registry = '';
-  if (item.registryUrl) {
-    const url = new URL(item.registryUrl);
-    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
-      throw new Error('invalid-registry');
-    }
-    registry = `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
+  if (typeof item.registryUrl !== 'string' || !item.registryUrl) throw new Error('invalid-registry');
+  let url;
+  try { url = new URL(item.registryUrl); } catch { throw new Error('invalid-registry'); }
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+    throw new Error('invalid-registry');
   }
-  return [item.datasource, item.packageName, registry, item.sourceVisibility].join('\0');
+  const registry = `${url.origin}${url.pathname.replace(/\/+$/, '')}`;
+  return [item.datasource, item.packageName, registry].join('\0');
 }
 
 function selectSample(inventory) {
@@ -37,8 +37,18 @@ function selectSample(inventory) {
       !Array.isArray(inventory.activeDatasources) || !inventory.activeDatasources.length ||
       !Array.isArray(inventory.dependencies) || !inventory.dependencies.length ||
       inventory.provenance?.method !== 'renovate-extract' ||
-      !/^[a-f0-9]{40}$/.test(inventory.provenance.headSha)) {
+      !Array.isArray(inventory.provenance.repositories) || !inventory.provenance.repositories.length ||
+      inventory.provenance.sha256 !== digest(JSON.stringify(inventory.provenance.repositories))) {
     throw new Error('invalid-inventory');
+  }
+  const heads = new Set();
+  for (const entry of inventory.provenance.repositories) {
+    if (typeof entry.repository !== 'string' || !entry.repository.startsWith(`${owner}/`) ||
+        heads.has(entry.repository) || typeof entry.baseBranch !== 'string' || !entry.baseBranch ||
+        !/^[a-f0-9]{40}$/.test(entry.headSha) ||
+        !/^[a-f0-9]{128}$/.test(entry.cacheSha512) ||
+        !/^[a-f0-9]{128}$/.test(entry.configHash)) throw new Error('invalid-inventory-head');
+    heads.add(entry.repository);
   }
   const classes = new Set(inventory.activeDatasources);
   if (classes.size !== inventory.activeDatasources.length ||
@@ -52,6 +62,7 @@ function selectSample(inventory) {
         item.packageFile === 'scripts/fixtures/renovate-cache-canary.txt' ||
         (item.datasource === 'github-releases' && item.packageName?.toLowerCase() === 'stuhlmuller/renovate')) continue;
     if (typeof item.repository !== 'string' || !item.repository.startsWith(`${owner}/`) ||
+        !heads.has(item.repository) ||
         !classes.has(item.datasource) || typeof item.packageName !== 'string' || !item.packageName ||
         !['public', 'private'].includes(item.sourceVisibility) ||
         (item.currentValue && typeof item.currentValue !== 'string')) {
@@ -60,7 +71,11 @@ function selectSample(inventory) {
     const key = sampleKey(item);
     const source = sourceKey(item);
     const rank = digest(`${inventory.seed}\0${key}`);
-    if (!sources.has(source) || rank < sources.get(source).rank) sources.set(source, { item, key, rank });
+    const prior = sources.get(source);
+    if (prior && prior.item.sourceVisibility !== item.sourceVisibility) {
+      throw new Error('ambiguous-source-visibility');
+    }
+    if (!prior || rank < prior.rank) sources.set(source, { item, key, rank });
   }
   for (const { item, key } of sources.values()) {
     const stratum = `${item.datasource}:${item.sourceVisibility}`;
@@ -173,15 +188,101 @@ function validTime(value) {
   return typeof value === 'string' && Number.isFinite(Date.parse(value));
 }
 
-function hasEvidenceFields(value) {
-  return typeof value?.source === 'string' && !!value.source.trim() && validTime(value.verifiedAt);
+function evidenceId(receipt, kind, value) {
+  return JSON.stringify([receipt.key, receipt.version, kind, value.source, value.sha256]);
 }
 
-function aggregateReport(ledger, outcomes) {
+function evidenceShape(value) {
+  return typeof value?.source === 'string' &&
+    /^evidence\/[A-Za-z0-9][A-Za-z0-9_-]{0,100}\.json$/.test(value.source) &&
+    /^[a-f0-9]{64}$/.test(value.sha256) && validTime(value.verifiedAt);
+}
+
+function hasEvidenceFields(value, evidence, receipt, kind) {
+  return evidenceShape(value) && evidence.has(evidenceId(receipt, kind, value));
+}
+
+function verifyPrivateEvidence(outcomes, directory = ledgerDir) {
+  const verified = new Set();
+  if (!outcomes) return verified;
+  const evidenceDirectory = path.join(directory, 'evidence');
+  let metadata;
+  try {
+    metadata = fs.lstatSync(evidenceDirectory);
+  } catch (error) {
+    if (error.code === 'ENOENT') return verified;
+    throw error;
+  }
+  if (!metadata.isDirectory() || (metadata.mode & 0o077)) throw new Error('invalid-evidence-permissions');
+  for (const receipt of outcomes.receipts || []) {
+    for (const kind of ['eligibility', 'outcome', 'exclusion']) {
+      const value = receipt?.[kind];
+      if (!evidenceShape(value)) continue;
+      const file = path.join(directory, value.source);
+      try {
+        metadata = fs.lstatSync(file);
+      } catch (error) {
+        if (error.code === 'ENOENT') continue;
+        throw error;
+      }
+      if (!metadata.isFile() || (metadata.mode & 0o077)) throw new Error('invalid-evidence-permissions');
+      const bytes = fs.readFileSync(file);
+      if (digest(bytes) !== value.sha256) continue;
+      let proof;
+      try { proof = JSON.parse(bytes.toString('utf8')); } catch { continue; }
+      const { source, sha256, ...claim } = value;
+      if (proof?.schema === 1 && proof.key === receipt.key && proof.version === receipt.version &&
+          proof.kind === kind && isDeepStrictEqual(proof.claim, claim) &&
+          proof.material && typeof proof.material === 'object' &&
+          Object.keys(proof.material).length) verified.add(evidenceId(receipt, kind, value));
+    }
+  }
+  return verified;
+}
+
+function classifyReceipt(receipt, event, evidence) {
+  const eligibility = receipt?.eligibility;
+  if (!eligibility || eligibility.status === 'unknown') return { kind: 'unknown' };
+  if (!hasEvidenceFields(eligibility, evidence, receipt, 'eligibility')) return { kind: 'unknown', incomplete: true };
+  if (eligibility.status === 'policy-ineligible') {
+    return typeof eligibility.reason === 'string' && eligibility.reason.trim()
+      ? { kind: 'policy-ineligible' } : { kind: 'unknown', incomplete: true };
+  }
+  if (eligibility.status === 'excluded-outage') {
+    const interval = receipt.exclusion;
+    const start = Date.parse(interval?.startAt);
+    const end = Date.parse(interval?.endAt);
+    const lastAbsent = Date.parse(event.lastAbsent);
+    const affectedAt = Date.parse(interval?.affectedAt);
+    if (!['source-outage', 'github-outage', 'maintenance'].includes(interval?.reason) ||
+        !hasEvidenceFields(interval, evidence, receipt, 'exclusion') || !validTime(interval.startAt) || !validTime(interval.endAt) ||
+        !validTime(interval.affectedAt) || typeof interval.impact !== 'string' ||
+        !interval.impact.trim() ||
+        !(start < end && affectedAt >= start && affectedAt < end &&
+          affectedAt >= lastAbsent && affectedAt <= lastAbsent + 4 * 3600000 &&
+          Date.parse(interval.verifiedAt) >= end)) return { kind: 'unknown', incomplete: true };
+    return { kind: 'excluded-outage' };
+  }
+  if (eligibility.status !== 'eligible') throw new Error('invalid-outcomes');
+  const outcome = receipt.outcome;
+  if (!outcome) return { kind: 'eligible', missing: true };
+  const at = Date.parse(outcome.at);
+  if (!['proposal', 'deferral'].includes(outcome.kind) || !validTime(outcome.at) ||
+      !hasEvidenceFields(outcome, evidence, receipt, 'outcome') || at < Date.parse(event.lastAbsent) ||
+      Date.parse(outcome.verifiedAt) < at ||
+      (outcome.kind === 'deferral' &&
+        (typeof outcome.reason !== 'string' || !outcome.reason.trim()))) {
+    return { kind: 'eligible', missing: true, incomplete: true };
+  }
+  return { kind: 'eligible', at };
+}
+
+function aggregateReport(ledger, outcomes, evidence = new Set()) {
   const receipts = outcomes || { schema: 1, inventorySha256: ledger.inventorySha256, receipts: [] };
   if (receipts.schema !== 1 || receipts.inventorySha256 !== ledger.inventorySha256 ||
       !Array.isArray(receipts.receipts)) throw new Error('invalid-outcomes');
   const events = new Map();
+  const releases = new Map();
   for (const item of ledger.sample) {
     for (const event of item.events) {
       if (typeof item.key !== 'string' || typeof event.version !== 'string' ||
@@ -190,6 +291,9 @@ function aggregateReport(ledger, outcomes) {
       const id = JSON.stringify([item.key, event.version]);
       if (events.has(id)) throw new Error('invalid-ledger');
       events.set(id, event);
+      const release = JSON.stringify([sourceKey(item), event.version]);
+      if (!releases.has(release)) releases.set(release, []);
+      releases.get(release).push({ item, event, id });
     }
   }
   const byEvent = new Map();
@@ -199,7 +303,7 @@ function aggregateReport(ledger, outcomes) {
     byEvent.set(id, receipt);
   }
   const counts = {
-    naturalEvents: events.size,
+    naturalEvents: releases.size,
     eligibleEvents: 0,
     onTime: 0,
     late: 0,
@@ -210,63 +314,31 @@ function aggregateReport(ledger, outcomes) {
     incompleteEvidence: 0,
     ambiguousEvents: 0,
   };
-  for (const [id, event] of events) {
-    if (event.ambiguous) counts.ambiguousEvents++;
-    const receipt = byEvent.get(id);
-    const eligibility = receipt?.eligibility;
-    if (!eligibility || eligibility.status === 'unknown') {
-      counts.unknownEvents++;
-      continue;
+  for (const members of releases.values()) {
+    const classifications = members.map(({ id, event }) => classifyReceipt(byEvent.get(id), event, evidence));
+    const lastAbsent = Math.min(...members.map(({ event }) => Date.parse(event.lastAbsent)));
+    if (members.some(({ event }) => event.ambiguous) ||
+        new Set(members.map(({ item }) => item.sourceVisibility)).size !== 1 ||
+        Math.max(...members.map(({ event }) => Date.parse(event.lastAbsent))) >=
+          Math.min(...members.map(({ event }) => Date.parse(event.firstPresent)))) {
+      counts.ambiguousEvents++;
     }
-    if (!hasEvidenceFields(eligibility)) {
-      counts.unknownEvents++;
-      counts.incompleteEvidence++;
-      continue;
+    if (classifications.some(({ incomplete }) => incomplete)) counts.incompleteEvidence++;
+    if (classifications.some(({ kind }) => kind === 'unknown')) counts.unknownEvents++;
+    const eligible = classifications.filter(({ kind }) => kind === 'eligible');
+    if (eligible.length) {
+      counts.eligibleEvents++;
+      if (eligible.some(({ missing }) => missing) || classifications.some(({ kind }) => kind === 'unknown')) {
+        counts.missingOutcomes++;
+      } else if (Math.max(...eligible.map(({ at }) => at)) - lastAbsent <= 4 * 3600000) {
+        counts.onTime++;
+      } else counts.late++;
+    } else if (classifications.every(({ kind }) => kind === 'policy-ineligible')) {
+      counts.policyIneligible++;
+    } else if (classifications.some(({ kind }) => kind === 'excluded-outage') &&
+        !classifications.some(({ kind }) => kind === 'unknown')) {
+      counts.excludedIntervals++;
     }
-    if (eligibility.status === 'policy-ineligible') {
-      if (typeof eligibility.reason !== 'string' || !eligibility.reason.trim()) {
-        counts.unknownEvents++;
-        counts.incompleteEvidence++;
-      } else counts.policyIneligible++;
-      continue;
-    }
-    if (eligibility.status === 'excluded-outage') {
-      const interval = receipt.exclusion;
-      const start = Date.parse(interval?.startAt);
-      const end = Date.parse(interval?.endAt);
-      const lastAbsent = Date.parse(event.lastAbsent);
-      const affectedAt = Date.parse(interval?.affectedAt);
-      if (!['source-outage', 'github-outage', 'maintenance'].includes(interval?.reason) ||
-          !hasEvidenceFields(interval) || !validTime(interval.startAt) || !validTime(interval.endAt) ||
-          !validTime(interval.affectedAt) || typeof interval.impact !== 'string' ||
-          !interval.impact.trim() ||
-          !(start < end && affectedAt >= start && affectedAt < end &&
-            affectedAt >= lastAbsent && affectedAt <= lastAbsent + 4 * 3600000 &&
-            Date.parse(interval.verifiedAt) >= end)) {
-        counts.unknownEvents++;
-        counts.incompleteEvidence++;
-      } else counts.excludedIntervals++;
-      continue;
-    }
-    if (eligibility.status !== 'eligible') throw new Error('invalid-outcomes');
-    counts.eligibleEvents++;
-    const outcome = receipt.outcome;
-    if (!outcome) {
-      counts.missingOutcomes++;
-      continue;
-    }
-    const at = Date.parse(outcome.at);
-    if (!['proposal', 'deferral'].includes(outcome.kind) || !validTime(outcome.at) ||
-        !hasEvidenceFields(outcome) || at < Date.parse(event.lastAbsent) ||
-        Date.parse(outcome.verifiedAt) < at ||
-        (outcome.kind === 'deferral' &&
-          (typeof outcome.reason !== 'string' || !outcome.reason.trim()))) {
-      counts.missingOutcomes++;
-      counts.incompleteEvidence++;
-      continue;
-    }
-    if (at - Date.parse(event.lastAbsent) <= 4 * 3600000) counts.onTime++;
-    else counts.late++;
   }
   let status = 'review-required';
   if (counts.eligibleEvents < 10 || counts.ambiguousEvents || counts.unknownEvents ||
@@ -444,8 +516,9 @@ async function main() {
     const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
     await poll(ledger);
   } else if (mode === 'report') {
+    const outcomes = readPrivateOutcomes();
     console.log(JSON.stringify(aggregateReport(
-      JSON.parse(fs.readFileSync(ledgerPath, 'utf8')), readPrivateOutcomes())));
+      JSON.parse(fs.readFileSync(ledgerPath, 'utf8')), outcomes, verifyPrivateEvidence(outcomes))));
   } else {
     throw new Error('invalid-mode');
   }
@@ -460,4 +533,5 @@ if (require.main === module) {
 }
 
 module.exports = { selectSample, recordPoll, aggregate, aggregateReport, readPrivateOutcomes,
+  verifyPrivateEvidence,
   readToken, renovateRoot, datasourceApi, poll };

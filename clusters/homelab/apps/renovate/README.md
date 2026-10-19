@@ -214,27 +214,58 @@ package-cache wrapper. Any datasource-local cache is confined to one Pod's
 ephemeral `/tmp`; the next poll uses a new Pod. It has no Kubernetes API token
 or inbound Service.
 
-Before starting this CronJob, create a reviewed, read-only dependency inventory
-from the actual Renovate extraction baseline. Put `inventory.json` on the
-private ledger PVC through a reviewed GitOps Job, then run this script's
-`seed` mode in that Job while the CronJob remains suspended. The inventory
-must record a reproducible `seed`, the extraction commit SHA, every active
-datasource class, and each candidate's repository, datasource, package name,
-source visibility (`public` or `private`), and optional registry URL/current
-value. Mark the controlled release canary; its fixture path is excluded even
-if the marker is omitted. The inventory review must prove every active class
-and public/private source stratum where present; the script rejects a missing
-class but cannot discover an omitted class from a falsified inventory. Private
-repository/package identities stay on the volume and out of public reviews.
-The single `provenance.headSha` checked by `seed` does not prove a
-multi-repository extraction baseline. Before unsuspending, privately verify a
-per-repository base-branch head-SHA vector or digest against the actual
-extraction used for the inventory. Full dry-run does not persist extraction
-cache, so a later write-enabled scan may have a different baseline; that
-comparison and a reviewed private inventory producer remain gates.
+Before starting this CronJob, freeze a private inventory from the pinned
+Renovate image's actual repository-extraction cache. Full dry-run skips cache
+persistence, so this requires a successful later write-enabled scan. The
+`acceptance-inventory-job.yaml` Job is deliberately omitted from Kustomize and
+has `suspend: true`; merging this source cannot start it. Its cache mount is
+read-only, it has no Kubernetes API token, and it writes only to the separate
+protected ledger. Activate it through a reviewed GitOps change only after the
+App transfer, write cutover, and private review input are ready.
+
+The private `/ledger/private/review.json` input must be a mode `0600` regular
+file owned by UID 12021, supplied through a reviewed CI/CD or ExternalSecret
+path. The `/ledger/private` directory must be owned by that UID with mode
+`0700`. The input contains a
+fixed seed, the pinned image digest and `config.js` SHA-256, every non-archived
+owned repository's default branch, current head SHA, Renovate cache SHA-512 and
+extraction config hash, plus one decision for **every** extracted dependency.
+Each decision uses the SHA-256 key returned by `candidateKey(repository,
+baseBranch, manager, packageFile, index, dependency)` in
+`acceptance-inventory.js`. A sampled decision needs a canonical HTTPS
+`registryUrl`, `public` or `private` **source** visibility, and private
+visibility/policy evidence references. An excluded decision needs a reason and
+private policy evidence. It also needs an independently obtained owner-inventory
+receipt (`ownerInventory.repositories`, SHA-256, source, and a verification time
+within one hour) and `expectedStrata` counts for each eligible datasource ×
+source-visibility pair. The Job compares these with App-visible repositories
+and reviewed extraction decisions. Repository visibility is not source visibility;
+rate-limited or failed anonymous registry checks are unknown. Never publish
+the review file or private package names.
+
+The Job verifies the pinned cache-v13 Brotli payload and SHA-512, every
+extraction row's review decision, exact current GitHub repository inventory and
+per-repository default-branch SHA, one canonical registry URL, and the mounted
+config/image identity. A missing repo, unknown visibility/policy, stale cache,
+ambiguous registry, or mismatched declared stratum fails before seeding. It
+atomically creates one `ledger.json` with the full private inventory and
+provenance embedded, mode `0600`, and logs counts only. A retry after an
+interrupted write can safely complete; it will not replace a frozen sample.
+Suspend the main Renovate CronJob through GitOps and verify no active Job while
+freezing this baseline. Keep
+the observer suspended until a private reviewer checks the full eligible
+datasource × source-visibility strata and source evidence. The cache is
+pre-lookup, so evidence references in `review.json` need independent effective
+policy and registry-access verification; the Job alone cannot prove them.
+
+The independent owner/policy/source receipt-production and review-file delivery
+paths are not yet declared, so the Job must remain
+omitted/suspended. Do not place the file on the volume with an ad hoc live
+command. Use a reviewed cleanup/reset path if the baseline must be rebuilt.
 
 The seed first selects one deterministic repository for each upstream datasource,
-package, normalized registry URL, and source-visibility combination. It then
+package, and normalized registry URL, rejecting conflicting visibility for the
+same source. It then
 selects up to five packages per datasource and source-visibility stratum by
 SHA-256 of the preregistered seed and dependency key. It writes the
 selection once to `/ledger/private/ledger.json` with mode `0600`; the seed stays
@@ -254,15 +285,26 @@ beside the ledger on the protected PVC. Bind it to `ledger.inventorySha256`, set
 `schema: 1`, and provide `receipts` keyed by the sampled item's SHA-256 `key`
 and exact observed `version`. Each receipt needs an `eligibility` status:
 `eligible`, `policy-ineligible`, `excluded-outage`, or `unknown`. Receipt
-eligibility evidence has a private `source` reference and `verifiedAt` time;
+eligibility evidence has a `source` path under `evidence/`, its exact SHA-256,
+and a `verifiedAt` time;
 policy-ineligible adds a policy `reason`. An excluded outage or maintenance
 also needs an `exclusion` with `reason` (`source-outage`, `github-outage`, or
 `maintenance`), `startAt`, `endAt`, an `affectedAt` time within both that
 interval and the event's four-hour window, a nonempty `impact` describing the
-affected scheduled lookup, write, or maintenance attempt, private `source`, and
+affected scheduled lookup, write, or maintenance attempt, `source`, SHA-256, and
 `verifiedAt`. Eligible
 events may have an `outcome` with `kind` (`proposal` or `deferral`), `at`, private
-`source`, and `verifiedAt`; a deferral also needs its policy `reason`.
+`source`, SHA-256, and `verifiedAt`; a deferral also needs its policy `reason`.
+
+The `/ledger/private/evidence` directory must have mode `0700`; each referenced
+JSON file must be a mode `0600` regular file. Its envelope is `{schema:1, key,
+version, kind, claim, material}`: `key` and `version` match the exact receipt,
+`kind` is `eligibility`, `outcome`, or `exclusion`, `claim` is the matching
+receipt field without `source` and `sha256`, and `material` is a nonempty private
+source object. A missing file, mismatched hash, or mismatched envelope makes
+the report inconclusive. The file binds a claim to material but does not prove
+that GitHub or a package registry supplied it; independent reviewed production
+and verification are required.
 
 The report joins exact events, counts eligible events without an outcome in the
 denominator, and measures four hours from the conservative `lastAbsent` bound.
@@ -270,11 +312,14 @@ It emits only aggregate counts and a rate. Unknown eligibility, incomplete
 evidence fields, ambiguous brackets, or fewer than ten eligible natural releases
 make the result inconclusive. Below 95% on-time gives `criteria-not-met` using
 integer counts; the displayed rate is floored to two decimals. The best script
-status is `review-required`: receipt fields alone cannot prove their GitHub PR
-or restricted policy-log source. A reviewed
+status is `review-required`: locally bound receipts alone cannot prove their
+GitHub PR or restricted policy-log source. A reviewed
 private receipt-production and independent source-verification path remains a
 gate before any SC-002 acceptance claim; do not commit private receipt content
 or inject it through an ad hoc live command.
+The verifier must check the PR head/diff and first creation or synchronize
+timestamp, or the exact version-bound effective-policy deferral, against the
+stored material.
 `review-required` also does not prove seven healthy days: separately verify the
 observer poll span, excluded intervals, hourly runner slots, and reviewable
 proposal or policy-deferral sources before publishing acceptance.

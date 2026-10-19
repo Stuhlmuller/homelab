@@ -13,6 +13,7 @@ configMapGenerator:
   - name: renovate-acceptance-observer
     files:
       - acceptance-observer.js
+      - acceptance-inventory.js
   - name: renovate-config
     files:
       - config.js
