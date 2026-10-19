@@ -82,10 +82,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T04:37:10.218Z" }
+generated: { by: "codex", at: "2026-10-19T05:20:35.611Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:20:35.611Z
 ---
 
 # Secrets And Identity
@@ -210,9 +210,12 @@ the App issuer and private key. The [2026-10-19 transfer receipt](../../docs/ope
 records both parameters at version 2 and a later `Ready=True` refresh of the
 `automation/renovate` ExternalSecret. It projects both credentials as files
 every five minutes. Current IAM source removes the temporary exact-scope
-companion writer role; the live role-retirement saved-plan apply and subsequent
-no-op verification remain pending. Keep the hourly CronJob suspended until the
-writer grant is confirmed gone and the separate dry-run gates pass.
+companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, the operator applied the private, un-targeted saved plan with only the
+role and inline-policy deletions. A read-only IAM lookup returned
+`NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
+remains suspended in full dry-run mode while separate parity gates are pending;
+the legacy GitHub Action remains the writer.
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name

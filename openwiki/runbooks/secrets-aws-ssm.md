@@ -22,10 +22,10 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-19T04:40:26.476Z" }
+generated: { by: "codex", at: "2026-10-19T05:24:03.516Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:24:03.516Z
 ---
 
 # AWS SSM Secret References
@@ -54,18 +54,20 @@ records a successful companion transfer: both parameters reached version 2,
 then `automation/renovate` refreshed with `Ready=True`; the CronJob stayed
 suspended with no Job. Inspect only parameter and Secret metadata, never values.
 Current IAM source removes the temporary exact-scope OIDC writer role from
-desired state. Its live retirement still needs a private, un-targeted saved
-plan showing only the role and inline-policy deletions, a reviewed apply, and
-a full-unit no-op plan. Keep the hourly CronJob suspended until the grant is
-confirmed gone; dry-run parity and the old-writer cutover remain separate gates.
+desired state. After [#1390](https://github.com/Stuhlmuller/homelab/pull/1390)
+merged, an operator applied a private, un-targeted saved plan deleting only
+that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
+a fresh full-unit plan had no changes. A later rotation needs a reviewed
+reintroduction of the exact-scope grant. The hourly CronJob remains suspended
+in full dry-run mode; parity and the old-writer cutover remain separate gates.
 
 **Source finding (2026-10-19).** The [workload README](../../clusters/homelab/apps/renovate/README.md#credentials-and-storage)
 still phrases initial role application and credential transfer as future steps,
 while the [operator receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
 records the transfer and the [IAM module](../../IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf)
 removes the role from desired state. Reconcile that README in a follow-up PR:
-mark the first transfer complete, keep live role retirement pending its reviewed
-apply, and retain the separate rotation and writer-cutover gates.
+mark the initial transfer and live role retirement complete, and retain the
+separate rotation and writer-cutover gates.
 
 ## Harbor native receipt prerequisite
 
