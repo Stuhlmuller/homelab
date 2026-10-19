@@ -344,13 +344,24 @@ class Kubernetes:
     def configuration_candidates(self, namespace_id):
         _require(isinstance(namespace_id, str) and namespace_id.startswith("ns_"),
                  "Configuration Namespace ID is invalid")
-        selector = ("app.kubernetes.io/managed-by=openclaw-enterprise,"
-                    "openclaw.dev/namespace=" + namespace_id)
-        listing = self._json("-n", "openclaw-agents", "get", "configmaps",
-                             "-l", selector, "-o=json")
+        # A label selector would hide ownership drift before the create gate.
+        listing = self._json("-n", "openclaw-agents", "get", "configmaps", "-o=json")
         _require(isinstance(listing, dict) and isinstance(listing.get("items"), list),
                  "Configuration ConfigMap list is invalid")
-        return listing["items"]
+        candidates = []
+        for item in listing["items"]:
+            metadata = item.get("metadata") if isinstance(item, dict) else None
+            _require(isinstance(metadata, dict), "Configuration ConfigMap list is invalid")
+            labels = metadata.get("labels") or {}
+            annotations = metadata.get("annotations") or {}
+            _require(isinstance(labels, dict) and isinstance(annotations, dict),
+                     "Configuration ConfigMap metadata is invalid")
+            name = metadata.get("name")
+            if ((isinstance(name, str) and name.startswith("cfg-")) or
+                    labels.get("app.kubernetes.io/managed-by") == "openclaw-enterprise" or
+                    any(key.startswith("openclaw.dev/") for key in (*labels, *annotations))):
+                candidates.append(item)
+        return candidates
 
 
 def require_driver_identity(installation):

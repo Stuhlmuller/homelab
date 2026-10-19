@@ -1066,12 +1066,25 @@ class InactiveAgentReconciliation(unittest.TestCase):
         post.assert_called_once()
 
     def test_configuration_candidate_lookup_is_scoped(self):
-        with patch.object(OCE.Kubernetes, "_json", return_value={"items": []}) as read:
-            self.assertEqual(OCE.Kubernetes().configuration_candidates("ns_one"), [])
+        drifted = {"metadata": {"name": OCE.configuration_configmap_name("cfg_one"),
+                                "labels": {"app.kubernetes.io/managed-by": "foreign"}}}
+        annotated = {"metadata": {"name": "renamed", "annotations": {
+            "openclaw.dev/configuration-id": "cfg_other"}}}
+        unrelated = {"metadata": {"name": "kube-root-ca.crt"}}
+        with patch.object(OCE.Kubernetes, "_json", return_value={
+                "items": [drifted, annotated, unrelated]}) as read:
+            self.assertEqual(OCE.Kubernetes().configuration_candidates("ns_one"),
+                             [drifted, annotated])
         read.assert_called_once_with(
-            "-n", "openclaw-agents", "get", "configmaps", "-l",
-            "app.kubernetes.io/managed-by=openclaw-enterprise,openclaw.dev/namespace=ns_one",
-            "-o=json")
+            "-n", "openclaw-agents", "get", "configmaps", "-o=json")
+
+    def test_partially_labeled_configuration_blocks_create(self):
+        drifted = {"metadata": {"name": OCE.configuration_configmap_name("cfg_one"),
+                                "labels": {"app.kubernetes.io/managed-by": "foreign"}}}
+        with patch.object(self.kube, "configuration_candidates", return_value=[drifted]):
+            with self.assertRaisesRegex(OCE.Blocked, "unjournaled Enterprise Configuration"):
+                self._reconcile()
+        self.assertFalse(any(call[0] == "POST" for call in self.api.calls))
 
     def test_verify_blocks_duplicate_name_or_changed_principal(self):
         self._reconcile()
