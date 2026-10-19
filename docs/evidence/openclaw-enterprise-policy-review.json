@@ -1268,6 +1268,17 @@
     "Qualify the full allowed/denied and lifecycle matrix on an isolated tainted Talos canary, then each expanded node; current render equality alone is insufficient."
   ],
   "repositoryDnsCorrection": {
+    "allCoreDnsDependentPolicyIds": [
+      "harbor/harbor-image-signing",
+      "harbor/harbor-postgres-backup",
+      "harbor/harbor-vulnerability-exporter",
+      "mastodon/mastodon-datastores",
+      "nix-builder/nix-builder",
+      "nofx/nofx-frontend",
+      "octelium/cordium-cluster-config",
+      "octelium/cordium-genesis",
+      "octelium-public/cloudflared-egress"
+    ],
     "checkedAt": "2026-10-19T17:47:06+00:00",
     "decision": "Limit the six source-owned TCP/UDP 53 egress peers from every kube-system Pod to the CoreDNS Pods selected by the live kube-dns Service.",
     "dnsReferenceSha256": {

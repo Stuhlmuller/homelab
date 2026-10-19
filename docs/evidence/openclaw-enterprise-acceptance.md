@@ -65,8 +65,9 @@ Enterprise Genesis (10), and Kiali's OpenAPI generator (1). Their exact
 generator outputs and rule intent remain unverified. Nine ingress rules admit
 all sources on fixed ports; eight are mesh HBONE TCP/15008, and Kiali's
 operator-owned rule covers TCP/20001 and TCP/9090. No source rule is changed
-from render equality alone. Six repository-owned DNS egress rules now select
+from render equality alone. Nine repository-owned DNS egress rules select
 only CoreDNS Pods on TCP/UDP 53, matching the live `kube-dns` Service selector;
+six were narrowed in this review, while three already had that selector.
 the policy review records their new source and render hashes separately from
 the earlier live baseline. Their live reconciliation and enforced DNS traffic,
 generated-owner decisions, and real canary enforcement remain pending, so

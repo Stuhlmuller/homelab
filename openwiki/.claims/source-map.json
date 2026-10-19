@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f834cf88f37cb24ce70c6d0fc029da591cb7ff5c855fecf55d4ef78d5e34f6a6",
+  "pageVersion": "sha256:89aeecb8b8b5b26d9687d9f205593f5b00e8c6909211940956d569f1a994080f",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -198,13 +198,13 @@
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
-          "version": "repo-file-v1:sha256:3a5b31195d404a22f4f95c61356524298dfa87f0040f2a790afd5e947e9102a4"
+          "version": "repo-file-v1:sha256:061289ef868fcd65ff5ac6f0ceae08fcefdb1e402f45fc11c2d1cc7216fc5d8d"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T14:01:19.597Z"
+    "at": "2026-10-19T19:40:37.007Z"
   }
 }

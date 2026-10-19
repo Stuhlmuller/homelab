@@ -174,8 +174,9 @@ domain allowlist. Follow the [canary and cleanup runbook](../clusters/homelab/pl
 before expanding enforcement; deleting the DaemonSet alone may leave firewall
 rules behind.
 
-Six [source-owned DNS policies](evidence/openclaw-enterprise-policy-review.json)
-now require CoreDNS Pods labeled `k8s-app=kube-dns` in `kube-system`. Changing
-the `kube-dns` Service selector or CoreDNS Pod labels requires updating those
-policies together, then proving TCP and UDP 53 through the Service on the
+Nine [source-owned DNS policies](evidence/openclaw-enterprise-policy-review.json)
+require CoreDNS Pods labeled `k8s-app=kube-dns` in `kube-system`; six were
+narrowed in this review. Changing the `kube-dns` Service selector or CoreDNS
+Pod labels requires updating all nine policies together, then proving TCP and
+UDP 53 through the Service on the
 isolated canary before firewall enforcement.

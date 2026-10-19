@@ -475,15 +475,17 @@ echo "::group::DNS NetworkPolicy peers"
 (
   rendered="$(mktemp)"
   trap 'rm -f "$rendered"' EXIT
-  for overlay in cordium harbor mastodon nix-builder octelium-public; do
+  for overlay in cordium harbor mastodon nix-builder nofx octelium-public; do
     kubectl kustomize "clusters/homelab/apps/$overlay" >> "$rendered"
     printf '\n---\n' >> "$rendered"
   done
   yq ea -o=json -I=0 '[.]' "$rendered" |
     jq -e '
       ["octelium/cordium-genesis", "octelium/cordium-cluster-config",
-       "harbor/harbor-postgres-backup", "mastodon/mastodon-datastores",
-       "nix-builder/nix-builder", "octelium-public/cloudflared-egress"] as $ids |
+       "harbor/harbor-postgres-backup", "harbor/harbor-vulnerability-exporter",
+       "harbor/harbor-image-signing", "mastodon/mastodon-datastores",
+       "nix-builder/nix-builder", "nofx/nofx-frontend",
+       "octelium-public/cloudflared-egress"] as $ids |
       [.[] | select(.kind == "NetworkPolicy") |
         (.metadata.namespace + "/" + .metadata.name) as $id |
         select($ids | index($id)) |
