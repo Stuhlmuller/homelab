@@ -278,6 +278,9 @@ def _startup_mount(spec, component, secret_name, image):
         "Installation controller placement changed")
     container = containers[0]
     _require(container.get("image") == image, "Installation controller image changed")
+    entrypoint = "apps/controller/src/" + ("server" if component == "api" else "worker") + ".mjs"
+    _require(container.get("command") in (None, []) and container.get("args") == [entrypoint],
+             "Installation controller entrypoint changed")
     env = [item for item in container.get("env", []) if item.get("name") == "OCC_CONFIG_PATH"]
     _require(len(env) == 1 and env[0].get("value") ==
              "/etc/openclaw/installation/installation.yaml" and

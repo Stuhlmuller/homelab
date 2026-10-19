@@ -120,6 +120,8 @@ class EnterpriseReconciliation(unittest.TestCase):
                                                   "path": "installation.yaml"}],
                     "defaultMode": 420}}],
                 "containers": [{"name": component, "image": image,
+                                "args": ["apps/controller/src/" +
+                                         ("server" if component == "api" else "worker") + ".mjs"],
                                 "env": [{"name": "OCC_CONFIG_PATH", "value":
                                          "/etc/openclaw/installation/installation.yaml"}],
                                 "volumeMounts": [{"name": "installation-startup",
@@ -132,7 +134,7 @@ class EnterpriseReconciliation(unittest.TestCase):
                 "metadata": {"name": name, "namespace": "openclaw-system",
                              "uid": "dep-" + component, "resourceVersion": "200",
                              "generation": 1, "labels": labels},
-                "spec": {"replicas": 1, "template": template},
+                "spec": {"replicas": 1, "template": copy.deepcopy(template)},
                 "status": {"observedGeneration": 1, "replicas": 1,
                            "updatedReplicas": 1, "availableReplicas": 1},
             }
@@ -142,7 +144,7 @@ class EnterpriseReconciliation(unittest.TestCase):
                              "resourceVersion": "300",
                              "ownerReferences": [{"kind": "Deployment", "controller": True,
                                                   "uid": "dep-" + component, "name": name}]},
-                "spec": {"template": template},
+                "spec": {"template": copy.deepcopy(template)},
             }]
             pods[component] = [{
                 "metadata": {"name": "pod-" + component, "uid": "pod-" + component,
@@ -153,7 +155,7 @@ class EnterpriseReconciliation(unittest.TestCase):
                              "ownerReferences": [{"kind": "ReplicaSet", "controller": True,
                                                   "uid": "rs-" + component,
                                                   "name": "rs-" + component}]},
-                "spec": pod_spec,
+                "spec": copy.deepcopy(pod_spec),
                 "status": {"phase": "Running", "conditions": [{"type": "Ready",
                                                                 "status": "True"}],
                            "containerStatuses": [{"name": component, "ready": True,
@@ -188,6 +190,24 @@ class EnterpriseReconciliation(unittest.TestCase):
         with self.assertRaisesRegex(OCE.Blocked, "ownership"):
             OCE.attest_stable_installation(document, digest, "ins_one", snapshot,
                                            copy.deepcopy(snapshot), image)
+
+    def test_ready_controller_cannot_bypass_startup_file_with_changed_entrypoint(self):
+        document, digest, image, baseline = self._installation_snapshot()
+        for kind in ("deployments", "replicaSets", "pods"):
+            for override in ({"args": ["apps/controller/src/other.mjs"]},
+                             {"command": ["sh"], "args": ["apps/controller/src/server.mjs"]}):
+                with self.subTest(kind=kind, override=override):
+                    changed = copy.deepcopy(baseline)
+                    workload = changed[kind]["api"]
+                    if isinstance(workload, list):
+                        workload = workload[0]
+                    spec = workload["spec"]
+                    if kind != "pods":
+                        spec = spec["template"]["spec"]
+                    spec["containers"][0].update(override)
+                    with self.assertRaisesRegex(OCE.Blocked, "entrypoint changed"):
+                        OCE.attest_stable_installation(document, digest, "ins_one", changed,
+                                                       copy.deepcopy(changed), image)
 
     def test_attestation_rejects_mutable_stale_foreign_or_racing_inputs(self):
         document, digest, image, baseline = self._installation_snapshot()
