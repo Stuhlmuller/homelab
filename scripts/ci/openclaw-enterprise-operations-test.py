@@ -542,6 +542,7 @@ restore_version key version-1 "$2"
             ('publish-archive', {}),
             ('publish-archive', {'BASELINE_REF': 'a' * 40 + '/123', 'ARCHIVE_REF': '../secret'}),
             ('verify', {}), ('verify', {'ARCHIVE_REF': 'abc/123'}),
+            ('prepare-restore', {}), ('prepare-restore', {'ARCHIVE_REF': '../secret'}),
         ):
             with self.subTest(stage=stage, extra=extra):
                 result = subprocess.run(['bash', str(SCRIPT), stage], cwd=ROOT,
@@ -789,7 +790,7 @@ printf '%s\\n' "$phase"
     def test_private_workflow_runs_only_fixed_stages_from_current_main(self):
         workflow = WORKFLOW.read_text()
         for required in (
-            'options: [none, inventory, publish-inventory, archive, publish-archive, verify]',
+            'options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore]',
             'group: openclaw-enterprise-operations-production',
             'name: homelab-production',
             'test "$ACTUAL_SHA" = "$(gh api',
@@ -813,6 +814,9 @@ printf '%s\\n' "$phase"
         self.assertNotIn('--expected-size 80000000000', script)
         self.assertIn('validate_baseline "$work/observed.json" "$work/status.json"', script)
         self.assertIn('verify_restored_archive "$restore/receipt.json"', script)
+        self.assertIn('verify_restored_archive "$restore/receipt.json" "$rehearsal"', script)
+        self.assertIn('free_kib * 1024 > archive_bytes + tree_bytes + 2147483648', script)
+        self.assertIn('refresh_status stopped\n    else', script)
         self.assertNotIn('"${reader[@]}" python3 /etc/openclaw-retirement/retirement.py inventory', script)
         self.assertIn('inventory-worker.sh=retirement/inventory-worker.sh',
                       (ROOT / 'clusters/homelab/apps/openclaw/kustomization.yaml').read_text())
@@ -826,19 +830,29 @@ printf '%s\\n' "$phase"
     def test_detached_verify_worker_records_completion(self):
         source = SCRIPT.read_text()
         helper = 'verify_restored_archive() {' + source.split('verify_restored_archive() {', 1)[1].split('\n}\n\ncase "$stage" in', 1)[0] + '\n}'
-        command = ('python3 /etc/openclaw-retirement/retirement.py verify-archive \\\n'
-                   '        --config /private/legacy/config.json --receipt "$1"')
-        for operation, expected in (('true', 'success'), ('false', 'failure')):
-            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as directory:
-                marker = Path(directory) / 'verify-123.state'
-                local = helper.replace('/private/legacy/verify-${GITHUB_RUN_ID}.state', str(marker))
-                local = local.replace(command, operation).replace('sleep 30', 'sleep 0.1')
-                shell = 'set -euo pipefail\nGITHUB_RUN_ID=123\nreader=()\n' + local + '\nverify_restored_archive /unused/receipt.json\n'
-                result = subprocess.run(['bash', '-c', shell], cwd=ROOT, capture_output=True,
-                                        text=True, timeout=5, check=False)
-                self.assertEqual(result.returncode, 0 if operation == 'true' else 1,
-                                 result.stderr)
-                self.assertEqual(marker.read_text().strip(), expected)
+        commands = (
+            'python3 /etc/openclaw-retirement/retirement.py verify-archive \\\n'
+            '            --config /private/legacy/config.json --receipt "$1"',
+            'env GITHUB_ACTIONS=true python3 /etc/openclaw-retirement/retirement.py prepare-restore \\\n'
+            '            --config /private/legacy/config.json --receipt "$1" --destination "$3"',
+        )
+        for mode in ('verify', 'prepare'):
+            for operation, expected in (('true', 'success'), ('false', 'failure')):
+                with self.subTest(mode=mode, operation=operation), tempfile.TemporaryDirectory() as directory:
+                    marker = Path(directory) / 'verify-123.state'
+                    local = helper.replace('/private/legacy/verify-${GITHUB_RUN_ID}.state', str(marker))
+                    for command in commands:
+                        self.assertIn(command, local)
+                        local = local.replace(command, operation)
+                    local = local.replace('sleep 30', 'sleep 0.1')
+                    call = ('verify_restored_archive /unused/receipt.json' +
+                            (' /unused/rehearsal' if mode == 'prepare' else ''))
+                    shell = 'set -euo pipefail\nGITHUB_RUN_ID=123\nreader=()\n' + local + '\n' + call + '\n'
+                    result = subprocess.run(['bash', '-c', shell], cwd=ROOT, capture_output=True,
+                                            text=True, timeout=5, check=False)
+                    self.assertEqual(result.returncode, 0 if operation == 'true' else 1,
+                                     result.stderr)
+                    self.assertEqual(marker.read_text().strip(), expected)
 
     def test_publish_recovery_refuses_changed_baseline_identity(self):
         contract = json.loads((ROOT / 'scripts/config/openclaw-enterprise.json').read_text())[

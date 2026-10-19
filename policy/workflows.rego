@@ -350,7 +350,7 @@ approved_openclaw_operations if {
 	protected_workflow_run_settings
 	count(dispatch.inputs) == 5
 	dispatch.inputs.expected_sha.required == true
-	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"]
+	dispatch.inputs.legacy_stage.options == ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore"]
 	dispatch.inputs.legacy_stage.default == "none"
 	dispatch.inputs.enterprise_stage.options == ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"]
 	dispatch.inputs.enterprise_stage.default == "none"
@@ -441,7 +441,7 @@ openclaw_dispatch_guard := `set -euo pipefail
 test "$ACTUAL_REF" = refs/heads/main
 test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
 case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+  inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
   *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
 esac
 if [[ "$ENTERPRISE_STAGE" != none ]]; then

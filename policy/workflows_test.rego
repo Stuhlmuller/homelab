@@ -379,7 +379,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"true": {"workflow_dispatch": {"inputs": {
 		"expected_sha": {"required": true},
-		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify"], "default": "none"},
+		"legacy_stage": {"options": ["none", "inventory", "publish-inventory", "archive", "publish-archive", "verify", "prepare-restore"], "default": "none"},
 		"enterprise_stage": {"options": ["none", "bind-installation", "full-sync", "reconcile", "stop", "verification", "restore", "acceptance"], "default": "none"},
 		"baseline_ref": {}, "archive_ref": {},
 	}}},

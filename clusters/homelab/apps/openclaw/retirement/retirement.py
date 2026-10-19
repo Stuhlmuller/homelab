@@ -9,6 +9,7 @@ import importlib.util
 import json
 import os
 import re
+import posixpath
 import shutil
 import sqlite3
 import stat
@@ -363,10 +364,73 @@ def index_bundle(bundle, index):
     index.commit()
 
 
-def verify_bundle(bundle, expected, config, expected_roots):
+def classify_links(index, config):
+    """Describe link dependencies without dereferencing private source paths."""
+    roots = {label: posixpath.normpath(config[key]) for label, key in
+             (('local', 'localRoot'), ('nas', 'nasRoot'))}
+    for name, target in index.execute('SELECT name, link FROM members '
+                                      "WHERE kind = 'symlink' ORDER BY name"):
+        label, _, relative = name.partition('/')
+        source = posixpath.join(roots[label], relative)
+        resolved = posixpath.normpath(target if target.startswith('/') else
+                                      posixpath.join(posixpath.dirname(source), target))
+        entry = {'member': name, 'target': target, 'resolved': resolved,
+                 'absolute': target.startswith('/')}
+        for target_label, root in roots.items():
+            if resolved == root or resolved.startswith(root + '/'):
+                suffix = resolved[len(root):].lstrip('/')
+                member = target_label + ('/' + suffix if suffix else '')
+                row = index.execute('SELECT kind FROM members WHERE name = ?',
+                                    (member,)).fetchone()
+                entry['targetMember'] = member
+                entry['class'] = ('missing-in-archive' if row is None else
+                                  'link-chain' if row[0] == 'symlink' else 'contained')
+                break
+        else:
+            entry['class'] = 'external'
+        yield entry
+
+
+def write_link_report(path, index, config, archive_sha):
+    private_dir(path.parent, config['nasUid'])
+    with path.open('x', encoding='utf-8') as output:
+        os.fchmod(output.fileno(), 0o600)
+        output.write('{"archiveSha256":' + json.dumps(archive_sha) + ',"format":1,"links":[')
+        count = 0
+        for entry in classify_links(index, config):
+            if count:
+                output.write(',')
+            json.dump(entry, output, sort_keys=True)
+            count += 1
+        output.write(']}\n')
+        output.flush()
+        os.fsync(output.fileno())
+    return count
+
+
+def verified_restore_destination(destination, bundle, config):
+    destination = Path(destination)
+    if not destination.is_absolute() or destination.exists() or destination.is_symlink():
+        raise ValueError('isolated restore destination must be new and absolute')
+    parent = private_dir(destination.parent, config['nasUid'])
+    destination = parent / destination.name
+    sources = [Path(config[key]).resolve() for key in
+               ('localRoot', 'nasRoot', 'stateMount', 'agentMount')]
+    if any(destination == source or destination.is_relative_to(source)
+           or source.is_relative_to(destination) for source in sources):
+        raise ValueError('isolated restore destination overlaps retained source')
+    if destination == bundle.parent or destination.is_relative_to(bundle.parent):
+        raise ValueError('isolated restore destination overlaps downloaded archive')
+    return destination
+
+
+def verify_bundle(bundle, expected, config, expected_roots, restore_at=None,
+                  expected_databases=None):
     private_file(bundle, config['nasUid'])
     if digest(bundle) != expected:
         raise ValueError('archive checksum mismatch')
+    if restore_at is not None:
+        restore_at = verified_restore_destination(restore_at, bundle, config)
     with (tempfile.TemporaryDirectory(prefix='oce-legacy-restore-',
                                       dir=private_dir(bundle.parent, config['nasUid'])) as scratch,
           tempfile.TemporaryDirectory(prefix='restore-index-', dir=private_dir(
@@ -417,6 +481,9 @@ def verify_bundle(bundle, expected, config, expected_roots):
             for name, mode in index.execute("SELECT name, mode FROM members WHERE kind = 'directory' "
                                             'ORDER BY length(name) DESC'):
                 (Path(scratch) / name).chmod(mode & 0o777)
+            link_count = (write_link_report(Path(scratch) / 'link-classification.json',
+                                            index, config, expected)
+                          if restore_at is not None else None)
         local, nas = Path(scratch) / 'local', Path(scratch) / 'nas'
         for label in ('local', 'nas'):
             if tree(Path(scratch) / label)['contentSha256'] != expected_roots[label]['tree'].get('contentSha256'):
@@ -430,6 +497,15 @@ def verify_bundle(bundle, expected, config, expected_roots):
                     or not any(item.iterdir())):
                 raise ValueError('archive restore omitted required NAS state')
         restored = {name: digest(local / name) for name in config['requiredLocal']}
+        if expected_databases is not None and restored != expected_databases:
+            raise ValueError('restored database differs from archive receipt')
+        if restore_at is not None:
+            restore_at.mkdir(mode=0o700)
+            os.rename(scratch, restore_at / 'tree')
+            write_private(restore_at / 'completed.json',
+                          {'format': 1, 'archiveSha256': expected,
+                           'restoredDatabases': restored, 'linkCount': link_count},
+                          config['nasUid'])
         return restored
 
 
@@ -483,7 +559,7 @@ def archive(config, status_path, baseline_path, observed_path, destination):
     return completed / 'receipt.json'
 
 
-def verify_archive(config, receipt_path):
+def verify_archive(config, receipt_path, restore_at=None):
     receipt_path = private_file(receipt_path, config['nasUid'])
     record = json.loads(receipt_path.read_text())
     identity = record.get('inventory', {})
@@ -494,18 +570,20 @@ def verify_archive(config, receipt_path):
             or identity.get('claims') != {name: config[name] for name in (
                 'localClaim', 'stateClaim', 'agentClaim', 'nasClaim')}):
         raise ValueError('archive receipt does not match the committed recovery contract')
+    database_hashes = {name: item['sha256'] for name, item in identity['databases'].items()}
+    if record['restoredDatabases'] != database_hashes:
+        raise ValueError('archive receipt database hashes disagree')
     restored = verify_bundle(receipt_path.parent / 'legacy.tar.gz', record['sha256'], config,
-                             identity['roots'])
-    if restored != record['restoredDatabases'] or restored != {
-        name: item['sha256'] for name, item in record['inventory']['databases'].items()
-    }:
+                             identity['roots'], restore_at, database_hashes)
+    if restored != database_hashes:
         raise ValueError('archive restore differs from receipt')
     return record
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation', choices=('inventory', 'archive', 'verify-archive'))
+    parser.add_argument('operation', choices=('inventory', 'archive', 'verify-archive',
+                                              'prepare-restore'))
     parser.add_argument('--config', required=True, type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--status', type=Path)
@@ -533,6 +611,11 @@ def main():
         elif args.operation == 'verify-archive' and args.receipt:
             verify_archive(config, args.receipt)
             print('Verified independent legacy restore')
+        elif args.operation == 'prepare-restore' and args.receipt and args.destination:
+            if os.environ.get('GITHUB_ACTIONS') != 'true':
+                raise ValueError('isolated restore preparation runs only in the protected workflow')
+            verify_archive(config, args.receipt, args.destination)
+            print('Prepared private isolated legacy restore; gateway boot remains unverified')
         else:
             parser.error('operation-specific private output, status, destination, or receipt required')
         return 0

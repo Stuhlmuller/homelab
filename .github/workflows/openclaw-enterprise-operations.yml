@@ -13,7 +13,7 @@ on:
         required: false
         default: none
         type: choice
-        options: [none, inventory, publish-inventory, archive, publish-archive, verify]
+        options: [none, inventory, publish-inventory, archive, publish-archive, verify, prepare-restore]
       enterprise_stage:
         description: Fixed Enterprise operation (binding needs a private bootstrap key; other stages need a durable journal)
         required: false
@@ -55,7 +55,7 @@ jobs:
           test "$ACTUAL_REF" = refs/heads/main
           test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
           case "${LEGACY_STAGE}:${ENTERPRISE_STAGE}" in
-            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
+            inventory:none|publish-inventory:none|archive:none|publish-archive:none|verify:none|prepare-restore:none|none:bind-installation|none:full-sync|none:reconcile|none:stop|none:verification|none:restore|none:acceptance) ;;
             *) echo '::error::Choose exactly one fixed operation stage.'; exit 2 ;;
           esac
           if [[ "$ENTERPRISE_STAGE" != none ]]; then

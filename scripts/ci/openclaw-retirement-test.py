@@ -308,6 +308,80 @@ class Retirement(unittest.TestCase):
         self.assertEqual(sentinel.read_text(), 'untouched')
         self.assertEqual(list(outside.iterdir()), [sentinel])
 
+    def test_prepare_restore_keeps_private_copy_and_classifies_links(self):
+        links = {
+            'contained-relative': '../unlisted-configuration',
+            'contained-absolute': str(self.local / self.config['requiredLocal'][0]),
+            'outside': str(self.archive_root / 'not-archived'),
+            'missing': 'absent',
+            'chain': 'contained-relative',
+        }
+        for name, target in links.items():
+            (self.nas / 'openclaw' / name).symlink_to(target)
+        observed = retirement.inventory(self.config, self.status)
+        self.observed_path.unlink()
+        retirement.write_private(self.observed_path,
+                                 dict(observed, rootIdentity=self.status['roots']))
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        original = retirement.inventory(self.config)
+        destination = self.archive_root / 'rehearsal'
+        config_path = self.archive_root / 'config.json'
+        retirement.write_private(config_path, {'legacyRetention': self.config})
+        command = [sys.executable, '-I', str(SOURCE), 'prepare-restore',
+                   '--config', str(config_path), '--receipt', str(receipt),
+                   '--destination', str(destination)]
+        denied = subprocess.run(command, capture_output=True, text=True,
+                                env={key: value for key, value in os.environ.items()
+                                     if key != 'GITHUB_ACTIONS'}, check=False)
+        self.assertEqual(denied.returncode, 1)
+        self.assertFalse(destination.exists())
+        prepared = subprocess.run(command, capture_output=True, text=True,
+                                  env={**os.environ, 'GITHUB_ACTIONS': 'true'}, check=False)
+        self.assertEqual(prepared.returncode, 0, prepared.stderr)
+        self.assertIn('gateway boot remains unverified', prepared.stdout)
+        self.assertEqual(retirement.inventory(self.config), original)
+        self.assertEqual(stat.S_IMODE(destination.stat().st_mode), 0o700)
+        self.assertEqual(stat.S_IMODE((destination / 'completed.json').stat().st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE((destination / 'tree/link-classification.json').stat().st_mode),
+                         0o600)
+        self.assertTrue((destination / 'tree/local/state/openclaw.sqlite').is_file())
+        self.assertTrue((destination / 'tree/nas/openclaw-backups/pre-2026.9.2-runtime').is_dir())
+        report = json.loads((destination / 'tree/link-classification.json').read_text())
+        classes = {Path(item['member']).name: item['class'] for item in report['links']}
+        self.assertEqual(classes, {'contained-relative': 'contained',
+                                   'contained-absolute': 'contained',
+                                   'outside': 'external', 'missing': 'missing-in-archive',
+                                   'chain': 'link-chain'})
+        self.assertEqual(json.loads((destination / 'completed.json').read_text())['linkCount'],
+                         len(links))
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config, receipt, destination)
+
+    def test_prepare_restore_refuses_source_overlap_and_bad_receipt_without_marker(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+        for destination in (self.local / 'rehearsal', self.nas / 'rehearsal',
+                            receipt.parent / 'rehearsal'):
+            with self.subTest(destination=destination), self.assertRaises(ValueError):
+                retirement.verify_archive(self.config, receipt, destination)
+            self.assertFalse(destination.exists())
+        bad = self.archive_root / 'bad-receipt'
+        bad.mkdir(mode=0o700)
+        (bad / 'legacy.tar.gz').write_bytes((receipt.parent / 'legacy.tar.gz').read_bytes())
+        (bad / 'legacy.tar.gz').chmod(0o600)
+        record = json.loads(receipt.read_text())
+        record['restoredDatabases'][self.config['requiredLocal'][0]] = '0' * 64
+        retirement.write_private(bad / 'receipt.json', record)
+        destination = self.archive_root / 'bad-rehearsal'
+        with self.assertRaises(ValueError):
+            retirement.verify_archive(self.config, bad / 'receipt.json', destination)
+        self.assertFalse(destination.exists())
+
     def test_symlink_only_required_directory_restores(self):
         required = self.nas / 'openclaw'
         (required / 'retained').unlink()

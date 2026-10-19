@@ -37,6 +37,10 @@ gh workflow run openclaw-enterprise-operations.yml --ref main \
 gh workflow run openclaw-enterprise-operations.yml --ref main \
   -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=verify \
   -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
+# After final.json exists, prepare a separate private copy for compatibility review.
+gh workflow run openclaw-enterprise-operations.yml --ref main \
+  -f expected_sha=<CURRENT_MAIN_SHA> -f legacy_stage=prepare-restore \
+  -f archive_ref=<PUBLISH_SHA>/<PUBLISH_RUN_ID>
 ```
 
 Inventory binds the two SQLite databases, NAS root, historical checkpoint,
@@ -124,6 +128,21 @@ both archived roots; others are dangling. External target data is not in this
 archive. T014 compatible recovery must classify those targets and prove any
 needed data is separately retained or rebuilt before acceptance. Do not
 blindly extract this tar into a live filesystem.
+
+`prepare-restore` downloads the exact versioned archive, checks free scratch
+space, and retains a verified copy at `/archive/private/rehearsal-<RUN_ID>/tree`.
+Its private `link-classification.json` records raw targets as `contained`,
+`link-chain`, `missing-in-archive`, or `external`. `completed.json` records
+only extraction and database integrity; its absence means the retained copy is
+incomplete. Neither file belongs in Git or public CI logs. Absolute
+links can still point at the original reader mounts: inspect every dependency
+without following it, then mount isolated copies at the legacy paths before an
+old-image boot. The NAS scratch copy has all-squash ownership, so local SQLite
+state needs a separate UID 1000 filesystem and the parent/child bind-mount
+identity from `values.yaml`. Keep all original claims read-only and the old
+gateway at zero replicas. This preparation alone does not accept T014; prove
+the isolated gateway can start without ingress or deliveries and recheck the
+stopped production state and retained credentials first.
 
 For compatible legacy recovery after a later Enterprise failure, first stop
 the new agent through its supported API and prove its runtime is terminated.
