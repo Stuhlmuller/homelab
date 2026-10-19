@@ -142,11 +142,11 @@
       "completedRunId": "6b3a1b06-2cab-4aec-82c0-983f2abef056"
     },
     "/openwiki/runbooks/secrets-aws-ssm.md": {
-      "gitHead": "e33cbafd574f54122c9dcbb904347b0e5bca0796",
-      "sourceFingerprint": "sha256:76ccc8be45165ff00be00324f9ecb542182167868e474b4f733dfc4cbb485886",
-      "pageVersion": "sha256:e33d2afc0ffcb6902c2f9f1e43007427d94e0815eb3952eba2eaf6ebff0288d5",
+      "pageVersion": "sha256:f8e7bfd5e843c099f8c12e33cbb75ce7a03b0beb240098bcdde3c3766e74145b",
       "completedBy": "codex",
-      "completedRunId": "82ffee78-1865-4cf0-9760-68887a47a220"
+      "completedRunId": "d010c423-5719-4e96-bdbc-a44c17bd567b",
+      "gitHead": "1e2bf4b093b2ccaec80352415db2a0c4e86e025a",
+      "sourceFingerprint": "sha256:087604ac613553994bbc3492723db6132df35a709f7a409bb777e31bb28f8599"
     },
     "/openwiki/runbooks/tailnet-ingress.md": {
       "gitHead": "6b3e524571bed8fe20de14b01cbbc6ecc004571d",
