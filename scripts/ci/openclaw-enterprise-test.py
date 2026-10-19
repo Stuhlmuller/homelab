@@ -648,6 +648,20 @@ class EnterpriseReconciliation(unittest.TestCase):
         changed_model["activationEnabled"] = True
         self.assertEqual(OCE._identity_hash(self.config), OCE._identity_hash(changed_model))
 
+    def test_namespace_create_rechecks_unique_name_before_journaling(self):
+        class CompetingNamespaceAPI(NamespaceAPI):
+            def post(self, path, body):
+                created = super().post(path, body)
+                self.namespaces.append({**created, "id": "ns_other"})
+                return created
+
+        with OCE.ProtectedJournal(self.private / "journal.json", self.config["source"]["revision"],
+                                  OCE._identity_hash(self.config)) as journal:
+            with self.assertRaisesRegex(OCE.Blocked, "duplicate Enterprise logical identity"):
+                OCE.reconcile_namespace(self.config, CompetingNamespaceAPI(), journal,
+                                        FakeKubernetes([]))
+            self.assertEqual(journal.state, {"pending": {"operation": "namespace-create"}})
+
     def test_lost_namespace_create_recovers_once_and_never_reposts(self):
         source = self.config["source"]["revision"]
         identity = OCE._identity_hash(self.config)

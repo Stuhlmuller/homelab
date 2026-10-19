@@ -568,6 +568,8 @@ def reconcile_namespace(config, api, journal, kube):
              exact.get("name") == name and exact.get("existingNamespace") == physical and
              exact.get("status") == "ready", "Namespace exact readback changed")
     kube.tenant_prepared(namespace_id, require_claimed=True)
+    discover_exact(api.get("/namespaces"), name, namespace_id,
+                   {"existingNamespace": physical})
     if state.get("namespaceId") is None:
         state["namespaceId"] = namespace_id
         state.pop("pending", None)
