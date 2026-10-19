@@ -1,8 +1,9 @@
 # OpenClaw Enterprise Replacement
 
-This runbook tracks the fresh stock Enterprise replacement. The current
-standalone OpenClaw remains active until the validated archive and shutdown
-lane runs. No Discord, LiteLLM, history, identity, jobs or tools move into the
+This runbook tracks the fresh stock Enterprise replacement. The standalone
+OpenClaw gateway and scheduled backup writer are stopped by GitOps; their
+volumes remain mounted read-only for the offline archive. No Discord, LiteLLM,
+history, identity, jobs or tools move into the
 new agent. The [specification](../specs/003-replace-openclaw-enterprise/spec.md),
 [task order](../specs/003-replace-openclaw-enterprise/tasks.md), and
 [validation guide](../specs/003-replace-openclaw-enterprise/quickstart.md)
@@ -29,15 +30,17 @@ gateway identity. Verify independent restores; backup listings alone do not
 prove recovery.
 
 The declared off-NAS destination is the versioned, encrypted
-`operator/application-backup-storage` bucket. Read-only inspection on
-2026-10-18 confirmed that the proposed bucket did not yet exist in account
-`716182248480`; staging its Terragrunt unit does not satisfy the archive gate.
-After the bucket change reaches protected `main`, dispatch
+`operator/application-backup-storage` bucket. It was created by protected
+Terragrunt apply `39110519607`, with versioning, KMS encryption and public-access
+block verified. For a fresh installation, after the bucket change reaches
+protected `main`, dispatch
 `.github/workflows/terragrunt-apply.yml` at that exact `expected_sha` with
 `application_backup_storage=true` and no Argo CD target. This scopes the
 saved-plan and policy-checked apply to the archive bucket, avoiding unrelated
 pending stack changes. Verify the bucket and an upload/download restore before stopping the legacy
-writer. The separate application-backup service remains inactive.
+writer. The separate application-backup service remains inactive. The archive
+worker runs detached because the prior long Kubernetes exec stream disconnected;
+a distinct `publish-archive` stage is required after its private result appears.
 The fixed inventory/archive/verify dispatches and compatible old-service
 recovery order are in the [OpenClaw runbook](../clusters/homelab/apps/openclaw/README.md#enterprise-replacement-retention).
 
