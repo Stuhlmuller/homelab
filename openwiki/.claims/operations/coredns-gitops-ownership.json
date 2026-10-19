@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c64c45ea9997a2cfb31fd01b999b66d0c8f1ef53e148c976a9f88bb0ed067614",
+  "pageVersion": "sha256:e572d5dc497650e02970f415e27f7e560f68d189a32c1b9058e6579076ddece2",
   "claims": [
     {
       "id": "claim_56d2256d788e4f1faf692c1c02a42e22",
@@ -33,14 +33,52 @@
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L173-L209",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L183-L219",
           "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_5ccef82fce4f413da7827acd753341d3",
+      "statement": "Six source-owned workload DNS egress rules allow TCP and UDP 53 only to kube-system Pods labeled k8s-app=kube-dns, matching the kube-dns Service selector and CoreDNS Pod template; live reconciliation and enforced canary traffic remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml#L29-L40",
+          "version": "repo-lines-v1:sha256:58c42eef2b89ebf9483ce2e43a8bb64573f21efa03700b18d5eac39b51959be9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViYTI1NzVlMzQ2ODk3MjNlYWM2ZGNjYWM1ZGY2ODAxNTdhODQ5Y2YyZTlmMTE0MzgzYjhlZDYzMDQxYmNmOTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjNTE3MDAyZTJhY2U0YjA4MGQyOWZmOWI2ZTEyY2UxNmUzMGU2NTQ0NWRjY2U4NTFmYzg0ZmM4MjJhMjdhNWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjYzMyYmI4NTYzN2VjNjU0ZDhmMTIzNDA2NTExYmRhNjJhYThkMzJiYWQxMjBmNTc1ZDUxNjIwZGYzMThkYjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM0YjEyMjU1Nzg2MTI0ZTUxYzEyNWY3ODRmZWU1YzFhZmRlMjU1ZDI2YjFhMjE2YWY1ZmExNDZiM2I0M2ZkZmQifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:873b48f0fb79646a85a0813b65e8854baf5501927ddb8853e26b7a4ebc574ea6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/mastodon/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:3b040f069a6808fe0b02809993c31dc055b15ecf67df365d28d3f8dc2fcec6d4"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/nix-builder/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:3ef10e43a5e4942ad69b81c28936ec78b8e9bc298c80f606ef89f7c933a063ab"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:6a840d9f711aac333fed74444fc6d0256e77ec4b192cfd5a0ed9f5dc45779ac2"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-deployment.yaml#L23-L35",
+          "version": "repo-lines-v1:sha256:65e2d2f67a383a684e4db260abd3e553891f3dd7465195f476ed84e27f0dcd9a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjczN2Y4YmI1MDgzMTkyZTgzYzc2ZjBkZmQ4Y2UyNTA5NDEwMzVlOThjMDA5NTBmMGI5MmZjNDU5OTBkNWFjYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlNjQ3YTNmN2QxNDIxMmM2OTNjYjQ5MmU1ZWYwNzY4Njc3NjdkYzQ1Mzk5ODQ5YzI3ZGFjMmQ5NjA4OGQ2MDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3ZjJhNmE5NWI3OWU0NmY1NzUyOTY5ZWQ3NTVkYjJmNDlhNzUwMTI4YTFlYzlmYWY3YTJjMjE1NjgwOGYxMGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUwOTczM2JkNDM5YzE0OTM2YjE0MGNkNDcwNzA1OGU5YmRkYzJjNzUxMzJiNDFlM2IxZjJiZDgyNTMyMTgxYTEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/dns/coredns-service.yaml#L23-L38",
+          "version": "repo-lines-v1:sha256:36a99601c95f8861009f343fec5381dd75c40fb5e2806c52dee5a774b33602bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJiYjVkZTlkMjBkNWYwM2M1ZTBjZGU3MDk1ZjllOWI4OWQxZGIxNTc4NDhhYjhmMmIzOWYyYmEwMGYxZGI0ZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYwYjJhYmRjODU3Zjc1OWVlZWVjNWViNzRhZWFiMjgyOWQxYjkxYjcwMGYzZGU1YTkzYmFmMjkxN2I0OTYyMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNTQ4NTBmNmYzZWQ4OTU2MzQ0Y2I4NjkzNzBiNmRlMDE1YTBiOTA1Y2RhMzQ3NzY4YzhmMjgzOGVmZDEzNDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4NmIyZTE2ODljYzk4YWVmMzE5MTQ1ZWY3NjFmZjUzYmZiMzMwYjYzYTVkZDZlZTYwYjQ0NTI5NzZjYjhjMTAifQ"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md#L68-L73",
+          "version": "repo-lines-v1:sha256:a15eec80a4e99c036a6a6d6cf8113691ddeeed33c80e662c68d9ec39ebdc77aa:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTJlODE3NTUwNWNhODA1N2IzOTg1Yjg4NGY5YjhiY2ZkNjI1MzhjOTJiMmJkODA4YmRlMmY2NzBkZTgwNmQwMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOGMxMWE0YTAzYmFmY2YxYmFlMTNlZDY4ZWQ4MTQ1OWFiMjYyNjc4NDQ3YTMyNGQyNDM5M2UyYzJhYmI0MTBiNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTI5NGZmODU1MzgyY2IxNzUxMmNjODdjOTg4ODQ5NDQzYTI2OTU3YmUxMWUzYWYzY2Q0YWE0MGYyNGFjYjlmNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTNhZGQwYmFjMTFhNDM5MWM1YzlkZjgxMWM2YWI5OTQ1MjhhYjZlMWI1OGUyNmVlMmE1ZjJlODUyNzQ2NWI1MyJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:30:44.377Z"
+    "at": "2026-10-19T18:14:53.914Z"
   }
 }
