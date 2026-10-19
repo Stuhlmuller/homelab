@@ -56,6 +56,10 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/kustomization.yaml
   - id: openwiki-source-2ebca2ea8b0df35457e8eb47
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
+  - id: openwiki-source-39a2e51e735c0e56dbcd68c6
+    resource: repo://clusters/homelab/apps/harbor/README.md
+  - id: openwiki-source-738da32a5c98c5c0390c9a2f
+    resource: repo://clusters/homelab/apps/harbor/values.yaml
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
@@ -129,7 +133,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:31:10.787Z
+    at: 2026-10-18T22:48:56.298Z
 ---
 
 # Harbor Private OCI Registry
@@ -432,6 +436,11 @@ workflow and verify fresh complete authenticated Harbor pulls before merging
 the separate consumer upgrade. The scoped receipt does not prove full-catalog
 coverage while the LiteLLM duplicate-index failure remains. That upgrade must verify that singleton nginx retains a
 rolling update, so its existing Pod serves Harbor while the replacement pulls.
+The separate consumer branch keeps chart 1.19.2 while pinning all nine runtime
+components to 2.15.4; the component gate rejects mixed versions. Migration
+`0181` is forward-only, so verify database and registry-blob backups and an
+isolated restore before rollout. Live registry/API and scan checks remain
+acceptance gates, and bundled Distribution v2 findings remain unresolved.
 See the [publication runbook](../../docs/harbor-image-mirroring.md).
 
 The registry Deployment uses `Recreate`, so its two 2.15.4 container images

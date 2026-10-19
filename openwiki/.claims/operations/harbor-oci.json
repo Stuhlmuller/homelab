@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5df23bae6a5573f911962320cdb9e40455607f05cfb849394cff0cdf62ddee24",
+  "pageVersion": "sha256:689f1e0111f5151e82af490c242834716d9afc0ffe302b90ea58fb6fa7636d1e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -30,7 +30,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
@@ -48,7 +48,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         }
       ]
     },
@@ -430,7 +430,7 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
@@ -476,7 +476,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -490,7 +490,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-images.json",
@@ -526,7 +526,7 @@
       "evidence": [
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -624,17 +624,31 @@
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
-          "version": "repo-file-v1:sha256:5b7241549aa7cd345e92cfe0f484c011b1bba376fd9194771a94805b2620284f"
+          "version": "repo-file-v1:sha256:cfffce611101d96b82065e7fce6559dfa2f1a5fab0187b659b7fbae3941a46ea"
         },
         {
           "resource": "repo://scripts/config/harbor-dns-images.json",
           "version": "repo-file-v1:sha256:e71afe421247062897d141b975ffea2863038c9e775d39dee733e7d8e58e4f23"
         }
       ]
+    },
+    {
+      "id": "claim_3bae6bacc1154c548bff73809efc0e48",
+      "statement": "The held Harbor consumer branch keeps chart 1.19.2 and pins nine runtime components to 2.15.4; forward-only migration 0181 requires verified database and blob backups plus isolated restore before rollout, with live registry/API and scan acceptance still pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/README.md",
+          "version": "repo-file-v1:sha256:6deb80f8e9383f00652ebd99676d0d3d39182ffb234f3b08afb92fb82e43e000"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/harbor/values.yaml",
+          "version": "repo-file-v1:sha256:116e2e10c0981cad94e05178e8621cad1f85a5dff281a1dbf777cf816c5756f1"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T21:31:10.787Z"
+    "at": "2026-10-18T22:48:56.298Z"
   }
 }
