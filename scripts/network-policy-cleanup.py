@@ -353,6 +353,7 @@ def execute(args):
     node_name = config["canary"]["node"]
     if node_name is None:
         raise ValueError("no admitted canary node")
+    PLATFORM["protected_context"](args.expected_sha)
     require_current_main(args.expected_sha)
     directory = PLATFORM["private_directory"](args.receipt_dir)
     placement = PLATFORM["read_private_json"](directory / "placement.json")

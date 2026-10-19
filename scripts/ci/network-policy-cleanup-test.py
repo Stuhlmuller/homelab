@@ -49,6 +49,17 @@ class FirewallCleanupTests(unittest.TestCase):
                 config=ROOT / "scripts/config/platform-maintenance.json",
                 expected_sha="0" * 40, receipt_dir=Path("/unused"), output=Path("/unused")))
 
+    def test_admitted_cleanup_requires_protected_workflow_before_cluster_access(self):
+        with patch.dict(SUT["PLATFORM"], {
+                "validate_config": lambda _: {"canary": {"node": "zimaboard-1"}},
+                "protected_context": lambda _: (_ for _ in ()).throw(
+                    ValueError("protected current-main workflow required"))}):
+            with self.assertRaisesRegex(ValueError, "protected current-main"):
+                SUT["execute"](argparse.Namespace(
+                    config=ROOT / "scripts/config/platform-maintenance.json",
+                    expected_sha="a" * 40, receipt_dir=Path("/unused"),
+                    output=Path("/unused")))
+
     def test_plan_targets_only_owned_ipv4_objects(self):
         commands, chains, sets = SUT["cleanup_plan"](state())
         self.assertEqual(chains, 8)
@@ -92,6 +103,7 @@ class FirewallCleanupTests(unittest.TestCase):
             path = Path(directory)
             platform = SUT["PLATFORM"]
             replacements = {"validate_config": lambda _: {"canary": {"node": "zimaboard-1"}},
+                            "protected_context": lambda _: None,
                             "current_main_sha": lambda: next(checks),
                             "private_directory": lambda value: value,
                             "private_output": lambda value: value,

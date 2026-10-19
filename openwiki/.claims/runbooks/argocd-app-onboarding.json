@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a4829d44860965621474a9cdec0d04fe8a1494c7d6c064e4857f6c1760316f2b",
+  "pageVersion": "sha256:61515e9bb258d6faad0595780bfd8598f61705975662f3f5cbbe3cac7fafb15d",
   "claims": [
     {
       "id": "claim_732731dc8626403ca02c2daf55b25d17",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:ca1dff9eab4d90f97030a8cf8d466bbfd588a866f09933d5fd67e5e15cf26216"
+          "version": "repo-file-v1:sha256:22abc6be8414362a1b7bc7a005a2068cc2b9b413971523baf308f00721dc43a4"
         },
         {
           "resource": "repo://docs/argocd-app-onboarding.md#L27-L35",
@@ -27,6 +27,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:08:11.339Z"
+    "at": "2026-10-19T09:33:00.928Z"
   }
 }
