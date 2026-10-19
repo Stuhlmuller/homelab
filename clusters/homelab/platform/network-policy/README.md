@@ -42,7 +42,8 @@ canary and live lifecycle evidence.
 workflow. It checks the live firewall DaemonSet's firewall-only flags, node
 selector, host mounts, service account, and read/watch RBAC. It probes the
 fixed TCP/UDP allow/deny matrix and resolves the Kubernetes Service name over
-both DNS transports. It rejects extra or unsafe fixture Pods, including changed
+both DNS transports, requiring an A record matching the live Kubernetes Service.
+It rejects extra or unsafe fixture Pods, including changed
 commands, arguments, or container security overrides. It requires each traffic
 probe's outcome marker as well as its exit code, so a transport error cannot
 count as a traffic result. It stores a private receipt listing each

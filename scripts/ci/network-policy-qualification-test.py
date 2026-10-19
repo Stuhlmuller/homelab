@@ -6,13 +6,14 @@ import json
 import shutil
 import socket
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
 import threading
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -114,17 +115,76 @@ class CanaryQualificationTests(unittest.TestCase):
                             "selector": {"k8s-app": "kube-dns"},
                             "ports": [{"protocol": protocol, "port": 53, "targetPort": 53}
                                       for protocol in ("TCP", "UDP")]}}
+        kubernetes = {"metadata": {"name": "kubernetes", "namespace": "default"},
+                      "spec": {"clusterIP": "10.96.0.1", "ipFamilies": ["IPv4"]}}
+        objects = {("-n", "kube-system", "get", "service", "kube-dns"): service,
+                   ("-n", "default", "get", "service", "kubernetes"): kubernetes}
         success = subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", "")
-        with (patch.object(self.module, "kubernetes_json", return_value=service),
-              patch.object(self.module, "probe_dns", side_effect=[success, success])):
+        with (patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]),
+              patch.object(self.module, "probe_dns", side_effect=[success, success]) as probe):
             results = self.module.dns_matrix()
             self.assertEqual([item["observed"] for item in results],
                              ["NPQ_DNS_ALLOWED", "NPQ_DNS_ALLOWED"])
-        with (patch.object(self.module, "kubernetes_json", return_value=service),
+            probe.assert_has_calls([call("npq-client", "10.96.0.10", protocol, "10.96.0.1")
+                                    for protocol in ("TCP", "UDP")])
+        with (patch.object(self.module, "kubernetes_json", side_effect=lambda *args: objects[args]),
               patch.object(self.module, "probe_dns", return_value=
                            subprocess.CompletedProcess([], 0, "", ""))):
             with self.assertRaisesRegex(ValueError, "DNS TCP probe failed"):
                 self.module.dns_matrix()
+
+    def test_dns_probe_requires_complete_expected_a_record(self):
+        def run_probe(protocol, answer):
+            kind = socket.SOCK_STREAM if protocol == "TCP" else socket.SOCK_DGRAM
+            with socket.socket(socket.AF_INET, kind) as listener:
+                listener.bind(("127.0.0.1", 0))
+                listener.settimeout(5)
+                if protocol == "TCP":
+                    listener.listen()
+                port = listener.getsockname()[1]
+                def serve():
+                    if protocol == "TCP":
+                        connection, _ = listener.accept()
+                        with connection:
+                            stream = connection.makefile("rb")
+                            length = struct.unpack("!H", stream.read(2))[0]
+                            query = stream.read(length)
+                            response = answer(query)
+                            connection.sendall(struct.pack("!H", len(response)) + response)
+                    else:
+                        query, address = listener.recvfrom(4096)
+                        listener.sendto(answer(query), address)
+                thread = threading.Thread(target=serve, daemon=True)
+                thread.start()
+                result = subprocess.run(
+                    [sys.executable, "-c", self.module.DNS_PROBE,
+                     "127.0.0.1", protocol, "10.96.0.1", str(port)],
+                    capture_output=True, text=True, timeout=5,
+                )
+                thread.join(timeout=5)
+                self.assertFalse(thread.is_alive())
+                return result
+
+        def response(query, address=None, truncated=False):
+            flags = b"\x83\x80" if truncated else b"\x81\x80"
+            header = query[:2] + flags + query[4:6] + b"\x00\x01\x00\x00\x00\x00"
+            question = query[12:]
+            if address is None:
+                return header + question
+            record = b"\xc0\x0c" + struct.pack("!HHIH", 1, 1, 60, 4)
+            return header + question + record + socket.inet_aton(address)
+
+        for protocol in ("TCP", "UDP"):
+            for address, truncated, expected_code in (("10.96.0.1", False, 0),
+                                                      (None, False, 8),
+                                                      ("10.96.0.2", False, 8),
+                                                      ("10.96.0.1", True, 8)):
+                with self.subTest(protocol=protocol, address=address, truncated=truncated):
+                    result = run_probe(protocol,
+                                       lambda query: response(query, address, truncated))
+                    self.assertEqual(result.returncode, expected_code, result.stderr)
+                    self.assertEqual(result.stdout.strip(),
+                                     "NPQ_DNS_ALLOWED" if expected_code == 0 else "")
 
     def test_inspection_refuses_foreign_policy_or_untainted_node(self):
         node = {"metadata": {"name": "zimaboard-0", "uid": "node-uid",

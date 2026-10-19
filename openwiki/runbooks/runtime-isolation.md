@@ -125,8 +125,10 @@ checks the admitted tainted node, three fixed fixture Pods and their policy.
 It rejects changed fixture commands, arguments, and container security contexts
 before probing, so a modified server cannot make blocked traffic appear denied.
 Its TCP/UDP allow-and-deny probes also resolve the Kubernetes Service name
-through the reviewed `kube-dns` Service over both TCP and UDP 53. Each probe
-requires an explicit remote outcome marker, so transport failure cannot count
+through the reviewed `kube-dns` Service over both TCP and UDP 53. Each DNS reply
+must contain a complete A record matching the live `default/kubernetes` Service
+IP, and each probe requires an explicit remote outcome marker. Transport failure
+or a malformed or wrong DNS answer cannot count
 as a deny or DNS success. Both DNS results enter a private receipt that lists
 the lifecycle scenarios still unverified. The qualifier does not create the
 fixture or attest node reboot, enforcer recovery, or real workload traffic;

@@ -147,7 +147,12 @@ class FirewallSourceTests(unittest.TestCase):
                             "selector": {"k8s-app": "kube-dns"},
                             "ports": [{"protocol": "TCP", "port": 53, "targetPort": 53},
                                       {"protocol": "UDP", "port": 53, "targetPort": 53}]}}
-        with (mock.patch.object(qualification, "kubernetes_json", return_value=service),
+        kubernetes = {"metadata": {"name": "kubernetes", "namespace": "default"},
+                      "spec": {"clusterIP": "10.96.0.1", "ipFamilies": ["IPv4"]}}
+        objects = {("-n", "kube-system", "get", "service", "kube-dns"): service,
+                   ("-n", "default", "get", "service", "kubernetes"): kubernetes}
+        with (mock.patch.object(qualification, "kubernetes_json",
+                                side_effect=lambda *args: objects[args]),
               mock.patch.object(qualification, "probe_dns", return_value=
                                 subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", "")) as probe):
             results = qualification.dns_matrix()
@@ -156,17 +161,19 @@ class FirewallSourceTests(unittest.TestCase):
                          ["NPQ_DNS_ALLOWED", "NPQ_DNS_ALLOWED"])
         self.assertEqual(probe.call_count, 2)
         self.assertEqual({call.args for call in probe.call_args_list}, {
-            ("npq-client", "10.96.0.10", "TCP"),
-            ("npq-client", "10.96.0.10", "UDP"),
+            ("npq-client", "10.96.0.10", "TCP", "10.96.0.1"),
+            ("npq-client", "10.96.0.10", "UDP", "10.96.0.1"),
         })
-        with (mock.patch.object(qualification, "kubernetes_json", return_value=service),
+        with (mock.patch.object(qualification, "kubernetes_json",
+                                side_effect=lambda *args: objects[args]),
               mock.patch.object(qualification, "probe_dns", side_effect=[
                   subprocess.CompletedProcess([], 0, "NPQ_DNS_ALLOWED\n", ""),
                   subprocess.CompletedProcess([], 7, "", "")])):
             with self.assertRaisesRegex(ValueError, "DNS"):
                 qualification.dns_matrix()
         service["spec"]["selector"] = {"k8s-app": "foreign"}
-        with mock.patch.object(qualification, "kubernetes_json", return_value=service):
+        with mock.patch.object(qualification, "kubernetes_json",
+                               side_effect=lambda *args: objects[args]):
             with self.assertRaisesRegex(ValueError, "DNS"):
                 qualification.dns_matrix()
 
