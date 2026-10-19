@@ -18,6 +18,10 @@ sources:
     resource: repo://clusters/homelab/apps/policy-bot/networkpolicy.yaml
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
     resource: repo://clusters/homelab/apps/policy-bot/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
+    resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -64,10 +68,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
+generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:30:44.377Z
 ---
 
 # Tailnet And App Ingress
@@ -98,6 +102,7 @@ flowchart LR
     Funnel --> HTTP[Traefik callback listener]
     HTTP --> Hooks[n8n and Policy Bot webhooks]
     Nodes[Talos nodes] --> Registry[Traefik registry listener]
+    Renovate[Renovate Pod] --> Registry
     Registry --> Harbor[Harbor OCI and token endpoints]
 ```
 
@@ -130,9 +135,14 @@ separate from the direct application proxy routes.
 Talos uses a dedicated `10.96.0.50:443` registry Service and host-only DNS patch;
 see [Harbor](../operations/harbor-oci.md). It exposes OCI/token paths only, not
 Harbor management or unrelated application hosts. Registry port 9443 permits
-only the four fixed LAN node addresses, four verified `cni0` bridge `/32`s
+the four fixed LAN node addresses, four verified `cni0` bridge `/32`s
 (`10.244.1.1` through `10.244.4.1`) and four `flannel.1` overlay `/32`s
-(`10.244.1.0` through `10.244.4.0`), with no authenticated mesh principal.
+(`10.244.1.0` through `10.244.4.0`) as unauthenticated sources. The exact
+`cluster.local/ns/automation/sa/renovate` mesh identity is the only
+authenticated Pod principal allowed on 9443; it has no access to the shared
+private listener on 8443. Its tokenless ServiceAccount and Pod-local host alias
+send the canonical Harbor TLS name to `10.96.0.50:443` without changing node or
+cluster DNS. The registry listener exposes OCI and token paths only.
 Talos host-to-Service SNAT selects a bridge locally or overlay across nodes;
 ordinary Pod CIDRs are not allowed. Converge these policies before the worker-first host-only mapping,
 then require an uncached successful pull from every node before Harbor DNS

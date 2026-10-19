@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:dec72af26393297946a6792778b3063b8a20bc8cbbc99483f690834a729e60a3",
+  "pageVersion": "sha256:39705b6f5bddc11c893a131db08898279129b3859ae5ea21d20364246d096de9",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -88,7 +88,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
+          "version": "repo-file-v1:sha256:a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
         },
         {
           "resource": "repo://clusters/homelab/platform/dns/coredns-configmap.yaml#L22-L23",
@@ -292,7 +292,7 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application is staged in automation as an hourly UTC CronJob suspended in full dry-run mode, with a retained 20 Gi NFS cache. The protected App-key transfer and temporary OIDC writer-grant retirement completed, while the legacy GitHub Action remains the writer pending dry-run parity and reviewed cutover; no live Renovate Job acceptance has occurred.",
+      "statement": "The Renovate Application is staged in automation as an hourly UTC CronJob suspended in full dry-run mode, with a retained 20 Gi NFS cache and a dedicated no-token ServiceAccount and Harbor host alias targeting the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement completed, while the legacy GitHub Action remains the writer pending dry-run parity and reviewed cutover; Harbor route and scheduled Job acceptance remain pending.",
       "evidence": [
         {
           "resource": "repo://IaC/renovate/stack.hcl",
@@ -300,15 +300,23 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:2f32499562ed091112c01222ed5327b721819cddfdf7dbed36e9f66ce8bce4ac"
+          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml#L1-L17",
-          "version": "repo-lines-v1:sha256:1f25b39c0b6742be29358e815101b5056c243e618411b78e15c2839696ba9627:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MWVhZmU1MjkzZDNkZjlhNzY1NDkzZjlhNWY5YWM1NDUxZWFiZmY5NzU3Y2RmNTZiMGJkNzg4NjZjN2Q2MzEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlkN2IxNWEwMzNmZDE5YzVjM2FiNzNlYTVhMDQ0MDA3YTM2NTUyYTNmOGY4MDllNmMxZTgxN2I1NzY1NzczMDYifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/pvc.yaml",
           "version": "repo-file-v1:sha256:069e6c51d6d34a4a4cc076b746fce4e8312887979e5bf52860ddc613280091be"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
         },
         {
           "resource": "repo://docs/operator-infrastructure.md#L339-L369",
@@ -319,6 +327,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:27:50.490Z"
+    "at": "2026-10-19T05:30:44.377Z"
   }
 }

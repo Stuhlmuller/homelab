@@ -164,10 +164,13 @@ class RouteTests(unittest.TestCase):
             {"from": [{"source": {"notPrincipals": ["*"],
                                     "ipBlocks": NODE_REGISTRY_SOURCES}}],
              "to": [{"operation": {"ports": ["9443"]}}]},
+            {"from": [{"source": {"principals": [
+                "cluster.local/ns/automation/sa/renovate"]}}],
+             "to": [{"operation": {"ports": ["9443"]}}]},
             {"to": [{"operation": {"ports": ["9000"]}}]},
         ])
 
-    def test_retained_connector_is_scoped_to_its_identity_and_private_tls(self):
+    def test_authenticated_callers_are_scoped_to_their_listener(self):
         policy = read_yaml("clusters/homelab/apps/traefik/authorizationpolicy.yaml")["spec"]
         authenticated = {
             (principal, port)
@@ -177,12 +180,16 @@ class RouteTests(unittest.TestCase):
             for target in rule["to"]
             for port in target["operation"]["ports"]
         }
-        principal = "cluster.local/ns/octelium-client/sa/octelium-client"
-        self.assertEqual(authenticated, {(principal, "8443")})
+        connector = "cluster.local/ns/octelium-client/sa/octelium-client"
+        renovate = "cluster.local/ns/automation/sa/renovate"
+        self.assertEqual(authenticated, {(connector, "8443"), (renovate, "9443")})
         for identity, port in (
             ("cluster.local/ns/octelium-client/sa/default", "8443"),
             ("cluster.local/ns/default/sa/octelium-client", "8443"),
-            (principal, "8000"), (principal, "8080"), (principal, "9443"),
+            (connector, "8000"), (connector, "8080"), (connector, "9443"),
+            ("cluster.local/ns/automation/sa/default", "9443"),
+            ("cluster.local/ns/default/sa/renovate", "9443"),
+            (renovate, "8000"), (renovate, "8080"), (renovate, "8443"),
         ):
             self.assertNotIn((identity, port), authenticated)
         network = read_yaml("clusters/homelab/apps/traefik/networkpolicy.yaml")["spec"]
@@ -226,17 +233,38 @@ class RouteTests(unittest.TestCase):
         registry, = [rule for rule in policy["ingress"]
                      if {"protocol": "TCP", "port": 9443} in rule["ports"]]
         self.assertEqual(registry, {
-            "from": [{"ipBlock": {"cidr": source}} for source in NODE_REGISTRY_SOURCES],
+            "from": ([{"ipBlock": {"cidr": source}} for source in NODE_REGISTRY_SOURCES] +
+                     [{"namespaceSelector": {"matchLabels": {
+                         "kubernetes.io/metadata.name": "automation"}},
+                       "podSelector": {"matchLabels": {
+                           "app.kubernetes.io/name": "renovate"}}}]),
             "ports": [{"protocol": "TCP", "port": 9443}],
         })
         # A nearby LAN host or ordinary Pod must not match this source boundary.
         networks = [ipaddress.ip_network(source["ipBlock"]["cidr"])
-                    for source in registry["from"]]
+                    for source in registry["from"] if "ipBlock" in source]
         for address in ("10.244.1.0", "10.244.2.0", "10.244.3.0", "10.244.4.0"):
             self.assertTrue(any(ipaddress.ip_address(address) in net for net in networks))
         for address in ("10.1.0.198", "10.1.0.203", "10.244.1.2", "10.244.2.2",
                         "10.244.3.2", "10.244.4.2"):
             self.assertFalse(any(ipaddress.ip_address(address) in net for net in networks))
+
+    def test_renovate_uses_only_the_registry_listener_and_its_own_identity(self):
+        registry = read_yaml("clusters/homelab/apps/traefik/values.yaml")["service"]["registry"]
+        self.assertEqual(registry["clusterIP"], "10.96.0.50")
+        self.assertEqual(registry["ports"]["https"], {"port": 443, "targetPort": 9443})
+        account = read_yaml("clusters/homelab/apps/renovate/serviceaccount.yaml")
+        self.assertEqual(account["metadata"]["name"], "renovate")
+        self.assertEqual(account["metadata"]["namespace"], "automation")
+        self.assertFalse(account["automountServiceAccountToken"])
+        resources = read_yaml("clusters/homelab/apps/renovate/kustomization.yaml")["resources"]
+        self.assertIn("serviceaccount.yaml", resources)
+        cronjob = read_yaml("clusters/homelab/apps/renovate/cronjob.yaml")
+        pod = cronjob["spec"]["jobTemplate"]["spec"]["template"]["spec"]
+        self.assertEqual(pod["serviceAccountName"], "renovate")
+        self.assertFalse(pod["automountServiceAccountToken"])
+        self.assertEqual(pod["hostAliases"], [{
+            "ip": "10.96.0.50", "hostnames": ["harbor.stinkyboi.com"]}])
 
     def test_node_registry_has_no_dashboard_or_other_app_route(self):
         registry = {name: route for name, route in ROUTERS.items()

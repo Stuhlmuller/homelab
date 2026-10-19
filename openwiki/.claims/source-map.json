@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:98fc65617076180410a4a94ff85cc6f92134bcec7d68837c7b73d4afab237b20",
+  "pageVersion": "sha256:35bf7828cdca614e5ce6e988f890f718e732864b9350f38c4ed0c5a7274f9697",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
+          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
@@ -139,6 +139,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:30:44.377Z"
   }
 }

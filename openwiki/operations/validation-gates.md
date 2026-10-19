@@ -52,6 +52,8 @@ sources:
     resource: repo://clusters/homelab/apps/prometheus/renovate-prometheusrules.yaml
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -182,10 +184,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
+generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:30:44.377Z
 ---
 
 # Validation Gates
@@ -374,8 +376,11 @@ Offline validation runs `traefik-routes-test.py` and
 callback/registry boundaries, Fleet setup denial, and the exact four LAN, four
 bridge, and four overlay `/32` sources for registry port 9443 in both ingress
 policies. Adjacent LAN addresses and ordinary Pod addresses remain outside that
-source boundary. The second checks tokenless API-proxy configuration and
-plan-only dry-run admission. Render the exact Traefik chart plus Kustomization
+source boundary. It also requires Renovate's dedicated no-token service identity
+and canonical Harbor host alias on the registry-only listener, while excluding
+the default identity and shared private listener. The second checks tokenless
+API-proxy configuration and plan-only dry-run admission. Render the exact
+Traefik chart plus Kustomization
 and run Conftest on all declared routing resources.
 
 Separately invoke `traefik-runtime-check.py --binary /absolute/path/to/traefik`
