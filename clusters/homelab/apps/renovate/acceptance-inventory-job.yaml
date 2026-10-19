@@ -72,6 +72,9 @@ spec:
             - name: github-app
               mountPath: /var/run/secrets/renovate
               readOnly: true
+            - name: review
+              mountPath: /review
+              readOnly: true
             - name: cache
               mountPath: /cache/renovate
               readOnly: true
@@ -99,6 +102,13 @@ spec:
           persistentVolumeClaim:
             claimName: renovate-cache
             readOnly: true
+        - name: review
+          secret:
+            secretName: renovate-acceptance-review
+            defaultMode: 0440
+            items:
+              - key: review.json
+                path: review.json
         - name: ledger
           persistentVolumeClaim:
             claimName: renovate-acceptance-ledger

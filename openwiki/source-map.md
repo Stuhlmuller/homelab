@@ -60,6 +60,8 @@ sources:
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
+  - id: openwiki-source-486d1ce133b06619f73dfd30
+    resource: repo://scripts/ci/renovate-acceptance-review-test.py
   - id: openwiki-source-7f41167da18dbfa043cfc3ca
     resource: repo://scripts/ci/static-checks.sh
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -70,6 +72,8 @@ sources:
     resource: repo://scripts/openclaw-enterprise-access.py
   - id: openwiki-source-2eea896f325c470e4979019b
     resource: repo://scripts/openclaw-enterprise.py
+  - id: openwiki-source-dc5b2313cafaf1babebbe560
+    resource: repo://scripts/renovate-acceptance-review.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
@@ -78,10 +82,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-19T21:42:47.615Z" }
+generated: { by: "codex", at: "2026-10-19T21:50:07.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:42:47.615Z
+    at: 2026-10-19T21:50:07.787Z
 ---
 
 # Source Map
@@ -153,6 +157,9 @@ Renovate acceptance source: the [workload runbook](../clusters/homelab/apps/reno
 [upstream observer and report](../clusters/homelab/apps/renovate/acceptance-observer.js),
 and their [inventory](../scripts/ci/renovate-acceptance-inventory-test.js)
 and [observer](../scripts/ci/renovate-acceptance-observer-test.js) fixtures.
+The guarded [private review delivery command](../scripts/renovate-acceptance-review.py)
+and [delivery fixture](../scripts/ci/renovate-acceptance-review-test.py)
+prepare the one-shot inventory input; neither activates the suspended jobs.
 See the [workload inventory](workloads/inventory.md) and
 [acceptance gates](operations/validation-gates.md#renovate-acceptance-evidence).
 

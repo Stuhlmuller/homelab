@@ -669,6 +669,14 @@ reviewed reintroduction of the same limited role, a later ExternalSecret
 refresh, and a Job using the same App identity before retiring the grant again.
 See the [Renovate runbook](../clusters/homelab/apps/renovate/README.md).
 
+The temporary Renovate acceptance review is a separate one-shot private input.
+It can exceed one SSM SecureString, so it is delivered as a fixed Kubernetes
+Secret through the guarded [operator command](../scripts/renovate-acceptance-review.py)
+after private owner/policy/source review. Only the staged inventory Job mounts
+it, copies it to the protected ledger, and remains suspended until a reviewed
+GitOps activation. The command retires that transient Secret after a successful
+inventory Job. No additional SSM reader grant is needed.
+
 At cutover, deleting the old workflow is insufficient: GitHub can rerun a
 historical workflow revision while its repository Actions private-key secret
 still exists. After the old workflow and all unfinished runs are gone, use the

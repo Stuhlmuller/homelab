@@ -143,3 +143,31 @@ test('single-file seed survives an interrupted link and refuses to replace a fro
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('projected private review is copied once to the protected ledger', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'renovate-review-'));
+  try {
+    const projection = path.join(root, 'projection');
+    const ledger = path.join(root, 'ledger');
+    fs.mkdirSync(path.join(projection, '..data'), { recursive: true });
+    const source = path.join(projection, '..data', 'review.json');
+    fs.writeFileSync(source, JSON.stringify({ schema: 1, owner: 'Stuhlmuller' }), { mode: 0o440 });
+    fs.symlinkSync('..data/review.json', path.join(projection, 'review.json'));
+    const projected = inventory.readReview(path.join(projection, 'review.json'));
+    assert.equal(projected.review.schema, 1);
+    inventory.materializeReview(projected.bytes, ledger);
+    const frozen = path.join(ledger, 'review.json');
+    assert.equal(fs.statSync(frozen).mode & 0o077, 0);
+    inventory.materializeReview(projected.bytes, ledger);
+    fs.rmSync(source);
+    fs.writeFileSync(source, JSON.stringify({ schema: 1, owner: 'other' }), { mode: 0o440 });
+    assert.throws(() => inventory.materializeReview(
+      inventory.readReview(path.join(projection, 'review.json')).bytes, ledger),
+      /review-already-frozen/);
+    fs.chmodSync(source, 0o644);
+    assert.throws(() => inventory.readReview(path.join(projection, 'review.json')),
+      /invalid-review-source/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

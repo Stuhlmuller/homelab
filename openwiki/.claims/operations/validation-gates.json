@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:4157e5f048de6a04ae8db6f997408e60fee542984bd93ce4b18d8dbfb0732e93",
+  "pageVersion": "sha256:a06cafcb185db4e26b9a4a195b734b091a2d198eadc296e7f31b90509a38e48f",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:81ee48470121856826acbab2f1c830449c7f468972bc5d090fc64529c7912db2"
         }
       ]
     },
@@ -780,7 +780,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:81ee48470121856826acbab2f1c830449c7f468972bc5d090fc64529c7912db2"
         }
       ]
     },
@@ -922,7 +922,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:81ee48470121856826acbab2f1c830449c7f468972bc5d090fc64529c7912db2"
         }
       ]
     },
@@ -1034,7 +1034,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:9733f7524d8a2c2a377f040b231ed393420d2939d4d4f7fc3bd2fa8128cd212e"
+          "version": "repo-file-v1:sha256:81ee48470121856826acbab2f1c830449c7f468972bc5d090fc64529c7912db2"
         }
       ]
     },
@@ -1169,8 +1169,8 @@
           "version": "repo-lines-v1:sha256:dcf4fc93f1ab65022cf7f58e9a495c3a0e943751a21adc40b2eb80c7975404d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZDIzMjMxZjEyNmYxNWIzYzM2NjE0YTM0NWY1OGM4NTkwN2Q0MmY3NjVmZmRiZTdjMDFmNGEwZjJmZmI5NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjcwOGNlYjY1YTk3NjhkN2ZhYWEzNzRmYjE0MGQ2ZTU4MzVkODc2YWNhYjQyNmM5NmQ0MjdjMTZlY2U0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMjIxMTM0MDkyMTFlMzMxMDZiOWIyMTY1MDg3NWMyN2FhZTIxNzZlOTRjYmZmYjA2ODg4NTkxMGY5YTI0NjYifQ"
         },
         {
-          "resource": "repo://scripts/ci/static-checks.sh#L25-L28",
-          "version": "repo-lines-v1:sha256:9ecf15bb292098dc9ce77b74bb842fd82eb3978ab55288859eb69656be951a39:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2ZmZjMDg3MTVmODZlYjA0MzU0Y2U1OTk2MTAxOThhZWI3OGVlOWM5MjMxY2JkZjQwZWQ0YTUwY2ZmZGUyYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2JlZjRmNzlhNDFkZTAxNTIwZDUxMmExM2YyMzg3OTUyZGEwNzEzNmUzOTJlYjE5ZDNiODVhZDRiODRiZmJmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk1NWUzZmJjOWYwMGM0ZmJkNWY3ZTdiMmMwNzNmZjBhOTMyMDQ2NDk1MzMxYTUzNjBhOGQ4NDNmMDQzZmMwNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0MjdiMDYxZDFhNWY2NjkxMWE5MGU5NTllYmVkZTFiYjE3MTAyMWY3OTE1YjM0ZmMwMTc2OWNlNzFjZDVhYSJ9"
+          "resource": "repo://scripts/ci/static-checks.sh#L25-L29",
+          "version": "repo-lines-v1:sha256:7a3fe95708769b73c23bd86731d312ffc32a3fe78e41220cfa4a89c3686d2a58:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2ZmZjMDg3MTVmODZlYjA0MzU0Y2U1OTk2MTAxOThhZWI3OGVlOWM5MjMxY2JkZjQwZWQ0YTUwY2ZmZGUyYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiN2JlZjRmNzlhNDFkZTAxNTIwZDUxMmExM2YyMzg3OTUyZGEwNzEzNmUzOTJlYjE5ZDNiODVhZDRiODRiZmJmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk1NWUzZmJjOWYwMGM0ZmJkNWY3ZTdiMmMwNzNmZjBhOTMyMDQ2NDk1MzMxYTUzNjBhOGQ4NDNmMDQzZmMwNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYWY0MjdiMDYxZDFhNWY2NjkxMWE5MGU5NTllYmVkZTFiYjE3MTAyMWY3OTE1YjM0ZmMwMTc2OWNlNzFjZDVhYSJ9"
         }
       ]
     },
@@ -1179,7 +1179,7 @@
       "statement": "Renovate's offline acceptance report counts missing eligible outcomes, uses the conservative last-absent bound, and stays inconclusive with fewer than ten eligible natural releases or ambiguous evidence; even a passing local result requires independent review.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L348-L371",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L375-L398",
           "version": "repo-lines-v1:sha256:d735f0852a9c91e0f75a1f4b3684b84c1235d642fb7fdb141e5ac897f97bd372:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQyOGZiNDgyYjEwOWQ3ZTQ1OTAyMzQyZWFiOTgyZGYwNDFhMzYzNDFiM2NiODQ0MDhjZGExYmY3ZTkyODQyOTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVmMWY4M2Y0YjcxN2RmNDUwMTUzYzZhMTAzMWI5YTdiOTY1MDQzOWQzODFmNTY3ODI4Zjc5ODU2Y2E3YmM2NjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI5YzY3NGYxZDUxYTYwZjIwZGUxMGU3NWE3Y2VlMTQzZDY4ZTA2NDQ2YjJmY2UyZjEwYjlmMDAwYTlmNjMzYTEifQ"
         },
         {
@@ -1187,10 +1187,28 @@
           "version": "repo-lines-v1:sha256:5a4bb6181216a78f7824662e9579d62ed981820ddf180ff5be3640542d3a6aaf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTExLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI5ODk3YTQzYjU0MmNmYmE1MjhmMmI1YjkzZWU1OWExNTA3NTYyZGY2ODE1OTQyN2ZmMWIwY2M2MmVkYmNmMWNhIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlYWYwY2EzYTk3YWQ5MzIzMzBjMTg2NjIzNTQ5Mzg5NTA0ZWVlZWYzMmY0ZGE4ZWZkMzYxMDhhMGI5M2QzNThlIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlMmJlMDdhZWQxNmI1NjlkYjgzZDM4NWRmZGM2MjdlYzA4YmMzMDcwZWE4MmQ2ZDIyZmVhZDIzMDhmMTMyMjJjIn0"
         }
       ]
+    },
+    {
+      "id": "claim_afe7b28b3e634435ace05351c8a720d0",
+      "statement": "The staged Renovate review delivery script and static fixture reject stale or unsigned main, unsafe private input, different replacement data, and retirement before successful inventory seeding; no private review delivery or seven-day acceptance is implied by these source tests.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/ci/renovate-acceptance-review-test.py",
+          "version": "repo-file-v1:sha256:4717ca39d46039ba307702e52ac455352f3d28eba8a6441ed5c9d51973a34c19"
+        },
+        {
+          "resource": "repo://scripts/ci/static-checks.sh#L25-L28",
+          "version": "repo-lines-v1:sha256:db5f8742f48fb597075ca92bd2378ea0a9689c7080287d638672a78a5d698675:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOGI2ZmZjMDg3MTVmODZlYjA0MzU0Y2U1OTk2MTAxOThhZWI3OGVlOWM5MjMxY2JkZjQwZWQ0YTUwY2ZmZGUyYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjUwMWFlYWVlZGNkNDZlNWU3Mjg0Y2QyNTMyMzc2Njg4NWJlYTcyODQ3MjEwNGU5ZGExY2M0YjgxNDQwODU1ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDk1NWUzZmJjOWYwMGM0ZmJkNWY3ZTdiMmMwNzNmZjBhOTMyMDQ2NDk1MzMxYTUzNjBhOGQ4NDNmMDQzZmMwNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTU5YmQxZWU0NTQ5YmU5YmJlNDQ2YmMwMjg4OTkxNGNmMzllY2JhY2FjOGFlMGIyZTE5MmQ4NTU3NDVmNTRhOSJ9"
+        },
+        {
+          "resource": "repo://scripts/renovate-acceptance-review.py#L43-L185",
+          "version": "repo-lines-v1:sha256:c8e76e47e4bd0782bf12869f6e241c51ab0b644460b27f612f119dec55dd34c8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI1YjBhNDg3N2Y5OTJhNmNhMzRmNGUyMTIwMzJkMjAyZDY5NjEzNDNhNmQ1YjI4M2VmZDkxM2NmMzdkM2RkNTAwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI4NGRjZDljNjY1NzI0OTNiZTNkYWExMDlkMDk2ZTgwM2MyOWI1OWRkZTJjZjM0NzgyMjBiOTUzNjQ2YzQ3Y2JhIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiZTg3OGRkY2YyOWZkMzBlYTkzMDAxMmQ1MTM0NDE5YmY2NDI2YTZjMDc0YTQ2OTBlNTNiZGRkYzEzZmJjOGU3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI3MGExYjM2ZmIxN2ZmMTQxNWMzMThlNWY2YmViMzA5MzVjODI3NDMxNTlmMzIzODdhMzEzYTg3YTY1MzlkNWJiIn0"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:47:56.824Z"
+    "at": "2026-10-19T21:50:07.787Z"
   }
 }
