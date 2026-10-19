@@ -26,6 +26,13 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CONSOLE_ORIGIN = "https://console.oce.stinkyboi.com"
+APPROVED_MODEL = {
+    "provider": "openai",
+    "id": "openrouter/free",
+    "baseUrl": "https://openrouter.ai/api/v1",
+    "api": "openai-completions",
+}
 SHA = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 JOURNAL_FIELDS = frozenset({
@@ -52,6 +59,8 @@ class API:
     """Exact-origin API reader. Mutations remain fenced by the Driver gap."""
 
     def __init__(self, origin, key):
+        if origin != CONSOLE_ORIGIN:
+            raise Blocked("Enterprise console origin changed")
         parsed = urlsplit(origin)
         if parsed.scheme != "https" or not parsed.hostname or parsed.path not in ("", "/"):
             raise Blocked("Enterprise API origin must be an HTTPS origin")
@@ -120,6 +129,9 @@ def _validate_config(config):
         raise Blocked("Enterprise source repository changed")
     if source.get("revision") != "33bb74590a749f37934da4502fca6035cd234a55":
         raise Blocked("Enterprise source revision changed")
+    origins = config.get("privateOrigins")
+    if not isinstance(origins, dict) or origins.get("console") != CONSOLE_ORIGIN:
+        raise Blocked("Enterprise console origin changed")
     namespace = config.get("namespace")
     if not isinstance(namespace, dict):
         raise Blocked("Enterprise Namespace definition is invalid")
@@ -135,11 +147,11 @@ def _validate_config(config):
     if config["activationEnabled"]:
         model = config.get("model", {})
         secrets = config.get("secrets", {})
-        if (not isinstance(model, dict) or not isinstance(model.get("provider"), str) or
-                not model["provider"] or not isinstance(model.get("id"), str) or
-                not model["id"] or not isinstance(secrets, dict) or
+        if not isinstance(model, dict) or model != APPROVED_MODEL:
+            raise Blocked("activation requires explicit model on approved OpenRouter transport")
+        if (not isinstance(secrets, dict) or
                 secrets.get("modelApiKey") != "/homelab/openclaw-enterprise/model-api-key"):
-            raise Blocked("activation requires explicit model and dedicated key reference")
+            raise Blocked("activation requires dedicated key reference")
 
 
 def _require(condition, reason):

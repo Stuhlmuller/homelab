@@ -57,6 +57,16 @@ class EnterpriseReconciliation(unittest.TestCase):
         with self.assertRaisesRegex(OCE.Blocked, "service key is invalid"):
             OCE.API("https://console.oce.stinkyboi.com", "test-key\nother-header: injected")
 
+    def test_service_key_destination_is_pinned(self):
+        for origin in ("https://unexpected.example", "https://console.oce.stinkyboi.com.evil.example",
+                       "https://console.oce.stinkyboi.com:444"):
+            with self.subTest(origin=origin), self.assertRaisesRegex(OCE.Blocked, "console origin changed"):
+                OCE.API(origin, "test-key")
+        changed = copy.deepcopy(self.config)
+        changed["privateOrigins"]["console"] = "https://unexpected.example"
+        with self.assertRaisesRegex(OCE.Blocked, "console origin changed"):
+            OCE._validate_config(changed)
+
     def _installation_snapshot(self):
         document = b"occ:\n  cluster: fixture\ndrivers:\n  compute:\n    id: kubernetes\n"
         digest = hashlib.sha256(document).hexdigest()
@@ -209,6 +219,20 @@ class EnterpriseReconciliation(unittest.TestCase):
             OCE._validate_config(active)
         active["secrets"]["modelApiKey"] = "/homelab/openclaw-enterprise/model-api-key"
         OCE._validate_config(active)
+        for field, value in (("provider", "attacker"), ("id", "anything"),
+                             ("baseUrl", "https://unexpected.example"), ("api", "anthropic-messages")):
+            changed = copy.deepcopy(active)
+            changed["model"][field] = value
+            with self.subTest(field=field), self.assertRaisesRegex(OCE.Blocked, "approved OpenRouter transport"):
+                OCE._validate_config(changed)
+        for field in ("provider", "id", "baseUrl", "api"):
+            changed = copy.deepcopy(active)
+            del changed["model"][field]
+            with self.subTest(missing=field), self.assertRaisesRegex(OCE.Blocked, "approved OpenRouter transport"):
+                OCE._validate_config(changed)
+        active["model"]["alternateEndpoint"] = "https://unexpected.example"
+        with self.assertRaisesRegex(OCE.Blocked, "approved OpenRouter transport"):
+            OCE._validate_config(active)
 
     def test_legacy_retention_data_is_not_read_or_imported(self):
         class UnreadableLegacy(dict):
