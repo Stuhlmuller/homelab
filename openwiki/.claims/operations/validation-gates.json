@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c970fb1bbc1319663dcf1548934598808e8ccdd668855582fc4d80636a7c9321",
+  "pageVersion": "sha256:a097b2161cc1b42b2beb14a640786c55fc17c333977653a2e16ce515708a3e32",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -1128,29 +1128,33 @@
     },
     {
       "id": "claim_370a44925f9847ceb782c54e62bad10d",
-      "statement": "The read-only NetworkPolicy inventory fingerprints normalized ingress and egress rules and fails on missing, drifted, or source-only policies. Mixed Ingress/Egress policies use direction-neutral finding kinds, while single-direction policies retain ingress or egress names; older private review hashes need refresh.",
+      "statement": "The read-only NetworkPolicy inventory compares normalized ingress and egress rules, fails on missing, drifted, or source-only policies, and labels mixed or policy-type-transition drift direction-neutrally. Omitted or empty policyTypes defaults to Ingress, with Egress added only for nonempty egress rules; older private review hashes need refresh.",
       "evidence": [
         {
           "resource": "repo://docs/image-egress-hardening.md#L136-L150",
           "version": "repo-lines-v1:sha256:c6b079fc0f71b9bcb8477b47aa77efeb1bccc83e2ee4ca530b40672ab78ef3f9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYxMzA5OTY2MWVmMGE1OThmNjZhMmU4YjRiM2UwOGYwMjMzOTc5OWVmMjZkNWM2OTY4NGZmNmYzYjNlMjkyZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAyNDg3ODJjZjBhOWJjMWIyZjY0ZjY5MDA3MWJiYzk0NTkyMzAzMDY2ZDg1ODE2Y2Q5MGEwNzI3ZjMyNjM1MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjOTk4ZjZjMDExMjg4MzhiODUyZmQ3NzMzMmU4MDM3ZThkMTk0NTM2NTc3OWMyNzE5Mjc1OTRlZjQ3NjI5ZTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L159-L218",
-          "version": "repo-lines-v1:sha256:fe5f6e9ffe8b8c23caa6e8323ac78d3667ffab0c897c6397ab22254fd7c860e8:eyJzZWxlY3RlZExpbmVDb3VudCI6NjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhODY5OGI4ZTlkNzEzMzJlY2E3YzI4YTRmNGE1YjdlODFhZjcyOGJlODI5YjBkOThiZWVkYTg1NDg5OTg2NGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZDYzNmIxMTdjNjBmNTBmMTI2ZDVlMDA4MmY4MDNjMDQxNWZiMWM0OTYwMjE5NmM5Mzc3YTRiMDNlZGNmZDUifQ"
+          "resource": "repo://scripts/ci/network-policy-inventory-test.py#L159-L247",
+          "version": "repo-lines-v1:sha256:2c2e93861c3fdba4894a9e725ba19fc1560e0ba33cdf9467674691304847f681:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0Y2RmZDZhYTY2MTJhMmZkYjIzZmI0N2QyMGIwNGFhZTY0MDIzNTdlYzI2OTNiMTBkYmQ2MjJmNTRjMjQ3NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjN2U1NDg5YzUwNWQ2MmI3NGUwYzRhZWFlNzY3NDllZGM3OTljNWYyNTEyMTRjYmQ3MGZhNzMwNGYzYjk1YmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MjM1ZjljMzc3NjY5ODVmZmQwNjJjMzNkYjFkOGJmMDgxYTliNDA1YTI0Y2MxYjEzODc5MmY2ZTUyNzgyY2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImMyZDYzNmIxMTdjNjBmNTBmMTI2ZDVlMDA4MmY4MDNjMDQxNWZiMWM0OTYwMjE5NmM5Mzc3YTRiMDNlZGNmZDUifQ"
         },
         {
-          "resource": "repo://scripts/network-policy-inventory.py#L174-L204",
-          "version": "repo-lines-v1:sha256:19065aefac9cd07542fbe30879ea00445d93157c82bcbe75ac80818d9d00ef13:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdjOTk4NDczMTk1MGEzYWIxOTdmNjY2OGJlNWNhODgzNGQwYmJiZmQzNTk4MDAxM2Y1MTY4NWIwNzZiOTkwYmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhOTZmNWZhM2MwMzRhYWYyNjBiOWNlZWMyNTg1ZDlkMjgyYWEyNmRhMTFlNjg1NWEyNDcwNzUxNzY0YmRjZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjMzZkNjg3ZWVlNGM4YTM4MzM4ZTk3ZTlmNjIxZDhkN2M2OTBjZTliYjVkYzA5NWNlODY2ZDdjNjY4ZDQwOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NDM5YTNiMjM1NjViM2Y1Y2IxZTg4MzM0ZTg0MmNkMDE2NTg1MzIzMmY5NzczODdhNTVhZjZmMGQxMDFjMGQifQ"
+          "resource": "repo://scripts/network-policy-inventory.py#L173-L206",
+          "version": "repo-lines-v1:sha256:e09184aa004106317658ed83860922d298db57a25d66b8f4b45145358d390bdc:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhOTZmNWZhM2MwMzRhYWYyNjBiOWNlZWMyNTg1ZDlkMjgyYWEyNmRhMTFlNjg1NWEyNDcwNzUxNzY0YmRjZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyMjRiZWYxMDk3NWFiNjgzY2YxMmI0N2IwOWJhOTM1NmYwOTlkMzA3NmViYzU1NWUzNzZkM2ViYTc5YTU1ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3NDM5YTNiMjM1NjViM2Y1Y2IxZTg4MzM0ZTg0MmNkMDE2NTg1MzIzMmY5NzczODdhNTVhZjZmMGQxMDFjMGQifQ"
         },
         {
-          "resource": "repo://scripts/network-policy-inventory.py#L609-L617",
-          "version": "repo-lines-v1:sha256:31376d1adfc2135264ed3208ededd882cf03c59052b1fd3dca70e260931324fc:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWFiMGFlZTI2MmZjNmQwNTZlN2MzZjYzNWY2ZmY4MzdmOWM4ZWU2NTBhNzY3Zjg5ZDg4MWFiNzE5NDg4MjM4YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDhkNDhmODgzMThhYzNmYWNjMDZjOTkxM2RlYWQ3ODc0NjIzODhjZWFiMDVhMmFiMDU1NGQ3ZDcyOWQwZDljZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTM2MTQ5NzVmZDFlMGY4NzQxOTJjZTA1Yjc4ODJmYTA5ZmJmOTA0MDFjMGVkYWZlYTk5N2Q3ZDBiOTZlNzJiMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTUzYjhjYzc4ZDllNWM2MzQxNTFmOWYwZjQ2OGU4ZDc1ZjI5ZDQ5Mjc0OWRkZGE0MWRmNmFlOWQ1ODBhNDY1ZSJ9"
+          "resource": "repo://scripts/network-policy-inventory.py#L56-L63",
+          "version": "repo-lines-v1:sha256:9d0c1284873d3a567da2cb9049003ba02025c1be0a9ac654261ad5f29f86b3ef:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2Y1ZDgzYzM0YTUzMmI0NGEzYWE5NmM1MzhkYzUwZDRhYmM3YTQzNTQ1M2FkYTIxNjM0YTkxZGExN2UwMThlZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmE5MWZkYzI3YzgwNjFmZDlmYjFhYzk5N2ZiMWNiYmQwZjIzZmIzNjE1Y2Q0OTU5ODczOTg0ZTNmMGY0NTY3NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTU2NDhkYjllY2JkYjQwZTRjMTE2Yzk5MjAzODdmMTViNzMxOWUzNWMyZTlmMGUzYzVjOWEzMTdmYmZkODg5NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzAxMjJjYzljNWUwNjQ0ZThiOGUxMDNkMTMwNmM5NGViYTI4OGRiZDdjYWJmZDJjN2FlMDEwMWQwNTViM2Q5MiJ9"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py#L610-L619",
+          "version": "repo-lines-v1:sha256:6999aec1d9be9808d513b0eab6e97299a0c409968a46a4a7ceb6364145243678:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5ZThhOTk1NmM3NDRjODBmZWMzZDAwNzM2NDgyMzMzNTcxNjY1YjljZjYxMTJmNzdhYTQ2N2Y3OWE1NDQyYzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4ZDQ4Zjg4MzE4YWMzZmFjYzA2Yzk5MTNkZWFkNzg3NDYyMzg4Y2VhYjA1YTJhYjA1NTRkN2Q3MjlkMGQ5Y2UiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImEyODNmNjFhODZmMzI5YzhlMmVkN2Q3OWE4ZDZhNjRjZmY4OGZmNzRmYjVjMDkwZDFlNWI3MTE3NjU3MjdmZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1M2I4Y2M3OGQ5ZTVjNjM0MTUxZjlmMGY0NjhlOGQ3NWYyOWQ0OTI3NDlkZGRhNDFkZjZhZTlkNTgwYTQ2NWUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T20:57:55.425Z"
+    "at": "2026-10-19T21:02:46.926Z"
   }
 }

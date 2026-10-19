@@ -86,11 +86,11 @@
       "completedRunId": "2144e579-9196-4d2d-9463-507054103f13"
     },
     "/openwiki/operations/validation-gates.md": {
-      "pageVersion": "sha256:c970fb1bbc1319663dcf1548934598808e8ccdd668855582fc4d80636a7c9321",
+      "pageVersion": "sha256:a097b2161cc1b42b2beb14a640786c55fc17c333977653a2e16ce515708a3e32",
       "completedBy": "codex",
-      "completedRunId": "7c5647c3-f5a9-4259-8577-6e6bf9cbb764",
-      "gitHead": "87f2c4cf30db591c0966b8b37dbe81312b1138e9",
-      "sourceFingerprint": "sha256:87d0336534a410df33fe38ee3113e9fa38121937d54033b8948e5630151acbc1"
+      "completedRunId": "9f195dce-4809-4047-8c95-3cab56b00670",
+      "gitHead": "298f0de51aecf5090ef6ad247437ec539f4b9a9a",
+      "sourceFingerprint": "sha256:1f637f1e7e3035edf9bc46831c633857ccb1e54fd64ad61b220845d23e9f832d"
     },
     "/openwiki/operations/wiki-maintenance.md": {
       "gitHead": "0b5ddc7b0614e02155b7ba027ecaaedaab7a062e",
@@ -135,11 +135,11 @@
       "completedRunId": "56f610dc-e14c-4455-95fb-0dadb7fd6fc9"
     },
     "/openwiki/runbooks/runtime-isolation.md": {
-      "pageVersion": "sha256:8c6511aa4bd6c082a3668dd56c6b4511a758f1049a28701024313f130eee6eaf",
+      "pageVersion": "sha256:74e81ff8597820b6e717a1ded7343c9314b9f36eaa0953df897b9934be36714d",
       "completedBy": "codex",
-      "completedRunId": "7c5647c3-f5a9-4259-8577-6e6bf9cbb764",
-      "gitHead": "87f2c4cf30db591c0966b8b37dbe81312b1138e9",
-      "sourceFingerprint": "sha256:87d0336534a410df33fe38ee3113e9fa38121937d54033b8948e5630151acbc1"
+      "completedRunId": "9f195dce-4809-4047-8c95-3cab56b00670",
+      "gitHead": "298f0de51aecf5090ef6ad247437ec539f4b9a9a",
+      "sourceFingerprint": "sha256:1f637f1e7e3035edf9bc46831c633857ccb1e54fd64ad61b220845d23e9f832d"
     },
     "/openwiki/runbooks/secrets-aws-ssm.md": {
       "gitHead": "5a382a73fd8ae5c3ad28aa6242d3fbe0e5615389",
