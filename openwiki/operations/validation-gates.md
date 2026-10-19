@@ -247,7 +247,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T21:02:46.926Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:02:46.926Z
+    at: 2026-10-19T21:17:22.223Z
 ---
 
 # Validation Gates
