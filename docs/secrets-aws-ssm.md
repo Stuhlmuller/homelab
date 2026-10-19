@@ -157,13 +157,32 @@ Secret. The workflow uses the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role,
 a fixed parameter name and an exact current-main SHA; it never accepts the key
 as a dispatch argument or prints it.
 
-Temporarily store the new key in the `homelab-production` environment secret
-`OCE_MODEL_API_KEY`, then dispatch `openclaw-enterprise-model-credential.yml` on
-`main` with its exact current commit as `expected_sha`. Verify its SSM version
-receipt, remove the temporary GitHub secret, and advance the committed
-ExternalSecret revision before registering the Agent's OCC `harnessAuth`
-Secret. The writer checks OpenRouter authentication and writes only the declared
-Enterprise parameter; it never copies the LiteLLM credential.
+Temporarily store the new owner OpenRouter key in the `homelab-production`
+environment secret `OCE_MODEL_API_KEY`, then dispatch the
+[fixed credential workflow](../.github/workflows/openclaw-enterprise-model-credential.yml)
+on `main` with its exact current commit as `expected_sha`. Its
+[writer](../scripts/litellm-provider-credential.py) checks OpenRouter
+authentication and writes only `/homelab/openclaw-enterprise/model-api-key`;
+it never copies the LiteLLM credential. Verify the SSM version receipt,
+advance the committed `OnChange` ExternalSecret revision, and check the target
+Secret and OCC `harnessAuth` binding. After reviewed activation, verify real
+inference from the Agent on that consumer revision. Authentication at
+`/api/v1/key` alone is not acceptance. Remove the temporary GitHub secret only
+after that end-to-end check succeeds.
+
+Before rotating a working key, retain its known-good owner copy privately until
+the replacement passes. If the first key fails a pre-activation check, keep
+[`activationEnabled: false`](../scripts/config/openclaw-enterprise.json),
+replace the temporary GitHub input with a corrected owner key, and repeat the
+same protected workflow; do not activate or delete unverified input. If the
+first activation or an active rotation fails real inference, stop the Agent
+through reviewed reconciliation and use the same fixed workflow to restore the
+still-safe known-good owner key. If none exists or it is unsafe, use a corrected
+new owner key instead. Verify the newer SSM version, commit another
+ExternalSecret revision, reconcile the OCC Secret and Agent, and confirm real
+inference on the restored consumer revision before deleting the temporary
+GitHub input or revoking the failed key. Keep all key values out of git,
+dispatch inputs and logs.
 
 | SSM parameter suffix | Producer | Planned ExternalSecret target/key | Only consumer |
 | --- | --- | --- | --- |
