@@ -102,8 +102,12 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-b3b14c71f8a81de8a3b71c02
+    resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-8f8dab72ff0b7636d31aef4b
+    resource: repo://docs/openclaw-enterprise-rollout.md
   - id: openwiki-source-f19aa740c5d820d4dd28114e
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
@@ -136,10 +140,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
+generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T08:22:58.881Z
+    at: 2026-10-19T09:02:08.557Z
 ---
 
 # Workload Inventory
@@ -339,8 +343,11 @@ agent has been deployed. The unregistered
 declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, seven retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
-certificate. It declares no running PostgreSQL, local volumes, private route,
-or Installation candidate. Its fresh agent will use a separate owner
+certificate. It declares no running PostgreSQL, local volumes, or Installation
+candidate. Separate staged Traefik and Octelium declarations provide an
+authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
+through the private OCE API; the old URL still targets the suspended legacy
+Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner
 OpenRouter key after the archive, mirror, platform, isolation, and
 recovery gates pass. No dedicated canary node is available.
 The platform source declares dormant `platform-network-policy`,

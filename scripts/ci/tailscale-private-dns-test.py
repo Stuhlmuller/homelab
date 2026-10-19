@@ -26,10 +26,11 @@ class Readiness(unittest.TestCase):
         apps = 'affine argocd bazarr compass deluge dispatcharr fleet grafana harbor kiali langfuse litellm multica n8n nofx openclaw policy-bot prowlarr radarr sonarr'.split()
         self.assertEqual(set(value['hostnames']), {f'{app}.stinkyboi.com' for app in apps} | {
             'stinkyboi.com', 'cordium.stinkyboi.com', '*.cordium.stinkyboi.com', 'console.stinkyboi.com',
-            'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com'})
+            'octelium.stinkyboi.com', 'octelium-api.stinkyboi.com', 'portal.stinkyboi.com',
+            'console.oce.stinkyboi.com', '*.agents.oce.stinkyboi.com'})
         self.assertEqual(set(value['retired_hostnames']), {f'{name}.stinkyboi.com' for name in (
             'octelium-transport', 'kubernetes-api-ci', 'n8n-webhook', 'policy-bot-hook')})
-        self.assertEqual(check.retirement_names(value), value['hostnames'][1:])
+        self.assertEqual(check.retirement_names(value), value['hostnames'][1:27])
         self.assertEqual(len(check.retirement_names(value)), 26)
         self.assertNotIn('stinkyboi.com', check.retirement_names(value))
         self.assertFalse(set(check.retirement_names(value)) & set(value['retired_hostnames']))
@@ -101,7 +102,7 @@ class Readiness(unittest.TestCase):
         commands = self.exercise()
         self.assertEqual(commands[0], ('kubectl', '-n', 'traefik', 'get', 'service', 'traefik-private', '-o', 'json'))
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 28)
+        self.assertEqual(len(probes), 30)
         self.assertTrue(all('--connect-to' in command and '--disable' in command and '--insecure' not in command
                             for command in probes))
         for failure in ('hostname', 'unpublished', 'config', 'grpc', 'realm', 'backend', 'address', 'peer'):
@@ -111,7 +112,7 @@ class Readiness(unittest.TestCase):
     def test_ipv4_service_does_not_publish_dualstack_peers_unsupported_ipv6(self):
         commands = self.exercise(dualstack_peer=True)
         probes = [command for command in commands if command[0] == 'curl']
-        self.assertEqual(len(probes), 28)
+        self.assertEqual(len(probes), 30)
         self.assertTrue(all(command[command.index('--connect-to') + 1].endswith(':100.100.100.1:443')
                             for command in probes))
 
@@ -161,60 +162,16 @@ class Readiness(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, 'read failed'):
                         check.routes({'hostnames':['affine.stinkyboi.com']})
 
-    def test_openclaw_502_requires_explicit_source_and_live_suspension(self):
-        source = {'controllers':{'openclaw':{'replicas':0}}}
-        live = {'metadata':{'name':'openclaw','namespace':'ai'},'spec':{'replicas':0},
-                'status':{'replicas':0}}
-        with patch.object(check, 'run', side_effect=[json.dumps(source), json.dumps(live)]) as run, \
-                patch.object(check, 'probe', return_value=(502, [])), contextlib.redirect_stderr(io.StringIO()):
-            check.routes({'hostnames':['openclaw.stinkyboi.com']}, '100.100.100.1')
-        self.assertEqual(run.call_args_list[0].args,
-                         ('yq', '-o=json', '.', str(ROOT/'clusters/homelab/apps/openclaw/values.yaml')))
-        self.assertEqual(run.call_args_list[1].args,
-                         ('kubectl', '-n', 'ai', 'get', 'deployment', 'openclaw', '-o', 'json'))
-
-        invalid_sources = (None, {}, {'controllers':None}, {'controllers':{}},
-                           {'controllers':{'openclaw':None}},
-                           *({'controllers':{'openclaw':{'replicas':value}}}
-                             for value in (1, None, '0', False)))
-        for desired in invalid_sources:
-            with self.subTest(source=desired), patch.object(check, 'run', return_value=json.dumps(desired)) as run, \
-                    patch.object(check, 'probe', return_value=(502, [])):
-                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
-                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
-                run.assert_called_once()
-
-        invalid_live = (
-            {**live, 'metadata':{'name':'other','namespace':'ai'}},
-            {**live, 'metadata':{'name':'openclaw','namespace':'other'}},
-            *({**live, 'spec':{'replicas':value}} for value in (1, None, '0', False)),
-            *({**live, 'status':{'replicas':value}} for value in (1, '0')),
-        )
-        for actual in invalid_live:
-            with self.subTest(live=actual), patch.object(check, 'run',
-                    side_effect=[json.dumps(source), json.dumps(actual)]), \
-                    patch.object(check, 'probe', return_value=(502, [])):
-                with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
-                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
-
-        for responses in ([RuntimeError('source read failed')], [json.dumps(source), RuntimeError('live read failed')]):
-            with self.subTest(failure=responses), patch.object(check, 'run', side_effect=responses), \
-                    patch.object(check, 'probe', return_value=(502, [])):
-                with self.assertRaisesRegex(RuntimeError, 'read failed'):
-                    check.routes({'hostnames':['openclaw.stinkyboi.com']})
-
     def test_suspension_exception_does_not_allow_other_apps_or_other_5xx(self):
         for host in ('affine', 'openclaw', 'n8n', 'fleet', 'harbor'):
             for status in (500, 502, 503, 504):
-                if (host == 'affine' and status in (500, 502, 503)) or (host == 'openclaw' and status == 502):
+                if host == 'affine' and status in (500, 502, 503):
                     continue
                 with self.subTest(host=host, status=status), patch.object(check, 'probe', return_value=(status, [])), \
-                        patch.object(check, 'affine_suspended') as affine, \
-                        patch.object(check, 'openclaw_suspended') as openclaw:
+                        patch.object(check, 'affine_suspended') as affine:
                     with self.assertRaisesRegex(RuntimeError, 'readiness failed'):
                         check.routes({'hostnames':[f'{host}.stinkyboi.com']})
                     affine.assert_not_called()
-                    openclaw.assert_not_called()
 
     def test_private_preflight_requires_direct_and_normal_client_dns_without_connection_override(self):
         commands = []

@@ -52,7 +52,8 @@ ROUTERS = HTTP["routers"]
 class RouteTests(unittest.TestCase):
     def test_complete_private_inventory_and_direct_backends(self):
         controls = {"cordium", "octelium-cluster", "octelium-alias",
-                    "octelium-api", "octelium-console"}
+                    "octelium-api", "octelium-console", "oce-console",
+                    "oce-native-admin"}
         self.assertEqual(set(ROUTERS), set(APPS) | controls |
                          {"n8n-webhook", "policy-bot-hook", "harbor-registry"})
         for app, backend in APPS.items():
@@ -128,6 +129,15 @@ class RouteTests(unittest.TestCase):
                          r"Host(`cordium.stinkyboi.com`) || HostRegexp(`^[^.]+\.cordium\.stinkyboi\.com$`)")
         self.assertEqual(ROUTERS["octelium-cluster"]["rule"],
                          "Host(`stinkyboi.com`) || Host(`portal.stinkyboi.com`)")
+        self.assertEqual(ROUTERS["oce-console"]["rule"], "Host(`console.oce.stinkyboi.com`)")
+        cert_names = set(read_yaml("clusters/homelab/apps/traefik/certificate.yaml")["spec"]["dnsNames"])
+        self.assertTrue({"console.oce.stinkyboi.com", "*.agents.oce.stinkyboi.com"} <= cert_names)
+        self.assertEqual(ROUTERS["oce-console"]["service"], "octelium-cluster")
+        self.assertEqual(ROUTERS["oce-native-admin"]["rule"],
+                         r"HostRegexp(`^agent-[0-9a-f]{32}\.agents\.oce\.stinkyboi\.com$`)")
+        self.assertEqual(ROUTERS["oce-native-admin"]["service"], "oce-api")
+        self.assertEqual(HTTP["services"]["oce-api"]["loadBalancer"], {
+            "servers": [{"url": "http://openclaw-enterprise-api.openclaw-system.svc.cluster.local:8080"}]})
         self.assertEqual(ROUTERS["octelium-api"]["rule"], "Host(`octelium-api.stinkyboi.com`)")
         self.assertEqual(HTTP["services"]["octelium-api"]["loadBalancer"]["servers"],
                          [{"url": "h2c://octelium-ingress-dataplane.octelium.svc.cluster.local:8080"}])

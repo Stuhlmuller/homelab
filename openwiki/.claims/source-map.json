@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d69498fe97d1dfb1c0dd63fae22ab954502cfb686e5c8c3bc8aabbad8ec1c6bd",
+  "pageVersion": "sha256:070b9f2685bd0af2b6aa4c216ee6071193710626a831cb5a820836c5bedf5312",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -48,7 +48,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
+          "version": "repo-file-v1:sha256:a9fe4a938e82cc218e570694f102c79ed718d791eee23eff5c3bd6446b23aaf0"
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
@@ -128,11 +128,11 @@
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+          "version": "repo-file-v1:sha256:4fcdd662b1bb132bc101e7d54fd6b33002d8a84068a805397640d6a417e94806"
         },
         {
           "resource": "repo://scripts/tailscale-private-dns.sh",
-          "version": "repo-file-v1:sha256:148fae056906e7af902950403beba0c890b22a1c8e43fef0021682d3586e3e29"
+          "version": "repo-file-v1:sha256:bf2a6a9e4309725e30df462a4f1d5ae04ae07ccdef4cd4b399a7ec7b7222b0f6"
         }
       ]
     },
@@ -161,10 +161,32 @@
           "version": "repo-lines-v1:sha256:64e363f032ea9f5da6359bc746e3e5e4892d006c06eaa01e2b698633a2707412:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxNTYxZTY4OWQ0MTk2NWUwYWQyOTMxYWJkM2Q2YjA5NzA0NjQwN2Y0MTY1ODgyNTg5YjdmMmZjZWZjOTZmNDg3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyYWU1MmVjODU5MzFiOTUxZDU3MzllZjkzNjQxYTRmZTRlZjQyYmJkYTliZTMwN2UyMzBlZWMzYmNhYjJmOGQxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiOWJjYTUxYmViZTk5ZjU2ZmJlZjdkNGE2ZDRlNTFiNDRkNzU3OGQxMTcxNGU5ZjE4Mjg3NDlmMDhlZWQwMjFkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0OWQ4NjlkMGJmNzY3MjA3MTI2NzkxZWU1MTc2YzhlYmU3MGIyNWNiOWE0OWY0M2QyMjdjMTYzYzA0ZmJhMmM3In0"
         }
       ]
+    },
+    {
+      "id": "claim_0f2f901e413048fa888c8d802aace266",
+      "statement": "The source map links the scoped OpenClaw Enterprise Octelium catalog and exact-main reconciler to the Octelium runbook, and points its native host boundary to private ingress guidance.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
+        },
+        {
+          "resource": "repo://docs/examples/octelium/homelab-services.yaml",
+          "version": "repo-file-v1:sha256:a79153404a86c9d442f69ff76e1035c405d4fdfc44e8ec102a91313efe0baa45"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-access-test.py",
+          "version": "repo-file-v1:sha256:7608acd5a8521547b9e60ebf4f0fedd2e5a4c1fc20b3ca938b6c4912222bc571"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise-access.py",
+          "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T08:18:59.770Z"
+    "at": "2026-10-19T09:02:08.557Z"
   }
 }

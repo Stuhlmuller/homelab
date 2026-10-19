@@ -60,6 +60,8 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-54c2f556ce1e78fb3ef2d1df
+    resource: repo://clusters/homelab/apps/traefik/certificate.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
@@ -80,6 +82,8 @@ sources:
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
     resource: repo://docs/harbor-image-mirroring.md
+  - id: openwiki-source-bef786188ec490a342373148
+    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-e081ebe342fc946979516883
     resource: repo://docs/nix-builder-seccomp.md
   - id: openwiki-source-1247eded2dab9841fec2a345
@@ -142,6 +146,8 @@ sources:
     resource: repo://scripts/ci/offline-checks.sh
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
+  - id: openwiki-source-4091442a62f62f0adc73ce96
+    resource: repo://scripts/ci/openclaw-enterprise-access-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
@@ -214,10 +220,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
+generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T08:22:58.881Z
+    at: 2026-10-19T09:02:08.557Z
 ---
 
 # Validation Gates
@@ -483,12 +489,13 @@ missing persistent after a later active change, duplicate resources, read failur
 and missing active config. Those checks repeat before and after apply while
 preserving the node identity, configuration-scope and no-reboot gates.
 
-The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
-OpenClaw HTTP 502 only when each reviewed workload declaration and live
-Deployment specify zero replicas and no live replicas remain. Deployed Traefik
-routes and TLS must match the reviewed checkout. Other application 5xx
-responses fail. These exceptions check routing to intentionally stopped apps;
-they do not establish application runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 only
+when its reviewed declaration and live Deployment specify zero replicas and no
+live replicas remain. OpenClaw has no stopped-workload 502 exception; its
+canonical route must pass normal application readiness after Enterprise cutover.
+Deployed Traefik routes and TLS must match the reviewed checkout. Other
+application 5xx responses fail. The AFFiNE exception checks routing, not
+application runtime health.
 
 The DNS regression includes a dual-address peer whose LoadBalancer Service
 publishes only IPv4: it must produce A records and no AAAA. Probe each published
@@ -1524,6 +1531,15 @@ Deployments, ReplicaSets, and Pods across two read-only snapshots. The
 entrypoint still refuses mutation because pinned `GET /installation` does not
 reveal selected Drivers. Local tests do not prove Secret readiness, certificate
 issuance, PostgreSQL TLS, network-policy enforcement, hooks, routes, or restore.
+The staged private-access check runs
+[`openclaw-enterprise-access-test.py`](../../scripts/ci/openclaw-enterprise-access-test.py)
+in the static gate. It validates the scoped Octelium catalog and exact-main
+reconciler without applying it. The Traefik route and executable runtime checks
+cover the authenticated console host, exact 32-hex native Agent host, rejected
+lookalikes, WebSockets, and certificate SANs. The console needs the explicit
+`console.oce.stinkyboi.com` SAN: `*.stinkyboi.com` covers only one label.
+Live console authentication and native Agent access still require the inactive
+Enterprise API, policy prerequisites, and final cutover.
 See the [rollout runbook](../../docs/openclaw-enterprise-rollout.md) and
 [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 

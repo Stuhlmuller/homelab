@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:80787169d36097aeb9513713987d4ca76916917a70a9914b939c0a226a60e9d5",
+  "pageVersion": "sha256:96dab8a2074cb5ab5d4f4e1699d6b01df6372fdf93c15fa76f5ccc47a4101337",
   "claims": [
     {
       "id": "claim_c2f71ac008ed4043b63233fd5ef41363",
@@ -16,7 +16,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
-          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
+          "version": "repo-file-v1:sha256:cc3868ae196ff5ebe61299c3741f1a8c247b526cf4674ee85c04a97df947d4f9"
         },
         {
           "resource": "repo://clusters/homelab/platform/tailnet-dns/README.md",
@@ -49,6 +49,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:08:11.339Z"
+    "at": "2026-10-19T09:02:08.557Z"
   }
 }

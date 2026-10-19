@@ -216,10 +216,12 @@ OCE Namespace to the latter through its supported `existingNamespace` input.
 Create an OCE-owned fresh agent claim; never adopt old claims. Keep new and old
 archives separate and independently recoverable.
 
-Private owner flow: stable OpenClaw URL -> authenticated console -> OCE native
-agent authorization -> private Envoy -> agent gateway. Resolve the native origin
-from OCE, not a guessed hash. New per-agent hosts route to the OCE API, preserving
-Host/WebSocket behavior and narrowly scoped session cookies.
+Private owner flow: stable OpenClaw URL -> Octelium-authenticated console ->
+OCE native exact-Agent authorization -> private Envoy -> agent gateway.
+Resolve the native origin from OCE, not a guessed hash. The console and old
+redirect use Octelium; only the narrow native HostRegexp goes directly from
+private Tailscale/Traefik to OCE API, preserving Host/WebSocket behavior and
+the `oce.stinkyboi.com` session cookie.
 
 ## Validation and Requirement Coverage
 

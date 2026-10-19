@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:289e676bd0723bbd11a9f3715571818cfcaf888fc827e73c37cabce540f24e47",
+  "pageVersion": "sha256:fdac01f311f9ef9e0c628cb5c26a4c2113a074c2823778bc35428e2a74a08685",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -66,11 +66,11 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:5e83bfb4b50a30d51b3ee2efabb6a6bac97f0ad377a3b29ba5a4dc2b5701fce5"
+          "version": "repo-file-v1:sha256:9afda1c4d74fe8231099dd278030e6579da5c2fa3714609f4aa08c23983460ae"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
-          "version": "repo-file-v1:sha256:078abb835cbc9f68940fd96b6570539984ee740e4781ead029e862dfeb2e733c"
+          "version": "repo-file-v1:sha256:24a8f706a20921c35e1aac59f7a2f1d72a9f6feb7a8b72cbbdf7c19a4217564f"
         }
       ]
     },
@@ -102,11 +102,11 @@
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
-          "version": "repo-file-v1:sha256:de7919f7a1d0d5f5da8bdd3c9d31271041966adac4929afd2758acc9407bf68b"
+          "version": "repo-file-v1:sha256:c28d696560edae42ec5589907f0349857f36d1baf224967152003b5f2cb62ebb"
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:fe836deb4b727f8c0fc0b2dc8e172b335ac0b9e827ef4c8609000061bbe5b3e7"
+          "version": "repo-file-v1:sha256:5b5eeeac3cd543d8264aa30e7aedc66b30caa6f0c96380f8e17210b8a149ce8d"
         }
       ]
     },
@@ -148,7 +148,7 @@
         },
         {
           "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
-          "version": "repo-file-v1:sha256:fe836deb4b727f8c0fc0b2dc8e172b335ac0b9e827ef4c8609000061bbe5b3e7"
+          "version": "repo-file-v1:sha256:5b5eeeac3cd543d8264aa30e7aedc66b30caa6f0c96380f8e17210b8a149ce8d"
         },
         {
           "resource": "repo://scripts/octelium-api-response.py",
@@ -156,7 +156,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-private-dns-check.py",
-          "version": "repo-file-v1:sha256:b7c0daf4b91ff98ae4c2b7de9d0a97f8c2fce4ba54fe4fa9d29833c02cd78b89"
+          "version": "repo-file-v1:sha256:40d64c03108b4b54d5d9daa22286422127493b02cd8023452c31732a52ce0708"
         }
       ]
     },
@@ -180,19 +180,19 @@
     },
     {
       "id": "claim_208b0475f0894dc0a15e62f0943aeb0a",
-      "statement": "The private DNS preflight accepts AFFiNE HTTP 500/502/503 and OpenClaw HTTP 502 only with reviewed source and live zero replicas. Deployed Traefik routes and TLS must match source, other app 5xx responses fail, and a peer IPv6 is not published when ingress Service publishes only IPv4.",
+      "statement": "The private DNS preflight accepts AFFiNE 500/502/503 only with reviewed and live zero replicas, removes the stopped OpenClaw 502 exception, requires deployed Traefik route/TLS parity, and rejects other application 5xx responses; published ingress remains IPv4-only.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L135-L220",
-          "version": "repo-lines-v1:sha256:8b3e0d8259494147e041189318fecbf50639c29c24b234c5420aa91a2d3db498:eyJzZWxlY3RlZExpbmVDb3VudCI6ODYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzYjE5NzNkYzIzZjAwZTlmNWYzYTk0MmJkMzE0ODY2YmQ4NTc3ZTcwM2YyNzMxZWVlMzUwYmE2OTZmYzY0MTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YzdmMDlkN2Q4MDY4MDMxNWIwNGY0OWJhMjU4OTgxZjMxODUxMzJiMGM0MTBhOTI3NDRlODIxZjRjMGVmMDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY3ODU1M2UwOTJlMTk2Y2VkYTYyYzZmYzM5MTJlNDNhOWQ1YzE5YzllYWYyZDhmYjhmNjI2ZWU5MGViOWFkYzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MjZjYzU0MDQzNGIzMzI5MWRlYTdmZTk3ZGVjYjM0NTZhOTBiZmRmMzM0OGFlN2VkNGM3NDZhOGIzZDA0NTMifQ"
+          "resource": "repo://docs/networking-tailnet-ingress.md",
+          "version": "repo-file-v1:sha256:1d94f8fee50916900530d36fccecfe2f9eda51a098b4a1f14e206c5116f6a578"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L91-L117",
-          "version": "repo-lines-v1:sha256:29cdf195d46b9f96df4ab5cb2f52504951411bd5088398168ddb9c98879deb69:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1ZDAyNjFlZTcwNzE5YWI3M2Y3NzcyN2U2YjZkNmZmY2E2MzE3ZWUxOTNkYzdiODA2ZmJkYzNjYjU2NDQ5NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdmYzM4MTkzZDdlNDhhYWNiYmFhYmJhYTJlZTgzMTE4OTk2Yzg0NWViYjM5NDBmZWE1ZTk2MjA2OWQ0ZDJkY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI1MWU1ZmFlZTBiMDA0MzY5YTM4OTRiYTUzMWYxM2Y1YTJmZmU1OTMyN2EwYTRkZmZlZTc1NjU5NDc2MzRlMTQifQ"
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py",
+          "version": "repo-file-v1:sha256:5b5eeeac3cd543d8264aa30e7aedc66b30caa6f0c96380f8e17210b8a149ce8d"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py#L136-L186",
-          "version": "repo-lines-v1:sha256:95b8aff0f5a1fa1bb6cb819b72e99bdf6d2b71f8abbe0e3d5e38e285a4285731:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3ZmUyZGU5NjU3OTJiMjRjODNmYzE3YWJkMzVmYWJiMmUwMGY1MDQ5M2VjZmJkYmRmMTI1ZGRkMTgwODMwNjkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1YTEyZDAxYWQ3ZTExZWVkMDFiOWM5NGM1MjdhYjc5ZDk3ZjRiODRkODg1NzdiOTQ3MDQ2ODg0ZDcwMjFjZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRiOWZkNzczN2QxNjFhZjNjZGYxNmQwYTc3MTE1NmJkZTQyMDUzNjU1NWJhNGEzZjkwNDc0ODI2NjEzNjczYTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjYjBkZGJkNzgzY2Q0YzNjNWY4MzkxMjI0MmEyMjcwM2RmYzJiNTFkMDYwYTdjMTU1YWMxZjY3Y2FiMmE4MmYifQ"
+          "resource": "repo://scripts/tailscale-private-dns-check.py",
+          "version": "repo-file-v1:sha256:40d64c03108b4b54d5d9daa22286422127493b02cd8023452c31732a52ce0708"
         }
       ]
     },
@@ -243,7 +243,7 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L173-L209",
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L183-L219",
           "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
         }
       ]
@@ -276,7 +276,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
+          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
         }
       ]
     },
@@ -392,7 +392,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b0b4f23cc32b0f2b1c8b85d4a61e0c50c10f1b0806236c673fca4cf19dc02336"
+          "version": "repo-file-v1:sha256:22e6470aed06446d38f40d4cab5359c8ba82b948d18256eae4c501abc282222b"
         }
       ]
     },
@@ -732,7 +732,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:b0b4f23cc32b0f2b1c8b85d4a61e0c50c10f1b0806236c673fca4cf19dc02336"
+          "version": "repo-file-v1:sha256:22e6470aed06446d38f40d4cab5359c8ba82b948d18256eae4c501abc282222b"
         }
       ]
     },
@@ -746,15 +746,15 @@
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-check-test.py",
-          "version": "repo-file-v1:sha256:de7919f7a1d0d5f5da8bdd3c9d31271041966adac4929afd2758acc9407bf68b"
+          "version": "repo-file-v1:sha256:c28d696560edae42ec5589907f0349857f36d1baf224967152003b5f2cb62ebb"
         },
         {
           "resource": "repo://scripts/ci/tailnet-dns-test.py",
-          "version": "repo-file-v1:sha256:38d315393fd39d82aa657eb6c9aed70f6e9eaa08a7f539b989a44c3c18f3e15b"
+          "version": "repo-file-v1:sha256:12c2659828a0a727b17ad4d27c2e4c8c606240004e437f50405201a549e474af"
         },
         {
           "resource": "repo://scripts/tailnet-dns-check.py",
-          "version": "repo-file-v1:sha256:faf5f4b92d4ec21b75dd43c127db1451367fb802d7e06d3804f6434e76bc6a84"
+          "version": "repo-file-v1:sha256:4fcdd662b1bb132bc101e7d54fd6b33002d8a84068a805397640d6a417e94806"
         }
       ]
     },
@@ -776,7 +776,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
+          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
         }
       ]
     },
@@ -813,15 +813,15 @@
       "statement": "Feature 005 separates 26 public app subdomain retirement targets from 27 private resolver names. Before any DELETE, the helper scans the complete Cloudflare zone and fails closed on relevant child NS delegation, including a wildcard NS covering a target, or an out-of-set covering wildcard A/AAAA/CNAME. It checks authoritative answers without traversing child zones and rereads full target fields so content, proxy, or TTL drift blocks. Per-name off-tailnet, DNS-01, preserved-record, post-TTL absence, and private HTTPS gates remain required.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L399-L416",
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L356-L373",
           "version": "repo-lines-v1:sha256:5988c21070999a35b307e015484ac66e1dc6848e2ab2c404e5fec6bd1ca36a67:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1ZGIzMjVjMTA3NzhiMTVmMTlkYzIwMDJmMDE2ZTYyODM3ZjFjYjQzNzM1YmRiZWEwOWY5NjlmMjhhYmQzZDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI5N2M5ZWMzMDhmNjIwYTEyYmE5YjM3Y2U4ZmJkZWVhMDkzYTA2YjRiM2RhZTc5YmQ2ZjIzZDJiODAwZDcyODIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjODE5MmFlZGY5YTg1Nzg4ZDk2YjcxM2IyZDA4ZDU3MjhjNThhZTU1MDhjY2IzMjlkMmY3NzUxNjhjODJhNGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE3M2FjYWQ5Zjk5NmJjNWFhYzQ4MWE4NzlmN2Y4NjIxM2JhMDhhYWFhYjIxNWY0YTc0Y2Y3ZDhkYmU5OGMyYmUifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L634-L643",
+          "resource": "repo://scripts/ci/tailscale-private-dns-test.py#L591-L600",
           "version": "repo-lines-v1:sha256:40ba51922a2c9e9d43ae4cbb553e700f490fa338b7fab55363725a5bc3468be3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NTI0ZWUwMmJlMTU4ZDA0ZTM2NDEyMWI5YzI0Y2M2MjQwODRmZjNlZTQ5MzhlYjJhYjk4MGM5NjJkMzY1NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzMzNmNGZlNDVlNjUzMWFhNmI3MzdlZGVjMDFlM2ViZjhlYmY0OTQxNTA2NjY1OGFiNzUxNDQzMjMzOWM5NDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxY2ZmZmY4NzkyZjllNDNmZTdiM2Y4ZTExMThlMjQwYTZmOTUzNWQyMTNiMGZkYjZjZDc4MGNiM2Q4ODQ2MDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJkMWQzOTNmZGQyNDhlYjZlY2E3NjZmNGIwNDVkMTlhMDNhOTQzNzliNWE4MGU5MzQwOTM0ZTBkODg0ODQzZDEifQ"
         },
         {
-          "resource": "repo://scripts/tailscale-private-dns-check.py#L273-L317",
+          "resource": "repo://scripts/tailscale-private-dns-check.py#L266-L310",
           "version": "repo-lines-v1:sha256:8e0cec6fb3c3f236740580d63e9890647a6cf6b3af101887ac2dcfd4496c9f6c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2YjlhOTM2ZDE2NDAyZDk0MmUyZDVlM2ZmNjBiMTM3M2E5YTk4NWZhOTBkMjcwMWQ0MDcwZDNhZTJmZDA0MzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMzZiOGFkOGQ1MzFhZTlmMzZjZmJjYmViZTFhNGU5OTFmZjgzNTAxZmJmMzA2ODA1MDNmODlmZjYwYjllZWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkNmQzMTE3NmFjZDg3MDA3MTY2MThiOWZmZDA2MDhjNDdlNTVkYzI2NDNkYWIyZGIyYjU4NjE5OGIyMjBjZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYwMWIyMmEyNDA4ODUwYjc0ZGY5N2QwNGZlNzMyNTZmNjk3YWIxYzg1NjcwMjFiYzkxNzM2MTA1NGQ0NTJiNDcifQ"
         },
         {
@@ -882,7 +882,7 @@
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
-          "version": "repo-file-v1:sha256:2e5ea96cde46fcc2ecfad16a9300922789686a39bfdc3275383edd253681b568"
+          "version": "repo-file-v1:sha256:b4b16c26471a64b8bb0758ecc6772ffd24db948543eb933a7c6653c3543b5e90"
         }
       ]
     },
@@ -922,7 +922,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
+          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
         }
       ]
     },
@@ -940,7 +940,7 @@
         },
         {
           "resource": "repo://scripts/ci/static-checks.sh",
-          "version": "repo-file-v1:sha256:85d09e75fa101c79314a5aea471d9196d266b6601dff291056098e98552c71b7"
+          "version": "repo-file-v1:sha256:f04670fc3bf8bd99a1031b441cdadd392a88c4d291a40465a8ab8eb8000a75af"
         },
         {
           "resource": "repo://scripts/openclaw-enterprise.py#L82-L110",
@@ -987,10 +987,32 @@
           "version": "repo-lines-v1:sha256:5298d48e43db8aca1f10933e51a5c92d6adf0c8811bae70d53b0bd279a0ba9c0:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE1NjFlNjg5ZDQxOTY1ZTBhZDI5MzFhYmQzZDZiMDk3MDQ2NDA3ZjQxNjU4ODI1ODliN2YyZmNlZmM5NmY0ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhYTYzZmI5ZGIzNjM5ODRkYjVhZmMxNmIxODE1MmQxZWI1OTE4OGRmNGJmMTUzYjc0ZmE4ZDg5NzE1ODEwZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI5YmNhNTFiZWJlOTlmNTZmYmVmN2Q0YTZkNGU1MWI0NGQ3NTc4ZDExNzE0ZTlmMTgyODc0OWYwOGVlZDAyMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZhOWM0M2UxNDMzZTk1M2NhZWMyOTliYjE5NTdiY2M4MWEwZTg3YjNiMjRkMDc1ZDQ5YmU3Mjk0NTM0OTNiYzgifQ"
         }
       ]
+    },
+    {
+      "id": "claim_82f0a6b9e2224aa496004a566aefed58",
+      "statement": "The staged OpenClaw Enterprise private-access fixtures validate a scoped authenticated Octelium console and redirect, an exact 32-hex native Agent route through private Traefik, WebSocket and lookalike-host behavior, and explicit console and Agent certificate SANs; source checks do not establish live access.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/certificate.yaml",
+          "version": "repo-file-v1:sha256:7d3d5a8d3b873cef8121f614e6941c098f0e5ed436d9b9ad0b10eedbb6cbd615"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-access-test.py",
+          "version": "repo-file-v1:sha256:7608acd5a8521547b9e60ebf4f0fedd2e5a4c1fc20b3ca938b6c4912222bc571"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-routes-test.py",
+          "version": "repo-file-v1:sha256:9afda1c4d74fe8231099dd278030e6579da5c2fa3714609f4aa08c23983460ae"
+        },
+        {
+          "resource": "repo://scripts/ci/traefik-runtime-check.py",
+          "version": "repo-file-v1:sha256:24a8f706a20921c35e1aac59f7a2f1d72a9f6feb7a8b72cbbdf7c19a4217564f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T08:22:58.881Z"
+    "at": "2026-10-19T09:02:08.557Z"
   }
 }
