@@ -5,6 +5,7 @@ import copy
 import importlib.util
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SOURCE = Path(__file__).resolve().parents[2] / "clusters/homelab/apps/openclaw-enterprise/quiesce.py"
 SPEC = importlib.util.spec_from_file_location("oce_quiesce", SOURCE)
@@ -100,6 +101,33 @@ class QuiesceContract(unittest.TestCase):
             MODULE.main()
         self.assertEqual(fake.updates, ["api"])
         self.assertEqual(fake.deployments["worker"]["spec"]["replicas"], 1)
+
+    def test_retry_after_partial_scale_finishes_fence(self):
+        fake = FakeAPI(conflict="worker")
+        MODULE.api = fake
+        MODULE.pods = lambda: [pod(component) for component in MODULE.COMPONENTS
+                               if fake.deployments[component]["spec"]["replicas"]]
+        with self.assertRaisesRegex(RuntimeError, "conflict"):
+            MODULE.main()
+        fake.conflict = None
+        MODULE.main()
+        self.assertEqual(fake.updates, ["api", "worker"])
+        self.assertEqual({component: fake.deployments[component]["spec"]["replicas"]
+                          for component in MODULE.COMPONENTS}, {"api": 0, "worker": 0})
+
+    def test_pod_timeout_leaves_writers_stopped_and_retry_is_idempotent(self):
+        fake = FakeAPI()
+        MODULE.api, MODULE.pods = fake, lambda: [pod("api")]
+        with patch.object(MODULE.time, "monotonic", side_effect=[0, 1, 180]), \
+             patch.object(MODULE.time, "sleep"):
+            with self.assertRaisesRegex(RuntimeError, "did not terminate"):
+                MODULE.main()
+        self.assertEqual(fake.updates, ["api", "worker"])
+        self.assertEqual({component: fake.deployments[component]["spec"]["replicas"]
+                          for component in MODULE.COMPONENTS}, {"api": 0, "worker": 0})
+        MODULE.pods = lambda: []
+        MODULE.main()
+        self.assertEqual(fake.updates, ["api", "worker"])
 
     def test_unknown_writer_state_blocks_before_scale(self):
         fake = FakeAPI()
