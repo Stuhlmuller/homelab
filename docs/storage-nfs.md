@@ -107,7 +107,13 @@ Important settings:
 | `provisionerName` | `k8s-sigs.io/qnap-nfs` | Stable provisioner identity |
 | `accessModes` | `ReadWriteMany` | NFS can support multi-node mounts |
 | `reclaimPolicy` | `Retain` | Protects workload data from accidental PVC deletion |
-| `allowVolumeExpansion` | `true` | Allows planned PVC growth |
+| `allowVolumeExpansion` | `false` | The provisioner cannot resize PVCs |
+
+The pinned [NFS subdir provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner/blob/nfs-subdir-external-provisioner-4.0.18/README.md#nfs-provisioner-limitationspitfalls)
+does not enforce requested PVC sizes or support resize. A claim's requested
+capacity neither reserves NAS space nor limits that claim's usage. Restore a
+full export through a declared NAS-capacity path; changing a PVC request does
+not restore free space.
 
 The parent `platform-storage` Application auto-syncs by default. Treat it as a
 readiness gate anyway: verify the QNAP export is visible and the child
