@@ -10,10 +10,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
   - id: openwiki-source-16c66cdb690dec6706cb1de1
     resource: repo://scripts/ci/n8n-ai-migration-check.py
-generated: { by: "codex", at: "2026-10-19T16:44:49.508Z" }
+generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T16:49:06.466Z
+    at: 2026-10-19T17:05:04.757Z
 ---
 
 # AI observability
@@ -263,14 +263,15 @@ database inventory of all ten workflows confirmed the active model node uses
 `openrouter/free` and `litellm-managed`. It also found two inactive workflows
 still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
 The prepared init migration now covers these three exact workflow/node IDs.
-It lists workflow IDs and skips only a target that is absent or whose
-model/settings no longer match the inventoried state; other targets continue.
-A failed ID listing, failed export of a present workflow, or empty export stops
-startup instead of silently skipping a present target.
+It lists workflow IDs and skips only a missing workflow, a validated workflow
+whose target node was removed, or a target whose model/settings no longer match
+the inventoried state; other targets continue. A failed ID listing, failed
+export of a present workflow, invalid export or node shape, duplicate target
+node, or JSON/write error stops startup instead of silently skipping a target.
 Matching workflows migrate to `openrouter/free`, and only previously active
 workflows are republished. The migration check exercises the complete init shell
-with absent and edited workflows, list/export failures, and the node
-transformation. This awaits
+with absent and edited workflows, removed target nodes, list/export failures,
+malformed JSON, write failures, and the node transformation. This awaits
 deployment; inactive workflows must remain inactive afterward.
 The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.

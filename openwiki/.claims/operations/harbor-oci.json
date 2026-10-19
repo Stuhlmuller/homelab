@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7fc2e7010f59dc2459aa22a3d9d880efd729ef75e03c949d44fae21dae6b7be4",
+  "pageVersion": "sha256:5fb8dfadf58c72e3da2a649a5be4b0dfae240249389404643a41c295015e200a",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -662,11 +662,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
+          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
@@ -684,7 +684,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
+          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
@@ -781,6 +781,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T16:49:06.466Z"
+    "at": "2026-10-19T17:05:04.757Z"
   }
 }

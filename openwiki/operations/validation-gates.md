@@ -232,10 +232,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T16:49:06.466Z" }
+generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T16:49:06.466Z
+    at: 2026-10-19T17:05:04.757Z
 ---
 
 # Validation Gates
@@ -819,8 +819,10 @@ AI routing requires both the source gates and per-caller live evidence in
 [AI observability](../architecture/ai-observability.md).
 `scripts/ci/n8n-ai-migration-check.py` runs the rendered n8n init shell with
 synthetic exports. It checks the three exact target nodes, unchanged inactive
-state, idempotence, continued startup for absent or edited workflows, and
-startup failure for a failed ID listing or failed export of a present workflow.
+state, idempotence, continued startup for absent workflows, validated removal
+of a target node or changed model settings, and startup failure for a failed ID
+listing, failed export of a present workflow, malformed JSON or node shape,
+duplicate target node, or write error.
 It does not prove deployment or live workflow execution.
 `scripts/ci/litellm-native-auth-test.py` runs with the pinned attribution-test
 dependencies and exercises native key lookup, blocking/deletion, model and

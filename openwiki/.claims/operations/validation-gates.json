@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e50646ce6d62ec901ae6a1d5466ad5b6e09069a13088f8b2147a29294738bbf2",
+  "pageVersion": "sha256:f64799a614f25e11e856d91040a967f4d6649df782c22bcea2022f6d066639dd",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
-          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+          "version": "repo-file-v1:sha256:23f3f3f47c52744b34a1443ebb9b61f4e675ab0311112cd1b7517b98077c5785"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
+          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -1074,17 +1074,21 @@
     },
     {
       "id": "claim_15a6664b8b36416e9fbf42ceaca43880",
-      "statement": "The n8n AI migration check exercises the rendered init shell with synthetic exports, verifying exact conversions, inactive and idempotent behavior, continuation for absent or edited workflows, and startup failure for a failed ID listing or failed export of a present workflow.",
+      "statement": "The n8n AI migration check exercises the rendered init shell with synthetic exports, verifying exact conversions, inactive and idempotent behavior, continuation for absent workflows and validated removed or edited target nodes, and startup failure for ID listing or present-workflow export errors, malformed JSON or node shape, duplicate target nodes, and write errors.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L1-L154",
-          "version": "repo-lines-v1:sha256:3128dc38a259ed3dbbe0905065045d7bef3948492e28738e8aa314a7897a17ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiI3OWUwZmFiY2JjMTEyZWI3ZWZmNmQ4OTYzMmJjMDNmYWEwOTQ0ZTFjMWFmNDM4NWU4ODFjYTE1OTU3YTU1NWZiIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJhNDc0Y2Y1NGFmMTU4YTkxNGVmMGU1ZDlhNTk1OTQ0NjE5NDEwMWY4MWE4NmMxYTcwMjY0ZDBiNWI0MGE1MTE5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L1-L94",
+          "version": "repo-lines-v1:sha256:0a35bf57f550491cfd1ab8d8f5e46767dee7d3936efe3140cf6b71c63894767a:eyJzZWxlY3RlZExpbmVDb3VudCI6OTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5ZTBmYWJjYmMxMTJlYjdlZmY2ZDg5NjMyYmMwM2ZhYTA5NDRlMWMxYWY0Mzg1ZTg4MWNhMTU5NTdhNTU1ZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NDE3NTQ5ZmQxZDA3NDliZTEwZTg0NDI0ZWMxZjcxYjYyYThhN2Y4MzhmMDc4M2MyMjdmNTQ4OGU1NDQ0YzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdkZDk2ODM1OTM5ODJkOGZhMjkwZjFkZDhhZjdiN2ZmMzMwODViNmFhY2Q4MjIzMGRiYzE0MmU1N2Y5OTBlMTYifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L96-L192",
+          "version": "repo-lines-v1:sha256:eb63d9bd76d09617fa407de914390bd84ee21bcbef30390b9b6dced210496ad0:eyJzZWxlY3RlZExpbmVDb3VudCI6OTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVkMjhiODM4ZGFkYWU5OTRlN2E3ZDcyYmFhZjZmYjczYTY4OGI5Nzg0YThkMTg1OGEyNGYxODI4NmRiYmY0YzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwNTEzY2JkOGE2Zjk4NjA2MjczOWIwMjVkM2YyOTRjNWJmYmViYTA1N2YyNjFjMDBmNDg2NTU3NjJkN2E0MmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZlZDg4OWZjZmY1ZWNmYzUyY2Q3YjE4MmRhM2E1MjQ4N2Q5OGM3Y2Y1Y2YzOTE4Y2E4MTZhNDljZmIyNTI4NDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjViNjBiMGFjYzA5YWRjYjU0NmFmZmQ4MmE2NGJkNTc4ZTQ4OThjOWI2YmNkZjI0MmUzZTZmMTRjMWY5MzlmMWMifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T16:49:06.466Z"
+    "at": "2026-10-19T17:05:04.757Z"
   }
 }

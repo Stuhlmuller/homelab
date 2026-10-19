@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:05999c3c63910af507ed4b9928886a93624d059167a2bdbea86ec4ff732bc68f",
+  "pageVersion": "sha256:9b2129ab12d73221af8b22ca5d93f310de736e890cdc924edb8744095d41ce0a",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -62,7 +62,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:d8d07e7458f9b1cc9fd97534dba29ddb049a75587c672ce06785e243beec0646"
+          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -123,6 +123,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T14:01:19.597Z"
+    "at": "2026-10-19T17:05:04.757Z"
   }
 }
