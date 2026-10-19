@@ -156,6 +156,47 @@ class ChartHooksContract(unittest.TestCase):
             self.assertTrue(any(volume.get("secret", {}).get("secretName") == self.values["installation"]["secretName"]
                                 for volume in volumes))
 
+    @unittest.skipUnless(UPSTREAM, "supply --upstream-root for pinned stock chart comparison")
+    def test_stock_chart_uses_exact_secret_keys_and_retained_file_mounts(self):
+        chart = {(item["kind"], item["metadata"]["name"]): item for item in self.chart}
+
+        def secret_env(container):
+            return {entry["name"]: entry["valueFrom"]["secretKeyRef"]
+                    for entry in container.get("env", [])
+                    if "secretKeyRef" in entry.get("valueFrom", {})}
+
+        for component in ("api", "worker"):
+            pod = chart["Deployment", f"openclaw-enterprise-{component}"]["spec"]["template"]["spec"]
+            container = pod["containers"][0]
+            expected = {"OCC_DATABASE_URL": {"name": "occ-database", "key": "application-url"}}
+            if component == "api":
+                expected["OCC_AUTH_SECRET"] = {"name": "occ-auth", "key": "secret"}
+            self.assertEqual(secret_env(container), expected)
+            volumes = {volume["name"]: volume for volume in pod["volumes"]}
+            self.assertEqual(volumes["installation-startup"]["secret"], {
+                "secretName": self.values["installation"]["secretName"],
+                "items": [{"key": "installation.yaml", "path": "installation.yaml"}]})
+            self.assertEqual(volumes["database-ca"]["secret"], {
+                "secretName": "occ-postgres-root", "items": [{"key": "tls.crt", "path": "tls.crt"}]})
+            self.assertEqual(volumes["gateway-api-key"]["secret"], {
+                "secretName": "occ-private-gateway-key", "items": [{"key": "occ", "path": "key"}]})
+            mounts = {mount["name"]: mount for mount in container["volumeMounts"]}
+            for name in ("installation-startup", "database-ca", "gateway-api-key"):
+                self.assertTrue(mounts[name]["readOnly"])
+
+        pod = chart["Job", "oce-initialization"]["spec"]["template"]["spec"]
+        migration = next(item for item in pod["initContainers"] if item["name"] == "migration")
+        bootstrap = next(item for item in pod["containers"] if item["name"] == "bootstrap")
+        self.assertEqual(secret_env(migration), {
+            "OCC_MIGRATION_DATABASE_URL": {"name": "occ-database", "key": "migration-url"}})
+        self.assertEqual(secret_env(bootstrap), {
+            "OCC_DATABASE_URL": {"name": "occ-database", "key": "application-url"},
+            "OCC_AUTH_SECRET": {"name": "occ-auth", "key": "secret"}})
+        volumes = {volume["name"]: volume for volume in pod["volumes"]}
+        self.assertEqual(volumes["bootstrap-password-output"]["persistentVolumeClaim"], {
+            "claimName": self.values["bootstrap"]["password"]["claimName"]})
+        self.assertNotIn("occ-model-api-key", json.dumps(self.chart))
+
     @unittest.skipUnless(UPSTREAM, "supply --upstream-root for stock profile regeneration")
     def test_candidate_is_pinned_openclaw_profile_with_reviewed_gateway_name(self):
         with tempfile.TemporaryDirectory() as output:
