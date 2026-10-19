@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:68e103fa9b1d9983b982f00b20b096fa454ae3603b338e487a19a51d0e00061d",
+  "pageVersion": "sha256:2f383d89487b44d2cbd2c69de6993e35770b4910ac897b696d58002e66d895cb",
   "claims": [
     {
       "id": "claim_387c6dac73fc4932ade43a20ef912aef",
@@ -11,10 +11,24 @@
           "version": "repo-lines-v1:sha256:e3003c14e6737ec1e4458ca692292eca39b263e38bced3c9b199c888b650c395:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYzY2I0NjBiNjczYjU1ZTE2Mzc2NWNmMTMyOTZkNTJjNmQwOWJlYzUxODI3ZTc5NGU2MDIwNzgyMjYxZDZjZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhkZjZkM2JlYzIyYTFhZmVmNzlmZmFlODI0OTY3YzFjYzk3YTIxNDYxNTQyMTI1MzhkMWIxMjU4ZWQ0MGQ2MjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijc3YzA5MDQ3NzM4NTNhY2FmZGFiMTMxZmE1N2I4OWI2YWMwYmM1NDQ0Y2U3NGRiOTU4M2Q1M2FiZTUxN2Y3MjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY1YmU3MjFkZTBhNzI5ODUwYTkyYThjNjZkYjA0NzAxZTdiN2NmN2RjYjRkMzRjYzYxODM5YjcwMGQwM2E4NDIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_c82596890e4140afa7852ea739251ea2",
+      "statement": "The n8n init migration skips unavailable or edited target workflows and continues processing other targets; it republishes only workflows that were already active.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L95-L166",
+          "version": "repo-lines-v1:sha256:fc4265d463e74f1d7b617f219025d788e60eb6f2d2604ab7802c1b58608f2e61:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlZjZkNzE1NDAwNDM4Y2UzN2M3ZGUxYTE3OTZjMTRhZTNiMzkxYWM2Nzc2MDc1MGRlNTAzYWU2ZDkyZmZkZjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdhZjIxNmYwZTU3NTdmMmM2MTZmNjA4MGM1ODM5ODY3NWY3NzhjZjZhMzZlMDNkNDQzYmU5MTMxYWQ2ZTQ3OGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBmNGRjNzBlZDA4ZWZiNjY1ODlhNGU3ODAxMWFmNjk0Njc4OGRlMmJkODlkMzViOWJhNDJlYjk2YzAxYmU1YTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNhY2MyOTQwN2VmMzRiNTVjMTdhYjZiNWIyMDkwOTdmOTQyNjQ2MTA5MWYwNDliOWNmY2QyMTllYzRmMTFiNjcifQ"
+        },
+        {
+          "resource": "repo://scripts/ci/n8n-ai-migration-check.py#L98-L128",
+          "version": "repo-lines-v1:sha256:bab589eecc55f422790d5c9583217bc670c3940922e3be3d1fae45a775cb7ed8:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBkNjc3MTIxZmYxZDRjZTdkNDE1YjhiMGY4M2NkMDQzNzdlYWYxZDg2N2VhZTVmOGNlM2NjMDczYmFiNWNlYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0NzRjZjU0YWYxNThhOTE0ZWYwZTVkOWE1OTU5NDQ2MTk0MTAxZjgxYTg2YzFhNzAyNjRkMGI1YjQwYTUxMTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM3Zjg4ZDJkZjM2N2YwMjQxYzU2N2U0MmFiY2EwMGIwZGEzOTU3OWNkMjZhOGMyZTY3YTIzM2E2NWJmNGY2N2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-10T23:10:58.872Z"
+    "at": "2026-10-19T16:08:27.544Z"
   }
 }

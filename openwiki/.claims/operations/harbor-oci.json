@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:7ea2b478e427824b6c76ce453b85e185ebcd37a347e40eb9e80290ba38b0872b",
+  "pageVersion": "sha256:61d18e7a2bae6da968fdb79d3e5e843fc13557ce97b43c9746ad7635fcd97a01",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -184,7 +184,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -290,7 +290,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/validate.yml",
-          "version": "repo-file-v1:sha256:d9da995eb37f579533d9bfa098ceb481488075aea9846cbc128d3994aee27678"
+          "version": "repo-file-v1:sha256:95ab6bc7d088d828702f41b4f49362dd8eb5ea4e1dd50bbbb888c54c7185945b"
         },
         {
           "resource": "repo://builds/harbor-core/scan.sh",
@@ -781,6 +781,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T14:58:52.418Z"
+    "at": "2026-10-19T16:08:27.544Z"
   }
 }

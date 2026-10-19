@@ -5,11 +5,15 @@ description: "LiteLLM caller routing, OpenRouter credentials, Langfuse attributi
 tags: ["homelab", "navigation"]
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-10T23:10:58.872Z
+    at: 2026-10-19T16:08:27.544Z
 sources:
+  - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
+    resource: repo://clusters/homelab/apps/n8n/values.yaml
   - id: openwiki-source-cce2f8f33e3b3639655d2b33
     resource: repo://clusters/homelab/apps/openclaw/assistant/bootstrap.py
-generated: { by: "codex", at: "2026-10-10T23:00:00.726Z" }
+  - id: openwiki-source-16c66cdb690dec6706cb1de1
+    resource: repo://scripts/ci/n8n-ai-migration-check.py
+generated: { by: "codex", at: "2026-10-19T16:08:27.544Z" }
 ---
 
 # AI observability
@@ -258,9 +262,13 @@ The n8n read-only CLI export hung and was terminated. A subsequent read-only
 database inventory of all ten workflows confirmed the active model node uses
 `openrouter/free` and `litellm-managed`. It also found two inactive workflows
 still configured with `gpt-5.5` and AWS Bedrock Claude 3 Sonnet, respectively.
-The prepared init migration now covers these three exact workflow/node IDs,
-rejects changed model/options, and republishes only previously active workflows.
-It awaits deployment; inactive workflows must remain inactive afterward.
+The prepared init migration now covers these three exact workflow/node IDs.
+It skips a target if CLI export is unavailable or its model/settings no longer
+match the inventoried state; other targets continue through the init container.
+Matching workflows migrate to `openrouter/free`, and only previously active
+workflows are republished. The migration check exercises the complete init shell
+with missing and edited exports as well as the node transformation. This awaits
+deployment; inactive workflows must remain inactive afterward.
 The active error workflow includes HTTP actions and Discord
 notifications; do not trigger it wholesale for an inference smoke check.
 Bounded native-node acceptance and NOFX inference acceptance remain outstanding.

@@ -19,7 +19,7 @@ installed in this workload.
 
 On first boot, `runtime/bootstrap.py` signs in with the fixed-code key from
 `multica-backend-secrets` and creates a 90-day personal token. The pinned
-upstream daemon renews that token in place when fewer than seven days remain;
+upstream daemon renews that token in place when seven days or less remain;
 revoked or expired tokens fail closed. The daemon has no database credentials,
 Kubernetes token, host sockets, or other application's home directory.
 
