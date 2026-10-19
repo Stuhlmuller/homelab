@@ -6,6 +6,7 @@ const observer = require('./acceptance-observer.js');
 
 const owner = 'Stuhlmuller';
 const privateDir = '/ledger/private';
+const reviewSource = '/review/review.json';
 const cacheDir = '/cache/renovate/renovate/repository/github';
 const imageDigest = 'sha256:82f2a1375a48339c02f9a74b14f8468386c5c5e88ff10aa1674aae31df52969d';
 
@@ -205,15 +206,42 @@ function saveLedger(ledger, directory = privateDir) {
   }
 }
 
-async function main() {
-  const directory = fs.lstatSync(privateDir);
-  if (!directory.isDirectory() || (directory.mode & 0o077)) {
+function readReview(source = reviewSource) {
+  const metadata = fs.statSync(source); // Kubernetes Secret files are symlinks into an atomic projection.
+  if (!metadata.isFile() || (metadata.mode & 0o007) || metadata.size > 900 * 1024) {
+    throw new Error('invalid-review-source');
+  }
+  const bytes = fs.readFileSync(source);
+  if (!bytes.length || bytes.length > 900 * 1024) throw new Error('invalid-review-source');
+  const review = JSON.parse(bytes.toString('utf8'));
+  if (review?.schema !== 1) throw new Error('invalid-review');
+  return { review, bytes };
+}
+
+function materializeReview(bytes, directory = privateDir) {
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const folder = fs.lstatSync(directory);
+  if (!folder.isDirectory() || (folder.mode & 0o077) || folder.uid !== process.getuid()) {
     throw new Error('invalid-ledger-permissions');
   }
-  const reviewPath = path.join(privateDir, 'review.json');
-  const metadata = fs.lstatSync(reviewPath);
-  if (!metadata.isFile() || (metadata.mode & 0o077)) throw new Error('invalid-review-permissions');
-  const review = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
+  const target = path.join(directory, 'review.json');
+  if (fs.existsSync(target)) {
+    const existing = fs.lstatSync(target);
+    if (!existing.isFile() || (existing.mode & 0o077) || existing.uid !== process.getuid() ||
+        !fs.readFileSync(target).equals(bytes)) throw new Error('review-already-frozen');
+    return;
+  }
+  const temporary = `${target}.${crypto.randomUUID()}.tmp`;
+  try {
+    fs.writeFileSync(temporary, bytes, { flag: 'wx', mode: 0o600 });
+    fs.linkSync(temporary, target);
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+  }
+}
+
+async function main() {
+  const { review, bytes } = readReview();
   const ledgerPath = path.join(privateDir, 'ledger.json');
   if (fs.existsSync(ledgerPath)) {
     const existing = fs.lstatSync(ledgerPath);
@@ -223,6 +251,7 @@ async function main() {
         ledger.inventorySha256 !== digest(JSON.stringify(ledger.inventory))) {
       throw new Error('sample-already-frozen');
     }
+    materializeReview(bytes);
     console.log(JSON.stringify({ mode: 'inventory-seed', status: 'already-frozen',
       repositories: ledger.inventory.provenance.repositories.length,
       classes: ledger.inventory.activeDatasources.length,
@@ -243,6 +272,7 @@ async function main() {
   const { inventory, ledger } = buildInventory(review, scans, datasources, live);
   ledger.inventory = inventory;
   ledger.reviewSha256 = digest(JSON.stringify(review));
+  materializeReview(bytes);
   saveLedger(ledger);
   console.log(JSON.stringify({ mode: 'inventory-seed', repositories: review.repositories.length,
     classes: inventory.activeDatasources.length, candidates: inventory.dependencies.length,
@@ -254,4 +284,5 @@ if (require.main === module) main().catch(() => {
   process.exitCode = 1;
 });
 
-module.exports = { candidateKey, canonicalRegistry, readCache, buildInventory, saveLedger };
+module.exports = { candidateKey, canonicalRegistry, readCache, buildInventory, saveLedger,
+  readReview, materializeReview };

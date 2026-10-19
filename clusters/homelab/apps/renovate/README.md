@@ -271,10 +271,15 @@ is read-only, and it writes only to the separate protected ledger. Activate it
 through a reviewed GitOps change only after the
 App transfer, write cutover, and private review input are ready.
 
-The private `/ledger/private/review.json` input must be a mode `0600` regular
-file owned by UID 12021, supplied through a reviewed CI/CD or ExternalSecret
-path. The `/ledger/private` directory must be owned by that UID with mode
-`0700`. The input contains a
+The private review input is delivered once with the repository-owned
+`scripts/renovate-acceptance-review.py` command from clean, signed current
+`main`. Keep the source JSON outside git as an owner-only mode `0600` file.
+The command creates only the fixed `automation/renovate-acceptance-review`
+Secret, rejects replacement with different data, and verifies its readback
+without printing values. Its `review.json` key mounts only in the omitted,
+suspended inventory Job. That Job freezes a mode `0600` copy owned by UID 12021
+at `/ledger/private/review.json`; the directory has mode `0700`. The input
+contains a
 fixed seed, the pinned image digest and `config.js` SHA-256, every non-archived
 owned repository's default branch, current head SHA, Renovate cache SHA-512 and
 extraction config hash, plus one decision for **every** extracted dependency.
@@ -306,12 +311,34 @@ datasource × source-visibility strata and source evidence. The cache is
 pre-lookup, so evidence references in `review.json` need independent effective
 policy and registry-access verification; the Job alone cannot prove them.
 
-The independent owner/policy/source receipt-production and review-file delivery
-paths are not yet declared, so the Job must remain
-omitted/suspended. Do not place the file on the volume with an ad hoc live
-command. SSM delivery needs new exact-name External Secrets reader grants and
-enough bounded SecureString capacity for the private review; neither is
-declared here. Use a reviewed cleanup/reset path if the baseline must be rebuilt.
+The private input delivery path is declared, but independent owner inventory,
+source-visibility, and effective-policy receipt production and review remain
+open. Keep the Job omitted/suspended until those inputs and the first
+write-enabled extraction cache are ready. Do not place files on the volume with
+an ad hoc live command. A review larger than 900 KiB needs a new reviewed
+delivery contract before seeding; this path does not split or truncate it.
+Use a reviewed cleanup/reset path if the baseline must be rebuilt.
+
+After the private source review is complete and the seeding change is ready,
+deliver the file shortly before the reviewed GitOps activation so the owner
+inventory receipt remains within its one-hour validity window:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py install \
+  --expected-sha <current-main-sha> --private-file /private/review.json --execute
+```
+
+The script requires the homelab API endpoint and never echoes the JSON. After
+the inventory Job succeeds and its aggregate receipt is reviewed, retire the
+transient Kubernetes Secret from current signed `main`:
+
+```sh
+python3 -I scripts/renovate-acceptance-review.py retire \
+  --expected-sha <current-main-sha> --execute
+```
+
+The frozen ledger and its separate reviewed cleanup path remain. A failed Job
+keeps the Secret available for diagnosis and retry; do not publish its data.
 
 The seed first selects one deterministic repository for each upstream datasource,
 package, and normalized registry URL, rejecting conflicting visibility for the
