@@ -8,9 +8,11 @@ import importlib.util
 import json
 from pathlib import Path
 import stat
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,6 +38,16 @@ class FakeAPI:
     def patch(self, path, body):
         self.calls.append(("PATCH", path, body))
         raise AssertionError("offline fixture must not mutate")
+
+
+class FakeKubernetes:
+    def __init__(self, snapshots):
+        self.snapshots = iter(snapshots)
+        self.calls = []
+
+    def snapshot(self, digest):
+        self.calls.append(digest)
+        return next(self.snapshots)
 
 
 class EnterpriseReconciliation(unittest.TestCase):
@@ -66,6 +78,22 @@ class EnterpriseReconciliation(unittest.TestCase):
         changed["privateOrigins"]["console"] = "https://unexpected.example"
         with self.assertRaisesRegex(OCE.Blocked, "console origin changed"):
             OCE._validate_config(changed)
+
+    def test_reviewed_installation_must_match_chart_secret_checksum_and_image(self):
+        candidate = (ROOT / "clusters/homelab/apps/openclaw-enterprise/installation.yaml").read_bytes()
+        digest = hashlib.sha256(candidate).hexdigest()
+        controller = self.config["source"]["images"]["controller"]
+        image = controller["repository"] + "@" + controller["digest"]
+        values = {"installation": {"secretName": "occ-installation-startup-" + digest[:32],
+                                    "key": "installation.yaml"},
+                  "controlPlane": {"installationChecksum": digest},
+                  "images": {"controller": image}}
+        with patch.object(OCE.subprocess, "check_output", return_value=json.dumps(values)):
+            self.assertEqual(OCE.reviewed_installation(self.config), (candidate, digest, image))
+            values["controlPlane"]["installationChecksum"] = "0" * 64
+            with patch.object(OCE.subprocess, "check_output", return_value=json.dumps(values)):
+                with self.assertRaisesRegex(OCE.Blocked, "binding changed"):
+                    OCE.reviewed_installation(self.config)
 
     def _installation_snapshot(self):
         document = b"occ:\n  cluster: fixture\ndrivers:\n  compute:\n    id: kubernetes\n"
@@ -110,6 +138,7 @@ class EnterpriseReconciliation(unittest.TestCase):
             }
             replicasets[component] = [{
                 "metadata": {"name": "rs-" + component, "uid": "rs-" + component,
+                             "namespace": "openclaw-system",
                              "resourceVersion": "300",
                              "ownerReferences": [{"kind": "Deployment", "controller": True,
                                                   "uid": "dep-" + component, "name": name}]},
@@ -146,6 +175,19 @@ class EnterpriseReconciliation(unittest.TestCase):
                          {"api": "300", "worker": "300"})
         self.assertEqual(receipt["podResourceVersions"],
                          {"api": "400", "worker": "400"})
+
+    def test_historical_replicaset_does_not_block_current_pod_proof(self):
+        document, digest, image, snapshot = self._installation_snapshot()
+        old = copy.deepcopy(snapshot["replicaSets"]["api"][0])
+        old["metadata"].update({"name": "rs-old", "uid": "rs-old", "resourceVersion": "299"})
+        snapshot["replicaSets"]["api"].append(old)
+        receipt = OCE.attest_stable_installation(document, digest, "ins_one", snapshot,
+                                                 copy.deepcopy(snapshot), image)
+        self.assertEqual(receipt["replicaSetUids"]["api"], "rs-api")
+        old["metadata"]["ownerReferences"][0]["uid"] = "foreign-deployment"
+        with self.assertRaisesRegex(OCE.Blocked, "ownership"):
+            OCE.attest_stable_installation(document, digest, "ins_one", snapshot,
+                                           copy.deepcopy(snapshot), image)
 
     def test_attestation_rejects_mutable_stale_foreign_or_racing_inputs(self):
         document, digest, image, baseline = self._installation_snapshot()
@@ -195,16 +237,57 @@ class EnterpriseReconciliation(unittest.TestCase):
             OCE.attest_stable_installation(document, digest, "ins_one", baseline,
                                            replaced_pod, image)
 
-    def test_check_and_reconcile_stop_before_mutation_on_driver_gap(self):
+    def test_kubernetes_snapshot_reads_only_fixed_cluster_and_objects(self):
+        context = {"clusters": [{"cluster": {"server": OCE.KUBE_SERVER}}]}
+        listing = {"items": []}
+        objects = [context, {"kind": "Secret"}, {"kind": "Deployment"}, listing, listing,
+                   {"kind": "Deployment"}, listing, listing]
+        with patch.object(OCE.Kubernetes, "_json", side_effect=objects) as read:
+            snapshot = OCE.Kubernetes().snapshot("a" * 64)
+        self.assertEqual(snapshot["secret"], {"kind": "Secret"})
+        self.assertEqual(read.call_count, 8)
+        self.assertEqual(read.call_args_list[1].args,
+                         ("-n", "openclaw-system", "get", "secret",
+                          "occ-installation-startup-" + "a" * 32, "-o=json"))
+        self.assertTrue(all(call.args[0] == "-n" for call in read.call_args_list[1:]))
+        with patch.object(OCE.Kubernetes, "_json", return_value={"clusters": [{"cluster": {
+                "server": "https://foreign.example"}}]}) as read:
+            with self.assertRaisesRegex(OCE.Blocked, "context changed"):
+                OCE.Kubernetes().snapshot("a" * 64)
+            read.assert_called_once()
+
+    def test_kubernetes_read_hides_error_and_secret_output(self):
+        failed = subprocess.CompletedProcess(["kubectl"], 1, "private-body", "private-error")
+        with patch.object(OCE.subprocess, "run", return_value=failed):
+            with self.assertRaisesRegex(OCE.Blocked, "proof read failed") as raised:
+                OCE.Kubernetes._json("get", "secret", "example")
+        self.assertNotIn("private", str(raised.exception))
+        with patch.object(OCE.subprocess, "run", return_value=subprocess.CompletedProcess(
+                ["kubectl"], 0, "not-json", "")):
+            with self.assertRaisesRegex(OCE.Blocked, "invalid JSON"):
+                OCE.Kubernetes._json("get", "secret", "example")
+
+    def test_check_proves_stable_current_pods_and_reconcile_remains_read_only(self):
+        document, digest, image, snapshot = self._installation_snapshot()
         api = FakeAPI({"/installation": {"id": "ins_one", "name": "oce",
                                          "capabilities": {"openclaw": {"executionModes": ["embedded"]}}}})
-        with self.assertRaisesRegex(OCE.Blocked, "selected Drivers"):
-            OCE.check(self.config, api)
-        with self.assertRaisesRegex(OCE.Blocked, "selected Drivers"):
-            OCE.reconcile(self.config, api, self.config["source"]["revision"])
-        with self.assertRaisesRegex(OCE.Blocked, "selected Drivers"):
-            OCE.verify(self.config, api)
+        kube = FakeKubernetes([copy.deepcopy(snapshot) for _ in range(6)])
+        with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
+            self.assertEqual(OCE.check(self.config, api, kube)["installationId"], "ins_one")
+            with self.assertRaisesRegex(OCE.Blocked, "reconciliation is not implemented"):
+                OCE.reconcile(self.config, api, kube, self.config["source"]["revision"])
+            with self.assertRaisesRegex(OCE.Blocked, "tenant verification is not implemented"):
+                OCE.verify(self.config, api, kube)
         self.assertEqual(api.calls, [("GET", "/installation")] * 3)
+        self.assertEqual(kube.calls, [digest] * 6)
+        self.assertFalse((self.private / "journal.json").exists())
+
+        unbound = copy.deepcopy(snapshot)
+        del unbound["secret"]["metadata"]["annotations"]["openclaw.dev/installation-id"]
+        kube = FakeKubernetes([unbound, copy.deepcopy(unbound)])
+        with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
+            with self.assertRaisesRegex(OCE.Blocked, "mutable or foreign"):
+                OCE.check(self.config, api, kube)
         self.assertFalse((self.private / "journal.json").exists())
 
     def test_activation_requires_explicit_model_and_distinct_key_reference(self):
@@ -241,8 +324,11 @@ class EnterpriseReconciliation(unittest.TestCase):
 
         config = {**self.config, "legacyRetention": UnreadableLegacy()}
         api = FakeAPI({"/installation": {"id": "ins_one"}})
-        with self.assertRaisesRegex(OCE.Blocked, "selected Drivers"):
-            OCE.reconcile(config, api, self.config["source"]["revision"])
+        document, digest, image, snapshot = self._installation_snapshot()
+        kube = FakeKubernetes([snapshot, copy.deepcopy(snapshot)])
+        with patch.object(OCE, "reviewed_installation", return_value=(document, digest, image)):
+            with self.assertRaisesRegex(OCE.Blocked, "reconciliation is not implemented"):
+                OCE.reconcile(config, api, kube, self.config["source"]["revision"])
         self.assertEqual(api.calls, [("GET", "/installation")])
 
     def test_duplicate_or_unjournaled_logical_identity_is_foreign(self):

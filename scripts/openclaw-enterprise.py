@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Fail-closed OpenClaw Enterprise reconciliation entrypoint.
 
-The pinned API does not expose the selected Installation Drivers. Until a
-repository-owned proof path exists, commands stop before any mutation. The
-recovery and journal helpers below specify the offline retry boundary; they do
-not turn incomplete installation evidence into permission to deploy.
+The pinned API does not expose selected Installation Drivers. Read-only checks
+attest the reviewed startup file and current controller Pods; reconciliation
+still stops before mutation until the remaining tenant workflow is implemented.
 """
 
 import argparse
@@ -27,6 +26,8 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
 CONSOLE_ORIGIN = "https://console.oce.stinkyboi.com"
+KUBE_SERVER = "https://kubernetes-api-ci.stinkyboi.com"
+INSTALLATION_APP = ROOT / "clusters/homelab/apps/openclaw-enterprise"
 APPROVED_MODEL = {
     "provider": "openai",
     "id": "openrouter/free",
@@ -56,7 +57,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class API:
-    """Exact-origin API reader. Mutations remain fenced by the Driver gap."""
+    """Exact-origin API reader. Mutations remain fenced by incomplete reconciliation."""
 
     def __init__(self, origin, key):
         if origin != CONSOLE_ORIGIN:
@@ -90,6 +91,49 @@ class API:
         return payload["data"]
 
 
+class Kubernetes:
+    """Read exact installed controller objects without printing Secret data."""
+
+    @staticmethod
+    def _json(*args):
+        try:
+            result = subprocess.run(["kubectl", "--request-timeout=15s", *args],
+                                    capture_output=True, text=True, timeout=20, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            raise Blocked("Kubernetes proof read is unavailable") from None
+        if result.returncode or len(result.stdout) > 4 * 1048576:
+            raise Blocked("Kubernetes proof read failed")
+        try:
+            return json.loads(result.stdout)
+        except ValueError:
+            raise Blocked("Kubernetes proof returned invalid JSON") from None
+
+    def snapshot(self, digest):
+        context = self._json("config", "view", "--minify", "-o=json")
+        _require(isinstance(context, dict) and isinstance(context.get("clusters"), list) and
+                 len(context["clusters"]) == 1 and
+                 isinstance(context["clusters"][0], dict) and
+                 isinstance(context["clusters"][0].get("cluster"), dict) and
+                 context["clusters"][0].get("cluster", {}).get("server") == KUBE_SERVER,
+                 "Kubernetes proof context changed")
+        namespace = "openclaw-system"
+        labels = "app.kubernetes.io/name=openclaw-enterprise,app.kubernetes.io/instance=oce"
+        secret_name = "occ-installation-startup-" + digest[:32]
+        snapshot = {"secret": self._json("-n", namespace, "get", "secret", secret_name, "-o=json"),
+                    "deployments": {}, "replicaSets": {}, "pods": {}}
+        for component in ("api", "worker"):
+            name = "openclaw-enterprise-" + component
+            selector = labels + ",app.kubernetes.io/component=" + component
+            snapshot["deployments"][component] = self._json(
+                "-n", namespace, "get", "deployment", name, "-o=json")
+            for kind, field in (("replicasets", "replicaSets"), ("pods", "pods")):
+                listing = self._json("-n", namespace, "get", kind, "-l", selector, "-o=json")
+                _require(isinstance(listing, dict) and isinstance(listing.get("items"), list),
+                         "Installation workload list is invalid")
+                snapshot[field][component] = listing["items"]
+        return snapshot
+
+
 def require_driver_identity(installation):
     """GET /installation is deliberately insufficient at the pinned revision."""
     if not isinstance(installation, dict) or not isinstance(installation.get("id"), str):
@@ -97,24 +141,61 @@ def require_driver_identity(installation):
     raise Blocked("GET /installation cannot prove selected Drivers; activation is blocked")
 
 
-def check(config, api):
-    _validate_config(config)
+def reviewed_installation(config):
+    candidate = (INSTALLATION_APP / "installation.yaml").read_bytes()
+    _require(0 < len(candidate) <= 1048576, "reviewed Installation bytes are invalid")
+    digest = hashlib.sha256(candidate).hexdigest()
+    try:
+        values = json.loads(subprocess.check_output(
+            ["yq", "-o=json", ".", str(INSTALLATION_APP / "values.yaml")],
+            stderr=subprocess.DEVNULL, timeout=15))
+    except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        raise Blocked("reviewed Installation chart values are unavailable") from None
+    controller = config.get("source", {}).get("images", {}).get("controller")
+    _require(isinstance(values, dict) and isinstance(values.get("installation"), dict) and
+             isinstance(controller, dict) and isinstance(controller.get("repository"), str) and
+             isinstance(controller.get("digest"), str),
+             "reviewed Installation chart values are invalid")
+    image = controller["repository"] + "@" + controller["digest"]
+    _require(values["installation"].get("secretName") ==
+             "occ-installation-startup-" + digest[:32] and
+             values["installation"].get("key") == "installation.yaml" and
+             values.get("controlPlane", {}).get("installationChecksum") == digest and
+             values.get("images", {}).get("controller") == image,
+             "reviewed Installation and chart binding changed")
+    return candidate, digest, image
+
+
+def prove_driver_identity(config, api, kube):
+    candidate, digest, image = reviewed_installation(config)
+    before = kube.snapshot(digest)
     installation = api.get("/installation")
-    require_driver_identity(installation)
+    _require(isinstance(installation, dict) and
+             isinstance(installation.get("id"), str) and
+             installation["id"].startswith("ins_"),
+             "Enterprise Installation response is invalid")
+    after = kube.snapshot(digest)
+    return attest_stable_installation(candidate, digest, installation["id"],
+                                     before, after, image)
 
 
-def reconcile(config, api, expected_sha):
+def check(config, api, kube):
+    _validate_config(config)
+    return prove_driver_identity(config, api, kube)
+
+
+def reconcile(config, api, kube, expected_sha):
     _validate_config(config)
     if not SHA.fullmatch(expected_sha):
         raise Blocked("Expected repository SHA is invalid")
-    # No journal or API mutation is started before the selected Driver proof.
-    installation = api.get("/installation")
-    require_driver_identity(installation)
+    prove_driver_identity(config, api, kube)
+    raise Blocked("Enterprise reconciliation is not implemented; no API mutation was sent")
 
 
-def verify(config, api):
+def verify(config, api, kube):
     # Verification is a read, never an inference probe or implicit deployment.
-    return check(config, api)
+    check(config, api, kube)
+    raise Blocked("Enterprise tenant verification is not implemented")
 
 
 def _validate_config(config):
@@ -272,11 +353,24 @@ def _attest_installation_snapshot(candidate, digest, installation_id, snapshot, 
         _startup_mount(template["spec"], component, secret_name, image)
         replicasets = snapshot["replicaSets"][component]
         pods = snapshot["pods"][component]
-        _require(len(replicasets) == 1 and len(pods) == 1,
+        _require(len(replicasets) >= 1 and len(pods) == 1,
                  "Installation workload has ambiguous replicas")
-        rs, pod = replicasets[0], pods[0]
+        pod = pods[0]
+        for historical in replicasets:
+            historical_meta = historical["metadata"]
+            _controller_owner(historical_meta, "Deployment", dep_meta["uid"], name)
+            _require(historical_meta.get("namespace") == "openclaw-system" and
+                     isinstance(historical_meta.get("uid"), str) and
+                     isinstance(historical_meta.get("name"), str),
+                     "Installation ReplicaSet is foreign")
+        pod_owners = [item for item in pod["metadata"].get("ownerReferences", [])
+                      if item.get("controller") is True and item.get("kind") == "ReplicaSet"]
+        active = [item for item in replicasets if len(pod_owners) == 1 and
+                  item["metadata"].get("uid") == pod_owners[0].get("uid") and
+                  item["metadata"].get("name") == pod_owners[0].get("name")]
+        _require(len(active) == 1, "Installation Pod has no unique owned ReplicaSet")
+        rs = active[0]
         rs_meta, pod_meta = rs["metadata"], pod["metadata"]
-        _controller_owner(rs_meta, "Deployment", dep_meta["uid"], name)
         _require(rs["spec"]["template"]["metadata"]["annotations"].get(
             "openclaw.dev/installation-checksum") == digest,
             "Installation ReplicaSet checksum changed")
@@ -615,12 +709,13 @@ def main(argv=None):
         else:
             key_path = Path(config["bootstrap"]["serviceKeyFile"])
         api = API(config["privateOrigins"]["console"], _read_key(key_path))
+        kube = Kubernetes()
         if args.command == "reconcile":
-            reconcile(config, api, args.expected_sha)
+            reconcile(config, api, kube, args.expected_sha)
         elif args.command == "verify":
-            verify(config, api)
+            verify(config, api, kube)
         else:
-            check(config, api)
+            check(config, api, kube)
     except (Blocked, OSError, ValueError, KeyError) as error:
         print(f"OpenClaw Enterprise {args.command} blocked: {error}", file=sys.stderr)
         return 1
