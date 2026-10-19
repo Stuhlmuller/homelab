@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import sqlite3
 import stat
@@ -16,7 +17,7 @@ import tarfile
 import tempfile
 import threading
 import time
-from contextlib import closing
+from contextlib import closing, contextmanager
 from pathlib import Path, PurePosixPath
 
 
@@ -59,6 +60,15 @@ def private_file(path, owner=None):
         raise ValueError('private file must be owned by this user with mode 0600')
     private_dir(path.parent, owner)
     return path
+
+
+@contextmanager
+def sqlite_phase(phase):
+    try:
+        yield
+    except sqlite3.Error as error:
+        error.retirement_phase = phase
+        raise
 
 
 def digest(path):
@@ -267,10 +277,39 @@ def stopped(status, config, observed, baseline):
         raise ValueError('legacy writer or source identity is active, missing, or uncertain')
 
 
+class DiskInodes:
+    """Keep tarfile's hardlink lookup on private disk, not in the Python heap."""
+
+    def __init__(self, db):
+        self.db = db
+        db.execute('CREATE TABLE inodes (id TEXT PRIMARY KEY, name TEXT NOT NULL) WITHOUT ROWID')
+
+    @staticmethod
+    def key(inode):
+        return f'{inode[0]}:{inode[1]}'
+
+    def __contains__(self, inode):
+        return self.db.execute('SELECT 1 FROM inodes WHERE id = ?',
+                               (self.key(inode),)).fetchone() is not None
+
+    def __getitem__(self, inode):
+        row = self.db.execute('SELECT name FROM inodes WHERE id = ?',
+                              (self.key(inode),)).fetchone()
+        if row is None:
+            raise KeyError(inode)
+        return row[0]
+
+    def __setitem__(self, inode, name):
+        self.db.execute('INSERT OR REPLACE INTO inodes VALUES (?, ?)',
+                        (self.key(inode), name))
+
+
 def add_tree(tar, root, label):
     def check(member):
         if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
             raise ValueError('unsupported special file in legacy state')
+        # Python 3.11 retains every written header unless the cache is cleared.
+        tar.members.clear()
         # Retain raw link targets; independent restore creates links only after data verification.
         if member.isfile() and member.size == 0 and not (member.mode & 0o444):
             tar.addfile(member)
@@ -292,6 +331,8 @@ def index_bundle(bundle, index):
     """Validate all headers before extraction, with membership stored on disk."""
     with tarfile.open(bundle, 'r|gz') as tar:
         for member in tar:
+            # Python 3.11 also caches headers in stream mode; SQLite is the index.
+            tar.members.clear()
             name = PurePosixPath(member.name)
             if (not name.parts or name.is_absolute() or name.parts[0] not in ('local', 'nas')
                     or '..' in name.parts or member.name != str(name)):
@@ -326,16 +367,22 @@ def verify_bundle(bundle, expected, config, expected_roots):
     private_file(bundle, config['nasUid'])
     if digest(bundle) != expected:
         raise ValueError('archive checksum mismatch')
-    with tempfile.TemporaryDirectory(prefix='oce-legacy-restore-',
-                                     dir=private_dir(bundle.parent, config['nasUid'])) as scratch:
-        with closing(sqlite3.connect(Path(scratch) / 'members.sqlite')) as index:
+    with (tempfile.TemporaryDirectory(prefix='oce-legacy-restore-',
+                                      dir=private_dir(bundle.parent, config['nasUid'])) as scratch,
+          tempfile.TemporaryDirectory(prefix='restore-index-', dir=private_dir(
+              Path(config['scratchRoot']))) as index_dir):
+        index_path = Path(index_dir) / 'members.sqlite'
+        with sqlite_phase('member-index'), closing(sqlite3.connect(index_path)) as index:
+            index_path.chmod(0o600)
             index.execute('PRAGMA journal_mode = OFF')
+            index.execute('PRAGMA cache_size = -1024')
             index.execute('CREATE TABLE members (name TEXT PRIMARY KEY, kind TEXT NOT NULL, '
                           'link TEXT NOT NULL, size INTEGER NOT NULL, mode INTEGER NOT NULL, '
                           'extracted INTEGER NOT NULL) WITHOUT ROWID')
             index_bundle(bundle, index)
             with tarfile.open(bundle, 'r|gz') as tar:
                 for member in tar:
+                    tar.members.clear()
                     kind = member_kind(member)
                     row = index.execute('SELECT kind, link, size, mode, extracted FROM members '
                                         'WHERE name = ?', (member.name,)).fetchone()
@@ -374,8 +421,9 @@ def verify_bundle(bundle, expected, config, expected_roots):
         for label in ('local', 'nas'):
             if tree(Path(scratch) / label)['contentSha256'] != expected_roots[label]['tree'].get('contentSha256'):
                 raise ValueError('archive content differs from stopped source')
-        for relative in config['requiredLocal']:
-            verify_read_only_database(local / relative, config, config['nasUid'])
+        with sqlite_phase('restored-database'):
+            for relative in config['requiredLocal']:
+                verify_read_only_database(local / relative, config, config['nasUid'])
         for relative in config['requiredNas']:
             item = nas / relative
             if (item.is_symlink() or not item.is_dir()
@@ -399,12 +447,21 @@ def archive(config, status_path, baseline_path, observed_path, destination):
         raise ValueError('archive destination cannot share a source root')
     scratch = Path(tempfile.mkdtemp(prefix='.partial-oce-legacy-', dir=destination))
     bundle = scratch / 'legacy.tar.gz'
-    with bundle.open('xb') as output:
-        with gzip.GzipFile(fileobj=output, mode='wb', mtime=0, filename='') as compressed:
-            with tarfile.open(fileobj=compressed, mode='w', dereference=False) as tar:
-                local, nas = roots(config)
-                add_tree(tar, local, 'local')
-                add_tree(tar, nas, 'nas')
+    with tempfile.TemporaryDirectory(prefix='tar-inodes-', dir=private_dir(
+            Path(config['scratchRoot']))) as index_dir:
+        index_path = Path(index_dir) / 'inodes.sqlite'
+        with sqlite_phase('writer-index'), closing(sqlite3.connect(index_path)) as index:
+            index_path.chmod(0o600)
+            index.execute('PRAGMA journal_mode = OFF')
+            index.execute('PRAGMA cache_size = -1024')
+            with bundle.open('xb') as output:
+                with gzip.GzipFile(fileobj=output, mode='wb', mtime=0, filename='') as compressed:
+                    with tarfile.open(fileobj=compressed, mode='w', dereference=False) as tar:
+                        tar.inodes = DiskInodes(index)
+                        local, nas = roots(config)
+                        add_tree(tar, local, 'local')
+                        add_tree(tar, nas, 'nas')
+            del tar  # Release the writer before independent restore.
     bundle.chmod(0o600)
     restored = verify_bundle(bundle, digest(bundle), config, observed['roots'])
     if restored != {name: item['sha256'] for name, item in observed['databases'].items()}:
@@ -480,7 +537,16 @@ def main():
             parser.error('operation-specific private output, status, destination, or receipt required')
         return 0
     except (OSError, ValueError, RuntimeError, KeyError, sqlite3.Error, tarfile.TarError) as error:
-        print(f'Legacy retirement refused: {type(error).__name__}', file=sys.stderr)
+        detail = ''
+        if isinstance(error, sqlite3.Error):
+            code = getattr(error, 'sqlite_errorname', None)
+            if not isinstance(code, str) or not re.fullmatch(r'SQLITE_[A-Z0-9_]+', code):
+                code = 'UNKNOWN'
+            phase = getattr(error, 'retirement_phase', args.operation)
+            if phase not in ('member-index', 'restored-database', 'writer-index'):
+                phase = args.operation
+            detail = f' phase={phase} sqlite_errorname={code}'
+        print(f'Legacy retirement refused: {type(error).__name__}{detail}', file=sys.stderr)
         return 1
     finally:
         stop.set()

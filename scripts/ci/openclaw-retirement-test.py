@@ -8,6 +8,7 @@ import os
 import sqlite3
 import stat
 import subprocess
+import sys
 import tarfile
 import tempfile
 import time
@@ -136,21 +137,102 @@ class Retirement(unittest.TestCase):
                                          self.archive_root)
             self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
 
-    def test_large_archive_verifies_without_caching_tar_members(self):
+    def test_large_archive_roundtrips_with_bounded_tar_member_cache(self):
         retained = self.nas / 'openclaw'
+        outside = self.nas.parent / 'outside-retained-roots'
+        outside.mkdir()
         for number in range(4000):
-            (retained / f'entry-{number:04d}').write_bytes(b'x')
+            item = retained / f'entry-{number:04d}'
+            item.write_bytes(b'x')
+            os.link(item, outside / item.name)
+        os.link(retained / 'entry-0000', retained / 'hardlink')
+        (retained / 'link').symlink_to('entry-0000')
         observed = retirement.inventory(self.config, self.status)
         self.observed_path.unlink()
         retirement.write_private(self.observed_path,
                                  dict(observed, rootIdentity=self.status['roots']))
-        with patch.object(tarfile.TarFile, 'getmembers',
+        peaks = {'read': 0, 'write': 0}
+        original_next = tarfile.TarFile.next
+        original_addfile = tarfile.TarFile.addfile
+
+        def watched_next(tar):
+            member = original_next(tar)
+            if member is not None:
+                # Python 3.11 caches stream headers; emulate that on newer Python too.
+                if not tar.members or tar.members[-1] is not member:
+                    tar.members.append(member)
+                peaks['read'] = max(peaks['read'], len(tar.members))
+            return member
+
+        def watched_addfile(tar, member, fileobj=None):
+            peaks['write'] = max(peaks['write'], len(tar.members))
+            self.assertNotIsInstance(tar.inodes, dict)
+            return original_addfile(tar, member, fileobj)
+
+        with patch.object(tarfile.TarFile, 'next', watched_next), \
+                patch.object(tarfile.TarFile, 'addfile', watched_addfile), \
+                patch.object(tarfile.TarFile, 'getmembers',
                           side_effect=AssertionError('tar headers cached in RAM')):
             with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
                 receipt = retirement.archive(self.config, self.status_path,
                                              self.baseline_path, self.observed_path,
                                              self.archive_root)
             self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertFalse(list(self.scratch_root.glob('tar-inodes-*')))
+        self.assertLessEqual(peaks['read'], 1)
+        self.assertLessEqual(peaks['write'], 1)
+
+    def test_restore_member_index_stays_on_private_local_scratch(self):
+        connect = sqlite3.connect
+        seen = []
+
+        def local_index(path, *args, **kwargs):
+            if Path(path).name == 'members.sqlite':
+                seen.append(Path(path))
+                if not Path(path).resolve().is_relative_to(self.scratch_root.resolve()):
+                    raise sqlite3.OperationalError('member index on archive mount')
+            return connect(path, *args, **kwargs)
+
+        with patch.object(sqlite3, 'connect', local_index), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}):
+            receipt = retirement.archive(self.config, self.status_path,
+                                         self.baseline_path, self.observed_path,
+                                         self.archive_root)
+            self.assertEqual(retirement.verify_archive(self.config, receipt)['format'], 1)
+        self.assertTrue(seen)
+        self.assertFalse(any(path.exists() for path in seen))
+
+    def test_sqlite_failure_reports_only_phase_and_error_code(self):
+        config_path = self.scratch_root / 'config.json'
+        config_path.write_text(json.dumps({'legacyRetention': self.config}))
+        result_path = self.archive_root / 'result.json'
+        error = sqlite3.OperationalError('private path and SQLite message withheld')
+        error.sqlite_errorname = 'SQLITE_IOERR'
+        output = io.StringIO()
+        argv = ['retirement.py', 'archive', '--config', str(config_path),
+                '--status', str(self.status_path), '--baseline', str(self.baseline_path),
+                '--observed', str(self.observed_path), '--destination', str(self.archive_root),
+                '--output', str(result_path)]
+        with patch.object(sys, 'argv', argv), \
+                patch.object(retirement, 'index_bundle', side_effect=error), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), redirect_stderr(output):
+            self.assertEqual(retirement.main(), 1)
+        self.assertEqual(output.getvalue(),
+                         'Legacy retirement refused: OperationalError '
+                         'phase=member-index sqlite_errorname=SQLITE_IOERR\n')
+        self.assertFalse(result_path.exists())
+
+        error.retirement_phase = 'private path withheld'
+        error.sqlite_errorname = 'SQLITE_IOERR private path withheld'
+        output = io.StringIO()
+        with patch.object(sys, 'argv', argv), \
+                patch.object(retirement, 'config_at', side_effect=error), \
+                patch.dict(os.environ, {'GITHUB_ACTIONS': 'true'}), redirect_stderr(output):
+            self.assertEqual(retirement.main(), 1)
+        self.assertEqual(output.getvalue(),
+                         'Legacy retirement refused: OperationalError '
+                         'phase=archive sqlite_errorname=UNKNOWN\n')
+        self.assertFalse(result_path.exists())
 
     def test_tree_walk_keeps_path_order_and_does_not_follow_links(self):
         (self.nas / 'prefix').mkdir()
