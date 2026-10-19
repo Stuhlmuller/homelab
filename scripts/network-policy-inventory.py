@@ -55,11 +55,11 @@ def metadata(item):
 
 def policy_types(spec):
     declared = spec.get("policyTypes")
-    if declared is None:
-        return {"Ingress", "Egress"} if "egress" in spec else {"Ingress"}
-    if (not isinstance(declared, list) or
-            not all(item in {"Ingress", "Egress"} for item in declared)):
+    if declared is not None and (not isinstance(declared, list) or
+                                 not all(item in {"Ingress", "Egress"} for item in declared)):
         raise ValueError("NetworkPolicy policyTypes is invalid")
+    if not declared:
+        return {"Ingress", "Egress"} if spec.get("egress") else {"Ingress"}
     return set(declared)
 
 
@@ -198,9 +198,11 @@ def policy_fingerprint(policy):
     return hashlib.sha256(encoded).hexdigest()
 
 
-def policy_finding_kind(status, policy):
-    types = policy["policyTypes"]
-    direction = f"{types[0].lower()}-" if len(types) == 1 else ""
+def policy_finding_kind(status, policy, other_policy=None):
+    types = set(policy["policyTypes"])
+    if other_policy is not None:
+        types.update(other_policy["policyTypes"])
+    direction = f"{next(iter(types)).lower()}-" if len(types) == 1 else ""
     return f"{status}-{direction}policy"
 
 
@@ -610,7 +612,7 @@ def audit(pod_items, policy_items, render_items, review_path=None, namespaces=()
         findings.append({"kind": policy_finding_kind("unowned", live[key]),
                          "policy": "/".join(key)})
     for key in drifted:
-        findings.append({"kind": policy_finding_kind("drifted", live[key]),
+        findings.append({"kind": policy_finding_kind("drifted", live[key], rendered[key]),
                          "policy": "/".join(key)})
     for key in source_only:
         findings.append({"kind": policy_finding_kind("source-only", rendered[key]),

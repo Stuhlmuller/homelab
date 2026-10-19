@@ -217,6 +217,35 @@ class NetworkPolicyInventoryTests(unittest.TestCase):
                           if item["kind"].startswith("drifted-")],
                          [{"kind": "drifted-policy", "policy": "apps/mixed"}])
 
+    def test_policy_type_transition_has_direction_neutral_finding(self):
+        selected = {"matchLabels": {"app": "client"}}
+        ingress = [{"ports": [{"port": 8080}]}]
+        live = policy("apps", "transition", selected, policy_types=["Ingress"],
+                      ingress=ingress)
+        rendered = policy("apps", "transition", selected, [], ["Ingress", "Egress"],
+                          ingress)
+        result = inventory.audit([pod("apps", "client", {"app": "client"})],
+                                 [live], [[rendered]])
+        self.assertEqual(result["driftedPolicies"], ["apps/transition"])
+        self.assertEqual([item for item in result["findings"]
+                          if item["kind"].startswith("drifted-")],
+                         [{"kind": "drifted-policy", "policy": "apps/transition"}])
+
+    def test_omitted_policy_types_with_empty_egress_defaults_to_ingress(self):
+        live = policy("apps", "empty-egress", {}, [], ["Ingress"])
+        rendered = policy("apps", "empty-egress", {}, [])
+        result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
+        self.assertEqual(inventory.normalized_policy(rendered)["policyTypes"], ["Ingress"])
+        self.assertEqual(result["driftedPolicies"], [])
+
+    def test_empty_policy_types_defaults_from_nonempty_egress(self):
+        live = policy("apps", "empty-types", {}, [{}], ["Ingress", "Egress"])
+        rendered = policy("apps", "empty-types", {}, [{}], [])
+        result = inventory.audit([pod("apps", "client", {})], [live], [[rendered]])
+        self.assertEqual(inventory.normalized_policy(rendered)["policyTypes"],
+                         ["Egress", "Ingress"])
+        self.assertEqual(result["driftedPolicies"], [])
+
     def test_not_in_selector_requires_label_presence(self):
         selector = {"matchExpressions": [{
             "key": "app", "operator": "NotIn", "values": ["excluded"],
