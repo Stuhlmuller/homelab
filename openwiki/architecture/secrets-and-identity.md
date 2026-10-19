@@ -8,6 +8,8 @@ sources:
     resource: repo://.github/workflows/cordium-runner-credentials.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-3065a4fecdc69ba955866da5
@@ -66,6 +68,8 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-43b94de29b6b12121d020dc6
     resource: repo://IaC/modules/tailscale-access/variables.tf
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -83,7 +87,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:24:44.455Z
 ---
 
 # Secrets And Identity
@@ -169,6 +173,12 @@ dry-run writes. A fail-closed admission policy rejects its non-dry-run writes.
 Apply retains cluster administration for existing bootstrap and RBAC ownership;
 Cordium's mesh identity has no Kubernetes binding. Existing CI transport remains
 until authenticated plan/apply and denial checks succeed over the new proxy.
+
+The staged phase 2b jobs join with scoped, pre-signed ephemeral keys, verify
+their exact node tag and tailnet, and create tokenless kubeconfigs for the TLS
+proxy. Apply and Cordium tags can reach shared private ingress on TCP 443;
+Tailscale grants cannot isolate Traefik hosts. App authentication and Cordium
+policy still enforce access. Live acceptance precedes retiring native CI access.
 
 Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier

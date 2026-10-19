@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:22762a7b1ce95ac90eaf4329891d0a526606868d6f288a62f30f1b68ba3486c3",
+  "pageVersion": "sha256:c08211a991e78ecbdf3d4a8357892489a74e186d6d1b46d2aee1e273a247621a",
   "claims": [
     {
       "id": "claim_364a8fb15652470e9e4de9f0fa4ba2bd",
@@ -117,10 +117,28 @@
           "version": "repo-lines-v1:sha256:25bb6bee4eebb47c7429ce45b083b265cce81f06a26e6a7ab4b3320f73057935:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwMmEwMzMyNjgxNjhlYjZmOThiMDRmMTg0MzUzYzFmOTkwNzM4MGRiMzQyMmJiYWVhNWU4OWM1YWU1NjU4MGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZTU3YTg2Y2VjM2Y2ZWExYWI2ZTU5ZDNkOWM3YmMyZDRlMDc3ODAzOGFkMGRlYjQyNGM1NmU2YjA4Yjk2MGIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEzNTNlZTU3NDBlZWU3ODVkMTdiNjlkMWMwOTdkMWE5OGRlYTMxMTk2YmRiOTk3NTFjNTUxZDc0M2FiYmNhNjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3ODZmYWYzYTAwNjIxZDk3MDk4OTgxMTY2NjE4ZTU0YTJhZGNhMDg3ZTYxYTY5MDk5MGI2YzIwMTFkNzdmYmMifQ"
         }
       ]
+    },
+    {
+      "id": "claim_7cf0fc8fe77147579abcc8e50309ae95",
+      "statement": "The staged phase 2b CI jobs use scoped pre-signed ephemeral Tailscale keys, verify the joined tag and tailnet, and use tokenless kubeconfigs for plan and apply through the operator API proxy. Cordium uses private ingress without a Kubernetes grant; legacy native Services and credentials remain until live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
+        },
+        {
+          "resource": "repo://scripts/ci/tailscale-access-check.py",
+          "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

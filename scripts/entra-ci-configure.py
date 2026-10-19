@@ -97,9 +97,7 @@ def verify_protection(environment, document):
         raise Failure("GitHub environment protection differs from the declared automatic-deployment policy")
 
 
-def verify_destinations():
-    for environment in ENVIRONMENTS.values():
-        verify_protection(environment, github(f"environments/{environment}", "environment protection lookup"))
+def verify_production_allowlist():
     policies = github("environments/homelab-production/deployment-branch-policies",
                       "production branch allowlist lookup")
     branches = policies.get("branch_policies") if isinstance(policies, dict) else None
@@ -107,6 +105,12 @@ def verify_destinations():
             or not isinstance(branches[0], dict) or branches[0].get("name") != "main"
             or branches[0].get("type") != "branch"):
         raise Failure("Production deployment requires exactly the main branch and no tags")
+
+
+def verify_destinations():
+    for environment in ENVIRONMENTS.values():
+        verify_protection(environment, github(f"environments/{environment}", "environment protection lookup"))
+    verify_production_allowlist()
     if github("branches/main", "main protection lookup").get("protected") is not True:
         raise Failure("Production deployment requires a protected main branch")
     for environment in (None, *ENVIRONMENTS.values()):

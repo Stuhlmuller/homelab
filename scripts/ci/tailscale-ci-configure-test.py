@@ -344,6 +344,18 @@ class TailscaleCIConfigureTest(unittest.TestCase):
         fake.outputs["github_auth_keys"]["sensitive"] = False
         self.assertEqual(self.run_script(fake, ["--execute"])[0], 1)
 
+    def test_invalid_production_allowlist_never_signs_or_publishes(self):
+        for policies in ([], [{"name": "main", "type": "tag"}],
+                         [{"name": "main", "type": "branch"}, {"name": "other", "type": "branch"}]):
+            with self.subTest(policies=policies):
+                fake = FakeCommands()
+                fake.branch_policies = policies
+                status, _ = self.run_script(fake, ["--execute"])
+                self.assertEqual(status, 1)
+                self.assertNotIn("CI key signing", [call[1] for call in fake.calls])
+                self.assertEqual(fake.writes, [])
+                self.assertFalse(self.cache.exists())
+
     def test_dirty_stale_unsigned_or_unprotected_main_never_signs(self):
         for variant in ("dirty", "stale", "unsigned", "unprotected", "bypass"):
             fake = FakeCommands()

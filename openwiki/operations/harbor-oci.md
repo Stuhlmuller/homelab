@@ -90,8 +90,6 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-e6fd9160ab2341143a5d45c8
     resource: repo://docs/image-egress-hardening.md
-  - id: openwiki-source-bef786188ec490a342373148
-    resource: repo://docs/networking-tailnet-ingress.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
   - id: openwiki-source-cf9e058040b1a15ca636bb42
@@ -108,6 +106,8 @@ sources:
     resource: repo://scripts/ci/harbor-publish-test.py
   - id: openwiki-source-d9d387d4c8e269e62340179d
     resource: repo://scripts/ci/harbor-publish.sh
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-b5db2a15b5e0f805364647e7
     resource: repo://scripts/ci/talos-harbor-mirrors-test.py
   - id: openwiki-source-8e156e6fb45ba3afd9795cd3
@@ -129,7 +129,7 @@ sources:
 generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T21:31:10.787Z
+    at: 2026-10-18T22:39:47.335Z
 ---
 
 # Harbor Private OCI Registry
@@ -154,10 +154,11 @@ projects. The `homelab` project is private.
 Phase 2a declares in-cluster DNS directly to Traefik, retaining the same
 publicly trusted TLS identity. Talos/containerd uses host DNS and moves through
 the separate guarded registry mapping below before external DNS changes.
-Hosted CI establishes a bounded Kubernetes port-forward to `traefik-private`
-with the existing Octelium CI credential. Only its disposable runner maps
+Staged hosted CI establishes a bounded Kubernetes port-forward to
+`traefik-private` through a tokenless Tailscale kubeconfig. Only its disposable runner maps
 the Harbor hostname to loopback, bypassing Cloudflare upload-size limits while
-retaining TLS verification. See `scripts/ci/harbor-publish.sh`.
+retaining TLS verification. Source validation does not establish live CI
+acceptance. See `scripts/ci/harbor-publish.sh`.
 
 The shared Octelium-to-Istio hop currently skips upstream certificate validation
 for the Kubernetes Service hostname, as declared in

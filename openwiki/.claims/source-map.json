@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:8977e50640cfff9f3b75078928e5f9d1230d1ce1f5a2df48e5fbad60c9154818",
+  "pageVersion": "sha256:ac766219d82180261013e9356978cac4eceeb106af71373b82029b3c66ef792e",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -44,7 +44,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+          "version": "repo-file-v1:sha256:12ec3d4b37d43501320bd5ec0aeadd877ef3563f16393d8d5b0c76d3798895a6"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
@@ -52,7 +52,7 @@
         },
         {
           "resource": "repo://scripts/tailscale-ci-configure.py",
-          "version": "repo-file-v1:sha256:0a277a4679653e6bf472506e7da1991fb51b9d15db6d9c7f9f6adabc73d774ea"
+          "version": "repo-file-v1:sha256:f34e43eea29a512cf3312df688c0fc273b9c4c31c6a76f8830f7996030975931"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -66,7 +66,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/mastodon-public-dns.yml",
-          "version": "repo-file-v1:sha256:5ec8b9c13900f72075c89c9c5b9393087daf14fc62c6244a07b9ba36012fe9fc"
+          "version": "repo-file-v1:sha256:7491c488c8dfde841f6f4e544593e06979b574c681d31ac91b6f871283ed720e"
         },
         {
           "resource": "repo://.github/workflows/mastodon-smtp-credential.yml",
@@ -92,7 +92,7 @@
         },
         {
           "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
         },
         {
           "resource": "repo://builds/cordium-runner/README.md",
@@ -135,10 +135,24 @@
           "version": "repo-file-v1:sha256:b39004f10c5d7c5f4224f74702c49eae590a70acc8d26e6703a54bc779abff0f"
         }
       ]
+    },
+    {
+      "id": "claim_206fbfebdf354090aaeb1bbc98b22543",
+      "statement": "The source map routes staged phase 2b Tailscale CI workflows, tokenless operator kubeconfig helper, and separate Cordium authorization to the CI runbook while legacy credentials remain through live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://scripts/ci/install-kubeconfig.sh",
+          "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

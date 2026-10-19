@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect or reconcile the single repository-owned NOFX Service over Tunnel."""
+"""Inspect or reconcile the single repository-owned NOFX Service over the verified Tailscale mesh."""
 import sys
 
 # sys is built in. Reject unsafe module search paths before any other imports.
@@ -8,20 +8,17 @@ if __name__ == "__main__" and not sys.flags.isolated:
 
 import argparse
 import contextlib
-import importlib.util
+import ipaddress
 import json
 import os
 import pathlib
 import re
-import select
+import runpy
 import signal
 import shutil
 import socket
-import socketserver
 import subprocess
 import tempfile
-import threading
-import time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CATALOG = "docs/examples/octelium/homelab-services.yaml"
@@ -72,85 +69,48 @@ def verify_reviewed_main(expected):
     run("git", "-C", str(ROOT), "cat-file", "-e", "HEAD:scripts/octelium-nofx-reconcile.py")
 
 
-@contextlib.contextmanager
-def native_transport(directory):
+def mesh_environment():
     if (os.environ.get("OCTELIUM_INSECURE_TLS") == "true"
             or os.environ.get("OCTELIUM_AUTH_PROXY_SOCKET")):
         raise RuntimeError("Native overrides must not bypass TLS or authentication")
-    spec = importlib.util.spec_from_file_location("tunnel_probe", ROOT / "scripts/octelium-tunnel-check.py")
-    probe = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(probe)
-    with socket.socket() as listener:
-        listener.bind(("127.0.0.1", 0))
-        port = listener.getsockname()[1]
+    app = pathlib.Path("/Applications/Tailscale.app/Contents/MacOS/Tailscale")
+    executable = str(app) if app.is_file() else shutil.which("tailscale")
+    if not executable:
+        raise RuntimeError("An authenticated Tailscale client is required")
+    status = json.loads(run(executable, "status", "--json").stdout)
+    if (status.get("BackendState") != "Running" or not status.get("Self", {}).get("Online")
+            or status.get("CurrentTailnet", {}).get("MagicDNSSuffix") != "tail67beb.ts.net"):
+        raise RuntimeError("The current Tailscale profile must be online in the declared tailnet")
+    peers = [peer for peer in status.get("Peer", {}).values()
+             if peer.get("DNSName", "").rstrip(".") == "homelab-ingress.tail67beb.ts.net" and peer.get("Online")]
+    if len(peers) != 1:
+        raise RuntimeError("The declared homelab-ingress peer must be uniquely online")
+    allowed = {ipaddress.ip_address(value) for value in peers[0].get("TailscaleIPs", [])}
+    networks = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
+    resolved = {ipaddress.ip_address(item[4][0]) for item in socket.getaddrinfo(API, 443, type=socket.SOCK_STREAM)}
+    if (not resolved or not resolved <= allowed
+            or any(not any(address in network for network in networks) for address in resolved)):
+        raise RuntimeError("Canonical Octelium API must resolve only to the verified mesh ingress peer")
+    environment = {key: value for key, value in os.environ.items()
+                   if key.lower() not in ("http_proxy", "https_proxy", "all_proxy", "no_proxy")}
+    validate = runpy.run_path(str(ROOT / "scripts/octelium-api-response.py"))["unauthenticated"]
+    with tempfile.TemporaryDirectory(prefix="homelab-api-probe-") as temporary:
+        body = pathlib.Path(temporary) / "body"
+        for protocol in ("application/grpc", "application/grpc-web+proto"):
+            result = run("curl", "--disable", "--silent", "--show-error", "--http2", "--max-time", "10",
+                         "--noproxy", "*", "--proto", "=https", "--header", f"content-type: {protocol}",
+                         "--header", "x-grpc-web: 1", "--header", "TE: trailers",  # codespell:ignore te
+                         "--data-binary", "", "--dump-header", "-", "--output", str(body),
+                         f"https://{API}/octelium.api.main.user.v1.MainService/GetStatus", env=environment)
+            if not validate(result.stdout.encode(), body.read_bytes(), native=protocol == "application/grpc"):
+                raise RuntimeError("Native mesh TLS/HTTP2 authentication probe failed")
+    return environment
 
-    class Handler(socketserver.StreamRequestHandler):
-        def handle(self):
-            self.connection.settimeout(15)
-            request = self.rfile.readline(4096).strip()
-            if request != f"CONNECT {API}:443 HTTP/1.1".encode():
-                self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n")
-                return
-            total = 0
-            while True:
-                line = self.rfile.readline(4096)
-                total += len(line)
-                if total > 16384 or not line:
-                    return
-                if line == b"\r\n":
-                    break
-            with socket.create_connection(("127.0.0.1", port), timeout=15) as upstream:
-                self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-                self.wfile.flush()
-                while True:
-                    ready, _, _ = select.select([self.connection, upstream], [], [], 60)
-                    if not ready:
-                        return
-                    for source in ready:
-                        data = source.recv(65536)
-                        if not data:
-                            return
-                        (upstream if source is self.connection else self.connection).sendall(data)
 
-    class Server(socketserver.ThreadingTCPServer):
-        daemon_threads = True
-
-        def handle_error(self, _request, _client_address):
-            # The bounded native command reports failure without private proxy diagnostics.
-            return
-
-    with (directory / "carrier.log").open("wb") as log:
-        carrier = subprocess.Popen(["cloudflared", "access", "tcp", "--hostname",
-            "octelium-transport.stinkyboi.com", "--url", f"127.0.0.1:{port}"], stdout=log, stderr=log)
-        try:
-            deadline = time.monotonic() + 45
-            while carrier.poll() is None and time.monotonic() < deadline:
-                if probe.probe(API, directory, port=port):
-                    break
-                time.sleep(1)
-            else:
-                raise RuntimeError("Native Tunnel TLS/HTTP2 probe failed")
-            with Server(("127.0.0.1", 0), Handler) as server:
-                thread = threading.Thread(target=server.serve_forever, daemon=True)
-                thread.start()
-                try:
-                    # Internal, dynamically allocated client transport, not desired-state inputs.
-                    environment = dict(os.environ)
-                    proxy = f"http://127.0.0.1:{server.server_address[1]}"
-                    for key in ("HTTPS_PROXY", "https_proxy", "ALL_PROXY", "all_proxy"):
-                        environment[key] = proxy
-                    environment["NO_PROXY"] = environment["no_proxy"] = ""
-                    yield environment
-                finally:
-                    server.shutdown()
-                    thread.join(timeout=2)
-        finally:
-            carrier.terminate()
-            try:
-                carrier.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                carrier.kill()
-                carrier.wait()
+@contextlib.contextmanager
+def native_transport(_directory):
+    # Keep the shared caller interface; native clients now connect directly over TLS.
+    yield mesh_environment()
 
 
 def reconcile(client, environment, desired, directory, execute):

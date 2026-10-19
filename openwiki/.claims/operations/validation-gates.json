@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:432fae75825d295012c540a65d58645c24ab8250429578d4f04b21ba3cba75bf",
+  "pageVersion": "sha256:e2fc1a8d8dbffeea5ad66487edb65c8bfa88906f274338dbe63044ccbaec31ee",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         }
       ]
     },
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
@@ -112,11 +112,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/tailscale-access-check-test.py",
-          "version": "repo-file-v1:sha256:af88b46a28a05c2a563046d07c6105502ad3a722bd6048ad026c570570f5b2c8"
+          "version": "repo-file-v1:sha256:db54068c87a1236b4311577545094e01ce2f3c119c07bb863da5974686387c0e"
         },
         {
           "resource": "repo://scripts/ci/tailscale-access-check.py",
-          "version": "repo-file-v1:sha256:fefd87182bb9ec85396ce701e7fddfa674e0531a8ee3290f75c615254614533c"
+          "version": "repo-file-v1:sha256:1d9cbbd3e0fc176e0d3d3209864c04e7499d4c4ad3d0173a8475e785499bbf70"
         }
       ]
     },
@@ -126,7 +126,7 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:7cc413ecd3ff1d77b910d5c33f543c30e0dc5cca63a5e2e6c48db5f66664d219"
         },
         {
           "resource": "repo://scripts/ci/talos-harbor-mirrors-test.py",
@@ -162,11 +162,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ci-configure-test.py",
-          "version": "repo-file-v1:sha256:67bd6e2675f60c6a0d565636ad5bfa7871252ce538e32da1bbadca79ee581395"
+          "version": "repo-file-v1:sha256:c2bcac5fad98c4d161a329d11e9beb9d10c03f239baff9e256f0af04468335cd"
         },
         {
           "resource": "repo://scripts/ci/tailscale-ingress-sign-test.py",
@@ -249,7 +249,7 @@
           "version": "repo-lines-v1:sha256:2d4b1d14269f6e596147700cfefd3c4035bdcf1f08f20d2fdd256e57c34901b9:eyJzZWxlY3RlZExpbmVDb3VudCI6ODUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NWZmNzQ4ZDkzZTIyMjRmNmRjYTExMDU0Njg3MzY3Y2IxZmI0OTM2ODIyMmRiODE1NjJhOGQ0OTBlOTllMWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5NTMzZTYxNDVlMzJmOGYwZDIyZTMxNzA4ODRiODQwNzIyYjk0ODY1MWE1OGRjYzliMzdmZGIwMWI2MmMzYTUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxZTk1ZDA2MzBhMzY0ZDczMTkzYmI0ZWI5OWNmZmFjZTZiMTkyMjU3Y2Q0MGE4NTJlZWRlM2NkMjgzZjc0NjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImNkNDVjNzZhNTE2MGIwOWYzMzdmMzIxMzIyY2VmMjgwMDIyNmVjZTc3MzU3YjBlOTBiZmIzNTRlNTJhYTk5NGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L519-L673",
+          "resource": "repo://scripts/ci/tailscale-ci-configure-test.py#L531-L685",
           "version": "repo-lines-v1:sha256:8c127fc07a1f480a8590c5149333cac0112dfa1c6d30b927a02e002b38f8598a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTU1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJhNzNhZWFiMzY1NDlhZGJmZTcxYTlhYzAxZDlhNDk2MDExNWY2MWQxYzYzYjdjOTRlMjdlMWYxNTAzNDJiODkzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiJkNjRhZTc0ODJlMmJmOWQ0OTA5MjMxNWNlYWI1MmY3YjJiMmNmYzk0ZDNiMjc5Mzc5MDA5YjMyNGVjOGE1NTFkIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJkYmRlNjU2ZGZkNjQ4MTg2MTFlMWVjOTc5ZTAwMDk4NTZkNjgzMGQwOGIxNzQ1YWFmODAwZWVkZGYxN2JhYjI3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhNzNmZmRkYmViMjI5MzhjNTgwMzc0MDIxNWVhMjM5ZjRiMGVmMGEyNDQ4N2YwNjM3NGYwYWMxYzRhYWE2NWY4In0"
         }
       ]
@@ -290,7 +290,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         }
       ]
     },
@@ -366,7 +366,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         }
       ]
     },
@@ -376,7 +376,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
+          "version": "repo-file-v1:sha256:37a3d323f1bb42ed28838b5e5b29b6f09f99378e663111b7d51873b5bbfed5cf"
         },
         {
           "resource": "repo://scripts/ci/harbor-core-scan-check-test.py",
@@ -384,7 +384,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:3b1c87c27cfff10d6c23268dfce746c38391f8358ca94773a7c42a1857603835"
         }
       ]
     },
@@ -394,11 +394,11 @@
       "evidence": [
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:7cc413ecd3ff1d77b910d5c33f543c30e0dc5cca63a5e2e6c48db5f66664d219"
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         }
       ]
     },
@@ -408,7 +408,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
+          "version": "repo-file-v1:sha256:37a3d323f1bb42ed28838b5e5b29b6f09f99378e663111b7d51873b5bbfed5cf"
         },
         {
           "resource": "repo://.github/workflows/validate.yml",
@@ -420,7 +420,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         }
       ]
     },
@@ -490,7 +490,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         },
         {
           "resource": "repo://scripts/ci/talos-nix-builder-seccomp-test.py",
@@ -529,8 +529,8 @@
       "statement": "Mastodon offline fixtures cover launcher, owner bootstrap, routing, SMTP injection and DNS conflict handling, while protected live activation additionally requires declared registration, real workload health, provider delivery and public behavior; the DNS lane installs and uses its pinned Nix shell.",
       "evidence": [
         {
-          "resource": "repo://.github/workflows/mastodon-public-dns.yml#L106-L133",
-          "version": "repo-lines-v1:sha256:be19aaca48ffa7909adbc09812c510f62edbe7e904f5c0271b94174d32d4ecce:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjYTkwZTdiYmQ2MmI5ZDA1YTAwMjRiZGVmNjcxNjE3YzU0M2M5NGM1ODEwNzQ1ZjNhMjA0NzliNGQ0YmMyMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjZjQyMzU3Y2FkZDlmY2U2ZDZhMzU3MjdiMjg3NDkzODZiZjVkYmJkYjk1N2ExOWQxODRmZjA0NWUxODFlYTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://.github/workflows/mastodon-public-dns.yml#L103-L146",
+          "version": "repo-lines-v1:sha256:194bebcdf1fe1b0645a9debf3d2ca88cf127b5eb21883dff84100f4ad40defc2:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NmY4NTIyMWFlMzVhZmNkMGFmMDMyZGVmYTA2M2Y2MzdkZTNmZmU4NmQyZGVjZjFkNGZhMDAxNzBjMmJmZGEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjYTkwZTdiYmQ2MmI5ZDA1YTAwMjRiZGVmNjcxNjE3YzU0M2M5NGM1ODEwNzQ1ZjNhMjA0NzliNGQ0YmMyMWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjJjZjQyMzU3Y2FkZDlmY2U2ZDZhMzU3MjdiMjg3NDkzODZiZjVkYmJkYjk1N2ExOWQxODRmZjA0NWUxODFlYTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         },
         {
           "resource": "repo://clusters/homelab/apps/mastodon/README.md",
@@ -566,7 +566,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:7cc413ecd3ff1d77b910d5c33f543c30e0dc5cca63a5e2e6c48db5f66664d219"
         },
         {
           "resource": "repo://scripts/config/harbor-runtime-images.json",
@@ -662,15 +662,15 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:840fdef099de1b49cfe02890507cf3d67c9e3a87bbe58e62bcb2a860be5f3676"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish-test.py",
-          "version": "repo-file-v1:sha256:34254061e9570de38169b6078bf0afc8e7687093715c8886bb631dd0b125c751"
+          "version": "repo-file-v1:sha256:7cc413ecd3ff1d77b910d5c33f543c30e0dc5cca63a5e2e6c48db5f66664d219"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:3b1c87c27cfff10d6c23268dfce746c38391f8358ca94773a7c42a1857603835"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -683,11 +683,11 @@
       "statement": "Harbor publisher transport fixtures require exact-error OCI conversion fallbacks for destination upload and a resumed alias copy, with unchanged root digest and alias plus a complete authenticated pull; generic destination failures remain terminal. These fixtures do not prove live full-catalog publication.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/harbor-publish-test.py#L860-L925",
+          "resource": "repo://scripts/ci/harbor-publish-test.py#L858-L923",
           "version": "repo-lines-v1:sha256:11daaed7273161d4f8ec5795dca47fc93882a05f617836cc0b5b47e2fd807e96:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwY2NjMjU3OWMyYjlhYzU4YTA4NjM1MzM1ODU2ODI4MjQyYWM0YTVmZjgwYTJiZmRjNWZiNDU1YjQwNWMxZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkN2ViZDgyYTkxNWY2Mjc2ZTNmNjgzZTMwM2VhMmQ4YzY2MTA2ZmE4OGM2ZGEyYjY3NjdjODlkYmY0YzAwZGMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwMTA2NWExZmY3MTU5MmIwZDUyMzhiNThhNTRhNGJlNjZlZDg2ZmI1MjE4NGNkNGQyZTBhZjlhZGVmNDdjMzkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhhYTBhNzA5YTQ1ZGFjYzc3ZWUyN2VjYTdmM2MzNDcyMGVkNzIzMGYxZjhmZDc2ODA2MzRmZDYwN2Q5Nzg2MTIifQ"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh#L303-L392",
+          "resource": "repo://scripts/ci/harbor-publish.sh#L301-L390",
           "version": "repo-lines-v1:sha256:ec12ba9fcd206767aec57c3c89c926b83df6aa3cd14eead3fb972208fb6a2c46:eyJzZWxlY3RlZExpbmVDb3VudCI6OTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZjlkNmZhNjBkNGU5YjRkYTBhMWE1YzVjYzg3NmJiZWM1ZTdlMjY5ZDNjMjk2YWZhMmNjNzZmZTQ0ZTBhOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzVhMzk1ZjAxZGIxMDg0MTE3ODMyNGUyZjU0OGQyZDNkOGUyYzM2Yzc4OWM5MjMwZGFkZGM2YzhjZTA3NWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM2NDU3N2U1ZDI0NTNmNDgwZTQzMTUxZmJjZWI5OTViMDQyM2NjOTNlNTFlNThlMWU4N2ZiYjRjNTUzMDg2YTgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijg3Zjc4YzE1NzZjMzcxMjk0NmUyNDU5MTRjZjhlMzMxYTllYjU5ZmVkNDY0NDU5MzhjY2U0NzUyMWY4ZGE4ZTIifQ"
         }
       ]
@@ -720,7 +720,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:3b1c87c27cfff10d6c23268dfce746c38391f8358ca94773a7c42a1857603835"
         }
       ]
     },
@@ -760,7 +760,7 @@
         },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
-          "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
+          "version": "repo-file-v1:sha256:9610cc9deef454383a02f6880c001ac79399febd85788fc25ff4ac067a7965b4"
         },
         {
           "resource": "repo://scripts/ci/renovate-alert-check.py",
@@ -773,22 +773,36 @@
       ]
     },
     {
-      "id": "claim_58ae28f7ae7642faa63b0dc5157e05ed",
+      "id": "claim_c5672f5ca9ef466cbc208f8cfca55a17",
+      "statement": "Existing GitHub-hosted live jobs still depend on the Octelium clientless Kubernetes route until staged phase 2b Tailscale CI jobs pass protected live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
+        }
+      ]
+    },
+    {
+      "id": "claim_bf8e0cc15f0e4f27ae3d07f61c78296a",
       "statement": "The Renovate config fixture simulates a cache write failure and requires the runner to stop before any GitHub API request; this does not prove live PVC failure handling.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L88",
-          "version": "repo-lines-v1:sha256:f32a4bf6e3e6980ea082dee2db89385ee53221cf8887321690b4ab5db7bc3106:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+          "resource": "repo://clusters/homelab/apps/renovate/config.js",
+          "version": "repo-file-v1:sha256:534e1e67b7c6da472c0a1643d952b28da09f16115ff1dcc73cff06beb44b1649"
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:593f37f2e0f54e2849efe5a31adaf9751224d6d204c106f873d89c93bfb69c05"
+          "version": "repo-file-v1:sha256:519abc68e6fdb381de7c09891dda3365684f774937442ba3411ffb98f537e7fa"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-19T00:24:44.455Z"
   }
 }

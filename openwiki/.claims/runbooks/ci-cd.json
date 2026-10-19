@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:19908e3a4b98fed80415a2f4697805c6db0edf4a3d866c1e401256105144138f",
+  "pageVersion": "sha256:b9c92370b21214e2e138142daa75f36163ab833106e14789d791ae30c90b4e9b",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://.github/workflows/nofx-images.yml",
-          "version": "repo-file-v1:sha256:b076f16676452f98d1abf6a084c4fe4583ddc4e7d77d2436962c1643adf7b3a6"
+          "version": "repo-file-v1:sha256:e3dc4a51dd8cd3d5652aca33123ef48a61db34169f04514bb7c2926ad482e4c3"
         },
         {
           "resource": "repo://.github/workflows/openclaw-config.yml",
@@ -20,7 +20,7 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         }
       ]
     },
@@ -42,7 +42,7 @@
         },
         {
           "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
         },
         {
           "resource": "repo://builds/cordium-runner/README.md",
@@ -64,17 +64,49 @@
         },
         {
           "resource": "repo://docs/ci-cd.md",
-          "version": "repo-file-v1:sha256:960e18ccc8c32230f2cbe3946c8bfc86d2a1dbd0b048bcb2c8a59d9c58a640b8"
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
-          "version": "repo-file-v1:sha256:80f4ef0a86bb393ac4025c006b13df71f09dd57e4092420fbd8d2174cd440026"
+          "version": "repo-file-v1:sha256:3b1c87c27cfff10d6c23268dfce746c38391f8358ca94773a7c42a1857603835"
+        }
+      ]
+    },
+    {
+      "id": "claim_1128065216a341a3aae7b8eef1db6e71",
+      "statement": "Phase 2b stages thirteen credentialed hosted live jobs on scoped pre-signed ephemeral Tailscale keys with exact tag/tailnet checks and tokenless operator proxy kubeconfigs. Legacy transport and credentials remain until live replacement acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:8670a980e44db338b7a8bf1cb90911d112ede890be7bd674af63d53680088e3f"
+        }
+      ]
+    },
+    {
+      "id": "claim_123fd901e91345c783fd34f46c51aba0",
+      "statement": "Policy Bot automatically approves through requires.count: 0, and the active policy has no organization-member disapproval rule; required GitHub checks gate merges.",
+      "evidence": [
+        {
+          "resource": "repo://.policy.yml",
+          "version": "repo-file-v1:sha256:541c4699b2d88107fb1288961abe85cc75982b9abed48f6d570887e5269b93eb"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T23:45:47.913Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

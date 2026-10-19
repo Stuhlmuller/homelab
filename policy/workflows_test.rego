@@ -7,8 +7,7 @@ test_allows_exact_openclaw_legacy_operation if {
 		openclaw_legacy_run,
 		{"contents": "read", "id-token": "write"},
 	)
-	violations := deny with input as candidate
-	count(violations) == 0
+	approved_openclaw_legacy_operation with input as candidate
 }
 
 test_rejects_changed_openclaw_legacy_operation if {
@@ -19,10 +18,9 @@ test_rejects_changed_openclaw_legacy_operation if {
 		),
 		workflow_with_openclaw_legacy_operation(openclaw_legacy_run, {"contents": "write", "id-token": "write"}),
 		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"`, `bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE" || true`), {"contents": "read", "id-token": "write"}),
+		workflow_with_openclaw_legacy_operation(replace(openclaw_legacy_run, "bash scripts/ci/install-kubeconfig.sh --tailscale", "bash scripts/ci/install-kubeconfig.sh"), {"contents": "read", "id-token": "write"}),
 	] {
-		violations := deny with input as candidate
-		some msg in violations
-		contains(msg, "exact protected stages")
+		not approved_openclaw_legacy_operation with input as candidate
 	}
 }
 
@@ -50,6 +48,8 @@ echo "Legacy operation completed; private receipts withheld."`)
 openclaw_legacy_run := `set -euo pipefail
 umask 077
 export OPENCLAW_PHASE_FILE="${RUNNER_TEMP}/openclaw-phase"
+bash scripts/ci/install-kubeconfig.sh --tailscale
+kubectl --request-timeout=15s version >/dev/null
 sha256sum --check --status <<<'f433de4d705662fddc30208efd9db7a3f1fab842857c400a6f5edd1bf7059436  scripts/ci/openclaw-enterprise-operations.sh'
 bash scripts/ci/openclaw-enterprise-operations.sh "$RUN_STAGE"
 `
@@ -65,7 +65,7 @@ workflow_with_openclaw_legacy_operation(run, permissions) := {
 		"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
 		"steps": [{
 			"name": "Run Legacy Stage",
-			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"},
+			"env": {"RUN_STAGE": "${{ inputs.legacy_stage }}"},
 			"run": run,
 		}],
 	}},
@@ -238,16 +238,14 @@ test_rejects_nix_wrapped_dynamic_executable if {
 test_rejects_workflow_scoped_secret_env if {
 	violations := deny with input as {
 		"name": "unsafe root env",
-		"on":   "push",
+		"on": "push",
 		"permissions": {},
 		"env": {"TOKEN": "${{secrets.OCTELIUM_CI_AUTH_TOKEN}}"},
-		"jobs": {
-			"test": {
-				"runs-on":    "ubuntu-24.04",
-				"permissions": {},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	some msg in violations
 	contains(msg, "workflow-level environment variable")
@@ -256,16 +254,14 @@ test_rejects_workflow_scoped_secret_env if {
 test_rejects_job_scoped_github_token_env if {
 	violations := deny with input as {
 		"name": "unsafe job env",
-		"on":   "push",
+		"on": "push",
 		"permissions": {},
-		"jobs": {
-			"test": {
-				"runs-on":    "ubuntu-24.04",
-				"permissions": {},
-				"env":         {"TOKEN": "${{github.token}}"},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"env": {"TOKEN": "${{github.token}}"},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	some msg in violations
 	contains(msg, "workflow job")
@@ -273,17 +269,15 @@ test_rejects_job_scoped_github_token_env if {
 
 test_rejects_mixed_case_workflow_scoped_secret_env if {
 	violations := deny with input as {
-		"name":        "unsafe mixed-case root env",
-		"on":          "push",
+		"name": "unsafe mixed-case root env",
+		"on": "push",
 		"permissions": {},
-		"env":         {"TOKEN": "${{ SECRETS [ 'NAME' ] }}"},
-		"jobs": {
-			"test": {
-				"runs-on":     "ubuntu-24.04",
-				"permissions": {},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"env": {"TOKEN": "${{ SECRETS [ 'NAME' ] }}"},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	some msg in violations
 	contains(msg, "workflow-level environment variable")
@@ -291,17 +285,15 @@ test_rejects_mixed_case_workflow_scoped_secret_env if {
 
 test_rejects_mixed_case_job_scoped_github_token_env if {
 	violations := deny with input as {
-		"name":        "unsafe mixed-case job env",
-		"on":          "push",
+		"name": "unsafe mixed-case job env",
+		"on": "push",
 		"permissions": {},
-		"jobs": {
-			"test": {
-				"runs-on":     "ubuntu-24.04",
-				"permissions": {},
-				"env":         {"TOKEN": "${{ GITHUB [ 'token' ] }}"},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"env": {"TOKEN": "${{ GITHUB [ 'token' ] }}"},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	some msg in violations
 	contains(msg, "workflow job")
@@ -309,17 +301,15 @@ test_rejects_mixed_case_job_scoped_github_token_env if {
 
 test_rejects_serialized_github_context_in_job_env if {
 	violations := deny with input as {
-		"name":        "unsafe serialized github context",
-		"on":          "push",
+		"name": "unsafe serialized github context",
+		"on": "push",
 		"permissions": {},
-		"jobs": {
-			"test": {
-				"runs-on":     "ubuntu-24.04",
-				"permissions": {},
-				"env":         {"CONTEXT": "${{ toJSON(GITHUB.*) }}"},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"env": {"CONTEXT": "${{ toJSON(GITHUB.*) }}"},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	some msg in violations
 	contains(msg, "workflow job")
@@ -327,17 +317,15 @@ test_rejects_serialized_github_context_in_job_env if {
 
 test_rejects_joined_github_context_in_job_env if {
 	violations := deny with input as {
-		"name":        "unsafe joined github context",
-		"on":          "push",
+		"name": "unsafe joined github context",
+		"on": "push",
 		"permissions": {},
-		"jobs": {
-			"test": {
-				"runs-on":     "ubuntu-24.04",
-				"permissions": {},
-				"env":         {"CONTEXT": "${{ join(GITHUB.*, ',') }}"},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"env": {"CONTEXT": "${{ join(GITHUB.*, ',') }}"},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	some msg in violations
 	contains(msg, "workflow job")
@@ -349,17 +337,15 @@ test_rejects_credentials_after_expression_braces if {
 		"${{ format('}}{0}', secrets.NAME) }}",
 	] {
 		violations := deny with input as {
-			"name":        "unsafe embedded braces",
-			"on":          "push",
+			"name": "unsafe embedded braces",
+			"on": "push",
 			"permissions": {},
-			"env":         {"TOKEN": value},
-			"jobs": {
-				"test": {
-					"runs-on":     "ubuntu-24.04",
-					"permissions": {},
-					"steps":       [{"run": "true"}],
-				},
-			},
+			"env": {"TOKEN": value},
+			"jobs": {"test": {
+				"runs-on": "ubuntu-24.04",
+				"permissions": {},
+				"steps": [{"run": "true"}],
+			}},
 		}
 		some msg in violations
 		contains(msg, "workflow-level environment variable")
@@ -368,17 +354,15 @@ test_rejects_credentials_after_expression_braces if {
 
 test_allows_unrelated_variable_name_containing_github if {
 	violations := deny with input as {
-		"name":        "safe variable name",
-		"on":          "push",
+		"name": "safe variable name",
+		"on": "push",
 		"permissions": {},
-		"env":         {"REPOSITORY": "${{ vars.MY_GITHUB }}"},
-		"jobs": {
-			"test": {
-				"runs-on":     "ubuntu-24.04",
-				"permissions": {},
-				"steps":       [{"run": "true"}],
-			},
-		},
+		"env": {"REPOSITORY": "${{ vars.MY_GITHUB }}"},
+		"jobs": {"test": {
+			"runs-on": "ubuntu-24.04",
+			"permissions": {},
+			"steps": [{"run": "true"}],
+		}},
 	}
 	count(violations) == 0
 }
@@ -486,7 +470,7 @@ test_rejects_unverified_apply_stage_classifier if {
 
 test_rejects_modified_plan_stage_guard if {
 	every replacement in [
-		replace(plan_stage_guard, "aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(plan_stage_guard, "2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(plan_stage_guard, "sha256sum --check --status", "true"),
 		replace(plan_stage_guard, "sha256sum", "shasum"),
 		replace(plan_stage_guard, "if sha256sum", "if ! sha256sum"),
@@ -580,7 +564,7 @@ test_rejects_modified_harbor_mirror_status if {
 		replace(harbor_mirror_private_run, `trap 'rm -f "$private_log" "$public_status"' EXIT`, `trap 'rm -f "$private_log"' EXIT`),
 		replace(harbor_mirror_private_run, "sha256sum --check --status", "true"),
 		replace(harbor_mirror_private_run, "&& sha256sum", "|| sha256sum"),
-		replace(harbor_mirror_private_run, "182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773", "0000000000000000000000000000000000000000000000000000000000000000"),
+		replace(harbor_mirror_private_run, "b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd", "0000000000000000000000000000000000000000000000000000000000000000"),
 		replace(harbor_mirror_private_run, "scripts/ci/harbor-publish.sh'", "scripts/ci/other.sh'"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror", "harbor-publish.sh publish"),
 		replace(harbor_mirror_private_run, "harbor-publish.sh mirror-dns", "harbor-publish.sh mirror-other"),
@@ -611,18 +595,14 @@ test_rejects_wrapped_live_command_and_write_all if {
 
 test_rejects_live_job_public_write_permission if {
 	base := workflow_with_live_run(withheld_live_run)
-	workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {
-		"permissions": {"pull-requests": "write", "id-token": "write"},
-	})}})
+	workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {"permissions": {"pull-requests": "write", "id-token": "write"}})}})
 	violations := deny with input as workflow
 	some msg in violations
 	contains(msg, "pull-requests")
 }
 
 test_rejects_workflow_wide_write_permission if {
-	workflow := object.union(workflow_with_live_run("echo safe"), {
-		"permissions": {"pull-requests": "write"},
-	})
+	workflow := object.union(workflow_with_live_run("echo safe"), {"permissions": {"pull-requests": "write"}})
 	violations := deny with input as workflow
 	some msg in violations
 	contains(msg, "workflow-wide")
@@ -631,9 +611,7 @@ test_rejects_workflow_wide_write_permission if {
 test_rejects_live_job_artifact_upload if {
 	every action in ["actions/upload-artifact", "chainguard-actions/actions-upload-artifact"] {
 		base := workflow_with_live_run(withheld_live_run)
-		workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {
-			"steps": array.concat(base.jobs.test.steps, [{"uses": sprintf("%s@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", [action])}]),
-		})}})
+		workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {"steps": array.concat(base.jobs.test.steps, [{"uses": sprintf("%s@aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", [action])}])})}})
 		violations := deny with input as workflow
 		some msg in violations
 		contains(msg, "must not upload artifacts")
@@ -677,9 +655,7 @@ test_rejects_octelium_catalog_without_one_use_credential if {
 }
 
 test_allows_one_use_octelium_catalog_with_private_output if {
-	violations := deny with input as workflow_with_catalog_run({
-		"OCTELIUM_CATALOG_AUTH_TOKEN": "test",
-	})
+	violations := deny with input as workflow_with_catalog_run({"OCTELIUM_CATALOG_AUTH_TOKEN": "test"})
 	count(violations) == 0
 }
 
@@ -693,7 +669,7 @@ withheld_live_run := `private_log="$(mktemp)"
 trap 'rm -f "$private_log"' EXIT
 if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 umask 077
-bash scripts/ci/install-kubeconfig.sh
+bash scripts/ci/install-kubeconfig.sh --tailscale
 EOF
 then
   echo "failure details withheld"
@@ -703,13 +679,13 @@ echo "success details withheld"`
 
 plan_stage_call := `bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 
-plan_stage_guard := `if sha256sum --check --status <<<'aed6c96d6e74935108029cc3ee115bd68e1e4f8ca381380d413d67198c2fb15c  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+plan_stage_guard := `if sha256sum --check --status <<<'2b340a25b7fdd41bfe40eef55389f2c05aaa27a518018f1a0afc67f5ea3a14c4  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 
 classified_live_run := replace(withheld_live_run, "\nthen\n", sprintf("\nthen\n  %s\n    %s\n  fi\n", [plan_stage_guard, plan_stage_call]))
 
 azuread_plan_stage_call := `HOMELAB_AZUREAD_PLAN_REPORT_FILE="${azuread_report:-}" bash scripts/ci/terragrunt-plan-stage.sh <"$private_log"`
 
-azuread_plan_stage_guard := `if sha256sum --check --status <<<'16be86dcc7b37efa6de69d01d093e8d866bf50f2af8f43258f5a17d45f67ecc0  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
+azuread_plan_stage_guard := `if sha256sum --check --status <<<'6f0f6aecb0d59e209436d3a3add58e05c8a7975db07d8cdff0f2e739da70500f  scripts/ci/terragrunt-plan-stage.sh' 2>/dev/null; then`
 
 azuread_private_live_run := `private_dir="$(mktemp -d)"
 chmod 700 "$private_dir"
@@ -718,7 +694,7 @@ azuread_report="$private_dir/azuread-report.json"
 trap 'rm -rf -- "$private_dir"' EXIT
 if ! HOMELAB_AZUREAD_PLAN_REPORT_FILE="$azuread_report" nix develop --command bash >"$private_log" 2>&1 <<'EOF'
 umask 077
-bash scripts/ci/install-kubeconfig.sh
+bash scripts/ci/install-kubeconfig.sh --tailscale
 EOF
 then
   echo "failure details withheld"
@@ -771,36 +747,185 @@ native_receipt_provenance_fixture := {
 workflow_with_live_run(run) := {
 	"name": "Live output test",
 	"on": "workflow_dispatch",
-	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
 	"jobs": {"test": {
-		"runs-on": "ubuntu-latest",
-		"steps": [{"run": run, "env": {"OCTELIUM_AUTH_TOKEN": "test"}}],
+		"runs-on": "ubuntu-24.04",
+		"environment": {"name": "homelab-production"},
+		"permissions": {"contents": "read", "id-token": "write"},
+		"steps": [tailscale_test_state, tailscale_test_join, tailscale_test_guard, {"run": run}],
 	}},
 }
 
 workflow_with_catalog_run(env) := {
-	"name":        "Octelium catalog test",
-	"on":          "workflow_dispatch",
+	"name": "Octelium catalog test",
+	"on": "workflow_dispatch",
 	"permissions": {},
 	"jobs": {"test": {
-		"runs-on":     "ubuntu-latest",
+		"runs-on": "ubuntu-latest",
 		"permissions": {"contents": "read"},
-		"steps":       [{"run": withheld_catalog_run, "env": env}],
+		"steps": [{"run": withheld_catalog_run, "env": env}],
 	}},
 }
 
 workflow_with_catalog_credential_on_different_step := {
-	"name":        "Octelium catalog test",
-	"on":          "workflow_dispatch",
+	"name": "Octelium catalog test",
+	"on": "workflow_dispatch",
 	"permissions": {},
 	"jobs": {"test": {
-		"runs-on":     "ubuntu-latest",
+		"runs-on": "ubuntu-latest",
 		"permissions": {"contents": "read"},
 		"steps": [
 			{"run": withheld_catalog_run},
 			{"run": "true", "env": {"OCTELIUM_CATALOG_AUTH_TOKEN": "test"}},
 		],
 	}},
+}
+
+# Treat joins as credentials: a different step/job, a skipped failure, or a
+# broader identity must not satisfy the live invocation's access boundary.
+tailscale_test_state := {"run": tailscale_state_run}
+tailscale_test_guard := {"run": "python3 -I scripts/ci/tailscale-identity-check.py apply"}
+
+tailscale_test_join := {
+	"uses": "tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd",
+	"with": {
+		"authkey": "${{ secrets.TAILSCALE_AUTH_KEY }}",
+		"statedir": "${{ runner.temp }}/tailscale-state",
+		"version": "1.102.3",
+		"log-mode": "quiet",
+		"ping": "homelab-tailscale-operator.tail67beb.ts.net",
+	},
+}
+
+test_rejects_invalid_tailscale_credential_join if {
+	every join in [
+		object.union(tailscale_test_join, {"uses": "tailscale/github-action@v4"}),
+		object.union(tailscale_test_join, {"if": "false"}),
+		object.union(tailscale_test_join, {"continue-on-error": true}),
+		object.union(tailscale_test_join, {"env": {"TAILSCALE_AUTHKEY": "secret"}}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"authkey": "secret"})}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"oauth-secret": "secret"})}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"tags": "tag:ci"})}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"audience": "wrong"})}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"log-mode": "all"})}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"authkey": "${{ secrets.TAILSCALE_CORDIUM_AUTH_KEY }}"})}),
+		object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {"statedir": "/tmp/shared-state"})}),
+		object.union(object.remove(tailscale_test_join, {"with"}), {"with": object.remove(tailscale_test_join.with, {"statedir"})}),
+	] {
+		base := workflow_with_live_run(withheld_live_run)
+		workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {"steps": [tailscale_test_state, join, tailscale_test_guard, {"run": withheld_live_run}]})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "requires an earlier pinned Tailscale authkey join")
+	}
+}
+
+test_rejects_missing_or_late_tailscale_join if {
+	every steps in [[{"run": withheld_live_run}], [{"run": withheld_live_run}, tailscale_test_join]] {
+		base := workflow_with_live_run(withheld_live_run)
+		workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {"steps": steps})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "requires an earlier pinned Tailscale authkey join")
+	}
+}
+
+test_rejects_tailscale_join_in_another_job if {
+	base := workflow_with_live_run(withheld_live_run)
+	workflow := object.union(base, {"jobs": {
+		"test": object.union(base.jobs.test, {"steps": [{"run": withheld_live_run}]}),
+		"join": {"steps": [tailscale_test_join]},
+	}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "requires an earlier pinned Tailscale authkey join")
+}
+
+test_rejects_wrong_protected_environment_or_runner if {
+	every changes in [
+		{"environment": "homelab-plan"},
+		{"environment": ""},
+		{"runs-on": "self-hosted"},
+	] {
+		base := workflow_with_live_run(withheld_live_run)
+		workflow := object.union(object.remove(base, {"jobs"}), {"jobs": {"test": object.union(object.remove(base.jobs.test, object.keys(changes)), changes)}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "requires an earlier pinned Tailscale authkey join")
+	}
+}
+
+test_rejects_legacy_kubernetes_transport if {
+	base := workflow_with_live_run(withheld_live_run)
+	workflow := object.union(base, {"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "must not configure legacy Octelium")
+}
+
+test_rejects_implicit_kubeconfig_transport if {
+	violations := deny with input as workflow_with_live_run(replace(withheld_live_run, " --tailscale", ""))
+	some msg in violations
+	contains(msg, "must explicitly install the fixed Tailscale kubeconfig")
+}
+
+test_plan_and_cordium_require_distinct_scoped_identities if {
+	every identity in ["plan", "cordium"] {
+		job := {
+			"runs-on": "ubuntu-24.04",
+			"environment": {"plan": "homelab-plan", "cordium": ""}[identity],
+			"permissions": {"id-token": "write"},
+			"steps": [
+				tailscale_test_state,
+				object.union(tailscale_test_join, {"with": object.union(tailscale_test_join.with, {
+					"authkey": tailscale_authkey(identity),
+					"ping": tailscale_ping(identity),
+				})}),
+				{"run": sprintf("python3 -I scripts/ci/tailscale-identity-check.py %s", [identity])},
+				{"run": {"plan": "bash scripts/ci/terragrunt-plan.sh", "cordium": "bash scripts/ci/cordium-ci.sh"}[identity]},
+			],
+		}
+		tailscale_join_before(job, 3)
+	}
+}
+
+test_mesh_identity_check_requires_private_output if {
+	violations := deny with input as workflow_with_live_run("python3 -I scripts/ci/tailscale-access-check.py apply")
+	some msg in violations
+	contains(msg, "withhold sensitive command output")
+}
+
+test_mesh_identity_check_requires_earlier_join if {
+	base := workflow_with_live_run("python3 -I scripts/ci/tailscale-access-check.py apply")
+	workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {"steps": [{"run": "python3 -I scripts/ci/tailscale-access-check.py apply"}]})}})
+	violations := deny with input as workflow
+	some msg in violations
+	contains(msg, "requires an earlier pinned Tailscale authkey join")
+}
+
+test_rejects_missing_late_or_skippable_state_and_identity_guards if {
+	every steps in [
+		[tailscale_test_join, tailscale_test_guard, {"run": withheld_live_run}],
+		[tailscale_test_join, tailscale_test_state, tailscale_test_guard, {"run": withheld_live_run}],
+		[object.union(tailscale_test_state, {"if": "false"}), tailscale_test_join, tailscale_test_guard, {"run": withheld_live_run}],
+		[{"run": "mkdir -p /tmp/shared-state"}, tailscale_test_join, tailscale_test_guard, {"run": withheld_live_run}],
+		[tailscale_test_state, tailscale_test_join, {"run": withheld_live_run}],
+		[tailscale_test_state, tailscale_test_guard, tailscale_test_join, {"run": withheld_live_run}],
+		[tailscale_test_state, tailscale_test_join, {"run": "python3 -I scripts/ci/tailscale-identity-check.py plan"}, {"run": withheld_live_run}],
+		[tailscale_test_state, tailscale_test_join, object.union(tailscale_test_guard, {"continue-on-error": true}), {"run": withheld_live_run}],
+		[tailscale_test_state, tailscale_test_join, object.union(tailscale_test_guard, {"env": {"PYTHONPATH": "/tmp"}}), {"run": withheld_live_run}],
+	] {
+		base := workflow_with_live_run(withheld_live_run)
+		workflow := object.union(base, {"jobs": {"test": object.union(base.jobs.test, {"steps": steps})}})
+		violations := deny with input as workflow
+		some msg in violations
+		contains(msg, "requires an earlier pinned Tailscale authkey join")
+	}
+}
+
+test_authkey_join_does_not_need_github_oidc_permission if {
+	base := workflow_with_live_run(withheld_live_run)
+	job := object.union(base.jobs.test, {"permissions": {"contents": "read"}})
+	tailscale_join_before(job, 3)
 }
 
 test_encrypted_harbor_artifact_exception_is_exact if {

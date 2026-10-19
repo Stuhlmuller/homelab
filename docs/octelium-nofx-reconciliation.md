@@ -7,8 +7,8 @@ reconcile that native Service.
 
 `scripts/octelium-nofx-reconcile.py` is the fixed operator path for this change.
 It reads only NOFX by default, using an existing operator Octelium session.
-The Nix shell supplies the pinned Cloudflare client. Install Octelium CLI 0.35.0
-from the fixed release archives with committed SHA-256 checksums. The installer
+Connect the operator host to the declared Tailscale tailnet. Install Octelium
+CLI 0.35.0 from the fixed release archives with committed SHA-256 checksums. The installer
 uses `sha256sum` when available (including the Linux Nix shell), with `shasum`
 as the Darwin fallback; checksum failure prevents installation.
 
@@ -32,12 +32,12 @@ script directory, current directory, user packages, and `PYTHONPATH` from
 module lookup, so an untracked `scripts/json.py` cannot execute before the
 clean-checkout guard. The guard still rejects untracked files during execution.
 
-The command starts a temporary unprivileged TCP carrier and a loopback CONNECT
-proxy restricted to the canonical API hostname. Only its child native-client
-processes receive that dynamically allocated proxy address. Inner TLS remains
-verified; it changes no hosts file, DNS settings, or saved client config.
-Temporary files and both listeners are removed afterward. Use `--homedir`
-only to select a different existing private operator login directory.
+The command verifies the declared Tailscale profile and unique online ingress
+peer, requires canonical API DNS to resolve only to that peer's mesh addresses,
+and checks native gRPC and gRPC-Web over verified TLS/HTTP2. Native clients then
+connect directly with inherited proxy settings removed. It starts no carrier
+or proxy and changes no hosts file, DNS settings, or saved client config.
+Use `--homedir` only to select a different existing private operator login directory.
 The helper rejects inherited `OCTELIUM_INSECURE_TLS=true` or a nonempty
 `OCTELIUM_AUTH_PROXY_SOCKET` before opening transport: the pinned native client
 would otherwise bypass certificate verification or use its authentication

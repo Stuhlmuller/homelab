@@ -12,6 +12,11 @@ HELPER = Path(__file__).with_name("terragrunt-plan-stage.sh")
 WORKFLOW = HELPER.parents[2] / ".github/workflows/terragrunt-plan.yml"
 PLAN_RUNNER = HELPER.with_name("terragrunt-plan.sh")
 MARKERS = {
+    "::group::CI kubeconfig verification": "ci-config",
+    "::group::API proxy identity": "ci-identity",
+    "::group::CI application read": "ci-read",
+    "::group::CI dry-run admission": "ci-dry-run",
+    "::group::CI write denial": "ci-denial",
     "": "nix",
     "::group::Kubeconfig setup": "kubeconfig",
     "::group::Kubernetes API check": "api",

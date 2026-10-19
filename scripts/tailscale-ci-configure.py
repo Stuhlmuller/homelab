@@ -82,6 +82,7 @@ def verify_destinations():
     for environment in GUARDS.ENVIRONMENTS.values():
         GUARDS.verify_protection(environment, GUARDS.github(
             f"environments/{environment}", "environment protection lookup"))
+    GUARDS.verify_production_allowlist()
     if GUARDS.github("branches/main", "main protection lookup").get("protected") is not True:
         raise GUARDS.Failure("Production deployment requires a protected main branch")
     for environment in (None, *GUARDS.ENVIRONMENTS.values()):

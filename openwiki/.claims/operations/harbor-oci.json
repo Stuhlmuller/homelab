@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5df23bae6a5573f911962320cdb9e40455607f05cfb849394cff0cdf62ddee24",
+  "pageVersion": "sha256:298887a1745d6e9a6930515b2d63d6d777bd98351ff5e19679e7087f4b50d7be",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -26,7 +26,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:840fdef099de1b49cfe02890507cf3d67c9e3a87bbe58e62bcb2a860be5f3676"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -34,7 +34,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773"
+          "version": "repo-file-v1:sha256:b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd"
         },
         {
           "resource": "repo://scripts/config/harbor-traefik-images.json",
@@ -324,7 +324,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
+          "version": "repo-file-v1:sha256:37a3d323f1bb42ed28838b5e5b29b6f09f99378e663111b7d51873b5bbfed5cf"
         },
         {
           "resource": "repo://builds/harbor-core/README.md",
@@ -368,7 +368,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773"
+          "version": "repo-file-v1:sha256:b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd"
         }
       ]
     },
@@ -392,7 +392,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-core-images.yml",
-          "version": "repo-file-v1:sha256:068445dd1bd569d4f07c4c83a48f2dde6fb9c3823e7c080219fd53f1e41ee015"
+          "version": "repo-file-v1:sha256:37a3d323f1bb42ed28838b5e5b29b6f09f99378e663111b7d51873b5bbfed5cf"
         },
         {
           "resource": "repo://builds/harbor-core/signer-test.sh",
@@ -404,7 +404,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773"
+          "version": "repo-file-v1:sha256:b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd"
         }
       ]
     },
@@ -448,7 +448,7 @@
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773"
+          "version": "repo-file-v1:sha256:b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd"
         },
         {
           "resource": "repo://scripts/config/harbor-mastodon-images.json",
@@ -458,15 +458,15 @@
     },
     {
       "id": "claim_26e35e77bced4b28a2e6109acc41659b",
-      "statement": "Hosted Harbor publication CI forwards the disposable runner to traefik/traefik-private over a bounded Kubernetes port-forward with the Octelium CI credential, maps the Harbor hostname to loopback, and retains TLS verification.",
+      "statement": "Staged hosted Harbor publication CI forwards its disposable runner to traefik/traefik-private through a tokenless Tailscale kubeconfig, maps the Harbor hostname to loopback, and retains TLS verification; protected live acceptance remains pending.",
       "evidence": [
         {
-          "resource": "repo://docs/networking-tailnet-ingress.md",
-          "version": "repo-file-v1:sha256:64f9eb5ffad94a804aa82c3de1e2154746f1f21f9da081a51d70a482471b7d4b"
+          "resource": "repo://scripts/ci/harbor-publish.sh",
+          "version": "repo-file-v1:sha256:b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd"
         },
         {
-          "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773"
+          "resource": "repo://scripts/ci/install-kubeconfig.sh",
+          "version": "repo-file-v1:sha256:c8d05da99914587bb5d6227b147ac885a7264f7500c83adb436b2ac556b05501"
         }
       ]
     },
@@ -566,7 +566,7 @@
         },
         {
           "resource": "repo://.github/workflows/cordium-runner-publish.yml",
-          "version": "repo-file-v1:sha256:3417cb76f79c71f256fc35cb65da29c1e60e76a5a34a32843633f98af5f34c4e"
+          "version": "repo-file-v1:sha256:36614c7ebc32a729aa2bd9bebb71971e6ff67bf90d8beb96b9af5320d7dac622"
         },
         {
           "resource": "repo://builds/cordium-runner/README.md",
@@ -580,11 +580,11 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:840fdef099de1b49cfe02890507cf3d67c9e3a87bbe58e62bcb2a860be5f3676"
         },
         {
           "resource": "repo://scripts/ci/harbor-publish.sh",
-          "version": "repo-file-v1:sha256:182d0a208fd388836e8e5150759a4655baa626ff804b38eafcb6e2251abc6773"
+          "version": "repo-file-v1:sha256:b6e610558b1637acbe37de75d203951c0c7fbc5c9cc2639ce20147a9d4ec21fd"
         },
         {
           "resource": "repo://scripts/config/harbor-renovate-images.json",
@@ -620,7 +620,7 @@
       "evidence": [
         {
           "resource": "repo://.github/workflows/harbor-mirror.yml",
-          "version": "repo-file-v1:sha256:8d47b2287a2778ec26d0ee11d73e21fa7dabd1e143855191dd399d7ac0d5f5a4"
+          "version": "repo-file-v1:sha256:840fdef099de1b49cfe02890507cf3d67c9e3a87bbe58e62bcb2a860be5f3676"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -635,6 +635,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T21:31:10.787Z"
+    "at": "2026-10-18T22:39:47.335Z"
   }
 }

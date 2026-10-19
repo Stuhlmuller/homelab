@@ -11,9 +11,6 @@ on:
 
 permissions: {}
 
-env:
-  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
-
 jobs:
   grafana:
     runs-on: ubuntu-24.04
@@ -50,23 +47,34 @@ jobs:
           primary-key: nix-develop-${{ runner.os }}-${{ hashFiles('flake.nix', 'flake.lock') }}
           restore-prefixes-first-match: nix-develop-${{ runner.os }}-
 
-      - name: Verify Diagnostic Inputs
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+      - name: Prepare Tailscale State
+        timeout-minutes: 1
         run: |
-          test -n "${OCTELIUM_AUTH_TOKEN}" || { echo "OCTELIUM_CI_AUTH_TOKEN must be set as a homelab-production environment secret."; exit 1; }
+          umask 077
+          mkdir -- "$RUNNER_TEMP/tailscale-state"
 
-      - name: Run Grafana Diagnostics Through Octelium
-        env:
-          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
-          KUBE_API_SERVER_URL: ${{ env.KUBE_API_SERVER_URL }}
+      - name: Connect To Tailscale
+        uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
+          statedir: ${{ runner.temp }}/tailscale-state
+          version: 1.102.3
+          log-mode: quiet
+          ping: homelab-tailscale-operator.tail67beb.ts.net
+
+      - name: Verify Tailscale Identity
+        timeout-minutes: 1
+        run: python3 -I scripts/ci/tailscale-identity-check.py apply
+
+      - name: Run Grafana Diagnostics Through Tailscale
         run: |
           private_log="$(mktemp)"
           trap 'rm -f "$private_log"' EXIT
           if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
           set -euo pipefail
           umask 077
-          bash scripts/ci/install-kubeconfig.sh
+          bash scripts/ci/install-kubeconfig.sh --tailscale
+          python3 -I scripts/ci/tailscale-access-check.py apply
           kubectl --request-timeout=15s version >/dev/null
           kubectl -n monitoring rollout status deployment/grafana --timeout=120s >/dev/null
           EOF

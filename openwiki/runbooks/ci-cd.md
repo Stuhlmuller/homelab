@@ -22,16 +22,22 @@ sources:
     resource: repo://.github/workflows/nofx-images.yml
   - id: openwiki-source-66763af1d94960a2aaf14e95
     resource: repo://.github/workflows/openclaw-config.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
+  - id: openwiki-source-cb3a8a3b9e69747d8a6feacf
+    resource: repo://.policy.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-e0d1dba87aa9213350b1234a
     resource: repo://docs/ci-cd.md
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-020791e1237c864b31f43a39
     resource: repo://scripts/ci/offline-static-checks.sh
-generated: { by: "codex", at: "2026-10-18T20:41:22.820Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # CI/CD
@@ -41,8 +47,9 @@ Canonical runbook: [`docs/ci-cd.md`](../../docs/ci-cd.md)
 Pull requests always emit the aggregate `Terragrunt Gate`; only trusted changes
 to live inputs enter the protected plan environment. Pushes to `main` emit an
 exact-SHA apply request, and an operator dispatches the protected apply. AWS,
-Azure, Kubernetes, and Octelium credentials remain GitHub environment inputs,
-while desired state stays in repository-owned files.
+Azure, and staged scoped Tailscale keys remain protected GitHub inputs;
+existing Kubernetes and Octelium inputs remain until replacement acceptance.
+Desired state stays in repository-owned files.
 
 Policy Bot automatically approves PRs through `requires.count: 0` in
 [`.policy.yml`](../../.policy.yml); human and Codex reviews are optional.
@@ -50,10 +57,8 @@ Policy Bot automatically approves PRs through `requires.count: 0` in
 The pull-request `Lint` job reports its own conclusion without commit-status
 write permission. The static gate rejects that permission in any PR workflow;
 the trusted-base native Chainguard receipt workflow alone sets its provenance
-status after checking the current main and PR head.
-Required GitHub checks and explicit Stuhlmuller organization-member disapproval
-still block merges. The policy takes effect from the target branch after merge;
-revert `.policy.yml` to restore review requirements.
+status after checking the current main and PR head. Required GitHub checks
+gate merges. Revert `.policy.yml` to restore review requirements.
 
 Read-only GitHub inspection on 2026-10-17 UTC confirmed that `main` ruleset
 `14700233` still requires the seven documented checks. `homelab-plan` has no
@@ -77,6 +82,22 @@ The pool remains disabled and existing job selectors stay unchanged. The
 [runner contract](../../builds/cordium-runner/README.md) lists the live
 isolation, publication, cold-pull, canary, and recovery evidence required
 before a reviewed selector cutover.
+
+## Staged Tailscale CI cutover
+
+Phase 2b stages thirteen credentialed hosted live jobs on pre-signed ephemeral
+Tailscale keys with Tailnet Lock retained. Plan and apply use separate protected
+environment keys; Cordium has a separate repository key and OIDC policy. Each
+job uses a private, uncached state directory and verifies its exact tag and
+tailnet before live work. The operator proxy kubeconfig is tokenless.
+The newly included jobs publish Cordium runner and OpenClaw images, publish
+Mastodon DNS, and run protected OpenClaw legacy retention.
+
+Canonical DNS/API, proxy admission/RBAC, and protected key publication must
+pass before merge. Live plan denial, exact-main apply, diagnostics, publisher,
+and Cordium acceptance follow the code change. Native catalog calls retain
+short-lived Octelium authorization; legacy transport and credentials remain
+until replacement acceptance. See the [CI runbook](../../docs/ci-cd.md).
 
 ## Credential recovery: 2026-09-26
 

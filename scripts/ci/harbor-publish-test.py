@@ -52,8 +52,6 @@ class HarborPublicationGates(unittest.TestCase):
             "GITHUB_STEP_SUMMARY": str(self.root / "summary"),
             "GITHUB_OUTPUT": str(self.root / "outputs"),
             "EXPECTED_SHA": SHA,
-            "OCTELIUM_AUTH_TOKEN": SECRET_SENTINEL,
-            "KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com",
         }
         self.executable("uname", "printf '%s\\n' Linux\n")
         self.executable("git", f"printf '%s\\n' {SHA}\n")
@@ -229,6 +227,8 @@ class HarborPublicationGates(unittest.TestCase):
                         "status": {"containerStatuses": [{"name": "public-key", "state": {"terminated": {
                             "exitCode": 0, "message": "test public key\\n"}}}]}}]}))
                 elif "port-forward" in args:
+                    assert args[args.index("--namespace") + 1] == "traefik"
+                    assert "service/traefik-private" in args
                     # Cleanup can interrupt startup; never expose a partial PID file.
                     (root / "forward-pid.tmp").write_text(str(os.getpid()))
                     (root / "forward-pid.tmp").replace(root / "forward-pid")
@@ -551,9 +551,7 @@ class HarborPublicationGates(unittest.TestCase):
                 self.rejected(mode="mirror-dns")
                 self.env[key] = previous
         self.rejected(mode="mirror-dns:codeberg.org/k8s-gateway/k8s_gateway")
-        del self.env["OCTELIUM_AUTH_TOKEN"]
-        result = self.rejected(mode="mirror-dns")
-        self.assertIn("The production Octelium CI credential is required", result.stderr)
+        self.assertNotIn("OCTELIUM_AUTH_TOKEN", (ROOT / "scripts/ci/harbor-publish.sh").read_text())
 
     def test_codeberg_registry_uses_anonymous_copy_and_complete_harbor_pull(self):
         self.transport_mocks(mirror=True, registries=("docker.io", "codeberg.org"))
@@ -1284,10 +1282,15 @@ class HarborPublicationGates(unittest.TestCase):
         self.executable("git", f'if [ "$1" = rev-parse ]; then echo {SHA}; else echo {"a" * 40}; fi\n')
         self.rejected()
 
-    def test_valid_inventory_reaches_missing_credential_gate(self):
-        del self.env["OCTELIUM_AUTH_TOKEN"]
-        result = self.rejected()
-        self.assertIn("The production Octelium CI credential is required", result.stderr)
+    def test_tailscale_kubeconfig_has_no_shared_bearer_token(self):
+        self.transport_mocks(mirror=True)
+        result = self.run_helper(mode="mirror")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls_for("kubectl")
+        self.assertIn(["config", "set-credentials", "homelab-ci", "--username=tailscale"], calls)
+        self.assertTrue(any("--server=https://homelab-tailscale-operator.tail67beb.ts.net" in args
+                            for args in calls))
+        self.assertFalse(any(arg.startswith("--token=") for args in calls for arg in args))
 
     def test_publisher_rejects_pull_request_execution(self):
         self.env["GITHUB_EVENT_NAME"] = "pull_request"

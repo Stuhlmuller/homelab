@@ -4,6 +4,8 @@ title: "Tailnet And App Ingress"
 description: "Staged Traefik mesh ingress, private Fleet, reviewed Funnel callbacks, and safe traffic cutover."
 tags: [runbook, networking, ingress]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-0108413231c2f8b3f2972abd
     resource: repo://clusters/homelab/apps/affine/networkpolicy.yaml
   - id: openwiki-source-5eb041b69ecfffa36cf7ffbb
@@ -42,6 +44,8 @@ sources:
     resource: repo://IaC/modules/tailscale-access/README.md
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
     resource: repo://scripts/ci/tailnet-dns-test.py
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
   - id: openwiki-source-511191e55632b55651ad4318
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
@@ -62,10 +66,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # Tailnet And App Ingress
@@ -183,6 +187,10 @@ do not revoke the delegated signing capability.
 The [provider runbook](../../IaC/modules/tailscale-access/README.md) owns exact
 secret scopes, private saved-plan commands, recovery, and the accepted signing-key
 tradeoff. Each CI job must supply a private `statedir` to the pinned action.
+The staged phase 2b jobs keep per-job state private and uncached, verify the
+exact node tag and tailnet before live commands, and use tokenless operator API
+kubeconfigs for plan/apply. Cordium retains separate native OIDC. Prepared
+source does not prove protected CI acceptance.
 
 ## Security and rollout gates
 

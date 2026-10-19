@@ -12,10 +12,14 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-fd5257dfdfce75d54d138848
+    resource: repo://scripts/ci/cordium-ci.sh
+  - id: openwiki-source-ff63d9d82b2370adf56a5f28
+    resource: repo://scripts/octelium-nofx-reconcile.py
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # Octelium
@@ -52,6 +56,16 @@ retained `cluster.local/ns/octelium-client/sa/octelium-client` principal only on
 and matching intended NetworkPolicy selector retire with the connector, not
 before it. New application routes belong in Traefik; the retained Octelium
 catalog is not a recipe to restore public app DNS or delete Cordium resources.
+
+Phase 2b changes the shared `native_transport` helper to direct canonical TLS.
+It requires the declared online tailnet and unique online ingress peer,
+verifies canonical DNS against that peer's mesh addresses, removes proxy
+overrides, and probes native gRPC plus gRPC-Web. Existing catalog and credential
+callers keep their narrow resource and exact-main guards. The Cordium CI wrapper
+uses direct TLS after its scoped Tailscale join; native OIDC remains a separate
+authorization boundary. Prepared source does not prove live CI execution or
+cleanup. Keep the old catalog, native credentials, Tunnel, and Mac rollback
+installer through the recorded acceptance gates.
 
 The temporary August 2026 recovery manifest runs the control paths, CI API,
 and 18 public WEB Service fallbacks on `acer` without Multus. Its generated Service UIDs must be

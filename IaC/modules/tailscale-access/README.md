@@ -74,7 +74,8 @@ subprocess output without displaying it or passing keys in process arguments.
 Run the publisher on this homelab's trusted Mac signing node after the provider
 apply. It uses `/Applications/Tailscale.app/Contents/MacOS/Tailscale`, verifies
 Tailnet Lock is enabled and this node is a trusted signer, and checks the fixed
-GitHub environment owner-review and branch protections. The default is read-only.
+GitHub automatic environment protections and the exact main-only, no-tags
+production branch allowlist. The default is read-only.
 `--execute` also requires a clean checkout at signed, verified current `main`.
 
 ```sh
@@ -152,6 +153,25 @@ The fixed failure path and private receipts preserve recovery if readback times
 out. No provider resource or generation change is required for this repair.
 
 ## Rotation and retirement
+
+Generation 2 replaces the three invalid generation-1 CI keys. The approved
+credential-only recovery uses a signed local generation change and a private
+saved provider plan before PR delivery, because the invalid plan key blocks
+credentialed PR CI. Publish from a clean verified current-main checkout using
+the fixed helper, then deliver the generation source through the protected PR.
+This staged recovery does not authorize workload apply or migration retirement.
+
+Provider readback confirms exactly three replacement keys with unchanged tags
+and 90-day expiry. Rotate generation 2 by `2026-12-13T02:35:56Z`, before expiry
+`2027-01-12T02:35:56Z`. Revoked key records can remain readable: verify their
+`revoked` timestamp and `invalid` flag rather than requiring HTTP 404.
+
+Tailnet Lock removal can precede local trust-list convergence. The fixed helper
+stops on a still-trusted readback; inspect trust before resuming its idempotent
+cleanup, which retains the cache entry until absence is confirmed. Explicit
+incident approval permits retiring only the compromised older CI authorities
+before normal replacement CI acceptance; retain unrelated signers and all
+workload/migration resources.
 
 Generation 1 was prepared on October 10, 2026 UTC. Rotate every 60 days from
 the provider creation timestamp, before the 90-day expiry. No timestamp or local environment

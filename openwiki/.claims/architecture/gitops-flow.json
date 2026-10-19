@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:53ea978b60e91e43982b4833b2638905199e55a06e3ade77d6341c5a48fdad91",
+  "pageVersion": "sha256:c5ca5490dbdc633dab27b6ce3a3711688103abe5e2591d7f919fcd9202d46c75",
   "claims": [
     {
       "id": "claim_0f406983655244d4a8a09171533840a5",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://IaC/modules/tailscale-access/README.md",
-          "version": "repo-file-v1:sha256:0667bd539406854f6c7322f685fac13b1c7f1ebdb9401f6f51f8bb4dbcc26d19"
+          "version": "repo-file-v1:sha256:12ec3d4b37d43501320bd5ec0aeadd877ef3563f16393d8d5b0c76d3798895a6"
         },
         {
           "resource": "repo://IaC/modules/tailscale-access/main.tf",
@@ -47,10 +47,28 @@
           "version": "repo-lines-v1:sha256:539b628b0d8a8f73695efa935fcbf4f538b1863c3f7f7906a256d12dc5f3d651:eyJzZWxlY3RlZExpbmVDb3VudCI6NTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY0OGUyY2NiMzAzOTAwNTZiMmFhNTg0ZTllNGJhM2E2ODAzZjcwZDZkMjNhMjhhNjU3ODY4MjhlYjdiNmI0NjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwZGYyMzAzNTAxZjYzNWQ0OWYwZDJmMzhmYTI1ODNmOGVjZTQ3N2IyMTg2YjNmYjQ5OTY3YmY2NWNkZGM3NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmM2UzNWFjZmU0NmM0Nzk1NTQ0MWJjYmZmM2VjYmNiOTZhMTY0ZTAyMzY5ZTY4YWIwOGVkNDVlNTg1YWM1NWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
+    },
+    {
+      "id": "claim_8cfa206fe5e64cbc969189161c8ea9b8",
+      "statement": "Phase 2b stages thirteen credentialed live jobs on scoped pre-signed Tailscale keys, verifies each joined tag and tailnet, and uses tokenless runner kubeconfigs for plan and apply through the operator API proxy. Protected environments and exact-current-main checks remain; source preparation alone does not establish live CI acceptance or retire native Services.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/terragrunt-plan.yml",
+          "version": "repo-file-v1:sha256:e278db38284ef3f1d14568539f12ad65d49569239ee1fc3402c4338971f3319e"
+        },
+        {
+          "resource": "repo://docs/ci-cd.md",
+          "version": "repo-file-v1:sha256:b4ffc815aba585b76d5d1a17c89287112602b5bcda83244cce44bbb57145ba54"
+        },
+        {
+          "resource": "repo://policy/workflows.rego",
+          "version": "repo-file-v1:sha256:8670a980e44db338b7a8bf1cb90911d112ede890be7bd674af63d53680088e3f"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

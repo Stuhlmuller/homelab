@@ -6,16 +6,18 @@ tags: ["architecture", "storage", "stateful"]
 sources:
   - id: openwiki-source-52536621afbfff1f8abeed59
     resource: repo://clusters/homelab/apps/renovate/config.js
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-caf6d77fd092a28e8583a6a2
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
+generated: { by: "codex", at: "2026-10-19T00:24:44.455Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:24:44.455Z
 ---
 
 # Storage And State

@@ -4,12 +4,16 @@ title: "GitOps Flow"
 description: "Terragrunt registration, Argo CD runtime ownership, operator exceptions, shared stack inputs, and private OCI publication."
 tags: ["architecture", "argocd", "terragrunt"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-e26a7307e86732ce7e6a34b6
     resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-ae0b2b6cec91dbc3476c410b
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-77d110fdd1547564be86e611
     resource: repo://IaC/modules/tailscale-access/main.tf
   - id: openwiki-source-6b5e63b8e249f20dfe916d9f
@@ -18,10 +22,12 @@ sources:
     resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-da61504fb6ba4ceba279edb0
     resource: repo://IaC/stacks/traefik/stack.hcl
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # GitOps Flow
@@ -139,6 +145,15 @@ stateless CoreDNS/k8s_gateway chart and configuration. Keep the Cloudflare Tunne
 old native catalog, credentials, and CI transport through their separate
 [ingress acceptance gates](../runbooks/tailnet-ingress.md). This prepared source
 does not claim that traffic has moved or old native Services have been retired.
+
+Phase 2b stages thirteen credentialed live jobs with scoped pre-signed Tailscale
+keys, verifies each joined tag and tailnet, and sends private API calls through
+mesh TLS. Plan and apply use tokenless runner kubeconfigs at the operator API
+proxy; admission allows plan dry runs but denies real Application writes.
+Production jobs keep protected-environment and exact-current-main checks.
+Prepared source does not establish live CI acceptance or retire old native
+Services. The added jobs include Cordium runner and OpenClaw image publication,
+OpenClaw legacy retention, and Mastodon DNS publication.
 
 ## Important Paths
 

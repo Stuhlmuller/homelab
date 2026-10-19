@@ -4,6 +4,8 @@ title: "Cluster Topology"
 description: "Talos node roles, API endpoints, scheduling capacity, Octelium recovery placement, and control-plane maintenance constraints."
 tags: ["architecture", "talos", "kubernetes"]
 sources:
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -20,6 +22,8 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/values.yaml
   - id: openwiki-source-e84e79af70aa76ff1e5928ad
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
+  - id: openwiki-source-e0d1dba87aa9213350b1234a
+    resource: repo://docs/ci-cd.md
   - id: openwiki-source-95ccd2be90fc4c1345dfbda6
     resource: repo://docs/evidence/acer-cordium-capacity-2026-10-17.json
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
@@ -28,10 +32,12 @@ sources:
     resource: repo://IaC/.catalog/units/bootstrap/argocd/terragrunt.hcl
   - id: openwiki-source-aa5e60e5d7c743b6b7b18220
     resource: repo://IaC/bootstrap/argocd/README.md
-generated: { by: "codex", at: "2026-10-18T19:06:56.344Z" }
+  - id: openwiki-source-f8287cec4efc309562629516
+    resource: repo://scripts/ci/tailscale-access-check.py
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T19:06:56.344Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 <!-- markdownlint-disable MD013 -->
@@ -347,6 +353,13 @@ resources and subresources stay denied. Tailscale provides remote Talos/LAN
 access and the declared application ingress. Old CI and operator transports
 remain during the [staged cutover](../../clusters/homelab/apps/traefik/CUTOVER.md);
 Octelium does not provide a Talos-native Service mode.
+
+The staged phase 2b CI jobs use scoped, pre-signed ephemeral Tailscale keys and
+verify the joined tag and tailnet before private commands. Plan and apply use
+the operator API proxy with tokenless kubeconfigs; Cordium reaches private
+ingress without a Kubernetes grant. Legacy native Services and credentials
+remain until live CI and client acceptance. Source checks alone do not prove
+that acceptance; see the [CI runbook](../../docs/ci-cd.md).
 
 Phase 2a routes cluster DNS for `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`, retaining

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2f158a9f67fe4976c631ba46ac4609e39e132ff436ed0d040625aa06b9a896cb",
+  "pageVersion": "sha256:5930837bf492b5ec5ec85c564b91d35372a6dd667a29a18976440d5e2b080a7a",
   "claims": [
     {
       "id": "claim_21b704c6018c45b0ac21239c1241572a",
@@ -43,10 +43,28 @@
           "version": "repo-lines-v1:sha256:e679a0afc600c32c6af21a41a9ee40160845ce128d8a03f322010ba254d83461:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyMTJlMzdkNGQ0ZmUwN2Q2MjMzZDllZTcyOWNhMWIxY2U5YmNmYjc1YjM0ZjYxZTEzZjkyZWYxZmI5YzNlODUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZGE1OWVjOTQ3MWRlN2RkNmM3ZjQ2YmNkMTczMTc1YjIzMTdkMTdmOGI1ZjM1OGIzMDhlNTVkMjU1YmE4ZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAwNjdiNGM2NTAzZWUzYmQ1ZTczMmZkZDQ2OTMzMThlYjdlZmI1MjY2MDYxNGEwOWY2NzRjZjBlYWNkZTBkNzYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE1YmE3MTJkODc3MDFjZjE2NTFkNjQzYTllYzY5NzllYjM5NDg1YjBkZGU0Njg3NGUyMjVmNDRlNzJiM2M1MDIifQ"
         }
       ]
+    },
+    {
+      "id": "claim_7f6c7a84c1cc41089422b04187aa8a72",
+      "statement": "Phase 2b's shared native transport uses direct canonical TLS after verifying the online tailnet, unique ingress peer, DNS mesh addresses and native gRPC/gRPC-Web probes. Cordium CI uses that transport after a scoped Tailscale join while native OIDC remains separate; legacy catalog, credentials, Tunnel and Mac rollback stay until live acceptance.",
+      "evidence": [
+        {
+          "resource": "repo://docs/octelium.md",
+          "version": "repo-file-v1:sha256:2b9406caa3d81c7de783bfebdeaacb867fe33ffb553b3a2e70306ce9264f23bb"
+        },
+        {
+          "resource": "repo://scripts/ci/cordium-ci.sh",
+          "version": "repo-file-v1:sha256:69aff5833ba9c50626331def0c5514d51c125c0586f5dc60b809a127dc099594"
+        },
+        {
+          "resource": "repo://scripts/octelium-nofx-reconcile.py",
+          "version": "repo-file-v1:sha256:be898d1d8531dbdffb3b4878c1ad566f52cbb16b6eb9824e872ee86010ea414a"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-18T19:06:56.344Z"
+    "at": "2026-10-18T22:24:17.285Z"
   }
 }

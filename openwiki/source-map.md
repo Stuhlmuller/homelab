@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/mastodon-public-dns.yml
   - id: openwiki-source-23ac5bc03d1cee79a72b06af
     resource: repo://.github/workflows/mastodon-smtp-credential.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-50e1601d2f23b472521e5c0f
     resource: repo://builds/cordium-runner/README.md
   - id: openwiki-source-efd15335758af38c6e6af9ab
@@ -38,6 +40,8 @@ sources:
     resource: repo://IaC/stacks/tailnet-dns/stack.hcl
   - id: openwiki-source-a6cfce5073f9b7c35fd3c9dc
     resource: repo://scripts/ci/harbor-native-chainguard-receipt.py
+  - id: openwiki-source-0f1996b7e0fc35047d4f05dd
+    resource: repo://scripts/ci/install-kubeconfig.sh
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
     resource: repo://scripts/entra-owner-conversion.py
   - id: openwiki-source-45cdc02b9fdef209e9d530d7
@@ -50,10 +54,10 @@ sources:
     resource: repo://scripts/tailscale-ingress-sign.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-18T22:24:17.285Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-18T22:24:17.285Z
 ---
 
 # Source Map
@@ -122,3 +126,16 @@ Mastodon source ownership: [workload runbook](../clusters/homelab/apps/mastodon/
 See the [inventory](workloads/inventory.md),
 [credential boundary](architecture/secrets-and-identity.md#mastodon-credential-boundary)
 and [activation gates](operations/validation-gates.md#mastodon-activation-gates).
+
+## Staged CI transport ownership
+
+The [phase 2b workflows](../.github/workflows/terragrunt-plan.yml) join through
+scoped pre-signed Tailscale keys and verify the joined identity. The shared
+[kubeconfig helper](../scripts/ci/install-kubeconfig.sh) gives plan/apply a
+tokenless operator API path; Cordium keeps separate native authorization.
+Legacy catalog credentials remain through live acceptance and retirement.
+The added live jobs are [Cordium runner publication](../.github/workflows/cordium-runner-publish.yml),
+[Mastodon DNS](../.github/workflows/mastodon-public-dns.yml),
+[OpenClaw image publication](../.github/workflows/openclaw-enterprise-images.yml),
+and [OpenClaw retention](../.github/workflows/openclaw-enterprise-operations.yml).
+See the [CI runbook](runbooks/ci-cd.md).

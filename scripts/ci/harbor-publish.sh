@@ -109,8 +109,6 @@ fi
 if [[ "$mode" == publish ]]; then
   : "${GITHUB_OUTPUT:?GITHUB_OUTPUT must be set by GitHub Actions}"
 fi
-: "${OCTELIUM_AUTH_TOKEN:?The production Octelium CI credential is required}"
-[[ "${KUBE_API_SERVER_URL:-}" == https://kubernetes-api-ci.stinkyboi.com ]]
 [[ ! -e "$HOME/.kube/config" ]] || {
   echo 'Refusing to replace an existing runner kubeconfig.' >&2
   exit 1
@@ -195,10 +193,10 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-# Reuse the declared clientless Octelium Kubernetes CI lane. Kubernetes streams
-# carry image uploads, avoiding the public HTTP Tunnel's request-size limit.
+# The mesh API proxy authenticates the ephemeral runner; Kubernetes streams
+# carry uploads to Traefik's private TLS listener.
 kubeconfig_added=true
-bash scripts/ci/install-kubeconfig.sh
+bash scripts/ci/install-kubeconfig.sh --tailscale
 kubectl --request-timeout=15s version >/dev/null
 cp "$(command -v kubectl)" "$scratch/kubectl"
 chmod 700 "$scratch/kubectl"

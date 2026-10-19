@@ -14,6 +14,8 @@ sources:
     resource: repo://.github/workflows/lint.yml
   - id: openwiki-source-f3c1ec74b74e361ea2192c05
     resource: repo://.github/workflows/mastodon-public-dns.yml
+  - id: openwiki-source-885831275c8e751281369a80
+    resource: repo://.github/workflows/terragrunt-plan.yml
   - id: openwiki-source-7f1128611d8d832ea8e26c38
     resource: repo://.github/workflows/validate.yml
   - id: openwiki-source-55e66a93073b222af31dbd6b
@@ -176,10 +178,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-1c2e8ef619584eb7386e226a
     resource: repo://scripts/talos-nix-builder-seccomp.py
-generated: { by: "codex", at: "2026-10-18T23:45:47.913Z" }
+generated: { by: "codex", at: "2026-10-19T00:24:44.455Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T00:24:44.455Z
 ---
 
 # Validation Gates
@@ -1290,7 +1292,9 @@ still requires a reviewed successful full apply across its outstanding range;
 never relabel a targeted run or manually skip an unapplied range. See the
 [Fleet Free identity runbook](../../clusters/homelab/apps/fleet/FREE-ENTRA.md#repository-operator-workflow).
 
-GitHub-hosted live jobs depend on the Octelium clientless Kubernetes route. If
+Until the staged phase 2b Tailscale jobs pass live acceptance, existing
+GitHub-hosted live jobs still depend on the Octelium clientless Kubernetes
+route. If
 that route is the failed dependency, restore reviewed
 `IaC/live/kubernetes-node-labels` state from a trusted LAN machine with a direct
 `https://10.1.0.199:6443` kubeconfig, shared-backend AWS credentials, a saved
