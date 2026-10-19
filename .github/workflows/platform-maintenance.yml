@@ -1,0 +1,145 @@
+name: Platform Maintenance
+
+# checkov:skip=CKV_GHA_7: fixed operations are bound to the exact current main SHA.
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact current main commit
+        required: true
+        type: string
+      stage:
+        description: Fixed inspection, canary, or upgrade stage
+        required: true
+        type: choice
+        options: [inspect, qualify, owned-cleanup, talos-1.11.6, talos-1.12.12, talos-1.13.11, talos-1.14.4, kubernetes-1.35.9]
+
+permissions: {}
+
+env:
+  KUBE_API_SERVER_URL: https://kubernetes-api-ci.stinkyboi.com
+
+jobs:
+  static-policy:
+    name: Validate Platform Stage Source
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Verify Dispatch Commit
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          test "${ACTUAL_REF}" = refs/heads/main
+          test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Static Checks
+        run: |
+          git fetch --no-tags origin main
+          cache_policy="${RUNNER_TEMP}/nix-cache-policy.json"
+          git show origin/main:scripts/config/nix-cache.json >"$cache_policy"
+          bash scripts/ci/nix-checks.sh --policy "$cache_policy"
+          nix develop --command bash scripts/ci/static-checks.sh --offline-verified
+          nix develop --command python3 -I scripts/ci/platform-maintenance-stage-test.py
+
+  maintenance:
+    name: Protected Platform Stage
+    needs: [static-policy]
+    if: github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    concurrency:
+      group: platform-maintenance-production
+      cancel-in-progress: false
+    environment:
+      name: homelab-production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Verify Current Main Commit Before Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Check Out Repository
+        uses: chainguard-actions/actions-checkout@9b08549f11b1cea64a914e482f95fa1413656505 # v5.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: chainguard-actions/cachix-install-nix-action@043d5ae37e81d3c6b1604becbdc6aefbdc9fa909 # v31.11.1
+        with:
+          enable_kvm: false
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Recheck Current Main Commit Before AWS Credentials
+        env:
+          ACTUAL_REF: ${{ github.ref }}
+          ACTUAL_SHA: ${{ github.sha }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$ACTUAL_REF" = refs/heads/main
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+          test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"
+
+      - name: Configure AWS Credentials
+        uses: chainguard-actions/aws-actions-configure-aws-credentials@2ea09546a514e2cbdbe87dd880db44555f7d3508 # v6.2.0
+        with:
+          aws-region: us-east-1
+          mask-aws-account-id: true
+          role-session-name: homelab-platform-${{ github.run_id }}
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_HOMELAB || secrets.AWS_ROLE_TO_ASSUME_HOMELAB }}
+          unset-current-credentials: true
+
+      - name: Run Reviewed Platform Stage
+        env:
+          RUN_STAGE: ${{ inputs.stage }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          OCTELIUM_AUTH_TOKEN: ${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}
+          OCE_OCTELIUM_CLIENT_AUTH_TOKEN: ${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}
+          OCE_TALOSCONFIG_B64: ${{ secrets.OCE_TALOSCONFIG_B64 }}
+          OCE_CONTROLPLANE_CONFIG_B64: ${{ secrets.OCE_CONTROLPLANE_CONFIG_B64 }}
+          OCE_WORKER_CONFIG_B64: ${{ secrets.OCE_WORKER_CONFIG_B64 }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          private_log="$(mktemp)"
+          trap 'rm -f "$private_log"' EXIT
+          if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+          set -euo pipefail
+          umask 077
+          talosctl version --client >/dev/null
+          sha256sum --check --status <<<'08929f10c8d1a8f35c671446253c00769c5f0e4fbb1673d2352f69b95eeb4e03  scripts/ci/platform-maintenance-stage.sh'
+          bash scripts/ci/platform-maintenance-stage.sh
+          EOF
+          then
+            echo "::error::Platform stage blocked; private transport, receipt, and cluster diagnostics withheld."
+            exit 1
+          fi
+          echo "Platform stage completed; private receipts withheld."

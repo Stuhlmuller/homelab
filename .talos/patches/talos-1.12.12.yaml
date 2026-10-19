@@ -1,0 +1,4 @@
+# Offline render target for the second reviewed Talos hop. The upgrade API owns live changes.
+machine:
+  install:
+    image: ghcr.io/siderolabs/installer:v1.12.12@sha256:628028e819d7753a97837fbf4c75692a217c302b5e3507cca2fec52dceb41630

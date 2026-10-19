@@ -83,6 +83,22 @@ labels before using Harbor credentials, then publishes, signs and completely
 pulls the paired images in the private `homelab` project. Dispatch it only with
 the current `main` SHA; use its immutable digest receipts for the Enterprise
 chart and CLI. A source revision change requires a new reviewed archive hash.
+
+Talos 1.14.4 [`upgrade-k8s`](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L177)
+appends `:v1.35.9` to the five component image bases,
+so validating catalog digests before passing those bases does not pin the
+upgrade pulls. Harbor bootstrap carries a disabled lock for only those five
+`mirror` repository/tag pairs. After a protected full-catalog mirror receipt,
+enable it in a reviewed change: bootstrap first checks all five aliases against
+the reviewed digests, then creates exact
+[tag-immutability rules](https://goharbor.io/docs/2.15.0/working-with-projects/working-with-images/create-tag-immutability-rules/)
+and requires Harbor's immutable-tag readback. Keep mirror publication idle
+during that sync. A wrong existing alias blocks activation and
+must be repaired through the protected mirror workflow while the lock is off.
+The Kubernetes upgrade stage remains blocked until a protected pre-upgrade
+readback, strict Talos mirror mapping on every node, and a Harbor restore test
+prove these rules remain effective.
+
 Private custom NOFX artifacts remain in the private `homelab` project.
 Only anonymously readable public upstream artifacts enter `mirror`; its
 stage-one read access remains public, including through the existing public

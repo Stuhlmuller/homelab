@@ -46,10 +46,22 @@ Istio 1.30 is the shortest currently supported branch spanning 1.34 and 1.35.
 3. Kubernetes `1.34.11 -> 1.35.9` through Talos's ordered upgrade operation;
    never apply version-image patches directly or promise a supported downgrade.
 
+Talos 1.14.4's `upgrade-k8s` appends `:v<target>` to each component image-base
+flag ([upstream source](https://github.com/siderolabs/talos/blob/v1.14.4/pkg/cluster/kubernetes/talos_managed.go#L170-L175)). Passing a
+`tag@sha256` reference to those flags would create an invalid reference. The
+maintenance helper therefore accepts only image bases whose generated target
+tags have exact digest-pinned entries in the reviewed Harbor catalog; the
+protected publication receipt must verify those tags before upgrade.
+
 Talos 1.14 uses the image factory's `metal-installer` path. Preserve the verified
 machine schematic, extensions, disk identity, and authenticated client access.
 The current repository has no version-upgrade helper/workflow; create a narrow
 maintenance lane before any node changes. Existing mirror helpers are not that lane.
+The existing `talos-api.homelab` Octelium TCP policy allows only the owner's
+human session ([service policy](../../docs/examples/octelium/homelab-services.yaml));
+the protected CI workload has no Talos transport yet. The maintenance workflow
+must declare and validate a scoped CI route with authenticated Talos mTLS, while
+retaining the direct LAN recovery path, before any upgrade stage is enabled.
 
 Read-only authenticated inspection on 2026-10-17 returned no
 `extensionstatus` resources on any of the four nodes. The selected Talos 1.14

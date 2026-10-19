@@ -11,8 +11,9 @@ and images, installation phase, logical Namespace/agent names, private origins,
 storage class, native model configuration, credential references, and
 `activationEnabled`. It contains no secret values or operator shell inputs.
 The source-to-image pairing policy and image repository names are fixed in T003;
-the controller/runtime digests are verified. The CLI digest stays null until
-its source-built artifact has a publication receipt; activation stays false.
+the controller/runtime pair is published and pinned. The CLI digest stays null
+until its source-built artifact has a publication receipt, and the remaining
+platform images still require T004 receipts. Activation remains false.
 
 Initial state is inactive: stock Embedded OpenClaw, no channels, no Backend,
 Sandbox, optional broker/collector, or configured Codex Harness. The pinned OCE
@@ -175,6 +176,11 @@ Both browser paths terminate at OCE API, which checks exact-agent permission
 before forwarding through private Envoy. No direct browser route to private Envoy
 or the gateway. Private DNS and browser-trusted certificates must be verified
 end-to-end; do not publish wildcard ingress to make an origin resolve.
+
+The stock chart renders destination-free TCP 5432 and 443 egress when
+`database.cidrs` or `cluster.cidrs` is empty. Kubernetes treats an empty `to`
+field as all destinations. Supply reviewed nonempty lists, assert the rendered
+policy, and qualify Service DNAT behavior on the Talos canary before install.
 
 ## Legacy Shutdown and New Recovery
 

@@ -163,6 +163,62 @@ deny contains msg if {
 	msg := "OpenClaw Enterprise legacy operations require exact protected stages, permissions, and script hash"
 }
 
+deny contains msg if {
+	object.get(input, "name", "") == "Platform Maintenance"
+	not approved_platform_maintenance
+	msg := "Platform maintenance requires exact protected stages, current-main verification, permissions, and script hash"
+}
+
+approved_platform_maintenance if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	dispatch.inputs.stage.options == ["inspect", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	job := input.jobs.maintenance
+	job.needs == ["static-policy"]
+	job.environment.name == "homelab-production"
+	job.concurrency == {"group": "platform-maintenance-production", "cancel-in-progress": false}
+	job.permissions == {"contents": "read", "id-token": "write"}
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	count(job.steps) == 6
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name, job.steps[4].name, job.steps[5].name] == ["Verify Current Main Commit Before Credentials", "Check Out Repository", "Install Nix", "Recheck Current Main Commit Before AWS Credentials", "Configure AWS Credentials", "Run Reviewed Platform Stage"]
+	verify := job.steps[0]
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == platform_maintenance_main_check
+	recheck := job.steps[3]
+	recheck.env == verify.env
+	trim(recheck.run, "\n") == platform_maintenance_main_check
+	some run in job.steps
+	run.name == "Run Reviewed Platform Stage"
+	run.env.RUN_STAGE == "${{ inputs.stage }}"
+	run.env.EXPECTED_SHA == "${{ inputs.expected_sha }}"
+	run.env.OCTELIUM_AUTH_TOKEN == "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"
+	run.env.OCE_OCTELIUM_CLIENT_AUTH_TOKEN == "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}"
+	run.env.OCE_TALOSCONFIG_B64 == "${{ secrets.OCE_TALOSCONFIG_B64 }}"
+	trim(run.run, "\n") == platform_maintenance_private_run
+}
+
+platform_maintenance_main_check := `set -euo pipefail
+test "$ACTUAL_REF" = refs/heads/main
+test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+test "$ACTUAL_SHA" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+platform_maintenance_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+talosctl version --client >/dev/null
+sha256sum --check --status <<<'08929f10c8d1a8f35c671446253c00769c5f0e4fbb1673d2352f69b95eeb4e03  scripts/ci/platform-maintenance-stage.sh'
+bash scripts/ci/platform-maintenance-stage.sh
+EOF
+then
+  echo "::error::Platform stage blocked; private transport, receipt, and cluster diagnostics withheld."
+  exit 1
+fi
+echo "Platform stage completed; private receipts withheld."`
+
 approved_openclaw_legacy_operation if {
 	dispatch := object.get(workflow_events, "workflow_dispatch", {})
 	dispatch.inputs.legacy_stage.options == ["inventory", "publish-inventory", "archive", "publish-archive", "verify"]

@@ -213,13 +213,20 @@ Enterprise model-credential write has occurred yet.
 
 The protected workflows use distinct `homelab-production` environment
 secrets: `OCE_MODEL_API_KEY` is one-time input to the fixed model-credential
-writer, and `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
-the fixed platform-maintenance job. Neither is a workflow dispatch input or an
-application environment variable. Cluster jobs reuse the existing
-`OCTELIUM_CI_AUTH_TOKEN` private route, and AWS writes use the existing
-`AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling those jobs, verify
-their exact destinations and direct recovery access; the declarations above
-do not grant Talos or model access by themselves.
+writer; `OCE_TALOSCONFIG_B64` is decoded to a mode-`0600` file only inside
+the fixed platform-maintenance job; and
+`OCE_OCTELIUM_CLIENT_AUTH_TOKEN` is a separate Octelium `CLIENT` credential
+for its private TCP Talos Service. Neither token nor config is a workflow
+dispatch input or an application environment variable. The declared upgrade
+contract also reserves `OCE_CONTROLPLANE_CONFIG_B64` and
+`OCE_WORKER_CONFIG_B64` for private role-specific Talos validation, but the
+upgrade workflow deliberately stops before using them until protected stage
+wiring and private recovery checks are implemented. Kubernetes API reads,
+including protected inspect, reuse the existing clientless
+`OCTELIUM_CI_AUTH_TOKEN` route, and AWS writes
+use the existing `AWS_ROLE_TO_ASSUME_HOMELAB` OIDC role. Before enabling any
+stage, verify its exact destination and direct recovery access; declarations
+alone do not grant Talos or model access.
 
 ## AI gateway contract
 

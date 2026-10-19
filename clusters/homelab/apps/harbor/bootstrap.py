@@ -61,6 +61,16 @@ SECRET_FILES = {
     ("mirror", "publisher"): "mirror-robot-push-password",
 }
 MAX_RESPONSE_BYTES = 1024 * 1024
+# Enable only after the protected full mirror receipt for these exact digests.
+KUBERNETES_TAG_LOCK_ENABLED = False
+KUBERNETES_TAG = "v1.35.9"
+KUBERNETES_TAG_DIGESTS = {
+    "registry.k8s.io/kube-apiserver": "sha256:32abf8e4e2ae679b35c719a04902c2ae1a98a5b8648ac034a4672e39660f8a73",
+    "registry.k8s.io/kube-controller-manager": "sha256:d7e4983f79ee763f7c56226395ab9c55261ff6035df5ed23eef9bd26b63eb140",
+    "registry.k8s.io/kube-scheduler": "sha256:d96574ba699bc887eeefcc05d9f7828b4df5ba75feac6f20b98097aa85d1ed22",
+    "registry.k8s.io/kube-proxy": "sha256:d08adb0c8c2c68075f1e6fa6c4c82880c5af54c1686ac20d22af612082c32a31",
+    "ghcr.io/siderolabs/kubelet": "sha256:40c4200b8163a952bbde447febd9822cb986b70ec785f39c4cfcb8e377b05b55",
+}
 
 
 class BootstrapError(Exception):
@@ -302,6 +312,67 @@ def read_project(client, project_name):
     return project
 
 
+def kubernetes_tag_artifact(client, repository, expected_digest, immutable=False):
+    encoded = urllib.parse.quote(urllib.parse.quote(repository, safe=""), safe="")
+    path = f"/projects/mirror/repositories/{encoded}/artifacts/{KUBERNETES_TAG}"
+    artifact, _ = client.request("GET", path + "?with_tag=true&with_immutable_status=true")
+    tags = artifact.get("tags") if isinstance(artifact, dict) else None
+    if (not isinstance(artifact, dict) or artifact.get("digest") != expected_digest or
+            not isinstance(tags, list) or
+            len([tag for tag in tags if isinstance(tag, dict) and tag.get("name") == KUBERNETES_TAG and
+                 (not immutable or tag.get("immutable") is True)]) != 1):
+        raise BootstrapError("Kubernetes mirror tag does not match the reviewed digest or lock")
+
+
+def kubernetes_immutable_rule(repository, project_id):
+    return {"project_id": project_id, "priority": 0, "disabled": False,
+            "action": "immutable", "template": "immutable_template",
+            "tag_selectors": [{"kind": "doublestar", "decoration": "matches", "pattern": KUBERNETES_TAG}],
+            "scope_selectors": {"repository": [
+                {"kind": "doublestar", "decoration": "repoMatches", "pattern": repository}]}}
+
+
+def reconcile_kubernetes_tag_lock(client, project_id):
+    if not KUBERNETES_TAG_LOCK_ENABLED:
+        return
+    project_id = positive_id(project_id)
+    if any(not re.fullmatch(r"sha256:[0-9a-f]{64}", digest)
+           for digest in KUBERNETES_TAG_DIGESTS.values()):
+        raise BootstrapError("Kubernetes mirror digest pin is invalid")
+    # Inspect every alias before the first write: an existing wrong alias must remain repairable.
+    for repository, digest in KUBERNETES_TAG_DIGESTS.items():
+        kubernetes_tag_artifact(client, repository, digest)
+    path = "/projects/mirror/immutabletagrules"
+    rules = read_pages(client, path, {}, max_count=15)
+    planned = []
+    for repository in KUBERNETES_TAG_DIGESTS:
+        desired = kubernetes_immutable_rule(repository, project_id)
+        matches = [rule for rule in rules if rule.get("tag_selectors") == desired["tag_selectors"] and
+                   rule.get("scope_selectors") == desired["scope_selectors"]]
+        if len(matches) > 1:
+            raise BootstrapError("Kubernetes mirror tag lock is ambiguous")
+        rule = matches[0] if matches else None
+        if rule and any(rule.get(key) != value for key, value in desired.items()
+                        if key not in ("disabled", "project_id")):
+            raise BootstrapError("Kubernetes mirror tag lock differs from reviewed policy")
+        planned.append((desired, rule))
+    if len(rules) + sum(rule is None for _, rule in planned) > 15:
+        raise BootstrapError("Harbor immutability rule capacity is exhausted")
+    for desired, rule in planned:
+        if rule:
+            if rule.get("disabled") is not False:
+                client.request("PUT", f"{path}/{rule['id']}", {**desired, "id": rule["id"]},
+                               json_response=False)
+        else:
+            client.request("POST", path, desired, expected=(201,), json_response=False)
+        rules = read_pages(client, path, {}, max_count=15)
+        if sum(all(rule.get(key) == value for key, value in desired.items()
+                   if key != "project_id") for rule in rules) != 1:
+            raise BootstrapError("Kubernetes mirror tag lock readback failed")
+    for repository, digest in KUBERNETES_TAG_DIGESTS.items():
+        kubernetes_tag_artifact(client, repository, digest, immutable=True)
+
+
 def robot_name(name, project_name):
     return f"{PREFIX}{project_name}+{name}"
 
@@ -476,6 +547,7 @@ def reconcile(client, robot_passwords, replication_policy=None):
         project = read_project(client, project_name)
         if project is None or any(project["metadata"].get(key) != value for key, value in metadata.items()):
             raise BootstrapError("Harbor project privacy or automatic scanning verification failed")
+        projects[project_name] = project
 
         robots = project_robots[project_name]
         for name in settings["robots"]:
@@ -504,6 +576,7 @@ def reconcile(client, robot_passwords, replication_policy=None):
     current = config_values(config)
     if any(current[key] != value for key, value in SETTINGS.items()):
         raise BootstrapError("Harbor configuration verification failed")
+    reconcile_kubernetes_tag_lock(client, projects["mirror"]["project_id"])
     if replication_policy is not None:
         reconcile_replication(client, replication_policy)
     backfill_scans(client)

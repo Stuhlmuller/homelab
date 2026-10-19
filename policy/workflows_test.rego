@@ -2,6 +2,69 @@ package main
 
 import rego.v1
 
+test_allows_protected_platform_maintenance if {
+	violations := deny with input as platform_maintenance_fixture
+	count(violations) == 0
+}
+
+test_rejects_changed_platform_maintenance if {
+	every candidate in [
+		object.union(platform_maintenance_fixture, {"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "owned-cleanup"]}}}}}),
+		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": object.union(platform_maintenance_fixture.jobs.maintenance, {"permissions": {"contents": "write", "id-token": "write"}})})}),
+		object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": object.union(platform_maintenance_fixture.jobs.maintenance, {"environment": {"name": "unprotected"}})})}),
+	] {
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
+test_rejects_missing_or_stale_main_recheck if {
+	steps := platform_maintenance_fixture.jobs.maintenance.steps
+	every changed in [
+		{"name": "Recheck Current Main Commit Before AWS Credentials", "env": steps[3].env, "run": "true"},
+		{"name": "Recheck Current Main Commit Before AWS Credentials", "env": steps[3].env, "run": `test "$ACTUAL_SHA" = "$EXPECTED_SHA"`},
+	] {
+		candidate_steps := [steps[0], steps[1], steps[2], changed, steps[4], steps[5]]
+		candidate_job := object.union(platform_maintenance_fixture.jobs.maintenance, {"steps": candidate_steps})
+		candidate := object.union(platform_maintenance_fixture, {"jobs": object.union(platform_maintenance_fixture.jobs, {"maintenance": candidate_job})})
+		violations := deny with input as candidate
+		some msg in violations
+		contains(msg, "Platform maintenance requires exact protected stages")
+	}
+}
+
+platform_maintenance_fixture := {
+	"name": "Platform Maintenance",
+	"env": {"KUBE_API_SERVER_URL": "https://kubernetes-api-ci.stinkyboi.com"},
+	"true": {"workflow_dispatch": {"inputs": {"stage": {"options": ["inspect", "qualify", "owned-cleanup", "talos-1.11.6", "talos-1.12.12", "talos-1.13.11", "talos-1.14.4", "kubernetes-1.35.9"]}}}},
+	"jobs": {
+		"static-policy": {"permissions": {"contents": "read"}},
+		"maintenance": {
+			"needs": ["static-policy"],
+			"environment": {"name": "homelab-production"},
+			"concurrency": {"group": "platform-maintenance-production", "cancel-in-progress": false},
+			"permissions": {"contents": "read", "id-token": "write"},
+			"if": "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'",
+			"steps": [
+				{"name": "Verify Current Main Commit Before Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+				{"name": "Check Out Repository"},
+				{"name": "Install Nix"},
+				{"name": "Recheck Current Main Commit Before AWS Credentials", "env": platform_maintenance_main_check_env, "run": platform_maintenance_main_check},
+				{"name": "Configure AWS Credentials"},
+				{"name": "Run Reviewed Platform Stage", "env": {
+					"RUN_STAGE": "${{ inputs.stage }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}",
+					"OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}",
+					"OCE_OCTELIUM_CLIENT_AUTH_TOKEN": "${{ secrets.OCE_OCTELIUM_CLIENT_AUTH_TOKEN }}",
+					"OCE_TALOSCONFIG_B64": "${{ secrets.OCE_TALOSCONFIG_B64 }}",
+				}, "run": platform_maintenance_private_run},
+			],
+		},
+	},
+}
+
+platform_maintenance_main_check_env := {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+
 test_allows_exact_openclaw_legacy_operation if {
 	candidate := workflow_with_openclaw_legacy_operation(
 		openclaw_legacy_run,

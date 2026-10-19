@@ -111,7 +111,7 @@
     ]
   },
   "executionBlockers": [
-    "Matching published controller/runtime images and source-built CLI are not verified",
+    "Full platform image catalog and source-built CLI are not verified",
     "Dedicated OpenRouter credential is not configured",
     "Storage placement and private recovery paths are not validated"
   ],
