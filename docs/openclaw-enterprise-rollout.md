@@ -20,6 +20,10 @@ restricted permissions. Record their content hashes, source SHA, selected OCI
 digests, workflow run, stage, time and pass/fail only in the sanitized
 [acceptance ledger](evidence/openclaw-enterprise-acceptance.md). A missing or
 ambiguous receipt is a failed gate, not permission to retry a mutation blindly.
+The pinned `cmd/occ` Linux amd64 binary is built with Go 1.27.1 and a reviewed
+SHA-256, then packaged with the controller/runtime images through the protected
+Enterprise image workflow. Record the signed CLI image digest from that
+workflow's verified pull before replacing the null `source.cli.artifactDigest`.
 
 The legacy archive and new Enterprise recovery set use separate private
 locations and access grants. Retain the old local databases, NAS workspace,
