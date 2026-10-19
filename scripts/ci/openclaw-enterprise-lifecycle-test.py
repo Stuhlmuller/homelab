@@ -57,6 +57,15 @@ class LifecycleOrder(unittest.TestCase):
                          "retry-preflight-then-initialization")
         self.assertNotIn("previousJob", scenarios["cancelled-after-quiesce"])
 
+    def test_preflight_rejects_nonterminal_previous_jobs_and_changed_candidate(self):
+        result = subprocess.run(
+            ["node", "--experimental-test-module-mocks",
+             str(ROOT / "scripts/ci/openclaw-enterprise-preflight-test.mjs")],
+            capture_output=True, text=True, timeout=20,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "6 preflight fixtures passed\n")
+
     def test_local_hooks_follow_helm_stages_and_block_migration_on_failure(self):
         expected = {int(weight): set(names) for weight, names in
                     self.fixture["expectedHooks"].items()}
