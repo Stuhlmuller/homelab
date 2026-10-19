@@ -81,6 +81,18 @@ with patch.dict(os.environ, {'OCE_MODEL_API_KEY': key}), \
     store.assert_called_once_with(key, module.ENTERPRISE_PARAMETER)
     assert 'OCE_MODEL_API_KEY' not in os.environ
 
+legacy_metadata = {'Parameters': [{'Name': module.PARAMETER,
+                                   'Type': 'SecureString', 'KeyId': 'alias/aws/ssm'}]}
+with patch.dict(os.environ, {'LITELLM_OPENROUTER_API_KEY': key}), \
+        patch.object(sys, 'argv', [str(source)]), \
+        patch.object(module, 'validate_context'), \
+        patch.object(module, 'command', return_value=json.dumps(legacy_metadata)), \
+        patch.object(module.urllib.request, 'build_opener', return_value=ProviderOpener()), \
+        patch.object(module, 'store', return_value={'Version': 3}) as store, \
+        contextlib.redirect_stdout(io.StringIO()):
+    module.rotate()
+    store.assert_called_once_with(key, module.PARAMETER)
+
 wrong_metadata = {'Parameters': [{'Name': module.PARAMETER,
                                   'Type': 'SecureString', 'KeyId': 'alias/aws/ssm'}]}
 with patch.dict(os.environ, {'OCE_MODEL_API_KEY': key}), \
