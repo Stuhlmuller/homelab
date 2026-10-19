@@ -17,6 +17,9 @@ pinned commit, SHA-256
 `d6919627a375f708d4d7e8142aff8bbc783c0a0565254c4372b83b7a306ffd13`.
 The focused test reruns the renderer against a supplied upstream checkout and
 compares every output byte after those two site adjustments.
+The Checkov secrets baseline pins three public PVC/Secret-name false positives
+by path and fingerprint; all other findings still fail. This keeps the reviewed
+Installation bytes and their checksum unchanged.
 
 The Helm hooks follow weights `-40` (service accounts, scoped RBAC, policy and
 script ConfigMap), `-18` (startup/dependency preflight), `-15` (API/worker
