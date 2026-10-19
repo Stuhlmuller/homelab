@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Offline failure fixtures for the pinned Enterprise API contract."""
 
+import base64
+import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -53,6 +56,111 @@ class EnterpriseReconciliation(unittest.TestCase):
     def test_service_key_rejects_header_injection(self):
         with self.assertRaisesRegex(OCE.Blocked, "service key is invalid"):
             OCE.API("https://console.oce.stinkyboi.com", "test-key\nother-header: injected")
+
+    def _installation_snapshot(self):
+        document = b"occ:\n  cluster: fixture\ndrivers:\n  compute:\n    id: kubernetes\n"
+        digest = hashlib.sha256(document).hexdigest()
+        secret_name = "occ-installation-startup-" + digest[:32]
+        self.assertLessEqual(len(secret_name), 63)
+        image = "harbor.example/controller@sha256:" + "a" * 64
+        secret = {
+            "metadata": {"name": secret_name, "namespace": "openclaw-system",
+                         "uid": "secret-one", "resourceVersion": "100",
+                         "creationTimestamp": "2026-10-18T00:00:00Z",
+                         "annotations": {"openclaw.dev/installation-id": "ins_one"}},
+            "immutable": True, "type": "Opaque",
+            "data": {"installation.yaml": base64.b64encode(document).decode()},
+        }
+        deployments, replicasets, pods = {}, {}, {}
+        for component in ("api", "worker"):
+            name = "openclaw-enterprise-" + component
+            labels = {"app.kubernetes.io/instance": "oce",
+                      "app.kubernetes.io/component": component}
+            pod_spec = {
+                "volumes": [{"name": "installation-startup", "secret": {
+                    "secretName": secret_name, "items": [{"key": "installation.yaml",
+                                                  "path": "installation.yaml"}],
+                    "defaultMode": 420}}],
+                "containers": [{"name": component, "image": image,
+                                "env": [{"name": "OCC_CONFIG_PATH", "value":
+                                         "/etc/openclaw/installation/installation.yaml"}],
+                                "volumeMounts": [{"name": "installation-startup",
+                                                  "mountPath": "/etc/openclaw/installation",
+                                                  "readOnly": True}]}],
+            }
+            template = {"metadata": {"labels": labels, "annotations": {
+                "openclaw.dev/installation-checksum": digest}}, "spec": pod_spec}
+            deployments[component] = {
+                "metadata": {"name": name, "namespace": "openclaw-system",
+                             "uid": "dep-" + component, "generation": 1, "labels": labels},
+                "spec": {"replicas": 1, "template": template},
+                "status": {"observedGeneration": 1, "replicas": 1,
+                           "updatedReplicas": 1, "availableReplicas": 1},
+            }
+            replicasets[component] = [{
+                "metadata": {"name": "rs-" + component, "uid": "rs-" + component,
+                             "ownerReferences": [{"kind": "Deployment", "controller": True,
+                                                  "uid": "dep-" + component, "name": name}]},
+                "spec": {"template": template},
+            }]
+            pods[component] = [{
+                "metadata": {"name": "pod-" + component, "uid": "pod-" + component,
+                             "namespace": "openclaw-system", "labels": labels,
+                             "annotations": {"openclaw.dev/installation-checksum": digest},
+                             "creationTimestamp": "2026-10-18T00:01:00Z",
+                             "ownerReferences": [{"kind": "ReplicaSet", "controller": True,
+                                                  "uid": "rs-" + component,
+                                                  "name": "rs-" + component}]},
+                "spec": pod_spec,
+                "status": {"phase": "Running", "conditions": [{"type": "Ready",
+                                                                "status": "True"}],
+                           "containerStatuses": [{"name": component, "ready": True,
+                                                  "state": {"running": {"startedAt":
+                                                      "2026-10-18T00:01:03Z"}}}]},
+            }]
+        return document, digest, image, {"secret": secret, "deployments": deployments,
+                                         "replicaSets": replicasets, "pods": pods}
+
+    def test_immutable_installation_snapshot_attests_both_loaded_drivers(self):
+        document, digest, image, before = self._installation_snapshot()
+        receipt = OCE.attest_stable_installation(document, digest, "ins_one", before,
+                                                 copy.deepcopy(before), image)
+        self.assertEqual(receipt["installationChecksum"], digest)
+        self.assertEqual(receipt["podUids"], {"api": "pod-api", "worker": "pod-worker"})
+
+    def test_attestation_rejects_mutable_stale_foreign_or_racing_inputs(self):
+        document, digest, image, baseline = self._installation_snapshot()
+        variants = []
+        mutable = copy.deepcopy(baseline)
+        mutable["secret"]["immutable"] = False
+        variants.append(mutable)
+        changed_data = copy.deepcopy(baseline)
+        changed_data["secret"]["data"]["installation.yaml"] = base64.b64encode(
+            b"different Installation").decode()
+        variants.append(changed_data)
+        stale = copy.deepcopy(baseline)
+        stale["pods"]["worker"][0]["metadata"]["creationTimestamp"] = "2026-10-17T00:00:00Z"
+        variants.append(stale)
+        foreign = copy.deepcopy(baseline)
+        foreign["deployments"]["api"]["spec"]["template"]["spec"]["volumes"][0]["secret"]["secretName"] = "other"
+        variants.append(foreign)
+        shadowed = copy.deepcopy(baseline)
+        shadowed["pods"]["api"][0]["spec"]["containers"][0]["volumeMounts"].append({
+            "name": "other", "mountPath": "/etc/openclaw"})
+        variants.append(shadowed)
+        for variant in variants:
+            with self.assertRaises(OCE.Blocked):
+                OCE.attest_stable_installation(document, digest, "ins_one", variant,
+                                               copy.deepcopy(variant), image)
+        raced = copy.deepcopy(baseline)
+        raced["secret"]["metadata"]["resourceVersion"] = "101"
+        with self.assertRaisesRegex(OCE.Blocked, "changed during proof"):
+            OCE.attest_stable_installation(document, digest, "ins_one", baseline, raced, image)
+        replaced_pod = copy.deepcopy(baseline)
+        replaced_pod["pods"]["worker"][0]["metadata"]["uid"] = "replacement"
+        with self.assertRaisesRegex(OCE.Blocked, "changed during proof"):
+            OCE.attest_stable_installation(document, digest, "ins_one", baseline,
+                                           replaced_pod, image)
 
     def test_check_and_reconcile_stop_before_mutation_on_driver_gap(self):
         api = FakeAPI({"/installation": {"id": "ins_one", "name": "oce",

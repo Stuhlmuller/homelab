@@ -8,6 +8,8 @@ not turn incomplete installation evidence into permission to deploy.
 """
 
 import argparse
+import base64
+from datetime import datetime
 import fcntl
 import hashlib
 import json
@@ -138,6 +140,160 @@ def _validate_config(config):
                 not model["id"] or not isinstance(secrets, dict) or
                 secrets.get("modelApiKey") != "/homelab/openclaw-enterprise/model-api-key"):
             raise Blocked("activation requires explicit model and dedicated key reference")
+
+
+def _require(condition, reason):
+    if not condition:
+        raise Blocked(reason)
+
+
+def _created_at(value):
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        _require(parsed.tzinfo is not None, "Installation snapshot lacks timestamps")
+        return parsed
+    except (AttributeError, TypeError, ValueError):
+        raise Blocked("Installation snapshot lacks timestamps") from None
+
+
+def _controller_owner(metadata, kind, uid, name):
+    owners = [item for item in metadata.get("ownerReferences", [])
+              if item.get("controller") is True]
+    _require(len(owners) == 1 and owners[0].get("kind") == kind and
+             owners[0].get("uid") == uid and owners[0].get("name") == name,
+             "Installation Pod ownership is foreign")
+
+
+def _startup_mount(spec, component, secret_name, image):
+    volumes = [item for item in spec.get("volumes", [])
+               if item.get("name") == "installation-startup"]
+    projected = volumes[0].get("secret", {}) if len(volumes) == 1 else {}
+    _require(len(volumes) == 1 and projected.get("secretName") == secret_name and
+             projected.get("items") == [{"key": "installation.yaml", "path": "installation.yaml"}] and
+             projected.get("defaultMode", 420) == 420 and projected.get("optional") in (None, False),
+             "Installation Secret projection changed")
+    containers = [item for item in spec.get("containers", []) if item.get("name") == component]
+    _require(len(containers) == 1 and not any(
+        item.get("name") == component for item in spec.get("initContainers", [])),
+        "Installation controller placement changed")
+    container = containers[0]
+    _require(container.get("image") == image, "Installation controller image changed")
+    env = [item for item in container.get("env", []) if item.get("name") == "OCC_CONFIG_PATH"]
+    _require(len(env) == 1 and env[0].get("value") ==
+             "/etc/openclaw/installation/installation.yaml" and
+             "valueFrom" not in env[0],
+             "Installation startup path changed")
+    mounts = container.get("volumeMounts", [])
+    selected = [item for item in mounts if item.get("name") == "installation-startup"]
+    _require(len(selected) == 1 and
+             selected[0].get("mountPath") == "/etc/openclaw/installation" and
+             selected[0].get("readOnly") is True and
+             not selected[0].get("subPath") and not selected[0].get("subPathExpr"),
+             "Installation startup mount changed")
+    _require(not any(item.get("name") != "installation-startup" and
+                     (item.get("mountPath") == "/etc/openclaw/installation" or
+                      "/etc/openclaw/installation".startswith(
+                          str(item.get("mountPath", "")) + "/") or
+                      str(item.get("mountPath", "")).startswith(
+                          "/etc/openclaw/installation/"))
+                     for item in mounts), "Installation startup file is shadowed")
+
+
+def _attest_installation_snapshot(candidate, digest, installation_id, snapshot, image):
+    _require(isinstance(candidate, bytes) and 0 < len(candidate) <= 1048576 and
+             isinstance(digest, str) and HEX64.fullmatch(digest) and
+             hashlib.sha256(candidate).hexdigest() == digest,
+             "reviewed Installation bytes or checksum changed")
+    _require(isinstance(installation_id, str) and installation_id.startswith("ins_") and
+             isinstance(snapshot, dict), "Installation identity evidence is invalid")
+    secret = snapshot["secret"]
+    metadata = secret["metadata"]
+    secret_name = "occ-installation-startup-" + digest[:32]
+    _require(metadata.get("name") == secret_name and
+             metadata.get("namespace") == "openclaw-system" and
+             isinstance(metadata.get("uid"), str) and bool(metadata["uid"]) and
+             isinstance(metadata.get("resourceVersion"), str) and bool(metadata["resourceVersion"]) and
+             metadata.get("annotations", {}).get("openclaw.dev/installation-id") == installation_id and
+             secret.get("immutable") is True and secret.get("type") == "Opaque" and
+             set(secret.get("data", {})) == {"installation.yaml"},
+             "Installation Secret is mutable or foreign")
+    try:
+        decoded = base64.b64decode(secret["data"]["installation.yaml"], validate=True)
+    except (ValueError, TypeError, base64.binascii.Error):
+        raise Blocked("Installation Secret data is invalid") from None
+    _require(decoded == candidate, "Installation Secret differs from reviewed candidate")
+    secret_time = _created_at(metadata.get("creationTimestamp"))
+    receipt = {"installationId": installation_id, "installationChecksum": digest,
+               "secretUid": metadata["uid"],
+               "secretResourceVersion": metadata["resourceVersion"],
+               "deploymentUids": {}, "replicaSetUids": {}, "podUids": {}}
+    for component in ("api", "worker"):
+        name = "openclaw-enterprise-" + component
+        labels = {"app.kubernetes.io/instance": "oce",
+                  "app.kubernetes.io/component": component}
+        deployment = snapshot["deployments"][component]
+        dep_meta = deployment["metadata"]
+        dep_status = deployment["status"]
+        generation = dep_meta.get("generation")
+        _require(dep_meta.get("name") == name and dep_meta.get("namespace") == "openclaw-system" and
+                 isinstance(dep_meta.get("uid"), str) and bool(dep_meta["uid"]) and
+                 all(dep_meta.get("labels", {}).get(key) == value for key, value in labels.items()) and
+                 type(generation) is int and generation > 0 and
+                 deployment["spec"].get("replicas") == 1 and
+                 dep_status.get("observedGeneration", 0) >= generation and
+                 all(dep_status.get(field) == 1 for field in
+                     ("replicas", "updatedReplicas", "availableReplicas")),
+                 "Installation Deployment identity or readiness changed")
+        template = deployment["spec"]["template"]
+        _require(template.get("metadata", {}).get("annotations", {}).get(
+            "openclaw.dev/installation-checksum") == digest,
+            "Installation Deployment checksum changed")
+        _startup_mount(template["spec"], component, secret_name, image)
+        replicasets = snapshot["replicaSets"][component]
+        pods = snapshot["pods"][component]
+        _require(len(replicasets) == 1 and len(pods) == 1,
+                 "Installation workload has ambiguous replicas")
+        rs, pod = replicasets[0], pods[0]
+        rs_meta, pod_meta = rs["metadata"], pod["metadata"]
+        _controller_owner(rs_meta, "Deployment", dep_meta["uid"], name)
+        _require(rs["spec"]["template"]["metadata"]["annotations"].get(
+            "openclaw.dev/installation-checksum") == digest,
+            "Installation ReplicaSet checksum changed")
+        _startup_mount(rs["spec"]["template"]["spec"], component, secret_name, image)
+        _controller_owner(pod_meta, "ReplicaSet", rs_meta.get("uid"), rs_meta.get("name"))
+        _require(pod_meta.get("namespace") == "openclaw-system" and
+                 not pod_meta.get("deletionTimestamp") and
+                 all(pod_meta.get("labels", {}).get(key) == value for key, value in labels.items()) and
+                 pod_meta.get("annotations", {}).get("openclaw.dev/installation-checksum") == digest and
+                 _created_at(pod_meta.get("creationTimestamp")) > secret_time,
+                 "Installation Pod predates its immutable Secret or is foreign")
+        _startup_mount(pod["spec"], component, secret_name, image)
+        status = pod["status"]
+        container_statuses = [item for item in status.get("containerStatuses", [])
+                              if item.get("name") == component]
+        _require(status.get("phase") == "Running" and
+                 any(item.get("type") == "Ready" and item.get("status") == "True"
+                     for item in status.get("conditions", [])) and
+                 len(container_statuses) == 1 and container_statuses[0].get("ready") is True and
+                 isinstance(container_statuses[0].get("state", {}).get("running"), dict),
+                 "Installation Pod is not ready")
+        _require(_created_at(container_statuses[0]["state"]["running"].get("startedAt")) > secret_time,
+                 "Installation controller predates its immutable Secret")
+        receipt["deploymentUids"][component] = dep_meta["uid"]
+        receipt["replicaSetUids"][component] = rs_meta["uid"]
+        receipt["podUids"][component] = pod_meta["uid"]
+    return receipt
+
+
+def attest_stable_installation(candidate, digest, installation_id, before, after, image):
+    """Compare reviewed bytes with two read-only workload snapshots around API GET."""
+    try:
+        first = _attest_installation_snapshot(candidate, digest, installation_id, before, image)
+        second = _attest_installation_snapshot(candidate, digest, installation_id, after, image)
+    except (AttributeError, KeyError, TypeError, IndexError):
+        raise Blocked("Installation workload evidence is incomplete") from None
+    _require(first == second, "Installation workload changed during proof")
+    return second
 
 
 def discover_exact(items, name, journal_id, expected=None):

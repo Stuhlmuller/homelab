@@ -44,6 +44,26 @@ repository-owned verification path compares the installed selection with the
 reviewed candidate, `check` and `reconcile` must fail closed before any API
 mutation. Capability support for Embedded is not that proof.
 
+The chart provides a read-only Kubernetes proof path. T039 must declare the
+exact reviewed `installation.yaml` bytes in a dedicated, version-named Opaque
+Secret `occ-installation-startup-<first 32 SHA-256 hex characters>`, with
+`immutable: true`, and
+pair `installation.secretName` with `controlPlane.installationChecksum` set to
+that full digest. After bootstrap, the Secret's
+`openclaw.dev/installation-id` annotation must equal `GET /installation`.
+Before reconciliation, a protected reader must compare the Secret's exact
+decoded bytes with the reviewed source and check both current, Ready API and
+worker Pods: Deployment/ReplicaSet ownership, pinned controller image, exact
+startup volume/key/path, checksum, and Pod creation after the immutable Secret.
+Read the Secret and workload identities again after the Installation API read;
+any changed UID, resource version or Pod identity blocks. Do not log the Secret
+or candidate bytes. An immutable Secret must use a new name on rotation so an
+old Pod cannot silently retain a deleted Secret mount.
+
+`scripts/openclaw-enterprise.py` has an offline attestation helper for these
+conditions. The reviewed candidate manifest and scoped Kubernetes read path
+are not yet present, so its CLI remains blocked before mutation or activation.
+
 Use these actual upstream operations:
 
 | Purpose | Supported operation and invariant |
