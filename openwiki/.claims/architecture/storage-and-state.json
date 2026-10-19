@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:30f7d0a68dfd0dc7cb7f9a9ca6dc50ae9b5b55cb7f1b234580ba31c45c0743af",
+  "pageVersion": "sha256:bc6e97078a7b947c54c5c3541817f42628b1dda78f89acd298c171972c5b2ced",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
@@ -58,7 +58,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:6d3d512c0131dcb3f8145311b98390677e33e01a2759715be4a562a984dc7dff"
+          "version": "repo-file-v1:sha256:af15755f732751f81e95d1e3b9be1b41eb6bfbd52fb522cb53b719cb29bf242b"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -139,7 +139,7 @@
       "statement": "The acceptance ledger has Argo prune protection and must be erased and verified through reviewed cleanup after aggregate review, including retained PV and NFS storage.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L372-L389",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L399-L416",
           "version": "repo-lines-v1:sha256:924a106f1ad466756cc7c3c4eab176f7a7cde5d926bc083c3be06445bb3c8974:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY5YmQxNWU5NmQ5ZmQ3YzQ1Y2MwMjIxM2FkOTM4YTY4NjU0YmU1ZmRlZGYzYjUwMDZkZTc4NzM3NjczZWFjZjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJkNTFmYzE4NTJmMGE4YTNlNGNkMWJlOTY0Mjg0M2E4ZjRkZjIwNzhiMGFkNTdmNDBiNjg1NTQ1MzI3NDBmMDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQxYTM4YTUwODdhNGUxNmRjMGVlNjU1MDMyYTMyYzgxYTc3Y2E5Y2E4YjEwMDAwZGQ4YzQ0ODMyODk3YTFiY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQwNDYxNmU3OGI3N2FjMmNhZTFmMDgyYTcxN2JiOWJjZmJlNmQxZDgyZGI2NTA5NjgxZGYxY2Q5NjVhZmZjM2IifQ"
         },
         {
@@ -151,6 +151,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:42:47.615Z"
+    "at": "2026-10-19T21:50:07.787Z"
   }
 }

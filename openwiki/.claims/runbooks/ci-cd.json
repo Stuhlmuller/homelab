@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:dd565369947896419e856e1cd7b23b7685f0ca0455e8b04b41e2ea2ccc28d189",
+  "pageVersion": "sha256:7aab3d8f4a7e311871bd6e911c1a8a15ad776fc4d05a2e8df4c9d0ef8fa126aa",
   "claims": [
     {
       "id": "claim_34382a82571c444084b9118105fb700f",
@@ -82,7 +82,7 @@
         },
         {
           "resource": "repo://docs/secrets-aws-ssm.md",
-          "version": "repo-file-v1:sha256:0427dd9702be2a38133630a578f31f7b26c505e327efb3df1353fa9bf150f134"
+          "version": "repo-file-v1:sha256:8a945b97b40fb774f80e92d70a4ba85b2bf2fae958f91a3d6b829d9d0c0a0093"
         }
       ]
     },
@@ -121,6 +121,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:17:22.223Z"
+    "at": "2026-10-19T21:50:07.787Z"
   }
 }

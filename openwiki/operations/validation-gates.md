@@ -180,6 +180,8 @@ sources:
     resource: repo://scripts/ci/platform-maintenance-stage.sh
   - id: openwiki-source-54912e76b9bc176f1d28ff87
     resource: repo://scripts/ci/policy-bot-webhook-test.py
+  - id: openwiki-source-486d1ce133b06619f73dfd30
+    resource: repo://scripts/ci/renovate-acceptance-review-test.py
   - id: openwiki-source-5028d06d31a177019a8bf782
     resource: repo://scripts/ci/renovate-alert-check.py
   - id: openwiki-source-b7865f8f7c461f149710edda
@@ -234,6 +236,8 @@ sources:
     resource: repo://scripts/platform-maintenance.py
   - id: openwiki-source-3a59e2e385041c09f8b021a1
     resource: repo://scripts/policy-bot-webhook.py
+  - id: openwiki-source-dc5b2313cafaf1babebbe560
+    resource: repo://scripts/renovate-acceptance-review.py
   - id: openwiki-source-9e73eddbbea62807ee2ea389
     resource: repo://scripts/tailnet-dns-check.py
   - id: openwiki-source-c5a2a233fdc6138ea6e6bb69
@@ -250,10 +254,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T21:47:56.824Z" }
+generated: { by: "codex", at: "2026-10-19T21:50:07.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:47:56.824Z
+    at: 2026-10-19T21:50:07.787Z
 ---
 
 # Validation Gates
@@ -2052,6 +2056,13 @@ Run the four focused `renovate-acceptance-*` Node suites in
 inventory, fixed sample, upstream polling, report conservatism, and version-bound
 PR proof. A Kustomize render must retain the observer CronJob as suspended and
 omit the suspended inventory and report Jobs. These are source checks.
+
+The private review input now has a guarded one-shot delivery command and
+`renovate-acceptance-review-test.py` in the static gate. The fixture rejects
+non-current or unsigned source, unsafe input files, replacement data, and
+premature retirement. This validates the operator path only; no private review
+has been delivered, and independent owner, source, and effective-policy receipts
+remain prerequisites before inventory seeding.
 
 The observer uses uncached 15-minute upstream polls and keeps private identity
 and timing brackets on its separate ledger. The offline report counts missing

@@ -104,6 +104,8 @@ sources:
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
+  - id: openwiki-source-dc5b2313cafaf1babebbe560
+    resource: repo://scripts/renovate-acceptance-review.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
   - id: openwiki-source-43db0977cfa60875fd0350f6
@@ -112,10 +114,10 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T21:47:56.824Z" }
+generated: { by: "codex", at: "2026-10-19T21:50:07.787Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T21:47:56.824Z
+    at: 2026-10-19T21:50:07.787Z
 ---
 
 # Secrets And Identity
@@ -262,6 +264,12 @@ reuses the projected App files to mint a read-scoped installation token. Its
 separate inventory Job is also suspended and omitted from Kustomize. Neither
 acceptance workload is authorized to start until the private sample and
 source-bound review input pass the workload gates.
+The guarded one-shot [review delivery command](../../scripts/renovate-acceptance-review.py)
+accepts an owner-only private file from clean, signed current `main`, creates
+only `automation/renovate-acceptance-review`, and refuses different replacement
+bytes. Only the omitted inventory Job mounts that Secret; successful seeding
+precedes guarded retirement. No new SSM parameter or reader grant is required.
+Independent owner, visibility, and policy receipt production remains open.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

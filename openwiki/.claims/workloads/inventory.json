@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:6f9c2befcaa8c11bcda903c031d6cc332f5c3045f7770c7daeb7ed51106a471b",
+  "pageVersion": "sha256:92276edddd3d3a185724a8d17b3931055ca15691820c553cefb63438a25c3508",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -509,10 +509,32 @@
           "version": "repo-lines-v1:sha256:dcf4fc93f1ab65022cf7f58e9a495c3a0e943751a21adc40b2eb80c7975404d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZDIzMjMxZjEyNmYxNWIzYzM2NjE0YTM0NWY1OGM4NTkwN2Q0MmY3NjVmZmRiZTdjMDFmNGEwZjJmZmI5NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjcwOGNlYjY1YTk3NjhkN2ZhYWEzNzRmYjE0MGQ2ZTU4MzVkODc2YWNhYjQyNmM5NmQ0MjdjMTZlY2U0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMjIxMTM0MDkyMTFlMzMxMDZiOWIyMTY1MDg3NWMyN2FhZTIxNzZlOTRjYmZmYjA2ODg4NTkxMGY5YTI0NjYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_aaaa42a6e30f404ea753d016dffcbf2f",
+      "statement": "The draft Renovate acceptance source stages a guarded, unrun one-shot private review input delivery command; inventory and report Jobs remain omitted from Kustomize, observer remains suspended, and seven-day acceptance is pending.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L204-L218",
+          "version": "repo-lines-v1:sha256:a96aabeebe7fe1f2b4df82477069b5d108aba567434135e103045d131c981f79:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc0ZjAxMmRkNDk5M2ZkNTUxYTQ5YzA0MzdmOTczZjA4OTIyZTYyMjllMzJiOGRhNjA2YzdkODRhODEzNzZhMzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5ZGM2MDNlNDg4NjRmYzlmMWRkMDZmNmQ3NDU1OWI2NTAxYzk4YzdiN2I2MjI0ZjAyNzkxZGRkZGE2ZGE3MDgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhlOThkNDZiNTE4MTBlZTczZTYyNmEzZTU1YmVjNzAxM2JlMDYxZDkzZGFjNDk5NzE5Njk1MmZlYTRkMDc0Y2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkzYTYyZThmNzdlNjA2Nzc4NjNmNmFjNjE1MDk4Y2Q5NjQxZmFjZjliZDM0MmUyOGZkMGI1M2NmYjEwMjhlODAifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/acceptance-observer-cronjob.yaml#L1-L13",
+          "version": "repo-lines-v1:sha256:a4b8e70485cb614a89327eefe79768dc417f30939d85534fb02216d0cded49fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJiMDQ0MjdlMmJjNWQzM2U2NzFiMTU3ZmFhYjAzNDdjYmZlYjYxYjI3NGI5YjcxMTZjZTkzNjM1MThiZWNlN2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0OTBiZGMxZjg3YWI4MjBjMzU5ZGFmZDA1YjNjZDNjMzQ0MDVlODM2MWExNTYyZmE0YzQ0NTM5NzE1MDgxMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUxYWVlYjBiNGEzOThiMzNhNWU4NzlkZDNlZGFkZDZhZGYyMzcyMDlmMjNhNmY3N2Y0MjVhMWI3ODVmZWIyNzEifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/kustomization.yaml#L1-L11",
+          "version": "repo-lines-v1:sha256:dcf4fc93f1ab65022cf7f58e9a495c3a0e943751a21adc40b2eb80c7975404d5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4ZDIzMjMxZjEyNmYxNWIzYzM2NjE0YTM0NWY1OGM4NTkwN2Q0MmY3NjVmZmRiZTdjMDFmNGEwZjJmZmI5NDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxMjcwOGNlYjY1YTk3NjhkN2ZhYWEzNzRmYjE0MGQ2ZTU4MzVkODc2YWNhYjQyNmM5NmQ0MjdjMTZlY2U0OWMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjYzMjIxMTM0MDkyMTFlMzMxMDZiOWIyMTY1MDg3NWMyN2FhZTIxNzZlOTRjYmZmYjA2ODg4NTkxMGY5YTI0NjYifQ"
+        },
+        {
+          "resource": "repo://scripts/renovate-acceptance-review.py#L42-L55",
+          "version": "repo-lines-v1:sha256:11999481592091aa0d615edf2a7eb4b4dd1adaa15cc7d5c067b6a88b636b5b78:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJjMmU0NjU4Y2U1NTJmMzkzN2MxNDMwZmFkMGYwNGYxYzUwYTJmNGMxOGE3OWU1NWIyZGJkY2FmZTFhNTZiYWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjNTY3NGZmZDQ0ZTYxMTMwZTgwN2YzOWFkMDZlYWFlOTM5MGE4M2RlOTNiMmRmYjZhNTYwMjg4YjI1YjllYWEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0NWUwZTdkODQ4OTc5ZTYxMjA4YTIwYTUwNGEwNjAxZDM3MGE3YzZhMTI5YTM2ZWZiNjY0YzgxOThhODE2YWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc1YzQ3OTAzN2E2NjkwM2JhMmQwZTM5ZTE2ZGQ1Y2Y3NzI3MDFiMWUwYTg1YzRiZDg0ZDI4MTIwMTZhZTAyYjQifQ"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:47:56.824Z"
+    "at": "2026-10-19T21:50:07.787Z"
   }
 }
