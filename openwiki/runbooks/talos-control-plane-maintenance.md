@@ -3,9 +3,6 @@ type: runbook
 title: "Talos Control-Plane Maintenance"
 description: "Authenticated Talos maintenance, etcd snapshot integrity, macOS backup scheduling, retention, offsite publication, and recovery limits."
 tags: ["runbook", "talos", "maintenance"]
-verified:
-  - by: openwiki/0.7.0
-    at: 2026-10-11T00:16:41.141Z
 sources:
   - id: openwiki-source-827cecf9eca9139ac8e7367a
     resource: repo://clusters/homelab/apps/langfuse/values.yaml
@@ -17,9 +14,12 @@ sources:
     resource: repo://docs/argocd-node-pressure-2026-10-10.md
   - id: openwiki-source-b1ffa4114052aa5dfacab93d
     resource: repo://docs/talos-control-plane-maintenance.md
-  - id: openwiki-source-f585f8850806deb1619ec0c5
+  - id: openwiki-source-d15d8af567654cd0f94c3158
     resource: repo://IaC/terragrunt-catalog/units/bootstrap/argocd/terragrunt.hcl
 generated: { by: "codex", at: "2026-10-11T00:16:41.141Z" }
+verified:
+  - by: openwiki/0.7.0
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Talos Control-Plane Maintenance

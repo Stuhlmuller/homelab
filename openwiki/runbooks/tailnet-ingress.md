@@ -38,7 +38,7 @@ sources:
     resource: repo://clusters/homelab/platform/tailnet-dns/README.md
   - id: openwiki-source-bef786188ec490a342373148
     resource: repo://docs/networking-tailnet-ingress.md
-  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+  - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
   - id: openwiki-source-a98a02c20ac8079466bdbdb6
     resource: repo://scripts/ci/tailnet-dns-test.py
@@ -46,6 +46,8 @@ sources:
     resource: repo://scripts/ci/tailscale-private-dns-test.py
   - id: openwiki-source-c5bae48eacfc2b48af15ad5a
     resource: repo://scripts/ci/traefik-routes-test.py
+  - id: openwiki-source-42d68526aac66a616145f957
+    resource: repo://scripts/config/tailscale-private-dns.json
   - id: openwiki-source-0f0f64f89adebd3b517b3c98
     resource: repo://scripts/multica-desktop-connect.py
   - id: openwiki-source-a8e2cab0bb2d9f7f664ad849
@@ -62,10 +64,10 @@ sources:
     resource: repo://scripts/tailscale-private-dns-check.py
   - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
     resource: repo://scripts/tailscale-private-dns.sh
-generated: { by: "codex", at: "2026-10-18T20:54:06.405Z" }
+generated: { by: "codex", at: "2026-10-19T04:52:17.100Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-18T23:45:47.913Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Tailnet And App Ingress
@@ -240,10 +242,26 @@ python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-hand
 
 The owner then sets that IP as a restricted `stinkyboi.com` nameserver in
 Tailscale DNS. Check normal client DNS and HTTPS before removing any public
-records. The later `tailscale-private-dns.sh --retire-private` helper only
-previews or deletes A/AAAA/CNAME records for the fixed 27 names; it cannot
-publish or restore them. Preserve callback, CI, carrier, unrelated names, and
-apex mail records. Keep the public records during this resolver handoff.
+records. The [feature 005 cutover](../../specs/005-retire-public-app-dns/contracts/cutover.md)
+limits the later `tailscale-private-dns.sh --retire-private` helper to public
+A/AAAA/CNAME records for the 26 approved non-apex app subdomains, including
+the Cordium wildcard owner. The resolver still answers all 27 approved private
+names. The helper cannot publish or restore records. Preserve the public apex
+A/MX/TXT and any CAA, DNS-01 validation, the public zone, four legacy callback/
+CI/carrier names, and unrelated public services. Keep the public records during
+this resolver handoff.
+
+Before the first deletion, require the exact record baseline, a per-name
+off-tailnet decision, and a complete paginated public-zone A/AAAA/CNAME/NS
+scan. A relevant child NS delegation, including a covering wildcard NS such as
+`*.stinkyboi.com`, or an out-of-set covering wildcard A/AAAA/CNAME blocks
+before any DELETE; the helper does not traverse child zones.
+It checks Cloudflare authoritative answers for all 26 names and a concrete
+Cordium child, blocking unexplained answers. After the old maximum TTL, confirm
+those names have no public A/AAAA/CNAME answer while normal tailnet DNS and
+HTTPS still work. Resolver recovery restores private answers without
+republishing those app records; the apex intentionally retains its public A.
+
 Phase 2a removed the old DNS-restoration workflow and public DNS helper;
 preserve the tunnel and verify Talos registry access before later retirement.
 The same phase declares internal CoreDNS rewrites for Octelium API and Harbor
@@ -253,11 +271,12 @@ readiness before n8n restarts because it can register hooks during startup.
 Check native API and Harbor access after internal DNS convergence; keep CI and
 shared native operator transport unchanged until canonical mesh acceptance.
 
-The private DNS readiness checker accepts AFFiNE HTTP 502 or 503 only when
-the repository and live Deployment explicitly declare zero replicas and no
-live replicas remain. This accounts for Traefik's static ClusterIP backend
-while AFFiNE is suspended. All other application 5xx responses fail; this
-exception does not establish AFFiNE runtime health.
+The private DNS readiness checker accepts AFFiNE HTTP 500, 502, or 503 and
+OpenClaw HTTP 502 only when each reviewed workload declaration and live
+Deployment specify zero replicas and no live replicas remain. Deployed Traefik
+routes and TLS must match the reviewed checkout. Other application 5xx
+responses fail. These exceptions check routing to intentionally stopped apps;
+they do not establish application runtime health.
 
 For the retained ingress preflight, `multica-desktop-connect.py --resume-only` reconnects only
 the verified saved tailnet profile and checks the ingress peer. It polls at most
@@ -289,12 +308,29 @@ POST-only hooks use non-executing OPTIONS probes before their URL changes.
 
 The [October 10 preflight record](../../clusters/homelab/apps/traefik/CUTOVER.md#october-10-ingress-preflight-evidence)
 records all 28 canonical private routes passing strict TLS over published IPv4,
-including guarded suspended AFFiNE 502 and ready OpenClaw, plus 20 public negative
-cases, two safe n8n OPTIONS responses and the corrected PolicyBot GET check.
+including AFFiNE 502 under its then-declared suspension and an OpenClaw 200
+response. Those are dated results, not current application readiness. The record
+also includes 20 public negative cases, two safe n8n OPTIONS responses and the
+corrected PolicyBot GET check.
 Traefik AP/NP specs matched reviewed main. Forced ingress IPv6 failed before TLS,
 consistent with the single-family Service; this is not IPv6 application acceptance.
 Normal-DNS cutover, authenticated user flows and signed callback delivery remain
 separate gates.
+
+### Public DNS retirement preflight (2026-10-18)
+
+Read-only pre-cutover inspection reported all 27 private names resolving through
+ordinary OS DNS and direct proxy DNS checks passing. It did not establish
+retirement readiness: the trusted Mac Tailscale.app CLI exited `-6`, the then
+current guard rejected AFFiNE HTTP 500 and OpenClaw HTTP 502 while both apps
+were deliberately at zero replicas, Fleet setup timed out, the latest n8n
+delivery check returned 404, and Policy Bot preview was unavailable. No public
+app records were deleted. The current [readiness guard](../../scripts/tailscale-private-dns-check.py)
+requires reviewed source and live zero replicas for those stopped-app responses.
+Repeat the trusted CLI and normal-client checks, Fleet setup, n8n and Policy Bot
+callback checks, and every remaining [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md)
+gate from reviewed `main` before any public deletion. This dated observation is
+not a cutover receipt.
 
 See [Validation Gates](../operations/validation-gates.md),
 [Secrets And Identity](../architecture/secrets-and-identity.md), and

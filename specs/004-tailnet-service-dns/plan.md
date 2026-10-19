@@ -1,5 +1,9 @@
 # Implementation Plan: Private Tailnet Service DNS
 
+Historical public-cutover plan: its 27-name retirement scope is superseded by
+the [26-name app subdomain cutover](../005-retire-public-app-dns/quickstart.md).
+The 27-name private resolver design remains.
+
 **Branch**: `codex/tailnet-service-dns` | **Date**: 2026-10-18 | **Spec**: [spec.md](spec.md)
 
 ## Summary

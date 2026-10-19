@@ -46,26 +46,28 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-785c903805cb6f5a9ea9ae91
     resource: repo://docs/octelium.md
+  - id: openwiki-source-f19aa740c5d820d4dd28114e
+    resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-cf9e058040b1a15ca636bb42
-    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-  - id: openwiki-source-aef98a0b80c0ff330c310ed1
-    resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
-  - id: openwiki-source-4fa6e8b8348f9583e76afe30
+  - id: openwiki-source-da1c62ec7717f978964e0a11
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
-  - id: openwiki-source-326a085bf1ea3cb64a10924e
+  - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
-  - id: openwiki-source-e9bb34bdbee430c2456beb6d
+  - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
-  - id: openwiki-source-b17e212516ed4cf97993dd01
+  - id: openwiki-source-f6b60d0a5b2ad5df65f1b2ee
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/README.md
-  - id: openwiki-source-77d110fdd1547564be86e611
+  - id: openwiki-source-5edf712b7916c34ad7d2c410
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/main.tf
-  - id: openwiki-source-6b5e63b8e249f20dfe916d9f
+  - id: openwiki-source-13b48922f1b929b52f4a0233
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/README.md
-  - id: openwiki-source-43b94de29b6b12121d020dc6
+  - id: openwiki-source-9d870d4d05777e4847356500
     resource: repo://IaC/terragrunt-catalog/modules/tailscale-access/variables.tf
+  - id: openwiki-source-1f0ad12bbff1986d64be6620
+    resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
+  - id: openwiki-source-96fd4f3e569f8bc04da5259d
+    resource: repo://IaC/terragrunt-catalog/units/operator/entra-stuhlmuller-pilot-user/terragrunt.hcl
   - id: openwiki-source-87a43c568d1aa897dc611cdf
     resource: repo://scripts/config/tailscale-policy.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -74,16 +76,16 @@ sources:
     resource: repo://scripts/fleet-google-login.py
   - id: openwiki-source-6f8ea3753bc76b21d99fe402
     resource: repo://scripts/tailscale-ci-configure.py
-  - id: openwiki-source-c4ba7c9b8c99ef7f9cfb598b
-    resource: repo://scripts/tailscale-private-dns.sh
   - id: openwiki-source-43db0977cfa60875fd0350f6
     resource: repo://scripts/talos-harbor-mirror-credential.py
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T02:17:09.125Z" }
+  - id: openwiki-source-111e7fc5206f50a28e4daf9c
+    resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
+generated: { by: "codex", at: "2026-10-19T04:37:10.218Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T02:17:09.125Z
+    at: 2026-10-19T05:01:55.414Z
 ---
 
 # Secrets And Identity
@@ -174,9 +176,12 @@ Phase 2a removes the old public DNS writer and restoration workflow while
 retaining Tunnel credentials, existing Octelium identities, and native carrier
 recovery. The separate tailnet resolver watches approved Kubernetes Services
 and needs no DNS write token. Only the later guarded retirement helper reads
-the existing scoped cert-manager Cloudflare token; it can delete public
-A/AAAA/CNAME records for the fixed 27 names after owner tailnet DNS handoff and
-client acceptance. It has no record-publication or restoration mode.
+the existing scoped cert-manager Cloudflare token. Feature 005 limits its
+public A/AAAA/CNAME deletion to the 26 approved non-apex app subdomains after owner
+tailnet DNS handoff and client acceptance. The private resolver retains all 27
+approved names. Public apex, mail, DNS-01 validation, and unrelated public
+names stay in the zone; see the [cutover contract](../../specs/005-retire-public-app-dns/contracts/cutover.md).
+The helper has no record-publication or restoration mode.
 Credential retirement follows application, callback, CI, and Cordium acceptance;
 changing DNS alone does not authorize deleting those credentials.
 
@@ -200,13 +205,14 @@ changing DNS alone does not authorize deleting those credentials.
   policies are attached.
 
 The staged [Renovate runner](../../clusters/homelab/apps/renovate/README.md)
-reuses its existing GitHub App. IaC declares two SecureString placeholders for
-the App issuer and private key. A temporary role permits the companion
-repository to transfer only those two values; it cannot read them back. The
-`automation` ExternalSecret projects both as files and refreshes every five
-minutes. Keep the hourly CronJob suspended until the transfer, Secret readiness,
-and removal of the temporary writer grant are verified. The current code is
-desired state, not evidence that the credentials have reached the cluster.
+reuses its existing GitHub App. IaC declared two SecureString placeholders for
+the App issuer and private key. The [2026-10-19 transfer receipt](../../docs/operator-infrastructure.md#renovate-app-credential-transfer-and-role-retirement)
+records both parameters at version 2 and a later `Ready=True` refresh of the
+`automation/renovate` ExternalSecret. It projects both credentials as files
+every five minutes. Current IAM source removes the temporary exact-scope
+companion writer role; the live role-retirement saved-plan apply and subsequent
+no-op verification remain pending. Keep the hourly CronJob suspended until the
+writer grant is confirmed gone and the separate dry-run gates pass.
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name
@@ -214,7 +220,7 @@ organization or environment secrets, and drained old runs. Cluster writes then
 require a separate reviewed GitOps change. Rollback first suspends and drains
 cluster Jobs; the guarded companion restore script can restore the repository
 Actions key from SSM before a reviewed PR restores the old workflow. This
-cutover has not occurred.
+writer cutover has not occurred.
 
 The operator-owned External Secrets permissions boundary denies direct
 temporary-session requests using `aws:TokenIssueTime` only when

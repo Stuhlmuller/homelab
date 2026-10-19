@@ -44,12 +44,18 @@ python3 -I scripts/tailnet-dns-check.py --server <DNS_TAILNET_IP> --initial-hand
 
 The owner then adds `<DNS_TAILNET_IP>` as one **restricted nameserver for
 `stinkyboi.com`** in Tailscale DNS. Enable **Use with exit node** for clients
-using an exit node. Do not set a global nameserver. Keep the 27 public app
-records until ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls,
-and callbacks pass. Then follow the guarded retirement in the
-[cutover guide](../clusters/homelab/apps/traefik/CUTOVER.md). After retirement,
-a resolver outage fails closed; recover the declared resolver or signed proxy
-and do not republish public application addresses.
+using an exit node. Do not set a global nameserver. The resolver keeps private
+answers for all 27 approved names, including the apex. The separate
+[public app subdomain cutover](../specs/005-retire-public-app-dns/quickstart.md)
+retires A/AAAA/CNAME records for only the 26 approved non-apex names after
+ordinary client DNS, HTTPS, native paths, Fleet, Harbor pulls, and callbacks
+pass. Intentionally stopped apps need matching zero-replica source and live
+checks in place of a serving HTTP response. Public apex A/MX/TXT and any CAA,
+the Cloudflare zone and DNS-01
+validation, four legacy public endpoints (`octelium-transport`,
+`kubernetes-api-ci`, `n8n-webhook`, and `policy-bot-hook`), and unrelated names
+remain. A resolver outage after retirement gives those 26 names no public app fallback;
+recover the declared resolver or signed proxy without republishing addresses.
 
 Inside Kubernetes, `platform-dns` rewrites `octelium-api.stinkyboi.com` and
 `harbor.stinkyboi.com` to `traefik-private.traefik.svc.cluster.local`. Clients
