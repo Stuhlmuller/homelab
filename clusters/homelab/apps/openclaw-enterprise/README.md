@@ -63,6 +63,8 @@ helm template oce /path/to/openclaw-enterprise/deploy/helm/openclaw-enterprise \
   --values clusters/homelab/apps/openclaw-enterprise/values.yaml
 python3 -I scripts/ci/openclaw-enterprise-chart-hooks-test.py \
   --upstream-root /path/to/openclaw-enterprise
+python3 -I scripts/ci/openclaw-enterprise-lifecycle-test.py \
+  --upstream-root /path/to/openclaw-enterprise
 python3 -I scripts/ci/openclaw-enterprise-quiesce-test.py
 ```
 
