@@ -200,3 +200,53 @@ Pod remains, then use the guarded companion
 to restore the repository key from SSM. Verify its receipt before restoring the
 legacy workflow through a reviewed PR. The interval between legacy deletion
 and first cluster write is a planned no-writer gap.
+
+## Temporary acceptance observer
+
+The separate `renovate-acceptance-observer` CronJob is staged suspended. It
+would poll every 15 minutes during the seven-day acceptance window. It mounts
+only `renovate-acceptance-ledger`, never `renovate-cache`. It asks GitHub for an
+installation token limited to `contents` and `metadata` **read** permissions.
+Its own GitHub POST mints that token; datasource clients may POST read-only
+GraphQL queries. The observer calls
+the pinned Renovate image's datasource implementations directly, bypassing the
+package-cache wrapper. Any datasource-local cache is confined to one Pod's
+ephemeral `/tmp`; the next poll uses a new Pod. It has no Kubernetes API token
+or inbound Service.
+
+Before starting this CronJob, create a reviewed, read-only dependency inventory
+from the actual Renovate extraction baseline. Put `inventory.json` on the
+private ledger PVC through a reviewed GitOps Job, then run this script's
+`seed` mode in that Job while the CronJob remains suspended. The inventory
+must record a reproducible `seed`, the extraction commit SHA, every active
+datasource class, and each candidate's repository, datasource, package name,
+source visibility (`public` or `private`), and optional registry URL/current
+value. Mark the controlled release canary; its fixture path is excluded even
+if the marker is omitted. The inventory review must prove every active class
+and public/private source stratum where present; the script rejects a missing
+class but cannot discover an omitted class from a falsified inventory. Private
+repository/package identities stay on the volume and out of public reviews.
+
+The seed selects up to five packages per datasource and source-visibility
+stratum by SHA-256 of the preregistered seed and dependency key. It writes the
+selection once to `/ledger/private/ledger.json` with mode `0600`; the seed stays
+private. A second seed
+refuses to replace it. Check the seed Job's aggregate counts, then use a
+reviewed GitOps change to unsuspend the CronJob. Its first healthy poll sets
+the baseline. Later healthy polls record each new version with the previous
+healthy absence time and first presence time. Failed source polls do not
+advance a bracket. Only counts appear in Pod logs. The `report` mode emits
+aggregate sample, stratum, poll-failure, and bracket counts; raw brackets stay
+on the protected PVC. Do not publish the inventory or ledger.
+
+Start the seven-day clock only after the sample and baseline are verified.
+Keep the observer suspended if the inventory, a datasource, private-source
+access, or the pinned image's datasource API fails validation. After the
+aggregate report is reviewed, erase the private files with a reviewed GitOps
+cleanup Job and verify `/ledger/private` is empty. Next remove `Prune=false`
+from the PVC manifest through GitOps and verify the live PVC annotation is
+gone. Only then remove the CronJob, script, cleanup Job, and PVC manifests
+through a reviewed change; verify the PVC and backing PV are deleted. If the
+storage class retains the PV, use a reviewed storage cleanup path and verify
+the erased NFS directory is gone. A PVC reset before the aggregate review
+destroys acceptance evidence.
