@@ -9,6 +9,11 @@
   },
   "generatedOwnerAudit": {
     "capturedAt": "2026-10-19T02:32:56.863292+00:00",
+    "liveSpecRecheck": {
+      "capturedAt": "2026-10-19T15:15:09+00:00",
+      "matchedPriorHashes": 18,
+      "method": "Read-only kubectl snapshot; SHA-256 of each generated policy's complete canonical JSON spec matched the earlier live baseline"
+    },
     "managers": {
       "OpenAPI-Generator": [
         "monitoring/kiali"
@@ -36,6 +41,66 @@
         "octelium/octeliumee-rscstore",
         "octelium/octeliumee-secretman"
       ]
+    },
+    "ownerBindings": {
+      "OpenAPI-Generator": {
+        "declaredVersion": "kiali-operator 2.26.0",
+        "inputPaths": [
+          "IaC/kiali/stack.hcl",
+          "clusters/homelab/apps/kiali/values.yaml"
+        ],
+        "ownershipEvidence": "The live policy has ownerReference Kiali/kiali; the repository enables that Kiali CR in the pinned operator Helm values"
+      },
+      "cordium-genesis": {
+        "declaredVersion": "cordium-genesis 0.12.7",
+        "inputPaths": [
+          "clusters/homelab/apps/cordium-bootstrap/genesis.yaml"
+        ],
+        "ownershipEvidence": "The pinned genesis Job is the repository invocation; live policy managedFields name cordium-genesis"
+      },
+      "octelium-genesis": {
+        "declaredVersion": "Octelium Cluster 0.35.0",
+        "inputPaths": [
+          "scripts/octelium-cluster-bootstrap.sh"
+        ],
+        "ownershipEvidence": "The repository bootstrap invokes octops init at this default version; live policy managedFields name octelium-genesis"
+      },
+      "octeliumee-genesis": {
+        "declaredVersion": "octeliumee 0.22.0",
+        "inputPaths": [
+          "scripts/octelium-enterprise-package.sh",
+          "IaC/octelium-enterprise/stack.hcl"
+        ],
+        "ownershipEvidence": "The repository package operation and GitOps steady-state owner declare this version; live policy managedFields name octeliumee-genesis"
+      }
+    },
+    "ownerInputSha256": {
+      "IaC/kiali/stack.hcl": "58a0f94447ffa6cecae21529fe71a7fceab6300de3e1682e3a0c012e5349cc09",
+      "IaC/octelium-enterprise/stack.hcl": "8ad7e49391b2f32b1ec4447c508653c4bf218edb52108ff6541ddb31d434e0f5",
+      "clusters/homelab/apps/cordium-bootstrap/genesis.yaml": "ec87ea2c5d7168c6b7ec6f03148895de31375ccf549ee0600374ab5c228b9953",
+      "clusters/homelab/apps/kiali/values.yaml": "e315de87d4f803a9955d264538decf5db6eccb701522dec53c99dfaa739aad3f",
+      "scripts/octelium-cluster-bootstrap.sh": "28e2c8c8ee392c7f74c6f36e448074b000f02e676280dcf9f265f422fa1949c9",
+      "scripts/octelium-enterprise-package.sh": "963c068373f4d56ca3032077c5c364b7c9a509e47ae2b69c1213827674244cf9"
+    },
+    "policyRuleDecisions": {
+      "cordium/ws-main": "Hold: selected Workspace Pods have Octelium/genesis ingress on TCP 8080/2022 and UDP 45000; egress allows DNS TCP/UDP 53, two internal TCP 8080 peers, and IPv4/IPv6 0/0 minus declared exclusions on every port. The latter remains a strict broad-egress finding pending pinned-generator render and canary traffic.",
+      "monitoring/kiali": "Hold: operator-owned ingress admits every source on TCP 20001/9090. The repository declares private Istio authorization but no source control for this NetworkPolicy; verify the operator-supported correction and real Octelium/Prometheus paths before narrowing.",
+      "octelium/cordium-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/cordium-rscserver": "Hold: ingress from Octelium cluster/genesis selectors on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octelium-ingress": "Hold: ingress from Octelium ingress-dataplane selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octelium-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octelium-octovigil": "Hold: ingress from Octelium cluster selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-cloudman": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octeliumee-clusterman": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octeliumee-collector": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-logstore": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-metricstore": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-nocturne": "Hold: ingress-only policy has no allow rules; it does not isolate egress.",
+      "octelium/octeliumee-policyportal": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-rscserver": "Hold: ingress from Octelium cluster/genesis selectors on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-rscstore": "Hold: ingress from same-namespace app=octelium selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/octeliumee-secretman": "Hold: ingress from Octelium rscserver selector on TCP 8080; ingress-only policy does not isolate egress.",
+      "octelium/svc-upstream": "Hold: ingress from Octelium svc/genesis selectors on every port; egress allows IPv4/IPv6 0/0 minus declared exclusions on every port. The latter remains a strict broad-egress finding pending pinned-generator render and canary traffic."
     },
     "method": "Read-only Kubernetes managedFields inspection; 18 generator-managed policies remain absent from repository Kustomize renders",
     "repositoryOwnerCandidates": [
@@ -1194,6 +1259,8 @@
   ],
   "requiredCorrections": [
     "Render or otherwise source-bind all 18 generated policies to the pinned Cordium, Octelium and Kiali owners; compare complete live ingress and egress specs before enforcement.",
+    "For cordium/ws-main and octelium/svc-upstream, determine the pinned generator's supported public-egress configuration and prove required destinations and private-range denial on the canary; neither all-port 0/0 rule is approved by owner binding alone.",
+    "For monitoring/kiali, determine the pinned operator's supported NetworkPolicy configuration and prove required TCP 20001/9090 clients before changing its all-source generated ingress.",
     "Review the nine all-source ingress rules, including eight TCP/15008 mesh rules and generated monitoring/kiali ports 20001/9090; narrow only where owner behavior and canary traffic prove safe.",
     "Decide explicit source-owned egress for the 196 currently unisolated Pods and qualify required DNS, API, database, mesh, NFS and private-access paths before each node is admitted.",
     "Review all 18 strict wildcard-egress findings, including Mastodon federation and generated Cordium/Octelium policies; retain strict broad-egress reporting and the separately accepted OCE public-443 boundary.",
