@@ -121,9 +121,8 @@ base intentionally adopts them again and the documentation explains why.
 3. Before nontrivial code with a relevant upstream or peer implementation,
    search the pinned XERJ reference corpus and inspect the cited source. See
    [reference coding](docs/xerj-reference-coding.md).
-4. Run the relevant repository validation gate. For most source changes, use
-   `nix develop --command bash scripts/ci/static-checks.sh`; for documentation,
-   use the focused checks in `README.md`.
+4. Run the change-specific validation gates in `README.md` and
+   `docs/validation-runbook.md`.
 5. Make the smallest code and documentation change that solves the request.
 6. Update affected knowledge-base notes under `openwiki/` when the
    change creates, removes, renames, or materially changes an app, platform
