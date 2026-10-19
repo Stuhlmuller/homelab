@@ -164,6 +164,13 @@ def _controller_owner(metadata, kind, uid, name):
              "Installation Pod ownership is foreign")
 
 
+def _resource_version(metadata):
+    version = metadata.get("resourceVersion")
+    _require(isinstance(version, str) and bool(version.strip()),
+             "Installation workload resource version is missing")
+    return version
+
+
 def _startup_mount(spec, component, secret_name, image):
     volumes = [item for item in spec.get("volumes", [])
                if item.get("name") == "installation-startup"]
@@ -226,7 +233,9 @@ def _attest_installation_snapshot(candidate, digest, installation_id, snapshot, 
     receipt = {"installationId": installation_id, "installationChecksum": digest,
                "secretUid": metadata["uid"],
                "secretResourceVersion": metadata["resourceVersion"],
-               "deploymentUids": {}, "replicaSetUids": {}, "podUids": {}}
+               "deploymentUids": {}, "replicaSetUids": {}, "podUids": {},
+               "deploymentResourceVersions": {}, "replicaSetResourceVersions": {},
+               "podResourceVersions": {}}
     for component in ("api", "worker"):
         name = "openclaw-enterprise-" + component
         labels = {"app.kubernetes.io/instance": "oce",
@@ -280,8 +289,11 @@ def _attest_installation_snapshot(candidate, digest, installation_id, snapshot, 
         _require(_created_at(container_statuses[0]["state"]["running"].get("startedAt")) > secret_time,
                  "Installation controller predates its immutable Secret")
         receipt["deploymentUids"][component] = dep_meta["uid"]
+        receipt["deploymentResourceVersions"][component] = _resource_version(dep_meta)
         receipt["replicaSetUids"][component] = rs_meta["uid"]
+        receipt["replicaSetResourceVersions"][component] = _resource_version(rs_meta)
         receipt["podUids"][component] = pod_meta["uid"]
+        receipt["podResourceVersions"][component] = _resource_version(pod_meta)
     return receipt
 
 

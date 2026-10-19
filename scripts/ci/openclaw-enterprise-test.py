@@ -40,9 +40,9 @@ class FakeAPI:
 
 class EnterpriseReconciliation(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="oce-reconciler-", dir="/private/tmp")
+        self.temp = tempfile.TemporaryDirectory(prefix="oce-reconciler-")
         self.addCleanup(self.temp.cleanup)
-        self.private = Path(self.temp.name) / "private"
+        self.private = Path(self.temp.name).resolve() / "private"
         self.private.mkdir(mode=0o700)
         self.config = json.loads((ROOT / "scripts/config/openclaw-enterprise.json").read_text())
         self.config["privateJournal"]["mountPath"] = str(self.private / "journal.json")
@@ -92,19 +92,22 @@ class EnterpriseReconciliation(unittest.TestCase):
                 "openclaw.dev/installation-checksum": digest}}, "spec": pod_spec}
             deployments[component] = {
                 "metadata": {"name": name, "namespace": "openclaw-system",
-                             "uid": "dep-" + component, "generation": 1, "labels": labels},
+                             "uid": "dep-" + component, "resourceVersion": "200",
+                             "generation": 1, "labels": labels},
                 "spec": {"replicas": 1, "template": template},
                 "status": {"observedGeneration": 1, "replicas": 1,
                            "updatedReplicas": 1, "availableReplicas": 1},
             }
             replicasets[component] = [{
                 "metadata": {"name": "rs-" + component, "uid": "rs-" + component,
+                             "resourceVersion": "300",
                              "ownerReferences": [{"kind": "Deployment", "controller": True,
                                                   "uid": "dep-" + component, "name": name}]},
                 "spec": {"template": template},
             }]
             pods[component] = [{
                 "metadata": {"name": "pod-" + component, "uid": "pod-" + component,
+                             "resourceVersion": "400",
                              "namespace": "openclaw-system", "labels": labels,
                              "annotations": {"openclaw.dev/installation-checksum": digest},
                              "creationTimestamp": "2026-10-18T00:01:00Z",
@@ -127,6 +130,12 @@ class EnterpriseReconciliation(unittest.TestCase):
                                                  copy.deepcopy(before), image)
         self.assertEqual(receipt["installationChecksum"], digest)
         self.assertEqual(receipt["podUids"], {"api": "pod-api", "worker": "pod-worker"})
+        self.assertEqual(receipt["deploymentResourceVersions"],
+                         {"api": "200", "worker": "200"})
+        self.assertEqual(receipt["replicaSetResourceVersions"],
+                         {"api": "300", "worker": "300"})
+        self.assertEqual(receipt["podResourceVersions"],
+                         {"api": "400", "worker": "400"})
 
     def test_attestation_rejects_mutable_stale_foreign_or_racing_inputs(self):
         document, digest, image, baseline = self._installation_snapshot()
@@ -156,6 +165,20 @@ class EnterpriseReconciliation(unittest.TestCase):
         raced["secret"]["metadata"]["resourceVersion"] = "101"
         with self.assertRaisesRegex(OCE.Blocked, "changed during proof"):
             OCE.attest_stable_installation(document, digest, "ins_one", baseline, raced, image)
+        for kind in ("deployments", "replicaSets", "pods"):
+            with self.subTest(kind=kind):
+                raced = copy.deepcopy(baseline)
+                workload = raced[kind]["worker"]
+                if isinstance(workload, list):
+                    workload = workload[0]
+                workload["metadata"]["resourceVersion"] = "401"
+                with self.assertRaisesRegex(OCE.Blocked, "changed during proof"):
+                    OCE.attest_stable_installation(document, digest, "ins_one", baseline,
+                                                   raced, image)
+                del workload["metadata"]["resourceVersion"]
+                with self.assertRaisesRegex(OCE.Blocked, "resource version"):
+                    OCE.attest_stable_installation(document, digest, "ins_one", baseline,
+                                                   raced, image)
         replaced_pod = copy.deepcopy(baseline)
         replaced_pod["pods"]["worker"][0]["metadata"]["uid"] = "replacement"
         with self.assertRaisesRegex(OCE.Blocked, "changed during proof"):
