@@ -95,6 +95,20 @@ test('sample freezes every class and source visibility, excluding the controlled
   assert.throws(() => observer.selectSample(source), /missing-datasource-class/);
 });
 
+test('poll and report reject a changed frozen sample while allowing observations', () => {
+  const source = inventory();
+  const ledger = observer.selectSample(source);
+  ledger.inventory = source;
+  assert.doesNotThrow(() => observer.verifyFrozenSample(ledger));
+  ledger.sample[0].seen.push('observed-version-hash');
+  assert.doesNotThrow(() => observer.verifyFrozenSample(ledger));
+  ledger.sample.pop();
+  assert.throws(() => observer.verifyFrozenSample(ledger), /sample-changed/);
+  ledger.sample = observer.selectSample(source).sample;
+  source.dependencies.pop();
+  assert.throws(() => observer.verifyFrozenSample(ledger), /invalid-ledger/);
+});
+
 test('seed deduplicates one upstream source across repositories before freezing', () => {
   const source = inventory();
   source.activeDatasources = ['npm'];
@@ -341,6 +355,21 @@ test('only healthy upstream polls advance last-absent brackets', () => {
   observer.recordPoll(ledger, result(['1.0.0'], absent), absent);
   assert.equal(observer.recordPoll(ledger, result(['1.0.0', '1.1.0'], present), present).events, 0);
   assert.equal(item.events.length, 1);
+});
+
+test('a healthy empty release list establishes the first last-absent bound', () => {
+  const ledger = observer.selectSample(inventory());
+  const item = ledger.sample[0];
+  const absent = '2026-10-18T00:00:00.000Z';
+  const present = '2026-10-18T00:15:00.000Z';
+  const result = (versions, at) => new Map([[item.key, {
+    response: { releases: versions.map((version) => ({ version })) },
+    startedAt: at, finishedAt: new Date(Date.parse(at) + 60_000).toISOString(),
+  }]]);
+  assert.equal(observer.recordPoll(ledger, result([], absent), absent).healthy, 1);
+  assert.equal(observer.recordPoll(ledger, result(['1.0.0'], present), present).events, 1);
+  assert.deepEqual(item.events, [{ version: '1.0.0', lastAbsent: absent,
+    firstPresent: '2026-10-18T00:16:00.000Z', ambiguous: false }]);
 });
 
 test('missed and late observer slots make release timing ambiguous', () => {

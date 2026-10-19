@@ -124,7 +124,7 @@ function recordPoll(ledger, results, at, startedAt = at) {
     const result = observation?.response;
     const startedAt = observation?.startedAt;
     const finishedAt = observation?.finishedAt;
-    if (!result || !Array.isArray(result.releases) || !result.releases.length ||
+    if (!result || !Array.isArray(result.releases) ||
         result.releases.some((release) => typeof release.version !== 'string') ||
         !startedAt || !finishedAt || !Number.isFinite(Date.parse(startedAt)) ||
         !Number.isFinite(Date.parse(finishedAt)) || startedAt > finishedAt) {
@@ -181,6 +181,19 @@ function aggregate(ledger) {
     ambiguousEvents: ledger.sample.reduce((sum, item) =>
       sum + item.events.filter((event) => event.ambiguous).length, 0),
   };
+}
+
+function verifyFrozenSample(ledger) {
+  if (!ledger?.inventory || !Array.isArray(ledger.sample) || !Array.isArray(ledger.polls) ||
+      ledger.inventorySha256 !== digest(JSON.stringify(ledger.inventory))) {
+    throw new Error('invalid-ledger');
+  }
+  const fields = ['repository', 'datasource', 'packageName', 'registryUrl',
+    'currentValue', 'sourceVisibility', 'key'];
+  const identities = (items) => items.map((item) => fields.map((field) => item?.[field]));
+  if (!isDeepStrictEqual(identities(ledger.sample), identities(selectSample(ledger.inventory).sample))) {
+    throw new Error('sample-changed');
+  }
 }
 
 function validTime(value) {
@@ -507,13 +520,13 @@ async function main() {
   const mode = process.argv[2];
   if (mode !== 'poll' && mode !== 'report') throw new Error('invalid-mode');
   privateDirectory();
+  const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
+  verifyFrozenSample(ledger);
   if (mode === 'poll') {
-    const ledger = JSON.parse(fs.readFileSync(ledgerPath, 'utf8'));
     await poll(ledger);
   } else {
     const outcomes = readPrivateOutcomes();
-    console.log(JSON.stringify(aggregateReport(
-      JSON.parse(fs.readFileSync(ledgerPath, 'utf8')), outcomes, verifyPrivateEvidence(outcomes))));
+    console.log(JSON.stringify(aggregateReport(ledger, outcomes, verifyPrivateEvidence(outcomes))));
   }
 }
 
@@ -525,6 +538,7 @@ if (require.main === module) {
   });
 }
 
-module.exports = { selectSample, recordPoll, aggregate, aggregateReport, readPrivateOutcomes,
+module.exports = { selectSample, recordPoll, aggregate, aggregateReport, verifyFrozenSample,
+  readPrivateOutcomes,
   verifyPrivateEvidence,
   readToken, renovateRoot, datasourceApi, poll };
