@@ -40,7 +40,7 @@
     },
     {
       "id": "claim_d48db879d21a41b286ee52884ca861ad",
-      "statement": "Before obtaining a GitHub token, Renovate flushes a 4 KiB cache probe and fails with a storage error if it cannot write; nfs-default cannot resize the PVC, so full backing share capacity must be restored through a declared path after reviewed CronJob suspension.",
+      "statement": "Before obtaining a GitHub token, Renovate flushes a 4 KiB cache probe and fails if it cannot write. The nfs-default 20Gi request neither reserves nor caps NAS storage and the provisioner cannot resize this PVC, so a full share needs capacity restored through a declared path after reviewed CronJob suspension.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L113",
@@ -49,6 +49,14 @@
         {
           "resource": "repo://clusters/homelab/apps/renovate/config.js#L79-L90",
           "version": "repo-lines-v1:sha256:54bfbf610b67a534836fcf72ff6f7838f730f8084a1c485840ebb708bde14537:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ4Nzg2OTVhZWY4YTJhMTg3MjA2OTRhMGY3Nzc5MjFhZGU4YTMwYzcwMWFjZmU2MDFhMTAzM2JkZDQ2YTcyNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlZmQ5NTU4ZTA0M2U4ZGM2YjJjMjVhNjI4ZjdhYjBiZWEwODQwYWRlZWE2Nzk3NmY1MzM0ZjA1NTYyMTE2MzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjIzOGU3ZDk0MmJjNjFhMWNiNDY1MzQ2M2VhZDlmMmFhZTlhM2Q1MmY3MGI3NmE2ZTdkZTFlYTZmY2MxMzc5YTciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRkZWZjNWE3NzVhZDM1Nzg2MzY3NGVmNzMzYzUzODU4NzM2NTc3OTA1YzgxM2Y2M2U5YTU3MmU3MjY5ZDcxYWMifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml",
+          "version": "repo-file-v1:sha256:baa0b8fd82e3bd9616186071554eae058aefe2fa79b7c87e51980030d339e035"
+        },
+        {
+          "resource": "repo://docs/storage-nfs.md",
+          "version": "repo-file-v1:sha256:76451e34f5f4e6d9f52c2bd7d6c899591869aad5ab25337df88a841bda127755"
         }
       ]
     },

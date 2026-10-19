@@ -70,8 +70,6 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-da1c62ec7717f978964e0a11
-    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-c2916697314c2405c38ebc73
     resource: repo://IaC/terragrunt-catalog/modules/entra-google-workspace-federation/main.tf
   - id: openwiki-source-f9b9c190e30dec01f9ffe9c9
@@ -106,7 +104,7 @@ sources:
     resource: repo://scripts/talos-harbor-mirrors.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T17:11:24.506Z" }
+generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
 verified:
   - by: openwiki/0.7.0
     at: 2026-10-19T22:21:44.110Z
@@ -239,8 +237,13 @@ companion writer role. After [#1390](https://github.com/Stuhlmuller/homelab/pull
 merged, the operator applied the private, un-targeted saved plan with only the
 role and inline-policy deletions. A read-only IAM lookup returned
 `NoSuchEntity`, and a fresh full-unit plan had no changes. The hourly CronJob
-is now declared unsuspended in full dry-run mode. Scheduled-run parity remains
-pending; the legacy GitHub Action remains the writer.
+is running in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
+finished all eight eligible repositories and logged the same public release
+cache-key hit on separate Pods; the protected companion canary published
+`v0.0.2` at 20:20 UTC. Normal refresh, fault recovery, full parity, and writer
+cutover remain open. The legacy GitHub Action remains the only writer. The App
+lacks repository Administration read, a recorded migration exception whose
+first write-enabled outcome still needs policy review.
 After dry-run parity and removal of the entire legacy workflow, a guarded
 companion script retires the repository Actions private key only after checking
 the SSM versions, later ExternalSecret projection, absence of same-name

@@ -290,16 +290,16 @@ identity and resolved Harbor through the shared private Traefik listener on
 before they reached Traefik; Renovate reported TLS `ECANCELED`. The
 [repository-owned repair](../../clusters/homelab/apps/renovate/README.md)
 gives the unsuspended full dry-run CronJob a dedicated no-token ServiceAccount
-and a Pod-local
-alias for `harbor.stinkyboi.com` to the registry-only `10.96.0.50:443` Service.
+and a Pod-local alias for `harbor.stinkyboi.com` to the registry-only
+`10.96.0.50:443` Service.
 Istio admits that exact identity only on port 9443. The listener still routes
-only OCI and token paths. Local route tests and rendering pass. The successful
-18:00 UTC scheduled dry run establishes repository coverage, but does not
-establish Harbor transport or version discovery. An eligible post-convergence
-Job must prove transport, expected public/unauthorized responses, and actual
-eligible version discovery before writer cutover. If an
-eligible private source needs a Harbor credential, add a reviewed secret
-contract before enabling writes.
+only OCI and token paths. Local route tests and rendering pass. The 18:00,
+19:00, and 20:00 UTC scheduled scans completed repository coverage without
+reported lookup errors, but none proved an eligible Harbor transport or version
+discovery path. A post-convergence eligible lookup must show transport,
+expected public or unauthorized responses, and actual version discovery
+before writer cutover. If an eligible private source needs a Harbor credential,
+add a reviewed secret contract before enabling writes.
 
 ## Identity And State
 

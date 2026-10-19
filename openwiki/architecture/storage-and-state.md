@@ -22,13 +22,17 @@ sources:
     resource: repo://clusters/homelab/apps/renovate/pvc.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
     resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-b8e8b7405b7234a1ce62dc56
+    resource: repo://clusters/homelab/platform/storage/nfs-subdir-external-provisioner-application.yaml
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-80ce7a2e5d2f59ee74027e0c
+    resource: repo://docs/storage-nfs.md
   - id: openwiki-source-b7865f8f7c461f149710edda
     resource: repo://scripts/ci/renovate-cache-recovery-test.mjs
   - id: openwiki-source-9100b7266ad774f6eeda0265
     resource: repo://scripts/ci/renovate-config-test.js
-generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
+generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
 verified:
   - by: openwiki/0.7.0
     at: 2026-10-19T22:48:59.937Z
@@ -553,17 +557,20 @@ private-package, and repository caches; its working files stay on ephemeral
 storage. The cache includes private package metadata, so restrict access to the
 volume and logs. It is replaceable and has no backup requirement. Argo CD does
 not prune the PVC. Before requesting a GitHub token, each run flushes a small
-write to the claim so a full or unwritable cache fails visibly. This NFS
-provisioner cannot resize the claim; restore backing share capacity through a
-declared path after suspending the CronJob through reviewed GitOps. For
+write to the claim so a full or unwritable cache fails visibly. The `20Gi`
+request neither reserves NAS space nor caps usage: `nfs-default` cannot resize
+PVCs or enforce their requested size. A full export needs restored NAS capacity
+through a declared path; increasing the PVC request cannot restore writes. For
 corruption, suspend the CronJob, clear only cache contents with a reviewed
 temporary GitOps Job, then let the next run rebuild them. See [the workload
 runbook](../../clusters/homelab/apps/renovate/README.md).
 The pinned Renovate recovery fixture confirms missing or malformed package and
 repository cache entries can be rebuilt; the config test confirms a full-claim
-probe stops GitHub access. These are local checks. A live cache-failure cycle
-and its next scheduled recovery still need to be observed before accepting
-the storage behavior.
+probe stops GitHub access. These are local checks. The 19:00 and 20:00 UTC
+scheduled Pods reused the same PVC and each logged one exact public canary
+datasource-key hit with distinct Pod UIDs. The protected `v0.0.2` release was
+published at 20:20 UTC; its normal scheduled refresh, a live cache-failure
+cycle, and next-slot recovery remain to be observed.
 
 ## Staged independent application recovery (HOME-2)
 

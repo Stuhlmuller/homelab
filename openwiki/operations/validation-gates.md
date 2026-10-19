@@ -1983,15 +1983,21 @@ fixtures also enforce that the 15-minute allowed late start plus the 40-minute
 Job runtime ends before the completion alert's 56-minute threshold and the next
 hourly slot. These checks verify declared behavior. The unsuspended full
 dry-run runner passed T017's 18:00 UTC scheduled discovery cycle after the
-17:00 registry mutex timeout; that result does not establish live cache
-recovery, two-Pod cache reuse, full owner/App parity, or write safety.
+17:00 datasource mutex timeout. The 19:00 and 20:00 scheduled Jobs each
+finished all eight eligible repositories with no reported errors and one
+exact public canary datasource-key cache hit on distinct Pods using the same
+bound PVC. This proves observed two-Pod reuse for that key, not general cache
+freshness, eligible Harbor discovery, full owner/App policy parity, or write
+safety.
 The alert fixture also checks a resume just before an hour boundary: it stays
 quiet during the first slot's grace period and alerts if that slot is missed.
 The pinned Renovate 44.167.4 cache fixture checks local recovery from missing
 and malformed package and repository cache entries. Neither fixture proves
 live PVC-failure recovery. Credential transfer and temporary writer-grant
-retirement are complete; two-Pod cache evidence, dry-run parity, and a
-separate seven-day acceptance window remain open gates.
+retirement are complete. The protected companion canary published `v0.0.2`
+at 20:20 UTC; normal scheduled refresh, live cache-failure and missed-cycle
+drills, dry-run parity, writer cutover, and the separate seven-day acceptance
+window remain open gates.
 
 Run `nix develop --command python3 -I scripts/ci/harbor-publish-test.py` for
 publication gates. Its native staging test uses generated local OCI fixtures

@@ -26,16 +26,14 @@ sources:
     resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-2170f836209310971c5e7b70
     resource: repo://docs/secrets-aws-ssm.md
-  - id: openwiki-source-da1c62ec7717f978964e0a11
-    resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
   - id: openwiki-source-fdfe98760ed73d2ac287a83c
     resource: repo://scripts/openclaw-enterprise-startup.py
-generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
+generated: { by: "codex", at: "2026-10-19T20:41:44.125Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-19T20:41:44.125Z
 ---
 
 # AWS SSM Secret References
@@ -69,8 +67,11 @@ merged, an operator applied a private, un-targeted saved plan deleting only
 that role and inline policy. Read-only IAM lookup returned `NoSuchEntity`, and
 a fresh full-unit plan had no changes. A later rotation needs a reviewed
 reintroduction of the exact-scope grant. The hourly CronJob is now declared
-unsuspended in full dry-run mode; scheduled-run parity and the old-writer
-cutover remain separate gates.
+unsuspended in full dry-run mode. Its 19:00 and 20:00 UTC scheduled Jobs each
+finished all eight eligible repositories with no reported errors. The legacy
+GitHub Action remains the only writer. Full App-policy parity, fault recovery,
+the old-writer workflow deletion, guarded Actions-key retirement, and cluster
+writer activation remain separate gates.
 
 ## OpenClaw Enterprise model key
 

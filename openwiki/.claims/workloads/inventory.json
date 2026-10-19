@@ -292,7 +292,7 @@
     },
     {
       "id": "claim_e86ce9046e874b32b67cf8d2377e22d4",
-      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while Harbor transport and version discovery, two-Pod cache evidence, full dry-run parity, and reviewed cutover remain open.",
+      "statement": "The Renovate Application declares an unsuspended hourly UTC full dry-run CronJob with a retained 20 Gi NFS cache, dedicated no-token ServiceAccount, and Harbor host alias to the registry-only Traefik listener. The protected App-key transfer and temporary OIDC writer-grant retirement are complete; T017 accepted the 18:00 UTC scheduled repository scan after the failed 17:00 slot. The legacy GitHub Action remains the writer while eligible Harbor transport and version discovery, full dry-run parity, fault recovery, and reviewed cutover remain open.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
