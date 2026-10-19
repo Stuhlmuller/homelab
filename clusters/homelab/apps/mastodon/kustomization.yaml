@@ -12,6 +12,7 @@ resources:
   - backup-cronjob.yaml
   - configmap.yaml
   - runtime-externalsecret.yaml
+  - database-role-job.yaml
   - migration.yaml
   - bootstrap-job.yaml
   - workloads.yaml

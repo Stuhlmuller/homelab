@@ -25,6 +25,7 @@ metadata:
     app.kubernetes.io/name: mastodon-web
     app.kubernetes.io/part-of: mastodon
   annotations:
+    checkov.io/skip1: CKV_K8S_40=The pinned upstream Mastodon image requires its unprivileged UID 991 to access its private application directory.
     argocd.argoproj.io/sync-wave: '3'
 spec:
   replicas: 1
@@ -37,14 +38,14 @@ spec:
     metadata:
       labels: *id001
       annotations:
-        homelab.stuhlmuller.dev/runtime-revision: v1
+        homelab.stuhlmuller.dev/runtime-revision: v2
     spec:
       serviceAccountName: mastodon
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
-        runAsUser: 65534
-        runAsGroup: 65534
+        runAsUser: 991
+        runAsGroup: 991
         runAsNonRoot: true
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
@@ -145,6 +146,7 @@ metadata:
     app.kubernetes.io/name: mastodon-sidekiq
     app.kubernetes.io/part-of: mastodon
   annotations:
+    checkov.io/skip1: CKV_K8S_40=The pinned upstream Mastodon image requires its unprivileged UID 991 to access its private application directory.
     argocd.argoproj.io/sync-wave: '3'
 spec:
   replicas: 1
@@ -157,14 +159,14 @@ spec:
     metadata:
       labels: *id001
       annotations:
-        homelab.stuhlmuller.dev/runtime-revision: v1
+        homelab.stuhlmuller.dev/runtime-revision: v2
     spec:
       serviceAccountName: mastodon
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
-        runAsUser: 65534
-        runAsGroup: 65534
+        runAsUser: 991
+        runAsGroup: 991
         runAsNonRoot: true
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch
@@ -282,6 +284,7 @@ metadata:
     app.kubernetes.io/name: mastodon-streaming
     app.kubernetes.io/part-of: mastodon
   annotations:
+    checkov.io/skip1: CKV_K8S_40=The pinned upstream Mastodon image requires its unprivileged UID 991 to access its private application directory.
     argocd.argoproj.io/sync-wave: '3'
 spec:
   replicas: 1
@@ -294,14 +297,14 @@ spec:
     metadata:
       labels: *id001
       annotations:
-        homelab.stuhlmuller.dev/runtime-revision: v1
+        homelab.stuhlmuller.dev/runtime-revision: v2
     spec:
       serviceAccountName: mastodon
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 120
       securityContext:
-        runAsUser: 65534
-        runAsGroup: 65534
+        runAsUser: 991
+        runAsGroup: 991
         runAsNonRoot: true
         fsGroup: 65534
         fsGroupChangePolicy: OnRootMismatch

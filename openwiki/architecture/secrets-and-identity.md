@@ -859,12 +859,17 @@ on enforced containment.
 ## Mastodon credential boundary
 
 The [Mastodon declaration](../../IaC/.catalog/units/live/aws-ssm-parameters/terragrunt.hcl)
-adds nine exact `/homelab/mastodon/` parameters and namespace-scoped External
+adds ten exact `/homelab/mastodon/` parameters and namespace-scoped External
 Secrets access. PostgreSQL, Redis, Rails, encryption, VAPID and the initial
 owner password are generated in encrypted state. The external SMTP slot starts
 with a rejected placeholder; the protected
 [SMTP workflow](../../.github/workflows/mastodon-smtp-credential.yml) injects
 only that fixed SecureString from `MASTODON_SMTP_PASSWORD`.
+
+PostgreSQL's protected bootstrap administrator stays separate from the limited
+`mastodon_app` role. A local-socket hook provisions that role from the generated
+`postgres-app-password`; the application template never receives the bootstrap
+password. Redis projects only its own datastore Secret key.
 
 The [runtime template](../../clusters/homelab/apps/mastodon/runtime-externalsecret.yaml)
 mounts configuration, VAPID and SMTP as files. Only the owner-bootstrap Job
