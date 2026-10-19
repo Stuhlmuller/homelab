@@ -82,23 +82,17 @@ test('a pinned-shape report is sealed once with private files and matching hashe
     const { config } = reportConfig(true);
     const paths = config.reportPaths(uid, directory);
     config.prepare(paths);
-    const report = {
-      problems: [],
-      repositories: {
-        'example/repo': {
-          problems: [],
-          packageFiles: { npm: [{ packageFile: 'package.json', deps: [
-            { datasource: 'npm', depName: 'example', currentVersion: '1.0.0' },
-          ] }] },
-          branches: [{ result: 'not-scheduled', prBlockedBy: 'NeedsApproval', upgrades: [] }],
-        },
-      },
-    };
-    const bytes = Buffer.from(JSON.stringify(report));
+    // Produced by pinned Renovate 44.167.4 reporting.js from synthetic extraction and branch cache.
+    const bytes = fs.readFileSync(path.join(__dirname, 'fixtures/renovate-report-44.167.4.json'));
+    const report = JSON.parse(bytes);
+    assert.deepEqual(report.repositories['example/fixture'].branches.map(({ result }) => result),
+      ['not-scheduled', 'needs-pr-approval', 'done']);
+    assert.equal(report.repositories['example/fixture'].branches[2].prNo, 42);
+    assert.equal(Object.hasOwn(report, 'timestamp'), false, 'the receipt supplies the scan time');
     fs.writeFileSync(paths.report, bytes, { mode: 0o600 });
     fs.writeFileSync(paths.log, 'private diagnostic\n', { mode: 0o600 });
     const counts = runner.seal(paths, uid, '2026-10-19T00:00:00.000Z', '2026-10-19T00:01:00.000Z');
-    assert.deepEqual(counts, { repositories: 1, packageFiles: 1, dependencies: 1, branches: 1 });
+    assert.deepEqual(counts, { repositories: 1, packageFiles: 1, dependencies: 1, branches: 3 });
     const receipt = JSON.parse(fs.readFileSync(paths.receipt, 'utf8'));
     assert.equal(receipt.report.sha256, crypto.createHash('sha256').update(bytes).digest('hex'));
     assert.equal(receipt.podUid, uid);
