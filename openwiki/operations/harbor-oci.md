@@ -58,6 +58,8 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/private-core-candidate/README.md
   - id: openwiki-source-6d89464fbd512a9fe7a09d90
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
+  - id: openwiki-source-bd06d6b0499111fbfe3b1e84
+    resource: repo://clusters/homelab/apps/litellm/values.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
@@ -124,6 +126,8 @@ sources:
     resource: repo://scripts/config/harbor-dns-images.json
   - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
     resource: repo://scripts/config/harbor-images.json
+  - id: openwiki-source-f9b3281815e3adb0fb2d9b59
+    resource: repo://scripts/config/harbor-litellm-images.json
   - id: openwiki-source-0a19fa5d8cf9ed1986095969
     resource: repo://scripts/config/harbor-mastodon-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
@@ -137,7 +141,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T06:14:05.634Z
 ---
 
 # Harbor Private OCI Registry
@@ -450,6 +454,17 @@ failure at `08:53:38.389Z`, matching
 Child writes succeeded, but the parent was unavailable by digest and either tag.
 Keep immutable source bytes and attestations intact; no live schema repair or
 index normalization is part of the ingress cutover.
+
+A fresh full-catalog attempt on October 19 (run `39190983355`)
+hit the same index and PostgreSQL constraint. The upstream index repeats the
+Linux amd64 child `sha256:2791e3241d7fa59ad942c54c237fb0d53a140b52fad2bd4b40c14a873dbc14a8`;
+all four observed nodes use amd64. The fixed
+[LiteLLM scope](../../scripts/config/harbor-litellm-images.json) adds that
+digest-only child to the catalog while leaving the running index pin intact.
+Its protected dispatch preserves the child manifest bytes and requires a
+complete authenticated Harbor pull. Require that scoped receipt before a
+separate consumer/catalog PR; then rerun the full catalog. This first stage
+does not prove full coverage or authorize strict Talos mirrors.
 
 The two-image Traefik scope can publish the native probe independently of this
 full-catalog incompatibility. A scoped receipt still proves only selected image

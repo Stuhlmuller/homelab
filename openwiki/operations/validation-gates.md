@@ -84,6 +84,8 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/entra-owner-mail/main.tf
   - id: openwiki-source-a3ec8939cc4b10401bd16cd8
     resource: repo://policy/kubernetes.rego
+  - id: openwiki-source-8853fb993dc68b93d8f20498
+    resource: repo://policy/workflows.rego
   - id: openwiki-source-23775c3de52f3ab95a13cb8b
     resource: repo://README.md
   - id: openwiki-source-714484b73b4ba165201cb06d
@@ -100,6 +102,8 @@ sources:
     resource: repo://scripts/ci/harbor-core-scan-check.py
   - id: openwiki-source-faf0c71b216725764a045c19
     resource: repo://scripts/ci/harbor-core-source-test.py
+  - id: openwiki-source-fb4f4b5b36278b2db27610f2
+    resource: repo://scripts/ci/harbor-images-check-test.py
   - id: openwiki-source-987548d3c95bf43aede062de
     resource: repo://scripts/ci/harbor-images-check.py
   - id: openwiki-source-d5f1c32d62a29aa3ee78ec67
@@ -160,6 +164,10 @@ sources:
     resource: repo://scripts/ci/traefik-routes-test.py
   - id: openwiki-source-c78947a32d84fb4e618c32da
     resource: repo://scripts/ci/traefik-runtime-check.py
+  - id: openwiki-source-d7eb11085c35d4a03ba4c1a2
+    resource: repo://scripts/config/harbor-images.json
+  - id: openwiki-source-f9b3281815e3adb0fb2d9b59
+    resource: repo://scripts/config/harbor-litellm-images.json
   - id: openwiki-source-85a2ae8a5ccc5550950c86b5
     resource: repo://scripts/config/harbor-renovate-images.json
   - id: openwiki-source-8a05c67bc78632e51f4366db
@@ -187,7 +195,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:30:44.377Z
+    at: 2026-10-19T06:14:05.634Z
 ---
 
 # Validation Gates
@@ -1788,10 +1796,18 @@ selected-image pull verification. A successful scoped run proves only those nine
 components; the LiteLLM duplicate-index failure still blocks full-catalog
 acceptance.
 
+The fixed LiteLLM scope selects the one reviewed Linux amd64 child digest
+from the current repeated-descriptor index. The catalog still retains the
+running index until a later consumer change. Coverage and publisher fixtures
+reject a missing, altered or extra scope entry before credentials. The shared
+publisher verifies original manifest bytes and a fresh complete authenticated
+Harbor pull; these source tests do not publish the child or clear full-catalog
+coverage.
+
 The fixed Renovate scope contains seven cataloged update digests. Publisher
 fixtures reject an unreviewed scoped entry and exercise its selected-image
-copy and authenticated-pull path. The workflow's exact security hash is
-updated with the new choice; a passing fixture does not publish the images or
+copy and authenticated-pull path. The workflow's exact security hash
+locks the reviewed fixed-scope choices; a passing fixture does not publish the images or
 validate consuming workloads.
 
 The staged hourly Renovate runner has a credential-free config and discovery
