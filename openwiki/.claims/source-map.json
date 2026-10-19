@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f69024648dc97fe92e2e060d61903f2fa7072596d17dbbe9f65c78f4a65f8002",
+  "pageVersion": "sha256:d69498fe97d1dfb1c0dd63fae22ab954502cfb686e5c8c3bc8aabbad8ec1c6bd",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -138,7 +138,7 @@
     },
     {
       "id": "claim_7566d0aeb96246d4b80d6fa470a9de75",
-      "statement": "The unregistered OpenClaw Enterprise foundation directory owns dormant namespace, ExternalSecret, TLS and network policy declarations, while the Enterprise Python helper owns fail-closed API reconciliation and the focused CI test checks that foundation.",
+      "statement": "The unregistered OpenClaw Enterprise foundation directory owns dormant namespace, ExternalSecret, TLS and network policy declarations; the Python helper owns fail-closed API reconciliation and exact origin/model validation, with separate foundation and reconciler fixtures in CI.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
@@ -149,14 +149,22 @@
           "version": "repo-file-v1:sha256:b2a3c458be7cd2c9b9a5bc9a1786b679c8c4574705fc3cb66277b133e14cbbdf"
         },
         {
-          "resource": "repo://scripts/openclaw-enterprise.py#L1-L104",
-          "version": "repo-lines-v1:sha256:95c055faa5f894110725bd5cd025c5e42fdcf804523828af6c4fb7c83c36bc1c:eyJzZWxlY3RlZExpbmVDb3VudCI6MTA0LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkNjgyY2JkYjRjOGIwNzUxOGJmNDg2YzU4OTkwZmMzOTE3ODNhYTIwYTkxNmJmYjI3YWQyMTFlYjFkNWMzNjQyIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwMWJhNDcxOWM4MGI2ZmU5MTFiMDkxYTdjMDUxMjRiNjRlZWVjZTk2NGUwOWMwNThlZjhmOTgwNWRhY2E1NDZiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MCwicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0MTYzM2ZhOTc1MjlmNjdiOGRmMDJjY2IwMDAxZGM0NzkxNWQ3MWRiNTc5NDU1YTI3ZDIwY2ZjM2UwYWJhY2Y2In0"
+          "resource": "repo://scripts/ci/openclaw-enterprise-test.py",
+          "version": "repo-file-v1:sha256:c74a533bf67b99c3d6a34d6f3ae6a56a82bcfc266d6d11f399d2d2ea95bc7c5c"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L28-L35",
+          "version": "repo-lines-v1:sha256:567f60d117527d73d780eb3f54a74d7aa1d011a0e2b04568e8f319ccc461cc8b:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNmMwY2FmNDQxYTFhYWQyMjQwZTdhYWNjYmIyYTczOTE1ZmM1Y2U2MmE5MGViODU3ODM2ZDkwNWM2ODc2MGM3ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjcwMDYyMTBiYzczMTZiNDZiZTk4YzRkNDMxMDFlOWE2ZjAzYWU0MzU4ODY5MDQ3MWYxNGZjMjYxZmFmYjQ3YiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjI2N2Y5ZmFmNzA0YTEwODAyN2U5ZjJkYmRhNjc4Njk2ODIzNDkwYmQ0OTVkM2QxOTcyYTA0YTE1YTU3NmIyOCJ9"
+        },
+        {
+          "resource": "repo://scripts/openclaw-enterprise.py#L58-L159",
+          "version": "repo-lines-v1:sha256:64e363f032ea9f5da6359bc746e3e5e4892d006c06eaa01e2b698633a2707412:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIxNTYxZTY4OWQ0MTk2NWUwYWQyOTMxYWJkM2Q2YjA5NzA0NjQwN2Y0MTY1ODgyNTg5YjdmMmZjZWZjOTZmNDg3IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIyYWU1MmVjODU5MzFiOTUxZDU3MzllZjkzNjQxYTRmZTRlZjQyYmJkYTliZTMwN2UyMzBlZWMzYmNhYjJmOGQxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiOWJjYTUxYmViZTk5ZjU2ZmJlZjdkNGE2ZDRlNTFiNDRkNzU3OGQxMTcxNGU5ZjE4Mjg3NDlmMDhlZWQwMjFkIiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI0OWQ4NjlkMGJmNzY3MjA3MTI2NzkxZWU1MTc2YzhlYmU3MGIyNWNiOWE0OWY0M2QyMjdjMTYzYzA0ZmJhMmM3In0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T07:43:16.273Z"
+    "at": "2026-10-19T08:18:59.770Z"
   }
 }
