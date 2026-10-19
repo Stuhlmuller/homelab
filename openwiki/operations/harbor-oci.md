@@ -152,10 +152,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
+generated: { by: "codex", at: "2026-10-19T14:58:52.418Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T14:01:19.597Z
+    at: 2026-10-19T14:58:52.418Z
 ---
 
 # Harbor Private OCI Registry
@@ -822,6 +822,10 @@ Harbor digest; if Skopeo cannot preserve the digest while copying an alias,
 `regctl` retries that alias from Harbor. These exact conversion fallbacks use
 `regctl` for the fresh complete authenticated pull. Other copy errors stop
 publication, and every selected artifact still needs digest and alias checks.
+Before copying an alias, the publisher retries a transient Harbor alias lookup
+up to three times. An expected missing-alias response proceeds to copy; an
+authentication error or other hard lookup failure stops publication. A retry
+does not replace the final digest, alias, and authenticated pull checks.
 The [native offline regression](../../scripts/ci/harbor-publish-test.py) checks
 both architecture children and repeated index descriptors through directory
 staging and a second copy. Its generated local OCI fixtures reject network
