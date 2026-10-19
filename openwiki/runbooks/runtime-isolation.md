@@ -8,8 +8,6 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/networkpolicy.yaml
   - id: openwiki-source-18a0bbca47813e2e084aa71b
     resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
-  - id: openwiki-source-95cce4aa4d0f7c4802f5fdd5
-    resource: repo://clusters/homelab/apps/kiali/README.md
   - id: openwiki-source-448cbe27130e9e3c4e8b10b3
     resource: repo://clusters/homelab/apps/kiali/values.yaml
   - id: openwiki-source-259f9ac5704d0293a7850944
@@ -20,8 +18,6 @@ sources:
     resource: repo://clusters/homelab/apps/octelium-public/configmap.yaml
   - id: openwiki-source-92921fc2790f07b9b1a48bd3
     resource: repo://clusters/homelab/apps/octelium-public/networkpolicy.yaml
-  - id: openwiki-source-1765d2b8de68537c36f7221e
-    resource: repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -40,12 +36,10 @@ sources:
     resource: repo://scripts/network-policy-inventory.py
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-  - id: openwiki-source-4f1f492ff2ee386585deee86
-    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
-generated: { by: "codex", at: "2026-10-19T22:22:06.612Z" }
+generated: { by: "codex", at: "2026-10-19T22:24:55.069Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T22:22:06.612Z
+    at: 2026-10-19T22:24:55.069Z
 ---
 
 # Runtime Isolation
@@ -58,15 +52,14 @@ intent-only while Flannel is the sole active CNI and the staged firewall-only
 kube-router Application selects no node.
 
 Kiali's [repository ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
-stages an ownership handoff for the operator-generated `monitoring/kiali` rule.
-It retains the same Kiali pod selector and source-unrestricted TCP 20001/9090
-ports. Argo CD applies the replacement `kiali-server-ingress` at wave 0; the
-[Kiali CR](../../clusters/homelab/apps/kiali/values.yaml) disables the
-operator policy at wave 1, and the pinned operator deletes only the old name.
-The source handoff does not prove live convergence, narrower access, or
-NetworkPolicy enforcement. Confirm Kiali access through Octelium and the
-Prometheus scrape after sync; the [T018 policy review](../../specs/003-replace-openclaw-enterprise/tasks.md)
-and isolated enforcement canary remain open.
+replaced the operator-generated `monitoring/kiali` rule without changing its
+Pod selector or source-unrestricted TCP 20001/9090 ports. Argo CD applies
+`kiali-server-ingress` at wave 0; the [Kiali CR](../../clusters/homelab/apps/kiali/values.yaml)
+disables the operator policy at wave 1. The [October 19 read-only recheck](../../docs/evidence/openclaw-enterprise-policy-review.json)
+found the old policy absent and the replacement's complete spec equal to the
+former rule and source manifest. This proves ownership convergence, not narrower
+access or enforcement. Octelium access, Prometheus scraping, and the isolated
+enforcement canary remain open under [T018](../../specs/003-replace-openclaw-enterprise/tasks.md).
 
 ## Declared peer narrowing
 
@@ -108,7 +101,11 @@ stateful workloads. Compare private read-only Pod/NetworkPolicy snapshots and
 all rendered policies with `scripts/network-policy-inventory.py`. Its review
 fingerprints now cover ingress and egress, and missing or drifted ingress-only
 generated policies fail the inventory. Obtain exact generator renders and a
-fresh read-only snapshot before the canary. Qualify
+fresh read-only snapshot before the canary. The [source-owner ledger](../../docs/evidence/openclaw-enterprise-policy-review.json)
+pins source locations for the original 18 generated policies; 17 still match
+their earlier full-spec hashes after Kiali's handoff. Cordium `ws-main` and
+Octelium `svc-upstream` retain broad public egress findings, and generator
+renders and real traffic remain unqualified. Qualify
 allowed DNS/API/storage/mesh traffic and denied direct IP, alternate port,
 IPv6, and gateway bypass on the canary. Prove enforcer restart, API loss,
 IP reuse, rescheduling, cold reboot, and ownership-limited cleanup before

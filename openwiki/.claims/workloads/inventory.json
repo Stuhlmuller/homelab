@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b446c5d7cc79460f0b4561bb02f5549b2a38d9173693014c0666d51070ac6351",
+  "pageVersion": "sha256:fc9747d065bc28032d8c65c91e05edafa21481152149f82c5477b1d223f26a4c",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -458,12 +458,8 @@
     },
     {
       "id": "claim_dbff4878e83b486cbd0847a96ca87c45",
-      "statement": "The Kiali source stages a distinct repository-owned ingress NetworkPolicy at Argo CD wave 0 before its wave-1 custom resource disables the operator-generated policy; the rule retains the observed unrestricted-source TCP 20001/9090 contract, and live handoff and enforcement qualification remain open.",
+      "statement": "Kiali's source-owned ingress policy replaces the operator-generated policy with an equivalent complete TCP 20001/9090 spec. The read-only recheck found the operator policy absent and source policy present; Octelium and Prometheus traffic, broad-source review, and isolated canary enforcement remain open.",
       "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/kiali/README.md",
-          "version": "repo-file-v1:sha256:22ac78c4a460441d2137cc4d996abb698219b721b0df29ac172de8ab5498b27a"
-        },
         {
           "resource": "repo://clusters/homelab/apps/kiali/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
@@ -471,6 +467,10 @@
         {
           "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
           "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:294a59451562f387851c2cc0a282586326111c76e348bbca42f77bc2988eb644"
         }
       ]
     },
@@ -484,7 +484,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
+          "version": "repo-file-v1:sha256:294a59451562f387851c2cc0a282586326111c76e348bbca42f77bc2988eb644"
         },
         {
           "resource": "repo://scripts/ci/offline-static-checks.sh",
@@ -521,6 +521,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T21:47:25.268Z"
+    "at": "2026-10-19T22:24:55.069Z"
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:c164247926d9c7640e6d526ef9b3f25889b6438793d2ce7f7c51a36e26946d04",
+  "pageVersion": "sha256:f07e5e23ca935d8cf02af5c76a4d52d71e40fd0d859729eb13a20f41f6fd195a",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -8,7 +8,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/platform/network-policy/README.md",
-          "version": "repo-file-v1:sha256:089c2e395615ab3ac94b42e42d52c55100fe0974e57b7e83cb73640c35ec7900"
+          "version": "repo-file-v1:sha256:22abc6be8414362a1b7bc7a005a2068cc2b9b413971523baf308f00721dc43a4"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
@@ -26,30 +26,22 @@
     },
     {
       "id": "claim_3a03a33eef1c45b4a4fd071facb605ef",
-      "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, admitted tainted node, and exact fixture commands, arguments, container security contexts, identities, and policy before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification unverified.",
+      "statement": "The protected network-policy qualifier verifies the live firewall-only DaemonSet and scoped RBAC, the admitted tainted node, and exact fixture identities before TCP/UDP allow-deny probes; its private receipt leaves lifecycle and real-workload qualification explicitly unverified.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/README.md#L40-L54",
-          "version": "repo-lines-v1:sha256:c30f3c64d8a4ed0b2b9409d6c201a8bda5c3f948b6d3b17a2c3b56dc51fdc045:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzOWI2MmY1MGYyZjEwZmY5NzgxODA2YzMzY2Y5NWZiNGVkNzlmYmY4ZTZlN2YxM2E0NzdkNDMxNWM2MzBjMjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU3ZTQ3ZjlhMWYyZDI2MTg0ZTRiNmM2NzhiYWViYjY3OTBmYTY2NzhhYzIyMWNlZTJkNTEyNWJlYmE4ZjA2YjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNjVmYzgzNzIzNDU3ZTIwMWQ1ZGE3NjA0NzZiOTA3M2JmMGUyM2NiYzMwZjJlMWY5ODlmMjUzMjFjM2ViNGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhY2M3NjY0YTM3YzI4MGI5ZTBjNTU2OGY1ODUxMjBhYjJmOTc5YjZlNTFmMmFiOTYyYjNhODBmMzU1OTk0YTYifQ"
+          "resource": "repo://clusters/homelab/platform/network-policy/README.md",
+          "version": "repo-file-v1:sha256:22abc6be8414362a1b7bc7a005a2068cc2b9b413971523baf308f00721dc43a4"
         },
         {
-          "resource": "repo://clusters/homelab/platform/network-policy/canary/fixtures.yaml#L20-L210",
-          "version": "repo-lines-v1:sha256:1e6f33fb6e1aa167d543c2768b0b74ef1d02c48bae2628a76c4926b766c79d53:eyJzZWxlY3RlZExpbmVDb3VudCI6MTkxLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzYWQyMDFmYjJkNjc0MzZjMTAxNDZkYTZiMGIzYjJlZTQ3YTNlNDFkMDZiZTIyMzcyOGI1NWIwOGY4Y2I2MjcwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzOTg2ZDRmMmI2MWQwOTJjNzJiZmU1MGU4YTJlYWI4NTFlZDE3MzlkOWY5YjA1OTMxOGQ2MjIwMjY4ZGIyYTNiIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI4ZmVmZTA1OGY4NzMwOWMyNjU3NzRmMzAwYTdhYTg0MGJhYTU0MWJhZjM2Y2Q5YjgwODQwNjgzNzY2MzhlZTU3IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI2NTkyMjIxYWFlMzQxZDA4NTEwYjk1NWY2YWFhN2JkM2M0YTFkOTAxZDk2N2IxODRlZjJjOThjMTFkZTQzYTVmIn0"
-        },
-        {
-          "resource": "repo://scripts/network-policy-qualification.py#L196-L279",
-          "version": "repo-lines-v1:sha256:8bf6e3138a0862486c94c3f796c654d61751b4dd7ddd4c7cb6dbb5549dcfba4e:eyJzZWxlY3RlZExpbmVDb3VudCI6ODQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxMWZjZTA2YTk1NDM1OTAxZjk2M2M3Zjc5MjEyN2U0OWJkNzEwYTYzNDljYTAyZTBmZjQ2OThkNzcwZTIzMDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2NzNkNmJmOTJhY2I2ZTE4ZmExMjI4YjkwMzYyYTM3ZGVhZDYwYzExZmY3NGE1Mjk1OGZlNGFhNjI1ZGNlM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3MDcyNzcyZmNlODQ3MWMzN2RkMjg0M2UzMjczMTI5MzdmZjI3MmI4NTJhNDZlZDZiMDEzODA5YzkzZDZlNmIifQ"
+          "resource": "repo://scripts/network-policy-qualification.py",
+          "version": "repo-file-v1:sha256:4a11d43c6c0b2fe415922a7d6accbc83639b9c1c544cb036dce53aeb051b5ba0"
         }
       ]
     },
     {
       "id": "claim_73469053f76b42e68fc38df4e36672d2",
-      "statement": "The Kiali source stages a name-distinct ingress NetworkPolicy at Argo CD wave 0 with the same pod selector and unrestricted TCP 20001/9090 ports as the pinned operator output; the wave-1 Kiali CR disables the operator-owned policy, whose delete task targets only the old name. Live handoff, T018 review and enforcement proof remain open.",
+      "statement": "The Kiali source applies a name-distinct ingress policy at wave 0 and disables the operator policy at wave 1 without changing the broad TCP 20001/9090 spec; an October 19 read-only recheck found the old policy absent and the source-owned replacement equal to the former complete spec, while traffic and enforcement proof remain pending.",
       "evidence": [
-        {
-          "resource": "repo://clusters/homelab/apps/kiali/README.md",
-          "version": "repo-file-v1:sha256:22ac78c4a460441d2137cc4d996abb698219b721b0df29ac172de8ab5498b27a"
-        },
         {
           "resource": "repo://clusters/homelab/apps/kiali/networkpolicy.yaml",
           "version": "repo-file-v1:sha256:2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
@@ -59,8 +51,8 @@
           "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
         },
         {
-          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md#L101-L106",
-          "version": "repo-lines-v1:sha256:310d2c78cf7f314f3444e47893f1c55673c70a1ac3e2f96624217f914cdb76ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ0MDMwMDJlZDAyM2VhNDEzM2FmODRmZWM4NjA4YzY5ZDE5OTg2MTAwMTljMGE5OGQwYTQ0YjM0YjVlY2E3OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzUxYjIyN2M4YzNhYjdlYmIwNGMyMTcxYTZmZTcwZWFjYmZhOTM2ODE2OGEwN2IyMzQxYWM1OWVkNTU2MTNhZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTM4N2U5M2UzYTUyNGZjNWU3ODg3NTkzOWIxODBjNDE4YTkwN2Y4ODc0NWRmZDllMmMxMzUzMTMwZTVjMTEwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjE1ZDEzODRmNDhiYmY5MjYwNzU1ZDJhZTgyMGYyODFhYjYzMmJlMDA0NWRhZTM2NjdiNjM4NzUzNjc3ZWNhMyJ9"
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:294a59451562f387851c2cc0a282586326111c76e348bbca42f77bc2988eb644"
         }
       ]
     },
@@ -70,7 +62,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
-          "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
+          "version": "repo-file-v1:sha256:294a59451562f387851c2cc0a282586326111c76e348bbca42f77bc2988eb644"
         },
         {
           "resource": "repo://docs/runtime-isolation.md",
@@ -143,10 +135,24 @@
           "version": "repo-file-v1:sha256:d1ad47ac92605795d46da0e657cf3e5d3aa132825fdbbd7724c037a814ecabd3"
         }
       ]
+    },
+    {
+      "id": "claim_e39c23c5f3b74dbcb878461c9b40a289",
+      "statement": "The generated policy source-owner ledger pins the original 18 policy source locations; 17 remaining generated full-spec hashes still match the prior live snapshot, while Cordium ws-main and Octelium svc-upstream retain broad egress findings and generator renders and canary traffic remain unqualified.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:294a59451562f387851c2cc0a282586326111c76e348bbca42f77bc2988eb644"
+        },
+        {
+          "resource": "repo://scripts/network-policy-inventory.py",
+          "version": "repo-file-v1:sha256:66f3541bee43fa3c9b50ea8efed997434251407b2d462893abb7d36c6a5698eb"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T22:22:06.612Z"
+    "at": "2026-10-19T22:24:55.069Z"
   }
 }
