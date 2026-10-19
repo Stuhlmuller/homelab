@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:f64799a614f25e11e856d91040a967f4d6649df782c22bcea2022f6d066639dd",
+  "pageVersion": "sha256:51c5644db1a18d8a93b01408adb1de568d74ce965e9b83815e9d3731a6aecc5e",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -794,7 +794,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:76426fb1f3fc7d399923e3f7247f422ebcbbba569a655cee691bcb54acdce34f"
+          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
         }
       ]
     },
@@ -804,7 +804,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
+          "version": "repo-file-v1:sha256:c902820dbe0f3d7efb797d17d161d3ee3a369a628353d0bd9d91a2e7120a341b"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -840,7 +840,7 @@
       "evidence": [
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://scripts/ci/harbor-images-check-test.py",
@@ -874,7 +874,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://docs/openclaw-enterprise-rollout.md",
@@ -1089,6 +1089,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-19T18:14:29.076Z"
   }
 }

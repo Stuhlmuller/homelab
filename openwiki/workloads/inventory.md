@@ -24,6 +24,12 @@ sources:
     resource: repo://clusters/homelab/apps/fleet/FREE-ENTRA.md
   - id: openwiki-source-b935b76b60643a425fe849c6
     resource: repo://clusters/homelab/apps/fleet/README.md
+  - id: openwiki-source-18a0bbca47813e2e084aa71b
+    resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
+  - id: openwiki-source-95cce4aa4d0f7c4802f5fdd5
+    resource: repo://clusters/homelab/apps/kiali/README.md
+  - id: openwiki-source-448cbe27130e9e3c4e8b10b3
+    resource: repo://clusters/homelab/apps/kiali/values.yaml
   - id: openwiki-source-3ee445a5390585cab7a1edab
     resource: repo://clusters/homelab/apps/langfuse/README.md
   - id: openwiki-source-827cecf9eca9139ac8e7367a
@@ -112,8 +118,6 @@ sources:
     resource: repo://docs/harbor-image-mirroring.md
   - id: openwiki-source-8f8dab72ff0b7636d31aef4b
     resource: repo://docs/openclaw-enterprise-rollout.md
-  - id: openwiki-source-f19aa740c5d820d4dd28114e
-    resource: repo://docs/operator-infrastructure.md
   - id: openwiki-source-8a1a5b8d575c44deffc46d40
     resource: repo://docs/rollback-argocd-apps.md
   - id: openwiki-source-59f51b5800f473496977b52a
@@ -128,8 +132,6 @@ sources:
     resource: repo://IaC/platform-image-policy/stack.hcl
   - id: openwiki-source-e3e84b128839afbc47f478f7
     resource: repo://IaC/platform-network-policy/stack.hcl
-  - id: openwiki-source-9324a7b2a44defc4437d288b
-    resource: repo://IaC/renovate/stack.hcl
   - id: openwiki-source-39e11b90e7410131b2dc0a6e
     resource: repo://IaC/tailnet-dns/stack.hcl
   - id: openwiki-source-25f75cdd2a576d57bb951a93
@@ -147,7 +149,7 @@ sources:
 generated: { by: "codex", at: "2026-10-19T17:05:04.757Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T17:05:04.757Z
+    at: 2026-10-19T18:17:18.323Z
 ---
 
 # Workload Inventory
@@ -339,6 +341,14 @@ CI transport remain until replacement client, callback and CI paths pass
 | `nofx`                 | `nofx`             | `clusters/homelab/apps/nofx`                    | `IaC/live/argocd-apps/nofx`                 | trading app at `https://nofx.stinkyboi.com` via Octelium `homelab-human-web-access` plus a second NOFX-owned login; backend SQLite data, backtest runs, and logs on the retained `nofx-data` NFS claim; absolute binary runs from `/app/data` so relative writes preserve the read-only image root; private maintained derivative in `builds/nofx` with published, signed OKX US cash-spot images and per-agent ledger ownership (runtime acceptance pending), declared by digest from Harbor with `harbor-pull` references; rollout requires authenticated pulls, fresh Secret readiness, stopped traders, and inactive simulations; allocations require explicit operator amounts; generated JWT, data-encryption, and RSA transport-encryption keys from `/homelab/nofx/*` SSM parameters                                  | external-secrets, harbor, istio, octelium, octelium-public, platform-storage, litellm (after gateway image rollout) |
 | `renovate` | `automation` | `clusters/homelab/apps/renovate` | `IaC/renovate/stack.hcl` | Hourly UTC CronJob, declared unsuspended in full dry-run mode; protected App-key transfer and temporary writer-grant retirement verified, with the legacy Action still writing pending dry-run parity and cutover; retained 20 Gi NFS cache with [reviewed recovery](../architecture/storage-and-state.md#renovate-cache); dedicated no-token ServiceAccount and Pod-local Harbor alias target the registry-only Traefik listener; a manual dry run occurred, but the [Harbor lookup gap](../operations/harbor-oci.md#renovate-docker-lookup-gap-2026-10-19-utc) leaves live route and scheduled Job acceptance pending | aws-ssm-parameters, external-secrets, platform-storage, traefik, istio, harbor |
 | `policy-bot`           | `automation`       | `clusters/homelab/apps/policy-bot`              | `IaC/live/argocd-apps/policy-bot`           | stateless GitHub App policy evaluator; one replica after SSM placeholders are replaced; declares `https://policy-bot-hook.tail67beb.ts.net/api/github/hook` through Funnel; the fixed helper moves the App registration after preflight and requires fresh signed-delivery acceptance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | external-secrets, cert-manager, istio                                                                               |
+
+Kiali's [source-staged ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
+uses a distinct name at Argo CD wave 0 before the wave-1
+[Kiali CR](../../clusters/homelab/apps/kiali/values.yaml) disables the
+operator-generated `monitoring/kiali` policy. It preserves the observed
+unrestricted-source TCP 20001/9090 contract. The handoff still needs live
+reconciliation and Octelium/Prometheus traffic checks; broad-source review and
+the network-enforcement canary remain open in [Runtime Isolation](../runbooks/runtime-isolation.md).
 
 The OpenClaw Enterprise replacement is staged in source with
 `activationEnabled: false`; no Enterprise controller, gateway, or

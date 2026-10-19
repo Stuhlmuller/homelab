@@ -4,6 +4,12 @@ title: "Runtime Isolation"
 description: "Current Pod Security and Istio boundaries, plus dormant firewall-only kube-router NetworkPolicy prerequisites and canary gates."
 tags: ["runbook", "security", "kubernetes"]
 sources:
+  - id: openwiki-source-18a0bbca47813e2e084aa71b
+    resource: repo://clusters/homelab/apps/kiali/networkpolicy.yaml
+  - id: openwiki-source-95cce4aa4d0f7c4802f5fdd5
+    resource: repo://clusters/homelab/apps/kiali/README.md
+  - id: openwiki-source-448cbe27130e9e3c4e8b10b3
+    resource: repo://clusters/homelab/apps/kiali/values.yaml
   - id: openwiki-source-994a8289757a8dfdfff70e1b
     resource: repo://clusters/homelab/platform/network-policy/README.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
@@ -14,10 +20,12 @@ sources:
     resource: repo://docs/runtime-isolation.md
   - id: openwiki-source-a347fb1739a2d297e214f41a
     resource: repo://scripts/network-policy-qualification.py
-generated: { by: "codex", at: "2026-10-19T10:02:28.692Z" }
+  - id: openwiki-source-4f1f492ff2ee386585deee86
+    resource: repo://specs/003-replace-openclaw-enterprise/tasks.md
+generated: { by: "codex", at: "2026-10-19T18:14:29.076Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T10:09:06.381Z
+    at: 2026-10-19T18:14:29.076Z
 ---
 
 # Runtime Isolation
@@ -28,6 +36,17 @@ Pod Security, service accounts, Istio authorization, and workload security
 contexts are enforced desired state. Existing `NetworkPolicy` objects remain
 intent-only while Flannel is the sole active CNI and the staged firewall-only
 kube-router Application selects no node.
+
+Kiali's [repository ingress policy](../../clusters/homelab/apps/kiali/networkpolicy.yaml)
+stages an ownership handoff for the operator-generated `monitoring/kiali` rule.
+It retains the same Kiali pod selector and source-unrestricted TCP 20001/9090
+ports. Argo CD applies the replacement `kiali-server-ingress` at wave 0; the
+[Kiali CR](../../clusters/homelab/apps/kiali/values.yaml) disables the
+operator policy at wave 1, and the pinned operator deletes only the old name.
+The source handoff does not prove live convergence, narrower access, or
+NetworkPolicy enforcement. Confirm Kiali access through Octelium and the
+Prometheus scrape after sync; the [T018 policy review](../../specs/003-replace-openclaw-enterprise/tasks.md)
+and isolated enforcement canary remain open.
 
 ## Egress enforcement prerequisite
 

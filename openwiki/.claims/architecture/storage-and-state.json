@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:9b2129ab12d73221af8b22ca5d93f310de736e890cdc924edb8744095d41ce0a",
+  "pageVersion": "sha256:62ebb8e67eddd060afea7b0d0933a49dd8f7e04eec517abf99bd133702059b72",
   "claims": [
     {
       "id": "claim_811fecbf7d96434297a5c741d52e0d91",
       "statement": "Renovate retains a 20 GiB nfs-default PVC for datasource, private-package, and repository caches, while working files use ephemeral storage.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L68-L72",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L69-L73",
           "version": "repo-lines-v1:sha256:d3324ca24a463beb26511d43f38ae1abc5b99b355fda9f779b6fea3252bc92f7:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTBhZjU4NmQzZTUxNTg1NmRmNTFmZGFhZGY0YTU4ZGQ3YWJjYzcxM2JlYjY2NjYyMzUzMzRmZTQyMGU5OTliZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTc0NmEwNjY0OGJlYmJmN2M2ZWUyNjFhZGI4YmU5NjFlNTA0ZjJiYzhhYWI1ZTEzY2ZmZmE0OTc2NTcyYzJiMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmE2Nzk2MWQ2OTE2NzEzMmFhYjNhYjc5MGYxYWZjOTE3OGU0MDg0YzQ2NGUxY2Y0ODZmMjkxZWVhYjc0MGNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjdkODNlYzUwNTViYjIyMTIzZGFhNDUwN2JlM2YzZDFlYzMzZDA5N2NkODQ0Y2Y5YzkwMzYxNmVmZDBhMWEzYSJ9"
         },
         {
@@ -25,11 +25,11 @@
       "statement": "The Renovate cache is replaceable and unbacked, while Argo CD does not prune its PVC; corruption recovery suspends scans and uses a reviewed temporary GitOps Job to clear only cache contents.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L68-L72",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L69-L73",
           "version": "repo-lines-v1:sha256:d3324ca24a463beb26511d43f38ae1abc5b99b355fda9f779b6fea3252bc92f7:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTBhZjU4NmQzZTUxNTg1NmRmNTFmZGFhZGY0YTU4ZGQ3YWJjYzcxM2JlYjY2NjYyMzUzMzRmZTQyMGU5OTliZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTc0NmEwNjY0OGJlYmJmN2M2ZWUyNjFhZGI4YmU5NjFlNTA0ZjJiYzhhYWI1ZTEzY2ZmZmE0OTc2NTcyYzJiMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmE2Nzk2MWQ2OTE2NzEzMmFhYjNhYjc5MGYxYWZjOTE3OGU0MDg0YzQ2NGUxY2Y0ODZmMjkxZWVhYjc0MGNkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjdkODNlYzUwNTViYjIyMTIzZGFhNDUwN2JlM2YzZDFlYzMzZDA5N2NkODQ0Y2Y5YzkwMzYxNmVmZDBhMWEzYSJ9"
         },
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L111-L124",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L112-L125",
           "version": "repo-lines-v1:sha256:4e8ab64c17872b37eaa813701ef25add66a0f87d88406308ca87c1ad1bb132c7:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE3NGYxYjY1MTRmZWQ2MjA3NzJmMDY2MDg5NjkzOWRkY2UyYWFjYTViYzBmNTU3ZDU1ZjVjYmI2NmJmODlmYzEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2Yjk4YjE5NTg5YmNiNmMzZmFjNjJjMDdkMzBiMzdiOGZlMzYwOWYyNGM5MzkxOTkzMzhiNWQ0Mzg0NzU2NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBlNGZlYTA5YzY0NjQ1MGZlZDRmMDc0ZTgzMzQwMDRjYTkyY2NhOTkzNGU1NzBiNzgyMDU4YjczYWFmMTliMjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YjAzY2NhZDI5ZWFkYTc0YWZlYmRhNzc3ZGVmNjUzOGVmMDAzMDk4NjRlMmI2ZTMwODhhMGQzYjM4ZDBkYWEifQ"
         },
         {
@@ -43,7 +43,7 @@
       "statement": "Before obtaining a GitHub token, Renovate flushes a 4 KiB probe to the cache and fails with a storage error if it cannot write; PVC expansion follows a reviewed GitOps change and requires backing NFS capacity.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/renovate/README.md#L91-L109",
+          "resource": "repo://clusters/homelab/apps/renovate/README.md#L92-L110",
           "version": "repo-lines-v1:sha256:d22d175d4ab920c42f0ff5ad10a72fb9d2dc704d4235e8ee2fbf8a0adf353f32:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZiOTM0NTNlZGQ1NDE0Y2UzYzlkOTJkMzM0OWI1ZDA4MGYwZDgxODc0MzcwNDdlMDA0NzUxZjIxNzYxYTc3NTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIxNWVkODdjNTM2YzU3ODFmYjc2ODNiMGZhZjkzOTAxYjIzMDg1NWFkNTAxMjAyOWEwZGEwNmQ4MWY5NzhiZDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI1ZGQ2NTIxOTNmMTAzYTUxODRhYjRjZjI2MDI5OGE3ZDQ5NTZmMzIxYTNjZjljZDUyZGQ2NGYwMTYwOGUyMWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImVlOWUzODRhNWM4NDRjZTJhNDY0YTQ3OGMzMjI5N2RhYzlhZjg0MGMyMGY0NzIzODNhMWEwY2UwOTU5OWQxOGEifQ"
         },
         {
@@ -52,7 +52,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:76426fb1f3fc7d399923e3f7247f422ebcbbba569a655cee691bcb54acdce34f"
+          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
         }
       ]
     },
@@ -62,7 +62,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:780fb0b31b535a05f1fc9dac9811e4716747ad83b039b897df3101de5c2da458"
+          "version": "repo-file-v1:sha256:c902820dbe0f3d7efb797d17d161d3ee3a369a628353d0bd9d91a2e7120a341b"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -70,7 +70,7 @@
         },
         {
           "resource": "repo://scripts/ci/renovate-config-test.js",
-          "version": "repo-file-v1:sha256:76426fb1f3fc7d399923e3f7247f422ebcbbba569a655cee691bcb54acdce34f"
+          "version": "repo-file-v1:sha256:087a31d53b65564028815bbe3271b5e918d7008463b35a71a3342971fc2febf9"
         }
       ]
     },
@@ -80,11 +80,11 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw/README.md",
-          "version": "repo-file-v1:sha256:ab3eaab6558f14690c2c012c2805dccf47305139f1065561e78423eb43ac42ff"
+          "version": "repo-file-v1:sha256:8dad9ee7ae9ca40462edc31ea8f94d1438e4f26e82da8c589e2d7d729e1cd38c"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         }
       ]
     },
@@ -123,6 +123,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T17:05:04.757Z"
+    "at": "2026-10-19T18:14:29.076Z"
   }
 }

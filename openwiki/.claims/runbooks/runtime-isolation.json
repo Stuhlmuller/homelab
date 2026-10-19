@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:68d30ec93f1df15168e3fa6a360319e2e43ce1ce9c40222cec66130fac508fe7",
+  "pageVersion": "sha256:cc1c2d6b5a79d83067a0b0dd0800d8c5b79f13e8e7ce61087c800efc0c3bf30c",
   "claims": [
     {
       "id": "claim_182c9edffb474a36b9087404516ef87f",
@@ -12,7 +12,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
+          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
         },
         {
           "resource": "repo://docs/image-egress-hardening.md#L90-L115",
@@ -37,10 +37,32 @@
           "version": "repo-file-v1:sha256:4a11d43c6c0b2fe415922a7d6accbc83639b9c1c544cb036dce53aeb051b5ba0"
         }
       ]
+    },
+    {
+      "id": "claim_73469053f76b42e68fc38df4e36672d2",
+      "statement": "The Kiali source stages a name-distinct ingress NetworkPolicy at Argo CD wave 0 with the same pod selector and unrestricted TCP 20001/9090 ports as the pinned operator output; the wave-1 Kiali CR disables the operator-owned policy, whose delete task targets only the old name. Live handoff, T018 review and enforcement proof remain open.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/README.md",
+          "version": "repo-file-v1:sha256:22ac78c4a460441d2137cc4d996abb698219b721b0df29ac172de8ab5498b27a"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/networkpolicy.yaml",
+          "version": "repo-file-v1:sha256:2dff6814ce25dc88d15c6873e7b54c6d7db50d5c2dc2fc1c45776ec10fca205e"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/kiali/values.yaml",
+          "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
+        },
+        {
+          "resource": "repo://specs/003-replace-openclaw-enterprise/tasks.md#L101-L106",
+          "version": "repo-lines-v1:sha256:310d2c78cf7f314f3444e47893f1c55673c70a1ac3e2f96624217f914cdb76ef:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ0MDMwMDJlZDAyM2VhNDEzM2FmODRmZWM4NjA4YzY5ZDE5OTg2MTAwMTljMGE5OGQwYTQ0YjM0YjVlY2E3OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzUxYjIyN2M4YzNhYjdlYmIwNGMyMTcxYTZmZTcwZWFjYmZhOTM2ODE2OGEwN2IyMzQxYWM1OWVkNTU2MTNhZiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTM4N2U5M2UzYTUyNGZjNWU3ODg3NTkzOWIxODBjNDE4YTkwN2Y4ODc0NWRmZDllMmMxMzUzMTMwZTVjMTEwNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjE1ZDEzODRmNDhiYmY5MjYwNzU1ZDJhZTgyMGYyODFhYjYzMmJlMDA0NWRhZTM2NjdiNjM4NzUzNjc3ZWNhMyJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T10:09:06.381Z"
+    "at": "2026-10-19T18:14:29.076Z"
   }
 }
