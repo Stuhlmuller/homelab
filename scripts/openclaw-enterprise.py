@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Fail-closed OpenClaw Enterprise reconciliation entrypoint.
 
-The pinned API does not expose selected Installation Drivers. Read-only checks
-attest the reviewed startup file and current controller Pods; reconciliation
-still stops before mutation until the remaining tenant workflow is implemented.
+Read-only checks attest the reviewed startup file and current controller Pods.
+Reconciliation may adopt the prepared tenant Namespace; agent activation remains
+blocked until its credential and deployment workflow is implemented.
 """
 
 import argparse
@@ -46,9 +46,106 @@ ID_PREFIXES = {
     "configurationId": "cfg_", "agentId": "agt_", "revisionId": "rev_",
 }
 
+# Pinned chart rbac.yaml at source revision 33bb745; repositoryCredentials=false,
+# agentRuntimeLogs=true in the reviewed Helm values.
+TENANT_ROLE_RULES = {
+    "oce-openclaw-tenant-worker": [
+        ("", ("secrets",), ("get", "create", "update", "delete")),
+        ("", ("configmaps", "serviceaccounts", "services", "resourcequotas", "limitranges"),
+         ("get", "list", "create", "patch", "delete")),
+        ("", ("pods",), ("get", "list", "watch", "patch")),
+        ("", ("pods/proxy",), ("get",)),
+        ("", ("persistentvolumeclaims",), ("get", "create", "patch", "delete")),
+        ("apps", ("deployments",), ("get", "list", "create", "patch", "delete")),
+        ("batch", ("jobs",), ("get", "create", "delete")),
+        ("networking.k8s.io", ("networkpolicies",),
+         ("get", "list", "create", "patch", "delete")),
+        ("gateway.networking.k8s.io", ("httproutes",),
+         ("get", "create", "patch", "delete")),
+        ("gateway.envoyproxy.io", ("securitypolicies",),
+         ("get", "create", "patch", "delete")),
+        ("discovery.k8s.io", ("endpointslices",), ("get", "list")),
+    ],
+    "oce-openclaw-tenant-api": [
+        ("", ("secrets",), ("get", "create", "update", "patch", "delete")),
+        ("apps", ("deployments",), ("list",)),
+        ("", ("pods",), ("get", "list")),
+        ("", ("pods/proxy",), ("get",)),
+        ("", ("pods/log",), ("get",)),
+        ("", ("events",), ("get", "list")),
+    ],
+    "oce-openclaw-tenant-configuration": [
+        ("", ("configmaps",), ("get", "list", "create", "update", "patch", "delete")),
+    ],
+}
+
+# Exact base policies emitted by the pinned Kubernetes Compute Driver for the
+# reviewed single-cluster Installation. Agent-specific policies may be added.
+REQUIRED_TENANT_POLICY_SPECS = {
+    "default-deny": {"podSelector": {}, "policyTypes": ["Ingress", "Egress"]},
+    "allow-dns": {
+        "podSelector": {"matchLabels": {"openclaw.dev/network-profile": "broad-egress-v1"}},
+        "policyTypes": ["Egress"],
+        "egress": [{
+            "to": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name":
+                                                         "kube-system"}},
+                    "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}}],
+            "ports": [{"protocol": protocol, "port": port}
+                      for port in (53, 5353) for protocol in ("UDP", "TCP")],
+        }],
+    },
+    "allow-gateway-ingress": {
+        "podSelector": {"matchLabels": {"openclaw.dev/workload-role": "gateway",
+                                         "openclaw.dev/network-profile": "broad-egress-v1"}},
+        "policyTypes": ["Ingress"],
+        "ingress": [{
+            "from": [{"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name":
+                                                           "envoy-gateway-system"}},
+                      "podSelector": {"matchLabels": {
+                          "gateway.envoyproxy.io/owning-gateway-namespace": "openclaw-system",
+                          "gateway.envoyproxy.io/owning-gateway-name": "oce-private-gateway"}}}],
+            "ports": [{"protocol": "TCP", "port": 8080}],
+        }],
+    },
+}
+
+
+def _normalized_policy_spec(spec):
+    _require(isinstance(spec, dict) and
+             set(spec) <= {"podSelector", "policyTypes", "ingress", "egress"} and
+             isinstance(spec.get("podSelector"), dict) and
+             isinstance(spec.get("policyTypes"), list) and spec["policyTypes"] and
+             all(policy_type in ("Ingress", "Egress") for policy_type in spec["policyTypes"]) and
+             all(key not in spec or isinstance(spec[key], list)
+                 for key in ("ingress", "egress")),
+             "prepared tenant NetworkPolicy spec is invalid")
+    return {"podSelector": spec.get("podSelector"),
+            "policyTypes": sorted(spec["policyTypes"]),
+            "ingress": spec.get("ingress") or [], "egress": spec.get("egress") or []}
+
+
+def _normalized_role_rules(rules):
+    _require(isinstance(rules, list), "prepared tenant ClusterRole rules are invalid")
+    normalized = []
+    for rule in rules:
+        _require(isinstance(rule, dict) and set(rule) == {"apiGroups", "resources", "verbs"} and
+                 isinstance(rule.get("apiGroups"), list) and rule["apiGroups"] and
+                 all(isinstance(group, str) for group in rule["apiGroups"]) and
+                 all(isinstance(rule.get(key), list) and rule[key] and
+                     all(isinstance(value, str) and value for value in rule[key])
+                     for key in ("resources", "verbs")),
+                 "prepared tenant ClusterRole rules are invalid")
+        normalized.append((tuple(sorted(rule["apiGroups"])),
+                           tuple(sorted(rule["resources"])), tuple(sorted(rule["verbs"]))))
+    return sorted(normalized)
+
 
 class Blocked(RuntimeError):
     """An unknown, unauthorized or ambiguous state that must not be retried."""
+
+
+class DefinitiveRejection(Blocked):
+    """Pinned API rejected authentication or authorization before mutation."""
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -57,7 +154,7 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class API:
-    """Exact-origin API reader. Mutations remain fenced by incomplete reconciliation."""
+    """Exact-origin API client that never exposes response bodies on failure."""
 
     def __init__(self, origin, key):
         if origin != CONSOLE_ORIGIN:
@@ -74,18 +171,33 @@ class API:
         self.opener = build_opener(NoRedirect())
 
     def get(self, path):
+        return self._request("GET", path, None, 200)
+
+    def post(self, path, body):
+        return self._request("POST", path, body, 201)
+
+    def _request(self, method, path, body, expected_status):
         if not path.startswith("/") or "?" in path or "#" in path:
             raise Blocked("Enterprise API path is not exact")
-        request = Request(self.origin + path, headers={"x-api-key": self.key}, method="GET")
+        if method == "POST" and not isinstance(body, dict):
+            raise Blocked("Enterprise API mutation body is invalid")
+        headers = {"x-api-key": self.key}
+        encoded = None
+        if body is not None:
+            headers["content-type"] = "application/json"
+            encoded = json.dumps(body, separators=(",", ":")).encode()
+        request = Request(self.origin + path, data=encoded, headers=headers, method=method)
         try:
             with self.opener.open(request, timeout=15) as response:
-                if response.status != 200:
-                    raise Blocked(f"Enterprise API read returned HTTP {response.status}")
+                if response.status != expected_status:
+                    raise Blocked(f"Enterprise API returned HTTP {response.status}")
                 payload = json.load(response)
         except HTTPError as error:
-            raise Blocked(f"Enterprise API read returned HTTP {error.code}") from None
+            if error.code in (401, 403):
+                raise DefinitiveRejection(f"Enterprise API returned HTTP {error.code}") from None
+            raise Blocked(f"Enterprise API returned HTTP {error.code}") from None
         except (URLError, TimeoutError, ValueError, json.JSONDecodeError):
-            raise Blocked("Enterprise API read failed or returned invalid JSON") from None
+            raise Blocked("Enterprise API request failed or returned invalid JSON") from None
         if not isinstance(payload, dict) or "data" not in payload:
             raise Blocked("Enterprise API response has no data envelope")
         return payload["data"]
@@ -132,6 +244,100 @@ class Kubernetes:
                          "Installation workload list is invalid")
                 snapshot[field][component] = listing["items"]
         return snapshot
+
+    def tenant_prepared(self, namespace_id=None, require_claimed=False):
+        """Read upstream adoption prerequisites before any Namespace POST/recovery."""
+        context = self._json("config", "view", "--minify", "-o=json")
+        _require(isinstance(context, dict) and isinstance(context.get("clusters"), list) and
+                 len(context["clusters"]) == 1 and
+                 isinstance(context["clusters"][0], dict) and
+                 isinstance(context["clusters"][0].get("cluster"), dict) and
+                 context["clusters"][0].get("cluster", {}).get("server") == KUBE_SERVER,
+                 "Kubernetes proof context changed")
+        namespace = self._json("get", "namespace", "openclaw-agents", "-o=json")
+        _require(isinstance(namespace, dict), "prepared tenant Namespace is invalid")
+        metadata = namespace.get("metadata", {})
+        _require(isinstance(metadata, dict) and
+                 isinstance(metadata.get("annotations"), dict) and
+                 isinstance(metadata.get("labels"), dict) and
+                 isinstance(namespace.get("status"), dict) and
+                 metadata.get("name") == "openclaw-agents" and
+                 isinstance(metadata.get("resourceVersion"), str) and
+                 bool(metadata["resourceVersion"]) and
+                 not metadata.get("deletionTimestamp") and
+                 metadata["annotations"].get("openclaw.dev/namespace-lifecycle") == "external" and
+                 metadata["labels"].get("pod-security.kubernetes.io/enforce") == "restricted" and
+                 metadata["labels"].get("pod-security.kubernetes.io/audit") == "restricted" and
+                 metadata["labels"].get("pod-security.kubernetes.io/warn") == "restricted" and
+                 namespace.get("status", {}).get("phase") == "Active",
+                 "prepared tenant Namespace is absent or changed")
+        markers = (metadata["labels"].get("openclaw.dev/namespace"),
+                   metadata["annotations"].get("openclaw.dev/namespace-id"),
+                   metadata["labels"].get("openclaw.dev/gateway-namespace"))
+        if namespace_id is None:
+            _require(all(marker is None for marker in markers),
+                     "prepared tenant Namespace has foreign ownership markers")
+        else:
+            _require(all(marker is None or marker == namespace_id for marker in markers),
+                     "prepared tenant Namespace has foreign ownership markers")
+            if require_claimed:
+                _require(all(marker == namespace_id for marker in markers),
+                         "prepared tenant Namespace has not been claimed")
+        policies = self._json("-n", "openclaw-agents", "get", "networkpolicies", "-o=json")
+        _require(isinstance(policies, dict) and isinstance(policies.get("items"), list),
+                 "prepared tenant NetworkPolicy list is invalid")
+        observed_policies = {}
+        for policy in policies["items"]:
+            _require(namespace_id is not None and isinstance(policy, dict) and
+                     policy.get("kind") in (None, "NetworkPolicy") and
+                     isinstance(policy.get("metadata"), dict) and
+                     isinstance(policy["metadata"].get("name"), str) and
+                     bool(policy["metadata"]["name"]) and
+                     policy["metadata"].get("namespace") == "openclaw-agents" and
+                     isinstance(policy["metadata"].get("labels"), dict) and
+                     isinstance(policy["metadata"].get("annotations"), dict) and
+                     policy["metadata"]["labels"].get("app.kubernetes.io/managed-by") ==
+                     "openclaw-enterprise" and
+                     policy["metadata"]["labels"].get("openclaw.dev/namespace") == namespace_id and
+                     policy["metadata"]["annotations"].get("openclaw.dev/namespace-id") == namespace_id,
+                     "prepared tenant has a foreign NetworkPolicy")
+            policy_name = policy["metadata"]["name"]
+            _require(policy_name not in observed_policies,
+                     "prepared tenant NetworkPolicy list is ambiguous")
+            observed_policies[policy_name] = policy
+        if require_claimed:
+            for policy_name, expected_spec in REQUIRED_TENANT_POLICY_SPECS.items():
+                observed = observed_policies.get(policy_name)
+                _require(observed is not None and
+                         _normalized_policy_spec(observed.get("spec")) ==
+                         _normalized_policy_spec(expected_spec),
+                         "prepared tenant NetworkPolicy is absent or changed")
+        for name, role, subject in (
+            ("openclaw-enterprise-worker", "oce-openclaw-tenant-worker", "openclaw-enterprise-worker"),
+            ("openclaw-enterprise-api-secrets", "oce-openclaw-tenant-api", "openclaw-enterprise-api"),
+            ("openclaw-enterprise-api-configuration", "oce-openclaw-tenant-configuration", "openclaw-enterprise-api"),
+        ):
+            cluster_role = self._json("get", "clusterrole", role, "-o=json")
+            _require(isinstance(cluster_role, dict) and
+                     isinstance(cluster_role.get("metadata"), dict) and
+                     cluster_role["metadata"].get("name") == role and
+                     cluster_role.get("aggregationRule") is None and
+                     _normalized_role_rules(cluster_role.get("rules")) ==
+                     _normalized_role_rules([
+                         {"apiGroups": [group], "resources": list(resources), "verbs": list(verbs)}
+                         for group, resources, verbs in TENANT_ROLE_RULES[role]
+                     ]),
+                     "prepared tenant ClusterRole is absent or changed")
+            binding = self._json("-n", "openclaw-agents", "get", "rolebinding", name, "-o=json")
+            _require(isinstance(binding, dict), "prepared tenant RBAC is invalid")
+            _require(isinstance(binding.get("metadata"), dict) and
+                     binding["metadata"].get("name") == name and
+                     binding.get("metadata", {}).get("namespace") == "openclaw-agents" and
+                     binding.get("roleRef") == {"apiGroup": "rbac.authorization.k8s.io",
+                                                "kind": "ClusterRole", "name": role} and
+                     binding.get("subjects") == [{"kind": "ServiceAccount", "name": subject,
+                                                  "namespace": "openclaw-system"}],
+                     "prepared tenant RBAC is absent or changed")
 
 
 def require_driver_identity(installation):
@@ -188,14 +394,95 @@ def reconcile(config, api, kube, expected_sha):
     _validate_config(config)
     if not SHA.fullmatch(expected_sha):
         raise Blocked("Expected repository SHA is invalid")
-    prove_driver_identity(config, api, kube)
-    raise Blocked("Enterprise reconciliation is not implemented; no API mutation was sent")
+    installation = prove_driver_identity(config, api, kube)
+    source_sha = config["source"]["revision"]
+    identity_sha = _identity_hash(config)
+    with ProtectedJournal(config["privateJournal"]["mountPath"], source_sha, identity_sha) as journal:
+        state = dict(journal.state)
+        installation_id = installation["installationId"]
+        _require(state.get("installationId", installation_id) == installation_id,
+                 "journaled Installation identity changed")
+        if "installationId" not in state:
+            state["installationId"] = installation_id
+            journal.save(state)
+        reconcile_namespace(config, api, journal, kube)
+    raise Blocked("Enterprise Agent reconciliation is not implemented; activation remains blocked")
 
 
 def verify(config, api, kube):
     # Verification is a read, never an inference probe or implicit deployment.
     check(config, api, kube)
     raise Blocked("Enterprise tenant verification is not implemented")
+
+
+def _identity_hash(config):
+    """Bind the journal to tenant identity while allowing model/phase revisions."""
+    identity = {"schemaVersion": config["schemaVersion"],
+                "sourceRevision": config["source"]["revision"],
+                "namespace": config["namespace"],
+                "agent": {key: config["agent"][key] for key in ("name", "type")},
+                "consoleOrigin": config["privateOrigins"]["console"]}
+    return hashlib.sha256(json.dumps(identity, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def reconcile_namespace(config, api, journal, kube):
+    """Create once, then adopt only the exact owned Namespace after API readback."""
+    state = dict(journal.state)
+    name = config["namespace"]["logicalName"]
+    physical = config["namespace"]["existingNamespace"]
+    pending = state.get("pending")
+    _require(pending is None or pending == {"operation": "namespace-create"},
+             "another Enterprise operation is pending")
+    candidates = api.get("/namespaces")
+    _require(isinstance(candidates, list), "Namespace list response is invalid")
+    if pending:
+        _require(state.get("namespaceId") is None, "pending Namespace already has an ID")
+        matches = [item for item in candidates if isinstance(item, dict) and item.get("name") == name]
+        _require(len(matches) == 1, "unknown Namespace create outcome; do not retry")
+        candidate = matches[0]
+        _require(candidate.get("existingNamespace") == physical and
+                 isinstance(candidate.get("id"), str) and candidate["id"].startswith("ns_"),
+                 "foreign Namespace recovery candidate")
+    else:
+        candidate = discover_exact(candidates, name, state.get("namespaceId"),
+                                   {"existingNamespace": physical})
+        if candidate is None:
+            kube.tenant_prepared()
+            state["pending"] = {"operation": "namespace-create"}
+            journal.save(state)
+            try:
+                candidate = api.post("/namespaces", {"name": name,
+                                                      "existingNamespace": physical})
+            except DefinitiveRejection:
+                # The pinned 401/403 admission and grant checks run before create.
+                # Preserve the intent if a competing Namespace appears meanwhile.
+                after_rejection = api.get("/namespaces")
+                _require(isinstance(after_rejection, list) and
+                         not any(isinstance(item, dict) and item.get("name") == name
+                                 for item in after_rejection),
+                         "Namespace create outcome changed after rejection")
+                state.pop("pending")
+                journal.save(state)
+                raise
+            _require(isinstance(candidate, dict) and candidate.get("name") == name and
+                     candidate.get("existingNamespace") == physical and
+                     isinstance(candidate.get("id"), str) and candidate["id"].startswith("ns_"),
+                     "Namespace create response is invalid")
+    namespace_id = candidate["id"]
+    _require(isinstance(namespace_id, str) and
+             re.fullmatch(r"ns_[A-Za-z0-9_-]{1,100}", namespace_id),
+             "Namespace ID is invalid")
+    kube.tenant_prepared(namespace_id)
+    exact = api.get("/namespaces/" + namespace_id)
+    _require(isinstance(exact, dict) and exact.get("id") == namespace_id and
+             exact.get("name") == name and exact.get("existingNamespace") == physical and
+             exact.get("status") == "ready", "Namespace exact readback changed")
+    kube.tenant_prepared(namespace_id, require_claimed=True)
+    if state.get("namespaceId") is None:
+        state["namespaceId"] = namespace_id
+        state.pop("pending", None)
+        journal.save(state)
+    return namespace_id
 
 
 def _validate_config(config):
@@ -645,7 +932,7 @@ class ProtectedJournal:
         if pending is not None:
             if (not isinstance(pending, dict) or
                     set(pending) - {"operation", "baselineRevisionIds"} or
-                    pending.get("operation") not in ("configuration-create", "deploy") or
+                    pending.get("operation") not in ("namespace-create", "configuration-create", "deploy") or
                     not isinstance(pending.get("baselineRevisionIds", []), list) or
                     any(not isinstance(item, str) or not item.startswith("rev_") or
                         not re.fullmatch(r"[A-Za-z0-9._~:@/-]{1,200}", item)

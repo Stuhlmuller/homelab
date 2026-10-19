@@ -49,7 +49,16 @@ The Secret's `openclaw.dev/installation-id` annotation cannot be known until
 bootstrap. The T041 protected selected-Driver proof must set/check that annotation
 against `GET /installation` and verify both Ready Pods' exact startup binding
 before reconciliation. The CLI's read-only `check` gathers that proof; the
-annotation binder is pending, and `reconcile`/tenant `verify` remain blocked.
+annotation binder is pending. With its protected credential file, exact main
+SHA and journal, `reconcile` can create/adopt the logical `claw` Namespace in
+the prepared `openclaw-agents` namespace, then exits blocked while Agent work
+remains unfinished. A failed `reconcile` may therefore have changed Enterprise
+and Kubernetes state. Inspect the journaled Namespace ID, exact API GET and
+owned Kubernetes Namespace/NetworkPolicies before retrying with the same
+journal; unknown creates are not reposted. Keep activation false and preserve
+the journal for rollback. Removing this logical Namespace needs a reviewed
+repository-owned cleanup path; do not delete the physical tenant Namespace.
+Tenant `verify` remains read-only and blocked.
 The chart's Kubernetes policy also needs nonempty reviewed `database.cidrs` and
 `cluster.cidrs`; this candidate has explicit destinations, but Service DNAT
 behavior still needs the isolated canary qualification.
