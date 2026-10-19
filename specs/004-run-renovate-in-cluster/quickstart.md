@@ -5,7 +5,7 @@ Use this after implementation. Apply only reviewed repository desired state thro
 
 ## Before the first cluster run
 
-1. Record the current Stuhlmuller/renovate workflow/config commit, latest successful run, App PR author, and accessible repository count. Verify the App installation covers all owned repositories, including future additions. Do not paste private repository names into public reports.
+1. Record the current Stuhlmuller/renovate workflow/config commit, latest successful run, App PR author, and accessible repository count. Verify the App installation covers all owned repositories, including future additions. Compare actual App grants with the documented Administration-read parity exception in contracts/runner-contract.md; verify first write-enabled outcomes rather than assuming private protection settings. Do not paste private repository names into public reports.
 2. Review and merge the SSM placeholder and dedicated OIDC transfer-role changes. Review the private saved plan through the existing protected apply path; secret-bearing shared-unit plans are not public PR artifacts.
 3. Dispatch the reviewed, fixed-target transfer workflow in Stuhlmuller/renovate. Confirm only the declared SSM parameter metadata. Never read or print the Secret value.
 4. Publish and verify the digest-pinned Renovate image through the declared Harbor mirror workflow before merging the consuming CronJob. Confirm the Argo CD Application points at main and the automation namespace is allowed.
