@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e914f217431cad8b49c21065577859e8b743521357548d67d4589636e3e30c17",
+  "pageVersion": "sha256:f329a7d1469521113ce9a2381efa87f0c983affc72b02f140bdbba59890d2af9",
   "claims": [
     {
       "id": "claim_2f47141350cc4647a283d38719ccb3b4",
@@ -110,7 +110,7 @@
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
+          "version": "repo-file-v1:sha256:5e83bfb4b50a30d51b3ee2efabb6a6bac97f0ad377a3b29ba5a4dc2b5701fce5"
         }
       ]
     },
@@ -120,7 +120,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
+          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
         },
         {
           "resource": "repo://scripts/tailscale-ingress-sign.py",
@@ -138,11 +138,11 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:a2e7b7fa8e1068fe4a6cafd829406b2d46dfa5352fbc153f22cbd5173c0b1e98"
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
+          "version": "repo-file-v1:sha256:a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
         }
       ]
     },
@@ -249,16 +249,16 @@
       "statement": "During the staged CoreDNS switch, the retained Octelium connector is explicitly permitted only on Traefik private TLS port8443 by its exact ambient principal and intended namespace-plus-pod-label NetworkPolicy peer; this allowance is removed with the connector after acceptance.",
       "evidence": [
         {
-          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L20-L27",
-          "version": "repo-lines-v1:sha256:896ef74b88bba93ad867e8df53e66e831d2a5c9b4f9ed656e8735644c102d86e:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYTNhNTk2MjdhN2NjNzQ4ZTQ5ZGMwZjhkODUyYjFiZjU3OGU4ZjFiMmIzZjU5NDJhNDgxMjMyYWQ2ZDg2M2QzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU5OWQwYTMzYjJiNGY1MmI4ZTk5NmMwNzAxNTY0NGVmMTVhNmJiNmFkMGMxZTM5YzZhYmM0N2MxYjU3YjBjMSJ9"
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml#L20-L26",
+          "version": "repo-lines-v1:sha256:ffbd629e8db260be7ab274828548d5d06fb4c41d93329f738f3767e4c4685e0e:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjg0Yjg4MGY1MjY3YTA2MTEwMDhkZmE3MzgxM2MwZjFmYzhmZTIyYTk0NWE2MmY4NTdiMTJlYTI4NjkwZTI2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGRhOWNmYjQyMDVjMTEwN2M0MGQ0ZWJjNDlkNmYxM2VkZjNkMTQ2YmQ4OTM1YzcxMWNjODc3NDYyMjczZDMzYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhhOWU3NGRiMDBlYjc1NDlhODE2M2U3ZTA1MTY5MjM2NjkxNDI3NzFmZDFjZGEyOWZiZDM5M2Q3MmE4NGRhYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWQwZWRmZTdlZmNhZDE5NDUyZjI1NDEzYjViNmIyZmE3ZjA2NWZjOTBjMzNiYjMxNDJlYjcxNTQ5ZjM1NDI4NiJ9"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml#L42-L52",
           "version": "repo-lines-v1:sha256:f42c07f5f0c569cb61a04880b27dd926dbbd55a143cdedc009762e5d613d851a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNzVhNGM4N2M2ZTViYzI4NjhmY2M2NzY1NWE0ZDc2YWM4NTk1MDk0OTI0Njk4MDUyMjc4ZDdmZjBkNTM4NDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2ZTc1NmQ3YTE0ODJmNjRjYjQ3NmNjYTBjNDc0OTAxZDU3OTlmYmZkNTdhYzYxZDI2ZjdjNWIwN2Q4MTdiODciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE4NjFjNTExMTc5YTY3ZmU2Yzk0MWU4YWFkNjk0MDI1ZDA2NTMwMTQxMTI2YzAwMGI0NWYwNDZlNjZhNjczZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ1YmUxOGYwZTU2ODAzOWRkNTBjZjRhMjRiOTdiNmMwN2Y4NjIyNTA2YTZiNWU2M2NhYmFjZjI5MGQ4ZjE3MGQifQ"
         },
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
-          "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L173-L209",
+          "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
         }
       ]
     },
@@ -331,10 +331,32 @@
           "version": "repo-lines-v1:sha256:20c11ae14effa0d01a2aeff59ced04119125ecced0d143be414bf9b2c0926e06:eyJzZWxlY3RlZExpbmVDb3VudCI6NTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMjg1M2JhMWQ4NTU2NmU2NTg5YjlmNDFhNThkZDlkYTU4NTkwZTQwODcwZGE4MDI1YjM2NjljYTE2NTcxYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc5NjQwYWUxZjk0MzNmZGEyOWViMDAyZmIzMjUwNDU2OGMxYzAwODkyNTA3NzRmM2UzNzNlNzkwMmMzMjhmMTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVmNTQ3NmUxZjBlMjBhN2EwYzkwZTY2ZWVjODJiMTdiZjAwN2U1MDZlMWU0NWI2NmE1MWQxMDQ0M2Q0MDM2NmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM3ODg1ZGZlNmI0YzE3NzE5NTEyZDNmZDZhMWJmN2FiZmYwYzk4NDNkNjc2OWJiODM3NmYzN2U2Y2Q3Zjk1NGYifQ"
         }
       ]
+    },
+    {
+      "id": "claim_5ac309e5cdf740fb8027e2b5038faf80",
+      "statement": "The dedicated tokenless Renovate Pod uses a host alias to send the canonical Harbor TLS hostname to the registry-only Traefik Service at 10.96.0.50:443; Istio admits only its exact service-account principal on port 9443 and excludes it from the shared private listener.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/README.md",
+          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:30:44.377Z"
   }
 }

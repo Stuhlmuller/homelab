@@ -60,6 +60,12 @@ sources:
     resource: repo://clusters/homelab/apps/harbor/vulnerability-exporter.yaml
   - id: openwiki-source-ffe9c2c54bc78625ce9efd78
     resource: repo://clusters/homelab/apps/mastodon/README.md
+  - id: openwiki-source-c728e68797517895d00bd9f9
+    resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
+  - id: openwiki-source-01fc0bedc522f2abd58d6698
+    resource: repo://clusters/homelab/apps/renovate/README.md
+  - id: openwiki-source-6bfa4cc9f18ca4484bfb2daf
+    resource: repo://clusters/homelab/apps/renovate/serviceaccount.yaml
   - id: openwiki-source-1ab63006818d653aed251f6d
     resource: repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml
   - id: openwiki-source-8f628fd33437cf63e7f9b8c2
@@ -68,6 +74,8 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/networkpolicy.yaml
   - id: openwiki-source-fbaccd01ca51226fa9e5324d
     resource: repo://clusters/homelab/apps/traefik/README.md
+  - id: openwiki-source-e26a7307e86732ce7e6a34b6
+    resource: repo://clusters/homelab/apps/traefik/routes.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
@@ -126,10 +134,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-18T21:31:10.787Z" }
+generated: { by: "codex", at: "2026-10-19T05:30:44.377Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T05:01:55.414Z
+    at: 2026-10-19T05:30:44.377Z
 ---
 
 # Harbor Private OCI Registry
@@ -195,11 +203,13 @@ and after apply; scope, identity, no-reboot and native-pull gates remain intact.
 Offline regression covers these cases without proving a live node rollout.
 
 Flannel does not enforce the declared NetworkPolicy. Traefik's Istio policy
-restricts registry sources to the four declared LAN node addresses and their
-four individual `cni0` bridge plus four `flannel.1` overlay `/32`s on port 9443,
-retaining the unauthenticated source restriction. Host-to-Service SNAT can select
-a bridge locally or an overlay source across nodes; whole Pod CIDRs remain
-excluded. Authenticated Talos reads confirmed bridges `10.244.1.1` through
+admits the four declared LAN node addresses and their four individual `cni0`
+bridge plus four `flannel.1` overlay `/32`s as unauthenticated sources on port
+9443. It also admits only `cluster.local/ns/automation/sa/renovate` as an
+authenticated Pod source on that port, not on the shared private listener.
+Host-to-Service SNAT can select a bridge locally or an overlay source across
+nodes; whole Pod CIDRs remain excluded. Authenticated Talos reads confirmed
+bridges `10.244.1.1` through
 `10.244.4.1` and overlays `10.244.1.0` through `10.244.4.0` on nodes `.199`
 through `.202`, respectively.
 Trusted node-local traffic still has Istio's bypass behavior. The listener's
@@ -232,6 +242,30 @@ privately; do not bypass readiness or issue an ad hoc reboot. The
 keeps this as an unresolved observation, not durable recovery proof.
 See the [host-only runbook](../../docs/harbor-image-mirroring.md) and
 [ingress contract](../runbooks/tailnet-ingress.md).
+
+### Renovate Docker lookup gap (2026-10-19 UTC)
+
+Read-only inspection of a successful
+[legacy GitHub Actions Renovate run](https://github.com/Stuhlmuller/renovate/actions/runs/39193708267) found
+12 failed Harbor Docker lookups. Its token probes timed out; the overall run's
+success did not prove Harbor version discovery worked. These hosted-runner
+timeouts do not establish the cause of the separate cluster failure. Keep
+detailed Job logs restricted because they can name private packages.
+
+The first manual in-cluster dry run used the default `automation` service
+identity and resolved Harbor through the shared private Traefik listener on
+8443. Destination ztunnel rejected its HBONE connections under the existing
+[authorization policy](../../clusters/homelab/apps/traefik/authorizationpolicy.yaml)
+before they reached Traefik; Renovate reported TLS `ECANCELED`. The
+[repository-owned repair](../../clusters/homelab/apps/renovate/README.md)
+gives the suspended CronJob a dedicated no-token ServiceAccount and a Pod-local
+alias for `harbor.stinkyboi.com` to the registry-only `10.96.0.50:443` Service.
+Istio admits that exact identity only on port 9443. The listener still routes
+only OCI and token paths. Local route tests and rendering pass; a later Job
+after GitOps convergence must prove transport, expected public/unauthorized
+responses, and actual eligible version discovery before writer cutover. If an
+eligible private source needs a Harbor credential, add a reviewed secret
+contract before enabling writes.
 
 ## Identity And State
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:50f1fd95706d9cf33861623cfb8b556363603393e24b55ce4c78c5a1bb4b5e60",
+  "pageVersion": "sha256:77965de9c44eec71f190f23b5cd778bad209054e2873edab721c96eb228a2b5e",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -62,19 +62,23 @@
     },
     {
       "id": "claim_590031ddaaf7450ab33897e0d461f9a8",
-      "statement": "The Traefik registry listener permits only four fixed Talos LAN addresses, four individual cni0 bridges and four flannel.1 overlay addresses on port 9443, retaining notPrincipals and OCI/token-only routing; whole Pod CIDRs remain excluded and Flannel NetworkPolicy is not enforced.",
+      "statement": "The Traefik registry listener admits only four fixed Talos LAN addresses, four individual cni0 bridges, four flannel.1 overlay addresses as unauthenticated sources, and the exact automation/renovate principal as an authenticated source on port 9443; whole Pod CIDRs remain excluded, routing remains OCI/token-only, and Flannel NetworkPolicy is not enforced.",
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
+          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
-          "version": "repo-file-v1:sha256:a2e7b7fa8e1068fe4a6cafd829406b2d46dfa5352fbc153f22cbd5173c0b1e98"
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:e837e035884d547a3e5d94d79e2d4642a10b870f6bc73898102bb26a91aa3ed3"
+          "version": "repo-file-v1:sha256:a70d178f3463fc4795a44086e116c88d6c413a29bf98a110c645feae2ca6bf79"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/routes.yaml",
+          "version": "repo-file-v1:sha256:c935f7897dd818f0a0a6f74de2b4635262e92ea04549e16b4174dc36c6a92a88"
         }
       ]
     },
@@ -88,7 +92,7 @@
         },
         {
           "resource": "repo://clusters/homelab/apps/traefik/README.md",
-          "version": "repo-file-v1:sha256:2f58c4981aa81511a7014202c00f8f78dba3a21909baa4256b707d6dae7a1f8d"
+          "version": "repo-file-v1:sha256:7a0c9903029078780432484be0fdc2719561c1a8adcddccce8989d4c4a5f7726"
         },
         {
           "resource": "repo://scripts/talos-harbor-mirrors.py",
@@ -631,10 +635,46 @@
           "version": "repo-file-v1:sha256:e71afe421247062897d141b975ffea2863038c9e775d39dee733e7d8e58e4f23"
         }
       ]
+    },
+    {
+      "id": "claim_a8a81b748b56428399b58d58cfec6ea2",
+      "statement": "The suspended Renovate CronJob uses a dedicated ServiceAccount without a mounted Kubernetes API token and resolves the canonical Harbor hostname to the registry-only Traefik Service at 10.96.0.50:443; Istio allows that identity only on the registry port 9443.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/serviceaccount.yaml",
+          "version": "repo-file-v1:sha256:5c584f7087bc36330e3dd2db0b82bd2a341b32c0c558fd7b748c6d76aa61c3c0"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
+        }
+      ]
+    },
+    {
+      "id": "claim_6e6c80a3aa64424f900c08573622f524",
+      "statement": "The first in-cluster Renovate dry run was rejected by destination ztunnel under its default service identity before Harbor traffic reached Traefik; the registry-only route requires a later post-convergence Job and credential review before writer cutover.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/README.md",
+          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/traefik/authorizationpolicy.yaml",
+          "version": "repo-file-v1:sha256:55c6d2455dec50ab3840cd76bd0e5b1704c82fced835d944dc8e740ff3cc72a9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:30:44.377Z"
   }
 }

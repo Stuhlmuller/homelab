@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:a7ca3426a64f7f373a75eeb249c5a13a21ed907adb6d001cf6ddc5126a7cdea0",
+  "pageVersion": "sha256:ff6e4391163071caaa7ac91bac0f14a8ba311a4f585c1726acad67ad3ed2c67a",
   "claims": [
     {
       "id": "claim_54969cd4ae3c4076ac2a415f355895ee",
@@ -54,15 +54,19 @@
     },
     {
       "id": "claim_fed10c4041d84a8c89efec2369232427",
-      "statement": "Offline validation runs route and tokenless-kubeconfig fixtures, including exact LAN, bridge, and overlay `/32` sources for registry port 9443; the separately invoked loopback runtime harness exercises declared Traefik routes and TLS reload. Neither replaces live ingress acceptance.",
+      "statement": "Offline validation runs route and tokenless-kubeconfig fixtures, including exact LAN, bridge, and overlay /32 sources plus a dedicated no-token Renovate identity and Harbor host alias for registry port 9443; the separately invoked loopback runtime harness exercises declared Traefik routes and TLS reload. Neither replaces live ingress acceptance.",
       "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/renovate/cronjob.yaml",
+          "version": "repo-file-v1:sha256:76c5092209e69a3e6d2e3bc993a9e17d1ec29462dc31935382630ebb7af14ca9"
+        },
         {
           "resource": "repo://scripts/ci/offline-checks.sh",
           "version": "repo-file-v1:sha256:01283ebd2f2e3ab4f5689223f9ce96ab7ee8c28eba8c2bd55f5e602533ca3cfa"
         },
         {
           "resource": "repo://scripts/ci/traefik-routes-test.py",
-          "version": "repo-file-v1:sha256:479660588345b7bf5eede2fd56303e193b36d35735ec5f62ad1c8a6c860557a4"
+          "version": "repo-file-v1:sha256:5e83bfb4b50a30d51b3ee2efabb6a6bac97f0ad377a3b29ba5a4dc2b5701fce5"
         },
         {
           "resource": "repo://scripts/ci/traefik-runtime-check.py",
@@ -239,8 +243,8 @@
       "statement": "The retained-connector regression requires exactly its octelium-client service-account principal and namespace/Pod selectors on private8443, rejecting unrelated identities and callback/registry ports.",
       "evidence": [
         {
-          "resource": "repo://scripts/ci/traefik-routes-test.py#L172-L207",
-          "version": "repo-lines-v1:sha256:9a5ca2cf5f4ef799a725df54ed50089f673fe448cc95367ab6735632952a76e1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyM2RjOTE5YjExYTI1MmY1MzVmZjVhOGU4YzMzZmFiMTE3MzRhYmY5OGNlZmRlZTYyMTZlYzEzOGViMDg2MWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwNzA0N2VmZDVjMTAwZDllZDVlOGU5YTJlNTQ0MTJlZGFmODgzNTllZDg5ODBhMjVlMGFhZTk4MDFlMTZhNDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjMzVkZjNhZDg4MGJkMDI1Zjk3ZDRkNThhZGMzMDExZjYwZjg2MzRjYjg0N2MwM2I4MTM4NDVkNGRhNzkwMWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQzY2Q5NTZkOGNjNDk1ZDEyMjY1NmZjNTAxYmIzZTE3ZDdhYmY0NWRkODgwMzI3NWYxYmVkNjI1MGY5MDdkZTMifQ"
+          "resource": "repo://scripts/ci/traefik-routes-test.py#L173-L209",
+          "version": "repo-lines-v1:sha256:f8fc7f3101380ac9dfd52b96cec8b80a87004935fbff4c95936b2c72bca8c21f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjcwYjgxYjY0YzNmZjg1NjliZTYzZDljYzVjNDFmNzc4ZWRmMmVkMGY1NzY0MjAzMjk3N2E3MzJjMGJmYTE4NDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5YjE5ODJlOGRkNzQ4MTE4MTQ2YjM5YTJkMDA2MmY0MDgxZTM0Nzc5Yjg2NzVjMjM0YzRmYjEyNGRjMzkzOTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5ODgwMDM5ZjQ4M2ZhYmE0ZTc5M2ZlMzJhYmE1MWNhMDIxZmMwY2NmZWExMWM5NjE2YzNlNDhhMTU3NDBiMjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhMTdlMWQ1N2JjYmY1NTA1OGRmNGQ4YzM1MDRkMWRiYjFmOTgyOTI1YjQ3MjNiZTA3OTZhNzc3ZGQzZTVlNmYifQ"
         }
       ]
     },
@@ -792,7 +796,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/renovate/README.md",
-          "version": "repo-file-v1:sha256:2f32499562ed091112c01222ed5327b721819cddfdf7dbed36e9f66ce8bce4ac"
+          "version": "repo-file-v1:sha256:e9c4c9d54486d9dcf170415cbbad724f7396ef0d8f5ad8382897e8a63f7f8da6"
         },
         {
           "resource": "repo://scripts/ci/renovate-cache-recovery-test.mjs",
@@ -833,6 +837,6 @@
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T05:30:44.377Z"
   }
 }
