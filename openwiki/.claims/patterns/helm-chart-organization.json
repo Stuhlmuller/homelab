@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:45570d138dcb18f441c643af0e5a460c85a5a729e5d4a5e43e2e96db6bf6976b",
+  "pageVersion": "sha256:554300f2fb51ed2c57a6ad1ede429ef21675c7a1e9434b7ce0898bbd01101f99",
   "claims": [
     {
       "id": "claim_f813a679b7d145dfbfc81a595d98b9e8",
@@ -15,10 +15,28 @@
           "version": "repo-file-v1:sha256:31a7947822d2961794068332bf01497b6cc9f494bb8f6c0286ecfec9e7a2b35e"
         }
       ]
+    },
+    {
+      "id": "claim_9aa2d0ec319d4bd590273838399a23ac",
+      "statement": "The dormant OpenClaw Enterprise candidate uses the pinned upstream Helm chart with app-local values, reviewed Installation bytes, Kustomize lifecycle hooks, and one EnvoyProxy image override; it has no Application or root Terragrunt registration.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:c3270cba9046df250f5953fc03ed551aebaa9a37f8ca8533833d8fd281dd23b8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml",
+          "version": "repo-file-v1:sha256:4f8cf618d5c9d076a2a193565d46c1552bf753c1603e0f3294cd653fd0ba7871"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/kustomization.yaml",
+          "version": "repo-file-v1:sha256:1c8dffaeecd216386e000bef883a8897edafac9c2297901a3cf964d545702d40"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T05:01:55.414Z"
+    "at": "2026-10-19T10:28:14.477Z"
   }
 }

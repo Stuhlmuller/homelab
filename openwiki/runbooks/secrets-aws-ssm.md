@@ -14,6 +14,8 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/externalsecret.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-6680389f3ee90f86c4c9a782
@@ -28,10 +30,12 @@ sources:
     resource: repo://IaC/terragrunt-catalog/modules/aws-github-actions-role-policy/main.tf
   - id: openwiki-source-1f0ad12bbff1986d64be6620
     resource: repo://IaC/terragrunt-catalog/units/live/aws-ssm-parameters/terragrunt.hcl
-generated: { by: "codex", at: "2026-10-19T07:43:16.273Z" }
+  - id: openwiki-source-fdfe98760ed73d2ac287a83c
+    resource: repo://scripts/openclaw-enterprise-startup.py
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T07:43:16.273Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # AWS SSM Secret References
@@ -93,6 +97,13 @@ password remains in its own Secret. Rotation needs a committed
 `generated-secret-revision` advance and consumer verification. The manifests
 are not registered with Argo, so source alone proves no SSM value, projected
 Secret, issued certificate, or running database.
+
+The reviewed [`installation.yaml`](../../clusters/homelab/apps/openclaw-enterprise/installation.yaml)
+contains non-secret startup configuration. It is separate from those seven SSM
+credentials. The protected startup workflow copies its exact bytes into a
+versioned immutable Kubernetes Secret because the stock chart mounts that
+Secret at startup. Initial creation precedes the installation ID; T041 must
+bind and attest that metadata after bootstrap before reconciliation can run.
 
 ## Harbor native receipt prerequisite
 

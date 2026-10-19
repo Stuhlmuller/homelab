@@ -1,0 +1,67 @@
+images:
+  controller: harbor.stinkyboi.com/homelab/homelab-oce-controller@sha256:8d0d0565bfcc14b070d55434557704480713c97819fe80f490bc046458241164
+installation:
+  name: homelab
+  secretName: occ-installation-startup-980de11bbc688a33741a19c9093f613e
+  key: installation.yaml
+auth:
+  baseUrl: https://console.oce.stinkyboi.com
+agentNativeAdmin:
+  enabled: true
+  domain: agents.oce.stinkyboi.com
+  sharedCookieDomain: oce.stinkyboi.com
+bootstrap:
+  adminEmail: operator@oce.example.invalid
+  password:
+    claimName: occ-bootstrap-admin-password
+database:
+  cidrs:
+    - 10.96.0.51/32
+  caSecretName: occ-postgres-root
+  caKey: tls.crt
+  caMountPath: /etc/openclaw/database-ca
+api:
+  clients:
+    - namespace: octelium
+      podLabels:
+        app: octelium
+        octelium.com/component: svc
+        octelium.com/svc: console.oce
+    - namespace: traefik
+      podLabels:
+        app.kubernetes.io/name: traefik
+        app.kubernetes.io/instance: traefik
+  modelDiscoveryCidrs: []
+  trustedProxy:
+    preset: generic
+    cidrs:
+      - 10.244.1.0/24
+      - 10.244.2.0/24
+      - 10.244.3.0/24
+      - 10.244.4.0/24
+    clientAddressHeader: x-forwarded-for
+cluster:
+  cidrs:
+    - 10.96.0.1/32
+    - 10.1.0.199/32
+controlPlane:
+  nodeSelector:
+    oce-role: control
+  installationChecksum: "980de11bbc688a33741a19c9093f613e74e464d2aae897571ac61d0056593c71"
+dns:
+  namespace: kube-system
+  podLabels:
+    k8s-app: kube-dns
+gatewayRouting:
+  enabled: true
+  gatewayClassName: envoy-gateway
+  gatewayName: oce-private-gateway
+  apiKeySecretName: occ-private-gateway-key
+  envoyNamespace: envoy-gateway-system
+metrics:
+  enabled: true
+logging:
+  collector:
+    enabled: false
+repositoryCredentials:
+  enabled: false

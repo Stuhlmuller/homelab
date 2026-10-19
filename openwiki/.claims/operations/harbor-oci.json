@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:2487df1ef5ff173b3886f985c165162b4f5e5dba8c334c81238339b7c849c741",
+  "pageVersion": "sha256:b24d69b2fda4b0dd0d73d631ee002fca7118a9c33398b86cd29d76ee188690d9",
   "claims": [
     {
       "id": "claim_0a59e498ea474869b56bee24c9a1f386",
@@ -738,17 +738,35 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
           "version": "repo-file-v1:sha256:300ea8ab953fc0b6b22f98835f8c2a06825302b3e55002f32f373a930f1af787"
         }
       ]
+    },
+    {
+      "id": "claim_89190b43dbc541a481683f14a327fc0b",
+      "statement": "The dormant Enterprise chart candidate references pinned Harbor controller/runtime digests and a single EnvoyProxy mirrored-image override; transitive image publication and live pulls remain unverified.",
+      "evidence": [
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:c3270cba9046df250f5953fc03ed551aebaa9a37f8ca8533833d8fd281dd23b8"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml#L1-L23",
+          "version": "repo-lines-v1:sha256:4f8cf618d5c9d076a2a193565d46c1552bf753c1603e0f3294cd653fd0ba7871:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxYTBiMzZhNDQ1NDIzMTY5MmY1Y2M3NDg2MDdkODJmY2FkZjRlZWQ3OGI3MmZlZGViZTQ4ZWI3MmUzMTA0N2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMxODJlMjliMzc5Mjc3ZDVhOTRhODFmOWUxMmVmZWE3N2FhZmVmYzY4NTZmNWZjMjlkYzY1Nzg4YmU5ODVmMzciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/values.yaml#L1-L2",
+          "version": "repo-lines-v1:sha256:27828993c743eb17047d8185ca1488c656dc3fdce111448a557065fb3bf19b2f:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjM0ZjRiMWRiYzg2NWU3ZTY5NDQ5N2Q5MGUyNzczMTIyM2RlMGY0OTJmOTg4YmIzNjBkOTNlYTc3MDRkMzZmNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNmNzRjM2VmODRlMGYzYTk1MDVlNmI1ZGU1OTNlYTY3NzgzYmNiMzU0NmVhN2Y1NjI4NDhmYjc2ZDE1Y2ZlMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzMyMWIxYjcwMWYzZjVkNmQ5ZmY4NjQ5NTVkZmMxMmExNGNmODg3NTkyNTFiMTA5ZTRmZTMwODdhNzkwZTkxMiJ9"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T10:02:28.692Z"
+    "at": "2026-10-19T10:28:14.477Z"
   }
 }

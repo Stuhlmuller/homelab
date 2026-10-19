@@ -64,6 +64,10 @@ sources:
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/postgres-tls.yaml
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-d65575b694fbbe7e37dd04e6
     resource: repo://clusters/homelab/apps/openclaw/README.md
   - id: openwiki-source-a11878298975bc4bd3bbaf7d
@@ -140,10 +144,10 @@ sources:
     resource: repo://scripts/fleet-free-setup.py
   - id: openwiki-source-87efd56c37d4fbd91671cd82
     resource: repo://scripts/mastodon-public-dns.py
-generated: { by: "codex", at: "2026-10-19T09:02:08.557Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:44:12.806Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # Workload Inventory
@@ -344,7 +348,11 @@ declares restricted `openclaw-system` and external `openclaw-agents` namespaces,
 scoped tenant RoleBindings, seven retained `OnChange` secret projections,
 a system ingress deny, and a retained PostgreSQL CA plus private server
 certificate. It declares no running PostgreSQL, local volumes, or Installation
-candidate. Separate staged Traefik and Octelium declarations provide an
+workload. A separate dormant [stock-chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+adds reviewed Installation bytes, versioned immutable startup Secret contract,
+local Helm values and lifecycle hooks. It has no Argo registration, and its
+placeholder administrator email, missing placement labels, and unfinished
+database/storage gates prevent activation. Separate staged Traefik and Octelium declarations provide an
 authenticated `console.oce.stinkyboi.com` path and exact opaque Agent hosts
 through the private OCE API; the old URL still targets the suspended legacy
 Service. No Enterprise access has passed live acceptance. Its fresh agent will use a separate owner

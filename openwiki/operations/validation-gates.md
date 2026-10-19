@@ -4,6 +4,8 @@ title: "Validation Gates"
 description: "Static, policy, render, secret-scan and live acceptance gates for homelab workloads."
 tags: [operations, validation]
 sources:
+  - id: openwiki-source-3b9a4d642a8fbbac6cbed98b
+    resource: repo://.checkov.baseline
   - id: openwiki-source-e82cbcffb5df1a3ee146efb1
     resource: repo://.cordium/runner-pool.json
   - id: openwiki-source-5639384dcb82d59768eb1132
@@ -146,8 +148,14 @@ sources:
     resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-4091442a62f62f0adc73ce96
     resource: repo://scripts/ci/openclaw-enterprise-access-test.py
+  - id: openwiki-source-18423e8d68f98d1e991a1691
+    resource: repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py
   - id: openwiki-source-80b544ebc719878ac3f31bac
     resource: repo://scripts/ci/openclaw-enterprise-foundation-test.py
+  - id: openwiki-source-7d23244901f610ddb0d3ae2a
+    resource: repo://scripts/ci/openclaw-enterprise-quiesce-test.py
+  - id: openwiki-source-86a40ee4669b4b7843917e87
+    resource: repo://scripts/ci/openclaw-enterprise-startup-test.py
   - id: openwiki-source-4c0fec174d4f7cf025f2e7f8
     resource: repo://scripts/ci/openclaw-enterprise-test.py
   - id: openwiki-source-379810dcab1205ffb941d2cb
@@ -220,10 +228,10 @@ sources:
     resource: repo://scripts/talos-nix-builder-seccomp.py
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T09:44:12.806Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T09:44:12.806Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # Validation Gates
@@ -1535,6 +1543,12 @@ Deployments, ReplicaSets, and Pods across two read-only snapshots. The
 entrypoint still refuses mutation because pinned `GET /installation` does not
 reveal selected Drivers. Local tests do not prove Secret readiness, certificate
 issuance, PostgreSQL TLS, network-policy enforcement, hooks, routes, or restore.
+The dormant chart gate renders pinned upstream Helm values with the reviewed
+Installation bytes, fixed immutable startup Secret name, and the single local
+Envoy image override. Startup, quiesce, and lifecycle fixtures check exact-main
+Secret creation/readback and bounded hook behavior; Checkov uses an exact
+three-finding baseline for public Secret-name strings. These offline checks do
+not establish running Pod/Secret binding or a successful live hook.
 The staged private-access check runs
 [`openclaw-enterprise-access-test.py`](../../scripts/ci/openclaw-enterprise-access-test.py)
 in the static gate. It validates the scoped Octelium catalog and exact-main

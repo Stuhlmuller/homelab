@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:070b9f2685bd0af2b6aa4c216ee6071193710626a831cb5a820836c5bedf5312",
+  "pageVersion": "sha256:d93047ea12cec200718492fdd228707e470e9576d006589a8392e654fca6c679",
   "claims": [
     {
       "id": "claim_4aff76be2bce43f6bb08b2fe6c45c82d",
@@ -142,7 +142,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md",
-          "version": "repo-file-v1:sha256:e5b1f527725106bacc7432515374060245b153609fdf77e1f21429be3e784931"
+          "version": "repo-file-v1:sha256:8c6fd653bc75f30f29f7563711a1b4cb6d718e021004374ed34638385218239f"
         },
         {
           "resource": "repo://scripts/ci/openclaw-enterprise-foundation-test.py",
@@ -183,10 +183,28 @@
           "version": "repo-file-v1:sha256:49af4de40aca3bcca6e28b46ab5d37515cbb03fa64de59277943812d17013cac"
         }
       ]
+    },
+    {
+      "id": "claim_a3e8ee280c8f41418b4316bb5b025934",
+      "statement": "The dormant Enterprise app directory owns pinned stock-chart values, reviewed Installation startup bytes, hooks and one Envoy image override; a separate exact-main workflow and startup script own immutable Secret creation, while focused CI fixtures exercise chart and lifecycle gates.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openclaw-enterprise-startup.yml",
+          "version": "repo-file-v1:sha256:98c4c8c37bcc3d0647c9be5f27dc75483e2ef0d229de79c1dcfa56a070136512"
+        },
+        {
+          "resource": "repo://clusters/homelab/apps/openclaw-enterprise/README.md",
+          "version": "repo-file-v1:sha256:c3270cba9046df250f5953fc03ed551aebaa9a37f8ca8533833d8fd281dd23b8"
+        },
+        {
+          "resource": "repo://scripts/ci/openclaw-enterprise-chart-hooks-test.py",
+          "version": "repo-file-v1:sha256:9b7bcc00c7c9c473d48869c2cf973e47a7b02790e651ec230966c5395332ac20"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T09:02:08.557Z"
+    "at": "2026-10-19T10:28:14.477Z"
   }
 }

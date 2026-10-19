@@ -64,6 +64,12 @@ sources:
     resource: repo://clusters/homelab/apps/mastodon/README.md
   - id: openwiki-source-878d8aa0884abae2a8194701
     resource: repo://clusters/homelab/apps/openclaw-enterprise-foundation/README.md
+  - id: openwiki-source-d27624f754153b714543d8c4
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/envoyproxy.yaml
+  - id: openwiki-source-9268fd97f2c4ec8553f9ecb8
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/README.md
+  - id: openwiki-source-500c19e4044fe1088cd60c0d
+    resource: repo://clusters/homelab/apps/openclaw-enterprise/values.yaml
   - id: openwiki-source-c728e68797517895d00bd9f9
     resource: repo://clusters/homelab/apps/renovate/cronjob.yaml
   - id: openwiki-source-01fc0bedc522f2abd58d6698
@@ -146,10 +152,10 @@ sources:
     resource: repo://scripts/config/harbor-traefik-images.json
   - id: openwiki-source-b4d9581a96236cc288a1836f
     resource: repo://scripts/talos-harbor-mirrors.py
-generated: { by: "codex", at: "2026-10-19T08:22:58.881Z" }
+generated: { by: "codex", at: "2026-10-19T10:28:14.477Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T10:02:28.692Z
+    at: 2026-10-19T10:28:14.477Z
 ---
 
 # Harbor Private OCI Registry
@@ -844,6 +850,11 @@ protected publication with complete Harbor pulls. The full platform image
 catalog and transitive render still lack a complete publication receipt;
 publishing the stock pair alone does not release the Enterprise rollout.
 The dormant Enterprise foundation is unregistered and deploys neither image.
+The separate dormant [chart candidate](../../clusters/homelab/apps/openclaw-enterprise/README.md)
+references the published controller/runtime digests and overrides only the
+stock `oce-private-gateway` EnvoyProxy image with a mirrored digest. Its local
+render comparison does not prove that every transitive image is published or
+that any Enterprise Pod has pulled from Harbor.
 See the [acceptance ledger](../../docs/evidence/openclaw-enterprise-acceptance.md).
 
 The [full catalog](../../scripts/config/harbor-images.json) contains digest-pinned

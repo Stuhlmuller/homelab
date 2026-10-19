@@ -164,6 +164,64 @@ deny contains msg if {
 }
 
 deny contains msg if {
+	object.get(input, "name", "") == "OpenClaw Enterprise Startup Candidate"
+	not approved_openclaw_startup
+	msg := "OpenClaw Enterprise startup requires exact-main protected create, fixed source hash, and private output"
+}
+
+approved_openclaw_startup if {
+	dispatch := object.get(workflow_events, "workflow_dispatch", {})
+	count(dispatch.inputs) == 1
+	dispatch.inputs.expected_sha.required == true
+	input.permissions == {}
+	input.concurrency == {"group": "openclaw-enterprise-startup-production", "cancel-in-progress": false}
+	count(input.jobs) == 2
+	static := input.jobs["static-policy"]
+	static.permissions == {"contents": "read"}
+	count(static.steps) == 4
+	static.steps[0].name == "Verify Dispatch Commit"
+	static.steps[0].env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}"}
+	contains(static.steps[0].run, `test "${ACTUAL_REF}" = refs/heads/main`)
+	contains(static.steps[0].run, `test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"`)
+	static.steps[3].name == "Run Static Checks"
+	contains(static.steps[3].run, "nix develop --command bash scripts/ci/static-checks.sh --offline-verified")
+	job := input.jobs.startup
+	job.needs == ["static-policy"]
+	job.if == "github.repository == 'Stuhlmuller/homelab' && github.ref == 'refs/heads/main'"
+	job.environment.name == "homelab-production"
+	job.permissions == {"contents": "read"}
+	count(job.steps) == 4
+	[job.steps[0].name, job.steps[1].name, job.steps[2].name, job.steps[3].name] == ["Verify Current Main Before Credentials", "Check Out Repository", "Install Nix", "Create Or Attest Fixed Startup Secret"]
+	verify := job.steps[0]
+	verify.env == {"ACTUAL_REF": "${{ github.ref }}", "ACTUAL_SHA": "${{ github.sha }}", "EXPECTED_SHA": "${{ inputs.expected_sha }}", "GH_REPO": "${{ github.repository }}", "GH_TOKEN": "${{ github.token }}"}
+	trim(verify.run, "\n") == openclaw_startup_main_check
+	run := job.steps[3]
+	run.env == {"EXPECTED_SHA": "${{ inputs.expected_sha }}", "OCTELIUM_AUTH_TOKEN": "${{ secrets.OCTELIUM_CI_AUTH_TOKEN }}"}
+	trim(run.run, "\n") == openclaw_startup_private_run
+}
+
+openclaw_startup_main_check := `set -euo pipefail
+test "${ACTUAL_REF}" = refs/heads/main
+test "${ACTUAL_SHA}" = "${EXPECTED_SHA}"
+test "${ACTUAL_SHA}" = "$(gh api "repos/${GH_REPO}/git/ref/heads/main" --jq .object.sha)"`
+
+openclaw_startup_private_run := `set -euo pipefail
+private_log="$(mktemp)"
+trap 'rm -f "$private_log"' EXIT
+if ! nix develop --command bash >"$private_log" 2>&1 <<'EOF'
+set -euo pipefail
+umask 077
+bash scripts/ci/install-kubeconfig.sh
+sha256sum --check --status <<<'08de19e4a74ae7521889d600edaae58b500bb9bdd6d9f5e7e2464d7fe45fb289  scripts/openclaw-enterprise-startup.py'
+python3 -I scripts/openclaw-enterprise-startup.py --execute --expected-sha "$EXPECTED_SHA"
+EOF
+then
+  echo "::error::Startup candidate blocked; private cluster diagnostics withheld."
+  exit 1
+fi
+echo "Reviewed startup Secret created or attested; private details withheld."`
+
+deny contains msg if {
 	object.get(input, "name", "") == "Platform Maintenance"
 	not approved_platform_maintenance
 	msg := "Platform maintenance requires exact protected stages, current-main verification, permissions, and script hash"

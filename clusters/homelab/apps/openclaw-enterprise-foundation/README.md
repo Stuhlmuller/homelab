@@ -18,8 +18,14 @@ Do not activate the agent from this declaration.
 
 The separate `occ-postgres-root` certificate is retained as database recovery
 material; cert-manager issues a server certificate only for the private Service
-FQDN in the URL. Storage placement, PostgreSQL workload/roles and backup,
-candidate inputs, private routes, and registration await their separate reviewed
-tasks and live gates.
+FQDN in the URL. The reviewed `occ-plugin` startup bytes live at
+`../openclaw-enterprise/installation.yaml`. The protected
+`openclaw-enterprise-startup` workflow creates and verifies only the immutable
+`occ-installation-startup-980de11bbc688a33741a19c9093f613e` Secret after
+this namespace exists and before the Enterprise Application is registered.
+The application PreSync hook checks its exact bytes and chart checksum. No raw
+Secret is rendered or committed. Storage placement,
+PostgreSQL workload/roles and backup, private routes, and registration await
+their separate reviewed tasks and live gates.
 Validate this dormant boundary with
 `nix develop --command python3 -I scripts/ci/openclaw-enterprise-foundation-test.py`.
