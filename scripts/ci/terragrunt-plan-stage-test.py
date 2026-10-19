@@ -125,21 +125,24 @@ class PrivatePlanStageTest(unittest.TestCase):
         self.assertIn('--report-format json', runner)
         self.assertIn('"${azuread_report_args[@]}" -- plan -lock=false -out plan.out -no-color', runner)
 
-    def test_changed_azuread_stack_never_skips_for_missing_credentials(self):
+    def test_changed_azuread_inputs_never_skip_for_missing_credentials(self):
         runner = PLAN_RUNNER.read_text()
         section = runner.split('echo "::group::AzureAD application registration plan"\n', 1)[1]
         section = section.split('\necho "::endgroup::"', 1)[0]
-        for changed, expected_code in ((True, 1), (False, 0)):
-            with self.subTest(changed=changed):
+        for stack_changed, inputs_changed, expected_code in (
+            (True, False, 1), (False, True, 1), (False, False, 0)
+        ):
+            with self.subTest(stack_changed=stack_changed, inputs_changed=inputs_changed):
                 script = ('set -euo pipefail\n'
                           'azuread_credentials_available() { return 1; }\n'
-                          f'terragrunt_azuread_stack_changed() {{ return {0 if changed else 1}; }}\n'
+                          f'terragrunt_azuread_stack_changed() {{ return {0 if stack_changed else 1}; }}\n'
+                          f'terragrunt_azuread_plan_inputs_changed() {{ return {0 if inputs_changed else 1}; }}\n'
                           + section)
                 result = subprocess.run(["bash", "-c", script], text=True,
                                         capture_output=True, timeout=5, check=False)
                 self.assertEqual(result.returncode, expected_code, result.stderr)
-                self.assertEqual("Skipping AzureAD" in result.stdout, not changed)
-                if changed:
+                self.assertEqual("Skipping AzureAD" in result.stdout, expected_code == 0)
+                if expected_code:
                     self.assertIn("AzureAD credentials are required", result.stderr)
 
     def test_workflow_tail_executes_only_the_verified_helper(self):

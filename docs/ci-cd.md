@@ -723,6 +723,16 @@ that phase only if the unapplied range did not change the AzureAD stack or its
 shared root configuration. Every root source change requires the credentials
 so identity drift is not silently ignored.
 
+For pull requests, a changed AzureAD stack or shared root, or changed plan
+inputs (`flake.nix`, `flake.lock`, `policy/terraform.rego`,
+`scripts/ci/terragrunt-filter-base.sh`, or `scripts/ci/terragrunt-plan.sh`),
+requires the `homelab-plan` environment's `AZUREAD_CLIENT_ID` and
+`AZUREAD_TENANT_ID` secrets plus a complete GitHub OIDC session. The
+`Terragrunt Plan` job fails if these are unavailable or the diff cannot be
+determined; it skips AzureAD only for unrelated changes. Restore the plan
+identity using the [Entra provider runbook](entra-terraform-provider.md),
+rerun the PR check, and verify its protected plan succeeds before merging.
+
 The `Entra OIDC Verify` dispatch takes an exact current-main SHA and runs
 refresh-enabled no-change plans for all four Entra units under both protected
 identities. It applies nothing and cannot advance the full-apply checkpoint.
