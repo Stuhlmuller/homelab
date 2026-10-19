@@ -16,21 +16,26 @@ inventory had 18 repositories: 10 archived and eight eligible non-archived,
 including four private repositories and no forks. The active
 `rstuhlmuller-renovate` App installation selected all repositories. The last
 observed legacy scheduled run (39092061312) succeeded at 2026-10-18 03:00 UTC.
+Its App-token scan started and finished all eight then-eligible owner
+repositories, including the four private repositories, and scanned none of the
+ten archives; the owner had no forks to exercise live fork handling.
 Its workflow/config commits were `3f5f078000173af86205f04df1559132d3e290f8`
 and `2215ff710e3395fe3e1955adf8911e54412dcfc5`, respectively; existing
 dependency PRs use author `rstuhlmuller-renovate[bot]`. The runner pins that
 bot username and Git author so startup needs no account lookup. The legacy
 workflow and global config reference no separate private-registry credential
-input; the workflow uses only the existing App secrets. The App currently has
-repository Checks, Contents, Issues, Pull requests, Commit statuses, and
-Workflows write; Metadata and Dependabot alerts read; and organization Members
-and Administration read. It lacks repository Administration read from
+input; the workflow uses only the existing App secrets. The public App
+definition currently requests repository Checks, Contents, Issues, Pull
+requests, Commit statuses, and Workflows write; Metadata and Dependabot alerts
+read; and organization Members and Administration read. It lacks repository
+Administration read from
 Renovate's recommended grants. This does not block discovery, but a repository
 override using automatic rebasing may lose branch-protection awareness. The
-operator credential cannot enumerate the installation-token repository list;
-compare its eligible count of eight, effective repository overrides, and the
-existing PR author with the first cluster dry run before cutover. Keep private
-repository names out of public reports.
+operator credential cannot enumerate the current installation-token repository
+list or confirm effective installation grants; compare its eligible count of
+eight, effective grants and repository overrides, and the existing PR author
+with the first cluster dry run before cutover. Keep private repository names out
+of public reports.
 
 ## Credentials and storage
 
