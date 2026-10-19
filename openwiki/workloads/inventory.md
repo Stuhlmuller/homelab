@@ -112,6 +112,8 @@ sources:
     resource: repo://docs/argocd-image-updater.md
   - id: openwiki-source-df5b234ace5ca38a67ae3b6b
     resource: repo://docs/evidence/openclaw-enterprise-acceptance.md
+  - id: openwiki-source-d04edc1f961af1e5e8d6ef79
+    resource: repo://docs/evidence/openclaw-enterprise-policy-review.json
   - id: openwiki-source-b3b14c71f8a81de8a3b71c02
     resource: repo://docs/examples/octelium/homelab-services.yaml
   - id: openwiki-source-f2b6230f4caf06e7eab9bc66
@@ -138,6 +140,8 @@ sources:
     resource: repo://IaC/terragrunt.stack.hcl
   - id: openwiki-source-f5339d55c401403e74eef9ec
     resource: repo://IaC/traefik/stack.hcl
+  - id: openwiki-source-020791e1237c864b31f43a39
+    resource: repo://scripts/ci/offline-static-checks.sh
   - id: openwiki-source-d2206c7f78c1ec59c3551c13
     resource: repo://scripts/config/openclaw-enterprise.json
   - id: openwiki-source-388dfb5b8078e3e9f29dbd62
@@ -148,10 +152,10 @@ sources:
     resource: repo://scripts/mastodon-public-dns.py
   - id: openwiki-source-a44b67b396abfe9ddff04314
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
-generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
+generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T19:09:44.607Z
+    at: 2026-10-19T20:01:23.259Z
 ---
 
 # Workload Inventory
@@ -262,6 +266,8 @@ a Service route for internal callers before external DNS moves to mesh addresses
 It now declares all six CoreDNS resources and pins the running image content,
 with a controlled rolling replacement. The Talos bootstrap handoff remains a
 separate, gated step; see [CoreDNS GitOps Ownership](../operations/coredns-gitops-ownership.md).
+Nine repository-owned DNS egress policies select its Pods on TCP/UDP 53;
+source checks pass, but isolated-canary traffic qualification remains open.
 
 `tailnet-dns` is a separate, stateless CoreDNS/k8s_gateway resolver for tailnet
 clients; it does not replace `platform-dns` or Traefik. Its Tailscale

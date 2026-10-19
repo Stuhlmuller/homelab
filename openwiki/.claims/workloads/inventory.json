@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:d23a024ff3a033a2ebac0dab7bd624733ee5a658e797ede13d1d2136d09364c3",
+  "pageVersion": "sha256:e53ca94e75cdec36319c13469b1a21ef63aaceda11a1618ed50d1d79af13ad13",
   "claims": [
     {
       "id": "claim_39dc845af46742c3a132275588ffa9d7",
@@ -76,7 +76,7 @@
       "evidence": [
         {
           "resource": "repo://clusters/homelab/apps/cordium/networkpolicy.yaml",
-          "version": "repo-file-v1:sha256:1cf32ecfc2aa7b133a277aac8385ddf6e271996bb04e7747ed5bcdeb60a5df7c"
+          "version": "repo-file-v1:sha256:ce2aaa515e2443bdd25d00f0e6f459f59f4c1c94cd8b901456ad01734f153246"
         },
         {
           "resource": "repo://clusters/homelab/apps/n8n/values.yaml#L210-L210",
@@ -334,7 +334,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
         },
         {
           "resource": "repo://scripts/config/openclaw-enterprise.json",
@@ -364,7 +364,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
         }
       ]
     },
@@ -382,7 +382,7 @@
         },
         {
           "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
-          "version": "repo-file-v1:sha256:23cae5681c523df705822f0b920ac9a1b022df4f232c1063390163712a53f567"
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
         },
         {
           "resource": "repo://docs/harbor-image-mirroring.md",
@@ -473,10 +473,28 @@
           "version": "repo-file-v1:sha256:513ef2a60128b3d847862ad7888944f2008c3ac857faaf81dd1237f2497122da"
         }
       ]
+    },
+    {
+      "id": "claim_69919faae29247d2ac5e32c6a1da02b4",
+      "statement": "Nine repository-owned DNS egress policies select CoreDNS Pods on TCP and UDP port 53; offline source checks pass while isolated-canary traffic qualification remains open.",
+      "evidence": [
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-acceptance.md",
+          "version": "repo-file-v1:sha256:369887763fb3193dcf116dbfbe98a3d8616b242baa919fc613530bda060730aa"
+        },
+        {
+          "resource": "repo://docs/evidence/openclaw-enterprise-policy-review.json",
+          "version": "repo-file-v1:sha256:75db6fa9f8a84fd009e919ab26790aea98f5f8c96469e33ac059c48417216b03"
+        },
+        {
+          "resource": "repo://scripts/ci/offline-static-checks.sh",
+          "version": "repo-file-v1:sha256:a3969d66b33370fc4cf29f1980c0134577ea3c2b6536ea64da93ba93b1b3b7af"
+        }
+      ]
     }
   ],
   "verification": {
     "by": "openwiki/0.7.0",
-    "at": "2026-10-19T19:09:44.607Z"
+    "at": "2026-10-19T20:01:23.259Z"
   }
 }

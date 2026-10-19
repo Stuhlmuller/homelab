@@ -72,6 +72,10 @@ sources:
     resource: repo://clusters/homelab/apps/traefik/CUTOVER.md
   - id: openwiki-source-f7b4195d4d622f91da5cc07b
     resource: repo://clusters/homelab/apps/traefik/funnel.yaml
+  - id: openwiki-source-2b75865bb7a2424915c916d3
+    resource: repo://clusters/homelab/platform/dns/coredns-deployment.yaml
+  - id: openwiki-source-8aef4e7455acf1892a6ac497
+    resource: repo://clusters/homelab/platform/dns/coredns-service.yaml
   - id: openwiki-source-45967fd30b5845212c1a62be
     resource: repo://clusters/homelab/platform/image-policy/binding.yaml
   - id: openwiki-source-c14c7585bd2e583682b8b7f7
@@ -234,10 +238,10 @@ sources:
     resource: repo://specs/004-run-renovate-in-cluster/tasks.md
   - id: openwiki-source-111e7fc5206f50a28e4daf9c
     resource: repo://specs/005-retire-public-app-dns/contracts/cutover.md
-generated: { by: "codex", at: "2026-10-19T19:09:44.607Z" }
+generated: { by: "codex", at: "2026-10-19T20:01:23.259Z" }
 verified:
   - by: openwiki/0.7.0
-    at: 2026-10-19T19:09:44.607Z
+    at: 2026-10-19T20:01:23.259Z
 ---
 
 # Validation Gates
@@ -540,6 +544,12 @@ manifests as isolation evidence; validate Tailscale ACLs, Istio authorization,
 listener path boundaries and application authentication through their real paths.
 See [ingress](../runbooks/tailnet-ingress.md) and the
 [provider runbook](../../IaC/terragrunt-catalog/modules/tailscale-access/README.md).
+
+The offline static gate renders all nine DNS egress policies and requires their
+TCP/UDP port 53 peers to select only `kube-system` Pods labeled
+`k8s-app=kube-dns`. It also checks that the `kube-dns` Service selector and
+CoreDNS Deployment Pod selector contain exactly that label. These source checks
+do not qualify DNS traffic on the isolated enforcement canary.
 
 The `network-policy` job in [validate](../../.github/workflows/validate.yml)
 runs a 30-minute disposable dual-stack Kind
